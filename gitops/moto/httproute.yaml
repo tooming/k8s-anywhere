@@ -1,0 +1,20 @@
+# moto dashboard/UI via Envoy: http://moto.127.0.0.1.nip.io:8080/moto-api/
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: moto
+  namespace: moto
+spec:
+  parentRefs:
+    - name: eg
+      namespace: lab-gateway
+  hostnames:
+    - "moto.127.0.0.1.nip.io"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: moto
+          port: 5000

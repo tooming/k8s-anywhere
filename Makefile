@@ -51,8 +51,9 @@ down: ## Stop everything (cluster + GitLab + Colima). Data on PVCs/volumes is ke
 ##@ Runtime (Colima)
 
 .PHONY: colima-up
-colima-up: ## Start the Colima VM (docker runtime)
+colima-up: ## Start the Colima VM (docker runtime) + raise inotify limits
 	colima status >/dev/null 2>&1 || colima start --cpu $(COLIMA_CPU) --memory $(COLIMA_MEM) --disk $(COLIMA_DISK) --vm-type vz --mount-type virtiofs
+	@colima ssh -- sudo sysctl -w fs.inotify.max_user_instances=8192 fs.inotify.max_user_watches=1048576 >/dev/null 2>&1 || true
 
 .PHONY: colima-down
 colima-down: ## Stop the Colima VM

@@ -1,0 +1,23 @@
+# s3manager — web UI to browse Garage (S3) buckets + objects.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: s3manager
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/storage/s3manager
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: storage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

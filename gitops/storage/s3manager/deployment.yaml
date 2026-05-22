@@ -1,0 +1,49 @@
+# s3manager — lightweight web UI to browse S3 buckets + objects. Pointed at Garage
+# (using the garage-s3 key). Reach it at http://s3.127.0.0.1.nip.io:8080
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3manager
+  namespace: storage
+  labels:
+    app: s3manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: s3manager
+  template:
+    metadata:
+      labels:
+        app: s3manager
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: s3manager
+          image: cloudlena/s3manager:latest
+          env:
+            - name: ENDPOINT
+              value: "garage.storage.svc.cluster.local:3900"
+            - name: REGION
+              value: "garage"
+            - name: USE_SSL
+              value: "false"
+            - name: ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: garage-s3
+                  key: access-key-id
+            - name: SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: garage-s3
+                  key: secret-access-key
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
