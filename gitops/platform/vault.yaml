@@ -1,0 +1,55 @@
+# HashiCorp Vault — secrets backend. Standalone + file storage on a PVC (persistent).
+# TLS disabled (lab). Injector off — we sync secrets into the cluster via External
+# Secrets Operator. Must be initialized + unsealed once after deploy (see Makefile).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://helm.releases.hashicorp.com
+    chart: vault
+    targetRevision: 0.32.0
+    helm:
+      releaseName: vault
+      valuesObject:
+        global:
+          tlsDisable: true
+        injector:
+          enabled: false
+        ui:
+          enabled: true
+        server:
+          standalone:
+            enabled: true
+            config: |
+              ui = true
+              listener "tcp" {
+                address     = "[::]:8200"
+                tls_disable = 1
+              }
+              storage "file" {
+                path = "/vault/data"
+              }
+          dataStorage:
+            enabled: true
+            size: 1Gi
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
