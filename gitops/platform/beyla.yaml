@@ -28,9 +28,9 @@ spec:
               kubernetes:
                 enable: true
             otel_traces_export:
-              endpoint: http://tempo.observability.svc.cluster.local:4318
+              endpoint: http://tempo.observability.svc.cluster.local:4318/v1/traces
             otel_metrics_export:
-              endpoint: http://mimir.observability.svc.cluster.local:9009/otlp
+              endpoint: http://mimir.observability.svc.cluster.local:9009/otlp/v1/metrics
               features:
                 - application
                 - application_span
