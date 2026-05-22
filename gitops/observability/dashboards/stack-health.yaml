@@ -20,15 +20,20 @@ data:
       "annotations": { "list": [] },
       "panels": [
         {
+          "id": 10, "type": "text", "title": "Lab UIs",
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+          "options": { "mode": "markdown", "content": "| Service | URL | Role |\n|---|---|---|\n| **ArgoCD** | http://argocd.127.0.0.1.nip.io:8080 | GitOps engine |\n| **Grafana** | http://localhost:8080 | Dashboards (here) |\n| **Vault** | http://vault.127.0.0.1.nip.io:8080 | Secrets |\n| **GitLab** | http://localhost:8929 | Git source |\n\n_In-cluster UIs routed via Envoy (`*.127.0.0.1.nip.io`, no /etc/hosts). GitLab is a standalone container on its own port._" }
+        },
+        {
           "id": 1, "type": "stat", "title": "ArgoCD Apps",
-          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 },
           "datasource": { "type": "prometheus", "uid": "mimir" },
           "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "count(argocd_app_info)", "instant": true } ],
           "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
         },
         {
           "id": 2, "type": "stat", "title": "Apps Healthy",
-          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 },
           "datasource": { "type": "prometheus", "uid": "mimir" },
           "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "count(argocd_app_info{health_status=\"Healthy\"})", "instant": true } ],
           "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] } }, "overrides": [] },
@@ -36,21 +41,21 @@ data:
         },
         {
           "id": 3, "type": "stat", "title": "Apps Synced",
-          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 },
           "datasource": { "type": "prometheus", "uid": "mimir" },
           "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "count(argocd_app_info{sync_status=\"Synced\"})", "instant": true } ],
           "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" }
         },
         {
           "id": 4, "type": "stat", "title": "Pods Running",
-          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 6 },
           "datasource": { "type": "prometheus", "uid": "mimir" },
           "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(kube_pod_status_phase{phase=\"Running\"})", "instant": true } ],
           "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
         },
         {
           "id": 5, "type": "timeseries", "title": "Pods by phase",
-          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 10 },
           "datasource": { "type": "prometheus", "uid": "mimir" },
           "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (phase) (kube_pod_status_phase)", "legendFormat": "{{phase}}", "range": true } ],
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "stacking": { "mode": "normal" } } }, "overrides": [] },
@@ -58,7 +63,7 @@ data:
         },
         {
           "id": 6, "type": "table", "title": "ArgoCD Applications (live)",
-          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 10 },
           "datasource": { "type": "prometheus", "uid": "mimir" },
           "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "argocd_app_info", "instant": true, "format": "table" } ],
           "transformations": [
