@@ -1,0 +1,10 @@
+# A real S3 bucket, declared as a Kubernetes object and reconciled by the ACK
+# S3 controller into moto. `kubectl get buckets` will list it; deleting this CR
+# deletes the bucket in moto (deletionPolicy: delete).
+apiVersion: s3.services.k8s.aws/v1alpha1
+kind: Bucket
+metadata:
+  name: ack-demo-bucket
+  namespace: ack-system
+spec:
+  name: ack-demo-bucket

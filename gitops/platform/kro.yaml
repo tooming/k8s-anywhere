@@ -1,0 +1,37 @@
+# KRO (Kube Resource Orchestrator) — bundle many k8s/ACK resources into ONE
+# custom API (a ResourceGraphDefinition generates a new CRD). The platform-eng
+# capstone: pairs with ACK so a single high-level claim provisions cloud + k8s
+# resources together. rbac.mode: unrestricted (default) so KRO can manage the
+# arbitrary resource kinds its RGDs reference (incl. ACK Buckets).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kro
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: ghcr.io/kro-run/kro
+    chart: kro
+    targetRevision: 0.4.1
+    helm:
+      releaseName: kro
+      valuesObject:
+        deployment:
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kro
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

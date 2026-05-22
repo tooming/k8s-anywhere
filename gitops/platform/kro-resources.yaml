@@ -1,0 +1,32 @@
+# KRO ResourceGraphDefinition(s) + instances. Wave 5: after both the KRO
+# controller and ACK S3 controller (wave 3) and ack-resources (wave 4) exist,
+# since the RGD references the ACK Bucket kind and KRO must generate the
+# S3BucketClaim CRD before its instance can apply.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kro-resources
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/kro
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ack-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,40 @@
+# ResourceGraphDefinition: defines a NEW high-level API (kind: S3BucketClaim,
+# group kro.run) that, from one claim, provisions:
+#   - an ACK S3 Bucket (reconciled into moto)
+#   - a "catalog" ConfigMap recording who owns the bucket
+# This is the abstraction layer: app teams write S3BucketClaim, not raw ACK CRs.
+# CEL refs: ${schema.spec.*} = claim inputs; ${bucket.*} = the created Bucket.
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: s3bucketclaim
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: S3BucketClaim
+    spec:
+      # simple-schema: type [| markers]
+      name: string | required=true
+      owner: string | default="platform"
+    status:
+      # surfaced on `kubectl get s3bucketclaim -o yaml`
+      bucketName: ${bucket.spec.name}
+  resources:
+    - id: bucket
+      template:
+        apiVersion: s3.services.k8s.aws/v1alpha1
+        kind: Bucket
+        metadata:
+          name: ${schema.spec.name}
+        spec:
+          name: ${schema.spec.name}
+    - id: catalog
+      template:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: ${schema.spec.name}-catalog
+        data:
+          bucket: ${schema.spec.name}
+          owner: ${schema.spec.owner}
+          managedBy: kro+ack

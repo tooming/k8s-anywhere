@@ -1,0 +1,51 @@
+# ACK (AWS Controllers for Kubernetes) — S3 service controller.
+# Manages "AWS" S3 resources as native k8s CRDs (kind: Bucket), but pointed at
+# our local moto emulator instead of real AWS. No AWS account, no cost.
+#
+# moto specifics:
+#   endpoint_url            -> moto's in-cluster Service
+#   allow_unsafe_...urls    -> moto is plain HTTP (SDK rejects http:// otherwise)
+#   endpoint_use_path_style -> reach buckets as moto.../<bucket>, NOT
+#                              <bucket>.moto... (virtual-host style has no DNS here)
+# Credentials come from Vault via ESO (ack-aws-creds Secret, INI format).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ack-s3
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: public.ecr.aws/aws-controllers-k8s
+    chart: s3-chart
+    targetRevision: 1.6.0
+    helm:
+      releaseName: ack-s3
+      valuesObject:
+        aws:
+          region: us-east-1
+          endpoint_url: http://moto.moto.svc:5000
+          allow_unsafe_aws_endpoint_urls: true
+          endpoint_use_path_style: true
+          credentials:
+            secretName: ack-aws-creds
+            secretKey: credentials
+            profile: default
+        installScope: cluster
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            memory: 128Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ack-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
