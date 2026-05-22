@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-lab-uis
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+data:
+  lab-uis.json: |
+    {
+      "uid": "lab-uis",
+      "title": "Lab — UIs",
+      "tags": ["lab"],
+      "schemaVersion": 39,
+      "version": 1,
+      "panels": [
+        {
+          "id": 1,
+          "type": "text",
+          "title": "Lab UIs (Envoy-routed via nip.io / host ports)",
+          "gridPos": { "h": 12, "w": 24, "x": 0, "y": 0 },
+          "options": {
+            "mode": "markdown",
+            "content": "## Lab UIs\n\n| Service | URL | Role |\n|---|---|---|\n| **ArgoCD** | http://argocd.127.0.0.1.nip.io:8080 | GitOps engine |\n| **Grafana** | http://localhost:8080 | Dashboards (you're here) |\n| **Vault** | http://vault.127.0.0.1.nip.io:8080 | Secrets |\n| **GitLab** | http://localhost:8929 | Git source of truth |\n\n_Routed in-cluster UIs use `*.127.0.0.1.nip.io` hostnames through Envoy (no /etc/hosts). GitLab runs as a standalone container on its own host port._"
+          }
+        }
+      ]
+    }

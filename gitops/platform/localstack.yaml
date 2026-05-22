@@ -1,0 +1,42 @@
+# LocalStack — local AWS emulator. First use: KMS for Vault auto-unseal. Later:
+# S3/IAM/etc. as the target for ACK controllers. PERSISTENCE=1 attempts to keep
+# state across restarts (may be Community-limited — we test before relying on it).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: localstack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://localstack.github.io/helm-charts
+    chart: localstack
+    targetRevision: 0.7.0
+    helm:
+      releaseName: localstack
+      valuesObject:
+        image:
+          tag: "stable"
+        persistence:
+          enabled: true
+          size: 2Gi
+        extraEnvVars:
+          - name: PERSISTENCE
+            value: "1"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: localstack
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
