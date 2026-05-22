@@ -1,16 +1,16 @@
-# k8s-lab control plane.
-# Modular profiles keep a 16 GB Mac within budget — see README.md / docs/00-architecture.md
+# k8s-lab control plane. Modular profiles keep a 16 GB Mac within budget.
+# `make up` bootstraps everything from scratch (see docs/DR.md). `make help` lists all.
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-# Colima VM sizing (host is 16 GB → leave ~4 GB for macOS)
+# Colima VM sizing (host is 16 GB -> leave ~4 GB for macOS)
 COLIMA_CPU  ?= 6
 COLIMA_MEM  ?= 12
 COLIMA_DISK ?= 60
 
-CLUSTER ?= k8s-lab
-LIVE    := infra/live/local
+LIVE     := infra/live/local
+REPO_DIR := $(shell pwd)
 
 REQUIRED_TOOLS := colima docker k3d kubectl helm terraform terragrunt kustomize argocd vault yq jq mkcert
 
@@ -18,74 +18,119 @@ REQUIRED_TOOLS := colima docker k3d kubectl helm terraform terragrunt kustomize 
 
 .PHONY: help
 help: ## Show this help
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) }' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) }' $(MAKEFILE_LIST)
 
 .PHONY: preflight
 preflight: ## Check required CLI tools are installed
 	@missing=0; for t in $(REQUIRED_TOOLS); do \
 		if command -v $$t >/dev/null 2>&1; then printf "  ok    %s\n" "$$t"; \
 		else printf "  MISS  %s\n" "$$t"; missing=1; fi; done; \
-	if [ $$missing -eq 1 ]; then echo "Some tools missing — see above."; exit 1; fi
+	if [ $$missing -eq 1 ]; then echo "Some tools missing (vault is optional)."; fi
+
+##@ Full lifecycle
+
+.PHONY: up
+up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
+	$(MAKE) colima-up
+	$(MAKE) cluster-up
+	$(MAKE) argocd
+	$(MAKE) gitlab-up
+	$(MAKE) gitlab-configure
+	$(MAKE) root-app
+	$(MAKE) vault-bootstrap
+	$(MAKE) garage-bootstrap
+	@echo ""
+	@echo "✅ lab up. Grafana http://localhost:8080  |  see 'make status' and docs/DR.md"
+
+.PHONY: down
+down: ## Stop everything (cluster + GitLab + Colima). Data on PVCs/volumes is kept.
+	-cd gitlab && docker compose stop
+	-cd $(LIVE)/cluster && terragrunt destroy -auto-approve
+	-colima stop
 
 ##@ Runtime (Colima)
 
 .PHONY: colima-up
 colima-up: ## Start the Colima VM (docker runtime)
-	colima start --cpu $(COLIMA_CPU) --memory $(COLIMA_MEM) --disk $(COLIMA_DISK) --vm-type vz --mount-type virtiofs
+	colima status >/dev/null 2>&1 || colima start --cpu $(COLIMA_CPU) --memory $(COLIMA_MEM) --disk $(COLIMA_DISK) --vm-type vz --mount-type virtiofs
 
 .PHONY: colima-down
 colima-down: ## Stop the Colima VM
 	colima stop
 
 .PHONY: colima-status
-colima-status: ## Show Colima VM status + resource usage
+colima-status: ## Show Colima VM status
 	colima status
 
 ##@ Cluster (k3d via Terraform/Terragrunt)
 
 .PHONY: cluster-up
 cluster-up: ## Create the k3d cluster
-	cd $(LIVE)/cluster && terragrunt apply
+	cd $(LIVE)/cluster && terragrunt apply -auto-approve
 
 .PHONY: cluster-down
 cluster-down: ## Destroy the k3d cluster
-	cd $(LIVE)/cluster && terragrunt destroy
+	cd $(LIVE)/cluster && terragrunt destroy -auto-approve
 
-##@ Bootstrap (ArgoCD + GitLab)
+##@ Bootstrap (day-0, imperative seam)
 
-.PHONY: bootstrap
-bootstrap: ## Install ArgoCD into the cluster (Terraform/Terragrunt)
-	cd $(LIVE)/argocd && terragrunt apply
+.PHONY: argocd
+argocd: ## Install ArgoCD (Helm via Terraform)
+	cd $(LIVE)/argocd && terragrunt apply -auto-approve
+
+.PHONY: gitlab-up
+gitlab-up: ## Start GitLab omnibus and wait until healthy (first boot ~5 min)
+	cd gitlab && docker compose up -d
+	@echo "waiting for GitLab to be healthy..."
+	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' gitlab 2>/dev/null)" = "healthy" ]; do sleep 10; done
+	@echo "GitLab healthy."
+
+.PHONY: gitlab-down
+gitlab-down: ## Stop GitLab omnibus (frees ~3 GB; keeps its volumes)
+	cd gitlab && docker compose stop
+
+.PHONY: gitlab-configure
+gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the repo
+	bash scripts/gitlab-pat.sh >/dev/null
+	cd $(LIVE)/gitlab && GITLAB_TOKEN="$$(cat $(REPO_DIR)/gitlab/.gitlab-token)" terragrunt apply -auto-approve
+	@PAT="$$(cat gitlab/.gitlab-token)"; git remote remove gitlab 2>/dev/null || true; \
+		git remote add gitlab "http://root:$${PAT}@localhost:8929/lab/k8s-lab.git"; \
+		git push -u gitlab main
+
+.PHONY: root-app
+root-app: ## Plant the ArgoCD app-of-apps (everything else syncs from here)
+	kubectl apply -f gitops/bootstrap/root-app.yaml
+
+.PHONY: vault-bootstrap
+vault-bootstrap: ## Init/unseal Vault + load secrets + k8s auth (idempotent)
+	bash scripts/vault-bootstrap.sh
+
+.PHONY: vault-unseal
+vault-unseal: ## Manually unseal Vault from the vault-keys Secret
+	kubectl -n vault exec vault-0 -- vault operator unseal "$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.unseal-key}' | base64 -d)"
+
+.PHONY: garage-bootstrap
+garage-bootstrap: ## Assign Garage layout + create key/buckets + push S3 key to Vault (idempotent)
+	bash scripts/garage-bootstrap.sh
+
+##@ ArgoCD access
 
 .PHONY: argocd-password
 argocd-password: ## Print the ArgoCD initial admin password
 	@kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
 
 .PHONY: argocd-ui
-argocd-ui: ## Port-forward ArgoCD UI -> http://localhost:8081 (user: admin)
-	@echo "ArgoCD UI -> http://localhost:8081  (user: admin, pw via 'make argocd-password')"
+argocd-ui: ## Port-forward ArgoCD UI -> http://localhost:8081 (or use http://argocd.127.0.0.1.nip.io:8080)
 	kubectl -n argocd port-forward svc/argocd-server 8081:80
 
-##@ Profiles (bring up ONE heavy area at a time)
-
-.PHONY: gitlab-up gitlab-down tidb-up tidb-down obs-up obs-down
-gitlab-up: ## Start GitLab omnibus container
-	@echo "TODO (gitops-backbone phase)"
-gitlab-down: ## Stop GitLab omnibus container
-	@echo "TODO"
-tidb-up: ## Enable the TiDB ArgoCD app
-	@echo "TODO (data phase)"
-tidb-down: ## Disable the TiDB ArgoCD app
-	@echo "TODO"
-obs-up: ## Enable the observability ArgoCD app (Mimir+Loki+Grafana)
-	@echo "TODO (observability phase)"
-obs-down: ## Disable the observability ArgoCD app
-	@echo "TODO"
-
-##@ Status
+##@ Status / RAM guard
 
 .PHONY: status
-status: ## Show VM memory + running pods
-	@colima status 2>/dev/null || true
-	@echo "--- pods ---"
-	@kubectl get pods -A 2>/dev/null || echo "cluster not reachable"
+status: ## Show VM resources + per-namespace memory + any non-running pods
+	@colima status 2>&1 | grep -iE 'arch|cpu|memory|disk' || true
+	@echo "--- nodes ---"; kubectl top nodes 2>/dev/null || echo "(metrics not ready)"
+	@echo "--- memory by namespace (top pods) ---"; \
+		kubectl top pods -A --no-headers 2>/dev/null | awk '{gsub(/Mi/,"",$$4); ns[$$1]+=$$4} END {for (n in ns) printf "  %-24s %5d Mi\n", n, ns[n]}' | sort -k2 -rn
+	@echo "--- pods not Running/Completed ---"; \
+		kubectl get pods -A --no-headers 2>/dev/null | awk '$$4!="Running" && $$4!="Completed" {print "  "$$1"/"$$2"  "$$4}' || true
+	@echo "--- GitLab container ---"; docker ps --filter name=gitlab --format '  {{.Names}}  {{.Status}}' 2>/dev/null || true
