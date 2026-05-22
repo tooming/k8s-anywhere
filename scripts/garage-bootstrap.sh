@@ -31,8 +31,8 @@ if ! g key info mimir-key >/dev/null 2>&1; then
 fi
 
 # buckets + permissions
-for b in mimir mimir-ruler loki tempo; do
+for b in mimir mimir-ruler loki tempo pyroscope; do
   g bucket create "$b" >/dev/null 2>&1 || true
   g bucket allow --read --write "$b" --key mimir-key >/dev/null 2>&1 || true
 done
-echo "[garage] bootstrap complete (buckets: mimir, mimir-ruler, loki)"
+echo "[garage] bootstrap complete (buckets: mimir, mimir-ruler, loki, tempo, pyroscope)"

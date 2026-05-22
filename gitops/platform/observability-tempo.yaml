@@ -1,5 +1,5 @@
 # Tempo — multi-tenant trace store (single-binary), Garage-backed (tempo bucket).
-# OTLP receiver on 4317(grpc)/4318(http). Needs a trace producer (Beyla / apps).
+# OTLP receiver on 4317(grpc)/4318(http). Needs a trace producer (an OTel-instrumented app).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

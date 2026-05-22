@@ -68,6 +68,11 @@ spec:
                   httpHeaderName1: "X-Scope-OrgID"
                 secureJsonData:
                   httpHeaderValue1: "lab"
+              - name: Pyroscope
+                uid: pyroscope
+                type: grafana-pyroscope-datasource
+                access: proxy
+                url: http://pyroscope.observability.svc.cluster.local:4040
         sidecar:
           dashboards:
             enabled: true

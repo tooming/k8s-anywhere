@@ -96,6 +96,24 @@ spec:
                 targets    = discovery.relabel.pod_logs.output
                 forward_to = [loki.write.loki.receiver]
               }
+
+              // ---- profiles -> Pyroscope (single-tenant) ----
+              // Pull pprof from the Go services (no eBPF, no app changes).
+              pyroscope.write "pyroscope" {
+                endpoint {
+                  url = "http://pyroscope.observability.svc.cluster.local:4040"
+                }
+              }
+
+              pyroscope.scrape "pprof" {
+                targets = [
+                  {"__address__" = "pyroscope.observability.svc.cluster.local:4040", "service_name" = "pyroscope"},
+                  {"__address__" = "mimir.observability.svc.cluster.local:9009", "service_name" = "mimir"},
+                  {"__address__" = "loki.observability.svc.cluster.local:3100", "service_name" = "loki"},
+                  {"__address__" = "tempo.observability.svc.cluster.local:3200", "service_name" = "tempo"},
+                ]
+                forward_to = [pyroscope.write.pyroscope.receiver]
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

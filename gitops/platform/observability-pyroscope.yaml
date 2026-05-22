@@ -1,0 +1,65 @@
+# Grafana Pyroscope — continuous profiling, the "P" in LGTM**P**. Single-binary
+# (replicaCount 1), Garage-backed (bucket `pyroscope`). The S3 client picks up
+# creds from AWS_* env (the garage-s3 Secret) since access/secret keys are left
+# empty in the config. Producer = Alloy `pyroscope.scrape` of Go /debug/pprof
+# endpoints (no eBPF). Viewed via the Grafana Pyroscope datasource + dashboard.
+# Single-tenant: the chart exposes no simple multitenancy toggle (the one
+# LGTMP component not on tenant `lab`).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pyroscope
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: pyroscope
+    targetRevision: 2.0.2
+    helm:
+      releaseName: pyroscope
+      valuesObject:
+        # don't deploy the bundled MinIO — we use Garage
+        minio:
+          enabled: false
+        pyroscope:
+          replicaCount: 1
+          persistence:
+            enabled: true
+            size: 4Gi
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          extraCustomEnvVars:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: garage-s3
+                  key: access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: garage-s3
+                  key: secret-access-key
+          structuredConfig:
+            storage:
+              backend: s3
+              s3:
+                endpoint: "garage.storage.svc.cluster.local:3900"
+                bucket_name: "pyroscope"
+                region: "garage"
+                insecure: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
