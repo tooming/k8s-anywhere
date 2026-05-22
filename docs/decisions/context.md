@@ -24,12 +24,13 @@ not Docker Desktop.
 | Secrets | Vault (standalone+file PVC) + External Secrets Operator | k8s-auth, role `eso` |
 | S3 object store | Garage (`storage` ns, PVC) | buckets: mimir, mimir-ruler, loki |
 | Metrics | Alloy (collector) → Mimir (S3=Garage, multi-tenant) → Grafana | tenant `lab` |
+| Logs | Alloy (pod logs) → Loki (S3=Garage, multi-tenant) → Grafana | tenant `lab` |
 | Workload health | kube-state-metrics + ArgoCD metrics | drives stack-health dashboard |
 | AWS emulation | moto (`moto` ns) | token-free; ACK targets it |
 
 ## Live decisions
 - **Ingress vs mesh:** Envoy Gateway = north-south. Service mesh (planned) = **Istio ambient + Kiali** (Istio's data plane is Envoy).
-- **Observability:** decoupled LGTM — **Alloy → Mimir → Grafana**, never a monolithic single-pod Prometheus (see ADR-0003). Mimir is **multi-tenant** (tenant `lab`; `X-Scope-OrgID` on Alloy remote_write + Grafana datasource). Mimir blocks/ruler on **Garage S3** + a PVC for the ingester WAL (survives restarts; blocks flush every 2h). Dashboards are git-synced via the Grafana sidecar + labelled ConfigMaps. Grafana DB on a PVC (sessions persist).
+- **Observability:** decoupled LGTM — **Alloy → Mimir → Grafana**, never a monolithic single-pod Prometheus (see ADR-0003). Mimir is **multi-tenant** (tenant `lab`; `X-Scope-OrgID` on Alloy remote_write + Grafana datasource). Mimir blocks/ruler on **Garage S3** + a PVC for the ingester WAL (survives restarts; blocks flush every 2h). Dashboards are git-synced via the Grafana sidecar + labelled ConfigMaps. Grafana DB on a PVC (sessions persist). **Logs**: Alloy ships pod logs → **Loki** (single-binary, multi-tenant `auth_enabled` tenant `lab`, Garage-backed `loki` bucket + PVC) → Grafana Loki datasource. Both Mimir & Loki are deployed always-on.
 - **Object storage:** **Garage**, not MinIO (ADR-0002).
 - **AWS emulation:** **moto** (token-free), not LocalStack (2026.x needs an auth token + persistence is Pro-only). ACK will target moto.
 - **Secrets:** Vault + ESO. Pattern for any new secret: `vault kv put secret/...` then add an `ExternalSecret` in `gitops/secrets/` — never kubectl-create or commit raw secrets. Vault seals on restart → an interim **auto-unsealer** re-unseals from the `vault-keys` Secret (lab-only). Real KMS auto-unseal would need a cloud KMS / LocalStack Pro — not viable here.
