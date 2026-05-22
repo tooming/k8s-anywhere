@@ -1,0 +1,30 @@
+# The shared lab Gateway (GatewayClass + Gateway). sync-wave 1 so it runs after
+# envoy-gateway (wave 0) has installed the Gateway API CRDs. retry covers any race.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lab-gateway
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/network
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lab-gateway
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

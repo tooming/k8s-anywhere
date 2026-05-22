@@ -1,0 +1,24 @@
+# Shared north-south entrypoint for the lab. Apps attach HTTPRoutes to this
+# Gateway from their own namespaces (allowedRoutes: All). Envoy Gateway sees the
+# GatewayClass and provisions an Envoy proxy + LoadBalancer Service for the Gateway.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: eg
+  namespace: lab-gateway
+spec:
+  gatewayClassName: eg
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All
