@@ -1,0 +1,36 @@
+# GitLab CE (omnibus) — the GitOps source of truth.
+# Runs OUTSIDE the cluster so its ~3-4 GB footprint stays off the k3d VM budget.
+# Reachable from the Mac at http://localhost:8929 and from cluster pods at
+# http://host.k3d.internal:8929 (both hit the same container via Colima's docker).
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    hostname: gitlab.local
+    restart: unless-stopped
+    shm_size: "256m"
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost:8929'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        gitlab_rails['initial_root_password'] = "${GITLAB_ROOT_PASSWORD:?set GITLAB_ROOT_PASSWORD in gitlab/.env}"
+        # --- trims for a 16 GB lab ---
+        puma['worker_processes'] = 2
+        sidekiq['max_concurrency'] = 9
+        prometheus_monitoring['enable'] = false
+    ports:
+      - "8929:8929"
+      - "2222:22"
+    # Named volumes (NOT Mac bind mounts): GitLab omnibus asserts the setgid bit
+    # (mode 2770) on git-data/repositories during reconfigure. Colima's virtiofs
+    # bind mounts drop setgid -> the dir lands as 0770 -> fatal reconfigure crash-loop.
+    # Named volumes live on the VM's ext4 filesystem, where setgid works correctly.
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+
+volumes:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:

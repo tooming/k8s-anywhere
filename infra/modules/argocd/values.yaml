@@ -1,0 +1,47 @@
+# ArgoCD Helm values — tuned for a 16 GB localhost lab.
+# See docs/00-architecture.md for the role ArgoCD plays.
+
+global:
+  domain: argocd.localhost
+
+configs:
+  params:
+    # Serve plain HTTP. We port-forward for now and terminate TLS at Envoy later.
+    server.insecure: true
+
+# Components we don't need in the lab — trimmed to save RAM.
+dex:
+  enabled: false
+notifications:
+  enabled: false
+
+applicationSet:
+  enabled: true
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+
+controller:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+repoServer:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+server:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+redis:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi

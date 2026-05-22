@@ -1,0 +1,33 @@
+# Terraform / Terragrunt
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+.terragrunt-cache/
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Kubeconfig / secrets — never commit these
+kubeconfig
+*.kubeconfig
+.env
+.env.*
+secrets/
+*.pem
+*.key
+*-key.pem
+
+# GitLab omnibus runtime data (bind-mounted)
+gitlab/data/
+gitlab/logs/
+gitlab/config/
+gitlab/.gitlab-token
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

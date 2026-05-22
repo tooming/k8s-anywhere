@@ -1,0 +1,23 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: ${cluster_name}
+servers: ${servers}
+agents: ${agents}
+kubeAPI:
+  hostPort: "${api_port}"
+ports:
+  - port: ${http_port}:80
+    nodeFilters:
+      - loadbalancer
+  - port: ${https_port}:443
+    nodeFilters:
+      - loadbalancer
+%{ if disable_traefik ~}
+options:
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
+%{ endif ~}

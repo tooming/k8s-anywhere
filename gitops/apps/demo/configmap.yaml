@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab-demo-hello
+data:
+  message: "Hello from GitOps — this was synced by ArgoCD, from GitLab, into the cluster."
+  source: "gitlab:lab/k8s-lab @ gitops/apps/demo"
