@@ -1,0 +1,38 @@
+# moto — token-free AWS API mock (S3/KMS/IAM/SQS/...). Single endpoint on :5000.
+# Ephemeral (no persistence) — fine for ACK demos. This is the endpoint ACK
+# controllers target instead of real AWS (replaces LocalStack).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moto
+  namespace: moto
+  labels:
+    app: moto
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: moto
+  template:
+    metadata:
+      labels:
+        app: moto
+    spec:
+      containers:
+        - name: moto
+          image: motoserver/moto:5.2.1
+          ports:
+            - name: http
+              containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /moto-api/
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 256Mi

@@ -1,0 +1,23 @@
+# moto — token-free AWS emulator (replaces LocalStack). AWS endpoint for ACK.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: moto
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/moto
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: moto
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
