@@ -1,0 +1,25 @@
+# Garage — S3-compatible object store (the persistent backend for Mimir/Loki,
+# and later Longhorn backups). Replaces the dead MinIO. PVC-backed so data
+# survives pod restarts. Secrets (rpc/admin) are kubectl-created out of git.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: garage
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/storage/garage
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: storage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
