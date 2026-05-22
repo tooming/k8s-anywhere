@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-lab-mimir
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+data:
+  lab-mimir.json: |
+    {
+      "uid": "lab-mimir",
+      "title": "Lab — Mimir",
+      "tags": ["lab"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "panels": [
+        {
+          "id": 1, "type": "stat", "title": "Mimir up",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "max(up{job=\"mimir\"})", "instant": true } ],
+          "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } } ] } },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+        },
+        {
+          "id": 2, "type": "stat", "title": "In-memory series",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(cortex_ingester_memory_series{job=\"mimir\"})", "instant": true } ],
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+        },
+        {
+          "id": 3, "type": "stat", "title": "Ingestion (samples/s)",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(cortex_distributor_received_samples_total{job=\"mimir\"}[5m]))", "instant": true } ],
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+        },
+        {
+          "id": 4, "type": "stat", "title": "Active tenants",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "count(count by (user) (cortex_ingester_memory_series_created_total{job=\"mimir\"}))", "instant": true } ],
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" }
+        },
+        {
+          "id": 5, "type": "timeseries", "title": "Ingestion rate (samples/s)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(cortex_distributor_received_samples_total{job=\"mimir\"}[5m]))", "legendFormat": "samples/s", "range": true } ],
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 15 } } }
+        },
+        {
+          "id": 6, "type": "timeseries", "title": "Request rate by route (req/s)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (route) (rate(cortex_request_duration_seconds_count{job=\"mimir\"}[5m]))", "legendFormat": "{{route}}", "range": true } ],
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+        },
+        {
+          "id": 7, "type": "timeseries", "title": "Request latency p99 by route (s)",
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "histogram_quantile(0.99, sum by (le, route) (rate(cortex_request_duration_seconds_bucket{job=\"mimir\"}[5m])))", "legendFormat": "{{route}}", "range": true } ],
+          "fieldConfig": { "defaults": { "unit": "s" } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+        }
+      ]
+    }

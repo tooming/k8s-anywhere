@@ -73,6 +73,47 @@ spec:
                 type: grafana-pyroscope-datasource
                 access: proxy
                 url: http://pyroscope.observability.svc.cluster.local:4040
+        # Community dashboards downloaded by gnetId at startup (needs egress to
+        # grafana.com), pointed at the Mimir datasource, in a "Community" folder.
+        # editable:true so tweaks stick (our own dashboards stay provisioned).
+        dashboardProviders:
+          dashboardproviders.yaml:
+            apiVersion: 1
+            providers:
+              - name: community
+                orgId: 1
+                folder: Community
+                type: file
+                disableDeletion: false
+                editable: true
+                options:
+                  path: /var/lib/grafana/dashboards/community
+        dashboards:
+          community:
+            node-exporter-full:
+              gnetId: 1860
+              revision: 45
+              datasource: Mimir
+            kubernetes-views-global:
+              gnetId: 15757
+              revision: 43
+              datasource: Mimir
+            kubernetes-views-pods:
+              gnetId: 15760
+              revision: 39
+              datasource: Mimir
+            kube-state-metrics-v2:
+              gnetId: 13332
+              revision: 12
+              datasource: Mimir
+            argocd:
+              gnetId: 14584
+              revision: 1
+              datasource: Mimir
+            loki-metrics:
+              gnetId: 17781
+              revision: 1
+              datasource: Mimir
         sidecar:
           dashboards:
             enabled: true

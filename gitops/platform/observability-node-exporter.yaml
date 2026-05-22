@@ -1,0 +1,38 @@
+# Prometheus node-exporter — host/node metrics (CPU, mem, disk, net, filesystem)
+# for the "Node Exporter Full" community dashboard. DaemonSet on every node;
+# Alloy scrapes it (job "node-exporter") -> Mimir. On k3d these are the node
+# *containers'* metrics (still useful to see per-node load).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: node-exporter
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: prometheus-node-exporter
+    targetRevision: 4.55.0
+    helm:
+      releaseName: node-exporter
+      valuesObject:
+        # run on every node (incl. any tainted control-plane)
+        tolerations:
+          - operator: Exists
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            memory: 64Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

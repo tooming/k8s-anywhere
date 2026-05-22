@@ -114,6 +114,74 @@ spec:
                 ]
                 forward_to = [pyroscope.write.pyroscope.receiver]
               }
+
+              // ---- node-exporter (host metrics) -> Mimir ----
+              discovery.relabel "node_exporter" {
+                targets = discovery.kubernetes.pods.targets
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  regex         = "prometheus-node-exporter"
+                  action        = "keep"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  target_label  = "instance"
+                }
+              }
+              prometheus.scrape "node_exporter" {
+                targets         = discovery.relabel.node_exporter.output
+                job_name        = "node-exporter"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
+              // ---- kubelet + cAdvisor (container/pod metrics) -> Mimir ----
+              // node role -> kubelet at <nodeIP>:10250; auth via SA token
+              // (RBAC nodes/metrics), kubelet serving cert is self-signed.
+              discovery.kubernetes "nodes" {
+                role = "node"
+              }
+              prometheus.scrape "kubelet" {
+                targets           = discovery.kubernetes.nodes.targets
+                job_name          = "kubelet"
+                scheme            = "https"
+                bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                tls_config {
+                  insecure_skip_verify = true
+                }
+                forward_to        = [prometheus.remote_write.mimir.receiver]
+                scrape_interval   = "30s"
+              }
+              discovery.relabel "cadvisor" {
+                targets = discovery.kubernetes.nodes.targets
+                rule {
+                  target_label = "__metrics_path__"
+                  replacement  = "/metrics/cadvisor"
+                }
+              }
+              prometheus.scrape "cadvisor" {
+                targets           = discovery.relabel.cadvisor.output
+                job_name          = "cadvisor"
+                scheme            = "https"
+                bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                tls_config {
+                  insecure_skip_verify = true
+                }
+                forward_to        = [prometheus.remote_write.mimir.receiver]
+                scrape_interval   = "30s"
+              }
+
+              // ---- LGTMP component self-metrics -> Mimir ----
+              prometheus.scrape "lgtmp" {
+                targets = [
+                  {"__address__" = "mimir.observability.svc.cluster.local:9009", "job" = "mimir"},
+                  {"__address__" = "loki.observability.svc.cluster.local:3100", "job" = "loki"},
+                  {"__address__" = "tempo.observability.svc.cluster.local:3200", "job" = "tempo"},
+                  {"__address__" = "pyroscope.observability.svc.cluster.local:4040", "job" = "pyroscope"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
