@@ -28,6 +28,11 @@ spec:
           env:
             - name: MOTO_PORT
               value: "5000"
+            # ACK reaches moto at host "moto.moto.svc", which moto otherwise
+            # greedily parses as <bucket>.<domain> (bucket="moto") -> every S3
+            # call 404s NoSuchBucket. Force path-style bucket parsing instead.
+            - name: S3_IGNORE_SUBDOMAIN_BUCKETNAME
+              value: "true"
           ports:
             - name: http
               containerPort: 5000
