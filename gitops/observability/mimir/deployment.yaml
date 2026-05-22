@@ -16,6 +16,10 @@ spec:
     metadata:
       labels:
         app: mimir
+      annotations:
+        # Bump when mimir.yaml changes so the pod restarts to read it
+        # (plain manifest has no auto-checksum like Helm charts do).
+        checksum/config: multitenant-v1
     spec:
       containers:
         - name: mimir
