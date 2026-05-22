@@ -18,6 +18,12 @@ spec:
       valuesObject:
         adminUser: admin
         adminPassword: admin
+        # persist grafana.db (users + sessions) so restarts don't force re-login
+        persistence:
+          enabled: true
+          size: 2Gi
+        deploymentStrategy:
+          type: Recreate
         resources:
           requests:
             cpu: 50m
