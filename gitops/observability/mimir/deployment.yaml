@@ -19,14 +19,26 @@ spec:
       annotations:
         # Bump when mimir.yaml changes so the pod restarts to read it
         # (plain manifest has no auto-checksum like Helm charts do).
-        checksum/config: multitenant-v1
+        checksum/config: s3-garage-v2
     spec:
       containers:
         - name: mimir
           image: grafana/mimir:3.0.6
           args:
             - -config.file=/etc/mimir/mimir.yaml
+            - -config.expand-env=true
             - -target=all
+          env:
+            - name: GARAGE_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: garage-s3
+                  key: access-key-id
+            - name: GARAGE_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: garage-s3
+                  key: secret-access-key
           ports:
             - name: http
               containerPort: 9009
@@ -53,4 +65,5 @@ spec:
           configMap:
             name: mimir-config
         - name: data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: mimir-data
