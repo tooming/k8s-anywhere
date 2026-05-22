@@ -1,0 +1,21 @@
+# Vault add-ons: interim auto-unsealer + UI HTTPRoute. sync-wave 2 (after Vault).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/vault
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

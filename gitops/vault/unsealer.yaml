@@ -1,0 +1,49 @@
+# Interim lab auto-unsealer: watches vault and unseals it from the vault-keys
+# Secret whenever it's sealed (e.g. after a pod restart). LAB-ONLY — the unseal
+# key sits in a k8s Secret, so this drops seal protection to "who can read that
+# Secret". Replace with KMS auto-unseal (seal "awskms" -> LocalStack) later.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-unsealer
+  namespace: vault
+  labels:
+    app: vault-unsealer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-unsealer
+  template:
+    metadata:
+      labels:
+        app: vault-unsealer
+    spec:
+      containers:
+        - name: unsealer
+          image: hashicorp/vault:1.21.2
+          env:
+            - name: VAULT_ADDR
+              value: http://vault.vault.svc.cluster.local:8200
+            - name: UNSEAL_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vault-keys
+                  key: unseal-key
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "vault-unsealer watching $VAULT_ADDR";
+              while true; do
+                if vault status 2>/dev/null | grep -E '^Sealed' | grep -q true; then
+                  echo "$(date) vault is sealed -> unsealing";
+                  vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1 || echo "unseal attempt failed (vault not ready?)";
+                fi
+                sleep 10;
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
