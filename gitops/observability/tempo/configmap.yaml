@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: observability
+data:
+  tempo.yaml: |
+    # Single-binary, multi-tenant Tempo backed by Garage S3 (tempo bucket).
+    multitenancy_enabled: true
+    server:
+      http_listen_port: 3200
+      grpc_listen_port: 9096
+      log_level: warn
+    distributor:
+      receivers:
+        otlp:
+          protocols:
+            http:
+              endpoint: "0.0.0.0:4318"
+            grpc:
+              endpoint: "0.0.0.0:4317"
+    ingester:
+      max_block_duration: 5m
+    compactor:
+      compaction:
+        block_retention: 168h
+    storage:
+      trace:
+        backend: s3
+        s3:
+          endpoint: garage.storage.svc.cluster.local:3900
+          bucket: tempo
+          region: garage
+          access_key: ${S3_ACCESS_KEY_ID}
+          secret_key: ${S3_SECRET_ACCESS_KEY}
+          insecure: true
+          forcepathstyle: true
+        wal:
+          path: /var/tempo/wal
+    usage_report:
+      reporting_enabled: false

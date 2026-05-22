@@ -59,6 +59,15 @@ spec:
                   httpHeaderName1: "X-Scope-OrgID"
                 secureJsonData:
                   httpHeaderValue1: "lab"
+              - name: Tempo
+                uid: tempo
+                type: tempo
+                access: proxy
+                url: http://tempo.observability.svc.cluster.local:3200
+                jsonData:
+                  httpHeaderName1: "X-Scope-OrgID"
+                secureJsonData:
+                  httpHeaderValue1: "lab"
         sidecar:
           dashboards:
             enabled: true

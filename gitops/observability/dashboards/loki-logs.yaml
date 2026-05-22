@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-lab-logs
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+data:
+  lab-logs.json: |
+    {
+      "uid": "lab-logs",
+      "title": "Lab — Logs",
+      "tags": ["lab"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "namespace", "label": "Namespace", "type": "query",
+            "datasource": { "type": "loki", "uid": "loki" },
+            "query": "label_values(namespace)", "refresh": 2,
+            "current": { "text": "observability", "value": "observability" }
+          },
+          {
+            "name": "pod", "label": "Pod", "type": "query",
+            "datasource": { "type": "loki", "uid": "loki" },
+            "query": "label_values({namespace=\"$namespace\"}, pod)",
+            "refresh": 2, "includeAll": true, "multi": true,
+            "current": { "text": "All", "value": "$__all" }
+          },
+          {
+            "name": "search", "label": "Search", "type": "textbox", "current": { "text": "", "value": "" }
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1, "type": "timeseries", "title": "Log rate (lines/s) by pod",
+          "gridPos": { "h": 7, "w": 24, "x": 0, "y": 0 },
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [ { "refId": "A", "datasource": { "type": "loki", "uid": "loki" }, "expr": "sum by (pod) (rate({namespace=\"$namespace\", pod=~\"$pod\"} |= \"$search\" [1m]))" } ],
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 50, "stacking": { "mode": "normal" } } } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+        },
+        {
+          "id": 2, "type": "logs", "title": "Logs  —  {namespace=\"$namespace\", pod=~\"$pod\"}  |= \"$search\"",
+          "gridPos": { "h": 19, "w": 24, "x": 0, "y": 7 },
+          "datasource": { "type": "loki", "uid": "loki" },
+          "targets": [ { "refId": "A", "datasource": { "type": "loki", "uid": "loki" }, "expr": "{namespace=\"$namespace\", pod=~\"$pod\"} |= \"$search\"" } ],
+          "options": { "showTime": true, "wrapLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" }
+        }
+      ]
+    }
