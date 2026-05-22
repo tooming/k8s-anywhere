@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: k8s-lab
+    theme: dark
+    color: slate
+    headerStyle: clean
+    layout:
+      Platform:
+        style: row
+        columns: 3
+      Observability:
+        style: row
+        columns: 3
+  services.yaml: |
+    - Platform:
+        - GitLab:
+            href: http://localhost:8929
+            description: Git source of truth (GitOps)
+            icon: gitlab.png
+        - ArgoCD:
+            href: http://localhost:8081
+            description: GitOps engine — run 'make argocd-ui'
+            icon: argo-cd.png
+        - Envoy Gateway:
+            href: http://localhost:8080
+            description: Ingress / API gateway
+            icon: envoy.png
+    - Observability:
+        - Grafana:
+            href: http://localhost:3000
+            description: Dashboards (coming soon)
+            icon: grafana.png
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: k8s-lab
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+    - search:
+        provider: duckduckgo
+        target: _blank
+    - datetime:
+        text_size: xl
+        format:
+          timeStyle: short
+          dateStyle: short
+  bookmarks.yaml: |
+    - Lab:
+        - Architecture:
+            - abbr: AR
+              href: http://localhost:8929/lab/k8s-lab/-/blob/main/docs/00-architecture.md
+  kubernetes.yaml: |
+    mode: cluster
+  docker.yaml: |
+    # no docker integration in-cluster
