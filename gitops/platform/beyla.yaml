@@ -1,0 +1,46 @@
+# Grafana Beyla — eBPF auto-instrumentation. Watches processes (no code changes)
+# and emits traces -> Tempo and RED metrics -> Mimir (both tenant "lab").
+# NOTE: needs eBPF (privileged + hostPID); may not attach inside k3d's containerized nodes.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: beyla
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: beyla
+    targetRevision: 1.16.7
+    helm:
+      releaseName: beyla
+      valuesObject:
+        env:
+          - name: OTEL_EXPORTER_OTLP_HEADERS
+            value: "X-Scope-OrgID=lab"
+        config:
+          data:
+            discovery:
+              instrument:
+                - k8s_namespace: ".*"
+            attributes:
+              kubernetes:
+                enable: true
+            otel_traces_export:
+              endpoint: http://tempo.observability.svc.cluster.local:4318
+            otel_metrics_export:
+              endpoint: http://mimir.observability.svc.cluster.local:9009/otlp
+              features:
+                - application
+                - application_span
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
