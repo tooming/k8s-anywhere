@@ -19,12 +19,9 @@ spec:
       valuesObject:
         image:
           tag: "stable"
-        persistence:
-          enabled: true
-          size: 2Gi
-        extraEnvVars:
-          - name: PERSISTENCE
-            value: "1"
+        # NOTE: PERSISTENCE=1 is LocalStack Pro-only (Community exits with code 55).
+        # So Community state is EPHEMERAL — fine for ACK/S3 demos; means a KMS key
+        # for Vault auto-unseal would NOT survive a LocalStack restart.
         resources:
           requests:
             cpu: 100m
