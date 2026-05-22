@@ -17,24 +17,34 @@ notifications:
 
 applicationSet:
   enabled: true
+  metrics:
+    enabled: true
   resources:
     requests:
       cpu: 25m
       memory: 64Mi
 
+# metrics.enabled creates the *-metrics Services that Alloy scrapes for the
+# stack-health dashboard (app sync/health, controller, repo-server, api).
 controller:
+  metrics:
+    enabled: true
   resources:
     requests:
       cpu: 100m
       memory: 256Mi
 
 repoServer:
+  metrics:
+    enabled: true
   resources:
     requests:
       cpu: 50m
       memory: 128Mi
 
 server:
+  metrics:
+    enabled: true
   resources:
     requests:
       cpu: 50m
