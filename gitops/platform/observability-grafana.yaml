@@ -1,0 +1,72 @@
+# Grafana — visualizes the real metrics in Mimir. Routed through Envoy at
+# localhost:8080. Dashboards are loaded from labelled ConfigMaps by the sidecar.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: grafana
+    targetRevision: 10.5.15
+    helm:
+      releaseName: grafana
+      valuesObject:
+        adminUser: admin
+        adminPassword: admin
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+        grafana.ini:
+          server:
+            root_url: "http://localhost:8080/"
+        datasources:
+          datasources.yaml:
+            apiVersion: 1
+            datasources:
+              - name: Mimir
+                uid: mimir
+                type: prometheus
+                access: proxy
+                url: http://mimir.observability.svc.cluster.local:9009/prometheus
+                isDefault: true
+        sidecar:
+          dashboards:
+            enabled: true
+            label: grafana_dashboard
+            labelValue: "1"
+            searchNamespace: ALL
+        extraObjects:
+          - apiVersion: gateway.networking.k8s.io/v1
+            kind: HTTPRoute
+            metadata:
+              name: grafana
+              namespace: observability
+            spec:
+              parentRefs:
+                - name: eg
+                  namespace: lab-gateway
+              rules:
+                - matches:
+                    - path:
+                        type: PathPrefix
+                        value: /
+                  backendRefs:
+                    - name: grafana
+                      port: 80
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
