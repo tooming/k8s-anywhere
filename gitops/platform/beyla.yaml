@@ -18,8 +18,7 @@ spec:
       releaseName: beyla
       valuesObject:
         env:
-          - name: OTEL_EXPORTER_OTLP_HEADERS
-            value: "X-Scope-OrgID=lab"
+          OTEL_EXPORTER_OTLP_HEADERS: "X-Scope-OrgID=lab"
         config:
           data:
             discovery:
