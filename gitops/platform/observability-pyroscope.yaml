@@ -24,6 +24,12 @@ spec:
         # don't deploy the bundled MinIO — we use Garage
         minio:
           enabled: false
+        # the chart also bundles its own Alloy (annotation-based pprof scraper).
+        # Disable it: our main Alloy already scrapes pyroscope/mimir/loki/tempo,
+        # and two CPU profilers on one target collide ("cpu profiling already in
+        # use") + the extra pod wastes RAM.
+        alloy:
+          enabled: false
         pyroscope:
           replicaCount: 1
           persistence:
