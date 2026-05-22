@@ -50,6 +50,15 @@ spec:
                   httpHeaderName1: "X-Scope-OrgID"
                 secureJsonData:
                   httpHeaderValue1: "lab"
+              - name: Loki
+                uid: loki
+                type: loki
+                access: proxy
+                url: http://loki.observability.svc.cluster.local:3100
+                jsonData:
+                  httpHeaderName1: "X-Scope-OrgID"
+                secureJsonData:
+                  httpHeaderValue1: "lab"
         sidecar:
           dashboards:
             enabled: true

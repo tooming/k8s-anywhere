@@ -1,5 +1,6 @@
-# Grafana Alloy — the collector. Scrapes real targets (kube-state-metrics +
-# ArgoCD's metrics endpoints) and remote_writes to Mimir. Decoupled from storage.
+# Grafana Alloy — the collector. Metrics: scrapes kube-state-metrics + ArgoCD,
+# remote_writes to Mimir. Logs: tails pod logs (k8s API) and ships to Loki.
+# Both multi-tenant (X-Scope-OrgID: lab). Decoupled from storage.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -28,6 +29,7 @@ spec:
               memory: 256Mi
           configMap:
             content: |
+              // ---- metrics -> Mimir ----
               prometheus.remote_write "mimir" {
                 endpoint {
                   url = "http://mimir.observability.svc.cluster.local:9009/api/v1/push"
@@ -41,7 +43,7 @@ spec:
                 targets = [
                   {"__address__" = "kube-state-metrics.observability.svc.cluster.local:8080", "job" = "kube-state-metrics"},
                 ]
-                forward_to     = [prometheus.remote_write.mimir.receiver]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
 
@@ -52,8 +54,47 @@ spec:
                   {"__address__" = "argocd-repo-server-metrics.argocd.svc.cluster.local:8084", "job" = "argocd-repo"},
                   {"__address__" = "argocd-applicationset-controller-metrics.argocd.svc.cluster.local:8080", "job" = "argocd-appset"},
                 ]
-                forward_to     = [prometheus.remote_write.mimir.receiver]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
+              }
+
+              // ---- logs -> Loki (tenant "lab") ----
+              loki.write "loki" {
+                endpoint {
+                  url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+                  headers = {
+                    "X-Scope-OrgID" = "lab",
+                  }
+                }
+              }
+
+              discovery.kubernetes "pods" {
+                role = "pod"
+              }
+
+              discovery.relabel "pod_logs" {
+                targets = discovery.kubernetes.pods.targets
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace"]
+                  target_label  = "namespace"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_name"]
+                  target_label  = "pod"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_name"]
+                  target_label  = "container"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app"]
+                  target_label  = "app"
+                }
+              }
+
+              loki.source.kubernetes "pods" {
+                targets    = discovery.relabel.pod_logs.output
+                forward_to = [loki.write.loki.receiver]
               }
   destination:
     server: https://kubernetes.default.svc
