@@ -27,6 +27,9 @@ spec:
         grafana.ini:
           server:
             root_url: "http://localhost:8080/"
+          dashboards:
+            # land on the Lab — Stack Health dashboard (file written by the sidecar)
+            default_home_dashboard_path: /tmp/dashboards/stack-health.json
         datasources:
           datasources.yaml:
             apiVersion: 1
