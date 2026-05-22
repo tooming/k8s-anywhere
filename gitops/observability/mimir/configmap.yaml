@@ -6,7 +6,8 @@ metadata:
 data:
   mimir.yaml: |
     # Monolithic single-node Mimir (Grafana's documented single-process layout).
-    multitenancy_enabled: false
+    # Multi-tenant: every write/read must carry the X-Scope-OrgID header.
+    multitenancy_enabled: true
     server:
       http_listen_port: 9009
       log_level: warn

@@ -37,6 +37,10 @@ spec:
                 access: proxy
                 url: http://mimir.observability.svc.cluster.local:9009/prometheus
                 isDefault: true
+                jsonData:
+                  httpHeaderName1: "X-Scope-OrgID"
+                secureJsonData:
+                  httpHeaderValue1: "lab"
         sidecar:
           dashboards:
             enabled: true
