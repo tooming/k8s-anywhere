@@ -1,0 +1,24 @@
+# Mimir — metrics store, run as a single binary (-target=all) with filesystem
+# storage. Decoupled from collection (Alloy), per the no-monolithic-Prometheus call.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mimir
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/observability/mimir
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,34 @@
+# kube-state-metrics — exposes real cluster object metrics (pod phases,
+# deployment replica readiness, etc.) that drive the stack-health view.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-state-metrics
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-state-metrics
+    targetRevision: 7.4.0
+    helm:
+      releaseName: kube-state-metrics
+      valuesObject:
+        fullnameOverride: kube-state-metrics
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

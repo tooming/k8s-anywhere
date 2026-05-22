@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mimir
+  namespace: observability
+  labels:
+    app: mimir
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mimir
+  template:
+    metadata:
+      labels:
+        app: mimir
+    spec:
+      containers:
+        - name: mimir
+          image: grafana/mimir:3.0.6
+          args:
+            - -config.file=/etc/mimir/mimir.yaml
+            - -target=all
+          ports:
+            - name: http
+              containerPort: 9009
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 9009
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 12
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 768Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/mimir
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: config
+          configMap:
+            name: mimir-config
+        - name: data
+          emptyDir: {}

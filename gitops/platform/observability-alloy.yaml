@@ -1,0 +1,63 @@
+# Grafana Alloy — the collector. Scrapes real targets (kube-state-metrics +
+# ArgoCD's metrics endpoints) and remote_writes to Mimir. Decoupled from storage.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: alloy
+    targetRevision: 1.8.1
+    helm:
+      releaseName: alloy
+      valuesObject:
+        controller:
+          type: deployment
+          replicas: 1
+        alloy:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          configMap:
+            content: |
+              prometheus.remote_write "mimir" {
+                endpoint {
+                  url = "http://mimir.observability.svc.cluster.local:9009/api/v1/push"
+                }
+              }
+
+              prometheus.scrape "ksm" {
+                targets = [
+                  {"__address__" = "kube-state-metrics.observability.svc.cluster.local:8080", "job" = "kube-state-metrics"},
+                ]
+                forward_to     = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
+              prometheus.scrape "argocd" {
+                targets = [
+                  {"__address__" = "argocd-application-controller-metrics.argocd.svc.cluster.local:8082", "job" = "argocd-controller"},
+                  {"__address__" = "argocd-server-metrics.argocd.svc.cluster.local:8083", "job" = "argocd-server"},
+                  {"__address__" = "argocd-repo-server-metrics.argocd.svc.cluster.local:8084", "job" = "argocd-repo"},
+                  {"__address__" = "argocd-applicationset-controller-metrics.argocd.svc.cluster.local:8080", "job" = "argocd-appset"},
+                ]
+                forward_to     = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
