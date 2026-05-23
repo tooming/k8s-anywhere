@@ -75,9 +75,57 @@ How it works (blue = the running cluster, green = a second one):
    targets green's load balancer, and a blue-only route (`vault.*`) starts returning
    404 through the front door (green doesn't run Vault).
 
-Blue keeps running afterward as a rollback target; `make dr-bluegreen-down`
-reclaims green's RAM. Blue is never modified, so the "system keeps working"
-guarantee holds by construction — the probe just proves the cutover is seamless.
+The endpoint of a real blue/green is to **retire blue** — `make dr-bluegreen-promote`
+does that. On 16 GB two *full* stacks can't coexist (proven: the green stack OOMs
+its `alloy`/`repo-server` while blue is also full), so the order is chosen to never
+overlap them: bring up a **serving-tier** green → **cut over** (zero downtime) →
+**delete blue** (frees ~7 GB) → **then promote green to a full, verified stack**.
+Serving never drops (a probe proved 100% — 1135/1135 — across cutover and retire);
+the one unavoidable single-host tradeoff is a brief observability/Vault/Garage gap
+after blue is gone until green finishes its full sync. Afterward green is the sole
+environment (canonical endpoint stays `:8000`; `:8080` is gone with blue).
+(`make dr-bluegreen` alone stops at cutover and keeps blue as a rollback target;
+`make dr-bluegreen-down` reclaims green's RAM.) See ADR-0005.
+
+## Single points of failure (and why true HA isn't possible here)
+
+Once you cut over to green and retire blue, two SPOFs remain — in **different paths**:
+
+| SPOF | Path | If it fails | Blast radius |
+|------|------|-------------|--------------|
+| **Front load balancer** (nginx `:8000`) | **Serving** | the stable endpoint is down until it restarts | the whole site, briefly |
+| **GitLab** (omnibus container) | **Control / recovery** | running workloads keep serving (ArgoCD holds last-synced state); but you can't sync changes or **recover** | no serving impact; recovery is blocked |
+
+**The hard truth: you cannot make this HA on a single machine.** HA needs ≥2
+independent failure domains; here the Colima VM (and the laptop) is itself the
+ultimate SPOF. Running two nginx front doors or two GitLabs on the same host removes
+nothing — they share the one thing that actually fails. So the honest lab goals are
+**resilience** (self-heal, fast restart) and **recoverability** (recreate-from-code),
+not true HA. What that looks like, and how you'd really do it in production:
+
+### Front load balancer
+- **Lab today:** the front door runs with `--restart unless-stopped`, so Docker
+  restarts it within ~1 s of a crash. That's *resilience*, not HA — a crash is still
+  a sub-second blip, and a host failure takes it down with everything else.
+- **Production HA:** the front LB is never a single box. Either a managed cloud LB
+  (multi-AZ, the cloud owns its redundancy), or a self-managed pair (HAProxy/nginx ×2)
+  sharing a **virtual IP via keepalived/VRRP**, fronted by **DNS** with health checks.
+  The VIP fails over between LBs in ~seconds; DNS spreads across regions. The point:
+  N≥2 LBs across N≥2 hosts/AZs, with an automatic failover mechanism.
+
+### GitLab (the DR irony)
+GitLab is the source of truth for a system whose *recovery* is GitOps — so a single
+GitLab means a single point of failure **in the recovery path itself**. Note it does
+*not* take serving down: if GitLab dies, every running workload keeps running on
+ArgoCD's last-synced state; only new syncs/recovery pause.
+- **Lab today:** GitLab is **recreate-from-code** — its data lives in the local clone
+  and both clusters' ArgoCD repo caches, and `make dr-test SCOPE=full` proves it
+  rebuilds and re-pushes from the local clone in ~5 min (RTO, not HA).
+- **Production HA:** GitLab Geo / a multi-replica HA topology (Postgres + Gitaly
+  Cluster + object storage), which is far too heavy for 16 GB. The lighter, lab-shaped
+  step toward removing the *recovery* SPOF is a **git mirror**: push-mirror the repo to
+  a second remote and let ArgoCD **fail over** its `repoURL` when GitLab is unreachable.
+  (Designed, not built — see the SPOF decision in `docs/decisions/`.)
 
 ## The order (what `make up` does, and why)
 

@@ -6,6 +6,11 @@ set -euo pipefail
 
 SNS=storage
 VNS=vault
+
+# Optionally target a specific cluster (KCTX=k3d-k8s-lab-green). Unset = current context.
+KCTX="${KCTX:-}"
+kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
+
 g() { kubectl -n "$SNS" exec sts/garage -- /garage "$@"; }
 
 # garage-0 is created by ArgoCD and only schedules once its garage-secrets Secret

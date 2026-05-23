@@ -16,6 +16,10 @@ T_MIMIR="${DR_T_MIMIR:-300}"
 T_GRAFANA="${DR_T_GRAFANA:-180}"
 CURL_IMG="${DR_CURL_IMAGE:-curlimages/curl:8.11.1}"
 
+# Optionally verify a specific cluster (KCTX=k3d-k8s-lab-green). Unset = current context.
+KCTX="${KCTX:-}"
+kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
+
 if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; Y=; B=; Z=; fi
 FAILED=0
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }

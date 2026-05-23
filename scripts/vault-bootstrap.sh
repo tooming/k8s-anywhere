@@ -7,6 +7,11 @@ set -euo pipefail
 NS=vault
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Optionally target a specific cluster (e.g. KCTX=k3d-k8s-lab-green to bootstrap
+# the green cluster). Unset = current context, so blue's `make up` path is unchanged.
+KCTX="${KCTX:-}"
+kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
+
 # vault-0 is created by ArgoCD only AFTER the root app-of-apps is planted, so from
 # a cold/from-scratch bootstrap it can take a few minutes to appear. Wait for it to
 # be CREATED, then Running, then responsive — don't assume it already exists.

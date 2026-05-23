@@ -41,14 +41,22 @@ http {
 EOF
 }
 
-apply_conf() { # $1 = upstream host; cp config into the container + graceful reload
+apply_conf() { # $1 = upstream host; cp config into the container + apply it
   local up="$1" tmp
   tmp="$(mktemp)"; gen_conf "$up" >"$tmp"
   docker cp "$tmp" "$NAME:/etc/nginx/nginx.conf"
   rm -f "$tmp"
-  # validate, then hot-reload (no listener gap, in-flight requests finish)
-  docker exec "$NAME" nginx -t >/dev/null 2>&1
-  docker exec "$NAME" nginx -s reload
+  docker exec "$NAME" nginx -t >/dev/null 2>&1 || { echo "[frontdoor] bad nginx config" >&2; return 1; }
+  # Graceful hot-reload when the master is already running (its pid file is
+  # populated) — no listener gap, in-flight requests finish. On a just-created
+  # container the master may not have written /run/nginx.pid yet, so `nginx -s
+  # reload` would fail ("invalid PID number"); there's no traffic yet, so just
+  # restart the container instead.
+  if docker exec "$NAME" sh -c 'test -s /run/nginx.pid' 2>/dev/null; then
+    docker exec "$NAME" nginx -s reload
+  else
+    docker restart "$NAME" >/dev/null
+  fi
 }
 
 case "${1:-}" in
@@ -68,6 +76,10 @@ case "${1:-}" in
     NET="${2:?network}"; docker network connect "$NET" "$NAME" 2>/dev/null || true
     echo "[frontdoor] connected to $NET"
     ;;
+  disconnect)
+    NET="${2:?network}"; docker network disconnect "$NET" "$NAME" 2>/dev/null || true
+    echo "[frontdoor] disconnected from $NET"
+    ;;
   point)
     UP="${2:?serverlb host}"; apply_conf "$UP"; echo "[frontdoor] now -> $UP"
     ;;
@@ -77,5 +89,5 @@ case "${1:-}" in
   down)
     docker rm -f "$NAME" >/dev/null 2>&1 || true; echo "[frontdoor] removed"
     ;;
-  *) echo "usage: $0 {up <net> <host>|connect <net>|point <host>|target|down}" >&2; exit 2;;
+  *) echo "usage: $0 {up <net> <host>|connect <net>|disconnect <net>|point <host>|target|down}" >&2; exit 2;;
 esac

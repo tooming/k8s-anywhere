@@ -15,6 +15,14 @@ API_PORT="${GREEN_API_PORT:-6446}"
 ARGOCD_CHART_VERSION="${ARGOCD_CHART_VERSION:-9.5.15}"
 ARGOCD_VALUES="$ROOT_DIR/infra/modules/argocd/values.yaml"
 CANARY_WAIT="${GREEN_CANARY_WAIT:-600}"
+# SCOPE: "serving" (default) plants the light serving-tier subset; "full" plants the
+# whole app-of-apps, then bootstraps green's Vault+Garage and verifies green end-to-end.
+SCOPE="${1:-serving}"
+if [ "$SCOPE" = "full" ]; then
+  GREEN_ROOT="${GREEN_ROOT:-$ROOT_DIR/gitops/bootstrap/root-app.yaml}"
+else
+  GREEN_ROOT="${GREEN_ROOT:-$ROOT_DIR/gitops/bluegreen/green-root.yaml}"
+fi
 
 g() { kubectl --context "$GCTX" "$@"; }
 
@@ -44,16 +52,23 @@ helm --kube-context "$GCTX" upgrade --install argocd argo/argo-cd \
   --version "$ARGOCD_CHART_VERSION" -n argocd --create-namespace \
   -f "$ARGOCD_VALUES" --wait --timeout 600s
 
-# 3. GitLab repo credential: copy blue's (Terraform-made) repo secret so green's
-#    ArgoCD can clone the same private repo. Strip instance-specific metadata.
-echo "[green] copying GitLab repo secret from blue..."
-kubectl --context "$BLUE_CTX" -n argocd get secret repo-gitlab-gitops -o json \
-  | jq 'del(.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.namespace,.status)' \
-  | g apply -n argocd -f -
+# 3. GitLab repo credential: green needs blue's (Terraform-made) repo secret to clone
+#    the private repo. Copy it once; skip if green already has it — e.g. during a
+#    promote-after-retire, where blue is already gone but green kept the secret.
+if g -n argocd get secret repo-gitlab-gitops >/dev/null 2>&1; then
+  echo "[green] repo secret already present on green"
+elif kubectl --context "$BLUE_CTX" -n argocd get secret repo-gitlab-gitops >/dev/null 2>&1; then
+  echo "[green] copying GitLab repo secret from blue..."
+  kubectl --context "$BLUE_CTX" -n argocd get secret repo-gitlab-gitops -o json \
+    | jq 'del(.metadata.resourceVersion,.metadata.uid,.metadata.creationTimestamp,.metadata.managedFields,.metadata.namespace,.status)' \
+    | g apply -n argocd -f -
+else
+  echo "[green] ERROR: green has no repo secret and blue is unreachable"; exit 1
+fi
 
 # 4. plant the green app-of-apps (from local disk, like bootstrap/root-app)
-echo "[green] planting green app-of-apps (serving-tier subset)..."
-g apply -f "$ROOT_DIR/gitops/bluegreen/green-root.yaml"
+echo "[green] planting green app-of-apps: $GREEN_ROOT"
+g apply -f "$GREEN_ROOT"
 
 # 5. wait for the canary (ArgoCD UI) to actually serve through green's gateway
 echo "[green] waiting for ArgoCD server..."
@@ -66,4 +81,18 @@ while :; do
   [ "$SECONDS" -ge "$end" ] && { echo "[green] ERROR: canary not serving on :$HTTP_PORT within ${CANARY_WAIT}s (last code $code)"; exit 1; }
   sleep 5
 done
-echo "[green] up."
+echo "[green] serving tier up (canary :$HTTP_PORT = 200)."
+
+# FULL scope: finish green like `make up` finishes blue — bootstrap green's Vault +
+# Garage (KCTX targets green), then verify green end-to-end. Now green is a complete,
+# verified environment, ready to take over from blue.
+if [ "$SCOPE" = "full" ]; then
+  echo "[green] promoting to FULL: bootstrapping green Vault..."
+  KCTX="$GCTX" bash "$ROOT_DIR/scripts/vault-bootstrap.sh"
+  echo "[green] bootstrapping green Garage..."
+  KCTX="$GCTX" bash "$ROOT_DIR/scripts/garage-bootstrap.sh"
+  echo "[green] verifying green (full end-to-end health)..."
+  KCTX="$GCTX" bash "$ROOT_DIR/scripts/dr-verify.sh"
+  echo "[green] FULL stack up + verified."
+fi
+echo "[green] up ($SCOPE)."

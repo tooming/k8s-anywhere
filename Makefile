@@ -160,3 +160,7 @@ dr-bluegreen: ## Zero-downtime blue/green DR: stand up a green cluster + cut ove
 .PHONY: dr-bluegreen-down
 dr-bluegreen-down: ## Remove the blue/green apparatus (green cluster + front door); blue is untouched
 	bash scripts/bluegreen-down.sh
+
+.PHONY: dr-bluegreen-promote
+dr-bluegreen-promote: ## Complete blue/green: green->FULL + verify + cutover + RETIRE blue (destructive, zero-downtime)
+	bash scripts/dr-bluegreen-promote.sh
