@@ -8,9 +8,19 @@ SNS=storage
 VNS=vault
 g() { kubectl -n "$SNS" exec sts/garage -- /garage "$@"; }
 
-echo "[garage] waiting for garage-0..."
-kubectl -n "$SNS" wait --for=jsonpath='{.status.phase}'=Running pod/garage-0 --timeout=180s >/dev/null 2>&1 || true
-for _ in $(seq 1 30); do g status >/dev/null 2>&1 && break; sleep 3; done
+# garage-0 is created by ArgoCD and only schedules once its garage-secrets Secret
+# exists (ESO syncs it from Vault, which vault-bootstrap must have set up first).
+# From scratch that whole chain takes minutes, so wait for the pod to be CREATED,
+# then Running, then responsive.
+WAIT="${GARAGE_WAIT:-600}"
+echo "[garage] waiting up to ${WAIT}s for garage-0 to be created by ArgoCD..."
+end=$((SECONDS + WAIT))
+until kubectl -n "$SNS" get pod garage-0 >/dev/null 2>&1; do
+  [ "$SECONDS" -ge "$end" ] && { echo "[garage] ERROR: garage-0 never appeared (is Vault bootstrapped + ESO syncing garage-secrets?)"; exit 1; }
+  sleep 5
+done
+kubectl -n "$SNS" wait --for=jsonpath='{.status.phase}'=Running pod/garage-0 --timeout="${WAIT}s" >/dev/null 2>&1 || true
+for _ in $(seq 1 60); do g status >/dev/null 2>&1 && break; sleep 3; done
 
 # layout (only if this node has no role yet)
 if g status 2>/dev/null | grep -q 'NO ROLE ASSIGNED'; then
@@ -20,14 +30,24 @@ if g status 2>/dev/null | grep -q 'NO ROLE ASSIGNED'; then
   g layout apply --version 1
 fi
 
-# access key (create once) + push to Vault so ESO can sync garage-s3
-if ! g key info mimir-key >/dev/null 2>&1; then
+# access key: ensure it exists, then ALWAYS ensure its creds are in Vault. (A
+# mid-run failure can leave the key created but not yet pushed; `key info
+# --show-secret` lets us recover it idempotently.) ESO syncs secret/garage/s3 ->
+# the garage-s3 Secret that Mimir/Loki/Tempo use.
+if g key info mimir-key >/dev/null 2>&1; then
+  KEYOUT=$(g key info mimir-key --show-secret 2>/dev/null || true)
+else
   echo "[garage] creating access key mimir-key"
-  KEYOUT=$(g key create mimir-key 2>/dev/null)
-  KID=$(printf '%s' "$KEYOUT" | grep -oE 'GK[0-9a-f]{20,}' | head -1)
-  KSEC=$(printf '%s' "$KEYOUT" | grep -oiE '[0-9a-f]{64}' | head -1)
+  KEYOUT=$(g key create mimir-key 2>/dev/null || true)
+fi
+KID=$(printf '%s' "$KEYOUT" | grep -oE 'GK[0-9a-f]{20,}' | head -1 || true)
+KSEC=$(printf '%s' "$KEYOUT" | grep -oiE '[0-9a-f]{64}' | head -1 || true)
+if [ -n "$KID" ] && [ -n "$KSEC" ]; then
   TOKEN=$(kubectl -n "$VNS" get secret vault-keys -o jsonpath='{.data.root-token}' | base64 -d)
   kubectl -n "$VNS" exec vault-0 -- env VAULT_TOKEN="$TOKEN" vault kv put secret/garage/s3 access-key-id="$KID" secret-access-key="$KSEC" >/dev/null
+  echo "[garage] ensured secret/garage/s3 in Vault (key $KID)"
+else
+  echo "[garage] ERROR: could not resolve mimir-key id/secret"; exit 1
 fi
 
 # buckets + permissions
@@ -35,4 +55,10 @@ for b in mimir mimir-ruler loki tempo pyroscope; do
   g bucket create "$b" >/dev/null 2>&1 || true
   g bucket allow --read --write "$b" --key mimir-key >/dev/null 2>&1 || true
 done
+
+# secret/garage/s3 was just (re)written above; nudge ESO so the garage-s3
+# ExternalSecrets (Mimir/Loki/Tempo + storage) pick it up now instead of waiting
+# for their refreshInterval. Best-effort.
+kubectl annotate externalsecret -A --all force-sync="$(date +%s)" --overwrite >/dev/null 2>&1 || true
+
 echo "[garage] bootstrap complete (buckets: mimir, mimir-ruler, loki, tempo, pyroscope)"

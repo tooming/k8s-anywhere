@@ -10,6 +10,37 @@ make up          # bootstrap everything, in order
 make status      # VM RAM + per-namespace usage + unhealthy pods
 ```
 
+## One-command DR test (`make dr-test`)
+
+Proves the recreate-from-code claim end to end: it **destroys the lab, rebuilds it
+with `make up`, then asserts it came back healthy** — and fails loudly if not.
+
+```sh
+make dr-test                 # default scope=full: cluster + GitLab wiped, rebuilt
+make dr-test SCOPE=cluster   # faster: only the k3d cluster (GitLab + Colima survive)
+make dr-test SCOPE=machine   # also delete the Colima VM (re-pulls all images)
+make dr-verify               # just the health assertions (no rebuild) — safe anytime
+make dr-destroy SCOPE=full   # just the teardown
+```
+
+| SCOPE | Wipes | Survives | Rebuild |
+|-------|-------|----------|---------|
+| `cluster` | k3d cluster (ArgoCD, Vault, Garage, all workloads, in-cluster repo secret) | GitLab + Colima | ~3-6 min. Exercises full **secret regeneration** (new Vault unseal/root keys, new Garage S3 key). The GitLab repo secret is recreated by `gitlab-configure`. |
+| `full` (default) | cluster **+ GitLab container & volumes** | Colima (image cache) | ~8-15 min. The git **source** itself is rebuilt and the repo re-pushed; new GitLab token minted. |
+| `machine` | full **+ the Colima VM** | nothing | ~15-30 min. Closest to a clean laptop; re-pulls every image. |
+
+State is local + throwaway (`infra/live/local/root.hcl`), so once a layer's real
+resources are gone the drill clears that layer's `terraform.tfstate` to force a
+clean greenfield `make up` (cluster + ArgoCD always; GitLab on full/machine).
+
+**What `dr-verify` checks (all live, no placeholders — see ADR-0004):**
+nodes `Ready` · every ArgoCD `Application` `Synced`+`Healthy` · Vault initialized &
+unsealed · all `ExternalSecret`s `SecretSynced` · Garage up with its buckets
+(`mimir mimir-ruler loki tempo pyroscope`) · **Mimir actually queryable** (`up`
+returns series for tenant `lab`, proving the Alloy→Mimir→Garage path) · Grafana
+`/api/health` `database=ok`. Each check polls until satisfied or its budget
+expires; exit 0 only if all pass.
+
 ## The order (what `make up` does, and why)
 
 The only **imperative** steps are the day-0 seam (you can't GitOps the GitOps

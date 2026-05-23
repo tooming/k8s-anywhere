@@ -12,6 +12,9 @@ COLIMA_DISK ?= 60
 LIVE     := infra/live/local
 REPO_DIR := $(shell pwd)
 
+# DR drill blast radius: cluster | full | machine (see docs/DR.md)
+SCOPE ?= full
+
 REQUIRED_TOOLS := colima docker k3d kubectl helm terraform terragrunt kustomize argocd vault yq jq mkcert
 
 ##@ General
@@ -135,3 +138,17 @@ status: ## Show VM resources + per-namespace memory + any non-running pods
 	@echo "--- pods not Running/Completed ---"; \
 		kubectl get pods -A --no-headers 2>/dev/null | awk '$$4!="Running" && $$4!="Completed" {print "  "$$1"/"$$2"  "$$4}' || true
 	@echo "--- GitLab container ---"; docker ps --filter name=gitlab --format '  {{.Names}}  {{.Status}}' 2>/dev/null || true
+
+##@ Disaster recovery (see docs/DR.md)
+
+.PHONY: dr-test
+dr-test: ## DR drill: destroy + rebuild from scratch + verify. SCOPE=cluster|full|machine (default full)
+	bash scripts/dr-test.sh $(SCOPE)
+
+.PHONY: dr-verify
+dr-verify: ## Assert the lab is healthy end-to-end (real checks, no rebuild)
+	bash scripts/dr-verify.sh
+
+.PHONY: dr-destroy
+dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=cluster|full|machine
+	bash scripts/dr-destroy.sh $(SCOPE)
