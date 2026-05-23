@@ -152,3 +152,11 @@ dr-verify: ## Assert the lab is healthy end-to-end (real checks, no rebuild)
 .PHONY: dr-destroy
 dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=cluster|full|machine
 	bash scripts/dr-destroy.sh $(SCOPE)
+
+.PHONY: dr-bluegreen
+dr-bluegreen: ## Zero-downtime blue/green DR: stand up a green cluster + cut over, prove no outage
+	bash scripts/dr-bluegreen.sh
+
+.PHONY: dr-bluegreen-down
+dr-bluegreen-down: ## Remove the blue/green apparatus (green cluster + front door); blue is untouched
+	bash scripts/bluegreen-down.sh

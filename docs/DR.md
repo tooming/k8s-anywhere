@@ -41,6 +41,44 @@ returns series for tenant `lab`, proving the Alloy→Mimir→Garage path) · Gra
 `/api/health` `database=ok`. Each check polls until satisfied or its budget
 expires; exit 0 only if all pass.
 
+## Zero-downtime blue/green DR (`make dr-bluegreen`)
+
+`make dr-test` recovers the lab but has an **outage** while it rebuilds. The
+blue/green drill instead recovers onto a **fresh cluster with zero downtime** —
+the system keeps serving the whole time — and proves it with a live probe.
+
+```sh
+make dr-bluegreen        # stand up green alongside blue, cut over, prove ~100% uptime
+make dr-bluegreen-down   # remove the green cluster + front door (blue is untouched)
+```
+
+How it works (blue = the running cluster, green = a second one):
+
+1. **Front door** — a small nginx proxy on host **:8000** forwards to whichever
+   cluster's Envoy load balancer is *active* (`scripts/bluegreen-frontdoor.sh`). It
+   runs on its own port, so blue's `:8080` is **never touched**. Cutover = rewrite
+   the upstream + `nginx -s reload`, which is graceful (keeps the listening socket,
+   drains old workers) → **no dropped connections**.
+2. **Canary** — the probe targets the **ArgoCD UI** (`argocd.127.0.0.1.nip.io`),
+   which both clusters serve, so "is it up?" is a real end-to-end signal.
+3. **Green** (`scripts/bluegreen-up.sh`) — a second k3d cluster `k8s-lab-green` on
+   its own ports (8082/8444/6446) and docker network, with its own ArgoCD that
+   syncs the **serving tier only** (`envoy-gateway`, `lab-gateway`, `demo`) from the
+   *same* GitLab repo via `gitops/bluegreen/green-root.yaml` (`directory.include`).
+   Two **full** LGTMP stacks don't fit 16 GB, so green recovers the always-available
+   edge; the point of this drill is the **cutover**, not duplicating observability.
+   (Blue+green peaks ~9.4 GB used of the 12 GB VM — fits.)
+4. **Probe + cutover** (`scripts/dr-bluegreen.sh`) — start a continuous probe of
+   the front door, bring green up, then repoint the front door blue→green. The
+   probe records uptime across the whole drill; PASS needs **uptime ≥ 99%** and
+   longest outage ≤ 2 s. Cutover is proven real two ways: the front-door config now
+   targets green's load balancer, and a blue-only route (`vault.*`) starts returning
+   404 through the front door (green doesn't run Vault).
+
+Blue keeps running afterward as a rollback target; `make dr-bluegreen-down`
+reclaims green's RAM. Blue is never modified, so the "system keeps working"
+guarantee holds by construction — the probe just proves the cutover is seamless.
+
 ## The order (what `make up` does, and why)
 
 The only **imperative** steps are the day-0 seam (you can't GitOps the GitOps
