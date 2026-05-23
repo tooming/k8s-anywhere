@@ -19,7 +19,7 @@ add a UI and forget the link. This skill makes the check mechanical.
 A UI change is **not complete** until the "Lab UIs" table reflects it in the
 *same* commit. A "UI" = anything a human opens in a browser:
 - in-cluster apps exposed via an Envoy **HTTPRoute** with a `hostname`
-  (`*.127.0.0.1.nip.io`) or a path on `localhost:8080`, **plus**
+  (`*.127.0.0.1.nip.io`) or a path on `localhost:8000`, **plus**
 - off-cluster UIs (GitLab on `:8929`).
 
 Backends viewed *through* Grafana (Mimir, Loki, Tempo, Pyroscope) are **not**
@@ -38,8 +38,11 @@ separate UIs — do not list them.
 3. Diff them. Every routed UI (host-based or `localhost` path) must appear once
    in the table; every table row must map to a real route (or GitLab). Add
    missing rows, remove dead ones.
-4. Each row: `| **Name** | URL | one-line role |`. Host-based UIs use
-   `http://<name>.127.0.0.1.nip.io:8080` (Envoy listener is `:8080`).
+4. Each row: `| **Name** | URL | one-line role |`. Host-based UIs use the **stable
+   front door** port `:8000` — `http://<name>.127.0.0.1.nip.io:8000`. The front door
+   routes to whichever cluster is active, so `:8000` stays correct across a blue/green
+   cutover; the per-cluster Envoy listener ports (`:8080` blue, `:8082` green) are NOT
+   stable, so never hardcode them in the panel. See `make frontdoor` and ADR-0005.
 5. If the table grew, bump the panel-10 `gridPos.h` so rows still fit, and shift
    the `y` of every panel below it by the same delta.
 6. Commit + push to the `gitlab` remote (ArgoCD syncs from there), then refresh:
