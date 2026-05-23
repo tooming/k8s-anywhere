@@ -164,3 +164,7 @@ dr-bluegreen-down: ## Remove the blue/green apparatus (green cluster + front doo
 .PHONY: dr-bluegreen-promote
 dr-bluegreen-promote: ## Complete blue/green: green->FULL + verify + cutover + RETIRE blue (destructive, zero-downtime)
 	bash scripts/dr-bluegreen-promote.sh
+
+.PHONY: frontdoor
+frontdoor: ## Ensure the stable front door is up on :8000 -> active cluster (canonical lab entry; UIs use :8000)
+	bash scripts/frontdoor-ensure.sh
