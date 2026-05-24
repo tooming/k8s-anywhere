@@ -8,7 +8,8 @@
 # Compares only host-based (`*.127.0.0.1.nip.io`) UIs — Grafana (localhost) and
 # GitLab (off-cluster :8929) are stable special cases the skill handles by hand.
 set -uo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# ROOT defaults to the repo; tests point LABUICHECK_ROOT at a fixture tree.
+ROOT="${LABUICHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 PANEL="$ROOT/gitops/observability/dashboards/stack-health.yaml"
 drift=0
 bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }

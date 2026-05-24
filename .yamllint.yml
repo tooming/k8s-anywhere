@@ -1,0 +1,22 @@
+# yamllint config tuned for Kubernetes/ArgoCD manifests + embedded Grafana
+# dashboards. Catches real problems (syntax errors, duplicate keys, trailing
+# whitespace, bad indentation) without fighting the conventions k8s YAML uses.
+extends: default
+
+rules:
+  # k8s manifests rarely start with `---`; many are single-doc.
+  document-start: disable
+  # Embedded dashboard JSON has legitimately long lines.
+  line-length: disable
+  # `on:`/`off:` etc. as values are fine; only flag bad boolean *keys*.
+  truthy:
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  # Helm/ArgoCD value blocks mix sequence styles.
+  indentation:
+    spaces: consistent
+    indent-sequences: whatever
+  braces:
+    max-spaces-inside: 1

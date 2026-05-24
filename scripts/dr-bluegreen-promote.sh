@@ -28,7 +28,7 @@ PROBE_LOG="${PROBE_LOG:-/tmp/bg-probe.log}"
 MIN_UPTIME="${MIN_UPTIME:-99.0}"
 MAX_OUTAGE="${MAX_OUTAGE:-2.0}"
 
-if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; Y=; B=; Z=; fi
+if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; B=; Z=; fi
 phase(){ printf '\n%s========== %s ==========%s\n' "$B" "$1" "$Z"; }
 probe(){ curl -s -o /dev/null -w '%{http_code}' --max-time 8 -H "Host: $CANARY_HOST" "http://localhost:$FRONTDOOR_PORT/" 2>/dev/null || echo 000; }
 

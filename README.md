@@ -84,6 +84,22 @@ The lab is **recreate-from-code**, and recovery is *exercised*, not assumed:
 See [docs/DR.md](docs/DR.md) and [ADR-0005](docs/decisions/adr-0005-spof-recreate-over-ha.md)
 (why true HA isn't possible on a single host, and what the lab does instead).
 
+## Quality gates
+
+`dr-verify`/`dr-test` are the *top* of the pyramid — they need a live 16 GB lab. The
+*bottom* is fast, clusterless, and runs on every push via GitHub Actions (and locally):
+
+| Command | What it checks |
+|---------|----------------|
+| `make lint` | `shellcheck` every script + `yamllint` the manifests/IaC |
+| `make validate` | schema-validate gitops manifests (`kubeconform`) + Terraform (`fmt`/`validate`/`tflint`) |
+| `make test` | `bats` unit tests: probe uptime math, destructive-script guards, the drift detectors |
+| `make readme-check` · `make lab-ui-check` | docs/dashboard drift detectors |
+| `make ci` | all of the above in one shot (mirrors the CI workflow) |
+
+Tools are optional locally (skipped with a note, like `make preflight`); CI installs
+them and enforces every gate.
+
 ## The 16 GB reality
 
 The always-on stack above fits the 12 GB Colima VM (~7 GB used). Adding a **heavy**
@@ -99,7 +115,8 @@ budget; `make gitlab-down` frees ~3 GB).
   `Application` per component) → `network/ vault/ secrets/ storage/ observability/
   moto/ ack/ kro/ apps/`; `bluegreen/` (green's serving-tier app-of-apps)
 - `gitlab/` — GitLab omnibus docker-compose
-- `scripts/` — bootstrap + DR/blue-green scripts · `docs/` — architecture, DR, decisions, dependency tree
+- `scripts/` — bootstrap + DR/blue-green scripts + the quality gates (`lint.sh`, `validate-*.sh`, `test.sh`)
+- `tests/` — `bats` unit tests + fixtures · `.github/workflows/ci.yml` — the clusterless CI gates · `docs/` — architecture, DR, decisions, dependency tree
 
 ## Repo
 

@@ -14,11 +14,12 @@ INTERVAL="${PROBE_INTERVAL:-0.3}"
 STATS="${PROBE_STATS:-/tmp/bg-probe.stats}"
 LOG="${PROBE_LOG:-/tmp/bg-probe.log}"
 
+# Counters the summary reads. Unit tests source this file and set them directly.
 total=0; ok=0; fail=0; run=0; maxrun=0
-: > "$LOG"
 stop=0
-trap 'stop=1' TERM INT
 
+# Pure: turns the counters into the uptime/outage stats file + a one-line summary.
+# No I/O beyond $STATS and stdout, so it's testable in isolation.
 summary() {
   local up="0.00" outage
   [ "$total" -gt 0 ] && up=$(awk "BEGIN{printf \"%.2f\", $ok/$total*100}")
@@ -28,17 +29,26 @@ summary() {
   printf '[probe] samples=%d ok=%d fail=%d uptime=%s%% longest-outage~%ss\n' \
     "$total" "$ok" "$fail" "$up" "$outage"
 }
-trap summary EXIT
 
-printf '[probe] watching %s (Host: %s) every %ss — SIGTERM to stop\n' "$URL" "$HOST_HDR" "$INTERVAL"
-while [ "$stop" -eq 0 ]; do
-  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "Host: $HOST_HDR" "$URL" 2>/dev/null || echo 000)
-  total=$((total+1))
-  if { [ "$code" -ge 200 ] && [ "$code" -lt 400 ]; } 2>/dev/null; then
-    ok=$((ok+1)); run=0
-  else
-    fail=$((fail+1)); run=$((run+1)); [ "$run" -gt "$maxrun" ] && maxrun=$run
-    printf '%s FAIL http=%s\n' "$(date +%H:%M:%S)" "$code" >> "$LOG"
-  fi
-  sleep "$INTERVAL"
-done
+probe_loop() {
+  : > "$LOG"
+  trap 'stop=1' TERM INT
+  trap summary EXIT
+  printf '[probe] watching %s (Host: %s) every %ss — SIGTERM to stop\n' "$URL" "$HOST_HDR" "$INTERVAL"
+  while [ "$stop" -eq 0 ]; do
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "Host: $HOST_HDR" "$URL" 2>/dev/null || echo 000)
+    total=$((total+1))
+    if { [ "$code" -ge 200 ] && [ "$code" -lt 400 ]; } 2>/dev/null; then
+      ok=$((ok+1)); run=0
+    else
+      fail=$((fail+1)); run=$((run+1)); [ "$run" -gt "$maxrun" ] && maxrun=$run
+      printf '%s FAIL http=%s\n' "$(date +%H:%M:%S)" "$code" >> "$LOG"
+    fi
+    sleep "$INTERVAL"
+  done
+}
+
+# Run the probe only when executed directly; `source` loads functions for tests.
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+  probe_loop
+fi

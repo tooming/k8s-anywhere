@@ -27,7 +27,7 @@ fi
 g() { kubectl --context "$GCTX" "$@"; }
 
 # 1. cluster (idempotent). Keep the current kube-context on BLUE (don't switch).
-if k3d cluster list 2>/dev/null | grep -q "^$GREEN[[:space:]]"; then
+if k3d cluster list 2>/dev/null | grep -q "^${GREEN}[[:space:]]"; then
   echo "[green] cluster $GREEN already exists"
 else
   echo "[green] creating k3d cluster $GREEN (api $API_PORT, http $HTTP_PORT, https $HTTPS_PORT)..."

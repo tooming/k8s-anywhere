@@ -7,7 +7,8 @@
 # Run by `make readme-check` and by the README-sync hook (.claude/settings.json).
 # Exit 0 = in sync; 1 = drift (findings printed). Companion to the lab-ui-audit skill.
 set -uo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# ROOT defaults to the repo; tests point READMECHECK_ROOT at a fixture tree.
+ROOT="${READMECHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 README="$ROOT/README.md"
 MK="$ROOT/Makefile"
 drift=0
