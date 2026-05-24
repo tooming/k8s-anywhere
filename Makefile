@@ -12,6 +12,12 @@ COLIMA_DISK ?= 60
 LIVE     := infra/live/local
 REPO_DIR := $(shell pwd)
 
+# Terraform state lives in the off-cluster Garage (infra/tfstate). These fixed
+# lab-local creds are imported into that Garage by tfstate-bootstrap.sh; the S3
+# backend reads them from the env. Garage-format key (GK + 24 hex / 64-hex secret).
+export AWS_ACCESS_KEY_ID     ?= GK31c2d4e5f60718293a4b5c6d
+export AWS_SECRET_ACCESS_KEY ?= a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00
+
 # DR drill blast radius: cluster | full | machine (see docs/DR.md)
 SCOPE ?= full
 
@@ -43,6 +49,7 @@ preflight: ## Check required CLI tools are installed
 .PHONY: up
 up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) colima-up
+	$(MAKE) tfstate-up
 	$(MAKE) cluster-up
 	$(MAKE) argocd
 	$(MAKE) gitlab-up
@@ -57,6 +64,7 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 down: ## Stop everything (cluster + GitLab + Colima). Data on PVCs/volumes is kept.
 	-cd gitlab && docker compose stop
 	-cd $(LIVE)/cluster && terragrunt destroy -auto-approve
+	-cd infra/tfstate && docker compose stop
 	-colima stop
 
 ##@ Runtime (Colima)
@@ -73,6 +81,20 @@ colima-down: ## Stop the Colima VM
 .PHONY: colima-status
 colima-status: ## Show Colima VM status
 	colima status
+
+##@ Terraform state (off-cluster S3)
+
+.PHONY: tfstate-up
+tfstate-up: ## Start + bootstrap the off-cluster Garage holding Terraform state (must precede any apply)
+	cd infra/tfstate && docker compose up -d
+	@echo "waiting for tfstate Garage to be healthy..."
+	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' tfstate-garage 2>/dev/null)" = "healthy" ]; do sleep 2; done
+	bash scripts/tfstate-bootstrap.sh
+	@echo "tfstate Garage ready (S3 http://localhost:3900, bucket tfstate)."
+
+.PHONY: tfstate-down
+tfstate-down: ## Stop the off-cluster Terraform-state Garage (keeps its volume/state)
+	cd infra/tfstate && docker compose stop
 
 ##@ Cluster (k3d via Terraform/Terragrunt)
 

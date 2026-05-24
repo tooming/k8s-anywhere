@@ -1,0 +1,23 @@
+# Standalone single-node Garage for Terraform state (off-cluster, lab-local).
+# Mirrors gitops/storage/garage/configmap.yaml, but self-contained: rpc_secret and
+# admin_token are baked in (this is a localhost throwaway lab, not real secrets).
+metadata_dir = "/var/lib/garage/meta"
+data_dir     = "/var/lib/garage/data"
+db_engine    = "lmdb"
+
+replication_factor = 1
+
+rpc_bind_addr   = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+rpc_secret      = "1799bccbd4d9a5e8f3c2b1a0079d6e5f4c3b2a1908172635445362718091a2b3"
+
+[s3_api]
+# Must match the `region` in the Terraform s3 backend (infra/live/local/root.hcl):
+# Garage validates the SigV4 region against this value.
+s3_region     = "garage"
+api_bind_addr = "[::]:3900"
+root_domain   = ".s3.tfstate.local"
+
+[admin]
+api_bind_addr = "[::]:3903"
+admin_token   = "tfstate-admin-token-localhost-only"
