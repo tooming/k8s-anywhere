@@ -31,6 +31,30 @@ readme-check: ## Check README.md is in sync with the Makefile + tools (drift det
 lab-ui-check: ## Check the Grafana "Lab UIs" panel matches the HTTPRoutes in gitops
 	@bash scripts/lab-ui-check.sh
 
+##@ Quality gates (clusterless; run on every commit + in CI)
+
+.PHONY: lint
+lint: ## shellcheck the scripts + yamllint the manifests/IaC
+	@bash scripts/lint.sh
+
+.PHONY: validate
+validate: ## Schema-validate gitops manifests (kubeconform) + terraform (fmt/validate/tflint)
+	@bash scripts/validate-manifests.sh
+	@bash scripts/validate-terraform.sh
+
+.PHONY: test
+test: ## Run the bats unit tests (probe math, DR guards, drift detectors)
+	@bash scripts/test.sh
+
+.PHONY: ci
+ci: ## Run every clusterless gate: lint + validate + test + drift checks
+	@bash scripts/lint.sh
+	@bash scripts/validate-manifests.sh
+	@bash scripts/validate-terraform.sh
+	@bash scripts/test.sh
+	@bash scripts/readme-check.sh
+	@bash scripts/lab-ui-check.sh
+
 .PHONY: preflight
 preflight: ## Check required CLI tools are installed
 	@missing=0; for t in $(REQUIRED_TOOLS); do \

@@ -28,7 +28,8 @@ note(){ printf '      %s%s%s\n' "$Y" "$1" "$Z"; }
 
 # retry <timeout_s> <interval_s> <predicate-fn> : 0 if predicate succeeds in time
 retry() {
-  local to=$1 iv=$2 fn=$3 end=$((SECONDS + $1))
+  local to=$1 iv=$2 fn=$3
+  local end=$((SECONDS + to))
   while :; do
     "$fn" && return 0
     [ "$SECONDS" -ge "$end" ] && return 1

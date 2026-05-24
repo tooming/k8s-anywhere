@@ -10,7 +10,7 @@ set -uo pipefail
 
 SCOPE="${1:-${DR_SCOPE:-full}}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$REPO_DIR"
+cd "$REPO_DIR" || exit 1
 
 case "$SCOPE" in
   cluster) EST="~3-6 min";   WIPE="k3d cluster (GitLab + Colima survive)";;
@@ -19,7 +19,7 @@ case "$SCOPE" in
   *) echo "unknown SCOPE '$SCOPE' (cluster|full|machine)" >&2; exit 2;;
 esac
 
-if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; Y=; B=; Z=; fi
+if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; B=; Z=; fi
 phase(){ printf '\n%s========== %s ==========%s\n' "$B" "$1" "$Z"; }
 hms(){ printf '%dm%02ds' $(( $1/60 )) $(( $1%60 )); }
 
