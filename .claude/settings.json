@@ -6,6 +6,18 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/adr-context-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Loading architecture decisions (ADRs)"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
@@ -21,6 +33,12 @@
             "command": "bash scripts/lab-ui-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking Lab UIs sync"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/adr-guard-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking ADR compliance"
           }
         ]
       }
