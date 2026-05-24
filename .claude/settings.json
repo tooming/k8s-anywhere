@@ -15,6 +15,12 @@
             "command": "bash scripts/readme-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking README sync"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/lab-ui-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking Lab UIs sync"
           }
         ]
       }

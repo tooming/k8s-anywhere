@@ -27,6 +27,10 @@ help: ## Show this help
 readme-check: ## Check README.md is in sync with the Makefile + tools (drift detector)
 	@bash scripts/readme-check.sh
 
+.PHONY: lab-ui-check
+lab-ui-check: ## Check the Grafana "Lab UIs" panel matches the HTTPRoutes in gitops
+	@bash scripts/lab-ui-check.sh
+
 .PHONY: preflight
 preflight: ## Check required CLI tools are installed
 	@missing=0; for t in $(REQUIRED_TOOLS); do \
