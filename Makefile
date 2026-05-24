@@ -23,6 +23,10 @@ REQUIRED_TOOLS := colima docker k3d kubectl helm terraform terragrunt kustomize 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) }' $(MAKEFILE_LIST)
 
+.PHONY: readme-check
+readme-check: ## Check README.md is in sync with the Makefile + tools (drift detector)
+	@bash scripts/readme-check.sh
+
 .PHONY: preflight
 preflight: ## Check required CLI tools are installed
 	@missing=0; for t in $(REQUIRED_TOOLS); do \

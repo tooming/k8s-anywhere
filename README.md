@@ -1,39 +1,108 @@
 # k8s-lab
 
-A localhost learning lab that wires a full cloud-native platform together on a single Mac, so you can see how the pieces fit:
+A localhost **GitOps platform** that wires a full cloud-native stack together on a
+single 16 GB Mac — so you can see how the pieces actually fit, not learn them in
+isolation. Terraform/Terragrunt bootstraps a local Kubernetes cluster, GitLab holds
+the manifests, and **ArgoCD continuously syncs everything else in**.
 
-**Envoy · k3s · ArgoCD · TiDB · Vault · GitLab · Terraform/Terragrunt · Mimir · Loki**
+Built as code end to end: **one command (`make up`) rebuilds the whole lab from
+scratch**, with self-verifying **disaster-recovery** and **zero-downtime blue/green**
+drills to prove recovery actually works.
 
-The shape is a **GitOps platform**: Terraform/Terragrunt bootstraps a local Kubernetes cluster, GitLab holds the manifests, and ArgoCD continuously syncs everything else into the cluster.
+- 📊 **[docs/dependency-tree.md](docs/dependency-tree.md)** — full dependency & integration graph (who deploys / depends on / talks to whom)
+- 🛟 **[docs/DR.md](docs/DR.md)** — recovery model + the day-0 bootstrap chain
+- 📐 **[docs/00-architecture.md](docs/00-architecture.md)** — roles & learning path · 🧭 **[docs/decisions/](docs/decisions/)** — ADRs
 
-See [docs/00-architecture.md](docs/00-architecture.md) for the full picture and the learning path.
+## The stack
 
-## Constraints
+Everything except Terraform/Terragrunt, GitLab, and the front door runs **in** the
+cluster, deployed by ArgoCD (one `Application` per component).
 
-This lab targets a **16 GB Mac**, so it is **modular**: a light always-on *core*, plus heavy areas you bring up one at a time. You cannot run GitLab + TiDB + full observability simultaneously — the `Makefile` profiles keep you within budget.
+| Layer | Tools |
+|-------|-------|
+| **Bootstrap (IaC)** | Terraform · Terragrunt · k3d (k3s-in-Docker) |
+| **GitOps** | GitLab (git source, omnibus container) · ArgoCD (engine, app-of-apps) |
+| **Ingress** | Envoy Gateway (north-south, Gateway API) |
+| **Secrets** | Vault (KV v2) · External Secrets Operator |
+| **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
+| **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
+| **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator) |
+| **Planned (heavy, on-demand)** | TiDB · Artifactory/Nexus · Istio ambient mesh + Kiali · Longhorn |
 
-| Profile         | Components                            | ~RAM    |
-|-----------------|---------------------------------------|---------|
-| core (always)   | k3s + Envoy Gateway + ArgoCD + Vault  | 3–4 GB  |
-| `gitlab`        | GitLab CE (omnibus container)         | 4–6 GB  |
-| `tidb`          | tidb-operator + PD / TiKV / TiDB      | 3–4 GB  |
-| `obs`           | Mimir + Loki + Grafana + Alloy        | 3–4 GB  |
+## Prerequisites
 
-## Quickstart
+macOS with **Colima** (not Docker Desktop). Install the toolchain, then verify:
 
 ```sh
-make preflight      # check required tools are installed
-make colima-up      # start the container runtime VM (12 GB)
-make cluster-up     # create the k3d cluster (Terraform / Terragrunt)
-make bootstrap      # install ArgoCD + connect GitLab as the GitOps source
+brew install colima docker k3d kubectl helm terraform terragrunt kustomize argocd vault yq jq mkcert
+make preflight      # checks all of the above are on PATH
 ```
 
-Then bring up one heavy profile at a time, e.g. `make obs-up` / `make obs-down`.
-Run `make` with no target for the full list. `make status` shows RAM + running pods.
+## Quick start — one command
+
+```sh
+make up             # bootstrap the ENTIRE lab from scratch, in order (~10 min; GitLab's first boot dominates)
+make status         # VM RAM + per-namespace usage + any unhealthy pods
+make dr-verify      # assert the whole lab is healthy end-to-end (real checks)
+```
+
+`make up` runs the only imperative (day-0) steps — Colima → k3d → ArgoCD → GitLab →
+app-of-apps → Vault/Garage bootstrap — then ArgoCD reconciles everything else. The
+ordered chain is documented in [docs/DR.md](docs/DR.md). Run `make` with no target
+for the full command list.
+
+## Endpoints
+
+After `make up`, UIs are served through Envoy on **`:8080`** (hostnames resolve to
+127.0.0.1 via `nip.io` — no `/etc/hosts` edits):
+
+| UI | URL |
+|----|-----|
+| ArgoCD | http://argocd.127.0.0.1.nip.io:8080 |
+| Grafana | http://localhost:8080 |
+| Vault | http://vault.127.0.0.1.nip.io:8080 |
+| S3 browser | http://s3.127.0.0.1.nip.io:8080 |
+| moto (AWS mock) | http://moto.127.0.0.1.nip.io:8080/moto-api/ |
+| GitLab | http://localhost:8929 |
+
+`make argocd-password` prints the ArgoCD admin password. The blue/green drills add a
+stable **front door on `:8000`** (`make frontdoor`) that serves the same UIs
+regardless of which cluster is live; after a blue→green promotion the canonical port
+becomes `:8000`.
+
+## Disaster recovery & blue/green
+
+The lab is **recreate-from-code**, and recovery is *exercised*, not assumed:
+
+| Command | What it does |
+|---------|--------------|
+| `make dr-verify` | Real end-to-end health check: nodes, every ArgoCD app Synced+Healthy, Vault unsealed, all ExternalSecrets synced, Garage + buckets, a **live Mimir query**, Grafana. Safe anytime. |
+| `make dr-test` | Full DR drill: **destroy** the lab → `make up` → verify. `SCOPE=cluster\|full\|machine`. |
+| `make dr-bluegreen` | **Zero-downtime** DR: stand up a 2nd (green) cluster, cut over via the front-door proxy, prove ~100% uptime with a continuous probe. |
+| `make dr-bluegreen-promote` | Migrate to green as a full stack and **retire blue** — serving never drops. |
+
+See [docs/DR.md](docs/DR.md) and [ADR-0005](docs/decisions/adr-0005-spof-recreate-over-ha.md)
+(why true HA isn't possible on a single host, and what the lab does instead).
+
+## The 16 GB reality
+
+The always-on stack above fits the 12 GB Colima VM (~7 GB used). Adding a **heavy**
+profile (TiDB, Artifactory, Istio mesh, Longhorn) needs care, and two *full* stacks
+don't fit at once — proven by the blue/green drill, which is why its promote retires
+blue *before* growing green. GitLab runs as a standalone container (off the cluster
+budget; `make gitlab-down` frees ~3 GB).
 
 ## Layout
 
-- `infra/`  — Terraform modules + Terragrunt live config (the bootstrap layer)
-- `gitops/` — what ArgoCD watches: app-of-apps → `platform/` `data/` `observability/` `apps/`
+- `infra/` — Terraform modules + Terragrunt live config (the day-0 bootstrap)
+- `gitops/` — what ArgoCD syncs: `bootstrap/` (root app-of-apps) → `platform/` (one
+  `Application` per component) → `network/ vault/ secrets/ storage/ observability/
+  moto/ ack/ kro/ apps/`; `bluegreen/` (green's serving-tier app-of-apps)
 - `gitlab/` — GitLab omnibus docker-compose
-- `scripts/`, `docs/`
+- `scripts/` — bootstrap + DR/blue-green scripts · `docs/` — architecture, DR, decisions, dependency tree
+
+## Repo
+
+`main` lives in the local **GitLab** (the GitOps source ArgoCD reads from) and is
+mirrored to **GitHub** ([github.com/tooming/k8s-lab](https://github.com/tooming/k8s-lab)).
+Push to GitLab for the running lab to pick up changes; GitHub is the public copy.

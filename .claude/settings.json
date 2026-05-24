@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/readme-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking README sync"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/commit-reminder-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking commit + push"
+          }
+        ]
+      }
+    ]
+  }
+}
