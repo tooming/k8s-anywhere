@@ -122,16 +122,24 @@ non-GitOps seam (you can't GitOps the GitOps engine or its git source into being
 ```
 make up
 └─ 1 colima-up          Colima VM (Docker runtime)
-   └─ 2 cluster-up       k3d cluster                                  [Terragrunt]
-      └─ 3 argocd        ArgoCD (GitOps engine)                       [Terraform/Helm]
-         └─ 4 gitlab-up  GitLab omnibus (git source)                  [docker compose]
-            └─ 5 gitlab-configure  project + ArgoCD repo deploy-token + git push   [Terraform + git]
-               └─ 6 root-app       app-of-apps planted                [kubectl apply]
-                  ├─ 7 vault-bootstrap   init/unseal, seed secrets, k8s auth, kick ESO
-                  └─ 8 garage-bootstrap  layout + S3 key + buckets → writes vault:garage/s3
-                     └─ ESO syncs Vault→Secrets ⇒ Garage, Mimir, Loki, Tempo,
-                        Pyroscope, ACK converge on their own
+   └─ 2 tfstate-up       off-cluster Garage for TF state              [docker compose]
+      └─ 3 cluster-up       k3d cluster                               [Terragrunt → s3 backend]
+         └─ 4 argocd        ArgoCD (GitOps engine)                    [Terraform/Helm]
+            └─ 5 gitlab-up  GitLab omnibus (git source)               [docker compose]
+               └─ 6 gitlab-configure  project + ArgoCD repo deploy-token + git push   [Terraform + git]
+                  └─ 7 root-app       app-of-apps planted             [kubectl apply]
+                     ├─ 8 vault-bootstrap   init/unseal, seed secrets, k8s auth, kick ESO
+                     └─ 9 garage-bootstrap  layout + S3 key + buckets → writes vault:garage/s3
+                        └─ ESO syncs Vault→Secrets ⇒ Garage, Mimir, Loki, Tempo,
+                           Pyroscope, ACK converge on their own
 ```
+
+> **Why a second, off-cluster Garage?** The in-cluster Garage is created *by* the
+> Terraform in steps 3–6, so it can't also be that Terraform's state backend without a
+> bootstrap loop. The state Garage (step 2) is a *separate instance* that comes up first
+> and lives off-cluster (like GitLab and the front door), breaking the loop. Same engine,
+> different purpose. See [docs/platform-products.md](platform-products.md) for the
+> build-vs-product distinction.
 
 ## ArgoCD apply order (sync-waves, from `gitops/platform/`)
 

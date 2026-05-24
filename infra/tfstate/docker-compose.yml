@@ -1,0 +1,27 @@
+# Off-cluster Garage (S3) that holds Terraform/Terragrunt state.
+# Same engine as the in-cluster object-storage product, but a SEPARATE instance and a
+# different purpose: this one is bootstrap substrate. It must NOT be the in-cluster
+# Garage, because that one is created BY the Terraform that would need this backend —
+# a dependency loop. This instance comes up before any `terragrunt apply`
+# (see `make tfstate-up`, ordered ahead of cluster-up), so the state store never
+# depends on the cluster Terraform builds.
+# Reachable from the Mac at http://localhost:3900 (S3 API).
+services:
+  garage:
+    image: dxflrs/garage:v2.3.0
+    container_name: tfstate-garage
+    hostname: tfstate-garage
+    restart: unless-stopped
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - tfstate_data:/var/lib/garage
+    ports:
+      - "3900:3900"
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  tfstate_data:

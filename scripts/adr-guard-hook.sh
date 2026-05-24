@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# PostToolUse guard: ADRs named `adr-NNNN-<chosen>-not-<rejected>.md` encode a REJECTED
+# technology (e.g. adr-0002-garage-not-minio -> "minio" is off-limits). If an edit to
+# infra/code reintroduces a rejected term, surface a reminder so we never silently
+# contradict an ADR. Self-maintaining: new "*-not-*" ADRs extend the guard automatically.
+# Reads the Claude Code hook JSON on stdin; non-blocking (the tool already ran).
+#   exit 0 = nothing to say  |  exit 2 = stderr is shown to Claude as a reminder
+set -uo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+payload="$(cat 2>/dev/null || true)"
+fp="$(printf '%s' "$payload" | jq -r '.tool_input.file_path // .tool_input.path // empty' 2>/dev/null || true)"
+[ -n "$fp" ] || exit 0
+
+# Guard infra/code only. Never the ADRs/docs that legitimately discuss rejected tech.
+case "$fp" in
+  *docs/*) exit 0 ;;
+  *infra/*|*gitops/*|*scripts/*|*Makefile|*.tf|*.hcl|*.yaml|*.yml) ;;
+  *) exit 0 ;;
+esac
+[ -f "$fp" ] || exit 0
+
+hits=""
+for adr in "$ROOT"/docs/decisions/adr-*-not-*.md; do
+  [ -e "$adr" ] || continue
+  rejected="$(basename "$adr" .md | sed -E 's/.*-not-//')"
+  [ -n "$rejected" ] || continue
+  if grep -qiw "$rejected" "$fp"; then
+    hits="$hits"$'\n'"  - '$rejected' (rejected by $(basename "$adr")) appears in ${fp##*/}"
+  fi
+done
+
+if [ -n "$hits" ]; then
+  {
+    echo "ADR guard: this file reintroduces a technology an ADR rejected:"
+    printf '%s\n' "$hits"
+    echo "Honor the ADR. If there's a real reason to revisit it, STOP and ask the user first."
+  } >&2
+  exit 2
+fi
+exit 0
