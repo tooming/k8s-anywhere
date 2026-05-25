@@ -155,7 +155,18 @@ gitlab-down: ## Stop GitLab omnibus (frees ~3 GB; keeps its volumes)
 .PHONY: gitlab-configure
 gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the repo
 	bash scripts/gitlab-pat.sh >/dev/null
-	cd $(LIVE)/gitlab && GITLAB_TOKEN="$$(cat $(REPO_DIR)/gitlab/.gitlab-token)" terragrunt apply -auto-approve
+	@PAT="$$(cat $(REPO_DIR)/gitlab/.gitlab-token)"; \
+		cd $(LIVE)/gitlab && GITLAB_TOKEN="$$PAT" ( \
+			terragrunt state list 2>/dev/null | grep -qx 'gitlab_group.lab' || { \
+				gid="$$(curl -fsS --header "PRIVATE-TOKEN: $$PAT" "http://localhost:8929/api/v4/groups/lab" 2>/dev/null | jq -r '.id // empty')"; \
+				[ -n "$$gid" ] && terragrunt import gitlab_group.lab "$$gid" >/dev/null || true; \
+			}; \
+			terragrunt state list 2>/dev/null | grep -qx 'gitlab_project.gitops' || { \
+				pid="$$(curl -fsS --header "PRIVATE-TOKEN: $$PAT" "http://localhost:8929/api/v4/projects/lab%2Fk8s-lab" 2>/dev/null | jq -r '.id // empty')"; \
+				[ -n "$$pid" ] && terragrunt import gitlab_project.gitops "$$pid" >/dev/null || true; \
+			}; \
+			terragrunt apply -auto-approve \
+		)
 	@PAT="$$(cat gitlab/.gitlab-token)"; git remote remove gitlab 2>/dev/null || true; \
 		git remote add gitlab "http://root:$${PAT}@localhost:8929/lab/k8s-lab.git"; \
 		git push -u gitlab main
