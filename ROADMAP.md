@@ -66,20 +66,35 @@ no access to anyone's local notes — so every rule it must follow lives here or
 ## Where new items come from — the planner
 
 The executor never invents work — it only implements items already listed below. New
-items come from a separate **weekly planner** routine that:
+items come from a separate **weekly planner** routine (also runnable on-demand) that:
 
-- reads [CHARTER.md](CHARTER.md) (the north-star) + the actual repo state + this file +
-  open PRs, and does **gap analysis**: a charter target not yet built, or a quality bar
-  not yet met, becomes a proposed item;
+- reads [CHARTER.md](CHARTER.md) (the north-star) + the repo state + this file + open PRs
+  + **open GitHub issues** (the intake queue), then produces items two ways:
+  - **gap analysis** — a charter target not yet built, or a quality bar not yet met,
+    becomes a proposed item;
+  - **intake grooming** — each open issue is a user work request of any size; the planner
+    sizes it and splits it into one or more concrete, single-PR-sized items;
 - opens a **plan-only PR** on a `plan/<slug>` branch that edits **only this file** —
-  adding concrete, single-PR-sized items and re-prioritizing *Now / next*. It never
-  writes feature code and never edits CHARTER.md (if the *goals* look stale, it says so
-  in the PR body for a human to decide);
-- de-dupes against existing items and open PRs, and may open **no PR** if the backlog is
-  already healthy (no churn for its own sake).
+  adding items and re-prioritizing *Now / next*. It never writes feature code and never
+  edits CHARTER.md (if the *goals* look stale, it says so in the PR body for a human);
+- closes the loop on each groomed issue (comments the resulting items, labels it
+  `groomed`, closes it);
+- de-dupes against existing items and open PRs, and may open **no PR** if there's nothing
+  to do (no churn for its own sake).
 
-You review and merge plan PRs, same as implementation PRs. To change *what the lab is
-becoming*, edit [CHARTER.md](CHARTER.md); the planner turns that into concrete items here.
+### How you add work
+
+- **Already a clean ~1-PR task?** Add it straight to *Now / next* below — the executor
+  builds it next run; no planner needed.
+- **A goal or direction?** Put it in [CHARTER.md](CHARTER.md) — the planner derives items.
+- **Ungroomed work of unknown size?** Open a **GitHub issue** describing it (any level of
+  detail). The planner grooms it into the right number of items — don't pre-size it,
+  that's the planner's job. The executor never reads issues, so nothing half-baked gets
+  built. To groom it *now* instead of waiting for the weekly run, trigger the planner
+  on-demand (routines page → Run, or ask Claude). Label an issue `wontfix` or `question`
+  to make the planner skip it.
+
+You review and merge plan PRs, same as implementation PRs.
 
 ---
 
