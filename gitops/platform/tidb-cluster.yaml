@@ -1,0 +1,23 @@
+# TiDB Cluster — ArgoCD Application for the TidbCluster CR + namespace.
+# ON-DEMAND: no automated: block → ArgoCD discovers this Application but will NOT
+# auto-deploy it. Bring up with: make tidb-up  (tidb-operator must be running first)
+# Tear down with:               make tidb-down
+# Do NOT add automated: here — the 12 GB VM cannot hold TiDB alongside always-on.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tidb-cluster
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/tidb
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tidb
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

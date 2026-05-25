@@ -152,6 +152,7 @@ make up
 | 4 | ack-resources | ACK `Bucket` CRs (need the controller) |
 | 5 | kro-resources | KRO instances (need the RGD + ACK) |
 | — | tidb-operator *(on-demand)* | CRD controller for TiDB; discovered by ArgoCD but **manual-sync only** — use `make tidb-operator-up` |
+| — | tidb-cluster *(on-demand)* | `TidbCluster` CR (1×PD + 1×TiKV + 1×TiDB); manual-sync only — use `make tidb-up` (requires tidb-operator) |
 
 > Sync-waves are ArgoCD's **apply** order. The **runtime** secret dependency
 > (Vault must be *bootstrapped* before ESO can sync) is enforced by the day-0
@@ -180,4 +181,5 @@ make up
 - **GitLab** is also off-cluster (docker), the git source ArgoCD reads from.
 - **Tempo** has no trace producer yet — the Alloy→Tempo OTLP path is wired but idle.
 - **TiDB Operator** (`gitops/platform/tidb-operator.yaml`) is on-demand / manual-sync — ArgoCD discovers the Application but does not auto-deploy the operator. Use `make tidb-operator-up` / `make tidb-operator-down`. Installs into namespace `tidb-admin`.
+- **TiDB Cluster** (`gitops/platform/tidb-cluster.yaml`) is on-demand / manual-sync — deploys a minimal `TidbCluster` CR (1×PD + 1×TiKV + 1×TiDB, ~1.5 GB) into namespace `tidb`. Use `make tidb-up` / `make tidb-down`. Requires TiDB Operator running first. ADR-0003 note: production topology uses ≥3 PD + ≥3 TiKV + 2 TiDB; single replicas are the ADR-0005 lab trade-off.
 - Storage backups, true HA: out of scope (single host). See `docs/DR.md`.
