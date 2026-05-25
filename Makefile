@@ -168,10 +168,9 @@ gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the re
 			}; \
 			terragrunt apply -auto-approve \
 		)
-	@PAT="$$(cat gitlab/.gitlab-token)"; git remote remove gitlab 2>/dev/null || true; \
+	@git remote remove gitlab 2>/dev/null || true; \
 		git remote add gitlab "http://root@localhost:8929/lab/k8s-lab.git"; \
-		git config credential.helper osxkeychain; \
-		printf 'protocol=http\nhost=localhost:8929\nusername=root\npassword=%s\n\n' "$$PAT" | git credential approve; \
+		git config credential."http://localhost:8929".helper "$(REPO_DIR)/scripts/gitlab-credential-helper.sh"; \
 		git push -u gitlab main
 
 .PHONY: root-app
