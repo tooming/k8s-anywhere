@@ -106,7 +106,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 - [x] **TiDB operator** — add the TiDB Operator as an on-demand ArgoCD
   `Application` (manual-sync, not in the always-on set) + its namespace + docs.
-- [ ] **TiDB cluster** — a minimally-sized `TidbCluster` CR (PD + TiKV + TiDB,
+- [x] **TiDB cluster** — a minimally-sized `TidbCluster` CR (PD + TiKV + TiDB,
   smallest viable replicas) + `make tidb-up` / `make tidb-down`.
 - [ ] **TiDB demo app** — a demo workload that reads its TiDB credentials from
   Vault via an `ExternalSecret`, with an Envoy route and a real Grafana dashboard
@@ -152,3 +152,4 @@ You review and merge plan PRs, same as implementation PRs.
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
 - [x] **TiDB operator** — `gitops/platform/tidb-operator.yaml` (manual-sync ArgoCD Application, chart `tidb-operator` v1.6.1 from charts.pingcap.org, namespace `tidb-admin`). Makefile targets `tidb-operator-up` / `tidb-operator-down`. Docs updated in README + dependency-tree. (auto/tidb-operator)
+- [x] **TiDB cluster** — `gitops/platform/tidb-cluster.yaml` (manual-sync ArgoCD Application, git-path `gitops/tidb/`). `TidbCluster` CR v8.1.2 with 1×PD + 1×TiKV + 1×TiDB (ADR-0005 lab trade-off; production uses ≥3+3+2). `make tidb-up` / `make tidb-down`. Docs updated in README + dependency-tree. (PR to be referenced)

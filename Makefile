@@ -232,3 +232,11 @@ tidb-operator-up: ## Deploy TiDB Operator via ArgoCD manual sync (~256 MB; do af
 .PHONY: tidb-operator-down
 tidb-operator-down: ## Remove TiDB Operator (cascade-deletes resources; keeps namespace + CRDs)
 	argocd app delete tidb-operator --cascade=background --yes
+
+.PHONY: tidb-up
+tidb-up: ## Deploy TiDB cluster via ArgoCD manual sync (~1.5 GB; requires tidb-operator-up first)
+	argocd app sync tidb-cluster --wait
+
+.PHONY: tidb-down
+tidb-down: ## Remove TiDB cluster (cascade-deletes pods/PVCs; keeps namespace + CRDs)
+	argocd app delete tidb-cluster --cascade=background --yes

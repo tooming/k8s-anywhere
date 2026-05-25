@@ -1,0 +1,69 @@
+# TiDB Cluster — minimal single-instance lab setup.
+# ADR-0003: production uses ≥3 PD + ≥3 TiKV + 2 TiDB; the 12 GB VM budget forces
+# single replicas here (ADR-0005 escape hatch — call out the trade-off explicitly).
+# ADR-0005: single host accepts SPOFs; optimises for recoverability.
+# ON-DEMAND: bring up with `make tidb-up` (requires tidb-operator running first).
+apiVersion: pingcap.com/v1alpha1
+kind: TidbCluster
+metadata:
+  name: lab
+  namespace: tidb
+spec:
+  version: "v8.1.2"
+  timezone: UTC
+  pvReclaimPolicy: Delete
+  enableDynamicConfiguration: true
+  configUpdateStrategy: RollingUpdate
+
+  pd:
+    baseImage: pingcap/pd
+    replicas: 1
+    # maxFailoverCount=0: do not spin up extra replicas on node failure in a 1-node lab.
+    maxFailoverCount: 0
+    storageClassName: local-path
+    requests:
+      storage: "1Gi"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    config:
+      replication:
+        # 1 replica per region matches the single TiKV node.
+        max-replicas: 1
+
+  tikv:
+    baseImage: pingcap/tikv
+    replicas: 1
+    maxFailoverCount: 0
+    storageClassName: local-path
+    requests:
+      storage: "2Gi"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    config:
+      storage:
+        # Don't reserve space for snapshots in a lab — avoids disk pressure.
+        reserve-space: "0MB"
+
+  tidb:
+    baseImage: pingcap/tidb
+    replicas: 1
+    maxFailoverCount: 0
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    service:
+      type: ClusterIP
