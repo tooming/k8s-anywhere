@@ -49,10 +49,12 @@ spec:
 
               prometheus.scrape "argocd" {
                 targets = [
-                  {"__address__" = "argocd-application-controller-metrics.argocd.svc.cluster.local:8082", "job" = "argocd-controller"},
-                  {"__address__" = "argocd-server-metrics.argocd.svc.cluster.local:8083", "job" = "argocd-server"},
-                  {"__address__" = "argocd-repo-server-metrics.argocd.svc.cluster.local:8084", "job" = "argocd-repo"},
-                  {"__address__" = "argocd-applicationset-controller-metrics.argocd.svc.cluster.local:8080", "job" = "argocd-appset"},
+                  // job names follow ArgoCD's official Prometheus convention so the
+                  // community dashboard (gnetId 14584) matches the per-component series.
+                  {"__address__" = "argocd-application-controller-metrics.argocd.svc.cluster.local:8082", "job" = "argocd-metrics"},
+                  {"__address__" = "argocd-server-metrics.argocd.svc.cluster.local:8083", "job" = "argocd-server-metrics"},
+                  {"__address__" = "argocd-repo-server-metrics.argocd.svc.cluster.local:8084", "job" = "argocd-repo-server"},
+                  {"__address__" = "argocd-applicationset-controller-metrics.argocd.svc.cluster.local:8080", "job" = "argocd-applicationset-controller"},
                 ]
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
