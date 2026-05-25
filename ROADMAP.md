@@ -2,7 +2,7 @@
 
 The backlog for **k8s-lab**, derived from [CHARTER.md](CHARTER.md) (the north-star this
 is projected from) and worked by two decoupled routines: a weekly **planner** that
-proposes items here (plan-only PRs) and an every-5h **executor** that implements one item
+proposes items here (plan-only PRs) and an every-6h **executor** that implements one item
 per run. CHARTER = the goals; this file = the next steps.
 
 The always-on stack is already built (Envoy, Vault, External Secrets, Garage,
@@ -14,7 +14,7 @@ cross-cutting hardening.
 
 ## How the executor uses this file
 
-The **executor** routine (every 5h) reads this file each run. It has **only this repo** —
+The **executor** routine (every 6h) reads this file each run. It has **only this repo** —
 no access to anyone's local notes — so every rule it must follow lives here, in
 `docs/decisions/` (the ADRs), or in [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md)
 (agent governance & review). The rules below are binding.

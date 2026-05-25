@@ -29,7 +29,7 @@ routine's model/cadence is a PR that edits this table.
 
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch | Max tier |
 |---|---|---|---|---|---|---|
-| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @maintainer | implements one ROADMAP item / run | 5h · Sonnet 4.6 | `auto/*` | 🟢 Green |
+| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @maintainer | implements one ROADMAP item / run | 6h (4/day) · Sonnet 4.6 | `auto/*` | 🟢 Green |
 | Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @maintainer | grooms CHARTER gaps + issues → ROADMAP | weekly · Opus 4.7 | `plan/*` | 🟢 Green |
 
 _(Replace `@maintainer` with the owning engineer or team as the team grows.)_
@@ -95,6 +95,10 @@ _Process:_
 
 ## 5. Cost & kill-switch
 
+- **Free quota: 5 routine runs per rolling 24h.** Beyond that, runs use usage credits *only
+  if* the "additional runs" toggle is on (otherwise they're skipped — a hard free cap).
+  Size total cadence across all routines to fit: today the executor (every 6h = 4/day) + the
+  weekly planner stay within it, leaving ~1 slot/day for an on-demand groom.
 - Spend scales with **cadence × model × routine count**; the registry records all three, and
   the routine's owner is accountable for it.
 - **Scale-out rule:** add agents or raise cadence only when there is review capacity to
