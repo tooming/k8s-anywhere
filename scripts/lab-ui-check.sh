@@ -2,8 +2,9 @@
 # Lab UIs drift check: the "Lab UIs" table in stack-health.yaml is hand-maintained,
 # so it drifts when a UI route is added/removed. This flags that mechanically by
 # comparing the panel against the host-based HTTPRoutes declared in gitops/ (the
-# source of truth — works with the lab down, like readme-check). The automatic
-# companion to the lab-ui-audit skill. Exit 0 = in sync; 1 = drift.
+# source of truth — works with the lab down, like readme-check). Runs in CI (the
+# 'drift' job, a required check) and as a PostToolUse hook, so panel drift is caught
+# mechanically — not by remembering to audit. Exit 0 = in sync; 1 = drift.
 #
 # Compares only host-based (`*.127.0.0.1.nip.io`) UIs — Grafana (localhost) and
 # GitLab (off-cluster :8929) are stable special cases the skill handles by hand.

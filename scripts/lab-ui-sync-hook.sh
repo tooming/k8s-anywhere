@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # PostToolUse hook: after editing an HTTPRoute manifest or the stack-health
 # dashboard, check whether the "Lab UIs" panel drifted from the routes and, if so,
-# surface a reminder so it's fixed in the same change (the automatic half of the
-# lab-ui-audit skill). Reads the Claude Code hook payload on stdin; non-blocking.
+# surface a reminder so it's fixed in the same change (the local companion to the
+# CI lab-ui-check 'drift' gate). Reads the Claude Code hook payload on stdin; non-blocking.
 #   exit 0 = nothing to say   |   exit 2 = stderr shown to Claude as a reminder
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,7 +19,7 @@ esac
 
 if ! out="$(bash "$ROOT/scripts/lab-ui-check.sh" 2>&1)"; then
   {
-    echo "Lab UIs panel looks stale after editing ${fp##*/} — keep it in sync (lab-ui-audit):"
+    echo "Lab UIs panel looks stale after editing ${fp##*/} — update the Lab UIs table (panel 10) in stack-health.yaml; host UIs use the :8000 front door:"
     echo "$out"
     echo "(re-check: make lab-ui-check; the panel is in gitops/observability/dashboards/stack-health.yaml)"
   } >&2

@@ -5,7 +5,7 @@
 # mentions, and tool-list drift. It cannot judge prose; for that, re-read the README.
 #
 # Run by `make readme-check` and by the README-sync hook (.claude/settings.json).
-# Exit 0 = in sync; 1 = drift (findings printed). Companion to the lab-ui-audit skill.
+# Exit 0 = in sync; 1 = drift (findings printed). Companion to lab-ui-check.sh (CI 'drift' job).
 set -uo pipefail
 # ROOT defaults to the repo; tests point READMECHECK_ROOT at a fixture tree.
 ROOT="${READMECHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
