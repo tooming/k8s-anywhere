@@ -43,6 +43,14 @@ _(Replace `@maintainer` with the owning engineer or team as the team grows.)_
 Every agent action falls in a tier. An agent that hits work above its registered tier must
 **stop and open an issue for a human** — never proceed.
 
+| Tier | Who acts | Examples (non-exhaustive) |
+|---|---|---|
+| 🟢 **Green** | Agent, unsupervised → PR + normal review | Docs, comments, tests; non-auto-synced manifests; dashboards from real metrics; README / `dependency-tree.md` sync; ROADMAP grooming |
+| 🟡 **Yellow** | Human writes an issue/RFC first, *then* an agent may implement | New platform component; anything growing the always-on footprint; new deps / Helm sources; CI, gate, or `Makefile` changes; security-adjacent (auth, RBAC, network exposure) |
+| 🔴 **Red** | Humans only — agent must refuse & escalate | Secrets; any live-cluster / prod change; **merging** PRs; repo settings / branch protection / CODEOWNERS; force-push, deletion, history rewrite; disabling another agent; editing CHARTER, the ADRs, or this doc; risky `infra/` bootstrap changes |
+
+Full definitions:
+
 **🟢 Green — autonomous (PR + normal review).** Docs, comments, tests; clusterless
 manifests that are *not* auto-synced (per the 12 GB budget rule); Grafana dashboards built
 from real metrics; `docs/dependency-tree.md` and README sync; ROADMAP grooming. This is the
