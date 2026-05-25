@@ -1,0 +1,45 @@
+# TiDB Operator — CRD controller that manages TidbCluster, TidbMonitor, etc.
+# ON-DEMAND: no automated: block → ArgoCD discovers this Application but will NOT
+# auto-deploy it. Bring up with: make tidb-operator-up
+# Tear down with:               make tidb-operator-down
+# Do NOT add automated: here — the 12 GB VM cannot hold TiDB alongside always-on.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tidb-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://charts.pingcap.org
+    chart: tidb-operator
+    targetRevision: 1.6.1
+    helm:
+      releaseName: tidb-operator
+      valuesObject:
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        scheduler:
+          create: true
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+        # Skip admission webhook — avoids cert-manager dependency in a lab.
+        admissionWebhook:
+          create: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tidb-admin
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -222,3 +222,13 @@ dr-bluegreen-promote: ## Complete blue/green: green->FULL + verify + cutover + R
 .PHONY: frontdoor
 frontdoor: ## Ensure the stable front door is up on :8000 -> active cluster (canonical lab entry; UIs use :8000)
 	bash scripts/frontdoor-ensure.sh
+
+##@ On-demand components (heavy; not auto-synced — bring up manually)
+
+.PHONY: tidb-operator-up
+tidb-operator-up: ## Deploy TiDB Operator via ArgoCD manual sync (~256 MB; do after make up)
+	argocd app sync tidb-operator --wait
+
+.PHONY: tidb-operator-down
+tidb-operator-down: ## Remove TiDB Operator (cascade-deletes resources; keeps namespace + CRDs)
+	argocd app delete tidb-operator --cascade=background --yes

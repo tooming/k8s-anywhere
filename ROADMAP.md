@@ -89,7 +89,7 @@ becoming*, edit [CHARTER.md](CHARTER.md); the planner turns that into concrete i
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
 > through to the next.
 
-- [ ] **TiDB operator** — add the TiDB Operator as an on-demand ArgoCD
+- [x] **TiDB operator** — add the TiDB Operator as an on-demand ArgoCD
   `Application` (manual-sync, not in the always-on set) + its namespace + docs.
 - [ ] **TiDB cluster** — a minimally-sized `TidbCluster` CR (PD + TiKV + TiDB,
   smallest viable replicas) + `make tidb-up` / `make tidb-down`.
@@ -129,4 +129,4 @@ becoming*, edit [CHARTER.md](CHARTER.md); the planner turns that into concrete i
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
-- _nothing yet_
+- [x] **TiDB operator** — `gitops/platform/tidb-operator.yaml` (manual-sync ArgoCD Application, chart `tidb-operator` v1.6.1 from charts.pingcap.org, namespace `tidb-admin`). Makefile targets `tidb-operator-up` / `tidb-operator-down`. Docs updated in README + dependency-tree. (auto/tidb-operator)

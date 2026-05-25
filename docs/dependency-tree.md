@@ -151,6 +151,7 @@ make up
 | 3 | ack-s3, kro, s3manager | controllers/abstractions + bucket UI |
 | 4 | ack-resources | ACK `Bucket` CRs (need the controller) |
 | 5 | kro-resources | KRO instances (need the RGD + ACK) |
+| — | tidb-operator *(on-demand)* | CRD controller for TiDB; discovered by ArgoCD but **manual-sync only** — use `make tidb-operator-up` |
 
 > Sync-waves are ArgoCD's **apply** order. The **runtime** secret dependency
 > (Vault must be *bootstrapped* before ESO can sync) is enforced by the day-0
@@ -178,4 +179,5 @@ make up
   SPOF in [ADR-0005](decisions/adr-0005-spof-recreate-over-ha.md).
 - **GitLab** is also off-cluster (docker), the git source ArgoCD reads from.
 - **Tempo** has no trace producer yet — the Alloy→Tempo OTLP path is wired but idle.
+- **TiDB Operator** (`gitops/platform/tidb-operator.yaml`) is on-demand / manual-sync — ArgoCD discovers the Application but does not auto-deploy the operator. Use `make tidb-operator-up` / `make tidb-operator-down`. Installs into namespace `tidb-admin`.
 - Storage backups, true HA: out of scope (single host). See `docs/DR.md`.
