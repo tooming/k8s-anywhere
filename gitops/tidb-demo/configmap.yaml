@@ -1,0 +1,43 @@
+# Static HTML served by the demo nginx container. The page explains the
+# Vault → ExternalSecret → Secret → Pod credential-injection flow (step 4 of the
+# lab learning path) without exposing the injected values.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tidb-demo-html
+  namespace: tidb
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>TiDB Demo — k8s-lab</title>
+      <style>
+        body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 1rem; }
+        code { background: #f4f4f4; padding: .1em .4em; border-radius: 3px; }
+        ol li { margin: .4rem 0; }
+      </style>
+    </head>
+    <body>
+      <h1>TiDB Demo App</h1>
+      <p><strong>Learning-path step 4</strong> — end-to-end Vault secret injection.</p>
+      <ol>
+        <li><strong>Vault</strong> holds <code>secret/tidb/demo</code> (username + password),
+            seeded by <code>make vault-bootstrap</code>.</li>
+        <li><strong>External Secrets Operator</strong> renders it as the Kubernetes
+            <code>Secret tidb-demo-creds</code> in namespace <code>tidb</code>.</li>
+        <li>This pod receives <code>TIDB_USER</code> and <code>TIDB_PASSWORD</code>
+            as environment variables from that Secret.</li>
+        <li><strong>Envoy Gateway</strong> routes traffic here via
+            <code>tidb-demo.127.0.0.1.nip.io:8000</code>.</li>
+      </ol>
+      <p>The credential values are <em>not</em> shown here.
+         Run <code>make tidb-up</code> first to have a live TiDB cluster to connect to.</p>
+      <hr>
+      <p><small>
+        Tear down: <code>make tidb-demo-down</code> &nbsp;·&nbsp;
+        Dashboard: <em>Lab — TiDB Demo App</em> in Grafana
+      </small></p>
+    </body>
+    </html>

@@ -265,3 +265,11 @@ tidb-up: ## Deploy TiDB cluster via ArgoCD manual sync (~1.5 GB; requires tidb-o
 .PHONY: tidb-down
 tidb-down: ## Remove TiDB cluster (cascade-deletes pods/PVCs; keeps namespace + CRDs)
 	argocd app delete tidb-cluster --cascade=background --yes
+
+.PHONY: tidb-demo-up
+tidb-demo-up: ## Deploy TiDB demo app via ArgoCD manual sync (run tidb-up first for a live database)
+	argocd app sync tidb-demo --wait
+
+.PHONY: tidb-demo-down
+tidb-demo-down: ## Remove TiDB demo app (cascade-deletes pods/secrets; keeps namespace)
+	argocd app delete tidb-demo --cascade=background --yes
