@@ -62,6 +62,12 @@ apply_conf() { # $1 = upstream host; cp config into the container + apply it
 case "${1:-}" in
   up)
     NET="${2:?network}"; UP="${3:?serverlb host}"
+    # A leftover container from an earlier drill may be stopped/exited (and still
+    # attached to a now-gone green network). docker exec into it fails and apply_conf
+    # then misreports "bad nginx config" — so drop a non-running one and recreate fresh.
+    if docker inspect "$NAME" >/dev/null 2>&1 && [ "$(docker inspect -f '{{.State.Running}}' "$NAME" 2>/dev/null)" != "true" ]; then
+      docker rm -f "$NAME" >/dev/null 2>&1 || true
+    fi
     if ! docker inspect "$NAME" >/dev/null 2>&1; then
       docker run -d --name "$NAME" --network "$NET" -p "$PORT:80" --restart unless-stopped "$IMG" >/dev/null
       # wait for nginx to be up before reconfiguring
