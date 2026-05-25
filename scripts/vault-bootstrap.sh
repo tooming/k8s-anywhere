@@ -59,8 +59,10 @@ v secrets list 2>/dev/null | grep -q '^secret/' || { echo "[vault] enabling kv-v
 #   secret/garage/server -> garage-secrets (Garage server)         [here]
 #   secret/aws/moto       -> ack-aws-creds (ACK->moto, dummy creds) [here]
 #   secret/garage/s3      -> garage-s3 (Mimir/Loki/Tempo)           [garage-bootstrap]
+#   secret/grafana/admin  -> grafana-admin (Grafana admin login)    [here]
 v kv get secret/garage/server >/dev/null 2>&1 || { echo "[vault] writing secret/garage/server"; v kv put secret/garage/server rpc-secret="$(openssl rand -hex 32)" admin-token="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/aws/moto >/dev/null 2>&1 || { echo "[vault] writing secret/aws/moto (dummy creds; moto ignores them)"; v kv put secret/aws/moto access-key-id=test secret-access-key=test >/dev/null; }
+v kv get secret/grafana/admin >/dev/null 2>&1 || { echo "[vault] writing secret/grafana/admin"; v kv put secret/grafana/admin admin-user=admin admin-password="$(openssl rand -hex 16)" >/dev/null; }
 if [ -s "$ROOT_DIR/gitlab/.gitlab-token" ]; then v kv put secret/gitlab/bootstrap token="$(cat "$ROOT_DIR/gitlab/.gitlab-token")" >/dev/null; fi
 
 # Kubernetes auth + read policy + ESO role

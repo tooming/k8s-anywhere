@@ -16,8 +16,13 @@ spec:
     helm:
       releaseName: grafana
       valuesObject:
-        adminUser: admin
-        adminPassword: admin
+        # admin login comes from Vault via the grafana-admin ExternalSecret
+        # (gitops/secrets/grafana-admin-externalsecret.yaml): no plaintext default,
+        # and a non-"admin" password means Grafana stops nagging to change it.
+        admin:
+          existingSecret: grafana-admin
+          userKey: admin-user
+          passwordKey: admin-password
         # persist grafana.db (users + sessions) so restarts don't force re-login
         persistence:
           enabled: true
