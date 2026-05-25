@@ -1,7 +1,9 @@
 # ROADMAP
 
-The backlog for **k8s-lab**, and the operating contract for the **autonomous dev
-routine** that works this repo whenever spare credit is available.
+The backlog for **k8s-lab**, derived from [CHARTER.md](CHARTER.md) (the north-star this
+is projected from) and worked by two decoupled routines: a weekly **planner** that
+proposes items here (plan-only PRs) and an every-5h **executor** that implements one item
+per run. CHARTER = the goals; this file = the next steps.
 
 The always-on stack is already built (Envoy, Vault, External Secrets, Garage,
 the full LGTMP observability stack, moto/ACK/KRO, the demo app — 25 ArgoCD apps).
@@ -10,9 +12,9 @@ cross-cutting hardening.
 
 ---
 
-## How the autonomous routine uses this file
+## How the executor uses this file
 
-A scheduled **remote** agent reads this file each run. It has **only this repo** —
+The **executor** routine (every 5h) reads this file each run. It has **only this repo** —
 no access to anyone's local notes — so every rule it must follow lives here or in
 `docs/decisions/` (the ADRs). The rules below are binding.
 
@@ -55,6 +57,29 @@ no access to anyone's local notes — so every rule it must follow lives here or
 8. **If the top item can't be done cleanly in one run, take the next feasible
    item** instead of committing something that fails `make ci`. If you genuinely
    can't make any gate-passing progress, stop **without** opening a PR.
+9. **Never invent new backlog items.** You only implement items already listed below.
+   If there's no actionable item, **stop** — the weekly planner refills the backlog
+   (see next section). An idle executor is fine; make-work is not.
+
+---
+
+## Where new items come from — the planner
+
+The executor never invents work — it only implements items already listed below. New
+items come from a separate **weekly planner** routine that:
+
+- reads [CHARTER.md](CHARTER.md) (the north-star) + the actual repo state + this file +
+  open PRs, and does **gap analysis**: a charter target not yet built, or a quality bar
+  not yet met, becomes a proposed item;
+- opens a **plan-only PR** on a `plan/<slug>` branch that edits **only this file** —
+  adding concrete, single-PR-sized items and re-prioritizing *Now / next*. It never
+  writes feature code and never edits CHARTER.md (if the *goals* look stale, it says so
+  in the PR body for a human to decide);
+- de-dupes against existing items and open PRs, and may open **no PR** if the backlog is
+  already healthy (no churn for its own sake).
+
+You review and merge plan PRs, same as implementation PRs. To change *what the lab is
+becoming*, edit [CHARTER.md](CHARTER.md); the planner turns that into concrete items here.
 
 ---
 
