@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-tidb-demo
+  namespace: observability
+  labels:
+    grafana_dashboard: "1"
+data:
+  tidb-demo.json: |
+    {
+      "uid": "lab-tidb-demo",
+      "title": "Lab — TiDB Demo App",
+      "tags": ["lab", "tidb"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": { "list": [] },
+      "annotations": { "list": [] },
+      "panels": [
+        {
+          "id": 1, "type": "text", "title": "About this demo",
+          "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+          "options": {
+            "mode": "markdown",
+            "content": "## TiDB Demo — learning-path step 4\n\nEnd-to-end Vault secret injection into a Kubernetes pod:\n1. **Vault** holds `secret/tidb/demo` (seeded by `make vault-bootstrap`)\n2. **ExternalSecret** `tidb-demo-creds` renders it as a Kubernetes Secret in namespace `tidb`\n3. The **demo Deployment** mounts `TIDB_USER` / `TIDB_PASSWORD` from that Secret\n4. **Envoy Gateway** routes traffic via `http://tidb-demo.127.0.0.1.nip.io:8000`\n\n`make tidb-demo-up` · `make tidb-demo-down` · `make tidb-up` for a live TiDB cluster"
+          }
+        },
+        {
+          "id": 2, "type": "stat", "title": "Demo Pod Running",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 5 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "mimir" },
+              "expr": "kube_pod_status_phase{namespace=\"tidb\", pod=~\"tidb-demo-.*\", phase=\"Running\"}",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+              "noValue": "not deployed"
+            },
+            "overrides": []
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" }
+        },
+        {
+          "id": 3, "type": "stat", "title": "Memory (MiB)",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 5 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "mimir" },
+              "expr": "container_memory_working_set_bytes{namespace=\"tidb\", container=\"demo\"} / 1024 / 1024",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 1,
+              "noValue": "not deployed"
+            },
+            "overrides": []
+          },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
+        },
+        {
+          "id": 4, "type": "timeseries", "title": "Memory usage",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "mimir" },
+              "expr": "container_memory_working_set_bytes{namespace=\"tidb\", container=\"demo\"}",
+              "legendFormat": "memory",
+              "range": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": { "drawStyle": "line", "fillOpacity": 10 }
+            },
+            "overrides": []
+          },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } }
+        },
+        {
+          "id": 5, "type": "timeseries", "title": "CPU usage",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+          "datasource": { "type": "prometheus", "uid": "mimir" },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "mimir" },
+              "expr": "rate(container_cpu_usage_seconds_total{namespace=\"tidb\", container=\"demo\"}[5m])",
+              "legendFormat": "cpu",
+              "range": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": { "drawStyle": "line", "fillOpacity": 10 }
+            },
+            "overrides": []
+          },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } }
+        }
+      ]
+    }

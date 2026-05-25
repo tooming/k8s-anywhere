@@ -1,0 +1,63 @@
+# Demo workload: nginx serving a static page, with TiDB credentials injected via
+# the tidb-demo-creds Secret (rendered by ESO from Vault secret/tidb/demo).
+# optional:true lets the pod start even when the ExternalSecret hasn't synced yet.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tidb-demo
+  namespace: tidb
+  labels:
+    app: tidb-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tidb-demo
+  template:
+    metadata:
+      labels:
+        app: tidb-demo
+    spec:
+      containers:
+        - name: demo
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          env:
+            - name: TIDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: tidb-demo-creds
+                  key: username
+                  optional: true
+            - name: TIDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tidb-demo-creds
+                  key: password
+                  optional: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: html
+          configMap:
+            name: tidb-demo-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tidb-demo
+  namespace: tidb
+spec:
+  selector:
+    app: tidb-demo
+  ports:
+    - port: 80
+      targetPort: 80
