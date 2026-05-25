@@ -134,7 +134,12 @@ cluster-down: ## Destroy the k3d cluster
 
 .PHONY: argocd
 argocd: ## Install ArgoCD (Helm via Terraform)
-	cd $(LIVE)/argocd && terragrunt apply -auto-approve
+	cd $(LIVE)/argocd && ( \
+		terragrunt state list 2>/dev/null | grep -qx 'helm_release.argocd' || { \
+			helm -n argocd status argocd >/dev/null 2>&1 && terragrunt import helm_release.argocd argocd/argocd >/dev/null || true; \
+		}; \
+		terragrunt apply -auto-approve \
+	)
 
 .PHONY: gitlab-up
 gitlab-up: ## Start GitLab omnibus and wait until healthy (first boot ~5 min)
