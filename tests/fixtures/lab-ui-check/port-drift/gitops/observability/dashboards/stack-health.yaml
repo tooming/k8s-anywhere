@@ -1,0 +1,4 @@
+# Lab UIs panel fixture (port drift): the host matches the routed UI, but the URL
+# hardcodes the per-cluster Envoy port :8080 instead of the stable front door :8000,
+# so lab-ui-check must flag the wrong port.
+# demo -> http://demo.127.0.0.1.nip.io:8080

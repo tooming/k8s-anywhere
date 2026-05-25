@@ -32,3 +32,9 @@ setup() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"MISSING from the Lab UIs panel"* ]]
 }
+
+@test "lab-ui-check: fails when a panel URL uses a non-front-door port" {
+  run env LABUICHECK_ROOT="$FIX/lab-ui-check/port-drift" bash "$REPO/scripts/lab-ui-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"front-door port :8000"* ]]
+}

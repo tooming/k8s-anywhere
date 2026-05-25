@@ -33,5 +33,13 @@ for h in $panel_hosts; do
   grep -qx "$h" <<<"$route_hosts" || bad "Lab UIs panel lists '$h' but no HTTPRoute declares it (stale row?)"
 done
 
-[ "$drift" -eq 0 ] && printf '  \033[32m✓\033[0m Lab UIs panel matches the host-based HTTPRoutes in gitops\n'
+# Port check: host-based UIs must use the stable front-door port :8000. The front door
+# routes to whichever cluster is active across a blue/green cutover; the per-cluster Envoy
+# ports (:8080 blue, :8082 green) are NOT stable and must never be hardcoded in the panel.
+# (lab-ui-audit skill / ADR-0005.)
+for u in $(grep -oE 'http://[a-z0-9-]+\.127\.0\.0\.1\.nip\.io(:[0-9]+)?' "$PANEL" 2>/dev/null | grep -vE ':8000$' | sort -u || true); do
+  bad "Lab UIs panel URL '$u' is not on the stable front-door port :8000 (never hardcode per-cluster ports like :8080/:8082)"
+done
+
+[ "$drift" -eq 0 ] && printf '  \033[32m✓\033[0m Lab UIs panel matches the host-based HTTPRoutes in gitops (and uses the :8000 front door)\n'
 exit "$drift"
