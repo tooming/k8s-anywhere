@@ -12,6 +12,9 @@ locals {
 # TFSTATE_ENDPOINT. `region` must match the Garage s3_region (infra/tfstate/garage.toml).
 # We write backend.tf directly (generate, not remote_state) so Terragrunt does not
 # try to manage the bucket via the real AWS APIs against Garage.
+# No state locking (no use_lockfile / DynamoDB): Garage doesn't support S3-native
+# locking — Terraform 404s releasing the .tflock — and this single-operator lab applies
+# sequentially, so a lock isn't needed. Do NOT re-add use_lockfile.
 generate "backend" {
   path      = "backend.tf"
   if_exists = "overwrite"
@@ -22,7 +25,6 @@ generate "backend" {
         key                         = "${path_relative_to_include()}/terraform.tfstate"
         region                      = "garage"
         use_path_style              = true
-        use_lockfile                = true
         skip_credentials_validation = true
         skip_region_validation      = true
         skip_metadata_api_check     = true
