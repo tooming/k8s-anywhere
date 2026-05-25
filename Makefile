@@ -268,7 +268,7 @@ tidb-down: ## Remove TiDB cluster (cascade-deletes pods/PVCs; keeps namespace + 
 
 .PHONY: tidb-demo-up
 tidb-demo-up: ## Deploy TiDB demo app via ArgoCD manual sync (run tidb-up first for a live database)
-	argocd app sync tidb-demo --wait
+	argocd app sync tidb-demo
 
 .PHONY: tidb-demo-down
 tidb-demo-down: ## Remove TiDB demo app (cascade-deletes pods/secrets; keeps namespace)
