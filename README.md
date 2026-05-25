@@ -27,7 +27,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
 | **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator) |
-| **Planned (heavy, on-demand)** | TiDB · Artifactory/Nexus · Istio ambient mesh + Kiali · Longhorn |
+| **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster · Artifactory/Nexus · Istio ambient mesh + Kiali · Longhorn |
 
 ## Prerequisites
 
