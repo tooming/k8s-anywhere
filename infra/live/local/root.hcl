@@ -27,12 +27,24 @@ generate "backend" {
         skip_region_validation      = true
         skip_metadata_api_check     = true
         skip_requesting_account_id  = true
-        endpoints {
+        endpoints = {
           s3 = "${get_env("TFSTATE_ENDPOINT", "http://localhost:3900")}"
         }
       }
     }
   EOF
+}
+
+# Terragrunt auto-runs `terraform init` before every plan/apply. Pass -reconfigure so a
+# backend change or a stale local-backend cache (e.g. left over from before this S3
+# backend existed) re-binds to the generated s3 backend instead of failing with
+# "Backend type changed from local to s3". Garage holds the authoritative state, so we
+# adopt the current backend rather than migrating the old one.
+terraform {
+  extra_arguments "reconfigure" {
+    commands  = ["init"]
+    arguments = ["-reconfigure"]
+  }
 }
 
 inputs = {
