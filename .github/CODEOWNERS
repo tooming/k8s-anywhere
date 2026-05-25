@@ -1,0 +1,29 @@
+# Code owners — GitHub routes every PR to the owners of the paths it touches, and
+# (with branch protection) requires their review before merge. This is what stops an
+# agent PR from merging without a human owner's approval. See docs/WAYS-OF-WORKING.md.
+#
+# As the team grows, replace the catch-all and fill in the per-domain owners below
+# (mirrors the ownership map in docs/WAYS-OF-WORKING.md §7).
+
+# Catch-all — until per-domain owners are assigned
+*                          @tooming
+
+# 🔴 High-trust paths (Red tier): goals, decisions, governance, CI, bootstrap
+/CHARTER.md                @tooming
+/docs/WAYS-OF-WORKING.md   @tooming
+/docs/decisions/           @tooming
+/.github/                  @tooming
+/infra/                    @tooming
+/gitops/bootstrap/         @tooming
+
+# Per-domain owners (assign as the team grows)
+# /gitops/network/         @network-owners
+# /gitops/vault/           @secrets-owners
+# /gitops/secrets/         @secrets-owners
+# /gitops/storage/         @storage-owners
+# /gitops/data/            @storage-owners
+# /gitops/observability/   @observability-owners
+# /gitops/ack/             @cloud-owners
+# /gitops/kro/             @cloud-owners
+# /gitops/moto/            @cloud-owners
+# /gitops/apps/            @app-owners

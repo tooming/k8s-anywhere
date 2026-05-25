@@ -1,9 +1,8 @@
 # Ways of Working — Agent Governance & Review
 
-> **Scope.** The first half of the team operating model: how autonomous agents operate in
-> this repo, and how *all* changes (human and agent) are reviewed and merged. The other
-> half — backlog tooling, planning/triage cadences, the domain-ownership map — is deferred;
-> see [Deferred](#deferred).
+> **Scope.** The team operating model for k8s-lab: how autonomous agents operate in this
+> repo, how *all* changes (human and agent) are reviewed and merged (§0–§6), and the team
+> process around them — backlog, planning, ownership (§7).
 >
 > **Status.** Target operating model for scaling k8s-lab to a team. Controls that still
 > need repo configuration are marked _⚙ to wire_. Today the repo runs two routines (see the
@@ -113,8 +112,52 @@ _Process:_
   the feedback loop: bad agent behavior → tighten the in-repo rules → agents comply on the
   next run.
 
-## Deferred
+## 7. Team process (backlog, planning, ownership)
 
-The team-process half is not yet written: backlog tooling (migrating `ROADMAP.md` to a
-concurrent tracker once several humans edit it), planning/triage cadences, definition of
-ready, per-domain charters, and the ownership / CODEOWNERS map. Tracked as a follow-up.
+### Backlog: file → tracker
+
+While only a few people edit it, `ROADMAP.md` in git is fine. Once several humans edit
+concurrently, move the backlog to a **GitHub Projects board** (Issues as cards; columns
+**Inbox → Ready → In progress → In review → Done**; a WIP cap per column). `CHARTER.md`
+and the ADRs stay as PR-reviewed files. The planner then writes/updates **Issues**, not a
+markdown list — which also ends the file-contention wrinkle between planner, executor, and
+humans.
+
+- **Definition of Ready** (an item is executor-pickable only when): scoped to one PR;
+  acceptance criteria stated; tier known (🟢/🟡/🔴) and any 🟡 RFC linked; owning domain /
+  CODEOWNER identified; clusterless-deliverable.
+- **Definition of Done**: the agent PR contract (§3), merged through the gate (§4).
+
+### Intake & triage
+
+- Work enters as a **GitHub issue** — already the planner's intake queue.
+- **Triage** (2–3×/week, rotating owner): label new issues (domain, tier, priority), close
+  duplicates / out-of-scope, route to a CODEOWNER. `wontfix` / `question` are skipped by
+  the planner.
+
+### Planning cadence
+
+- **Weekly grooming** (leads + planner): leads set *priority*; the planner proposes
+  decomposition and surfaces CHARTER gaps. Humans decide order; the planner records the
+  agreed items.
+- **Per-cycle retro**: review what agents shipped vs. what got reverted, and tune the
+  routine prompts / this doc. Governance is iterated via PR (§6) like any other code.
+
+### Ownership map
+
+Each domain has an owning person/team, encoded in [`.github/CODEOWNERS`](../.github/CODEOWNERS):
+
+| Domain | Paths | Owner |
+|---|---|---|
+| Bootstrap / IaC | `infra/`, `gitops/bootstrap/`, `gitops/platform/` | @tbd |
+| Network / ingress | `gitops/network/` | @tbd |
+| Secrets | `gitops/vault/`, `gitops/secrets/` | @tbd |
+| Storage / data | `gitops/storage/`, `gitops/data/` | @tbd |
+| Observability | `gitops/observability/` | @tbd |
+| Cloud control-plane | `gitops/ack/`, `gitops/kro/`, `gitops/moto/` | @tbd |
+| Apps / demo | `gitops/apps/` | @tbd |
+
+As the team grows, give each domain its **own executor routine** scoped to that path (own
+branch prefix), so agents work in parallel without colliding and PRs route to the right
+reviewers. **Per-domain charters**: `CHARTER.md` is the top-level north-star; a domain may
+add a sub-charter / OKRs that its planner reads for domain-specific gap analysis.

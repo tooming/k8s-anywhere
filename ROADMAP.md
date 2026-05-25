@@ -15,8 +15,9 @@ cross-cutting hardening.
 ## How the executor uses this file
 
 The **executor** routine (every 5h) reads this file each run. It has **only this repo** —
-no access to anyone's local notes — so every rule it must follow lives here or in
-`docs/decisions/` (the ADRs). The rules below are binding.
+no access to anyone's local notes — so every rule it must follow lives here, in
+`docs/decisions/` (the ADRs), or in [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md)
+(agent governance & review). The rules below are binding.
 
 1. **One item per run.** Take the single topmost unchecked `[ ]` item under
    *Backlog* (prefer the *Now / next* list). Keep the change to one reviewable PR.
@@ -60,6 +61,12 @@ no access to anyone's local notes — so every rule it must follow lives here or
 9. **Never invent new backlog items.** You only implement items already listed below.
    If there's no actionable item, **stop** — the weekly planner refills the backlog
    (see next section). An idle executor is fine; make-work is not.
+10. **Stay in your autonomy tier** (see [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md)).
+    You operate at **🟢 Green only** — docs, tests, non-auto-synced manifests, dashboards
+    from real metrics. If the next item actually needs **🟡 Yellow** work (a new
+    dependency, a CI/gate/Makefile change, anything security-adjacent) or **🔴 Red** work
+    (secrets, any cluster/repo-settings change), do NOT do it: open a GitHub issue stating
+    what a human must decide, and move to the next feasible Green item.
 
 ---
 
