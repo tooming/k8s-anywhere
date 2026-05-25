@@ -34,6 +34,10 @@ routine's model/cadence is a PR that edits this table.
 
 _(Replace `@maintainer` with the owning engineer or team as the team grows.)_
 
+> The canonical, version-controlled definitions of these routines (cron, model, prompt,
+> tools) live in [`routines/`](../routines/) and are applied via Claude Code — see
+> [routines/README.md](../routines/README.md). This table is the human-readable summary.
+
 ## 2. Autonomy tiers (what an agent may do unsupervised)
 
 Every agent action falls in a tier. An agent that hits work above its registered tier must

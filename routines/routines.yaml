@@ -1,0 +1,30 @@
+# Declarative source of truth for the scheduled remote agents ("routines") that
+# develop this repo. The claude.ai backend is the RUNNING state; this file is the
+# DESIRED state. Edit here + the referenced *.prompt.md, open a PR, and after merge
+# ask Claude Code to "apply the routines" — it syncs the backend to match. See README.md.
+
+environment_id: env_014NJKuQoEb7PAi3PXaFW2B9   # Anthropic cloud (Default)
+source: https://github.com/tooming/k8s-lab     # repo cloned into each run
+
+routines:
+  # The EXECUTOR — implements one ROADMAP item per run.
+  - name: k8s-lab autonomous dev
+    trigger_id: trig_01CRtpmaS1scBQL74xKqmfvS
+    cron: "0 */6 * * *"            # every 6h = 4/day (fits the 5/day free routine quota)
+    model: claude-sonnet-4-6
+    enabled: true
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    prompt_file: executor.prompt.md
+    branch_prefix: auto/           # PRs land on auto/<slug>
+    max_tier: green                # WAYS-OF-WORKING.md autonomy tier
+
+  # The PLANNER — grooms CHARTER gaps + GitHub issues into ROADMAP items.
+  - name: k8s-lab planner
+    trigger_id: trig_015uWP3Hv1LTREpKzzkMkpUE
+    cron: "0 6 * * 1"             # weekly, Mondays 06:00 UTC (~09:00 Europe/Tallinn)
+    model: claude-opus-4-7
+    enabled: true
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    prompt_file: planner.prompt.md
+    branch_prefix: plan/           # plan-only PRs land on plan/<slug>
+    max_tier: green
