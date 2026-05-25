@@ -123,6 +123,13 @@ becoming*, edit [CHARTER.md](CHARTER.md); the planner turns that into concrete i
 - [ ] Add Grafana dashboards/alerts for any always-on component lacking them —
   real metrics only (ADR-0004).
 - [ ] Keep `docs/dependency-tree.md` current as components are added.
+- [ ] **ADR for the off-cluster Garage Terraform-state backend.** The remote
+  `backend "s3"` over an off-cluster Garage (`infra/tfstate/`, `make tfstate-up`,
+  `scripts/tfstate-bootstrap.sh`) shipped in `a07a1d2` and is described in
+  `docs/dependency-tree.md` / `DR.md` / `platform-products.md`, but the *decision*
+  has no ADR. Record one (`adr-0006-…`): why off-cluster Garage state (no
+  cluster→state bootstrap loop; distinct from in-cluster Garage and from moto's
+  S3) and the `generate "backend.tf"` choice; link it from `docs/decisions/README.md`.
 - [ ] Add an ADR for any new non-trivial decision.
 
 ---
