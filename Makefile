@@ -156,7 +156,7 @@ gitlab-down: ## Stop GitLab omnibus (frees ~3 GB; keeps its volumes)
 gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the repo
 	bash scripts/gitlab-pat.sh >/dev/null
 	@PAT="$$(cat $(REPO_DIR)/gitlab/.gitlab-token)"; \
-		cd $(LIVE)/gitlab && GITLAB_TOKEN="$$PAT" ( \
+		cd $(LIVE)/gitlab && export GITLAB_TOKEN="$$PAT"; ( \
 			terragrunt state list 2>/dev/null | grep -qx 'gitlab_group.lab' || { \
 				gid="$$(curl -fsS --header "PRIVATE-TOKEN: $$PAT" "http://localhost:8929/api/v4/groups/lab" 2>/dev/null | jq -r '.id // empty')"; \
 				[ -n "$$gid" ] && terragrunt import gitlab_group.lab "$$gid" >/dev/null || true; \
