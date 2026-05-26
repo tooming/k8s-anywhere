@@ -116,17 +116,26 @@ You review and merge plan PRs, same as implementation PRs.
 ### Now / next
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
 > through to the next.
+>
+> **Planner note (2026-05-26):** the whole TiDB track (operator → cluster → demo)
+> is **done** and moved to *Done*; the always-on resource/bats/dashboard hardening
+> items are likewise complete. The 🟢 executor lane is now nearly empty — almost all
+> remaining high-value work (real Tempo trace producer, NetworkPolicies,
+> `securityContext` hardening, the heavy on-demand components, the capstone) is 🟡
+> and **blocked on a human RFC**. Until a human writes those RFCs, the executor will
+> only have the documentation items below. See the plan-PR body.
 
-- [x] **TiDB operator** — add the TiDB Operator as an on-demand ArgoCD
-  `Application` (manual-sync, not in the always-on set) + its namespace + docs.
-- [x] **TiDB cluster** — a minimally-sized `TidbCluster` CR (PD + TiKV + TiDB,
-  smallest viable replicas) + `make tidb-up` / `make tidb-down`.
-- [x] **TiDB demo app** — 🟢 Green. A demo workload that reads its TiDB
-  credentials from Vault via an `ExternalSecret`, with an Envoy route and a real
-  Grafana dashboard (learning-path step 4). **Must be non-auto-synced** — it
-  belongs to the on-demand TiDB profile, so bring it up via `make tidb-up` (or its
-  own `make` target) and keep it out of the always-on app-of-apps
-  (`gitops/bootstrap/root-app.yaml`), per the 12 GB budget rule.
+- [ ] 🟢 **ADR for the off-cluster Garage Terraform-state backend.** The remote
+  `backend "s3"` over an off-cluster Garage (`infra/tfstate/`, `make tfstate-up`,
+  `scripts/tfstate-bootstrap.sh`) shipped in `a07a1d2` and is described in
+  `docs/dependency-tree.md` / `DR.md` / `platform-products.md`, but the *decision*
+  has no ADR. Record one (`adr-0007-…` — note: `adr-0006` is now taken by the
+  merged Grafana Git Sync ADR): why off-cluster Garage state (no cluster→state
+  bootstrap loop; distinct from in-cluster Garage and from moto's S3) and the
+  `generate "backend.tf"` choice; link it from `docs/decisions/README.md`.
+  (🟢 — records an *already-shipped* decision, i.e. documentation; it does not
+  change an existing ADR, which would be 🔴.)
+- [ ] 🟢 Keep `docs/dependency-tree.md` current as components are added.
 
 ### Heavy on-demand components (README "Planned" row)
 > All 🟡 Yellow — each introduces a **new platform component + new third-party
@@ -155,9 +164,6 @@ You review and merge plan PRs, same as implementation PRs.
 > Use these when nothing above can be done cleanly in a single run. Mixed tiers —
 > the 🟡 items still need a human RFC before the executor builds them.
 
-- [x] 🟢 Audit every workload for resource requests/limits; add the missing ones.
-  (Today every `Deployment`/`StatefulSet` in `gitops/` carries limits; remaining
-  work is completeness — CPU limits and multi-container coverage.)
 - [ ] 🟡 Add default-deny `NetworkPolicy` per namespace + the minimal allows each
   component needs. *(Security-adjacent / network exposure — needs human RFC first;
   there are currently zero `NetworkPolicy` objects, so this is a from-scratch
@@ -165,9 +171,6 @@ You review and merge plan PRs, same as implementation PRs.
   namespace once a human signs off on the deny-by-default direction.)*
 - [ ] 🟡 Harden `securityContext` (runAsNonRoot, drop ALL caps, readOnlyRootFilesystem
   where viable) across manifests. *(Security-adjacent — needs human RFC first.)*
-- [x] 🟢 Expand `bats` coverage (script guards, drift detectors, uptime-math edges).
-- [x] 🟢 Add Grafana dashboards/alerts for any always-on component lacking them —
-  real metrics only (ADR-0004).
 - [ ] 🟡 **Real trace producer for Tempo.** Tempo is deployed always-on and the
   "Lab — Traces" dashboard exists, but **nothing emits OTLP** — no workload outside
   Tempo references `4317`/`4318`/`otel`, so the traces pillar carries no real data
@@ -178,16 +181,6 @@ You review and merge plan PRs, same as implementation PRs.
   needs a human RFC on what to instrument: the existing `hello` demo, a purpose-built
   tiny emitter, or fold it into the TiDB/capstone demo. Keep footprint inside the
   12 GB budget.)*
-- [ ] 🟢 Keep `docs/dependency-tree.md` current as components are added.
-- [ ] 🟢 **ADR for the off-cluster Garage Terraform-state backend.** The remote
-  `backend "s3"` over an off-cluster Garage (`infra/tfstate/`, `make tfstate-up`,
-  `scripts/tfstate-bootstrap.sh`) shipped in `a07a1d2` and is described in
-  `docs/dependency-tree.md` / `DR.md` / `platform-products.md`, but the *decision*
-  has no ADR. Record one (`adr-0006-…`): why off-cluster Garage state (no
-  cluster→state bootstrap loop; distinct from in-cluster Garage and from moto's
-  S3) and the `generate "backend.tf"` choice; link it from `docs/decisions/README.md`.
-  (🟢 — this records an *already-shipped* decision, i.e. documentation; it does not
-  change an existing ADR, which would be 🔴.)
 - [ ] 🟢 Add an ADR for any new non-trivial decision (documenting a decision already
   made/shipped; changing an *existing* ADR is 🔴 humans-only).
 
