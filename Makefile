@@ -250,26 +250,42 @@ frontdoor: ## Ensure the stable front door is up on :8000 -> active cluster (can
 
 ##@ On-demand components (heavy; not auto-synced — bring up manually)
 
+# Drive ArgoCD via kubectl, not the argocd CLI: the CLI needs a logged-in
+# server/token (and --core depends on the repo-server pod), neither of which a
+# fresh shell has. Patching the Application's `operation` field hands the work to
+# the in-cluster controller — the same engine that syncs every auto-synced app.
+# $(1) = Application name in the argocd namespace.
+define argocd-sync
+	kubectl -n argocd patch application $(1) --type merge -p '{"operation":{"initiatedBy":{"username":"make"},"sync":{}}}'
+	@echo "$(1): sync triggered (runs async in-cluster) — watch: kubectl -n argocd get app $(1) -w"
+endef
+
+# --cascade=background equivalent: add the resources finalizer, then delete the CR.
+define argocd-delete
+	-kubectl -n argocd patch application $(1) --type merge -p '{"metadata":{"finalizers":["resources-finalizer.argocd.argoproj.io"]}}'
+	kubectl -n argocd delete application $(1) --ignore-not-found
+endef
+
 .PHONY: tidb-operator-up
 tidb-operator-up: ## Deploy TiDB Operator via ArgoCD manual sync (~256 MB; do after make up)
-	argocd app sync tidb-operator --wait
+	$(call argocd-sync,tidb-operator)
 
 .PHONY: tidb-operator-down
 tidb-operator-down: ## Remove TiDB Operator (cascade-deletes resources; keeps namespace + CRDs)
-	argocd app delete tidb-operator --cascade=background --yes
+	$(call argocd-delete,tidb-operator)
 
 .PHONY: tidb-up
 tidb-up: ## Deploy TiDB cluster via ArgoCD manual sync (~1.5 GB; requires tidb-operator-up first)
-	argocd app sync tidb-cluster --wait
+	$(call argocd-sync,tidb-cluster)
 
 .PHONY: tidb-down
 tidb-down: ## Remove TiDB cluster (cascade-deletes pods/PVCs; keeps namespace + CRDs)
-	argocd app delete tidb-cluster --cascade=background --yes
+	$(call argocd-delete,tidb-cluster)
 
 .PHONY: tidb-demo-up
 tidb-demo-up: ## Deploy TiDB demo app via ArgoCD manual sync (run tidb-up first for a live database)
-	argocd app sync tidb-demo
+	$(call argocd-sync,tidb-demo)
 
 .PHONY: tidb-demo-down
 tidb-demo-down: ## Remove TiDB demo app (cascade-deletes pods/secrets; keeps namespace)
-	argocd app delete tidb-demo --cascade=background --yes
+	$(call argocd-delete,tidb-demo)
