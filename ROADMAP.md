@@ -166,7 +166,7 @@ You review and merge plan PRs, same as implementation PRs.
 - [ ] 🟡 Harden `securityContext` (runAsNonRoot, drop ALL caps, readOnlyRootFilesystem
   where viable) across manifests. *(Security-adjacent — needs human RFC first.)*
 - [x] 🟢 Expand `bats` coverage (script guards, drift detectors, uptime-math edges).
-- [ ] 🟢 Add Grafana dashboards/alerts for any always-on component lacking them —
+- [x] 🟢 Add Grafana dashboards/alerts for any always-on component lacking them —
   real metrics only (ADR-0004).
 - [ ] 🟡 **Real trace producer for Tempo.** Tempo is deployed always-on and the
   "Lab — Traces" dashboard exists, but **nothing emits OTLP** — no workload outside
@@ -195,6 +195,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **Vault & Secrets dashboard** — Added `gitops/observability/dashboards/vault.yaml`: a "Lab — Vault & Secrets" Grafana dashboard (ConfigMap, `grafana_dashboard: "1"`) with 11 panels covering pod-running status, memory, CPU, restart counts, and ArgoCD sync state for both Vault and External Secrets Operator. All panels use real KSM/cAdvisor/ArgoCD metrics already scraped by Alloy — no fabricated data (ADR-0004). Covers the "Add Grafana dashboards for always-on components lacking them" backlog item. (PR #TBD)
 - [x] **Expand bats coverage** — Added 11 new tests across two files: `tests/adr-guard.bats` (7 tests — verifies the PostToolUse ADR guard exits 0 on clean/excluded paths and exits 2 with the correct message when a rejected term such as "minio" appears in a guarded file) + 4 uptime-math edge cases in `tests/bluegreen-probe.bats` (all-failures → 0%, single-pass, single-fail, and the outage-uses-maxrun-not-fail-count invariant). Suite grows from 15 to 26 tests. (auto/expand-bats-coverage)
 - [x] **Resource CPU limits** — Added `cpu:` limits to every `Deployment`/`StatefulSet` in `gitops/` (9 direct-manifest workloads + 11 Helm-chart `Application` values entries, including both containers in the TiDB Operator chart and the Grafana sidecar). All workloads already had memory limits and cpu/memory requests; this completes the resource envelope. (auto/resource-cpu-limits)
 - [x] **TiDB operator** — `gitops/platform/tidb-operator.yaml` (manual-sync ArgoCD Application, chart `tidb-operator` v1.6.1 from charts.pingcap.org, namespace `tidb-admin`). Makefile targets `tidb-operator-up` / `tidb-operator-down`. Docs updated in README + dependency-tree. (auto/tidb-operator)
