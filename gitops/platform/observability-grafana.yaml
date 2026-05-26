@@ -124,10 +124,12 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 32Mi
+              memory: 64Mi
             limits:
               cpu: 100m
-              memory: 64Mi
+              # searchNamespace: ALL makes the sidecar watch every ConfigMap +
+              # Secret cluster-wide; 64Mi OOMKills it before it syncs dashboards.
+              memory: 128Mi
           dashboards:
             enabled: true
             label: grafana_dashboard
