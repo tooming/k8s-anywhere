@@ -51,3 +51,32 @@ stat() { grep "^$1=" "$PROBE_STATS" | cut -d= -f2; }
   [ "$(stat ok)" = "40" ]
   [ "$(stat fail)" = "2" ]
 }
+
+@test "summary: all failures reports 0% uptime" {
+  total=50; ok=0; fail=50; run=0; maxrun=10
+  summary >/dev/null
+  [ "$(stat uptime_pct)" = "0.00" ]
+}
+
+@test "summary: single passing sample reports 100% uptime and no outage" {
+  total=1; ok=1; fail=0; run=0; maxrun=0
+  summary >/dev/null
+  [ "$(stat uptime_pct)" = "100.00" ]
+  [ "$(stat approx_outage_s)" = "0.0" ]
+}
+
+@test "summary: single failing sample reports 0% uptime and one interval of outage" {
+  total=1; ok=0; fail=1; run=0; maxrun=1
+  summary >/dev/null
+  [ "$(stat uptime_pct)" = "0.00" ]
+  [ "$(stat approx_outage_s)" = "0.3" ]   # 1 * 0.3s interval
+}
+
+@test "summary: outage uses max consecutive run, not total fail count" {
+  # 3 total failures but the worst consecutive streak was only 2,
+  # so the estimated outage is 2×0.3s = 0.6s (not 3×0.3s = 0.9s).
+  total=10; ok=7; fail=3; run=0; maxrun=2
+  summary >/dev/null
+  [ "$(stat approx_outage_s)" = "0.6" ]
+  [ "$(stat max_consec_fail)" = "2" ]
+}
