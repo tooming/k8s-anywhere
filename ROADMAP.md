@@ -135,7 +135,7 @@ You review and merge plan PRs, same as implementation PRs.
   `generate "backend.tf"` choice; link it from `docs/decisions/README.md`.
   (🟢 — records an *already-shipped* decision, i.e. documentation; it does not
   change an existing ADR, which would be 🔴.)
-- [ ] 🟢 Keep `docs/dependency-tree.md` current as components are added.
+- [x] 🟢 Keep `docs/dependency-tree.md` current as components are added.
 
 ### Heavy on-demand components (README "Planned" row)
 > All 🟡 Yellow — each introduces a **new platform component + new third-party
@@ -188,6 +188,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **Dependency-tree sync** — Updated `docs/dependency-tree.md` to match current repo state: added TiDB on-demand components (Operator, Cluster, Demo App) to the Mermaid integration graph with dashed on-demand edges; added the two missing ESO secret-chain edges (`grafana-admin ← grafana/admin`, `tidb-demo-creds ← tidb/demo`); added the Envoy → `tidb-demo.127.0.0.1.nip.io` HTTPRoute edge; added two new rows to the integration edges table; expanded the Day-0 vault-bootstrap step to enumerate exactly which Vault paths it seeds. (PR #28)
 - [x] **Vault & Secrets dashboard** — Added `gitops/observability/dashboards/vault.yaml`: a "Lab — Vault & Secrets" Grafana dashboard (ConfigMap, `grafana_dashboard: "1"`) with 11 panels covering pod-running status, memory, CPU, restart counts, and ArgoCD sync state for both Vault and External Secrets Operator. All panels use real KSM/cAdvisor/ArgoCD metrics already scraped by Alloy — no fabricated data (ADR-0004). Covers the "Add Grafana dashboards for always-on components lacking them" backlog item. (PR #TBD)
 - [x] **Expand bats coverage** — Added 11 new tests across two files: `tests/adr-guard.bats` (7 tests — verifies the PostToolUse ADR guard exits 0 on clean/excluded paths and exits 2 with the correct message when a rejected term such as "minio" appears in a guarded file) + 4 uptime-math edge cases in `tests/bluegreen-probe.bats` (all-failures → 0%, single-pass, single-fail, and the outage-uses-maxrun-not-fail-count invariant). Suite grows from 15 to 26 tests. (auto/expand-bats-coverage)
 - [x] **Resource CPU limits** — Added `cpu:` limits to every `Deployment`/`StatefulSet` in `gitops/` (9 direct-manifest workloads + 11 Helm-chart `Application` values entries, including both containers in the TiDB Operator chart and the Grafana sidecar). All workloads already had memory limits and cpu/memory requests; this completes the resource envelope. (auto/resource-cpu-limits)
