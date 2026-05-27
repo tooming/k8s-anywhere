@@ -53,9 +53,9 @@ for the full command list.
 
 ### Apply Grafana dashboard changes (localhost lab)
 
-Lab dashboards (`grafana/dashboards/*.json`, including `Lab — Logs`, `Lab — Mimir`,
-`Lab — Profiles`, `Lab — Stack Health`, `Lab — TiDB Demo App`, `Lab — Traces`,
-`Lab — Vault & Secrets`) are managed by Grafana native Git Sync (Pure Git), not a
+Lab dashboards (`grafana/dashboards/*.json`, including `Lab — Grafana`, `Lab — Logs`,
+`Lab — Mimir`, `Lab — Profiles`, `Lab — Stack Health`, `Lab — TiDB Demo App`,
+`Lab — Traces`, `Lab — Vault & Secrets`) are managed by Grafana native Git Sync (Pure Git), not a
 k8s sidecar. After editing them, run:
 
 ```sh
