@@ -125,7 +125,7 @@ You review and merge plan PRs, same as implementation PRs.
 > and **blocked on a human RFC**. Until a human writes those RFCs, the executor will
 > only have the documentation items below. See the plan-PR body.
 
-- [ ] 🟢 **ADR for the off-cluster Garage Terraform-state backend.** The remote
+- [x] 🟢 **ADR for the off-cluster Garage Terraform-state backend.** The remote
   `backend "s3"` over an off-cluster Garage (`infra/tfstate/`, `make tfstate-up`,
   `scripts/tfstate-bootstrap.sh`) shipped in `a07a1d2` and is described in
   `docs/dependency-tree.md` / `DR.md` / `platform-products.md`, but the *decision*
@@ -194,3 +194,4 @@ You review and merge plan PRs, same as implementation PRs.
 - [x] **TiDB operator** — `gitops/platform/tidb-operator.yaml` (manual-sync ArgoCD Application, chart `tidb-operator` v1.6.1 from charts.pingcap.org, namespace `tidb-admin`). Makefile targets `tidb-operator-up` / `tidb-operator-down`. Docs updated in README + dependency-tree. (auto/tidb-operator)
 - [x] **TiDB cluster** — `gitops/platform/tidb-cluster.yaml` (manual-sync ArgoCD Application, git-path `gitops/tidb/`). `TidbCluster` CR v8.1.2 with 1×PD + 1×TiKV + 1×TiDB (ADR-0005 lab trade-off; production uses ≥3+3+2). `make tidb-up` / `make tidb-down`. Docs updated in README + dependency-tree. (PR to be referenced)
 - [x] **TiDB demo app** — `gitops/platform/tidb-demo.yaml` (manual-sync ArgoCD Application, git-path `gitops/tidb-demo/`). nginx demo workload in namespace `tidb` reading Vault credentials (`secret/tidb/demo`) via `ExternalSecret tidb-demo-creds`. Envoy HTTPRoute `tidb-demo.127.0.0.1.nip.io`. Grafana dashboard "Lab — TiDB Demo App" (real pod/container metrics). `make tidb-demo-up` / `make tidb-demo-down`. Vault-bootstrap seeding added. Docs updated in README + dependency-tree + stack-health panel.
+- [x] **ADR-0007 — Off-cluster Garage Terraform-state backend** — Added `docs/decisions/adr-0007-off-cluster-garage-tfstate-backend.md` documenting why a second off-cluster Garage instance is used as the Terraform state backend (avoids the cluster→state bootstrap loop), the `generate "backend"` choice over `remote_state` (Garage compatibility), the explicit disabling of state locking, and the relationship to ADRs 0001/0002/0003/0005. Linked from `docs/decisions/README.md`.
