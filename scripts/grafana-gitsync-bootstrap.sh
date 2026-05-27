@@ -34,6 +34,12 @@ VT=$(kubectl -n "$VNS" get secret vault-keys -o jsonpath='{.data.root-token}' | 
 PAT=$(kubectl -n "$VNS" exec vault-0 -- env VAULT_TOKEN="$VT" vault kv get -field=token secret/gitlab/bootstrap)
 [ -n "$PAT" ] || { echo "[grafana-gitsync] ERROR: no GitLab token at secret/gitlab/bootstrap (run scripts/gitlab-pat.sh + vault-bootstrap)"; exit 1; }
 
+# Land on the Stack Health dashboard (replaces the removed sidecar default_home_dashboard_path).
+# Best-effort + idempotent; the uid resolves once Git Sync imports it.
+curl -fsS -u "$USER:$PW" -H 'Content-Type: application/json' -X PATCH \
+  "$GRAFANA_URL/api/org/preferences" -d '{"homeDashboardUID":"lab-stack-health"}' >/dev/null 2>&1 \
+  && echo "[grafana-gitsync] home dashboard -> lab-stack-health" || echo "[grafana-gitsync] (home dashboard not set yet)"
+
 BASE="$GRAFANA_URL/apis/provisioning.grafana.app/v0alpha1/namespaces/$NS/repositories"
 
 # Already provisioned? (don't clobber UI/token state on re-run)

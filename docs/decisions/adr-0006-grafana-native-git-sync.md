@@ -22,10 +22,14 @@ to dashboards. No new dependency cycle: Grafana↔GitLab does not touch ArgoCD's
 credentials or Vault's unseal key (ADR-0001 corollary).
 
 **Specifics.**
-- Requires Grafana **v12+** with the `provisioning` + `kubernetesDashboards` feature
-  toggles (and unified storage). The feature is GA but the Pure-Git / self-hosted-GitLab
-  path is new (Feb 2026) and Grafana still flags it as not-for-prod — an accepted
+- Requires Grafana **v12.4+** (the generic `git` provider) with the `provisioning` +
+  `kubernetesDashboards` toggles, `[provisioning] repository_types` allow-listing `git`,
+  and a one-time `unified_storage … enableMigration` for the existing dashboards. The
+  Pure-Git / self-hosted path is new (Feb 2026), flagged not-for-prod — an accepted
   learning-lab risk, not a production claim (ADR-0004).
+- **HTTPS is mandatory** — Pure Git rejects `http://`. The http-only lab GitLab is fronted
+  by an **nginx TLS proxy** (`:8930`, mkcert cert); Grafana trusts the mkcert CA via a
+  combined bundle (init container + `SSL_CERT_FILE`). ArgoCD/CLI keep using http `:8929`.
 - **Pure Git** type (OSS). The *enhanced* GitLab integration (PR workflows, linking) is
   Enterprise/Cloud-only and is **not** used.
 - Auth = a **GitLab Personal Access Token** kept in **Vault** (the existing api-scoped
@@ -36,6 +40,9 @@ credentials or Vault's unseal key (ADR-0001 corollary).
   `gitops/observability/dashboards/` ConfigMaps, and the `observability-dashboards`
   ArgoCD Application. **Community dashboards (gnetId) are unaffected** — separate provider.
 
-**Status.** Accepted; **implementation pending** (Grafana version bump, provisioning
-config, dashboard migration into git, sidecar removal, live verification). Moves to
-*Adopted* only after Git Sync is verified working end-to-end (ADR-0004).
+**Status.** **Adopted.** Implemented + verified live: Grafana 12.4 syncs the lab
+dashboards (`grafana/dashboards/` in the repo) from GitLab over the TLS proxy; the
+k8s-sidecar, dashboard ConfigMaps, and the `observability-dashboards` app are removed.
+The Repository connection is bootstrapped imperatively (`scripts/grafana-gitsync-bootstrap.sh`),
+the TLS proxy + CA via `scripts/gitlab-tls-bootstrap.sh`. Community (gnetId) dashboards
+are unaffected. (Follow-up: wire both bootstraps into `make up`/DR.)

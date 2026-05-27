@@ -1,0 +1,42 @@
+{
+  "uid": "lab-profiles",
+  "title": "Lab — Profiles",
+  "tags": ["lab"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service", "label": "Service", "type": "textbox",
+        "current": { "text": "pyroscope", "value": "pyroscope" },
+        "description": "service_name scraped by Alloy: pyroscope | mimir | loki | tempo"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1, "type": "text", "title": "About",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "options": { "mode": "markdown", "content": "Continuous profiles pulled by **Alloy `pyroscope.scrape`** from Go `/debug/pprof` endpoints (no eBPF, no app changes). Set **Service** to `pyroscope`, `mimir`, `loki`, or `tempo`. Single-tenant (`anonymous`)." }
+    },
+    {
+      "id": 2, "type": "flamegraph", "title": "CPU  —  $service",
+      "gridPos": { "h": 13, "w": 24, "x": 0, "y": 3 },
+      "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" }, "queryType": "profile", "profileTypeId": "process_cpu:cpu:nanoseconds:cpu:nanoseconds", "labelSelector": "{service_name=\"$service\"}", "groupBy": [] }
+      ]
+    },
+    {
+      "id": 3, "type": "flamegraph", "title": "Memory (inuse_space)  —  $service",
+      "gridPos": { "h": 13, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" }, "queryType": "profile", "profileTypeId": "memory:inuse_space:bytes:space:bytes", "labelSelector": "{service_name=\"$service\"}", "groupBy": [] }
+      ]
+    }
+  ]
+}
+
