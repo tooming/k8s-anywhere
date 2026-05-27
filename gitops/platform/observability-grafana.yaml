@@ -16,10 +16,10 @@ spec:
     helm:
       releaseName: grafana
       valuesObject:
-        # Pin Grafana 12.4+ — the generic "git" (Pure Git) Git Sync provider requires
-        # it (ADR-0006); the chart's default appVersion (12.3.1) doesn't enable that type.
+        # Pin Grafana 13.0.1 — keeps the Pure-Git Git Sync provider from ADR-0006 and
+        # avoids the 13.0.0 unified-storage migration bug for Git Sync users.
         image:
-          tag: "12.4.0"
+          tag: "13.0.1"
         # admin login comes from Vault via the grafana-admin ExternalSecret
         # (gitops/secrets/grafana-admin-externalsecret.yaml): no plaintext default,
         # and a non-"admin" password means Grafana stops nagging to change it.
@@ -58,7 +58,7 @@ spec:
             mountPath: /etc/ssl-custom
         extraInitContainers:
           - name: ca-bundle
-            image: docker.io/grafana/grafana:12.4.0
+            image: docker.io/grafana/grafana:13.0.1
             command:
               - /bin/sh
               - -c
@@ -80,9 +80,9 @@ spec:
             kubernetesDashboards: true
           provisioning:
             # the generic "git" (Pure Git) provider isn't in the default allow-list
-            # (github|local), so enable it explicitly (needs the 12.4+ image above).
+            # (github|local), so enable it explicitly (needs the 13.0.1 image above).
             repository_types: "git|github|bitbucket|gitlab|local"
-          # 12.4 + kubernetesDashboards keeps dashboards/folders in unified storage;
+          # 13.0.1 + kubernetesDashboards keeps dashboards/folders in unified storage;
           # existing legacy-format dashboards must be migrated on first boot, or Grafana
           # refuses to start while provisioning is on. Enable the one-time migration.
           unified_storage.folders.folder.grafana.app:
