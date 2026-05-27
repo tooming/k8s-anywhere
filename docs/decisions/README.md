@@ -13,3 +13,4 @@ rationale travels with the code.
   - [ADR-0003](adr-0003-decoupled-no-spof.md) — Production-shaped, decoupled designs; no single-pod SPOFs
   - [ADR-0004](adr-0004-no-fabricated-content.md) — Dashboards/outputs show real, auto-discovered state
   - [ADR-0005](adr-0005-spof-recreate-over-ha.md) — On one host, choose recoverability over (impossible) HA
+  - [ADR-0006](adr-0006-grafana-native-git-sync.md) — Dashboards via Grafana native Git Sync (not the sidecar)
