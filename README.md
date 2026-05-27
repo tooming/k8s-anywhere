@@ -70,22 +70,20 @@ applies updates automatically.
 
 ## Endpoints
 
-After `make up`, UIs are served through Envoy on **`:8080`** (hostnames resolve to
-127.0.0.1 via `nip.io` — no `/etc/hosts` edits):
+After `make up`, UIs are served via the stable front door on **`:8000`**
+(hostnames resolve to 127.0.0.1 via `nip.io` — no `/etc/hosts` edits):
 
 | UI | URL |
 |----|-----|
-| ArgoCD | http://argocd.127.0.0.1.nip.io:8080 |
-| Grafana | http://localhost:8080 |
-| Vault | http://vault.127.0.0.1.nip.io:8080 |
-| S3 browser | http://s3.127.0.0.1.nip.io:8080 |
-| moto (AWS mock) | http://moto.127.0.0.1.nip.io:8080/moto-api/ |
+| ArgoCD | http://argocd.127.0.0.1.nip.io:8000 |
+| Grafana | http://localhost:8000 |
+| Vault | http://vault.127.0.0.1.nip.io:8000 |
+| S3 browser | http://s3.127.0.0.1.nip.io:8000 |
+| moto (AWS mock) | http://moto.127.0.0.1.nip.io:8000/moto-api/ |
 | GitLab | http://localhost:8929 |
 
-`make argocd-password` prints the ArgoCD admin password. The blue/green drills add a
-stable **front door on `:8000`** (`make frontdoor`) that serves the same UIs
-regardless of which cluster is live; after a blue→green promotion the canonical port
-becomes `:8000`.
+`make argocd-password` prints the ArgoCD admin password. `:8080` is a per-cluster
+Envoy LB port used underneath the front door and is not the canonical UI entrypoint.
 
 ## Disaster recovery & blue/green
 
