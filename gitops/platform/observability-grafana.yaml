@@ -82,6 +82,13 @@ spec:
             # the generic "git" (Pure Git) provider isn't in the default allow-list
             # (github|local), so enable it explicitly (needs the 12.4+ image above).
             repository_types: "git|github|bitbucket|gitlab|local"
+          # 12.4 + kubernetesDashboards keeps dashboards/folders in unified storage;
+          # existing legacy-format dashboards must be migrated on first boot, or Grafana
+          # refuses to start while provisioning is on. Enable the one-time migration.
+          unified_storage.folders.folder.grafana.app:
+            enableMigration: true
+          unified_storage.dashboards.dashboard.grafana.app:
+            enableMigration: true
           dashboards:
             # land on the Lab — Stack Health dashboard (file written by the sidecar)
             default_home_dashboard_path: /tmp/dashboards/stack-health.json
