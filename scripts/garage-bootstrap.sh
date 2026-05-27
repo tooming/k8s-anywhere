@@ -37,14 +37,14 @@ fi
 
 # access key: ensure it exists, then ALWAYS ensure its creds are in Vault. (A
 # mid-run failure can leave the key created but not yet pushed; `key info
-# --show-secret` lets us recover it idempotently.) ESO syncs secret/garage/s3 ->
-# the garage-s3 Secret that Mimir/Loki/Tempo use.
-if g key info mimir-key >/dev/null 2>&1; then
-  KEYOUT=$(g key info mimir-key --show-secret 2>/dev/null || true)
-else
+# --show-secret` lets us recover it idempotently.) Garage v2.3 redacts the
+# secret from `key create`, so always re-read it via `key info --show-secret`.
+# ESO syncs secret/garage/s3 -> the garage-s3 Secret that Mimir/Loki/Tempo use.
+if ! g key info mimir-key >/dev/null 2>&1; then
   echo "[garage] creating access key mimir-key"
-  KEYOUT=$(g key create mimir-key 2>/dev/null || true)
+  g key create mimir-key >/dev/null 2>&1
 fi
+KEYOUT=$(g key info --show-secret mimir-key 2>/dev/null || true)
 KID=$(printf '%s' "$KEYOUT" | grep -oE 'GK[0-9a-f]{20,}' | head -1 || true)
 KSEC=$(printf '%s' "$KEYOUT" | grep -oiE '[0-9a-f]{64}' | head -1 || true)
 if [ -n "$KID" ] && [ -n "$KSEC" ]; then
