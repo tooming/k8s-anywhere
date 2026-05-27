@@ -24,6 +24,7 @@ kubeconfig
 # GitLab omnibus runtime data (bind-mounted)
 gitlab/data/
 gitlab/logs/
+gitlab/tls/
 gitlab/config/
 gitlab/.gitlab-token
 

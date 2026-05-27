@@ -30,6 +30,25 @@ services:
       - gitlab_logs:/var/log/gitlab
       - gitlab_data:/var/opt/gitlab
 
+  # TLS front door for Grafana's native Git Sync, which only accepts HTTPS git
+  # URLs (ADR-0006). Terminates TLS on :8930 (mkcert cert from gitlab-tls-bootstrap.sh)
+  # and proxies git to GitLab's http :8929. Additive — GitLab/ArgoCD/CLI still use http.
+  gitlab-tls:
+    image: nginx:1.27-alpine
+    container_name: gitlab-tls
+    restart: unless-stopped
+    # Opt-in profile: only starts with `docker compose --profile tls up` (which
+    # gitlab-tls-bootstrap.sh runs, after the cert exists), so a plain GitLab
+    # `docker compose up` never crash-loops on a missing cert.
+    profiles: ["tls"]
+    depends_on:
+      - gitlab
+    ports:
+      - "8930:8930"
+    volumes:
+      - ./nginx-tls.conf:/etc/nginx/nginx.conf:ro
+      - ./tls:/etc/nginx/tls:ro
+
 volumes:
   gitlab_config:
   gitlab_logs:

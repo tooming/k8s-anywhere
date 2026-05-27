@@ -16,6 +16,10 @@ spec:
     helm:
       releaseName: grafana
       valuesObject:
+        # Pin Grafana 12.4+ — the generic "git" (Pure Git) Git Sync provider requires
+        # it (ADR-0006); the chart's default appVersion (12.3.1) doesn't enable that type.
+        image:
+          tag: "12.4.0"
         # admin login comes from Vault via the grafana-admin ExternalSecret
         # (gitops/secrets/grafana-admin-externalsecret.yaml): no plaintext default,
         # and a non-"admin" password means Grafana stops nagging to change it.
@@ -36,15 +40,48 @@ spec:
           limits:
             cpu: 500m
             memory: 256Mi
+        # Grafana's Git Sync client (Go) must trust the mkcert CA on GitLab's HTTPS
+        # proxy (ADR-0006). This init container appends that CA — published as the
+        # gitlab-tls-ca ConfigMap by scripts/gitlab-tls-bootstrap.sh — to the image's
+        # system bundle; SSL_CERT_FILE then points Grafana at the combined bundle, so
+        # public CAs still work (grafana.com dashboard downloads) AND our CA is trusted.
+        env:
+          SSL_CERT_FILE: /etc/ssl-custom/ca-bundle.crt
+        extraConfigmapMounts:
+          - name: gitlab-tls-ca
+            configMap: gitlab-tls-ca
+            mountPath: /etc/gitlab-ca
+            readOnly: true
+            optional: true   # graceful on a fresh cluster before gitlab-tls-bootstrap runs
+        extraEmptyDirMounts:
+          - name: custom-ca
+            mountPath: /etc/ssl-custom
+        extraInitContainers:
+          - name: ca-bundle
+            image: docker.io/grafana/grafana:12.4.0
+            command:
+              - /bin/sh
+              - -c
+              # always seed the system CAs; append our CA if the (optional) CM is present.
+              - "cp /etc/ssl/certs/ca-certificates.crt /etc/ssl-custom/ca-bundle.crt; cat /etc/gitlab-ca/ca.crt >> /etc/ssl-custom/ca-bundle.crt 2>/dev/null || true"
+            volumeMounts:
+              - name: gitlab-tls-ca
+                mountPath: /etc/gitlab-ca
+              - name: custom-ca
+                mountPath: /etc/ssl-custom
         grafana.ini:
           server:
             root_url: "http://localhost:8080/"
-          # Git Sync (native dashboards-as-code → GitLab, ADR-0006). OSS needs just
-          # these two toggles on Grafana 12+; the Repository connection is created
-          # out-of-band against Grafana's provisioning apiserver (bootstrap seam).
+          # Git Sync (native dashboards-as-code → GitLab, ADR-0006). The Repository
+          # connection is created out-of-band against Grafana's provisioning apiserver
+          # (scripts/grafana-gitsync-bootstrap.sh) — a bootstrap seam, not ArgoCD.
           feature_toggles:
             provisioning: true
             kubernetesDashboards: true
+          provisioning:
+            # the generic "git" (Pure Git) provider isn't in the default allow-list
+            # (github|local), so enable it explicitly (needs the 12.4+ image above).
+            repository_types: "git|github|bitbucket|gitlab|local"
           dashboards:
             # land on the Lab — Stack Health dashboard (file written by the sidecar)
             default_home_dashboard_path: /tmp/dashboards/stack-health.json
