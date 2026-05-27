@@ -1,3 +1,0 @@
-# Lab UIs panel fixture (drifted): a routed UI exists in gitops/ but this panel
-# advertises no host, so lab-ui-check must report the missing UI.
-# (intentionally lists nothing)

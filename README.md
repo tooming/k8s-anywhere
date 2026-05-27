@@ -51,6 +51,21 @@ app-of-apps → Vault/Garage bootstrap — then ArgoCD reconciles everything els
 ordered chain is documented in [docs/DR.md](docs/DR.md). Run `make` with no target
 for the full command list.
 
+### Apply Grafana dashboard changes (localhost lab)
+
+Lab dashboards (`grafana/dashboards/*.json`, including `Lab — Logs`, `Lab — Mimir`,
+`Lab — Profiles`, `Lab — Stack Health`, `Lab — TiDB Demo App`, `Lab — Traces`,
+`Lab — Vault & Secrets`) are managed by Grafana native Git Sync (Pure Git), not a
+k8s sidecar. After editing them, run:
+
+```sh
+git push gitlab main            # push dashboard JSON changes to the lab's GitOps source
+make gitlab-tls-bootstrap       # ensure the GitLab HTTPS proxy + CA config are in place
+make grafana-gitsync-bootstrap  # ensure Grafana's "Lab dashboards (GitLab, Pure Git)" repo exists
+```
+
+Grafana polls the Git Sync repo every 60s and applies updates automatically.
+
 ## Endpoints
 
 After `make up`, UIs are served through Envoy on **`:8080`** (hostnames resolve to
