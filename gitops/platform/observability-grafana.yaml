@@ -1,5 +1,5 @@
 # Grafana — visualizes the real metrics in Mimir. Routed through Envoy at
-# localhost:8080. Dashboards are loaded from labelled ConfigMaps by the sidecar.
+# localhost:8080. Lab dashboards sync from GitLab via Grafana native Git Sync (ADR-0006).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -89,9 +89,6 @@ spec:
             enableMigration: true
           unified_storage.dashboards.dashboard.grafana.app:
             enableMigration: true
-          dashboards:
-            # land on the Lab — Stack Health dashboard (file written by the sidecar)
-            default_home_dashboard_path: /tmp/dashboards/stack-health.json
         datasources:
           datasources.yaml:
             apiVersion: 1
@@ -170,26 +167,9 @@ spec:
               gnetId: 17781
               revision: 1
               datasource: Mimir
-        sidecar:
-          resources:
-            requests:
-              cpu: 10m
-              memory: 64Mi
-            limits:
-              cpu: 100m
-              memory: 128Mi
-          dashboards:
-            enabled: true
-            label: grafana_dashboard
-            labelValue: "1"
-            # Lab dashboards all live in the observability namespace as ConfigMaps.
-            # Watch only that, configmaps only — NOT every ConfigMap + Secret in
-            # every namespace. The unscoped watch (searchNamespace: ALL +
-            # resource: both) is what OOMKilled the sidecar at 64Mi. Scoping is the
-            # real fix; the 128Mi limit above is headroom for k8s-sidecar's ~50Mi
-            # Python baseline.
-            searchNamespace: observability
-            resource: configmap
+        # No k8s-sidecar: lab dashboards now sync from GitLab via native Git Sync
+        # (ADR-0006). The community dashboards above (gnetId) use a separate file
+        # provider and are unaffected.
         extraObjects:
           - apiVersion: gateway.networking.k8s.io/v1
             kind: HTTPRoute
