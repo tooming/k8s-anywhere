@@ -181,6 +181,7 @@ spec:
                   {"__address__" = "loki.observability.svc.cluster.local:3100", "job" = "loki"},
                   {"__address__" = "tempo.observability.svc.cluster.local:3200", "job" = "tempo"},
                   {"__address__" = "pyroscope.observability.svc.cluster.local:4040", "job" = "pyroscope"},
+                  {"__address__" = "grafana.observability.svc.cluster.local:80", "job" = "grafana"},
                 ]
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
