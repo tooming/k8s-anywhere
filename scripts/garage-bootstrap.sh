@@ -45,8 +45,25 @@ if ! g key info mimir-key >/dev/null 2>&1; then
   g key create mimir-key >/dev/null 2>&1
 fi
 KEYOUT=$(g key info --show-secret mimir-key 2>/dev/null || true)
-KID=$(printf '%s' "$KEYOUT" | grep -oE 'GK[0-9a-f]{20,}' | head -1 || true)
-KSEC=$(printf '%s' "$KEYOUT" | grep -oiE '[0-9a-f]{64}' | head -1 || true)
+# Garage output has varied across versions; prefer labelled fields first, then
+# fall back to legacy Garage-formatted key patterns.
+KID=$(printf '%s\n' "$KEYOUT" | awk -F': *' '
+  BEGIN { IGNORECASE = 1 }
+  $1 ~ /^(access[ _-]?key([ _-]?id)?|key[ _-]?id)$/ {
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+    print $2
+    exit
+  }' | tr -d '"' || true)
+KSEC=$(printf '%s\n' "$KEYOUT" | awk -F': *' '
+  BEGIN { IGNORECASE = 1 }
+  $1 ~ /^(secret[ _-]?access[ _-]?key|secret[ _-]?key)$/ {
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+    print $2
+    exit
+  }' | tr -d '"' || true)
+[ -n "$KID" ] || KID=$(printf '%s' "$KEYOUT" | grep -oiE 'GK[0-9a-f]{20,}' | head -1 || true)
+[ -n "$KSEC" ] || KSEC=$(printf '%s' "$KEYOUT" | grep -oiE '[0-9a-f]{64}' | head -1 || true)
+[[ "${KSEC,,}" == redacted* || "$KSEC" == "*" ]] && KSEC=""
 if [ -n "$KID" ] && [ -n "$KSEC" ]; then
   TOKEN=$(kubectl -n "$VNS" get secret vault-keys -o jsonpath='{.data.root-token}' | base64 -d)
   kubectl -n "$VNS" exec vault-0 -- env VAULT_TOKEN="$TOKEN" vault kv put secret/garage/s3 access-key-id="$KID" secret-access-key="$KSEC" >/dev/null
