@@ -189,6 +189,10 @@ vault-unseal: ## Manually unseal Vault from the vault-keys Secret
 garage-bootstrap: ## Assign Garage layout + create key/buckets + push S3 key to Vault (idempotent)
 	bash scripts/garage-bootstrap.sh
 
+.PHONY: gitlab-tls-bootstrap
+gitlab-tls-bootstrap: ## Mint mkcert TLS for the GitLab HTTPS proxy + publish CA to cluster + start proxy (idempotent, ADR-0006)
+	bash scripts/gitlab-tls-bootstrap.sh
+
 .PHONY: grafana-gitsync-bootstrap
 grafana-gitsync-bootstrap: ## Create the Grafana Git Sync Repository (Pure Git -> GitLab) so dashboards sync as code (idempotent, ADR-0006)
 	bash scripts/grafana-gitsync-bootstrap.sh

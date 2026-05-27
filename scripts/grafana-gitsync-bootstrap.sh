@@ -18,7 +18,7 @@ kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
 GRAFANA_URL="${GRAFANA_URL:-http://localhost:8080}"
 NS="${GRAFANA_API_NS:-default}"           # Grafana apiserver namespace (single-org OSS)
 REPO_NAME="${REPO_NAME:-lab-dashboards}"
-GIT_URL="${GIT_URL:-http://host.k3d.internal:8929/lab/k8s-lab.git}"
+GIT_URL="${GIT_URL:-https://host.k3d.internal:8930/lab/k8s-lab.git}"   # TLS proxy (Pure Git needs https)
 GIT_BRANCH="${GIT_BRANCH:-main}"
 GIT_PATH="${GIT_PATH:-grafana/dashboards}"
 GIT_USER="${GIT_USER:-root}"              # GitLab user owning the PAT
