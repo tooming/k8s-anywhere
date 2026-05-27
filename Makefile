@@ -186,8 +186,8 @@ gitlab-push: ## Push main to the local GitLab repo
 		}
 
 .PHONY: gitlab-force-push
-gitlab-force-push: ## Force-push main to the local GitLab repo (--force-with-lease)
-	@$(MAKE) gitlab-push GITLAB_PUSH_FLAGS=--force-with-lease
+gitlab-force-push: ## Force-push main to the local GitLab repo (--force)
+	@$(MAKE) gitlab-push GITLAB_PUSH_FLAGS=--force
 
 .PHONY: root-app
 root-app: ## Plant the ArgoCD app-of-apps (everything else syncs from here)
