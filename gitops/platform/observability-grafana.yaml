@@ -39,6 +39,12 @@ spec:
         grafana.ini:
           server:
             root_url: "http://localhost:8080/"
+          # Git Sync (native dashboards-as-code → GitLab, ADR-0006). OSS needs just
+          # these two toggles on Grafana 12+; the Repository connection is created
+          # out-of-band against Grafana's provisioning apiserver (bootstrap seam).
+          feature_toggles:
+            provisioning: true
+            kubernetesDashboards: true
           dashboards:
             # land on the Lab — Stack Health dashboard (file written by the sidecar)
             default_home_dashboard_path: /tmp/dashboards/stack-health.json

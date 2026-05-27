@@ -28,8 +28,10 @@ credentials or Vault's unseal key (ADR-0001 corollary).
   learning-lab risk, not a production claim (ADR-0004).
 - **Pure Git** type (OSS). The *enhanced* GitLab integration (PR workflows, linking) is
   Enterprise/Cloud-only and is **not** used.
-- Auth = a **GitLab Personal Access Token** in **Vault**, delivered via **ESO** — never
-  committed (the lab's standard secret pattern).
+- Auth = a **GitLab Personal Access Token** kept in **Vault** (the existing api-scoped
+  bootstrap token) and read by the Git Sync bootstrap seam, which hands it to Grafana via
+  the Repository's `secure.token` (stored encrypted *inside* Grafana). No workload reads
+  it at runtime, so no ExternalSecret is needed — the token never lands in git either way.
 - Removes on cutover: the k8s-sidecar dashboard config, the
   `gitops/observability/dashboards/` ConfigMaps, and the `observability-dashboards`
   ArgoCD Application. **Community dashboards (gnetId) are unaffected** — separate provider.
