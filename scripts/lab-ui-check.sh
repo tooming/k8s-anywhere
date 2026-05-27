@@ -20,7 +20,8 @@ bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
 # host-based UIs declared by HTTPRoutes in gitops (safe if no files match)
 route_files="$(grep -rl 'kind: HTTPRoute' "$ROOT"/gitops 2>/dev/null || true)"
 route_hosts=""
-[ -n "$route_files" ] && route_hosts="$(printf '%s\n' "$route_files" | xargs grep -hoE '[a-z0-9-]+\.127\.0\.0\.1\.nip\.io' 2>/dev/null | sort -u)"
+[ -n "$route_files" ] && route_hosts="$(printf '%s\n' "$route_files" | xargs grep -hoE '[a-z0-9-]+\.127\.0\.0\.1\.nip\.io' 2>/dev/null || true)"
+[ -n "$route_hosts" ] && route_hosts="$(printf '%s\n' "$route_hosts" | sort -u)"
 
 # host-based UIs the panel advertises
 panel_hosts="$(grep -oE '[a-z0-9-]+\.127\.0\.0\.1\.nip\.io' "$PANEL" 2>/dev/null | sort -u)"
