@@ -168,6 +168,10 @@ gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the re
 				pid="$$(curl -fsS --header "PRIVATE-TOKEN: $$PAT" "http://localhost:8929/api/v4/projects/lab%2Fk8s-lab" 2>/dev/null | jq -r '.id // empty')"; \
 				[ -n "$$pid" ] && terragrunt import gitlab_project.gitops "$$pid" >/dev/null || true; \
 			}; \
+			terragrunt state list 2>/dev/null | grep -qx 'gitlab_branch_protection.main' || { \
+				pid="$$(curl -fsS --header "PRIVATE-TOKEN: $$PAT" "http://localhost:8929/api/v4/projects/lab%2Fk8s-lab" 2>/dev/null | jq -r '.id // empty')"; \
+				[ -n "$$pid" ] && terragrunt import gitlab_branch_protection.main "$${pid}:main" >/dev/null || true; \
+			}; \
 			terragrunt apply -auto-approve \
 		)
 	@$(MAKE) gitlab-push

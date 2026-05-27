@@ -25,6 +25,16 @@ resource "gitlab_project" "gitops" {
   initialize_with_readme = false
 }
 
+# Allow force-push on main so `make gitlab-force-push` is not blocked by GitLab's
+# default branch-protection rules.
+resource "gitlab_branch_protection" "main" {
+  project            = gitlab_project.gitops.id
+  branch             = "main"
+  push_access_level  = "maintainer"
+  merge_access_level = "maintainer"
+  allow_force_push   = true
+}
+
 # Read-only token ArgoCD uses to clone the private repo.
 resource "gitlab_project_deploy_token" "argocd" {
   project  = gitlab_project.gitops.id
