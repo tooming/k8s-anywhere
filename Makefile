@@ -11,6 +11,8 @@ COLIMA_DISK ?= 60
 
 LIVE     := infra/live/local
 REPO_DIR := $(shell pwd)
+GITLAB_REMOTE_URL := http://root@localhost:8929/lab/k8s-lab.git
+GITLAB_PUSH_FLAGS ?=
 
 # Terraform state lives in the off-cluster Garage (infra/tfstate). These fixed
 # lab-local creds are imported into that Garage by tfstate-bootstrap.sh; the S3
@@ -168,10 +170,24 @@ gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the re
 			}; \
 			terragrunt apply -auto-approve \
 		)
+	@$(MAKE) gitlab-push
+
+.PHONY: gitlab-push
+gitlab-push: ## Push main to the local GitLab repo
 	@git remote remove gitlab 2>/dev/null || true; \
-		git remote add gitlab "http://root@localhost:8929/lab/k8s-lab.git"; \
+		git remote add gitlab "$(GITLAB_REMOTE_URL)"; \
 		git config credential."http://localhost:8929".helper "$(REPO_DIR)/scripts/gitlab-credential-helper.sh"; \
-		git push -u gitlab main
+		git push $(GITLAB_PUSH_FLAGS) -u gitlab main || { \
+			rc="$$?"; \
+			if [ -z "$(GITLAB_PUSH_FLAGS)" ]; then \
+				echo "gitlab push failed. If the local GitLab branch should be overwritten, rerun 'make gitlab-force-push'." >&2; \
+			fi; \
+			exit "$$rc"; \
+		}
+
+.PHONY: gitlab-force-push
+gitlab-force-push: ## Force-push main to the local GitLab repo (--force-with-lease)
+	@$(MAKE) gitlab-push GITLAB_PUSH_FLAGS=--force-with-lease
 
 .PHONY: root-app
 root-app: ## Plant the ArgoCD app-of-apps (everything else syncs from here)
