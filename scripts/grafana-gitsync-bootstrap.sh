@@ -6,7 +6,7 @@
 # OWN apiserver/unified-storage — NOT the k3d cluster, so ArgoCD can't reconcile
 # it. Creating it is therefore an imperative bootstrap seam, like garage-bootstrap.sh.
 # Requires the `provisioning` + `kubernetesDashboards` feature toggles (set in
-# gitops/platform/observability-grafana.yaml) to be live on Grafana 12+.
+# gitops/platform/observability-grafana.yaml) to be live on Grafana 13.x.
 set -euo pipefail
 
 ONS=observability
