@@ -162,7 +162,7 @@ make up
 |------|------|---------------|
 | 0 | envoy-gateway, lab-gateway, external-secrets-config, vault-extras, demo | CRDs + gateway + the `ExternalSecret`/store definitions + namespaces first |
 | 1 | vault, external-secrets, garage, mimir, kube-state-metrics, moto | secret engine + ESO controller + storage + metrics store |
-| 2 | alloy, grafana, loki, tempo, pyroscope, node-exporter, observability-dashboards | collectors + stores + UI, after their deps |
+| 2 | alloy, grafana, loki, tempo, pyroscope, node-exporter | collectors + stores + UI, after their deps |
 | 3 | ack-s3, kro, s3manager | controllers/abstractions + bucket UI |
 | 4 | ack-resources | ACK `Bucket` CRs (need the controller) |
 | 5 | kro-resources | KRO instances (need the RGD + ACK) |

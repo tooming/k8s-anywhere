@@ -12,16 +12,16 @@ fp="$(printf '%s' "$payload" | jq -r '.tool_input.file_path // .tool_input.path 
 
 # React only to the dashboard itself, or a gitops file that declares an HTTPRoute.
 case "$fp" in
-  *stack-health.yaml) ;;
+  *stack-health.json) ;;
   */gitops/*.yaml) grep -q 'kind: HTTPRoute' "$fp" 2>/dev/null || exit 0 ;;
   *) exit 0 ;;
 esac
 
 if ! out="$(bash "$ROOT/scripts/lab-ui-check.sh" 2>&1)"; then
   {
-    echo "Lab UIs panel looks stale after editing ${fp##*/} — update the Lab UIs table (panel 10) in stack-health.yaml; host UIs use the :8000 front door:"
+    echo "Lab UIs panel looks stale after editing ${fp##*/} — update the Lab UIs table (panel 10) in stack-health.json; host UIs use the :8000 front door:"
     echo "$out"
-    echo "(re-check: make lab-ui-check; the panel is in gitops/observability/dashboards/stack-health.yaml)"
+    echo "(re-check: make lab-ui-check; the panel is in grafana/dashboards/stack-health.json)"
   } >&2
   exit 2
 fi

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Lab UIs drift check: the "Lab UIs" table in stack-health.yaml is hand-maintained,
+# Lab UIs drift check: the "Lab UIs" table in stack-health.json is hand-maintained,
 # so it drifts when a UI route is added/removed. This flags that mechanically by
 # comparing the panel against the host-based HTTPRoutes declared in gitops/ (the
 # source of truth — works with the lab down, like readme-check). Runs in CI (the
@@ -11,11 +11,11 @@
 set -uo pipefail
 # ROOT defaults to the repo; tests point LABUICHECK_ROOT at a fixture tree.
 ROOT="${LABUICHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-PANEL="$ROOT/gitops/observability/dashboards/stack-health.yaml"
+PANEL="$ROOT/grafana/dashboards/stack-health.json"
 drift=0
 bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
 
-[ -f "$PANEL" ] || { echo "no stack-health.yaml — nothing to check"; exit 0; }
+[ -f "$PANEL" ] || { echo "no stack-health.json — nothing to check"; exit 0; }
 
 # host-based UIs declared by HTTPRoutes in gitops (safe if no files match)
 route_files="$(grep -rl 'kind: HTTPRoute' "$ROOT"/gitops 2>/dev/null || true)"

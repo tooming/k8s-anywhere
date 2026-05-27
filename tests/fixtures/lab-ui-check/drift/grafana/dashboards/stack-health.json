@@ -1,0 +1,2 @@
+# Lab UIs panel fixture (drift): route fixture declares demo.127.0.0.1.nip.io but panel
+# advertises no host, so lab-ui-check must report the missing UI.
