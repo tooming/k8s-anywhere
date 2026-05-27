@@ -72,7 +72,10 @@ if ! v auth list 2>/dev/null | grep -q '^kubernetes/'; then
   v auth enable kubernetes
   v write auth/kubernetes/config kubernetes_host=https://kubernetes.default.svc:443
   printf 'path "secret/data/*" { capabilities = ["read"] }\n' | v policy write eso-read -
-  v write auth/kubernetes/role/eso bound_service_account_names=external-secrets bound_service_account_namespaces=external-secrets audience=https://kubernetes.default.svc policies=eso-read ttl=1h
+  # audience MUST equal the SA token's aud — k3s issues `https://kubernetes.default.svc.cluster.local`;
+  # the bare `https://kubernetes.default.svc` is rejected by k8s TokenReview ("invalid audience"),
+  # which leaves the whole ESO ClusterSecretStore not-ready (and breaks garage-bootstrap in `make up`).
+  v write auth/kubernetes/role/eso bound_service_account_names=external-secrets bound_service_account_namespaces=external-secrets audience=https://kubernetes.default.svc.cluster.local policies=eso-read ttl=1h
 fi
 
 # Vault is now usable by ESO. On a cold bootstrap the ESO controller cached a
