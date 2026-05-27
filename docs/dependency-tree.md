@@ -17,6 +17,7 @@ graph TD
   classDef obs fill:#e6e6ff,stroke:#5b5bc0,color:#000
   classDef ing fill:#ffe6ff,stroke:#b35bb3,color:#000
   classDef cloud fill:#e0f7f7,stroke:#3bb3b3,color:#000
+  classDef ondemand fill:#eeeeee,stroke:#999,color:#555
 
   user(["You — browser"])
   frontdoor["Front door — nginx :8000<br/>(off-cluster docker, stable entry)"]:::ing
@@ -70,6 +71,11 @@ graph TD
       ack["ACK (S3 controller)"]:::cloud
       kro["KRO — S3BucketClaim RGD"]:::cloud
     end
+    subgraph TIDB["TiDB — on-demand (manual sync only)"]
+      tidbop["TiDB Operator<br/>(tidb-admin ns)"]:::ondemand
+      tidbcluster["TiDB Cluster<br/>1×PD + 1×TiKV + 1×TiDB<br/>(tidb ns)"]:::ondemand
+      tidbdemo["TiDB Demo App<br/>(tidb ns)"]:::ondemand
+    end
     envoy["Envoy Gateway"]:::ing
     demo["demo / canary (hello)"]
   end
@@ -83,6 +89,8 @@ graph TD
   eso -->|garage-s3| pyro
   eso -->|garage-s3| s3man
   eso -->|"ack-aws-creds ← aws/moto"| ack
+  eso -->|"grafana-admin ← grafana/admin"| grafana
+  eso -->|"tidb-demo-creds ← tidb/demo"| tidbdemo
 
   %% --- observability data flow ---
   nodeexp -->|scrape| alloy
@@ -104,6 +112,10 @@ graph TD
   kro -->|composes| ack
   ack -->|"S3 API :5000"| moto
 
+  %% --- TiDB on-demand chain ---
+  tidbop -.->|"manages CRDs"| tidbcluster
+  tidbcluster -.->|"DB endpoint"| tidbdemo
+
   %% --- ingress (north-south) ---
   user --> frontdoor
   frontdoor --> envoy
@@ -112,6 +124,7 @@ graph TD
   envoy -->|vault.127.0.0.1.nip.io| vault
   envoy -->|s3.127.0.0.1.nip.io| s3man
   envoy -->|moto.127.0.0.1.nip.io| moto
+  envoy -.->|"tidb-demo.127.0.0.1.nip.io (on-demand)"| tidbdemo
 ```
 
 ## Day-0 bootstrap chain (`make up` — the only imperative steps)
@@ -128,10 +141,12 @@ make up
             └─ 5 gitlab-up  GitLab omnibus (git source)               [docker compose]
                └─ 6 gitlab-configure  project + ArgoCD repo deploy-token + git push   [Terraform + git]
                   └─ 7 root-app       app-of-apps planted             [kubectl apply]
-                     ├─ 8 vault-bootstrap   init/unseal, seed secrets, k8s auth, kick ESO
+                     ├─ 8 vault-bootstrap   init/unseal; seed secret/garage/server,
+                     │                      aws/moto, grafana/admin, tidb/demo;
+                     │                      k8s auth + eso role; kick ESO
                      └─ 9 garage-bootstrap  layout + S3 key + buckets → writes vault:garage/s3
                         └─ ESO syncs Vault→Secrets ⇒ Garage, Mimir, Loki, Tempo,
-                           Pyroscope, ACK converge on their own
+                           Pyroscope, ACK, Grafana converge on their own
 ```
 
 > **Why a second, off-cluster Garage?** The in-cluster Garage is created *by* the
@@ -168,12 +183,15 @@ make up
 | ESO → garage-secrets | `← vault:garage/server` | `gitops/secrets/garage-externalsecrets.yaml` |
 | ESO → garage-s3 (Mimir/Loki/Tempo/Pyroscope/storage) | `← vault:garage/s3` | `gitops/secrets/` |
 | ESO → ack-aws-creds | `← vault:aws/moto` | `gitops/secrets/ack-creds.yaml` |
+| ESO → grafana-admin | `← vault:grafana/admin` (admin user + password) | `gitops/secrets/grafana-admin-externalsecret.yaml` |
+| ESO → tidb-demo-creds *(on-demand)* | `← vault:tidb/demo` (username + password) | `gitops/tidb-demo/externalsecret.yaml` |
 | Mimir/Loki/Tempo/Pyroscope → Garage | S3 backend `garage.storage.svc:3900` | each component's config |
 | Alloy → Mimir/Loki/Pyroscope | remote_write / push | `gitops/observability/alloy` |
 | Alloy ⇢ Tempo | OTLP `:4318` (configured; no trace producer yet) | alloy config |
 | ACK → moto | S3 API `moto.moto.svc:5000` | `gitops/ack`, ACK chart values |
 | KRO → ACK | `S3BucketClaim` RGD composes a `Bucket` | `gitops/kro` |
 | Front door :8000 → Envoy → UIs | `HTTPRoute` host-routing | `gitops/network`, per-app routes |
+| Envoy → tidb-demo.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/tidb-demo/route.yaml` |
 
 ## Notes
 - **Front door** (`:8000`, nginx docker container) is off-cluster and **not**
