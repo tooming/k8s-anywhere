@@ -59,12 +59,14 @@ Lab dashboards (`grafana/dashboards/*.json`, including `Lab — Logs`, `Lab — 
 k8s sidecar. After editing them, run:
 
 ```sh
-git push gitlab main            # push dashboard JSON changes to the lab's GitOps source
+make gitlab-push                # push dashboard JSON changes to the lab's GitOps source
 make gitlab-tls-bootstrap       # ensure the GitLab HTTPS proxy + CA config are in place
 make grafana-gitsync-bootstrap  # ensure Grafana's "Lab dashboards (GitLab, Pure Git)" repo exists
 ```
 
-Grafana polls the Git Sync repo every 60s and applies updates automatically.
+If the local GitLab `main` branch has diverged and you want to overwrite it, run
+`make gitlab-force-push` instead. Grafana polls the Git Sync repo every 60s and
+applies updates automatically.
 
 ## Endpoints
 
