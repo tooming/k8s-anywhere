@@ -1,0 +1,35 @@
+{
+  "uid": "lab-gitsync",
+  "title": "Lab — Git Sync",
+  "tags": ["lab", "gitsync"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Healthy scrape targets",
+      "description": "Live count of targets reporting up==1, proving this dashboard renders real Mimir data — and that it arrived via native Git Sync (ADR-0006), not the sidecar.",
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "unit": "short" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area", "textMode": "auto" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "count(up == 1)" } ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Targets up by job",
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 0 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "stacking": { "mode": "normal" } }, "unit": "short" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "count by (job) (up == 1)", "legendFormat": "{{job}}" } ]
+    }
+  ]
+}
