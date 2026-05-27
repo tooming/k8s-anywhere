@@ -181,6 +181,21 @@ You review and merge plan PRs, same as implementation PRs.
   needs a human RFC on what to instrument: the existing `hello` demo, a purpose-built
   tiny emitter, or fold it into the TiDB/capstone demo. Keep footprint inside the
   12 GB budget.)*
+- [ ] 🟡 **Wire the Git Sync bootstraps into `make up` / DR (and survive Grafana rolls).**
+  ADR-0006 left two imperative seams run by hand: `scripts/gitlab-tls-bootstrap.sh` (mkcert
+  cert + nginx TLS proxy on `:8930` + publish the `gitlab-tls-ca` ConfigMap) and
+  `scripts/grafana-gitsync-bootstrap.sh` (create the Pure Git `Repository` + set the home
+  dashboard). Two fragilities, both hit live when Grafana was bumped to 13.0.1 (#35):
+  (a) `gitlab-tls-ca` isn't GitOps-managed, so if it's absent when the Grafana pod
+  (re)starts, the CA-bundle init builds a bundle WITHOUT the mkcert CA → Git Sync fails
+  `x509: unknown authority` and dashboards vanish; (b) the `Repository` lives in Grafana
+  unified storage and did NOT survive the 12.4→13 upgrade, so it must be re-created. `make up`
+  (and DR) must run both bootstraps in order — cert before the proxy; CA published before
+  Grafana starts (restart Grafana if the CA arrives late so the init re-runs); `Repository`
+  re-created once Grafana is healthy — so a rebuilt/upgraded lab self-heals with no manual
+  steps. Add the wiring + DR coverage + bats/docs. *(🟡 — Makefile + DR/bootstrap-ordering,
+  infra-critical; a human owns the ordering. Until then `make gitlab-tls-bootstrap` +
+  `make grafana-gitsync-bootstrap` are the manual recovery steps.)*
 - [x] 🟢 Add an ADR for any new non-trivial decision (documenting a decision already
   made/shipped; changing an *existing* ADR is 🔴 humans-only).
 
