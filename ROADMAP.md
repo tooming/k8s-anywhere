@@ -86,8 +86,10 @@ items come from a separate **weekly planner** routine (also runnable on-demand) 
   edits CHARTER.md (if the *goals* look stale, it says so in the PR body for a human);
 - closes the loop on each groomed issue (comments the resulting items, labels it
   `groomed`, closes it);
-- de-dupes against existing items and open PRs, and may open **no PR** if there's nothing
-  to do (no churn for its own sake).
+- de-dupes against existing items and open PRs; it won't open a churn PR when there's
+  nothing to propose — but it **never ends a run silent**: with no ROADMAP changes it
+  instead files (or refreshes) a single GitHub issue surfacing the highest-value
+  gap/decision for a human. **Every planner run yields a plan PR or a GitHub issue.**
 
 ### How you add work
 
