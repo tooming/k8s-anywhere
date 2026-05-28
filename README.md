@@ -26,6 +26,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Secrets** | Vault (KV v2) · External Secrets Operator |
 | **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
 | **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
+| **Data layer** | RabbitMQ (message broker + management UI) · Redis (cache / key-value) · redis_exporter · data-demo (traffic generator) |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator) |
 | **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Artifactory/Nexus · Istio ambient mesh + Kiali · Longhorn |
 
@@ -54,9 +55,9 @@ for the full command list.
 ### Apply Grafana dashboard changes (localhost lab)
 
 Lab dashboards (`grafana/dashboards/*.json`, including `Lab — Grafana`, `Lab — Logs`,
-`Lab — Mimir`, `Lab — Profiles`, `Lab — Stack Health`, `Lab — TiDB Demo App`,
-`Lab — Traces`, `Lab — Vault & Secrets`) are managed by Grafana native Git Sync (Pure Git), not a
-k8s sidecar. After editing them, run:
+`Lab — Mimir`, `Lab — Profiles`, `Lab — RabbitMQ`, `Lab — Redis`, `Lab — Stack Health`,
+`Lab — TiDB Demo App`, `Lab — Traces`, `Lab — Vault & Secrets`) are managed by Grafana
+native Git Sync (Pure Git), not a k8s sidecar. After editing them, run:
 
 ```sh
 make gitlab-push                # push dashboard JSON changes to the lab's GitOps source
@@ -80,6 +81,7 @@ After `make up`, UIs are served via the stable front door on **`:8000`**
 | Vault | http://vault.127.0.0.1.nip.io:8000 |
 | S3 browser | http://s3.127.0.0.1.nip.io:8000 |
 | moto (AWS mock) | http://moto.127.0.0.1.nip.io:8000/moto-api/ |
+| RabbitMQ | http://rabbitmq.127.0.0.1.nip.io:8000 |
 | GitLab | http://localhost:8929 |
 
 `make argocd-password` prints the ArgoCD admin password. `:8080` is a per-cluster

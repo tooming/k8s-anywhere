@@ -1,0 +1,64 @@
+# RabbitMQ traffic generator: a shell loop (curl) that talks to the management HTTP API.
+# It declares a durable 'demo' queue, then publishes and consumes messages every few
+# seconds, so the rabbitmq_prometheus metrics — messages published/delivered, queue
+# depth, connections/channels — show real movement on the "Lab — RabbitMQ" dashboard.
+# Waits for the management API before looping so it tolerates a cold start.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-load
+  namespace: data
+  labels:
+    app: rabbitmq-load
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-load
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-load
+    spec:
+      containers:
+        - name: rabbitmq-load
+          image: curlimages/curl:8.10.1
+          env:
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: data-demo-creds
+                  key: rabbitmq-username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: data-demo-creds
+                  key: rabbitmq-password
+          command:
+            - /bin/sh
+            - -c
+            - |
+              Q=demo
+              API=http://rabbitmq:15672/api
+              AUTH="$RABBITMQ_USER:$RABBITMQ_PASSWORD"
+              echo "rabbitmq-load: waiting for the management API..."
+              until curl -fsS -u "$AUTH" "$API/overview" >/dev/null 2>&1; do sleep 5; done
+              curl -fsS -u "$AUTH" -H 'content-type: application/json' \
+                -XPUT "$API/queues/%2f/$Q" -d '{"durable":true}' >/dev/null
+              echo "rabbitmq-load: publishing/consuming on queue '$Q'"
+              while true; do
+                curl -fsS -u "$AUTH" -H 'content-type: application/json' \
+                  -XPOST "$API/exchanges/%2f/amq.default/publish" \
+                  -d "{\"properties\":{},\"routing_key\":\"$Q\",\"payload\":\"hello\",\"payload_encoding\":\"string\"}" >/dev/null || true
+                curl -fsS -u "$AUTH" -H 'content-type: application/json' \
+                  -XPOST "$API/queues/%2f/$Q/get" \
+                  -d '{"count":10,"ackmode":"ack_requeue_false","encoding":"auto"}' >/dev/null || true
+                sleep 5
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 48Mi
