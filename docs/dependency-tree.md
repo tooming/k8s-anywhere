@@ -18,6 +18,7 @@ graph TD
   classDef ing fill:#ffe6ff,stroke:#b35bb3,color:#000
   classDef cloud fill:#e0f7f7,stroke:#3bb3b3,color:#000
   classDef ondemand fill:#eeeeee,stroke:#999,color:#555
+  classDef data fill:#ffe9d6,stroke:#cc7a30,color:#000
 
   user(["You — browser"])
   frontdoor["Front door — nginx :8000<br/>(off-cluster docker, stable entry)"]:::ing
@@ -76,6 +77,11 @@ graph TD
       tidbcluster["TiDB Cluster<br/>1×PD + 1×TiKV + 1×TiDB<br/>(tidb ns)"]:::ondemand
       tidbdemo["TiDB Demo App<br/>(tidb ns)"]:::ondemand
     end
+    subgraph DATA["Data layer — always-on (data ns)"]
+      rabbitmq["RabbitMQ<br/>broker + mgmt UI + prometheus"]:::data
+      redis["Redis<br/>cache/KV + redis_exporter"]:::data
+      datademo["data-demo<br/>(traffic generators)"]:::data
+    end
     envoy["Envoy Gateway"]:::ing
     demo["demo / canary (hello)"]
   end
@@ -91,6 +97,9 @@ graph TD
   eso -->|"ack-aws-creds ← aws/moto"| ack
   eso -->|"grafana-admin ← grafana/admin"| grafana
   eso -->|"tidb-demo-creds ← tidb/demo"| tidbdemo
+  eso -->|"rabbitmq-creds ← rabbitmq/default"| rabbitmq
+  eso -->|"redis-creds ← redis/default"| redis
+  eso -->|"data-demo-creds ← rabbitmq/default + redis/default"| datademo
 
   %% --- observability data flow ---
   nodeexp -->|scrape| alloy
@@ -116,6 +125,12 @@ graph TD
   tidbop -.->|"manages CRDs"| tidbcluster
   tidbcluster -.->|"DB endpoint"| tidbdemo
 
+  %% --- data layer (always-on) ---
+  rabbitmq -->|"scrape :15692"| alloy
+  redis -->|"scrape :9121"| alloy
+  datademo -->|"AMQP publish/consume"| rabbitmq
+  datademo -->|"SET/GET/INCR"| redis
+
   %% --- ingress (north-south) ---
   user --> frontdoor
   frontdoor --> envoy
@@ -125,6 +140,7 @@ graph TD
   envoy -->|s3.127.0.0.1.nip.io| s3man
   envoy -->|moto.127.0.0.1.nip.io| moto
   envoy -.->|"tidb-demo.127.0.0.1.nip.io (on-demand)"| tidbdemo
+  envoy -->|rabbitmq.127.0.0.1.nip.io| rabbitmq
 ```
 
 ## Day-0 bootstrap chain (`make up` — the only imperative steps)
@@ -142,7 +158,8 @@ make up
                └─ 6 gitlab-configure  project + ArgoCD repo deploy-token + git push   [Terraform + git]
                   └─ 7 root-app       app-of-apps planted             [kubectl apply]
                      ├─ 8 vault-bootstrap   init/unseal; seed secret/garage/server,
-                     │                      aws/moto, grafana/admin, tidb/demo;
+                     │                      aws/moto, grafana/admin, tidb/demo,
+                     │                      rabbitmq/default, redis/default;
                      │                      k8s auth + eso role; kick ESO
                      └─ 9 garage-bootstrap  layout + S3 key + buckets → writes vault:garage/s3
                         └─ ESO syncs Vault→Secrets ⇒ Garage, Mimir, Loki, Tempo,
@@ -160,11 +177,11 @@ make up
 
 | Wave | Apps | Why this wave |
 |------|------|---------------|
-| 0 | envoy-gateway, lab-gateway, external-secrets-config, vault-extras, demo | CRDs + gateway + the `ExternalSecret`/store definitions + namespaces first |
-| 1 | vault, external-secrets, garage, mimir, kube-state-metrics, moto | secret engine + ESO controller + storage + metrics store |
-| 2 | alloy, grafana, loki, tempo, pyroscope, node-exporter | collectors + stores + UI, after their deps |
-| 3 | ack-s3, kro, s3manager | controllers/abstractions + bucket UI |
-| 4 | ack-resources | ACK `Bucket` CRs (need the controller) |
+| 0 | envoy-gateway, demo | Gateway API CRDs + controller; demo (no wave annotation, auto-synced) |
+| 1 | vault, external-secrets, garage, mimir, kube-state-metrics, moto, lab-gateway | secret engine + ESO controller + storage + metrics store; shared Gateway (after Gateway API CRDs) |
+| 2 | alloy, grafana, loki, tempo, pyroscope, node-exporter, external-secrets-config, vault-extras | collectors + stores + UI; ClusterSecretStore + ESO bindings; Vault add-ons (all after wave 1 deps) |
+| 3 | ack-s3, kro, s3manager, rabbitmq, redis | controllers/abstractions + bucket UI; data layer (after the ClusterSecretStore in wave 2) |
+| 4 | ack-resources, data-demo | ACK `Bucket` CRs (need the controller); data-demo traffic generators (need rabbitmq + redis) |
 | 5 | kro-resources | KRO instances (need the RGD + ACK) |
 | — | tidb-operator *(on-demand)* | CRD controller for TiDB; discovered by ArgoCD but **manual-sync only** — use `make tidb-operator-up` |
 | — | tidb-cluster *(on-demand)* | `TidbCluster` CR (1×PD + 1×TiKV + 1×TiDB); manual-sync only — use `make tidb-up` (requires tidb-operator) |
@@ -192,6 +209,12 @@ make up
 | KRO → ACK | `S3BucketClaim` RGD composes a `Bucket` | `gitops/kro` |
 | Front door :8000 → Envoy → UIs | `HTTPRoute` host-routing | `gitops/network`, per-app routes |
 | Envoy → tidb-demo.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/tidb-demo/route.yaml` |
+| ESO → rabbitmq-creds | `← vault:rabbitmq/default` (username + password) | `gitops/data/rabbitmq/externalsecret.yaml` |
+| ESO → redis-creds | `← vault:redis/default` (password) | `gitops/data/redis/externalsecret.yaml` |
+| ESO → data-demo-creds | `← vault:rabbitmq/default + redis/default` | `gitops/data/demo/externalsecret.yaml` |
+| Alloy → RabbitMQ / Redis | scrape `:15692` / `:9121` → Mimir | `gitops/platform/observability-alloy.yaml` |
+| data-demo → RabbitMQ / Redis | AMQP publish/consume · Redis SET/GET/INCR | `gitops/data/demo/` |
+| Envoy → rabbitmq.127.0.0.1.nip.io | HTTPRoute (management UI) | `gitops/data/rabbitmq/route.yaml` |
 
 ## Notes
 - **Front door** (`:8000`, nginx docker container) is off-cluster and **not**
@@ -202,4 +225,7 @@ make up
 - **TiDB Operator** (`gitops/platform/tidb-operator.yaml`) is on-demand / manual-sync — ArgoCD discovers the Application but does not auto-deploy the operator. Use `make tidb-operator-up` / `make tidb-operator-down`. Installs into namespace `tidb-admin`.
 - **TiDB Cluster** (`gitops/platform/tidb-cluster.yaml`) is on-demand / manual-sync — deploys a minimal `TidbCluster` CR (1×PD + 1×TiKV + 1×TiDB, ~1.5 GB) into namespace `tidb`. Use `make tidb-up` / `make tidb-down`. Requires TiDB Operator running first. ADR-0003 note: production topology uses ≥3 PD + ≥3 TiKV + 2 TiDB; single replicas are the ADR-0005 lab trade-off.
 - **TiDB Demo App** (`gitops/platform/tidb-demo.yaml`) is on-demand / manual-sync — deploys an nginx-based demo workload (namespace `tidb`) that reads TiDB credentials from Vault via `ExternalSecret tidb-demo-creds`. Demonstrates the Vault → ESO → Secret → Pod injection flow (learning-path step 4). HTTPRoute: `tidb-demo.127.0.0.1.nip.io`. Dashboard: "Lab — TiDB Demo App". Use `make tidb-demo-up` / `make tidb-demo-down`.
+- **RabbitMQ** (`gitops/platform/rabbitmq.yaml`) is **always-on / auto-synced** — single-node broker (namespace `data`) with the management UI (`rabbitmq.127.0.0.1.nip.io`) and the `rabbitmq_prometheus` plugin (`:15692`, scraped by Alloy). Default user from Vault via `ExternalSecret rabbitmq-creds`. Dashboard: "Lab — RabbitMQ". ADR-0009. ADR-0003/0005 note: production runs a clustered broker with quorum queues; the single node is the single-host lab trade-off.
+- **Redis** (`gitops/platform/redis.yaml`) is **always-on / auto-synced** — single-node cache/KV (namespace `data`) with auth via `--requirepass` (Vault → `ExternalSecret redis-creds`) and a `redis_exporter` sidecar (`:9121`, scraped by Alloy). No web UI. Dashboard: "Lab — Redis". ADR-0010. ADR-0003/0005 note: production uses Sentinel/Cluster; the single replica is the single-host lab trade-off.
+- **data-demo** (`gitops/platform/data-demo.yaml`) is **always-on / auto-synced** — tiny generators (`redis-load`, `rabbitmq-load`, namespace `data`) that exercise Redis and RabbitMQ continuously so the dashboards show real traffic, not idle brokers. Credentials via `ExternalSecret data-demo-creds`.
 - Storage backups, true HA: out of scope (single host). See `docs/DR.md`.

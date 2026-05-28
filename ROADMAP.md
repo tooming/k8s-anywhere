@@ -6,9 +6,9 @@ proposes items here (plan-only PRs) and an every-6h **executor** that implements
 per run. CHARTER = the goals; this file = the next steps.
 
 The always-on stack is already built (Envoy, Vault, External Secrets, Garage,
-the full LGTMP observability stack, moto/ACK/KRO, the demo app — 25 ArgoCD apps).
-What's left is the heavy *on-demand* components, the end-to-end capstone, and
-cross-cutting hardening.
+the full LGTMP observability stack, moto/ACK/KRO, the RabbitMQ + Redis data layer,
+the demo app — ~28 ArgoCD apps). What's left is the heavy *on-demand* components,
+the end-to-end capstone, and cross-cutting hardening.
 
 ---
 
@@ -50,17 +50,26 @@ no access to anyone's local notes — so every rule it must follow lives here, i
    the Grafana "Lab UIs" panel (there's a drift check) and update the README /
    `docs/dependency-tree.md` so `make readme-check` and `make lab-ui-check` stay
    green.
-6. **Deliver a GitHub PR — never push to `main`, never self-merge.** One branch per
-   run (`auto/<short-slug>`). Title it clearly; the body should say what + why and
-   note it's an autonomous run. CI runs on the PR; the user reviews and merges.
+6. **Every scheduled run's work lands as a PR — never push to `main`, never self-merge.**
+   One branch per run (`auto/<short-slug>`). Title it clearly; the body should say what +
+   why and note it's an autonomous run. CI runs on the PR; the user reviews and merges. A
+   run never commits straight to a branch without opening a PR, and never silently does
+   nothing (see rule #9).
 7. **Check it off in the same PR.** Mark the item `[x]`, move it to *Done*, and
    reference the PR number.
 8. **If the top item can't be done cleanly in one run, take the next feasible
    item** instead of committing something that fails `make ci`. If you genuinely
-   can't make any gate-passing progress, stop **without** opening a PR.
-9. **Never invent new backlog items.** You only implement items already listed below.
-   If there's no actionable item, **stop** — the weekly planner refills the backlog
-   (see next section). An idle executor is fine; make-work is not.
+   can't make any gate-passing progress this run, do **not** open a half-baked PR —
+   **prompt the maintainer** (rule #9's channel) instead, then stop.
+9. **Never invent new backlog items — and never go silent.** You only implement items
+   already listed below; the weekly planner refills the backlog (see next section). But
+   when there's no actionable item — the *Now / next* lane is empty, or everything left is
+   🟡/🔴 blocked on a human — do **not** just stop. **Prompt the maintainer** so the
+   idle/blocked state is visible: open a single GitHub issue titled `executor idle — needs
+   work` (or, if one is already open, add a comment to it — search first, never spam a new
+   one each run) that @-mentions the maintainer and lists what's blocked and which
+   decision/RFC/ADR is owed to unblock it. One issue, refreshed each idle run. That is the
+   only acceptable "no PR" outcome — fabricated make-work is still forbidden.
 10. **Stay in your autonomy tier** (see [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md)).
     You operate at **🟢 Green only** — docs, tests, non-auto-synced manifests, dashboards
     from real metrics. If the next item actually needs **🟡 Yellow** work (a new
@@ -205,6 +214,21 @@ You review and merge plan PRs, same as implementation PRs.
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **RabbitMQ + Redis data layer (always-on, fully integrated)** — Added an always-on
+  data layer in namespace `data`, deployed by ArgoCD (auto-synced, ADR-0001): **RabbitMQ**
+  (single-node broker, management UI via Envoy at `rabbitmq.127.0.0.1.nip.io`, `rabbitmq_prometheus`
+  plugin) and **Redis** (single-node cache/KV, `--requirepass` auth, `redis_exporter` sidecar).
+  Credentials flow Vault → ESO (`secret/rabbitmq/default`, `secret/redis/default`, seeded by
+  `vault-bootstrap.sh`). Alloy scrapes both (`:15692` / `:9121`); two real-metric dashboards
+  ("Lab — RabbitMQ", "Lab — Redis", ADR-0004). A `data-demo` workload (`redis-load` +
+  `rabbitmq-load`) generates continuous real traffic. New ADR-0009 (RabbitMQ) + ADR-0010
+  (Redis); README / dependency-tree / Lab UIs panel / `make creds` updated; `tests/data-layer.bats`
+  added. (human-directed; branch `claude/roadmap-state-pUXWw`)
+- [x] **Routine governance: never go silent when idle** — Updated the binding ROADMAP rules
+  (#6, #8, #9) and both routine prompts so every scheduled run ends in either a PR or a
+  refreshed `executor idle — needs work` GitHub issue that prompts the maintainer (with what's
+  blocked + which RFC/ADR is owed). Removed the "stop without opening a PR" silent no-op.
+  (human-directed; branch `claude/roadmap-state-pUXWw`)
 - [x] **Dependency-tree sync** — Updated `docs/dependency-tree.md` to match current repo state: added TiDB on-demand components (Operator, Cluster, Demo App) to the Mermaid integration graph with dashed on-demand edges; added the two missing ESO secret-chain edges (`grafana-admin ← grafana/admin`, `tidb-demo-creds ← tidb/demo`); added the Envoy → `tidb-demo.127.0.0.1.nip.io` HTTPRoute edge; added two new rows to the integration edges table; expanded the Day-0 vault-bootstrap step to enumerate exactly which Vault paths it seeds. (PR #28)
 - [x] **Vault & Secrets dashboard** — Added `grafana/dashboards/lab-vault.json`: a "Lab — Vault & Secrets" Grafana dashboard with 11 panels covering pod-running status, memory, CPU, restart counts, and ArgoCD sync state for both Vault and External Secrets Operator. All panels use real KSM/cAdvisor/ArgoCD metrics already scraped by Alloy — no fabricated data (ADR-0004). Delivered through Grafana native Git Sync (ADR-0006). Covers the "Add Grafana dashboards for always-on components lacking them" backlog item. (PR #TBD)
 - [x] **Expand bats coverage** — Added 11 new tests across two files: `tests/adr-guard.bats` (7 tests — verifies the PostToolUse ADR guard exits 0 on clean/excluded paths and exits 2 with the correct message when a rejected term such as "minio" appears in a guarded file) + 4 uptime-math edge cases in `tests/bluegreen-probe.bats` (all-failures → 0%, single-pass, single-fail, and the outage-uses-maxrun-not-fail-count invariant). Suite grows from 15 to 26 tests. (auto/expand-bats-coverage)

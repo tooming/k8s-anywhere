@@ -1,0 +1,53 @@
+# Redis traffic generator: a tiny shell loop using redis-cli against the 'redis' service.
+# It SETs/GETs/INCRs keys (hits) and GETs a missing key (miss) every few seconds, so the
+# redis_exporter metrics — commands processed, keyspace hits/misses, connected clients —
+# carry real movement on the "Lab — Redis" dashboard. Auth via REDISCLI_AUTH (no
+# password on the command line).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-load
+  namespace: data
+  labels:
+    app: redis-load
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-load
+  template:
+    metadata:
+      labels:
+        app: redis-load
+    spec:
+      containers:
+        - name: redis-load
+          image: redis:7.4-alpine
+          env:
+            - name: REDISCLI_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: data-demo-creds
+                  key: redis-password
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "redis-load: generating traffic against redis:6379"
+              n=0
+              while true; do
+                n=$((n + 1))
+                redis-cli -h redis SET "demo:last" "$(date -u +%FT%TZ)" >/dev/null
+                redis-cli -h redis INCR "demo:counter" >/dev/null
+                redis-cli -h redis GET "demo:last" >/dev/null      # keyspace hit
+                redis-cli -h redis GET "demo:missing:$n" >/dev/null # keyspace miss
+                redis-cli -h redis SETEX "demo:tmp" 30 "ephemeral" >/dev/null
+                sleep 3
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi

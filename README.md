@@ -26,6 +26,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Secrets** | Vault (KV v2) · External Secrets Operator |
 | **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
 | **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
+| **Data layer** | RabbitMQ (message broker + management UI) · Redis (cache / key-value) · redis_exporter · data-demo (traffic generator) |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator) |
 | **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Artifactory/Nexus · Istio ambient mesh + Kiali · Longhorn |
 
@@ -54,9 +55,9 @@ for the full command list.
 ### Apply Grafana dashboard changes (localhost lab)
 
 Lab dashboards (`grafana/dashboards/*.json`, including `Lab — Grafana`, `Lab — Logs`,
-`Lab — Mimir`, `Lab — Profiles`, `Lab — Stack Health`, `Lab — TiDB Demo App`,
-`Lab — Traces`, `Lab — Vault & Secrets`) are managed by Grafana native Git Sync (Pure Git), not a
-k8s sidecar. After editing them, run:
+`Lab — Mimir`, `Lab — Profiles`, `Lab — RabbitMQ`, `Lab — Redis`, `Lab — Stack Health`,
+`Lab — TiDB Demo App`, `Lab — Traces`, `Lab — Vault & Secrets`) are managed by Grafana
+native Git Sync (Pure Git), not a k8s sidecar. After editing them, run:
 
 ```sh
 make gitlab-push                # push dashboard JSON changes to the lab's GitOps source
@@ -70,22 +71,21 @@ applies updates automatically.
 
 ## Endpoints
 
-After `make up`, UIs are served through Envoy on **`:8080`** (hostnames resolve to
-127.0.0.1 via `nip.io` — no `/etc/hosts` edits):
+After `make up`, UIs are served via the stable front door on **`:8000`**
+(hostnames resolve to 127.0.0.1 via `nip.io` — no `/etc/hosts` edits):
 
 | UI | URL |
 |----|-----|
-| ArgoCD | http://argocd.127.0.0.1.nip.io:8080 |
-| Grafana | http://localhost:8080 |
-| Vault | http://vault.127.0.0.1.nip.io:8080 |
-| S3 browser | http://s3.127.0.0.1.nip.io:8080 |
-| moto (AWS mock) | http://moto.127.0.0.1.nip.io:8080/moto-api/ |
+| ArgoCD | http://argocd.127.0.0.1.nip.io:8000 |
+| Grafana | http://localhost:8000 |
+| Vault | http://vault.127.0.0.1.nip.io:8000 |
+| S3 browser | http://s3.127.0.0.1.nip.io:8000 |
+| moto (AWS mock) | http://moto.127.0.0.1.nip.io:8000/moto-api/ |
+| RabbitMQ | http://rabbitmq.127.0.0.1.nip.io:8000 |
 | GitLab | http://localhost:8929 |
 
-`make argocd-password` prints the ArgoCD admin password. The blue/green drills add a
-stable **front door on `:8000`** (`make frontdoor`) that serves the same UIs
-regardless of which cluster is live; after a blue→green promotion the canonical port
-becomes `:8000`.
+`make argocd-password` prints the ArgoCD admin password. `:8080` is a per-cluster
+Envoy LB port used underneath the front door and is not the canonical UI entrypoint.
 
 ## Disaster recovery & blue/green
 

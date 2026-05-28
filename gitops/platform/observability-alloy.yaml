@@ -186,6 +186,19 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
+
+              // ---- data layer (RabbitMQ + Redis) -> Mimir ----
+              // RabbitMQ exposes the rabbitmq_prometheus plugin on :15692; Redis is
+              // scraped via the redis_exporter sidecar on :9121. Feeds the
+              // "Lab — RabbitMQ" and "Lab — Redis" dashboards with real metrics.
+              prometheus.scrape "data" {
+                targets = [
+                  {"__address__" = "rabbitmq.data.svc.cluster.local:15692", "job" = "rabbitmq"},
+                  {"__address__" = "redis.data.svc.cluster.local:9121", "job" = "redis"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

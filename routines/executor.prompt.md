@@ -12,8 +12,10 @@ STEP 4 — Implement just that item. Hard rules:
   - BUDGET: heavy/on-demand components (TiDB, Artifactory/Nexus, Istio+Kiali, Longhorn) must NOT be auto-synced. Do not register them for automated sync in gitops/bootstrap/root-app.yaml; add a manual `make <name>-up`/`make <name>-down` target instead. The 12 GB VM cannot hold them alongside the always-on stack.
   - ADRs are binding: GitOps over Terraform/Helm (workloads are ArgoCD Applications, never `helm install`); Garage not MinIO; decoupled/no-SPOF; NO fabricated content (dashboards/outputs must show real, auto-discovered state); recreate-over-HA on a single host.
 
-STEP 5 — Validate: run `make ci` and fix until green. If you can't get the chosen item green this run, fall through to the next feasible item. If nothing can be done cleanly, STOP without opening a PR.
+STEP 5 — Validate: run `make ci` and fix until green. If you can't get the chosen item green this run, fall through to the next feasible item. If nothing can be done cleanly, do NOT open a half-baked PR — go to STEP 6b instead.
 
 STEP 6 — Deliver. When `make ci` is green: in ROADMAP.md check the item [x] and move it to the Done section referencing the PR; create a new branch auto/<short-slug>, commit, and push the branch; open a PR with `gh pr create` (clear title; body = what changed + why + a note that this is an autonomous scheduled run). Do NOT push to main. Do NOT merge the PR.
 
-Deliver exactly one PR, or nothing. Keep it focused and reviewable.
+STEP 6b — No actionable work? Prompt the maintainer; never go silent. If the "Now / next" lane is empty or everything left is 🟡/🔴 blocked on a human, do NOT fabricate make-work and do NOT stop silently. Run `gh issue list --state open --search "executor idle"`; if an `executor idle — needs work` issue is already open, add a comment refreshing it, otherwise `gh issue create` one. @-mention the maintainer and list what's blocked + which decision/RFC/ADR is owed to unblock it. One issue, refreshed each idle run — never a new one every run.
+
+Every scheduled run ends in either a PR (STEP 6) or a refreshed maintainer-prompt issue (STEP 6b) — never a silent no-op. Keep it focused and reviewable.
