@@ -192,7 +192,7 @@ You review and merge plan PRs, same as implementation PRs.
   needs a human RFC on what to instrument: the existing `hello` demo, a purpose-built
   tiny emitter, or fold it into the TiDB/capstone demo. Keep footprint inside the
   12 GB budget.)*
-- [ ] 🟡 **Wire the Git Sync bootstraps into `make up` / DR (and survive Grafana rolls).**
+- [x] 🟡 **Wire the Git Sync bootstraps into `make up` / DR (and survive Grafana rolls).**
   ADR-0006 left two imperative seams run by hand: `scripts/gitlab-tls-bootstrap.sh` (mkcert
   cert + nginx TLS proxy on `:8930` + publish the `gitlab-tls-ca` ConfigMap) and
   `scripts/grafana-gitsync-bootstrap.sh` (create the Pure Git `Repository` + set the home
@@ -214,6 +214,13 @@ You review and merge plan PRs, same as implementation PRs.
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **Wire Git Sync bootstraps into `make up` / DR (survive Grafana rolls)** — Both ADR-0006
+  imperative seams now run automatically: `gitlab-tls-bootstrap` (mkcert cert + nginx TLS proxy +
+  publish `gitlab-tls-ca` ConfigMap, rolls Grafana if the CA arrives after it was already running)
+  is called after `vault-bootstrap` in `make up`; `grafana-gitsync-bootstrap` (create the Pure Git
+  `Repository` + set the home dashboard, waits up to 5 min for Grafana health) is called last. DR is
+  covered: `make dr-test` rebuilds via `make up`, which includes both steps. Recovery cookbook in
+  `docs/DR.md` updated; `tests/bootstrap-seams.bats` (9 structural tests) added.
 - [x] **RabbitMQ + Redis data layer (always-on, fully integrated)** — Added an always-on
   data layer in namespace `data`, deployed by ArgoCD (auto-synced, ADR-0001): **RabbitMQ**
   (single-node broker, management UI via Envoy at `rabbitmq.127.0.0.1.nip.io`, `rabbitmq_prometheus`
