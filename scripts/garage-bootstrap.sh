@@ -63,7 +63,7 @@ KSEC=$(printf '%s\n' "$KEYOUT" | awk -F': *' '
   }' | tr -d '"' || true)
 [ -n "$KID" ] || KID=$(printf '%s' "$KEYOUT" | grep -oiE 'GK[0-9a-f]{20,}' | head -1 || true)
 [ -n "$KSEC" ] || KSEC=$(printf '%s' "$KEYOUT" | grep -oiE '[0-9a-f]{64}' | head -1 || true)
-[[ "${KSEC,,}" == redacted* || "$KSEC" == "*" ]] && KSEC=""
+[[ "$(echo "$KSEC" | tr '[:upper:]' '[:lower:]')" == redacted* || "$KSEC" == "*" ]] && KSEC=""
 if [ -n "$KID" ] && [ -n "$KSEC" ]; then
   TOKEN=$(kubectl -n "$VNS" get secret vault-keys -o jsonpath='{.data.root-token}' | base64 -d)
   kubectl -n "$VNS" exec vault-0 -- env VAULT_TOKEN="$TOKEN" vault kv put secret/garage/s3 access-key-id="$KID" secret-access-key="$KSEC" >/dev/null
