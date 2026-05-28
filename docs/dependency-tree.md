@@ -160,9 +160,9 @@ make up
 
 | Wave | Apps | Why this wave |
 |------|------|---------------|
-| 0 | envoy-gateway, lab-gateway, external-secrets-config, vault-extras, demo | CRDs + gateway + the `ExternalSecret`/store definitions + namespaces first |
-| 1 | vault, external-secrets, garage, mimir, kube-state-metrics, moto | secret engine + ESO controller + storage + metrics store |
-| 2 | alloy, grafana, loki, tempo, pyroscope, node-exporter | collectors + stores + UI, after their deps |
+| 0 | envoy-gateway, demo | Gateway API CRDs + controller; demo (no wave annotation, auto-synced) |
+| 1 | vault, external-secrets, garage, mimir, kube-state-metrics, moto, lab-gateway | secret engine + ESO controller + storage + metrics store; shared Gateway (after Gateway API CRDs) |
+| 2 | alloy, grafana, loki, tempo, pyroscope, node-exporter, external-secrets-config, vault-extras | collectors + stores + UI; ClusterSecretStore + ESO bindings; Vault add-ons (all after wave 1 deps) |
 | 3 | ack-s3, kro, s3manager | controllers/abstractions + bucket UI |
 | 4 | ack-resources | ACK `Bucket` CRs (need the controller) |
 | 5 | kro-resources | KRO instances (need the RGD + ACK) |
