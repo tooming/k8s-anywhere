@@ -1,0 +1,110 @@
+{
+  "uid": "lab-rabbitmq",
+  "title": "Lab — RabbitMQ",
+  "tags": ["lab", "data", "rabbitmq"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1, "type": "text", "title": "About RabbitMQ",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "## RabbitMQ — always-on message broker\n\nSingle-node RabbitMQ (`data` namespace) with the management UI at `http://rabbitmq.127.0.0.1.nip.io:8000`. Default user from Vault `secret/rabbitmq/default` → ESO Secret `rabbitmq-creds`. Metrics come from the **rabbitmq_prometheus** plugin on `:15692`, scraped by Alloy. The `rabbitmq-load` demo publishes/consumes on the `demo` queue.\n\nADR-0005 lab trade-off: one node recovers in place; production runs a clustered broker with quorum queues (ADR-0009)."
+      }
+    },
+    {
+      "id": 2, "type": "stat", "title": "Broker Up",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "up{job=\"rabbitmq\"}", "instant": true }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "noValue": "no data"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" }
+    },
+    {
+      "id": 3, "type": "stat", "title": "Connections",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rabbitmq_connections", "instant": true }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none", "noValue": "no data" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
+    },
+    {
+      "id": 4, "type": "stat", "title": "Queues",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rabbitmq_queues", "instant": true }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none", "noValue": "no data" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
+    },
+    {
+      "id": 5, "type": "stat", "title": "Messages ready",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rabbitmq_queue_messages_ready)", "instant": true }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none", "noValue": "0" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Messages published / sec",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(rabbitmq_channel_messages_published_total[5m])", "legendFormat": "published", "range": true }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Queue depth (messages ready)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rabbitmq_queue_messages_ready", "legendFormat": "{{queue}}", "range": true }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Channels & consumers",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rabbitmq_channels", "legendFormat": "channels", "range": true },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rabbitmq_consumers", "legendFormat": "consumers", "range": true }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Pod memory (container=rabbitmq)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "container_memory_working_set_bytes{namespace=\"data\", pod=~\"rabbitmq-.*\", container=\"rabbitmq\"}", "legendFormat": "memory", "range": true }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } }
+    }
+  ]
+}

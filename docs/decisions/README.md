@@ -16,3 +16,5 @@ rationale travels with the code.
   - [ADR-0006](adr-0006-grafana-native-git-sync.md) — Dashboards via Grafana native Git Sync (not the sidecar)
   - [ADR-0007](adr-0007-off-cluster-garage-tfstate-backend.md) — Off-cluster Garage as the Terraform-state backend
   - [ADR-0008](adr-0008-envoy-gateway-not-traefik.md) — Envoy Gateway for north-south ingress (Gateway API, not Traefik)
+  - [ADR-0009](adr-0009-rabbitmq-message-broker.md) — RabbitMQ as the lab's message broker (plain manifests, always-on)
+  - [ADR-0010](adr-0010-redis-cache.md) — Redis as the lab's cache / key-value store (plain manifests, always-on)
