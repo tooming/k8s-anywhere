@@ -29,10 +29,10 @@ routine's model/cadence is a PR that edits this table.
 
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch | Max tier |
 |---|---|---|---|---|---|---|
-| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @maintainer | implements one ROADMAP item / run | 6h (4/day) · Sonnet 4.6 | `auto/*` | 🟢 Green |
-| Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @maintainer | grooms CHARTER gaps + issues → ROADMAP | weekly · Opus 4.7 | `plan/*` | 🟢 Green |
+| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run | 6h (4/day) · Sonnet 4.6 | `auto/*` | 🟢 Green |
+| Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @tooming | grooms CHARTER gaps + issues → ROADMAP | weekly · Opus 4.7 | `plan/*` | 🟢 Green |
 
-_(Replace `@maintainer` with the owning engineer or team as the team grows.)_
+_(As the team grows, replace the single-owner entries above with the owning engineer or team for each routine.)_
 
 > The canonical, version-controlled definitions of these routines (cron, model, prompt,
 > tools) live in [`routines/`](../routines/) and are applied via Claude Code — see
