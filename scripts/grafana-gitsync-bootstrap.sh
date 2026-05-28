@@ -27,6 +27,20 @@ GIT_USER="${GIT_USER:-root}"              # GitLab user owning the PAT
 PW=$(kubectl -n "$ONS" get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d)
 USER=$(kubectl -n "$ONS" get secret grafana-admin -o jsonpath='{.data.admin-user}' | base64 -d)
 
+# Wait for Grafana to be healthy before making API calls.  On a from-scratch
+# bootstrap Grafana only starts once ESO has synced grafana-admin from Vault, and
+# then the init container must finish its CA-bundle build first.
+WAIT="${GRAFANA_WAIT:-300}"
+echo "[grafana-gitsync] waiting up to ${WAIT}s for Grafana to be healthy ($GRAFANA_URL)..."
+end=$((SECONDS + WAIT))
+while true; do
+  health=$(curl -fsS --max-time 10 "$GRAFANA_URL/api/health" 2>/dev/null || true)
+  [ "$(printf '%s' "$health" | jq -r '.database' 2>/dev/null)" = "ok" ] && break
+  [ "$SECONDS" -ge "$end" ] && { echo "[grafana-gitsync] ERROR: Grafana not healthy after ${WAIT}s"; exit 1; }
+  sleep 10
+done
+echo "[grafana-gitsync] Grafana is healthy."
+
 # GitLab PAT: the api-scoped bootstrap token, read straight from Vault (same seam
 # as garage-bootstrap.sh). Grafana stores it encrypted in its own secret store via
 # the Repository's `secure.token`, so no runtime k8s Secret is needed.

@@ -82,8 +82,10 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) gitlab-configure
 	$(MAKE) root-app
 	$(MAKE) vault-bootstrap
+	$(MAKE) gitlab-tls-bootstrap
 	$(MAKE) garage-bootstrap
 	$(MAKE) frontdoor
+	$(MAKE) grafana-gitsync-bootstrap
 	@echo ""
 	@echo "✅ lab up. UIs via the front door on :8000 — Grafana http://localhost:8000 · ArgoCD http://argocd.127.0.0.1.nip.io:8000 · run 'make creds' for logins, 'make status' for health"
 

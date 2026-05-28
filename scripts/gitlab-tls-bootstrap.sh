@@ -33,6 +33,14 @@ if kubectl get ns "$ONS" >/dev/null 2>&1; then
     --from-file=ca.crt="$CAROOT/rootCA.pem" \
     --dry-run=client -o yaml | kubectl apply -f - >/dev/null
   echo "[gitlab-tls] published mkcert root CA -> configmap/gitlab-tls-ca (ns $ONS)"
+  # If Grafana is already running its init container already baked a CA bundle that
+  # may be missing the mkcert CA (e.g. the CA arrived late, or this is a re-run).
+  # Roll the deployment so the init re-runs and appends the CA before Grafana starts.
+  ready=$(kubectl -n "$ONS" get deploy grafana -o jsonpath='{.status.readyReplicas}' 2>/dev/null || true)
+  if [ "${ready:-0}" -ge 1 ]; then
+    echo "[gitlab-tls] Grafana is running; rolling deployment so the init re-reads the CA bundle..."
+    kubectl -n "$ONS" rollout restart deployment/grafana >/dev/null
+  fi
 else
   echo "[gitlab-tls] WARN: namespace $ONS missing (cluster down?); skipped publishing CA"
 fi
