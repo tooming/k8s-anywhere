@@ -128,14 +128,95 @@ You review and merge plan PRs, same as implementation PRs.
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
 > through to the next.
 >
-> **Planner note (2026-05-26):** the whole TiDB track (operator → cluster → demo)
-> is **done** and moved to *Done*; the always-on resource/bats/dashboard hardening
-> items are likewise complete. The 🟢 executor lane is now nearly empty — almost all
-> remaining high-value work (real Tempo trace producer, NetworkPolicies,
-> `securityContext` hardening, the heavy on-demand components, the capstone) is 🟡
-> and **blocked on a human RFC**. Until a human writes those RFCs, the executor will
-> only have the documentation items below. See the plan-PR body.
+> **Planner note (2026-05-29):** the maintainer answered the executor's idle
+> notice (issue #57) by filing five RFCs (#58 Artifactory, #59 Istio ambient,
+> #60 Longhorn, #61 Tempo producer, #62 capstone) — those RFCs ARE the
+> human-authored design input the 🟡 items were waiting on (per
+> [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md) §2). Each RFC has been
+> groomed into single-PR 🟢 items below, ordered so the smallest, highest-value
+> work (Tempo producer — completes the LGTMP traces pillar with no new heavy
+> deps) runs first, then the heavy on-demand components in the order
+> Artifactory → Istio + Kiali → Longhorn (Artifactory first because the
+> Capstone, RFC #62, chains behind it). NetworkPolicies and `securityContext`
+> hardening remain 🟡 and still need their own RFCs.
+>
+> ADR items are 🟢 because they *record decisions already made* by the RFC
+> issues — the same precedent as ADR-0007/ADR-0008. Manifest items for the new
+> heavy components are 🟢 because each lands as a **non-auto-synced** ArgoCD
+> `Application` (rule #4) — the executor pattern proven by the TiDB track.
 
+- [ ] 🟢 **Real Tempo trace producer — swap the `hello` demo image for a small
+  OTel-instrumented public image.** RFC #61 directs us to instrument the
+  existing `hello` demo (not a new emitter, not the TiDB demo). The current
+  `gitops/apps/demo/deployment.yaml` runs `nginx:alpine`, which can't emit
+  OTLP. Replace the image with `jaegertracing/example-hotrod:latest` (canonical
+  small public OTel demo from the Jaeger project) and set
+  `OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo.observability.svc.cluster.local:4318`
+  via env so spans land in Tempo's OTLP HTTP receiver (the existing
+  `tempo.observability.svc:4317`/`:4318` is already configured —
+  `gitops/observability/tempo/deployment.yaml`). Keep replicas=1 and the
+  existing CPU/memory limits (hotrod is ~80 MB image, fits the 12 GB budget).
+  Acceptance: dashboard ("Lab — Traces") expectation documented; clusterless
+  `make ci` gates pass; `docs/dependency-tree.md` updated to show the new
+  `hello → tempo` OTLP edge. (🟢 — RFC #61 is the human RFC; image choice is
+  named here so the executor doesn't pick. *Maintainer may swap to a different
+  small public OTel image by editing this item before the executor runs.*)
+- [ ] 🟢 **ADR-0011 — Artifactory as the on-demand artifact registry (not
+  Nexus).** Records the RFC #58 decision. Add
+  `docs/decisions/adr-0011-artifactory-not-nexus.md`: why Artifactory over
+  Nexus (single, well-known, JFrog OSS chart; learning value); chart source
+  (`jfrog/artifactory-oss` Helm chart, or named alternative); expected
+  footprint within the 12 GB budget (heavy → manual-sync ADR-0001 + ADR-0005
+  trade-off); relationship to RFC #62 (capstone consumer). Link from
+  `docs/decisions/README.md`. (🟢 — documents a decision already taken by
+  RFC #58; same pattern as ADR-0007/0008.)
+- [ ] 🟢 **Artifactory on-demand manifests + tooling.** Add
+  `gitops/platform/artifactory.yaml` as an ArgoCD `Application` with **no
+  `automated:` block** (manual sync, ROADMAP rule #4 — see the TiDB pattern in
+  `gitops/platform/tidb-operator.yaml`). Add `make artifactory-up` /
+  `make artifactory-down` targets. Add a `bats` test asserting the Application
+  is NOT auto-synced (mirror `tests/data-layer.bats`). Update `README.md`,
+  `docs/dependency-tree.md` (add the on-demand component row + dashed edge),
+  and wire the Artifactory UI into the Grafana "Lab UIs" panel via an Envoy
+  `HTTPRoute` (e.g. `artifactory.127.0.0.1.nip.io`) so `make lab-ui-check`
+  stays green. Use values from the ADR (chart, footprint). (🟢 — non-auto-synced
+  heavy component; the executor pattern is proven by `tidb-operator`,
+  `tidb-cluster`, `tidb-demo`.)
+- [ ] 🟢 **ADR-0012 — Istio ambient mesh + Kiali on-demand (not sidecar).**
+  Records the RFC #59 decision. Add
+  `docs/decisions/adr-0012-istio-ambient-not-sidecar.md`: why ambient over
+  sidecar (no per-pod injection, lighter memory footprint, simpler on a single
+  host); chart sources (`istio/base`, `istio/istiod`, `istio/cni`,
+  `istio/ztunnel` for ambient; Kiali official chart); relationship to
+  ADR-0008 (Envoy data plane shared with the north-south gateway); expected
+  footprint within the 12 GB budget. Link from `docs/decisions/README.md`.
+- [ ] 🟢 **Istio ambient on-demand manifests + tooling.** Add `gitops/istio/`
+  and `gitops/platform/istio-*.yaml` ArgoCD `Application`s **without
+  `automated:`** (one app per istio component: `istio-base`, `istiod`,
+  `istio-cni`, `ztunnel` — or bundle as the ADR resolves). Add `make istio-up`
+  / `make istio-down`. Bats test asserts no auto-sync. Update `README.md`,
+  `docs/dependency-tree.md`. (Kiali wiring goes in the next item.)
+- [ ] 🟢 **Kiali on-demand manifests + Lab UIs panel wiring.** Add
+  `gitops/platform/kiali.yaml` as a manual-sync ArgoCD `Application`. Add the
+  Kiali UI to the Lab UIs panel via an Envoy `HTTPRoute`
+  (`kiali.127.0.0.1.nip.io`) so `make lab-ui-check` covers it. Add `bats` +
+  docs updates (`README.md`, `docs/dependency-tree.md`). Document that
+  `make istio-up` must precede `make kiali-up` (or fold into a combined
+  `mesh-up` target — executor's call within the ADR).
+- [ ] 🟢 **ADR-0013 — Longhorn distributed block storage on-demand.** Records
+  the RFC #60 decision. Add
+  `docs/decisions/adr-0013-longhorn-block-storage.md`: why we're un-deferring
+  Longhorn (`docs/decisions/context.md` currently says "Deferred"); chart
+  source (`longhorn/longhorn` official Helm chart); expected footprint within
+  the 12 GB budget; relationship to ADR-0002 (Garage is S3; Longhorn is block).
+  Update `docs/decisions/context.md` in the same PR to reflect the un-defer.
+  Link from `docs/decisions/README.md`.
+- [ ] 🟢 **Longhorn on-demand manifests + tooling.** Add
+  `gitops/platform/longhorn.yaml` (or `gitops/storage/longhorn.yaml`) as a
+  manual-sync ArgoCD `Application`. Add `make longhorn-up` /
+  `make longhorn-down`. Bats test asserts no auto-sync. Update `README.md` and
+  `docs/dependency-tree.md`. Wire the Longhorn UI into the Lab UIs panel via
+  an Envoy `HTTPRoute` (`longhorn.127.0.0.1.nip.io`).
 - [x] 🟢 **ADR for the off-cluster Garage Terraform-state backend.** The remote
   `backend "s3"` over an off-cluster Garage (`infra/tfstate/`, `make tfstate-up`,
   `scripts/tfstate-bootstrap.sh`) shipped in `a07a1d2` and is described in
@@ -149,27 +230,44 @@ You review and merge plan PRs, same as implementation PRs.
 - [x] 🟢 Keep `docs/dependency-tree.md` current as components are added.
 
 ### Heavy on-demand components (README "Planned" row)
-> All 🟡 Yellow — each introduces a **new platform component + new third-party
-> chart/dependency + a new ADR** (the tech choice is a human decision). The executor
-> must **not** build these unprompted: open a GitHub issue naming the decision a human
-> owes (which product, which chart source, footprint within the 12 GB budget) and move
-> to the next 🟢 item. A human RFC + the ADR unblock the build.
-
-- [ ] 🟡 **Artifactory or Nexus** artifact registry, on-demand. Pick one; record the
-  choice as a new ADR. Manifests + `make` target + docs. *(needs human RFC first)*
-- [ ] 🟡 **Istio ambient mesh + Kiali**, on-demand. Ambient profile; wire Kiali into
-  the Lab UIs panel. Manifests + `make` target + docs + ADR. *(needs human RFC first)*
-- [ ] 🟡 **Longhorn** distributed block storage, on-demand. Manifests + `make` target
-  + docs + ADR. *(needs human RFC first; context.md currently defers Longhorn —
-  reconcile that note when the RFC lands.)*
+> **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
+> ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
+> *Now / next* above.** Any future heavy/on-demand component goes through the
+> same grooming flow: human files an RFC issue → planner splits into ADR +
+> non-auto-synced manifest + `make` target + docs + bats items → executor builds.
+> Heavy components MUST stay out of `gitops/bootstrap/root-app.yaml`'s
+> auto-synced set (rule #4).
 
 ### Capstone — "tie it together" (learning-path step 5)
-- [ ] 🟡 **End-to-end pipeline** — a GitLab CI pipeline that builds the demo app image
-  → pushes to an in-lab registry → ArgoCD deploys it → Envoy routes it → Grafana
-  shows its metrics & logs → Vault holds its secrets. Author the pipeline +
-  manifests as code; validate clusterless. *(needs human RFC first — pulls in a new
-  in-lab registry component and touches CI; large enough that the planner should split
-  it into staged items once a human sets direction.)*
+> RFC #62 directs the capstone end-to-end pipeline. The in-lab registry is
+> **Artifactory** (RFC #58 → ADR-0011), so this whole chain is **blocked on
+> the Artifactory manifest item landing first** (see *Now / next*). When that
+> lands, the planner promotes the steps below into *Now / next* one at a time
+> in the order shown.
+
+- [ ] 🟢 **Capstone step 1 — GitLab CI: build the demo app image and push it to
+  Artifactory.** Add `.gitlab-ci.yml` (or update if present) with a build job
+  that produces an image of the `hello` demo (or its capstone successor) and
+  pushes to the in-lab Artifactory Docker registry endpoint. Vault-stored
+  registry creds via ESO; no plaintext creds in CI vars. Clusterless gates:
+  `make ci` lints the YAML, structural bats. *(Blocked on the Artifactory
+  manifest item.)*
+- [ ] 🟢 **Capstone step 2 — ArgoCD `Application` for the pipeline-deployed
+  app variant.** New `gitops/apps/capstone/` Application sourcing the
+  pipeline-built image (via Argo image-updater annotation or a values bump in
+  the same repo). Auto-synced is fine here — the workload itself is light.
+  *(Blocked on step 1.)*
+- [ ] 🟢 **Capstone step 3 — Envoy `HTTPRoute` for the capstone app**
+  (`capstone.127.0.0.1.nip.io`). Wire it into the Grafana "Lab UIs" panel so
+  `make lab-ui-check` covers it. *(Blocked on step 2.)*
+- [ ] 🟢 **Capstone step 4 — Grafana dashboard tile for the capstone app**
+  ("Lab — Capstone"): real pod/container metrics + Loki log panel filtered to
+  the capstone namespace + Tempo traces panel if the app is OTel-instrumented
+  (see the Tempo-producer item above). ADR-0004: real metrics only.
+  *(Blocked on step 2.)*
+- [ ] 🟢 **Capstone step 5 — Vault secret + `ExternalSecret` for the capstone
+  app.** Seed via `scripts/vault-bootstrap.sh` (mirror the `tidb/demo` pattern);
+  `ExternalSecret` in `gitops/secrets/`. *(Blocked on step 2.)*
 
 ### Cross-cutting hardening & quality (always-safe filler)
 > Use these when nothing above can be done cleanly in a single run. Mixed tiers —
@@ -182,16 +280,9 @@ You review and merge plan PRs, same as implementation PRs.
   namespace once a human signs off on the deny-by-default direction.)*
 - [ ] 🟡 Harden `securityContext` (runAsNonRoot, drop ALL caps, readOnlyRootFilesystem
   where viable) across manifests. *(Security-adjacent — needs human RFC first.)*
-- [ ] 🟡 **Real trace producer for Tempo.** Tempo is deployed always-on and the
-  "Lab — Traces" dashboard exists, but **nothing emits OTLP** — no workload outside
-  Tempo references `4317`/`4318`/`otel`, so the traces pillar carries no real data
-  (a learning objective unmet + an ADR-0004 "no fabricated/empty real-state panel"
-  smell). Add an OTel-instrumented producer that emits real spans to Tempo's OTLP
-  receiver, then confirm the dashboard populates. *(🟡 because it introduces a new
-  instrumented workload/image and touches the always-on observability data flow —
-  needs a human RFC on what to instrument: the existing `hello` demo, a purpose-built
-  tiny emitter, or fold it into the TiDB/capstone demo. Keep footprint inside the
-  12 GB budget.)*
+- [x] 🟢 **Real trace producer for Tempo** — RFC #61 set the direction
+  (instrument the `hello` demo, not a separate emitter); groomed into
+  *Now / next* above.
 - [x] 🟡 **Wire the Git Sync bootstraps into `make up` / DR (and survive Grafana rolls).**
   ADR-0006 left two imperative seams run by hand: `scripts/gitlab-tls-bootstrap.sh` (mkcert
   cert + nginx TLS proxy on `:8930` + publish the `gitlab-tls-ca` ConfigMap) and
