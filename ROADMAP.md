@@ -161,7 +161,7 @@ You review and merge plan PRs, same as implementation PRs.
   `hello → tempo` OTLP edge. (🟢 — RFC #61 is the human RFC; image choice is
   named here so the executor doesn't pick. *Maintainer may swap to a different
   small public OTel image by editing this item before the executor runs.*)
-- [ ] 🟢 **ADR-0011 — Artifactory as the on-demand artifact registry (not
+- [x] 🟢 **ADR-0011 — Artifactory as the on-demand artifact registry (not
   Nexus).** Records the RFC #58 decision. Add
   `docs/decisions/adr-0011-artifactory-not-nexus.md`: why Artifactory over
   Nexus (single, well-known, JFrog OSS chart; learning value); chart source
@@ -305,6 +305,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **ADR-0011 — Artifactory as the on-demand artifact registry (not Nexus)** — Added `docs/decisions/adr-0011-artifactory-not-nexus.md` documenting why Artifactory OSS over Nexus (first-party `jfrog/artifactory-oss` chart from `charts.jfrog.io`; industry prevalence; OCI-native free tier); the 12 GB budget constraint that mandates non-auto-synced deployment (same pattern as TiDB); the capstone dependency chain (RFC #62 build pipeline blocked on Artifactory manifests); and ADR cross-references. Linked from `docs/decisions/README.md`. (auto/adr-0011-artifactory)
 - [x] **Real Tempo trace producer — swap `hello` demo to HotROD** — Replaced `nginx:alpine` in `gitops/apps/demo/deployment.yaml` with `jaegertracing/example-hotrod:latest`; added `OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo.observability.svc.cluster.local:4318`. Updated `docs/dependency-tree.md` to show the `hello → tempo` OTLP edge (removed the "no producer yet" placeholder). Updated the "Lab — Traces" Grafana dashboard About panel to document HotROD as the trace producer with example TraceQL queries. (auto/tempo-trace-producer)
 - [x] **Wire Git Sync bootstraps into `make up` / DR (survive Grafana rolls)** — Both ADR-0006
   imperative seams now run automatically: `gitlab-tls-bootstrap` (mkcert cert + nginx TLS proxy +
