@@ -161,7 +161,7 @@ You review and merge plan PRs, same as implementation PRs.
   `hello → tempo` OTLP edge. (🟢 — RFC #61 is the human RFC; image choice is
   named here so the executor doesn't pick. *Maintainer may swap to a different
   small public OTel image by editing this item before the executor runs.*)
-- [ ] 🟢 **ADR-0011 — Artifactory as the on-demand artifact registry (not
+- [x] 🟢 **ADR-0011 — Artifactory as the on-demand artifact registry (not
   Nexus).** Records the RFC #58 decision. Add
   `docs/decisions/adr-0011-artifactory-not-nexus.md`: why Artifactory over
   Nexus (single, well-known, JFrog OSS chart; learning value); chart source
@@ -305,6 +305,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **ADR-0011 — Artifactory as the on-demand artifact registry (not Nexus)** — Added `docs/decisions/adr-0011-artifactory-not-nexus.md` recording the RFC #58 decision: why Artifactory OSS over Nexus (first-party JFrog chart, better Docker/OCI support in the free tier, higher industry transfer value), chart source (`jfrog/artifactory-oss` from `https://charts.jfrog.io`), expected footprint (~1–2 GB JVM, therefore heavy/on-demand, never auto-synced), and the blocking relationship to the capstone pipeline (RFC #62). Linked from `docs/decisions/README.md`. (PR to be referenced)
 - [x] **Wire Git Sync bootstraps into `make up` / DR (survive Grafana rolls)** — Both ADR-0006
   imperative seams now run automatically: `gitlab-tls-bootstrap` (mkcert cert + nginx TLS proxy +
   publish `gitlab-tls-ca` ConfigMap, rolls Grafana if the CA arrives after it was already running)
