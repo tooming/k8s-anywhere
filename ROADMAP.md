@@ -145,7 +145,7 @@ You review and merge plan PRs, same as implementation PRs.
 > heavy components are 🟢 because each lands as a **non-auto-synced** ArgoCD
 > `Application` (rule #4) — the executor pattern proven by the TiDB track.
 
-- [ ] 🟢 **Real Tempo trace producer — swap the `hello` demo image for a small
+- [x] 🟢 **Real Tempo trace producer — swap the `hello` demo image for a small
   OTel-instrumented public image.** RFC #61 directs us to instrument the
   existing `hello` demo (not a new emitter, not the TiDB demo). The current
   `gitops/apps/demo/deployment.yaml` runs `nginx:alpine`, which can't emit
@@ -305,6 +305,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **Real Tempo trace producer — swap `hello` demo to HotROD** — Replaced `nginx:alpine` in `gitops/apps/demo/deployment.yaml` with `jaegertracing/example-hotrod:latest`; added `OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo.observability.svc.cluster.local:4318`. Updated `docs/dependency-tree.md` to show the `hello → tempo` OTLP edge (removed the "no producer yet" placeholder). Updated the "Lab — Traces" Grafana dashboard About panel to document HotROD as the trace producer with example TraceQL queries. (auto/tempo-trace-producer)
 - [x] **Wire Git Sync bootstraps into `make up` / DR (survive Grafana rolls)** — Both ADR-0006
   imperative seams now run automatically: `gitlab-tls-bootstrap` (mkcert cert + nginx TLS proxy +
   publish `gitlab-tls-ca` ConfigMap, rolls Grafana if the CA arrives after it was already running)
