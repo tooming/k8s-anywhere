@@ -18,7 +18,7 @@
     {
       "id": 1, "type": "text", "title": "About",
       "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
-      "options": { "mode": "markdown", "content": "Traces appear once something **sends spans** to Tempo (OTLP `tempo.observability.svc:4318`). There is no producer yet — Beyla (eBPF) was removed because it can't capture on nested k3d; the planned **OTel-instrumented demo app** will populate this. Edit the **TraceQL** box (e.g. `{ name =~ \".*\" }`, `{ duration > 100ms }`) to filter." }
+      "options": { "mode": "markdown", "content": "Traces are produced by the **`hello` demo app** (`jaegertracing/example-hotrod` — the Jaeger HotROD ride-sharing demo). It runs in namespace `lab-demo` and sends spans via OTLP HTTP to `tempo.observability.svc.cluster.local:4318`. Use the **TraceQL** box to filter — for example `{ .service.name =~ \".*\" }` shows all spans, `{ duration > 100ms }` shows slow calls, or `{ .http.method = \"GET\" }` shows HTTP GET requests." }
     },
     {
       "id": 2, "type": "table", "title": "Traces  —  $traceql",

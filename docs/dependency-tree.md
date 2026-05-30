@@ -83,7 +83,7 @@ graph TD
       datademo["data-demo<br/>(traffic generators)"]:::data
     end
     envoy["Envoy Gateway"]:::ing
-    demo["demo / canary (hello)"]
+    demo["demo / hello<br/>(HotROD — OTel trace producer)"]
   end
 
   %% --- secret chain (ExternalSecret <- Vault path) ---
@@ -107,7 +107,7 @@ graph TD
   alloy -->|"metrics (X-Scope-OrgID lab)"| mimir
   alloy -->|logs| loki
   alloy -->|profiles| pyro
-  alloy -.->|"OTLP :4318 (no producer yet)"| tempo
+  demo -->|"OTLP :4318"| tempo
   mimir -->|S3| garage
   loki -->|S3| garage
   tempo -->|S3| garage
@@ -204,7 +204,7 @@ make up
 | ESO → tidb-demo-creds *(on-demand)* | `← vault:tidb/demo` (username + password) | `gitops/tidb-demo/externalsecret.yaml` |
 | Mimir/Loki/Tempo/Pyroscope → Garage | S3 backend `garage.storage.svc:3900` | each component's config |
 | Alloy → Mimir/Loki/Pyroscope | remote_write / push | `gitops/observability/alloy` |
-| Alloy ⇢ Tempo | OTLP `:4318` (configured; no trace producer yet) | alloy config |
+| hello (HotROD) → Tempo | OTLP HTTP `:4318` (`OTEL_EXPORTER_OTLP_ENDPOINT`) | `gitops/apps/demo/deployment.yaml` |
 | ACK → moto | S3 API `moto.moto.svc:5000` | `gitops/ack`, ACK chart values |
 | KRO → ACK | `S3BucketClaim` RGD composes a `Bucket` | `gitops/kro` |
 | Front door :8000 → Envoy → UIs | `HTTPRoute` host-routing | `gitops/network`, per-app routes |
@@ -221,7 +221,7 @@ make up
   GitOps-managed — the stable entry that survives blue/green; it's the front-LB
   SPOF in [ADR-0005](decisions/adr-0005-spof-recreate-over-ha.md).
 - **GitLab** is also off-cluster (docker), the git source ArgoCD reads from.
-- **Tempo** has no trace producer yet — the Alloy→Tempo OTLP path is wired but idle.
+- **Tempo** receives traces from the `hello` demo app (HotROD) via OTLP HTTP `:4318`. HotROD runs in `lab-demo` namespace and exports to `tempo.observability.svc.cluster.local:4318` via the standard `OTEL_EXPORTER_OTLP_ENDPOINT` env var. The "Lab — Traces" dashboard shows live span data.
 - **TiDB Operator** (`gitops/platform/tidb-operator.yaml`) is on-demand / manual-sync — ArgoCD discovers the Application but does not auto-deploy the operator. Use `make tidb-operator-up` / `make tidb-operator-down`. Installs into namespace `tidb-admin`.
 - **TiDB Cluster** (`gitops/platform/tidb-cluster.yaml`) is on-demand / manual-sync — deploys a minimal `TidbCluster` CR (1×PD + 1×TiKV + 1×TiDB, ~1.5 GB) into namespace `tidb`. Use `make tidb-up` / `make tidb-down`. Requires TiDB Operator running first. ADR-0003 note: production topology uses ≥3 PD + ≥3 TiKV + 2 TiDB; single replicas are the ADR-0005 lab trade-off.
 - **TiDB Demo App** (`gitops/platform/tidb-demo.yaml`) is on-demand / manual-sync — deploys an nginx-based demo workload (namespace `tidb`) that reads TiDB credentials from Vault via `ExternalSecret tidb-demo-creds`. Demonstrates the Vault → ESO → Secret → Pod injection flow (learning-path step 4). HTTPRoute: `tidb-demo.127.0.0.1.nip.io`. Dashboard: "Lab — TiDB Demo App". Use `make tidb-demo-up` / `make tidb-demo-down`.

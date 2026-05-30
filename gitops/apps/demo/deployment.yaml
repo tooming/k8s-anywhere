@@ -16,9 +16,12 @@ spec:
     spec:
       containers:
         - name: hello
-          image: nginx:alpine
+          image: jaegertracing/example-hotrod:latest
           ports:
-            - containerPort: 80
+            - containerPort: 8080
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://tempo.observability.svc.cluster.local:4318"
           resources:
             requests:
               cpu: 10m
