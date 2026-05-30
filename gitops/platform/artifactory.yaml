@@ -1,0 +1,43 @@
+# Artifactory OSS — on-demand artifact registry (JFrog first-party Helm chart).
+# ON-DEMAND: no automated: block → ArgoCD discovers this Application but will NOT
+# auto-deploy it. Bring up with: make artifactory-up
+# Tear down with:               make artifactory-down
+# Do NOT add automated: here — JVM footprint (~1–2 GB) is incompatible with
+# running the always-on stack simultaneously (12 GB VM budget, ADR-0011).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: artifactory
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jfrog.io
+    chart: artifactory-oss
+    targetRevision: 107.77.11
+    helm:
+      releaseName: artifactory-oss
+      valuesObject:
+        nginx:
+          enabled: false       # Envoy HTTPRoute handles ingress (ADR-0008)
+        postgresql:
+          enabled: false       # Use embedded Derby — lighter footprint for the lab
+        artifactory:
+          persistence:
+            size: 5Gi
+          javaOpts:
+            other: "-Xms256m -Xmx512m"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 1Gi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: artifactory
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -321,3 +321,13 @@ tidb-demo-up: ## Deploy TiDB demo app via ArgoCD manual sync (run tidb-up first 
 .PHONY: tidb-demo-down
 tidb-demo-down: ## Remove TiDB demo app (cascade-deletes pods/secrets; keeps namespace)
 	$(call argocd-delete,tidb-demo)
+
+.PHONY: artifactory-up
+artifactory-up: ## Deploy Artifactory OSS via ArgoCD manual sync (~1-2 GB JVM; do after make up)
+	$(call argocd-sync,artifactory)
+	$(call argocd-sync,artifactory-extras)
+
+.PHONY: artifactory-down
+artifactory-down: ## Remove Artifactory OSS and its Envoy route (reclaims ~1-2 GB RAM)
+	$(call argocd-delete,artifactory-extras)
+	$(call argocd-delete,artifactory)

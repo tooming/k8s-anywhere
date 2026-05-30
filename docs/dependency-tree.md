@@ -77,6 +77,9 @@ graph TD
       tidbcluster["TiDB Cluster<br/>1×PD + 1×TiKV + 1×TiDB<br/>(tidb ns)"]:::ondemand
       tidbdemo["TiDB Demo App<br/>(tidb ns)"]:::ondemand
     end
+    subgraph ARTIF["Artifactory — on-demand (manual sync only)"]
+      artifactory["Artifactory OSS<br/>artifact registry + Docker registry<br/>(artifactory ns)"]:::ondemand
+    end
     subgraph DATA["Data layer — always-on (data ns)"]
       rabbitmq["RabbitMQ<br/>broker + mgmt UI + prometheus"]:::data
       redis["Redis<br/>cache/KV + redis_exporter"]:::data
@@ -124,6 +127,9 @@ graph TD
   %% --- TiDB on-demand chain ---
   tidbop -.->|"manages CRDs"| tidbcluster
   tidbcluster -.->|"DB endpoint"| tidbdemo
+
+  %% --- Artifactory on-demand ---
+  envoy -.->|"artifactory.127.0.0.1.nip.io (on-demand)"| artifactory
 
   %% --- data layer (always-on) ---
   rabbitmq -->|"scrape :15692"| alloy
@@ -186,6 +192,8 @@ make up
 | — | tidb-operator *(on-demand)* | CRD controller for TiDB; discovered by ArgoCD but **manual-sync only** — use `make tidb-operator-up` |
 | — | tidb-cluster *(on-demand)* | `TidbCluster` CR (1×PD + 1×TiKV + 1×TiDB); manual-sync only — use `make tidb-up` (requires tidb-operator) |
 | — | tidb-demo *(on-demand)* | Demo app reading TiDB creds from Vault via ExternalSecret; manual-sync only — use `make tidb-demo-up` |
+| — | artifactory *(on-demand)* | JFrog Artifactory OSS artifact + Docker registry (chart `jfrog/artifactory-oss` from `charts.jfrog.io`); manual-sync only — use `make artifactory-up` |
+| — | artifactory-extras *(on-demand)* | Envoy HTTPRoute for `artifactory.127.0.0.1.nip.io`; paired with the artifactory Application — use `make artifactory-up` |
 
 > Sync-waves are ArgoCD's **apply** order. The **runtime** secret dependency
 > (Vault must be *bootstrapped* before ESO can sync) is enforced by the day-0
@@ -215,6 +223,7 @@ make up
 | Alloy → RabbitMQ / Redis | scrape `:15692` / `:9121` → Mimir | `gitops/platform/observability-alloy.yaml` |
 | data-demo → RabbitMQ / Redis | AMQP publish/consume · Redis SET/GET/INCR | `gitops/data/demo/` |
 | Envoy → rabbitmq.127.0.0.1.nip.io | HTTPRoute (management UI) | `gitops/data/rabbitmq/route.yaml` |
+| Envoy → artifactory.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/artifactory/route.yaml` |
 
 ## Notes
 - **Front door** (`:8000`, nginx docker container) is off-cluster and **not**
@@ -228,4 +237,5 @@ make up
 - **RabbitMQ** (`gitops/platform/rabbitmq.yaml`) is **always-on / auto-synced** — single-node broker (namespace `data`) with the management UI (`rabbitmq.127.0.0.1.nip.io`) and the `rabbitmq_prometheus` plugin (`:15692`, scraped by Alloy). Default user from Vault via `ExternalSecret rabbitmq-creds`. Dashboard: "Lab — RabbitMQ". ADR-0009. ADR-0003/0005 note: production runs a clustered broker with quorum queues; the single node is the single-host lab trade-off.
 - **Redis** (`gitops/platform/redis.yaml`) is **always-on / auto-synced** — single-node cache/KV (namespace `data`) with auth via `--requirepass` (Vault → `ExternalSecret redis-creds`) and a `redis_exporter` sidecar (`:9121`, scraped by Alloy). No web UI. Dashboard: "Lab — Redis". ADR-0010. ADR-0003/0005 note: production uses Sentinel/Cluster; the single replica is the single-host lab trade-off.
 - **data-demo** (`gitops/platform/data-demo.yaml`) is **always-on / auto-synced** — tiny generators (`redis-load`, `rabbitmq-load`, namespace `data`) that exercise Redis and RabbitMQ continuously so the dashboards show real traffic, not idle brokers. Credentials via `ExternalSecret data-demo-creds`.
+- **Artifactory OSS** (`gitops/platform/artifactory.yaml` + `gitops/platform/artifactory-extras.yaml`) is **on-demand / manual-sync** — JFrog Artifactory OSS artifact registry (chart `jfrog/artifactory-oss` from `charts.jfrog.io`, namespace `artifactory`). JVM footprint (~1–2 GB) prevents auto-sync alongside the always-on stack (ADR-0011). HTTPRoute: `artifactory.127.0.0.1.nip.io`. Use `make artifactory-up` / `make artifactory-down`. The capstone pipeline (RFC #62) pushes images here. ADR-0003/0005 note: production runs clustered Artifactory HA; single node is the single-host lab trade-off.
 - Storage backups, true HA: out of scope (single host). See `docs/DR.md`.
