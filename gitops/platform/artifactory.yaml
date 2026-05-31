@@ -1,8 +1,8 @@
 # Artifactory OSS — on-demand artifact registry (JFrog first-party Helm chart).
-# ON-DEMAND: no automated: block → ArgoCD discovers this Application but will NOT
+# ON-DEMAND: no auto-sync block → ArgoCD discovers this Application but will NOT
 # auto-deploy it. Bring up with: make artifactory-up
 # Tear down with:               make artifactory-down
-# Do NOT add automated: here — JVM footprint (~1–2 GB) is incompatible with
+# Do NOT enable auto-sync here — JVM footprint (~1–2 GB) is incompatible with
 # running the always-on stack simultaneously (12 GB VM budget, ADR-0011).
 apiVersion: argoproj.io/v1alpha1
 kind: Application

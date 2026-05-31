@@ -1,8 +1,8 @@
 # Istio base — CRDs and cluster-scoped RBAC resources (Helm chart: istio/base).
-# ON-DEMAND: no automated: block → ArgoCD discovers this Application but will NOT
+# ON-DEMAND: no auto-sync block → ArgoCD discovers this Application but will NOT
 # auto-deploy it. Bring up first with: make istio-up
 # Tear down last with:                make istio-down
-# Do NOT add automated: here — the full Istio ambient footprint (~480 MB) is
+# Do NOT enable auto-sync here — the full Istio ambient footprint (~480 MB) is
 # incompatible with running the always-on stack simultaneously (12 GB VM budget,
 # ADR-0012). Deploy order: istio-base → istio-cni → istiod → ztunnel.
 apiVersion: argoproj.io/v1alpha1
