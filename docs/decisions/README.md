@@ -20,3 +20,4 @@ rationale travels with the code.
   - [ADR-0010](adr-0010-redis-cache.md) — Redis as the lab's cache / key-value store (plain manifests, always-on)
   - [ADR-0011](adr-0011-artifactory-not-nexus.md) — Artifactory as the on-demand artifact registry (not Nexus)
   - [ADR-0012](adr-0012-istio-ambient-not-sidecar.md) — Istio ambient mesh + Kiali on-demand (not sidecar)
+  - [ADR-0013](adr-0013-longhorn-block-storage.md) — Longhorn distributed block storage on-demand
