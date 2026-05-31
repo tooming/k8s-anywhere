@@ -1,5 +1,5 @@
 # Artifactory extras — Envoy HTTPRoute and any supporting in-repo manifests.
-# ON-DEMAND: pairs with the artifactory Application. No automated: block.
+# ON-DEMAND: pairs with the artifactory Application. No auto-sync block.
 # Bring up with: make artifactory-up
 # Tear down with: make artifactory-down
 apiVersion: argoproj.io/v1alpha1

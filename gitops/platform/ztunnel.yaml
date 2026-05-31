@@ -1,6 +1,6 @@
 # Istio ztunnel — per-node L4 proxy that implements the ambient mesh data plane
 # (replaces sidecars with a shared node-level proxy; ADR-0012). ON-DEMAND: no
-# automated: block. Bring up with: make istio-up (step 4, last; requires istiod).
+# auto-sync block. Bring up with: make istio-up (step 4, last; requires istiod).
 # Tear down with:                  make istio-down (step 1, first).
 apiVersion: argoproj.io/v1alpha1
 kind: Application

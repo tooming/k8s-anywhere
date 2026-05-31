@@ -1,5 +1,5 @@
 # Istio control plane — istiod running in ambient profile (no sidecar injection;
-# ADR-0012). ON-DEMAND: no automated: block. Bring up with: make istio-up (step 3,
+# ADR-0012). ON-DEMAND: no auto-sync block. Bring up with: make istio-up (step 3,
 # after istio-cni). Tear down with: make istio-down (step 2, after ztunnel).
 apiVersion: argoproj.io/v1alpha1
 kind: Application

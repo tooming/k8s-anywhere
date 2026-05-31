@@ -1,6 +1,6 @@
 # Istio CNI — node-level plugin for transparent traffic capture in ambient mode.
 # Must be deployed before istiod when using the ambient profile. ON-DEMAND: no
-# automated: block. Bring up with: make istio-up (step 2, after istio-base)
+# auto-sync block. Bring up with: make istio-up (step 2, after istio-base)
 # Tear down with:                  make istio-down (step 3, before istio-base)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
