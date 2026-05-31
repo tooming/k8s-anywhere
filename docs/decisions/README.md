@@ -19,3 +19,4 @@ rationale travels with the code.
   - [ADR-0009](adr-0009-rabbitmq-message-broker.md) — RabbitMQ as the lab's message broker (plain manifests, always-on)
   - [ADR-0010](adr-0010-redis-cache.md) — Redis as the lab's cache / key-value store (plain manifests, always-on)
   - [ADR-0011](adr-0011-artifactory-not-nexus.md) — Artifactory as the on-demand artifact registry (not Nexus)
+  - [ADR-0012](adr-0012-istio-ambient-not-sidecar.md) — Istio ambient mesh + Kiali on-demand (not sidecar)
