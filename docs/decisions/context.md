@@ -41,7 +41,7 @@ not Docker Desktop.
 - **Secrets:** Vault + ESO. Pattern for any new secret: `vault kv put secret/...` then add an `ExternalSecret` in `gitops/secrets/` — never kubectl-create or commit raw secrets. Vault seals on restart → an interim **auto-unsealer** re-unseals from the `vault-keys` Secret (lab-only). Real KMS auto-unseal would need a cloud KMS / LocalStack Pro — not viable here.
 - **Routing:** per-app UIs via Envoy with `*.127.0.0.1.nip.io` hostnames (no /etc/hosts). Grafana=`localhost:8080`, ArgoCD=`argocd.127.0.0.1.nip.io:8080`, Vault=`vault.127.0.0.1.nip.io:8080`, GitLab=`localhost:8929`.
 - **TiDB:** MySQL-compatible; will be demoed with a sample app, **not** used as Grafana's backend (would couple always-on Grafana to the heavy on-demand TiDB profile).
-- **Longhorn:** not needed — `local-path` covers PVCs; optional learning extra, fiddliest on k3d. Deferred.
+- **Longhorn:** on-demand block storage learning objective (ADR-0013, RFC #60). `local-path` remains the provisioner for the always-on stack; Longhorn adds a Kubernetes-native StorageClass + snapshot API + UI as a manual-sync on-demand component. Not auto-synced (12 GB budget). Bring up with `make longhorn-up`.
 
 ## Operational rules
 1. **No dependency cycle:** never source ArgoCD's git credentials or Vault's unseal key *from Vault* (would cycle ArgoCD↔Vault). Verified acyclic: repo secret is Terraform-made; ESO manages only workload secrets.
