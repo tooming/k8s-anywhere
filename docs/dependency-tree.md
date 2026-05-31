@@ -85,6 +85,7 @@ graph TD
       istiocni["istio-cni<br/>node CNI plugin<br/>(ambient mode)"]:::ondemand
       istiod["istiod<br/>control plane<br/>(ambient profile)"]:::ondemand
       ztunnel["ztunnel<br/>per-node L4 proxy<br/>(DaemonSet)"]:::ondemand
+      kiali["Kiali<br/>service mesh UI<br/>(istio-system ns)"]:::ondemand
     end
     subgraph DATA["Data layer — always-on (data ns)"]
       rabbitmq["RabbitMQ<br/>broker + mgmt UI + prometheus"]:::data
@@ -142,6 +143,8 @@ graph TD
   istiobase -.->|"CRDs"| istiod
   istiocni -.->|"node capture"| ztunnel
   istiod -.->|"control plane"| ztunnel
+  istiod -.->|"mesh config"| kiali
+  envoy -.->|"kiali.127.0.0.1.nip.io (on-demand)"| kiali
 
   %% --- data layer (always-on) ---
   rabbitmq -->|"scrape :15692"| alloy
@@ -210,6 +213,8 @@ make up
 | — | istio-cni *(on-demand, step 2)* | Istio CNI node plugin, ambient profile (chart `istio/cni`); must precede istiod — use `make istio-up` |
 | — | istiod *(on-demand, step 3)* | Istio control plane, ambient profile (chart `istio/istiod`); no sidecar injection (ADR-0012) — use `make istio-up` |
 | — | ztunnel *(on-demand, step 4)* | Per-node L4 proxy DaemonSet implementing ambient mesh data plane (chart `istio/ztunnel`) — use `make istio-up` |
+| — | kiali *(on-demand)* | Service mesh observability UI (chart `kiali-server` from `https://kiali.org/helm-charts`, v1.89.0); anonymous auth; connects to Mimir Prometheus API; Envoy HTTPRoute `kiali.127.0.0.1.nip.io` — use `make kiali-up` (requires `istio-up`) or `make mesh-up` |
+| — | kiali-extras *(on-demand)* | Envoy HTTPRoute for `kiali.127.0.0.1.nip.io`; paired with the kiali Application — use `make kiali-up` |
 
 > Sync-waves are ArgoCD's **apply** order. The **runtime** secret dependency
 > (Vault must be *bootstrapped* before ESO can sync) is enforced by the day-0
@@ -240,6 +245,8 @@ make up
 | data-demo → RabbitMQ / Redis | AMQP publish/consume · Redis SET/GET/INCR | `gitops/data/demo/` |
 | Envoy → rabbitmq.127.0.0.1.nip.io | HTTPRoute (management UI) | `gitops/data/rabbitmq/route.yaml` |
 | Envoy → artifactory.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/artifactory/route.yaml` |
+| Envoy → kiali.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/kiali/route.yaml` |
+| istiod → Kiali *(on-demand)* | mesh config (xDS endpoint) | `gitops/platform/kiali.yaml` values |
 
 ## Notes
 - **Front door** (`:8000`, nginx docker container) is off-cluster and **not**
@@ -254,5 +261,6 @@ make up
 - **Redis** (`gitops/platform/redis.yaml`) is **always-on / auto-synced** — single-node cache/KV (namespace `data`) with auth via `--requirepass` (Vault → `ExternalSecret redis-creds`) and a `redis_exporter` sidecar (`:9121`, scraped by Alloy). No web UI. Dashboard: "Lab — Redis". ADR-0010. ADR-0003/0005 note: production uses Sentinel/Cluster; the single replica is the single-host lab trade-off.
 - **data-demo** (`gitops/platform/data-demo.yaml`) is **always-on / auto-synced** — tiny generators (`redis-load`, `rabbitmq-load`, namespace `data`) that exercise Redis and RabbitMQ continuously so the dashboards show real traffic, not idle brokers. Credentials via `ExternalSecret data-demo-creds`.
 - **Artifactory OSS** (`gitops/platform/artifactory.yaml` + `gitops/platform/artifactory-extras.yaml`) is **on-demand / manual-sync** — JFrog Artifactory OSS artifact registry (chart `jfrog/artifactory-oss` from `charts.jfrog.io`, namespace `artifactory`). JVM footprint (~1–2 GB) prevents auto-sync alongside the always-on stack (ADR-0011). HTTPRoute: `artifactory.127.0.0.1.nip.io`. Use `make artifactory-up` / `make artifactory-down`. The capstone pipeline (RFC #62) pushes images here. ADR-0003/0005 note: production runs clustered Artifactory HA; single node is the single-host lab trade-off.
-- **Istio ambient mesh** (`gitops/platform/istio-base.yaml`, `istio-cni.yaml`, `istiod.yaml`, `ztunnel.yaml`) is **on-demand / manual-sync** — Istio ambient mesh (no per-pod sidecars; ADR-0012). Four ArgoCD Applications in deployment order: `istio-base` (CRDs) → `istio-cni` (CNI plugin, ambient) → `istiod` (control plane, ambient profile) → `ztunnel` (per-node L4 proxy DaemonSet). Charts from `https://istio-release.storage.googleapis.com/charts`, version 1.24.3. Total footprint ~480 MB. Namespace `istio-system`. Use `make istio-up` / `make istio-down`. Kiali UI (service mesh visualisation) wiring follows in the next ROADMAP item. ADR-0008 note: ztunnel shares the same Envoy data plane as the north-south gateway.
+- **Istio ambient mesh** (`gitops/platform/istio-base.yaml`, `istio-cni.yaml`, `istiod.yaml`, `ztunnel.yaml`) is **on-demand / manual-sync** — Istio ambient mesh (no per-pod sidecars; ADR-0012). Four ArgoCD Applications in deployment order: `istio-base` (CRDs) → `istio-cni` (CNI plugin, ambient) → `istiod` (control plane, ambient profile) → `ztunnel` (per-node L4 proxy DaemonSet). Charts from `https://istio-release.storage.googleapis.com/charts`, version 1.24.3. Total footprint ~480 MB. Namespace `istio-system`. Use `make istio-up` / `make istio-down`. ADR-0008 note: ztunnel shares the same Envoy data plane as the north-south gateway.
+- **Kiali** (`gitops/platform/kiali.yaml` + `gitops/platform/kiali-extras.yaml`) is **on-demand / manual-sync** — service mesh observability UI (chart `kiali-server` v1.89.0 from `https://kiali.org/helm-charts`, namespace `istio-system`). Connects to Mimir's Prometheus-compatible API (`X-Scope-OrgID: lab`) for real-time service graph and traffic metrics. Exposed via Envoy HTTPRoute `kiali.127.0.0.1.nip.io`. Use `make kiali-up` / `make kiali-down` (requires `istio-up` first). For convenience, `make mesh-up` / `make mesh-down` bring up/down Istio + Kiali together in the correct order. ADR-0012; footprint ~200 MB.
 - Storage backups, true HA: out of scope (single host). See `docs/DR.md`.

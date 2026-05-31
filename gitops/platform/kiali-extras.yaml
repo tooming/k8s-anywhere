@@ -1,0 +1,22 @@
+# Kiali extras — Envoy HTTPRoute and any supporting in-repo manifests.
+# ON-DEMAND: pairs with the kiali Application. No auto-sync block.
+# Bring up with: make kiali-up
+# Tear down with: make kiali-down
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kiali-extras
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/kiali
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
