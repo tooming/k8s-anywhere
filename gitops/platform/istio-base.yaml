@@ -1,0 +1,29 @@
+# Istio base — CRDs and cluster-scoped RBAC resources (Helm chart: istio/base).
+# ON-DEMAND: no automated: block → ArgoCD discovers this Application but will NOT
+# auto-deploy it. Bring up first with: make istio-up
+# Tear down last with:                make istio-down
+# Do NOT add automated: here — the full Istio ambient footprint (~480 MB) is
+# incompatible with running the always-on stack simultaneously (12 GB VM budget,
+# ADR-0012). Deploy order: istio-base → istio-cni → istiod → ztunnel.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-base
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: base
+    targetRevision: 1.24.3
+    helm:
+      releaseName: istio-base
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

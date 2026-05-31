@@ -331,3 +331,17 @@ artifactory-up: ## Deploy Artifactory OSS via ArgoCD manual sync (~1-2 GB JVM; d
 artifactory-down: ## Remove Artifactory OSS and its Envoy route (reclaims ~1-2 GB RAM)
 	$(call argocd-delete,artifactory-extras)
 	$(call argocd-delete,artifactory)
+
+.PHONY: istio-up
+istio-up: ## Deploy Istio ambient mesh via ArgoCD manual sync (~480 MB; do after make up)
+	$(call argocd-sync,istio-base)
+	$(call argocd-sync,istio-cni)
+	$(call argocd-sync,istiod)
+	$(call argocd-sync,ztunnel)
+
+.PHONY: istio-down
+istio-down: ## Remove Istio ambient mesh: ztunnel → istiod → cni → base (reclaims ~480 MB)
+	$(call argocd-delete,ztunnel)
+	$(call argocd-delete,istiod)
+	$(call argocd-delete,istio-cni)
+	$(call argocd-delete,istio-base)
