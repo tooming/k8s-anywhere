@@ -28,7 +28,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
 | **Data layer** | RabbitMQ (message broker + management UI) · Redis (cache / key-value) · redis_exporter · data-demo (traffic generator) |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator) |
-| **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Artifactory OSS (`make artifactory-up` / `make artifactory-down`) · Istio ambient mesh — istio-base + istio-cni + istiod + ztunnel (`make istio-up` / `make istio-down`) · Kiali (planned) · Longhorn (planned) |
+| **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Artifactory OSS (`make artifactory-up` / `make artifactory-down`) · Istio ambient mesh (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn (planned) |
 
 ## Prerequisites
 
@@ -83,6 +83,8 @@ After `make up`, UIs are served via the stable front door on **`:8000`**
 | moto (AWS mock) | http://moto.127.0.0.1.nip.io:8000/moto-api/ |
 | RabbitMQ | http://rabbitmq.127.0.0.1.nip.io:8000 |
 | GitLab | http://localhost:8929 |
+| Artifactory *(on-demand)* | http://artifactory.127.0.0.1.nip.io:8000 |
+| Kiali *(on-demand)* | http://kiali.127.0.0.1.nip.io:8000 |
 
 `make argocd-password` prints the ArgoCD admin password. `:8080` is a per-cluster
 Envoy LB port used underneath the front door and is not the canonical UI entrypoint.

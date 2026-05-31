@@ -345,3 +345,19 @@ istio-down: ## Remove Istio ambient mesh: ztunnel → istiod → cni → base (r
 	$(call argocd-delete,istiod)
 	$(call argocd-delete,istio-cni)
 	$(call argocd-delete,istio-base)
+
+.PHONY: kiali-up
+kiali-up: ## Deploy Kiali service mesh UI via ArgoCD manual sync (~200 MB; requires istio-up first)
+	$(call argocd-sync,kiali)
+	$(call argocd-sync,kiali-extras)
+
+.PHONY: kiali-down
+kiali-down: ## Remove Kiali and its Envoy route (reclaims ~200 MB)
+	$(call argocd-delete,kiali-extras)
+	$(call argocd-delete,kiali)
+
+.PHONY: mesh-up
+mesh-up: istio-up kiali-up ## Deploy Istio ambient mesh + Kiali together (istio-up then kiali-up)
+
+.PHONY: mesh-down
+mesh-down: kiali-down istio-down ## Remove Kiali then Istio ambient mesh (kiali-down then istio-down)

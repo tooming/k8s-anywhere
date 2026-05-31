@@ -67,3 +67,31 @@ setup() {
   run grep -E '^istio-down:' "$REPO/Makefile"
   [ "$status" -eq 0 ]
 }
+
+# --- Kiali must NOT be auto-synced (ADR-0012, 12 GB budget) ------------------
+@test "kiali Application has no automated: block (on-demand only)" {
+  run grep 'automated:' "$REPO/gitops/platform/kiali.yaml"
+  [ "$status" -eq 1 ]
+}
+
+@test "kiali-extras Application has no automated: block (on-demand only)" {
+  run grep 'automated:' "$REPO/gitops/platform/kiali-extras.yaml"
+  [ "$status" -eq 1 ]
+}
+
+# --- Envoy HTTPRoute wiring --------------------------------------------------
+@test "Kiali HTTPRoute declares kiali.127.0.0.1.nip.io" {
+  run grep -r 'kiali\.127\.0\.0\.1\.nip\.io' "$REPO/gitops/"
+  [ "$status" -eq 0 ]
+}
+
+# --- make targets exist ------------------------------------------------------
+@test "Makefile has kiali-up target" {
+  run grep -E '^kiali-up:' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}
+
+@test "Makefile has kiali-down target" {
+  run grep -E '^kiali-down:' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}

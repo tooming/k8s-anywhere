@@ -1,0 +1,42 @@
+# Kiali — service mesh observability UI for Istio ambient (ADR-0012).
+# ON-DEMAND: no auto-sync block. Requires make istio-up first.
+# Bring up with: make kiali-up   (or make mesh-up for Istio + Kiali together)
+# Tear down with: make kiali-down
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kiali
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://kiali.org/helm-charts
+    chart: kiali-server
+    targetRevision: 1.89.0
+    helm:
+      releaseName: kiali
+      valuesObject:
+        auth:
+          strategy: anonymous
+        external_services:
+          prometheus:
+            url: "http://mimir.observability.svc.cluster.local:9009/prometheus"
+            custom_headers:
+              X-Scope-OrgID: "lab"
+          tracing:
+            enabled: false
+        deployment:
+          resources:
+            requests:
+              cpu: 20m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
