@@ -1,0 +1,35 @@
+# Istio CNI — node-level plugin for transparent traffic capture in ambient mode.
+# Must be deployed before istiod when using the ambient profile. ON-DEMAND: no
+# automated: block. Bring up with: make istio-up (step 2, after istio-base)
+# Tear down with:                  make istio-down (step 3, before istio-base)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-cni
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: cni
+    targetRevision: 1.24.3
+    helm:
+      releaseName: istio-cni
+      valuesObject:
+        profile: ambient
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

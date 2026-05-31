@@ -35,3 +35,35 @@ setup() {
   run grep -E '^artifactory-down:' "$REPO/Makefile"
   [ "$status" -eq 0 ]
 }
+
+# --- Istio ambient must NOT be auto-synced (ADR-0012, 12 GB budget) ----------
+@test "istio-base Application has no automated: block (on-demand only)" {
+  run grep 'automated:' "$REPO/gitops/platform/istio-base.yaml"
+  [ "$status" -eq 1 ]
+}
+
+@test "istiod Application has no automated: block (on-demand only)" {
+  run grep 'automated:' "$REPO/gitops/platform/istiod.yaml"
+  [ "$status" -eq 1 ]
+}
+
+@test "istio-cni Application has no automated: block (on-demand only)" {
+  run grep 'automated:' "$REPO/gitops/platform/istio-cni.yaml"
+  [ "$status" -eq 1 ]
+}
+
+@test "ztunnel Application has no automated: block (on-demand only)" {
+  run grep 'automated:' "$REPO/gitops/platform/ztunnel.yaml"
+  [ "$status" -eq 1 ]
+}
+
+# --- make targets exist -------------------------------------------------------
+@test "Makefile has istio-up target" {
+  run grep -E '^istio-up:' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}
+
+@test "Makefile has istio-down target" {
+  run grep -E '^istio-down:' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}
