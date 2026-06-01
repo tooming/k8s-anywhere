@@ -1,9 +1,10 @@
 #!/usr/bin/env bats
-# Clusterless checks for the capstone build pipeline (step 1: GitLab CI → Artifactory).
-# These assert the structural wiring is internally consistent — the CI file exists,
-# contains no plaintext credentials, the Vault path is seeded, and the ESO
-# ExternalSecret is declared — so a mis-wired capstone step is caught before any
-# live pipeline runs. No cluster needed.
+# Clusterless checks for the capstone pipeline (steps 1–2):
+# step 1: GitLab CI → Artifactory build+push
+# step 2: ArgoCD Application deploying the pipeline-built image
+# These assert structural wiring is internally consistent — CI file, no plaintext
+# creds, Vault path seeded, ESO ExternalSecret in dockerconfigjson form, and the
+# ArgoCD Application targeting gitops/apps/capstone.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -57,5 +58,40 @@ setup() {
 
 @test "artifactory-registry ExternalSecret pulls from vault key artifactory/registry" {
   run grep -q 'key: artifactory/registry' "$REPO/gitops/secrets/artifactory-registry-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "artifactory-registry ExternalSecret uses dockerconfigjson template" {
+  run grep -q 'kubernetes.io/dockerconfigjson' "$REPO/gitops/secrets/artifactory-registry-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- Step 2: ArgoCD Application for the capstone app ---------------------------
+
+@test "capstone ArgoCD Application exists in gitops/platform/" {
+  [ -f "$REPO/gitops/platform/capstone.yaml" ]
+}
+
+@test "capstone Application has automated sync (auto-synced is fine; workload is light)" {
+  run grep -q 'automated:' "$REPO/gitops/platform/capstone.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone Application sources gitops/apps/capstone" {
+  run grep -q 'path: gitops/apps/capstone' "$REPO/gitops/platform/capstone.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone Deployment exists in gitops/apps/capstone/" {
+  [ -f "$REPO/gitops/apps/capstone/deployment.yaml" ]
+}
+
+@test "capstone Deployment pulls from the Artifactory docker-local registry" {
+  run grep -q 'artifactory.127.0.0.1.nip.io/docker-local/hello' "$REPO/gitops/apps/capstone/deployment.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone Deployment references artifactory-registry imagePullSecret" {
+  run grep -q 'artifactory-registry' "$REPO/gitops/apps/capstone/deployment.yaml"
   [ "$status" -eq 0 ]
 }
