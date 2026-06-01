@@ -27,11 +27,21 @@ No unregistered autonomous routine may run against this repo. Each is owned by o
 accountable human — for its output **and** its cost. Adding, re-scoping, or changing a
 routine's model/cadence is a PR that edits this table.
 
+**Remote routines (cloud, clusterless):**
+
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch | Max tier |
 |---|---|---|---|---|---|---|
-| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run | 6h (4/day) · Sonnet 4.6 | `auto/*` | 🟢 Green |
+| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run | 8h (3/day) · Sonnet 4.6 | `auto/*` | 🟢 Green |
 | Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @tooming | grooms CHARTER gaps + issues → ROADMAP | weekly Mon · Opus 4.7 | `plan/*` | 🟢 Green |
-| Architect | _(apply after merge)_ | @tooming | researches best practices → opens RFC issues for 🟡 items | weekly Tue · Opus 4.7 | `arch/*` | 🟢 Green |
+| Architect | `trig_01SpewghyraZDSrLoGA32nBe` | @tooming | researches best practices → opens RFC issues for 🟡 items | weekly Tue · Opus 4.7 | `arch/*` | 🟢 Green |
+| Reviewer | `trig_01Dw7US6aZmJo8XZwDikoNkG` | @tooming | first-pass code review of every open `auto/*`/`plan/*`/`arch/*` PR (comments only — never merges) | daily 17:30 UTC · Opus 4.7 | — (comments) | 🟢 Green |
+
+**Local on-demand roles (maintainer's machine, cluster-bound — not on cron, no quota cost):**
+
+| Role | Owner | Purpose | Invoked as |
+|---|---|---|---|
+| Verifier | @tooming | bring up the lab on an `auto/*` PR's branch and confirm acceptance criteria pass end-to-end; comments `[verifier-routine]` + labels `verified-by-routine` | `claude --prompt routines/verifier.prompt.md "verify auto/<slug>"` |
+| Operator | @tooming | on-call pulse check; run `make dr-*` drills; file `incident` issues when something needs a human | `claude --prompt routines/operator.prompt.md "check the lab"` |
 
 _(As the team grows, replace the single-owner entries above with the owning engineer or team for each routine.)_
 
@@ -102,7 +112,9 @@ _Process:_
   rubber-stamp.
 - **WIP limit:** cap concurrent open agent PRs (suggested ≤ 3 `auto/*` + ≤ 1 `plan/*` + ≤ 1 `arch/*`). At
   the cap, agents wait instead of piling on. (The executor already skips items with an open
-  `auto/*` PR; the cap generalizes that to protect reviewer attention.)
+  `auto/*` PR; the cap generalizes that to protect reviewer attention.) The reviewer
+  routine posts a first pass on every open agent PR — it does NOT replace human review,
+  and approving its review never counts as the human approval the gate requires.
 - **Staleness SLA:** an agent PR with no review in N working days is flagged or auto-closed,
   not left to rot. Closing is cheap — the item simply returns to the backlog.
 
@@ -110,9 +122,10 @@ _Process:_
 
 - **Free quota: 5 routine runs per rolling 24h.** Beyond that, runs use usage credits *only
   if* the "additional runs" toggle is on (otherwise they're skipped — a hard free cap).
-  Size total cadence across all routines to fit: executor (every 6h = 4/day) + planner
-  (weekly Mon) + architect (weekly Tue) = 5 on Mon and Tue, 4 other days — all within the
-  free quota.
+  Size total cadence across all routines to fit: executor (every 8h = 3/day) + reviewer
+  (daily) + planner (weekly Mon) + architect (weekly Tue) = 5 on Mon and Tue, 4 other days
+  — all within the free quota. (The local verifier and operator are invoked by hand on
+  the maintainer's machine; they have no cron and no quota cost.)
 - Spend scales with **cadence × model × routine count**; the registry records all three, and
   the routine's owner is accountable for it.
 - **Scale-out rule:** add agents or raise cadence only when there is review capacity to
