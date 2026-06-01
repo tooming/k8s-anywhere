@@ -15,6 +15,10 @@ These fire on cron from claude.ai; they only see what's in git, never the live c
 | [`planner.prompt.md`](planner.prompt.md) | the planner's prompt (weekly Mon groomer, `plan/*` PRs) |
 | [`architect.prompt.md`](architect.prompt.md) | the architect's prompt (weekly Tue RFC opener, `arch/*` PRs) |
 | [`reviewer.prompt.md`](reviewer.prompt.md) | the reviewer's prompt (daily first-pass PR review, comments only — never merges) |
+| [`triager.prompt.md`](triager.prompt.md) | the triager's prompt (Wed + Sat issue labeller — labels only, never PRs) |
+| [`upgrade-drafter.prompt.md`](upgrade-drafter.prompt.md) | the upgrade drafter's prompt (weekly Thu version-bump PR, `upgrade/*`) |
+| [`doc-drift-author.prompt.md`](doc-drift-author.prompt.md) | the doc-drift author's prompt (weekly Fri README/dependency-tree/lab-UI reconciliation, `sync/*`) |
+| [`learning-post-writer.prompt.md`](learning-post-writer.prompt.md) | the learning-post writer's prompt (weekly Sun reflection in `docs/learnings/`, `learn/*`) |
 
 ### Local on-demand roles (maintainer's machine, cluster-bound)
 

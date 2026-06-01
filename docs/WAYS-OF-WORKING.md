@@ -35,6 +35,10 @@ routine's model/cadence is a PR that edits this table.
 | Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @tooming | grooms CHARTER gaps + issues → ROADMAP | weekly Mon · Opus 4.7 | `plan/*` | 🟢 Green |
 | Architect | `trig_01SpewghyraZDSrLoGA32nBe` | @tooming | researches best practices → opens RFC issues for 🟡 items | weekly Tue · Opus 4.7 | `arch/*` | 🟢 Green |
 | Reviewer | `trig_01Dw7US6aZmJo8XZwDikoNkG` | @tooming | first-pass code review of every open `auto/*`/`plan/*`/`arch/*` PR (comments only — never merges) | daily 17:30 UTC · Opus 4.7 | — (comments) | 🟢 Green |
+| Triager | `trig_01E6ugxYJY6yGzwvSHSgFaCx` | @tooming | labels open issues with domain / tier / priority | Wed + Sat 12:00 UTC · Sonnet 4.6 | — (labels) | 🟢 Green |
+| Upgrade drafter | `trig_01UyN9qcTFvWD14k38tn49K1` | @tooming | bumps existing chart/image versions, one PR per run | weekly Thu 09:00 UTC · Sonnet 4.6 | `upgrade/*` | 🟢 Green |
+| Doc-drift author | `trig_01AibRNtdZLqLu3a58jDxnFk` | @tooming | reconciles README + dependency-tree + lab-UI drift | weekly Fri 09:00 UTC · Sonnet 4.6 | `sync/*` | 🟢 Green |
+| Learning-post writer | `trig_01GNuyixzT3TBDF7Mk4ZeSTr` | @tooming | one short post per week reflecting on what landed | weekly Sun 10:00 UTC · Sonnet 4.6 | `learn/*` | 🟢 Green |
 
 **Local on-demand roles (maintainer's machine, cluster-bound — not on cron, no quota cost):**
 
@@ -85,8 +89,10 @@ bootstrap changes that could break recreate-from-code.
 
 - **One item per PR**, focused and bounded (target < ~400 changed lines; larger work is
   split by the planner first). Reviewers may reject oversized PRs on sight.
-- **Branch prefix signals origin:** `auto/*` (executor), `plan/*` (planner), `feat/*` /
-  `fix/*` (humans). Prefixes are reserved — humans don't use `auto/` or `plan/`.
+- **Branch prefix signals origin:** `auto/*` (executor), `plan/*` (planner), `arch/*`
+  (architect), `upgrade/*` (upgrade drafter), `sync/*` (doc-drift author), `learn/*`
+  (learning-post writer); `feat/*` / `fix/*` / `chore/*` (humans). Agent prefixes are
+  reserved — humans don't use them.
 - **PR body must state:** what changed + why, the ROADMAP item / issue it addresses, and
   that it's an agent run plus which routine produced it.
 - **Green before review:** `make ci` passes; ADRs honored; heavy components stay
@@ -110,11 +116,12 @@ _Process:_
   reviewed for correctness, scope, **gate integrity** (did the agent quietly weaken a test
   or loosen a check?), and security. CI-green is necessary, not sufficient; don't
   rubber-stamp.
-- **WIP limit:** cap concurrent open agent PRs (suggested ≤ 3 `auto/*` + ≤ 1 `plan/*` + ≤ 1 `arch/*`). At
-  the cap, agents wait instead of piling on. (The executor already skips items with an open
-  `auto/*` PR; the cap generalizes that to protect reviewer attention.) The reviewer
-  routine posts a first pass on every open agent PR — it does NOT replace human review,
-  and approving its review never counts as the human approval the gate requires.
+- **WIP limit:** cap concurrent open agent PRs (suggested ≤ 3 `auto/*` + ≤ 1 each of
+  `plan/*`, `arch/*`, `upgrade/*`, `sync/*`, `learn/*`). At the cap, agents wait instead
+  of piling on. (The executor already skips items with an open `auto/*` PR; the cap
+  generalizes that to protect reviewer attention.) The reviewer routine posts a first pass
+  on every open agent PR — it does NOT replace human review, and approving its review
+  never counts as the human approval the gate requires.
 - **Staleness SLA:** an agent PR with no review in N working days is flagged or auto-closed,
   not left to rot. Closing is cheap — the item simply returns to the backlog.
 
@@ -122,10 +129,19 @@ _Process:_
 
 - **Free quota: 5 routine runs per rolling 24h.** Beyond that, runs use usage credits *only
   if* the "additional runs" toggle is on (otherwise they're skipped — a hard free cap).
-  Size total cadence across all routines to fit: executor (every 8h = 3/day) + reviewer
-  (daily) + planner (weekly Mon) + architect (weekly Tue) = 5 on Mon and Tue, 4 other days
-  — all within the free quota. (The local verifier and operator are invoked by hand on
-  the maintainer's machine; they have no cron and no quota cost.)
+  Current allocation runs exactly at cap, every day:
+  - **Mon:** executor (3) + reviewer (1) + planner (1) = 5
+  - **Tue:** executor (3) + reviewer (1) + architect (1) = 5
+  - **Wed:** executor (3) + reviewer (1) + triager (1) = 5
+  - **Thu:** executor (3) + reviewer (1) + upgrade-drafter (1) = 5
+  - **Fri:** executor (3) + reviewer (1) + doc-drift-author (1) = 5
+  - **Sat:** executor (3) + reviewer (1) + triager (1) = 5
+  - **Sun:** executor (3) + reviewer (1) + learning-post-writer (1) = 5
+
+  No headroom. Adding any new routine or raising any cadence requires either cutting the
+  executor (every 12h = 2/day) or enabling the paid "additional runs" toggle. (The local
+  verifier and operator are invoked by hand on the maintainer's machine; they have no cron
+  and no quota cost.)
 - Spend scales with **cadence × model × routine count**; the registry records all three, and
   the routine's owner is accountable for it.
 - **Scale-out rule:** add agents or raise cadence only when there is review capacity to
