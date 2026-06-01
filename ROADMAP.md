@@ -240,12 +240,11 @@ You review and merge plan PRs, same as implementation PRs.
 
 ### Capstone — "tie it together" (learning-path step 5)
 > RFC #62 directs the capstone end-to-end pipeline. The in-lab registry is
-> **Artifactory** (RFC #58 → ADR-0011), so this whole chain is **blocked on
-> the Artifactory manifest item landing first** (see *Now / next*). When that
-> lands, the planner promotes the steps below into *Now / next* one at a time
-> in the order shown.
+> **Artifactory** (RFC #58 → ADR-0011). The Artifactory manifests have landed and
+> step 1 is now done. Steps 2–5 are sequentially dependent — the planner should
+> promote **step 2** into *Now / next* now that step 1 has merged.
 
-- [ ] 🟢 **Capstone step 1 — GitLab CI: build the demo app image and push it to
+- [x] 🟢 **Capstone step 1 — GitLab CI: build the demo app image and push it to
   Artifactory.** Add `.gitlab-ci.yml` (or update if present) with a build job
   that produces an image of the `hello` demo (or its capstone successor) and
   pushes to the in-lab Artifactory Docker registry endpoint. Vault-stored
@@ -305,6 +304,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **Capstone step 1 — GitLab CI: build the demo app image and push it to Artifactory** — Added `.gitlab-ci.yml` with a `build-and-push` Docker-in-DinD job targeting the in-lab Artifactory registry; `gitops/apps/demo/Dockerfile` (thin wrapper on `jaegertracing/example-hotrod:latest`); `secret/artifactory/registry` seeding in `scripts/vault-bootstrap.sh`; `gitops/secrets/artifactory-registry-externalsecret.yaml` (ESO ExternalSecret + `capstone` Namespace for in-cluster imagePullSecret material); `tests/capstone.bats` (9 structural tests: CI file shape, no plaintext creds, Vault path seeded, ExternalSecret wired, Dockerfile present); `docs/dependency-tree.md` updated (CAPSTONE subgraph, pipeline edges, integration-edges table rows, capstone Note); `README.md` updated. No plaintext credentials — `ARTIFACTORY_USER` / `ARTIFACTORY_PASSWORD` are masked GitLab CI variables sourced from Vault. (auto/capstone-step-1)
 - [x] **Longhorn on-demand manifests + tooling** — Added `gitops/platform/longhorn.yaml` (non-auto-synced ArgoCD Application, chart `longhorn/longhorn` v1.7.2 from `https://charts.longhorn.io`, namespace `longhorn-system`; replica count 1 for single-node lab); `gitops/longhorn/route.yaml` (Envoy HTTPRoute `longhorn.127.0.0.1.nip.io`); `gitops/platform/longhorn-extras.yaml` (Application sourcing the route); `make longhorn-up` / `make longhorn-down` targets; 5 bats tests (no auto-sync on both Applications, HTTPRoute wired, make targets present); Grafana "Lab UIs" panel updated; `README.md` and `docs/dependency-tree.md` updated with Longhorn subgraph, sync-wave rows, integration edge, and notes entry. (auto/longhorn-manifests)
 - [x] **ADR-0013 — Longhorn distributed block storage on-demand** — Added `docs/decisions/adr-0013-longhorn-block-storage.md` documenting why Longhorn is un-deferred (on-demand pattern proven by TiDB/Artifactory/Istio; learning objective: StorageClass + snapshot API + UI; CNCF graduated 2022); the official `longhorn/longhorn` chart from `charts.longhorn.io`; footprint estimate (~350–400 MB, on-demand non-auto-synced); complementarity with ADR-0002 (Garage=S3 object, Longhorn=block/filesystem — different interfaces, not alternatives); and relationships to ADRs 0001/0002/0003/0005/0008. Updated `docs/decisions/context.md` to replace the "Deferred" note with the un-defer rationale. Linked from `docs/decisions/README.md`. (auto/adr-0013-longhorn)
 - [x] **Kiali on-demand manifests + Lab UIs panel wiring** — Added `gitops/platform/kiali.yaml` (non-auto-synced ArgoCD Application, chart `kiali-server` v1.89.0 from `https://kiali.org/helm-charts`, namespace `istio-system`; anonymous auth; Mimir Prometheus datasource with `X-Scope-OrgID: lab`); `gitops/kiali/route.yaml` (Envoy HTTPRoute `kiali.127.0.0.1.nip.io`); `gitops/platform/kiali-extras.yaml` (Application sourcing the route); `make kiali-up` / `make kiali-down` targets; combined `make mesh-up` / `make mesh-down` (Istio + Kiali together, correct order); 5 bats tests (no auto-sync, HTTPRoute wired, make targets present); Grafana "Lab UIs" panel updated; `README.md` and `docs/dependency-tree.md` updated.

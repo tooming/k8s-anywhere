@@ -80,6 +80,9 @@ graph TD
     subgraph ARTIF["Artifactory — on-demand (manual sync only)"]
       artifactory["Artifactory OSS<br/>artifact registry + Docker registry<br/>(artifactory ns)"]:::ondemand
     end
+    subgraph CAPSTONE["Capstone — build pipeline (step 1 done; steps 2–5 pending)"]
+      capstoneci["GitLab CI<br/>build-and-push pipeline<br/>(.gitlab-ci.yml)"]:::ondemand
+    end
     subgraph ISTIO["Istio ambient — on-demand (manual sync only)"]
       istiobase["istio-base<br/>CRDs + RBAC<br/>(istio-system ns)"]:::ondemand
       istiocni["istio-cni<br/>node CNI plugin<br/>(ambient mode)"]:::ondemand
@@ -114,6 +117,7 @@ graph TD
   eso -->|"rabbitmq-creds ← rabbitmq/default"| rabbitmq
   eso -->|"redis-creds ← redis/default"| redis
   eso -->|"data-demo-creds ← rabbitmq/default + redis/default"| datademo
+  eso -.->|"artifactory-registry ← artifactory/registry (capstone ns)"| capstoneci
 
   %% --- observability data flow ---
   nodeexp -->|scrape| alloy
@@ -139,8 +143,10 @@ graph TD
   tidbop -.->|"manages CRDs"| tidbcluster
   tidbcluster -.->|"DB endpoint"| tidbdemo
 
-  %% --- Artifactory on-demand ---
+  %% --- Artifactory on-demand + capstone CI pipeline ---
   envoy -.->|"artifactory.127.0.0.1.nip.io (on-demand)"| artifactory
+  gitlab -.->|"capstone CI build (step 1)"| capstoneci
+  capstoneci -.->|"docker push hello:SHA (on-demand)"| artifactory
 
   %% --- Istio ambient on-demand chain ---
   istiobase -.->|"CRDs"| istiocni
@@ -258,6 +264,8 @@ make up
 | Envoy → kiali.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/kiali/route.yaml` |
 | istiod → Kiali *(on-demand)* | mesh config (xDS endpoint) | `gitops/platform/kiali.yaml` values |
 | Envoy → longhorn.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/longhorn/route.yaml` |
+| ESO → artifactory-registry *(capstone)* | `← vault:artifactory/registry` (username + password) | `gitops/secrets/artifactory-registry-externalsecret.yaml` |
+| GitLab CI → Artifactory *(capstone step 1)* | docker push `hello:SHA` via `.gitlab-ci.yml` | `.gitlab-ci.yml` |
 
 ## Notes
 - **Front door** (`:8000`, nginx docker container) is off-cluster and **not**
@@ -275,4 +283,5 @@ make up
 - **Istio ambient mesh** (`gitops/platform/istio-base.yaml`, `istio-cni.yaml`, `istiod.yaml`, `ztunnel.yaml`) is **on-demand / manual-sync** — Istio ambient mesh (no per-pod sidecars; ADR-0012). Four ArgoCD Applications in deployment order: `istio-base` (CRDs) → `istio-cni` (CNI plugin, ambient) → `istiod` (control plane, ambient profile) → `ztunnel` (per-node L4 proxy DaemonSet). Charts from `https://istio-release.storage.googleapis.com/charts`, version 1.24.3. Total footprint ~480 MB. Namespace `istio-system`. Use `make istio-up` / `make istio-down`. ADR-0008 note: ztunnel shares the same Envoy data plane as the north-south gateway.
 - **Kiali** (`gitops/platform/kiali.yaml` + `gitops/platform/kiali-extras.yaml`) is **on-demand / manual-sync** — service mesh observability UI (chart `kiali-server` v1.89.0 from `https://kiali.org/helm-charts`, namespace `istio-system`). Connects to Mimir's Prometheus-compatible API (`X-Scope-OrgID: lab`) for real-time service graph and traffic metrics. Exposed via Envoy HTTPRoute `kiali.127.0.0.1.nip.io`. Use `make kiali-up` / `make kiali-down` (requires `istio-up` first). For convenience, `make mesh-up` / `make mesh-down` bring up/down Istio + Kiali together in the correct order. ADR-0012; footprint ~200 MB.
 - **Longhorn** (`gitops/platform/longhorn.yaml` + `gitops/platform/longhorn-extras.yaml`) is **on-demand / manual-sync** — CNCF distributed block storage + CSI driver (chart `longhorn/longhorn` v1.7.2 from `https://charts.longhorn.io`, namespace `longhorn-system`). Runs alongside `local-path` (the default provisioner) — adds a custom `StorageClass`, snapshot API, and volume UI; it does not replace `local-path` (ADR-0013). Default replica count: 1 (single-node lab, ADR-0005). Footprint ~350–400 MB; on-demand to stay within the 12 GB budget. Exposed via Envoy HTTPRoute `longhorn.127.0.0.1.nip.io`. Use `make longhorn-up` / `make longhorn-down`.
+- **Capstone pipeline (step 1)** — `.gitlab-ci.yml` defines a `build-and-push` job that builds `gitops/apps/demo/Dockerfile` (a thin wrapper on `jaegertracing/example-hotrod:latest`) and pushes it to the Artifactory Docker registry as `docker-local/hello:$CI_COMMIT_SHORT_SHA`. Credentials (`ARTIFACTORY_USER` / `ARTIFACTORY_PASSWORD`) are masked GitLab CI variables sourced from Vault (`secret/artifactory/registry`, seeded by `make vault-bootstrap`). The same credentials are available in-cluster via `ExternalSecret artifactory-registry` in namespace `capstone` (steps 2–5 will deploy the capstone app there). Prerequisites: `make artifactory-up`; create a `docker-local` repository in the Artifactory UI; set the two masked variables in GitLab → Settings → CI/CD.
 - Storage backups, true HA: out of scope (single host). See `docs/DR.md`.

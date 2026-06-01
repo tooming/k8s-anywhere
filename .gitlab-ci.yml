@@ -1,0 +1,47 @@
+# Capstone CI pipeline (step 1 of 5): builds the hello demo image and pushes it
+# to the in-lab Artifactory Docker registry. Runs on the local GitLab instance.
+#
+# Credential prerequisites (no plaintext stored here — all values live in Vault):
+#   1. make vault-bootstrap          seeds secret/artifactory/registry in Vault
+#   2. Retrieve the generated password:
+#        vault kv get secret/artifactory/registry
+#   3. In GitLab → Settings → CI/CD → Variables, add masked + protected variables:
+#        ARTIFACTORY_USER     ← username field from step 2
+#        ARTIFACTORY_PASSWORD ← password field from step 2
+#
+# Component prerequisites:
+#   make artifactory-up              Artifactory must be running before first push
+#   Create a local Docker repository named "docker-local" in the Artifactory UI
+#
+# The in-cluster ESO ExternalSecret (gitops/secrets/artifactory-registry-externalsecret.yaml)
+# makes the same credentials available to pods as an imagePullSecret in namespace capstone.
+
+stages:
+  - build
+
+variables:
+  REGISTRY: "artifactory.127.0.0.1.nip.io"
+  IMAGE_NAME: "docker-local/hello"
+
+build-and-push:
+  stage: build
+  image: docker:24
+  services:
+    # Allow HTTP pushes to the in-lab registry (no TLS on the nip.io route).
+    - name: docker:24-dind
+      alias: docker
+      command: ["--insecure-registry=artifactory.127.0.0.1.nip.io"]
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - echo "$ARTIFACTORY_PASSWORD" | docker login "$REGISTRY" -u "$ARTIFACTORY_USER" --password-stdin
+  script:
+    - docker build -t "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" gitops/apps/demo/
+    - docker push "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+    - docker tag "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$REGISTRY/$IMAGE_NAME:latest"
+    - docker push "$REGISTRY/$IMAGE_NAME:latest"
+  after_script:
+    - docker logout "$REGISTRY" || true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
