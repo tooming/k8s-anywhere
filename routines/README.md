@@ -4,12 +4,28 @@ The version-controlled **source of truth** for the scheduled remote Claude Code
 agents that develop this repo. The claude.ai routines backend holds the *running*
 state; the files here are the *desired* state.
 
+### Remote scheduled routines (cloud, clusterless)
+
+These fire on cron from claude.ai; they only see what's in git, never the live cluster.
+
 | File | What |
 |------|------|
 | [`routines.yaml`](routines.yaml) | per-routine metadata: `trigger_id`, `cron`, `model`, env, tools, `prompt_file` |
-| [`executor.prompt.md`](executor.prompt.md) | the executor's prompt (every-6h implementer, `auto/*` PRs) |
+| [`executor.prompt.md`](executor.prompt.md) | the executor's prompt (every-8h implementer, `auto/*` PRs) |
 | [`planner.prompt.md`](planner.prompt.md) | the planner's prompt (weekly Mon groomer, `plan/*` PRs) |
 | [`architect.prompt.md`](architect.prompt.md) | the architect's prompt (weekly Tue RFC opener, `arch/*` PRs) |
+| [`reviewer.prompt.md`](reviewer.prompt.md) | the reviewer's prompt (daily first-pass PR review, comments only — never merges) |
+
+### Local on-demand roles (maintainer's machine, cluster-bound)
+
+These can't be cloud routines — they need Colima and the live cluster. The maintainer
+invokes them by hand in a Claude Code session. Listed in `routines.yaml` under
+`local_roles:` for discoverability; no `trigger_id`, no cron, no quota cost.
+
+| File | What |
+|------|------|
+| [`verifier.prompt.md`](verifier.prompt.md) | bring up the lab on an `auto/*` PR's branch and confirm acceptance criteria pass end-to-end |
+| [`operator.prompt.md`](operator.prompt.md) | on-call pulse check; run DR drills; file `incident` issues when something needs a human |
 
 ## Changing a routine
 
