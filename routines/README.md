@@ -1,6 +1,6 @@
 # routines/ — the scheduled remote agents, as code
 
-The version-controlled **source of truth** for the two scheduled remote Claude Code
+The version-controlled **source of truth** for the scheduled remote Claude Code
 agents that develop this repo. The claude.ai routines backend holds the *running*
 state; the files here are the *desired* state.
 
@@ -8,7 +8,8 @@ state; the files here are the *desired* state.
 |------|------|
 | [`routines.yaml`](routines.yaml) | per-routine metadata: `trigger_id`, `cron`, `model`, env, tools, `prompt_file` |
 | [`executor.prompt.md`](executor.prompt.md) | the executor's prompt (every-6h implementer, `auto/*` PRs) |
-| [`planner.prompt.md`](planner.prompt.md) | the planner's prompt (weekly groomer, `plan/*` PRs) |
+| [`planner.prompt.md`](planner.prompt.md) | the planner's prompt (weekly Mon groomer, `plan/*` PRs) |
+| [`architect.prompt.md`](architect.prompt.md) | the architect's prompt (weekly Tue RFC opener, `arch/*` PRs) |
 
 ## Changing a routine
 

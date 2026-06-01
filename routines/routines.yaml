@@ -28,3 +28,14 @@ routines:
     prompt_file: planner.prompt.md
     branch_prefix: plan/           # plan-only PRs land on plan/<slug>
     max_tier: green
+
+  # The ARCHITECT — researches best practices and opens RFC issues for 🟡 backlog items.
+  - name: k8s-lab architect
+    trigger_id: ""                 # populated by "apply the routines" after merge
+    cron: "0 6 * * 2"             # weekly, Tuesdays 06:00 UTC (day after the planner)
+    model: claude-opus-4-7
+    enabled: true
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    prompt_file: architect.prompt.md
+    branch_prefix: arch/           # PRs land on arch/<slug>
+    max_tier: green                # ROADMAP grooming + GitHub issues only
