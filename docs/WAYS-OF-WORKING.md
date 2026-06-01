@@ -30,7 +30,8 @@ routine's model/cadence is a PR that edits this table.
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch | Max tier |
 |---|---|---|---|---|---|---|
 | Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run | 6h (4/day) · Sonnet 4.6 | `auto/*` | 🟢 Green |
-| Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @tooming | grooms CHARTER gaps + issues → ROADMAP | weekly · Opus 4.7 | `plan/*` | 🟢 Green |
+| Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @tooming | grooms CHARTER gaps + issues → ROADMAP | weekly Mon · Opus 4.7 | `plan/*` | 🟢 Green |
+| Architect | _(apply after merge)_ | @tooming | researches best practices → opens RFC issues for 🟡 items | weekly Tue · Opus 4.7 | `arch/*` | 🟢 Green |
 
 _(As the team grows, replace the single-owner entries above with the owning engineer or team for each routine.)_
 
@@ -99,7 +100,7 @@ _Process:_
   reviewed for correctness, scope, **gate integrity** (did the agent quietly weaken a test
   or loosen a check?), and security. CI-green is necessary, not sufficient; don't
   rubber-stamp.
-- **WIP limit:** cap concurrent open agent PRs (suggested ≤ 3 `auto/*` + ≤ 1 `plan/*`). At
+- **WIP limit:** cap concurrent open agent PRs (suggested ≤ 3 `auto/*` + ≤ 1 `plan/*` + ≤ 1 `arch/*`). At
   the cap, agents wait instead of piling on. (The executor already skips items with an open
   `auto/*` PR; the cap generalizes that to protect reviewer attention.)
 - **Staleness SLA:** an agent PR with no review in N working days is flagged or auto-closed,
@@ -109,8 +110,9 @@ _Process:_
 
 - **Free quota: 5 routine runs per rolling 24h.** Beyond that, runs use usage credits *only
   if* the "additional runs" toggle is on (otherwise they're skipped — a hard free cap).
-  Size total cadence across all routines to fit: today the executor (every 6h = 4/day) + the
-  weekly planner stay within it, leaving ~1 slot/day for an on-demand groom.
+  Size total cadence across all routines to fit: executor (every 6h = 4/day) + planner
+  (weekly Mon) + architect (weekly Tue) = 5 on Mon and Tue, 4 other days — all within the
+  free quota.
 - Spend scales with **cadence × model × routine count**; the registry records all three, and
   the routine's owner is accountable for it.
 - **Scale-out rule:** add agents or raise cadence only when there is review capacity to
