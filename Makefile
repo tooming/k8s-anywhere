@@ -361,3 +361,13 @@ mesh-up: istio-up kiali-up ## Deploy Istio ambient mesh + Kiali together (istio-
 
 .PHONY: mesh-down
 mesh-down: kiali-down istio-down ## Remove Kiali then Istio ambient mesh (kiali-down then istio-down)
+
+.PHONY: longhorn-up
+longhorn-up: ## Deploy Longhorn distributed block storage via ArgoCD manual sync (~350-400 MB; do after make up)
+	$(call argocd-sync,longhorn)
+	$(call argocd-sync,longhorn-extras)
+
+.PHONY: longhorn-down
+longhorn-down: ## Remove Longhorn and its Envoy route (reclaims ~350-400 MB)
+	$(call argocd-delete,longhorn-extras)
+	$(call argocd-delete,longhorn)

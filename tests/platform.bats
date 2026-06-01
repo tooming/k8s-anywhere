@@ -95,3 +95,31 @@ setup() {
   run grep -E '^kiali-down:' "$REPO/Makefile"
   [ "$status" -eq 0 ]
 }
+
+# --- Longhorn must NOT be auto-synced (ADR-0013, 12 GB budget) ---------------
+@test "longhorn Application has no automated: block (on-demand only)" {
+  run grep 'automated:' "$REPO/gitops/platform/longhorn.yaml"
+  [ "$status" -eq 1 ]
+}
+
+@test "longhorn-extras Application has no automated: block (on-demand only)" {
+  run grep 'automated:' "$REPO/gitops/platform/longhorn-extras.yaml"
+  [ "$status" -eq 1 ]
+}
+
+# --- Envoy HTTPRoute wiring --------------------------------------------------
+@test "Longhorn HTTPRoute declares longhorn.127.0.0.1.nip.io" {
+  run grep -r 'longhorn\.127\.0\.0\.1\.nip\.io' "$REPO/gitops/"
+  [ "$status" -eq 0 ]
+}
+
+# --- make targets exist ------------------------------------------------------
+@test "Makefile has longhorn-up target" {
+  run grep -E '^longhorn-up:' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}
+
+@test "Makefile has longhorn-down target" {
+  run grep -E '^longhorn-down:' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}

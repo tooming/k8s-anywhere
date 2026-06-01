@@ -1,0 +1,50 @@
+# Longhorn — on-demand distributed block storage (CNCF graduated, ADR-0013).
+# ON-DEMAND: no auto-sync block → ArgoCD discovers this Application but will NOT
+# auto-deploy it. Bring up with: make longhorn-up
+# Tear down with:               make longhorn-down
+# Do NOT enable auto-sync here — Longhorn footprint (~350–400 MB) must not run
+# alongside the always-on stack without explicit user intent (12 GB VM budget, ADR-0013).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.longhorn.io
+    chart: longhorn
+    targetRevision: 1.7.2
+    helm:
+      releaseName: longhorn
+      valuesObject:
+        defaultSettings:
+          defaultReplicaCount: 1         # single-node lab (ADR-0005)
+        persistence:
+          defaultClassReplicaCount: 1
+        ingress:
+          enabled: false                 # Envoy HTTPRoute handles ingress (ADR-0008)
+        longhornUI:
+          replicas: 1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+        longhornManager:
+          resources:
+            requests:
+              cpu: 20m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: longhorn-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
