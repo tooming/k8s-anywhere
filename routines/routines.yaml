@@ -6,11 +6,17 @@
 environment_id: env_014NJKuQoEb7PAi3PXaFW2B9   # Anthropic cloud (Default)
 source: https://github.com/tooming/k8s-lab     # repo cloned into each run
 
+# Quota math (WAYS-OF-WORKING.md §5 — 5 runs / rolling 24h free):
+#   exec 4/day + 1 routine-of-the-day on every weekday = 5/day, every day, at cap.
+#   Mon=planner, Tue=architect, Wed=triager, Thu=upgrade-drafter, Fri=doc-drift,
+#   Sat=triager, Sun=learning-post. No headroom — raising any cadence requires
+#   either cutting executor or enabling the "additional runs" paid toggle.
+
 routines:
   # The EXECUTOR — implements one ROADMAP item per run.
   - name: k8s-lab autonomous dev
     trigger_id: trig_01CRtpmaS1scBQL74xKqmfvS
-    cron: "0 */6 * * *"            # every 6h = 4/day (fits the 5/day free routine quota)
+    cron: "0 */6 * * *"            # every 6h = 4/day
     model: claude-sonnet-4-6
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
@@ -39,3 +45,47 @@ routines:
     prompt_file: architect.prompt.md
     branch_prefix: arch/           # PRs land on arch/<slug>
     max_tier: green                # ROADMAP grooming + GitHub issues only
+
+  # The TRIAGER — labels open GitHub issues with domain / tier / priority.
+  - name: k8s-lab triager
+    trigger_id: trig_01E6ugxYJY6yGzwvSHSgFaCx
+    cron: "0 12 * * 3,6"           # Wed + Sat 12:00 UTC (~15:00 Europe/Tallinn), 2/week
+    model: claude-sonnet-4-6
+    enabled: true
+    allowed_tools: [Bash, Read, Glob, Grep]   # labels-only — no Write/Edit, no PRs
+    prompt_file: triager.prompt.md
+    branch_prefix: ""              # no branch — labels via gh
+    max_tier: green                # labels only
+
+  # The UPGRADE DRAFTER — bumps existing chart/image versions, one PR per run.
+  - name: k8s-lab upgrade-drafter
+    trigger_id: trig_01UyN9qcTFvWD14k38tn49K1
+    cron: "0 9 * * 4"              # weekly, Thursdays 09:00 UTC
+    model: claude-sonnet-4-6
+    enabled: true
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    prompt_file: upgrade-drafter.prompt.md
+    branch_prefix: upgrade/        # PRs land on upgrade/<component>-<from>-to-<to>
+    max_tier: green                # same-source bumps only (see prompt's tier note)
+
+  # The DOC-DRIFT AUTHOR — reconciles README + dependency-tree + lab-UI drift.
+  - name: k8s-lab doc-drift-author
+    trigger_id: trig_01AibRNtdZLqLu3a58jDxnFk
+    cron: "0 9 * * 5"              # weekly, Fridays 09:00 UTC
+    model: claude-sonnet-4-6
+    enabled: true
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    prompt_file: doc-drift-author.prompt.md
+    branch_prefix: sync/           # PRs land on sync/docs-drift-YYYY-WW
+    max_tier: green
+
+  # The LEARNING-POST WRITER — one short post per week reflecting on what landed.
+  - name: k8s-lab learning-post-writer
+    trigger_id: trig_01GNuyixzT3TBDF7Mk4ZeSTr
+    cron: "0 10 * * 0"             # weekly, Sundays 10:00 UTC
+    model: claude-sonnet-4-6
+    enabled: true
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    prompt_file: learning-post-writer.prompt.md
+    branch_prefix: learn/          # PRs land on learn/YYYY-W##
+    max_tier: green
