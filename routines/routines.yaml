@@ -31,7 +31,7 @@ routines:
 
   # The ARCHITECT — researches best practices and opens RFC issues for 🟡 backlog items.
   - name: k8s-lab architect
-    trigger_id: ""                 # populated by "apply the routines" after merge
+    trigger_id: trig_01SpewghyraZDSrLoGA32nBe
     cron: "0 6 * * 2"             # weekly, Tuesdays 06:00 UTC (day after the planner)
     model: claude-opus-4-7
     enabled: true
