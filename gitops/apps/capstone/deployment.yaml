@@ -1,0 +1,53 @@
+# Capstone app variant — runs the pipeline-built image pulled from the in-lab
+# Artifactory Docker registry (step 2 of the capstone pipeline demo).
+# The GitLab CI pipeline (step 1) builds and pushes this image; this Deployment
+# pulls the :latest tag so every pipeline push is reflected on the next pod restart.
+# imagePullSecrets references the dockerconfigjson Secret rendered by ESO from
+# Vault (secret/artifactory/registry) — see gitops/secrets/artifactory-registry-externalsecret.yaml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capstone
+  namespace: capstone
+  labels:
+    app: capstone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: capstone
+  template:
+    metadata:
+      labels:
+        app: capstone
+    spec:
+      imagePullSecrets:
+        - name: artifactory-registry
+      containers:
+        - name: capstone
+          image: artifactory.127.0.0.1.nip.io/docker-local/hello:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://tempo.observability.svc.cluster.local:4318"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: capstone
+  namespace: capstone
+spec:
+  selector:
+    app: capstone
+  ports:
+    - port: 8080
+      targetPort: 8080
