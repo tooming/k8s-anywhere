@@ -130,52 +130,17 @@ You review and merge plan PRs, same as implementation PRs.
 >
 > **Planner note (2026-06-01):** the previous wave landed — Tempo trace
 > producer (HotROD swap), Artifactory (ADR-0011 + manifests + tooling), Istio
-> ambient + Kiali (ADR-0012 + manifests), and Longhorn (ADR-0013 + manifests).
-> All three heavy on-demand components are now in the repo, each as a
-> non-auto-synced ArgoCD `Application` with a `make <name>-up`/`-down` pair,
-> Envoy `HTTPRoute`, Grafana "Lab UIs" tile, and `bats` coverage. With
-> Artifactory live, **the Capstone (RFC #62) is unblocked**: step 1 (GitLab
-> CI builds the demo image and pushes it to Artifactory) is promoted below.
-> Steps 2–5 stay in the Capstone section, each blocked on its predecessor —
-> the planner will promote them one at a time as each lands.
-> NetworkPolicies and `securityContext` hardening remain 🟡 and still need
+> ambient + Kiali (ADR-0012 + manifests), Longhorn (ADR-0013 + manifests), and
+> Capstone step 1 (GitLab CI build + push to Artifactory). With step 1 done,
+> **Capstone step 2** (ArgoCD Application for the pipeline-deployed image) is
+> next. NetworkPolicies and `securityContext` hardening remain 🟡 and still need
 > their own RFCs before the executor may build them.
 
-- [ ] 🟢 **Capstone step 1 — GitLab CI builds the demo image and pushes it to
-  Artifactory.** RFC #62 directs the end-to-end pipeline; ADR-0011 records
-  Artifactory as the in-lab registry, and the Artifactory manifests landed in
-  `auto/artifactory-manifests` (`gitops/platform/artifactory.yaml`,
-  `make artifactory-up`/`-down`, `artifactory.127.0.0.1.nip.io`). This step
-  adds the *build + push* half of the inner loop.
-  - Add a thin, buildable capstone image source under `gitops/apps/capstone/`
-    — a minimal `Dockerfile` wrapping a tiny static-content or hello-world
-    workload (e.g. nginx + a single index.html, or a Go `net/http` "hello
-    capstone" binary). Living in this repo keeps the build reproducible from
-    code (CHARTER recreate-from-code). *(Reusing HotROD as base is acceptable
-    if the executor judges the diff is smaller; either way the source lives
-    here so a re-clone rebuilds the image.)*
-  - Add `.gitlab-ci.yml` at the repo root (no file exists today) with a single
-    `build` job that builds the image and pushes it to Artifactory's Docker
-    registry endpoint (`artifactory.127.0.0.1.nip.io` from the existing
-    `HTTPRoute`, or the in-cluster service URL). Pull credentials at runtime
-    via env vars sourced from a Kubernetes `Secret` — **no plaintext creds
-    in CI vars**.
-  - Seed registry credentials in Vault from `scripts/vault-bootstrap.sh` at a
-    new path (e.g. `secret/artifactory/registry` with `username` +
-    `password`); add an `ExternalSecret` in `gitops/secrets/` that
-    materializes the Secret the runner reads (mirror the
-    `tidb-demo-creds` / `rabbitmq-creds` patterns).
-  - Acceptance: `make ci` stays green — `yamllint` lints the new
-    `.gitlab-ci.yml`; structural `bats` asserts (a) `.gitlab-ci.yml` defines
-    the `build` job and references `$ARTIFACTORY_*` env vars sourced from a
-    Secret rather than plaintext, (b) `vault-bootstrap.sh` seeds the new
-    Vault path, (c) the new `ExternalSecret` exists with matching
-    `remoteRef`. `README.md` and `docs/dependency-tree.md` updated with the
-    new GitLab CI → Artifactory edge and the new ESO secret edge.
-  - (🟢 — RFC #62 is the human RFC; same single-PR shape the executor used
-    for the earlier capstone-prereq items. *Maintainer may pre-pick the
-    image source flavor, Vault path, or registry hostname by editing this
-    item before the executor runs.*)
+- [ ] 🟢 **Capstone step 2 — ArgoCD `Application` for the pipeline-deployed
+  app variant.** New `gitops/apps/capstone/` Application sourcing the
+  pipeline-built image (via Argo image-updater annotation or a values bump in
+  the same repo). Auto-synced is fine here — the workload itself is light.
+  *(Blocked on step 1 — now landed; unblocked.)*
 
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
@@ -188,16 +153,17 @@ You review and merge plan PRs, same as implementation PRs.
 
 ### Capstone — "tie it together" (learning-path step 5)
 > RFC #62 directs the capstone end-to-end pipeline. The in-lab registry is
-> **Artifactory** (RFC #58 → ADR-0011), and the Artifactory manifests landed
-> in `auto/artifactory-manifests`, **unblocking step 1**. Step 1 is now in
-> *Now / next*; steps 2–5 remain here, each blocked on its predecessor — the
-> planner promotes them one at a time as each lands.
+> **Artifactory** (RFC #58 → ADR-0011). The Artifactory manifests have landed and
+> step 1 is now done. Steps 2–5 are sequentially dependent — the planner should
+> promote **step 2** into *Now / next* now that step 1 has merged.
 
-- [ ] 🟢 **Capstone step 2 — ArgoCD `Application` for the pipeline-deployed
-  app variant.** New `gitops/apps/capstone/` Application sourcing the
-  pipeline-built image (via Argo image-updater annotation or a values bump in
-  the same repo). Auto-synced is fine here — the workload itself is light.
-  *(Blocked on step 1.)*
+- [x] 🟢 **Capstone step 1 — GitLab CI: build the demo app image and push it to
+  Artifactory.** Add `.gitlab-ci.yml` (or update if present) with a build job
+  that produces an image of the `hello` demo (or its capstone successor) and
+  pushes to the in-lab Artifactory Docker registry endpoint. Vault-stored
+  registry creds via ESO; no plaintext creds in CI vars. Clusterless gates:
+  `make ci` lints the YAML, structural bats. *(Blocked on the Artifactory
+  manifest item.)*
 - [ ] 🟢 **Capstone step 3 — Envoy `HTTPRoute` for the capstone app**
   (`capstone.127.0.0.1.nip.io`). Wire it into the Grafana "Lab UIs" panel so
   `make lab-ui-check` covers it. *(Blocked on step 2.)*
@@ -226,6 +192,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **Capstone step 1 — GitLab CI: build the demo app image and push it to Artifactory** — Added `.gitlab-ci.yml` with a `build-and-push` Docker-in-DinD job targeting the in-lab Artifactory registry; `gitops/apps/demo/Dockerfile` (thin wrapper on `jaegertracing/example-hotrod:latest`); `secret/artifactory/registry` seeding in `scripts/vault-bootstrap.sh`; `gitops/secrets/artifactory-registry-externalsecret.yaml` (ESO ExternalSecret + `capstone` Namespace for in-cluster imagePullSecret material); `tests/capstone.bats` (9 structural tests: CI file shape, no plaintext creds, Vault path seeded, ExternalSecret wired, Dockerfile present); `docs/dependency-tree.md` updated (CAPSTONE subgraph, pipeline edges, integration-edges table rows, capstone Note); `README.md` updated. No plaintext credentials — `ARTIFACTORY_USER` / `ARTIFACTORY_PASSWORD` are masked GitLab CI variables sourced from Vault. (auto/capstone-step-1)
 - [x] **Longhorn on-demand manifests + tooling** — Added `gitops/platform/longhorn.yaml` (non-auto-synced ArgoCD Application, chart `longhorn/longhorn` v1.7.2 from `https://charts.longhorn.io`, namespace `longhorn-system`; replica count 1 for single-node lab); `gitops/longhorn/route.yaml` (Envoy HTTPRoute `longhorn.127.0.0.1.nip.io`); `gitops/platform/longhorn-extras.yaml` (Application sourcing the route); `make longhorn-up` / `make longhorn-down` targets; 5 bats tests (no auto-sync on both Applications, HTTPRoute wired, make targets present); Grafana "Lab UIs" panel updated; `README.md` and `docs/dependency-tree.md` updated with Longhorn subgraph, sync-wave rows, integration edge, and notes entry. (auto/longhorn-manifests)
 - [x] **ADR-0013 — Longhorn distributed block storage on-demand** — Added `docs/decisions/adr-0013-longhorn-block-storage.md` documenting why Longhorn is un-deferred (on-demand pattern proven by TiDB/Artifactory/Istio; learning objective: StorageClass + snapshot API + UI; CNCF graduated 2022); the official `longhorn/longhorn` chart from `charts.longhorn.io`; footprint estimate (~350–400 MB, on-demand non-auto-synced); complementarity with ADR-0002 (Garage=S3 object, Longhorn=block/filesystem — different interfaces, not alternatives); and relationships to ADRs 0001/0002/0003/0005/0008. Updated `docs/decisions/context.md` to replace the "Deferred" note with the un-defer rationale. Linked from `docs/decisions/README.md`. (auto/adr-0013-longhorn)
 - [x] **Kiali on-demand manifests + Lab UIs panel wiring** — Added `gitops/platform/kiali.yaml` (non-auto-synced ArgoCD Application, chart `kiali-server` v1.89.0 from `https://kiali.org/helm-charts`, namespace `istio-system`; anonymous auth; Mimir Prometheus datasource with `X-Scope-OrgID: lab`); `gitops/kiali/route.yaml` (Envoy HTTPRoute `kiali.127.0.0.1.nip.io`); `gitops/platform/kiali-extras.yaml` (Application sourcing the route); `make kiali-up` / `make kiali-down` targets; combined `make mesh-up` / `make mesh-down` (Istio + Kiali together, correct order); 5 bats tests (no auto-sync, HTTPRoute wired, make targets present); Grafana "Lab UIs" panel updated; `README.md` and `docs/dependency-tree.md` updated.
