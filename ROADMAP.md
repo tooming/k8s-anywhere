@@ -181,12 +181,12 @@ You review and merge plan PRs, same as implementation PRs.
 > the 🟡 items still need a human RFC before the executor builds them.
 
 - [ ] 🟡 Add default-deny `NetworkPolicy` per namespace + the minimal allows each
-  component needs. *(Security-adjacent / network exposure — needs human RFC first;
+  component needs. (RFC #82) *(Security-adjacent / network exposure — needs human RFC first;
   there are currently zero `NetworkPolicy` objects, so this is a from-scratch
   cross-cutting design, not a one-PR tweak — the planner should split it per
   namespace once a human signs off on the deny-by-default direction.)*
 - [ ] 🟡 Harden `securityContext` (runAsNonRoot, drop ALL caps, readOnlyRootFilesystem
-  where viable) across manifests. *(Security-adjacent — needs human RFC first.)*
+  where viable) across manifests. (RFC #83) *(Security-adjacent — needs human RFC first.)*
 
 ---
 
