@@ -95,3 +95,34 @@ setup() {
   run grep -q 'artifactory-registry' "$REPO/gitops/apps/capstone/deployment.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- Step 3: Envoy HTTPRoute for the capstone app ---------------------------
+
+@test "capstone HTTPRoute exists in gitops/apps/capstone/" {
+  [ -f "$REPO/gitops/apps/capstone/route.yaml" ]
+}
+
+@test "capstone HTTPRoute is kind HTTPRoute" {
+  run grep -q 'kind: HTTPRoute' "$REPO/gitops/apps/capstone/route.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone HTTPRoute declares capstone.127.0.0.1.nip.io hostname" {
+  run grep -q 'capstone\.127\.0\.0\.1\.nip\.io' "$REPO/gitops/apps/capstone/route.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone HTTPRoute targets the capstone Service on port 8080" {
+  run grep -q '8080' "$REPO/gitops/apps/capstone/route.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone HTTPRoute uses the eg gateway in lab-gateway namespace" {
+  run grep -q 'namespace: lab-gateway' "$REPO/gitops/apps/capstone/route.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone.127.0.0.1.nip.io appears in the Grafana Lab UIs panel" {
+  run grep -q 'capstone\.127\.0\.0\.1\.nip\.io' "$REPO/grafana/dashboards/stack-health.json"
+  [ "$status" -eq 0 ]
+}
