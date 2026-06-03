@@ -39,6 +39,12 @@
             "command": "bash scripts/adr-guard-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking ADR compliance"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/routines-sync-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking routines sync"
           }
         ]
       }
