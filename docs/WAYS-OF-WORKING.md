@@ -12,8 +12,10 @@
 
 1. **Agents are contributors, not admins.** Every agent change lands as a PR and clears the
    *same* bar as a human change. No special merge path.
-2. **Humans own priority, merge, and architecture.** Agents *propose* and *implement*
-   well-scoped, low-risk work; humans decide what matters and what ships.
+2. **Humans own merge; agents own design and implementation.** The architect makes
+   binding technical decisions (RFCs, ADRs); the planner sequences them; the executor
+   implements. The human's only gate is the merge button on the resulting PRs. Agents
+   *propose* what ships; humans decide *whether* to ship it by merging or closing.
 3. **The repo is the only rulebook agents obey.** Remote agents see only what's in git, so
    [CHARTER.md](../CHARTER.md), the [ROADMAP.md](../ROADMAP.md) rules, the ADRs in
    [decisions/](decisions/), and this doc are the *complete* set of rules. A governance
@@ -61,26 +63,30 @@ Every agent action falls in a tier. An agent that hits work above its registered
 | Tier | Who acts | Examples (non-exhaustive) |
 |---|---|---|
 | 🟢 **Green** | Agent, unsupervised → PR + normal review | Docs, comments, tests; non-auto-synced manifests; dashboards from real metrics; README / `dependency-tree.md` sync; ROADMAP grooming |
-| 🟡 **Yellow** | Human writes an issue/RFC first, *then* an agent may implement | New platform component; anything growing the always-on footprint; new deps / Helm sources; CI, gate, or `Makefile` changes; security-adjacent (auth, RBAC, network exposure) |
-| 🔴 **Red** | Humans only — agent must refuse & escalate | Secrets; any live-cluster / prod change; **merging** PRs; repo settings / branch protection / CODEOWNERS; force-push, deletion, history rewrite; disabling another agent; editing CHARTER, the ADRs, or this doc; risky `infra/` bootstrap changes |
+| 🟡 **Yellow** | Architect authors a binding RFC → planner grooms it → executor implements (no human-approval step) | New platform component; anything growing the always-on footprint; new deps / Helm sources; CI, gate, or `Makefile` changes; security-adjacent (auth, RBAC, network exposure); ADR-authoring; `infra/` bootstrap changes |
+| 🔴 **Red** | Humans only — agent must refuse & escalate | Secrets; any live-cluster / prod change; **merging** PRs; repo settings / branch protection / CODEOWNERS; force-push, deletion, history rewrite; disabling another agent; editing CHARTER.md (goals) or this governance doc |
 
 Full definitions:
 
 **🟢 Green — autonomous (PR + normal review).** Docs, comments, tests; clusterless
 manifests that are *not* auto-synced (per the 12 GB budget rule); Grafana dashboards built
 from real metrics; `docs/dependency-tree.md` and README sync; ROADMAP grooming. This is the
-executor's and planner's entire lane.
+executor's and planner's day-to-day lane.
 
-**🟡 Yellow — needs a human-authored issue/RFC first (agent may then implement).** A new
-platform component; anything that grows the always-on footprint; new third-party
-dependencies or Helm chart sources; changes to CI, the quality gates, or `Makefile`
-targets; security-adjacent changes (auth, RBAC, network exposure).
+**🟡 Yellow — architect-decided, no human-approval step.** A new platform component;
+anything that grows the always-on footprint; new third-party dependencies or Helm chart
+sources; changes to CI, the quality gates, or `Makefile` targets; security-adjacent
+changes (auth, RBAC, network exposure); authoring new ADRs; `infra/` bootstrap changes.
+The architect routine makes the binding decision and files it as an `rfc`-labeled GitHub
+issue (and, where the decision requires it, an accompanying `arch/*` PR that lands the ADR
+and any `infra/` change). The planner grooms the RFC into 🟢 executor items on its next
+run without waiting for a human to approve the RFC — the architect's decision *is* the
+approval. The human gate remains the merge button on every resulting PR.
 
 **🔴 Red — humans only; an agent must refuse and escalate.** Secrets/credentials of any
 kind; any live-cluster or prod mutation; **merging** PRs; repo settings, branch protection,
 or CODEOWNERS; force-push, branch/data deletion, history rewrite; editing CHARTER.md
-(goals), the ADRs (decisions), or this doc; disabling or altering another agent; `infra/`
-bootstrap changes that could break recreate-from-code.
+(goals) or this governance doc; disabling or altering another agent.
 
 **Always, regardless of tier:** never weaken or skip a gate, never self-merge, never push to
 `main`, never access credentials.
