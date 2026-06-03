@@ -159,3 +159,41 @@ setup() {
   run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-capstone.json"
   [ "$status" -eq 1 ]
 }
+
+# --- Step 5: Vault secret + ExternalSecret for the capstone app ---------------
+
+@test "capstone-app ExternalSecret exists in gitops/secrets/" {
+  [ -f "$REPO/gitops/secrets/capstone-app-externalsecret.yaml" ]
+}
+
+@test "capstone-app ExternalSecret is kind ExternalSecret" {
+  run grep -q 'kind: ExternalSecret' "$REPO/gitops/secrets/capstone-app-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone-app ExternalSecret targets namespace capstone" {
+  run grep -q 'namespace: capstone' "$REPO/gitops/secrets/capstone-app-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone-app ExternalSecret pulls from vault key capstone/app" {
+  run grep -q 'key: capstone/app' "$REPO/gitops/secrets/capstone-app-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone-app ExternalSecret renders Secret named capstone-app-creds" {
+  run grep -q 'name: capstone-app-creds' "$REPO/gitops/secrets/capstone-app-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "vault-bootstrap.sh seeds secret/capstone/app" {
+  run grep -q 'secret/capstone/app' "$REPO/scripts/vault-bootstrap.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "capstone Deployment injects APP_KEY from capstone-app-creds secret" {
+  run grep -q 'capstone-app-creds' "$REPO/gitops/apps/capstone/deployment.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'APP_KEY' "$REPO/gitops/apps/capstone/deployment.yaml"
+  [ "$status" -eq 0 ]
+}
