@@ -120,9 +120,9 @@ You review and merge plan PRs, same as implementation PRs.
 
 > **Autonomy tiers** (per [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md) §2) are
 > tagged inline on every item: **🟢 Green** the executor may build now; **🟡 Yellow**
-> needs a human-authored issue/RFC *first* (the executor must skip it and open an issue,
-> per rule #10, never build it unprompted); **🔴 Red** humans only. *Now / next* holds
-> only 🟢 items.
+> needs an architect RFC *first* — the executor still must not build it unprompted, but
+> the architect's RFC is binding (no human-approval step) and the planner grooms it into
+> 🟢 items on its next run; **🔴 Red** humans only. *Now / next* holds only 🟢 items.
 
 ### Now / next
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
