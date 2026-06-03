@@ -13,11 +13,21 @@ ports:
   - port: ${https_port}:443
     nodeFilters:
       - loadbalancer
-%{ if disable_traefik ~}
+%{ if disable_traefik || disable_default_cni ~}
 options:
   k3s:
     extraArgs:
+%{ if disable_traefik ~}
       - arg: --disable=traefik
         nodeFilters:
           - server:*
+%{ endif ~}
+%{ if disable_default_cni ~}
+      - arg: --flannel-backend=none
+        nodeFilters:
+          - server:*
+      - arg: --disable-network-policy
+        nodeFilters:
+          - server:*
+%{ endif ~}
 %{ endif ~}
