@@ -32,6 +32,12 @@ spec:
           env:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://tempo.observability.svc.cluster.local:4318"
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: capstone-app-creds
+                  key: app-key
+                  optional: true
           resources:
             requests:
               cpu: 10m
