@@ -128,19 +128,53 @@ You review and merge plan PRs, same as implementation PRs.
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
 > through to the next.
 >
-> **Planner note (2026-06-01):** the previous wave landed — Tempo trace
-> producer (HotROD swap), Artifactory (ADR-0011 + manifests + tooling), Istio
-> ambient + Kiali (ADR-0012 + manifests), Longhorn (ADR-0013 + manifests), and
-> Capstone step 1 (GitLab CI build + push to Artifactory). With step 1 done,
-> **Capstone step 2** (ArgoCD Application for the pipeline-deployed image) is
-> next. NetworkPolicies and `securityContext` hardening remain 🟡 and still need
-> their own RFCs before the executor may build them.
+> **Planner note (2026-06-03):** capstone steps 1–5 have all landed, completing
+> the end-to-end inner loop (GitLab CI → Artifactory → ArgoCD → Envoy →
+> Grafana → Vault/ESO). The heavy on-demand wave (TiDB, Artifactory, Istio
+> ambient + Kiali, Longhorn) is also complete. The two remaining 🟡 items
+> (NetworkPolicy default-deny, `securityContext` hardening) are blocked on
+> maintainer decision on RFC #82 / #83 — the architect already opened them.
+> To keep the executor moving while the RFCs are decided, this wave seeds three
+> 🟢 **observability gap-fillers** — Grafana dashboards covering CHARTER
+> learning objectives that today have no dedicated view (GitOps reconcile loop,
+> north-south ingress via Gateway API, S3-compatible storage). All three use
+> real metrics (ADR-0004); ArgoCD is already scraped by Alloy, Envoy Gateway
+> and Garage only need a small additive scrape job in the existing Alloy
+> config.
 
-- [x] 🟢 **Capstone step 2 — ArgoCD `Application` for the pipeline-deployed
-  app variant.** New `gitops/apps/capstone/` Application sourcing the
-  pipeline-built image (via Argo image-updater annotation or a values bump in
-  the same repo). Auto-synced is fine here — the workload itself is light.
-  *(Blocked on step 1 — now landed; unblocked.)*
+- [ ] 🟢 **Lab — ArgoCD dashboard** (`grafana/dashboards/lab-argocd.json`).
+  Real ArgoCD metrics already scraped by Alloy (jobs `argocd-metrics`,
+  `argocd-server-metrics`, `argocd-repo-server`,
+  `argocd-applicationset-controller`). Panels: per-app sync state timeseries
+  (`argocd_app_info` by `name` / `sync_status` / `health_status`); reconcile
+  duration heatmap (`argocd_app_reconcile_bucket`); sync attempt rate
+  (`rate(argocd_app_sync_total[5m])` split by `phase`); repo-server git
+  request latency (`argocd_git_request_duration_seconds_bucket`);
+  ApplicationSet controller reconcile counts; pod-running / restart stats
+  from KSM (mirror the `lab-vault` stat-row pattern). Wire into the "Lab UIs"
+  panel; add bats tests asserting dashboard file exists, panel count, no
+  fabricated data, and dependency-tree mention. ADR-0004: real metrics only.
+- [ ] 🟢 **Lab — Envoy Gateway dashboard** + Alloy scrape job
+  (`grafana/dashboards/lab-envoy.json` + scrape addition in
+  `gitops/platform/observability-alloy.yaml`). Add a `prometheus.scrape`
+  block for the Envoy Gateway data plane (`envoy.envoy-gateway-system` admin
+  stats port, `/stats/prometheus`) and the controller's controller-runtime
+  metrics endpoint. Dashboard panels: per-listener request rate, p50/p95/p99
+  request latency, 5xx ratio, upstream cluster health (`envoy_cluster_*`),
+  active connections, HTTPRoute count from KSM (`kube_*` Gateway API CRs if
+  KSM is configured for them; otherwise omit). Wire into "Lab UIs" panel +
+  bats + dependency-tree. ADR-0004: real metrics only. Single PR; clusterless
+  validation = `make ci`.
+- [ ] 🟢 **Lab — Garage S3 dashboard** + Alloy scrape job
+  (`grafana/dashboards/lab-garage.json` + scrape addition in
+  `gitops/platform/observability-alloy.yaml`). Add a `prometheus.scrape`
+  block for Garage's admin port (`garage.storage.svc.cluster.local:3903`,
+  path `/metrics`). Panels: API request rate by verb (`garage_api_*`),
+  bucket / object counts (`garage_bucket_*`, `garage_object_*`), replication
+  lag (`garage_block_resync_*`), free disk (`garage_storage_*`), error rate.
+  Wire into "Lab UIs" panel + bats + dependency-tree. Covers the
+  S3-compatible-storage CHARTER learning objective. ADR-0004: real metrics
+  only.
 
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
