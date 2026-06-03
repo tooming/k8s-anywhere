@@ -38,3 +38,9 @@ variable "disable_traefik" {
   default     = true
   description = "Disable the bundled Traefik ingress — we use Envoy Gateway instead"
 }
+
+variable "disable_default_cni" {
+  type        = bool
+  default     = false
+  description = "Disable k3s's bundled Flannel CNI + NetworkPolicy controller (--flannel-backend=none --disable-network-policy). Per ADR-0014, set to true ONLY when the Cilium ArgoCD Application is also being landed in the same change — otherwise the cluster comes up with no CNI and pods stay in ContainerCreating."
+}

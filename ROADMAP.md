@@ -215,10 +215,8 @@ You review and merge plan PRs, same as implementation PRs.
 > the 🟡 items still need a human RFC before the executor builds them.
 
 - [ ] 🟡 Add default-deny `NetworkPolicy` per namespace + the minimal allows each
-  component needs. (RFC #82) *(Security-adjacent / network exposure — needs human RFC first;
-  there are currently zero `NetworkPolicy` objects, so this is a from-scratch
-  cross-cutting design, not a one-PR tweak — the planner should split it per
-  namespace once a human signs off on the deny-by-default direction.)*
+  component needs. (RFC #82 → ADR-0014 Cilium prerequisite landed; remaining work is
+  the Cilium chart Application + per-namespace policy fan-out — planner to groom.)
 - [ ] 🟡 Harden `securityContext` (runAsNonRoot, drop ALL caps, readOnlyRootFilesystem
   where viable) across manifests. (RFC #83) *(Security-adjacent — needs human RFC first.)*
 

@@ -10,13 +10,14 @@ terraform {
 resource "local_file" "k3d_config" {
   filename = "${path.cwd}/k3d-config.generated.yaml"
   content = templatefile("${path.module}/k3d-config.yaml.tftpl", {
-    cluster_name    = var.cluster_name
-    servers         = var.servers
-    agents          = var.agents
-    api_port        = var.api_port
-    http_port       = var.http_port
-    https_port      = var.https_port
-    disable_traefik = var.disable_traefik
+    cluster_name        = var.cluster_name
+    servers             = var.servers
+    agents              = var.agents
+    api_port            = var.api_port
+    http_port           = var.http_port
+    https_port          = var.https_port
+    disable_traefik     = var.disable_traefik
+    disable_default_cni = var.disable_default_cni
   })
 }
 
