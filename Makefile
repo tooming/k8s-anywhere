@@ -86,6 +86,7 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) colima-up
 	$(MAKE) tfstate-up
 	$(MAKE) cluster-up
+	$(MAKE) coredns-host-alias
 	$(MAKE) argocd
 	$(MAKE) gitlab-up
 	$(MAKE) gitlab-configure
@@ -143,6 +144,10 @@ cluster-up: ## Create the k3d cluster
 .PHONY: cluster-down
 cluster-down: ## Destroy the k3d cluster
 	cd $(LIVE)/cluster && terragrunt destroy -auto-approve
+
+.PHONY: coredns-host-alias
+coredns-host-alias: ## Teach CoreDNS to resolve host.k3d.internal -> docker gateway (k3d 5.x on Colima omits this)
+	@bash scripts/coredns-host-alias.sh
 
 ##@ Bootstrap (day-0, imperative seam)
 
@@ -241,7 +246,7 @@ creds: ## Print all lab UI logins (reads live secrets; needs the cluster/GitLab 
 	@r=$$(grep -E '^GITLAB_ROOT_PASSWORD=' gitlab/.env 2>/dev/null | cut -d= -f2-); echo "GitLab   root  / $${r:-<gitlab/.env missing>}    http://localhost:8929"
 	@t=$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); echo "Vault    token / $${t:-<cluster down>}    http://vault.127.0.0.1.nip.io:8080"
 	@ru=$$(kubectl -n data get secret rabbitmq-creds -o jsonpath='{.data.username}' 2>/dev/null | base64 -d); rp=$$(kubectl -n data get secret rabbitmq-creds -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "RabbitMQ $${ru:-<cluster down>} / $${rp:-<cluster down>}    http://rabbitmq.127.0.0.1.nip.io:8080"
-	@dp=$$(kubectl -n data get secret redis-creds -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "Redis    (requirepass) / $${dp:-<cluster down>}    redis://redis.data.svc:6379"
+	@dp=$$(kubectl -n data get secret valkey-creds -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "Valkey   (requirepass) / $${dp:-<cluster down>}    valkey://valkey.data.svc:6379"
 
 .PHONY: argocd-ui
 argocd-ui: ## Port-forward ArgoCD UI -> http://localhost:8081 (or use http://argocd.127.0.0.1.nip.io:8080)
