@@ -189,13 +189,63 @@ spec:
 
               // ---- data layer (RabbitMQ + Redis) -> Mimir ----
               // RabbitMQ exposes the rabbitmq_prometheus plugin on :15692; Redis is
-              // scraped via the redis_exporter sidecar on :9121. Feeds the
+              // scraped via the redis_exporter co-located container on :9121. Feeds the
               // "Lab — RabbitMQ" and "Lab — Redis" dashboards with real metrics.
               prometheus.scrape "data" {
                 targets = [
                   {"__address__" = "rabbitmq.data.svc.cluster.local:15692", "job" = "rabbitmq"},
                   {"__address__" = "redis.data.svc.cluster.local:9121", "job" = "redis"},
                 ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
+              // ---- Envoy Gateway (north-south ingress) -> Mimir ----
+              // Controller controller-runtime metrics (:19001/metrics) + data-plane
+              // Envoy proxy /stats/prometheus (:19000) via pod label discovery.
+              // Feeds the "Lab — Envoy Gateway" dashboard (ADR-0004).
+              prometheus.scrape "envoy_gateway_controller" {
+                targets = [
+                  {"__address__" = "envoy-gateway.envoy-gateway-system.svc.cluster.local:19001", "job" = "envoy-gateway-controller"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
+              discovery.relabel "envoy_proxy_pods" {
+                targets = discovery.kubernetes.pods.targets
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace"]
+                  regex         = "envoy-gateway-system"
+                  action        = "keep"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_component"]
+                  regex         = "proxy"
+                  action        = "keep"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_ip"]
+                  regex         = "(.*)"
+                  target_label  = "__address__"
+                  replacement   = "$1:19000"
+                }
+                rule {
+                  target_label = "__metrics_path__"
+                  replacement  = "/stats/prometheus"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_name"]
+                  target_label  = "pod"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "envoy-proxy"
+                }
+              }
+
+              prometheus.scrape "envoy_proxy" {
+                targets         = discovery.relabel.envoy_proxy_pods.output
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }

@@ -1,0 +1,163 @@
+{
+  "uid": "lab-envoy-gateway",
+  "title": "Lab — Envoy Gateway (Ingress)",
+  "tags": ["lab", "envoy", "ingress"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1, "type": "text", "title": "About Envoy Gateway (Ingress)",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "## Lab — Envoy Gateway (Ingress)\n\nReal-time view of Envoy Gateway, the lab's north-south ingress (ADR-0008, Gateway API). Two Alloy scrape targets feed this dashboard:\n\n- `envoy-gateway-controller` → `envoy-gateway.envoy-gateway-system.svc:19001/metrics` (controller-runtime reconcile metrics)\n- `envoy-proxy` → Envoy proxy pod admin port `:19000/stats/prometheus` (per-listener request rates, latency, error ratios, upstream cluster health)\n\nAll panels use real Envoy / KSM / cAdvisor metrics (ADR-0004 — no fabricated data). The Gateway object `eg` in namespace `lab-gateway` serves `*.127.0.0.1.nip.io` routes for the whole lab."
+      }
+    },
+    {
+      "id": 2, "type": "stat", "title": "Controller Pod Running",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "max(kube_pod_status_phase{namespace=\"envoy-gateway-system\", pod=~\"envoy-gateway-[^-]+-[^-]+\", phase=\"Running\"})", "instant": true }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } }],
+          "noValue": "not deployed"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 3, "type": "stat", "title": "Proxy Pod Running",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "max(kube_pod_status_phase{namespace=\"envoy-gateway-system\", pod=~\"envoy-lab-gateway-.*\", phase=\"Running\"})", "instant": true }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } }],
+          "noValue": "not deployed"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 4, "type": "stat", "title": "Active Downstream Connections",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(envoy_http_downstream_cx_active{job=\"envoy-proxy\"})", "instant": true }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" }
+    },
+    {
+      "id": 5, "type": "stat", "title": "Request Rate (req/s)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(envoy_http_downstream_rq_completed{job=\"envoy-proxy\"}[5m]))", "instant": true }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "reqps",
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Request Rate by Listener",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (envoy_http_connection_manager_prefix) (rate(envoy_http_downstream_rq_completed{job=\"envoy-proxy\"}[5m]))", "legendFormat": "{{envoy_http_connection_manager_prefix}}", "range": true }],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Request Latency p50 / p95 / p99 (ms)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "histogram_quantile(0.5,  sum by (le) (rate(envoy_http_downstream_rq_time_bucket{job=\"envoy-proxy\"}[5m])))", "legendFormat": "p50", "range": true },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "histogram_quantile(0.95, sum by (le) (rate(envoy_http_downstream_rq_time_bucket{job=\"envoy-proxy\"}[5m])))", "legendFormat": "p95", "range": true },
+        { "refId": "C", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "histogram_quantile(0.99, sum by (le) (rate(envoy_http_downstream_rq_time_bucket{job=\"envoy-proxy\"}[5m])))", "legendFormat": "p99", "range": true }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "fillOpacity": 5 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "5xx Error Ratio",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(envoy_http_downstream_rq_5xx{job=\"envoy-proxy\"}[5m])) / sum(rate(envoy_http_downstream_rq_completed{job=\"envoy-proxy\"}[5m]))", "legendFormat": "5xx ratio", "range": true }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": { "drawStyle": "line", "fillOpacity": 20 },
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.01 }] }
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Upstream Active Connections per Cluster",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (envoy_cluster_name) (envoy_cluster_upstream_cx_active{job=\"envoy-proxy\"})", "legendFormat": "{{envoy_cluster_name}}", "range": true }],
+      "fieldConfig": {
+        "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "stacking": { "mode": "normal" } } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "Controller Reconcile Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (controller) (rate(controller_runtime_reconcile_total{job=\"envoy-gateway-controller\"}[5m]))", "legendFormat": "{{controller}} total", "range": true },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (controller) (rate(controller_runtime_reconcile_errors_total{job=\"envoy-gateway-controller\"}[5m]))", "legendFormat": "{{controller}} errors", "range": true }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": [{ "matcher": { "id": "byRegexp", "options": ".*errors.*" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }]
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 11, "type": "timeseries", "title": "Memory by Container (envoy-gateway-system)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (container) (container_memory_working_set_bytes{namespace=\"envoy-gateway-system\", container!=\"\", container!=\"POD\"})", "legendFormat": "{{container}}", "range": true }],
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    }
+  ]
+}
