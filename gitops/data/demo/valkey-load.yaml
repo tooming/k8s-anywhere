@@ -1,47 +1,47 @@
-# Redis traffic generator: a tiny shell loop using redis-cli against the 'redis' service.
+# Valkey traffic generator: a tiny shell loop using valkey-cli against the 'valkey' service.
 # It SETs/GETs/INCRs keys (hits) and GETs a missing key (miss) every few seconds, so the
 # redis_exporter metrics — commands processed, keyspace hits/misses, connected clients —
-# carry real movement on the "Lab — Redis" dashboard. Auth via REDISCLI_AUTH (no
+# carry real movement on the "Lab — Valkey" dashboard. Auth via REDISCLI_AUTH (no
 # password on the command line).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis-load
+  name: valkey-load
   namespace: data
   labels:
-    app: redis-load
+    app: valkey-load
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: redis-load
+      app: valkey-load
   template:
     metadata:
       labels:
-        app: redis-load
+        app: valkey-load
     spec:
       containers:
-        - name: redis-load
-          image: redis:7.4-alpine
+        - name: valkey-load
+          image: valkey/valkey:8.0-alpine
           env:
             - name: REDISCLI_AUTH
               valueFrom:
                 secretKeyRef:
                   name: data-demo-creds
-                  key: redis-password
+                  key: valkey-password
           command:
             - /bin/sh
             - -c
             - |
-              echo "redis-load: generating traffic against redis:6379"
+              echo "valkey-load: generating traffic against valkey:6379"
               n=0
               while true; do
                 n=$((n + 1))
-                redis-cli -h redis SET "demo:last" "$(date -u +%FT%TZ)" >/dev/null
-                redis-cli -h redis INCR "demo:counter" >/dev/null
-                redis-cli -h redis GET "demo:last" >/dev/null      # keyspace hit
-                redis-cli -h redis GET "demo:missing:$n" >/dev/null # keyspace miss
-                redis-cli -h redis SETEX "demo:tmp" 30 "ephemeral" >/dev/null
+                valkey-cli -h valkey SET "demo:last" "$(date -u +%FT%TZ)" >/dev/null
+                valkey-cli -h valkey INCR "demo:counter" >/dev/null
+                valkey-cli -h valkey GET "demo:last" >/dev/null      # keyspace hit
+                valkey-cli -h valkey GET "demo:missing:$n" >/dev/null # keyspace miss
+                valkey-cli -h valkey SETEX "demo:tmp" 30 "ephemeral" >/dev/null
                 sleep 3
               done
           resources:

@@ -1,6 +1,6 @@
-# Data-layer demo — small always-on workloads that actually USE RabbitMQ and Redis, so
-# the dashboards show real traffic (publish/deliver rates, Redis ops/sec) rather than an
-# idle broker. ALWAYS-ON: automated sync. Wave 4: after rabbitmq + redis (wave 3) so the
+# Data-layer demo — small always-on workloads that actually USE RabbitMQ and Valkey, so
+# the dashboards show real traffic (publish/deliver rates, Valkey ops/sec) rather than an
+# idle broker. ALWAYS-ON: automated sync. Wave 4: after rabbitmq + valkey (wave 3) so the
 # services and credentials exist when the generators start.
 apiVersion: argoproj.io/v1alpha1
 kind: Application

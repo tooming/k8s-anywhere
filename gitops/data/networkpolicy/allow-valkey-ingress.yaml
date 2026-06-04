@@ -1,16 +1,16 @@
-# Allow ingress to Redis pods in the data namespace (ADR-0016).
-# Permits traffic on the Redis port (6379) from other pods in the data namespace
-# (redis-load client) and the redis_exporter metrics port (9121) from Alloy
+# Allow ingress to Valkey pods in the data namespace (ADR-0016).
+# Permits traffic on the Valkey port (6379) from other pods in the data namespace
+# (valkey-load client) and the redis_exporter metrics port (9121) from Alloy
 # in the observability namespace.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-redis-ingress
+  name: allow-valkey-ingress
   namespace: data
 spec:
   podSelector:
     matchLabels:
-      app: redis
+      app: valkey
   policyTypes:
     - Ingress
   ingress:

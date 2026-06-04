@@ -187,14 +187,14 @@ spec:
                 scrape_interval = "30s"
               }
 
-              // ---- data layer (RabbitMQ + Redis) -> Mimir ----
-              // RabbitMQ exposes the rabbitmq_prometheus plugin on :15692; Redis is
+              // ---- data layer (RabbitMQ + Valkey) -> Mimir ----
+              // RabbitMQ exposes the rabbitmq_prometheus plugin on :15692; Valkey is
               // scraped via the redis_exporter co-located container on :9121. Feeds the
-              // "Lab — RabbitMQ" and "Lab — Redis" dashboards with real metrics.
+              // "Lab — RabbitMQ" and "Lab — Valkey" dashboards with real metrics.
               prometheus.scrape "data" {
                 targets = [
                   {"__address__" = "rabbitmq.data.svc.cluster.local:15692", "job" = "rabbitmq"},
-                  {"__address__" = "redis.data.svc.cluster.local:9121", "job" = "redis"},
+                  {"__address__" = "valkey.data.svc.cluster.local:9121", "job" = "valkey"},
                 ]
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"

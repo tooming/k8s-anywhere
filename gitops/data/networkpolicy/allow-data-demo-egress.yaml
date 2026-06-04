@@ -1,6 +1,6 @@
-# Allow egress from data-demo pods to RabbitMQ and Redis (ADR-0016).
+# Allow egress from data-demo pods to RabbitMQ and Valkey (ADR-0016).
 # rabbitmq-load talks to the management HTTP API on 15672.
-# redis-load talks to the Redis server on 6379.
+# valkey-load talks to the Valkey server on 6379.
 # Both generators stay within the data namespace — no cross-namespace egress needed.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -14,7 +14,7 @@ spec:
         operator: In
         values:
           - rabbitmq-load
-          - redis-load
+          - valkey-load
   policyTypes:
     - Egress
   egress:

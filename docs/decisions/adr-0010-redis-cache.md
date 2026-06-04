@@ -1,8 +1,8 @@
 # ADR-0010 — Redis as the lab's cache / key-value store (plain manifests, always-on)
 
-**Status.** Adopted. Active in `gitops/platform/redis.yaml` (ArgoCD Application,
-auto-synced) and `gitops/data/redis/` (StatefulSet with a redis_exporter sidecar +
-Service + ExternalSecret). Demo traffic from `gitops/data/demo/redis-load.yaml`.
+**Status.** Superseded by [ADR-0018](adr-0018-valkey-not-redis.md). Valkey (BSD-3,
+Linux Foundation) replaced Redis once Valkey 8.0 reached production stability and became
+the default managed-KV offering on AWS and GCP. See ADR-0018 for the full rationale.
 
 ---
 

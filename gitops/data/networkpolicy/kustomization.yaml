@@ -1,6 +1,6 @@
 # NetworkPolicy Kustomize overlay for the data namespace (ADR-0016 pilot).
 # Pulls the two shared baseline templates and adds the data-specific allow rules.
-# Wired into the rabbitmq, redis, and data-demo ArgoCD Applications via the
+# Wired into the rabbitmq, valkey, and data-demo ArgoCD Applications via the
 # gitops/data/ path — all three share the data namespace so one overlay suffices.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -11,5 +11,5 @@ resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
   - allow-rabbitmq-ingress.yaml
-  - allow-redis-ingress.yaml
+  - allow-valkey-ingress.yaml
   - allow-data-demo-egress.yaml
