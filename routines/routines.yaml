@@ -9,8 +9,10 @@ source: https://github.com/tooming/k8s-lab     # repo cloned into each run
 # Quota math (WAYS-OF-WORKING.md §5 — 5 runs / rolling 24h free):
 #   executor 3/day + reviewer 1/day = 4/day baseline, plus one daily routine-of-the-day:
 #   Mon=planner, Tue=architect, Wed=triager, Thu=upgrade-drafter, Fri=doc-drift,
-#   Sat=triager, Sun=learning-post → exactly 5/day, every day, at cap.
+#   Sat=triager, Sun=industry-news-writer → exactly 5/day, every day, at cap.
 #   No headroom — raising any cadence requires cutting executor or enabling the paid toggle.
+#   learning-post-writer was replaced by industry-news-writer (Sun slot) to unblock
+#   the architect's ADR audit cycle (see issue #94 / docs/industry/).
 
 routines:
   # The EXECUTOR — implements one ROADMAP item per run.
@@ -90,15 +92,17 @@ routines:
     branch_prefix: sync/           # PRs land on sync/docs-drift-YYYY-WW
     max_tier: green
 
-  # The LEARNING-POST WRITER — one short post per week reflecting on what landed.
-  - name: k8s-lab learning-post-writer
+  # The INDUSTRY-NEWS-WRITER — produces docs/industry/YYYY-W##-digest.md each week.
+  # Runs Sundays so the digest is ready when the architect runs on Tuesdays.
+  # Replaced the learning-post-writer in the Sun quota slot to unblock ADR audits.
+  - name: k8s-lab industry-news-writer
     trigger_id: trig_01GNuyixzT3TBDF7Mk4ZeSTr
-    cron: "0 10 * * 0"             # weekly, Sundays 10:00 UTC
+    cron: "0 8 * * 0"              # weekly, Sundays 08:00 UTC (before architect's Tue 06:00)
     model: claude-sonnet-4-6
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
-    prompt_file: learning-post-writer.prompt.md
-    branch_prefix: learn/          # PRs land on learn/YYYY-W##
+    prompt_file: industry-news-writer.prompt.md
+    branch_prefix: digest/         # PRs land on digest/YYYY-W##
     max_tier: green
 
 # Local-only roles (NOT remote routines — they need Colima and the live cluster).
