@@ -1,0 +1,67 @@
+# PostgreSQL batch coordinator for Aiven Inkless — single replica (ADR-0005).
+# Credentials come from the inkless-postgres-creds Secret rendered by ESO
+# (Vault path: secret/inkless/postgres). ON-DEMAND: deployed with make inkless-up.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: inkless-postgres
+  namespace: inkless
+  labels:
+    app: inkless-postgres
+spec:
+  serviceName: inkless-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inkless-postgres
+  template:
+    metadata:
+      labels:
+        app: inkless-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "inkless"
+            - name: POSTGRES_USER
+              value: "admin"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: inkless-postgres-creds
+                  key: password
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "admin", "-d", "inkless"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "admin", "-d", "inkless"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

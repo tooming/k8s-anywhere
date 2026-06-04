@@ -1,0 +1,29 @@
+# Aiven Inkless — on-demand Kafka fork implementing KIP-1150 (diskless topics).
+# Uses Garage (ADR-0002) as the S3 object backend and PostgreSQL as the batch
+# coordinator. Single-node KRaft broker (ADR-0005).
+#
+# ON-DEMAND: no automated: block → ArgoCD discovers this Application but will NOT
+# auto-deploy it. Bring up with: make inkless-up
+# Tear down with:               make inkless-down
+#
+# Do NOT add automated: here — the JVM Kafka broker (~1 GB RAM) must not run
+# alongside the always-on stack without explicit user intent (12 GB VM budget,
+# ADR-0015).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: inkless
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/inkless
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: inkless
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
