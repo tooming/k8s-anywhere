@@ -1,0 +1,173 @@
+# ADR-0017 — Pod Security Standards `restricted` profile across all namespaces
+
+**Status.** Adopted. Decision taken in RFC #83. Pilot namespace: `capstone`;
+full fan-out to remaining namespaces follows per-namespace via the planner's
+groomed items.
+
+---
+
+## Context
+
+[RFC #83](https://github.com/tooming/k8s-lab/issues/83) calls for hardening
+every pod's `securityContext` against the Kubernetes Pod Security Standards
+(PSS) `restricted` profile. PodSecurityPolicy was removed in Kubernetes 1.25;
+the in-tree successor is **Pod Security Admission (PSA)**, which enforces PSS
+profiles via namespace labels.
+
+The lab runs ~28 ArgoCD `Application`s across mixed direct manifests and Helm
+charts. None currently set the required `securityContext` fields or carry PSA
+namespace labels.
+
+---
+
+## Decision
+
+Adopt PSS `restricted` as the target for every lab namespace, enforced at two
+layers:
+
+### Layer 1 — manifest fields (every Deployment / StatefulSet / DaemonSet)
+
+**Pod-level `securityContext`:**
+
+```yaml
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001          # any non-zero UID; pick per-workload, default 10001
+        runAsGroup: 10001
+        fsGroup: 10001            # only when a writable volume is mounted
+        seccompProfile:
+          type: RuntimeDefault
+```
+
+**Container-level `securityContext`** (every container, including initContainers):
+
+```yaml
+securityContext:
+  allowPrivilegeEscalation: false
+  privileged: false
+  readOnlyRootFilesystem: true    # exceptions noted in §Scope
+  capabilities:
+    drop: ["ALL"]
+```
+
+**Writable-filesystem workloads** use `emptyDir` mounts over write targets
+(e.g. `/tmp`, `/var/cache`, `/var/log`) instead of relaxing
+`readOnlyRootFilesystem`. For stateful workloads the existing PVC already
+covers the data path; only ephemeral write targets need `emptyDir`.
+
+**Helm-chart workloads** add `valuesObject.podSecurityContext` /
+`valuesObject.containerSecurityContext` (or the chart-specific equivalent) in
+the ArgoCD `Application`'s `spec.source.helm.valuesObject` so PSS-restricted
+is enforced after the chart renders.
+
+### Layer 2 — namespace labels (every namespace manifest)
+
+```yaml
+metadata:
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+```
+
+The manifest fields are what actually runs; the namespace label is the
+in-cluster safety net that catches a future workload that forgets to set the
+fields. Without the label, a non-compliant pod can be added and nothing
+in-tree blocks it.
+
+---
+
+## Why PSS `restricted`
+
+- **PSS `restricted` is the SIG-Auth-documented production baseline.** It
+  bundles `runAsNonRoot`, `seccompProfile=RuntimeDefault`,
+  `capabilities.drop=[ALL]`, `allowPrivilegeEscalation=false`, and the
+  host-namespace prohibitions in one labelled enforcement.
+- **`readOnlyRootFilesystem: true` is the highest-value hardening control.**
+  It blocks the most common post-compromise step (drop a binary, modify a
+  config). The `emptyDir`-over-write-targets pattern is the documented fix and
+  preserves the security win without per-workload exceptions.
+- **Two-layer enforcement is the defence-in-depth standard.** Manifest fields
+  prevent the problem; namespace labels catch regressions. Both are required.
+- **CNCF Cloud Native Security Whitepaper v2** independently names the same
+  controls, confirming cross-vendor consensus.
+
+---
+
+## Per-namespace profile
+
+Not every namespace can run under `restricted` — some system-level components
+need elevated privileges. The table below records each carve-out permanently
+so the executor never silently applies the wrong label.
+
+| Namespace | PSA profile | Reason |
+|-----------|-------------|--------|
+| `capstone` | `restricted` | Pilot; workload is fully owned by us. |
+| `argocd` | `restricted` | ArgoCD components run as non-root; no special capabilities. |
+| `observability` | `restricted` | LGTMP stack; containers are non-root-capable. |
+| `storage` (Garage) | `baseline` | Upstream Garage image does not yet declare an explicit non-root user required by `restricted`. Re-evaluate per upstream release. |
+| `data` | `restricted` | RabbitMQ + Redis both support non-root operation. |
+| `tidb` / `tidb-admin` | `baseline` | TiDB operator pods need additional capabilities; `baseline` is HashiCorp/PingCAP's documented recommendation. |
+| `moto` / `ack-system` | `restricted` | Stateless HTTP mock; non-root-capable. |
+| `lab-gateway` | `restricted` | Envoy Gateway; runs as non-root. |
+| `vault` | `baseline` | Vault needs `IPC_LOCK` to `mlock` its memory and prevent secret swap-to-disk. `restricted` forbids it; `baseline` is HashiCorp's recommended profile. |
+| `longhorn-system` | `privileged` | longhorn-manager and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, and host `/dev`. Block storage cannot work under `restricted`. |
+| `istio-system` | `privileged` | istio-cni runs as a DaemonSet that mutates host CNI config; ztunnel requires `NET_ADMIN`. Both fail under `restricted`. |
+| `kube-system` | unchanged | k3s-managed; out of scope. |
+
+---
+
+## Staged rollout
+
+| Phase | Scope | Rationale |
+|-------|-------|-----------|
+| **Pilot** (this ADR) | `capstone` | Small namespace, single Deployment owned by us, dashboards already exist — clean blast radius. |
+| **Fan-out** (planner-groomed items) | `argocd`, `observability`, `data`, `lab-gateway`, `moto`, `ack-system` (all `restricted`) | One namespace per executor run. |
+| **Carve-out namespaces** | `storage`, `tidb`, `tidb-admin` (`baseline`); `vault` (`baseline`); `longhorn-system`, `istio-system` (`privileged`) | Label-only change (no workload securityContext fan-out). |
+
+---
+
+## Scope & exceptions
+
+**In scope** — every Deployment / StatefulSet / DaemonSet under `gitops/**`
+(~28 ArgoCD `Application`s, mix of direct manifests and Helm charts).
+
+**Per-workload field carve-outs (still inside a `restricted` namespace):**
+
+- `readOnlyRootFilesystem: false` for any chart that the executor verifies
+  cannot be patched with an `emptyDir` overlay in the current pass — flag in
+  the PR, file a follow-up. Default is `true`; this is an explicit exception,
+  not the rule.
+
+**Out of scope (this RFC):**
+
+- Sigstore / cosign image signing and admission verification — separate concern.
+- Kyverno / OPA Gatekeeper — PSA is the in-tree control; external policy
+  engines only if a gap appears.
+
+---
+
+## Files this work touches (pilot)
+
+| Path | Role |
+|------|------|
+| `docs/decisions/adr-0017-pod-security-standards-restricted.md` | This ADR |
+| `gitops/apps/capstone/namespace.yaml` | Explicit `capstone` namespace manifest with four PSA `restricted` labels |
+| `gitops/apps/capstone/deployment.yaml` | Pod- and container-level `securityContext` fields; `emptyDir` for write targets |
+| `tests/securitycontext.bats` | Clusterless YAML structural tests: deployment sets `runAsNonRoot`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`, `readOnlyRootFilesystem: true`, `seccompProfile.type: RuntimeDefault`; namespace carries the four PSA labels |
+
+---
+
+## Relationship to existing ADRs
+
+| ADR | Relationship |
+|-----|-------------|
+| [ADR-0001](adr-0001-gitops-over-terraform-helm.md) | Changes land as ArgoCD-synced manifest edits — no `kubectl apply`. |
+| [ADR-0003](adr-0003-decoupled-no-spof.md) | Defence-in-depth (two-layer enforcement) complements decoupled designs. |
+| [ADR-0004](adr-0004-no-fabricated-content.md) | Security labels that are silently unenforced would be fabricated safety — this ADR pairs the manifest fields with namespace labels so enforcement is real. |
+| [ADR-0005](adr-0005-spof-recreate-over-ha.md) | Single-host lab still gets production-shaped security controls; the recreate-from-code property is unchanged. |
+| [ADR-0016](adr-0016-default-deny-networkpolicy.md) | Companion security ADR (pod security controls vs host network controls). The two together express the production defence-in-depth baseline. |

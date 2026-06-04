@@ -128,19 +128,14 @@ You review and merge plan PRs, same as implementation PRs.
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
 > through to the next.
 >
-> **Planner note (2026-06-03):** capstone steps 1–5 have all landed, completing
-> the end-to-end inner loop (GitLab CI → Artifactory → ArgoCD → Envoy →
-> Grafana → Vault/ESO). The heavy on-demand wave (TiDB, Artifactory, Istio
-> ambient + Kiali, Longhorn) is also complete. The two remaining 🟡 items
-> (NetworkPolicy default-deny, `securityContext` hardening) are blocked on
-> maintainer decision on RFC #82 / #83 — the architect already opened them.
-> To keep the executor moving while the RFCs are decided, this wave seeds three
-> 🟢 **observability gap-fillers** — Grafana dashboards covering CHARTER
-> learning objectives that today have no dedicated view (GitOps reconcile loop,
-> north-south ingress via Gateway API, S3-compatible storage). All three use
-> real metrics (ADR-0004); ArgoCD is already scraped by Alloy, Envoy Gateway
-> and Garage only need a small additive scrape job in the existing Alloy
-> config.
+> **Planner note (2026-06-04):** the observability gap-fillers (ArgoCD,
+> Envoy Gateway, Garage dashboards) and all five capstone steps have landed.
+> The two previously 🟡-blocked hardening tracks (RFC #82 NetworkPolicy,
+> RFC #83 securityContext) now have their binding ADRs (ADR-0016 and ADR-0017)
+> and are groomed below into 🟢 executor items. The Cilium follow-on
+> (ADR-0014) is the prerequisite for the NetworkPolicy items; land it first.
+> Issue #94 (ADR-0010 Redis → Valkey audit) is deferred until the first
+> industry-news-writer digest lands — do not swap without digest confirmation.
 
 - [x] 🟢 **Lab — ArgoCD dashboard** (`grafana/dashboards/lab-argocd.json`).
   Real ArgoCD metrics already scraped by Alloy (jobs `argocd-metrics`,
@@ -175,6 +170,53 @@ You review and merge plan PRs, same as implementation PRs.
   Wire into "Lab UIs" panel + bats + dependency-tree. Covers the
   S3-compatible-storage CHARTER learning objective. ADR-0004: real metrics
   only.
+
+- [ ] 🟢 **Cilium on-demand manifest + infra flip** (ADR-0014 follow-on,
+  RFC #82 prerequisite). `gitops/platform/cilium.yaml` — non-auto-synced
+  ArgoCD `Application`, chart `cilium/cilium` ≥ v1.16 from
+  `https://helm.cilium.io`, namespace `kube-system`,
+  `kubeProxyReplacement: true`, `hubble.enabled: false` (stays inside the
+  12 GB budget; Hubble deferred). Set `disable_default_cni = true` in
+  `infra/live/local/cluster/terragrunt.hcl` (atomic with the chart — ADR-0014
+  mandates that both land in the same PR). `make cilium-up` / `make cilium-down`
+  targets. `docs/DR.md` note: "after `make up`, run `make cilium-up` before any
+  workload". `tests/cilium.bats` (no `automated:` block in the Application; both
+  Makefile targets exist). ADR-0004: Cilium is always-on once enabled — it is
+  the network data plane, not on-demand. **This item is the prerequisite for the
+  two NetworkPolicy items below.**
+
+- [ ] 🟢 **NetworkPolicy baseline — `data` namespace pilot** (ADR-0016,
+  RFC #82). Reusable templates under `gitops/network/policies/`:
+  `default-deny.yaml` (policyTypes: [Ingress, Egress], no rules) and
+  `allow-dns-and-apiserver.yaml` (egress UDP/TCP 53 to kube-dns pods in
+  `kube-system`; egress TCP 6443 to `10.43.0.1/32`). Pilot overlay:
+  `gitops/data/networkpolicy/kustomization.yaml` referencing both templates;
+  per-workload allows: `allow-rabbitmq-ingress.yaml` (ports 5672, 15692),
+  `allow-redis-ingress.yaml` (ports 6379, 9121),
+  `allow-data-demo-egress.yaml` (egress from the data-demo pods to RabbitMQ
+  and Redis). Wire overlay into the existing `data` ArgoCD `Application`.
+  `tests/networkpolicy.bats` asserting clusterless: both baseline templates
+  exist; `default-deny-all` has `policyTypes: [Ingress, Egress]` and no rules;
+  `data` overlay references both templates. `docs/dependency-tree.md` updated
+  with network-policy note. *(Blocked on Cilium item above.)*
+
+- [ ] 🟢 **securityContext hardening — `capstone` pilot** (ADR-0017, RFC #83).
+  `gitops/apps/capstone/namespace.yaml` — new explicit `Namespace` manifest for
+  `capstone` with the four PSA labels at `restricted`
+  (`pod-security.kubernetes.io/enforce: restricted`,
+  `…/warn: restricted`, `…/audit: restricted`,
+  `…/enforce-version: latest`). Update
+  `gitops/apps/capstone/deployment.yaml` — pod-level securityContext
+  (`runAsNonRoot: true`, `runAsUser: 10001`, `runAsGroup: 10001`,
+  `fsGroup: 10001`, `seccompProfile.type: RuntimeDefault`) and container-level
+  (`allowPrivilegeEscalation: false`, `privileged: false`,
+  `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`); add an
+  `emptyDir` mount for any writable path identified during review.
+  `tests/securitycontext.bats` asserting clusterless: deployment sets
+  `runAsNonRoot`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`,
+  `readOnlyRootFilesystem: true`, `seccompProfile.type: RuntimeDefault`; and
+  `capstone` namespace manifest carries the four PSA `restricted` labels.
+  `make ci` must pass.
 
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
@@ -214,11 +256,20 @@ You review and merge plan PRs, same as implementation PRs.
 > Use these when nothing above can be done cleanly in a single run. Mixed tiers —
 > the 🟡 items still need a human RFC before the executor builds them.
 
-- [ ] 🟡 Add default-deny `NetworkPolicy` per namespace + the minimal allows each
-  component needs. (RFC #82 → ADR-0014 Cilium prerequisite landed; remaining work is
-  the Cilium chart Application + per-namespace policy fan-out — planner to groom.)
-- [ ] 🟡 Harden `securityContext` (runAsNonRoot, drop ALL caps, readOnlyRootFilesystem
-  where viable) across manifests. (RFC #83) *(Security-adjacent — needs human RFC first.)*
+- [x] 🟡 Add default-deny `NetworkPolicy` per namespace + the minimal allows each
+  component needs. (RFC #82 → ADR-0014 Cilium prerequisite landed; ADR-0016
+  NetworkPolicy decision adopted. Groomed into 🟢 items in *Now / next* above:
+  Cilium manifest item + NetworkPolicy baseline pilot item.)
+- [x] 🟡 Harden `securityContext` (runAsNonRoot, drop ALL caps, readOnlyRootFilesystem
+  where viable) across manifests. (RFC #83 → ADR-0017 adopted. Groomed into 🟢
+  securityContext hardening — capstone pilot item in *Now / next* above.)
+- [ ] 🟡 **ADR-0010 revisit — Redis → Valkey swap** (issue #94, pending first
+  industry-news-writer digest). The architect's ADR audit flagged that Valkey (LF
+  BSD-3 fork, cloud-provider default in 2026) may now supersede Redis. Decision
+  explicitly deferred until `docs/industry/` contains its first digest entry —
+  "a 'supersede' call should not be made without digest confirmation" (issue #94).
+  When the digest lands: re-evaluate, write ADR-0018 superseding ADR-0010 if
+  confirmed, and add a swap item (`gitops/data/redis/ → valkey/`) to *Now / next*.
 
 ---
 
