@@ -21,12 +21,25 @@ spec:
       labels:
         app: capstone
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       imagePullSecrets:
         - name: artifactory-registry
       containers:
         - name: capstone
           image: artifactory.127.0.0.1.nip.io/docker-local/hello:latest
           imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 8080
           env:

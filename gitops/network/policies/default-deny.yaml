@@ -1,0 +1,13 @@
+# Reusable deny-all NetworkPolicy template (ADR-0016).
+# Denies all ingress and egress for every pod in the namespace.
+# The consuming namespace's Kustomize overlay sets the namespace via a patch.
+# This policy alone is the "floor" — add explicit allow-* policies on top.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress

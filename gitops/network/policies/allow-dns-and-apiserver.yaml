@@ -1,0 +1,32 @@
+# Reusable allow-DNS-and-apiserver egress policy (ADR-0016).
+# Permits every pod in the namespace to resolve DNS (kube-dns UDP/TCP 53)
+# and reach the k3s Kubernetes API server (10.43.0.1/32 TCP 6443).
+# Without this a deny-all namespace cannot start any workload successfully.
+# The consuming namespace's Kustomize overlay sets the namespace via a patch.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-and-apiserver
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+    - ports:
+        - port: 6443
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 10.43.0.1/32
