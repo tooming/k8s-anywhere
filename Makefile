@@ -380,3 +380,11 @@ longhorn-up: ## Deploy Longhorn distributed block storage via ArgoCD manual sync
 longhorn-down: ## Remove Longhorn and its Envoy route (reclaims ~350-400 MB)
 	$(call argocd-delete,longhorn-extras)
 	$(call argocd-delete,longhorn)
+
+.PHONY: inkless-up
+inkless-up: ## Deploy Aiven Inkless (diskless Kafka) via ArgoCD manual sync (~1.1 GB; requires garage-bootstrap; do after make up)
+	$(call argocd-sync,inkless)
+
+.PHONY: inkless-down
+inkless-down: ## Remove Aiven Inkless and PostgreSQL (reclaims ~1.1 GB RAM; does not delete Garage bucket)
+	$(call argocd-delete,inkless)

@@ -95,6 +95,10 @@ graph TD
       longhornmgr["longhorn-manager<br/>DaemonSet + CSI driver<br/>(longhorn-system ns)"]:::ondemand
       longhornui["longhorn-ui<br/>volume/snapshot dashboard"]:::ondemand
     end
+    subgraph INKLESS["Inkless — on-demand (manual sync only)"]
+      inklessbroker["inkless-broker<br/>Aiven Inkless (KIP-1150)<br/>(inkless ns)"]:::ondemand
+      inklesspg["inkless-postgres<br/>batch coordinator<br/>(inkless ns)"]:::ondemand
+    end
     subgraph DATA["Data layer — always-on (data ns)"]
       rabbitmq["RabbitMQ<br/>broker + mgmt UI + prometheus"]:::data
       redis["Redis<br/>cache/KV + redis_exporter"]:::data
@@ -165,6 +169,10 @@ graph TD
   %% --- Longhorn on-demand ---
   longhornmgr -.->|"manages volumes"| longhornui
   envoy -.->|"longhorn.127.0.0.1.nip.io (on-demand)"| longhornui
+
+  %% --- Inkless on-demand ---
+  inklessbroker -.->|"JDBC batch coord"| inklesspg
+  inklessbroker -.->|"S3 PUT/GET records"| garage
 
   %% --- data layer (always-on) ---
   rabbitmq -->|"scrape :15692"| alloy
@@ -241,6 +249,7 @@ make up
 | — | kiali-extras *(on-demand)* | Envoy HTTPRoute for `kiali.127.0.0.1.nip.io`; paired with the kiali Application — use `make kiali-up` |
 | — | longhorn *(on-demand)* | CNCF distributed block storage + CSI driver (chart `longhorn/longhorn` v1.7.2 from `https://charts.longhorn.io`, namespace `longhorn-system`; replica count 1 for single-node lab); manual-sync only — use `make longhorn-up` |
 | — | longhorn-extras *(on-demand)* | Envoy HTTPRoute for `longhorn.127.0.0.1.nip.io`; paired with the longhorn Application — use `make longhorn-up` |
+| — | inkless *(on-demand)* | Aiven Inkless (KIP-1150 diskless Kafka) + PostgreSQL batch coordinator; manual-sync only — use `make inkless-up`; S3 backend is Garage (bucket `inkless`, key `inkless-key`) |
 
 > Sync-waves are ArgoCD's **apply** order. The **runtime** secret dependency
 > (Vault must be *bootstrapped* before ESO can sync) is enforced by the day-0

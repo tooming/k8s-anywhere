@@ -78,9 +78,43 @@ for b in mimir mimir-ruler loki tempo pyroscope; do
   g bucket allow --read --write "$b" --key mimir-key >/dev/null 2>&1 || true
 done
 
+# inkless key + bucket (on-demand; created at bootstrap so make inkless-up works
+# immediately without a separate garage step). Stores the key at secret/inkless/s3.
+if ! g key info inkless-key >/dev/null 2>&1; then
+  echo "[garage] creating access key inkless-key"
+  g key create inkless-key >/dev/null 2>&1
+fi
+IKOUT=$(g key info --show-secret inkless-key 2>/dev/null || true)
+IKID=$(printf '%s\n' "$IKOUT" | awk -F': *' '
+  BEGIN { IGNORECASE = 1 }
+  $1 ~ /^(access[ _-]?key([ _-]?id)?|key[ _-]?id)$/ {
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+    print $2
+    exit
+  }' | tr -d '"' || true)
+IKSEC=$(printf '%s\n' "$IKOUT" | awk -F': *' '
+  BEGIN { IGNORECASE = 1 }
+  $1 ~ /^(secret[ _-]?access[ _-]?key|secret[ _-]?key)$/ {
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+    print $2
+    exit
+  }' | tr -d '"' || true)
+[ -n "$IKID" ]  || IKID=$(printf '%s'  "$IKOUT" | grep -oiE 'GK[0-9a-f]{20,}' | head -1 || true)
+[ -n "$IKSEC" ] || IKSEC=$(printf '%s' "$IKOUT" | grep -oiE '[0-9a-f]{64}'     | head -1 || true)
+[[ "$(echo "$IKSEC" | tr '[:upper:]' '[:lower:]')" == redacted* || "$IKSEC" == "*" ]] && IKSEC=""
+if [ -n "$IKID" ] && [ -n "$IKSEC" ]; then
+  TOKEN=$(kubectl -n "$VNS" get secret vault-keys -o jsonpath='{.data.root-token}' | base64 -d)
+  kubectl -n "$VNS" exec vault-0 -- env VAULT_TOKEN="$TOKEN" vault kv put secret/inkless/s3 access-key-id="$IKID" secret-access-key="$IKSEC" >/dev/null
+  echo "[garage] ensured secret/inkless/s3 in Vault (key $IKID)"
+else
+  echo "[garage] WARNING: could not resolve inkless-key id/secret — secret/inkless/s3 not written"
+fi
+g bucket create inkless >/dev/null 2>&1 || true
+g bucket allow --read --write inkless --key inkless-key >/dev/null 2>&1 || true
+
 # secret/garage/s3 was just (re)written above; nudge ESO so the garage-s3
 # ExternalSecrets (Mimir/Loki/Tempo + storage) pick it up now instead of waiting
 # for their refreshInterval. Best-effort.
 kubectl annotate externalsecret -A --all force-sync="$(date +%s)" --overwrite >/dev/null 2>&1 || true
 
-echo "[garage] bootstrap complete (buckets: mimir, mimir-ruler, loki, tempo, pyroscope)"
+echo "[garage] bootstrap complete (buckets: mimir, mimir-ruler, loki, tempo, pyroscope, inkless)"

@@ -64,6 +64,8 @@ v secrets list 2>/dev/null | grep -q '^secret/' || { echo "[vault] enabling kv-v
 #   secret/redis/default    -> redis-creds (Redis requirepass)       [here]
 #   secret/artifactory/registry -> artifactory-registry (imagePullSecret + CI creds) [here]
 #   secret/capstone/app   -> capstone-app-creds (capstone app credential) [here]
+#   secret/inkless/postgres -> inkless-postgres-creds (on-demand; broker+pg) [here]
+#   secret/inkless/s3      -> inkless-broker-creds (on-demand; Garage S3 key) [garage-bootstrap]
 v kv get secret/garage/server >/dev/null 2>&1 || { echo "[vault] writing secret/garage/server"; v kv put secret/garage/server rpc-secret="$(openssl rand -hex 32)" admin-token="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/aws/moto >/dev/null 2>&1 || { echo "[vault] writing secret/aws/moto (dummy creds; moto ignores them)"; v kv put secret/aws/moto access-key-id=test secret-access-key=test >/dev/null; }
 v kv get secret/grafana/admin >/dev/null 2>&1 || { echo "[vault] writing secret/grafana/admin"; v kv put secret/grafana/admin admin-user=admin admin-password="$(openssl rand -hex 16)" >/dev/null; }
@@ -72,6 +74,7 @@ v kv get secret/rabbitmq/default >/dev/null 2>&1 || { echo "[vault] writing secr
 v kv get secret/redis/default >/dev/null 2>&1 || { echo "[vault] writing secret/redis/default"; v kv put secret/redis/default password="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/artifactory/registry >/dev/null 2>&1 || { echo "[vault] writing secret/artifactory/registry"; v kv put secret/artifactory/registry username=admin password="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/capstone/app >/dev/null 2>&1 || { echo "[vault] writing secret/capstone/app"; v kv put secret/capstone/app app-key="$(openssl rand -hex 32)" >/dev/null; }
+v kv get secret/inkless/postgres >/dev/null 2>&1 || { echo "[vault] writing secret/inkless/postgres"; v kv put secret/inkless/postgres password="$(openssl rand -hex 16)" >/dev/null; }
 if [ -s "$ROOT_DIR/gitlab/.gitlab-token" ]; then v kv put secret/gitlab/bootstrap token="$(cat "$ROOT_DIR/gitlab/.gitlab-token")" >/dev/null; fi
 
 # Kubernetes auth + read policy + ESO role
