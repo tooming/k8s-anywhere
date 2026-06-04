@@ -1,0 +1,147 @@
+# ADR-0016 — Default-deny NetworkPolicy per namespace (Cilium-enforced)
+
+**Status.** Adopted. Decision taken in RFC #82. Pilot namespace: `data`; full
+fan-out to remaining namespaces follows per-namespace via the planner's groomed
+items.
+
+---
+
+## Context
+
+[RFC #82](https://github.com/tooming/k8s-lab/issues/82) calls for a
+deny-by-default, allow-by-exception network-segmentation model expressed in the
+standard `networking.k8s.io/v1 NetworkPolicy` API. This requires:
+
+1. A policy-capable CNI — covered by **ADR-0014** (Cilium, swapping out
+   k3s-default Flannel which does not enforce `NetworkPolicy`).
+2. The policy fan-out itself: two baseline policies per namespace (deny-all +
+   allow-DNS-and-apiserver) plus per-workload explicit-allow policies.
+
+Without ADR-0014's Cilium prerequisite every `NetworkPolicy` object lands
+declaratively but is silently non-functional — exactly the "fabricated content"
+anti-pattern ADR-0004 forbids. This ADR therefore depends on ADR-0014 being
+active (i.e. the cluster has been brought up with `disable_default_cni = true`
+and `make cilium-up` has run).
+
+---
+
+## Decision
+
+Adopt **deny-by-default, allow-by-exception** network segmentation for every
+lab namespace, using the following pattern:
+
+### 1. Two baseline policies in every namespace
+
+| Name | Selector | policyTypes | Rule |
+|------|----------|-------------|------|
+| `default-deny-all` | `podSelector: {}` | `[Ingress, Egress]` | no rules (deny everything) |
+| `allow-dns-and-apiserver` | `podSelector: {}` | `[Egress]` | UDP/TCP 53 to `kube-system` pods (`k8s-app: kube-dns`); TCP 6443 to `10.43.0.1/32` (k3s API) |
+
+These two are the universal floor — every namespace gets both. Together they
+let a pod resolve DNS and reach the Kubernetes API while blocking all other
+ingress and egress by default.
+
+### 2. Per-workload explicit-allow policies
+
+Named for the flow they permit (e.g. `allow-grafana-to-mimir`,
+`allow-eso-from-vault`). One YAML file per flow, co-located with the workload
+it serves (e.g. `gitops/observability/networkpolicy-allow-grafana-to-mimir.yaml`).
+No catch-all "allow same namespace" — every edge is explicit.
+
+### 3. Reusable templates
+
+Two parameter-free template files under `gitops/network/policies/`:
+- `default-deny.yaml` — the `default-deny-all` NetworkPolicy (namespace
+  provided by the consuming Kustomize overlay)
+- `allow-dns-and-apiserver.yaml` — the `allow-dns-and-apiserver` NetworkPolicy
+
+Each namespace's Kustomize overlay sets `namespace:` in a patch so a single
+`kustomization.yaml` plus a 3-line patch is all a new namespace needs.
+
+### 4. Staged rollout — pilot then fan-out
+
+| Phase | Scope | Rationale |
+|-------|-------|-----------|
+| **Pilot** (this ADR) | `data` namespace | RabbitMQ + Redis are self-contained, the existing "Lab — RabbitMQ" / "Lab — Redis" dashboards and `data-demo` load generator give immediate signal if a policy is wrong. |
+| **Fan-out** (planner-groomed items) | `argocd`, `vault`, `observability`, `storage`, `lab-gateway`, `tidb`, `tidb-admin`, `moto`, `ack-system`, `capstone` — one item per namespace | Sequential, one namespace per executor run so failures are isolated. |
+| **On-demand** | `artifactory`, `istio-system`, `longhorn-system` | Per-component allow policies land **with** the bring-up PR for that component — not retroactively. |
+| **Out of scope** | `kube-system` | Contains kube-dns, metrics-server, and the kubelet's SA issuer; flows are complex and a policy mistake here takes the cluster down. Addressed in a follow-up RFC. |
+
+---
+
+## Why Cilium (from ADR-0014)
+
+The detailed CNI-choice rationale lives in ADR-0014. Summary:
+
+- k3s's bundled Flannel does not enforce `NetworkPolicy` — any policy placed
+  before the CNI swap is silently non-functional.
+- Cilium (CNCF graduated 2023) is the eBPF-native CNI that new clusters reach
+  for in 2026. It enforces standard `NetworkPolicy` and provides the richer
+  `CiliumNetworkPolicy` for future L7 rules.
+- Calico was considered — still excellent, rejected because Cilium fits the
+  lab's eBPF learning angle better and `kubeProxyReplacement` removes a layer.
+
+---
+
+## Why default-deny
+
+- NIST SP 800-204C and the CNCF Cloud Native Security Whitepaper v2 both
+  name "default-deny ingress + egress per namespace, with explicit allows" as
+  the production bar. Pod Security Standards (ADR-0017) intentionally do not
+  cover the network — `NetworkPolicy` is the dedicated control surface.
+- Deny-egress-everything immediately breaks workloads because DNS (kube-dns)
+  and API access become unreachable. The two-policy split (deny-all +
+  allow-dns-and-apiserver) is the standard pattern that avoids this footgun.
+- Pilot-then-fan-out is how every shop rolls deny-by-default without a
+  Friday-night outage. The `data` namespace has the cleanest blast radius.
+
+---
+
+## Scope & exceptions
+
+**Namespaces in scope (fan-out order after pilot):**
+`data`, `argocd`, `vault`, `observability`, `storage`, `lab-gateway`, `tidb`,
+`tidb-admin`, `moto`, `ack-system`, `capstone`.
+
+**Carve-outs / special handling:**
+
+| Namespace | Treatment | Reason |
+|-----------|-----------|--------|
+| `kube-system` | out of scope | DNS, metrics-server, API issuer — a mistake here brings the cluster down. Separate RFC. |
+| `istio-system` (on-demand) | policy lands with bring-up PR | ztunnel/istiod flows are component-specific |
+| `longhorn-system` (on-demand) | policy lands with bring-up PR | longhorn-manager ↔ longhorn-csi flows are component-specific |
+| `artifactory` (on-demand) | policy lands with bring-up PR | Artifactory ↔ Garage S3 flows are component-specific |
+
+**Istio ambient, once up:** `NetworkPolicy` (CNI layer) and Istio
+`AuthorizationPolicy` (L7/identity layer) are complementary per CNCF guidance
+— both stay in place.
+
+---
+
+## Files this work touches
+
+| Path | Role |
+|------|------|
+| `docs/decisions/adr-0016-default-deny-networkpolicy.md` | This ADR |
+| `gitops/network/policies/default-deny.yaml` | Reusable deny-all template |
+| `gitops/network/policies/allow-dns-and-apiserver.yaml` | Reusable DNS+API allow template |
+| `gitops/data/networkpolicy/kustomization.yaml` | Pilot overlay for `data` namespace |
+| `gitops/data/networkpolicy/allow-rabbitmq-ingress.yaml` | Allow ingress to RabbitMQ (5672, 15692) |
+| `gitops/data/networkpolicy/allow-redis-ingress.yaml` | Allow ingress to Redis (6379, 9121) |
+| `gitops/data/networkpolicy/allow-data-demo-egress.yaml` | Allow data-demo → RabbitMQ + Redis |
+| `tests/networkpolicy.bats` | Clusterless YAML structural tests |
+| `docs/dependency-tree.md` | Note on `data` namespace policy posture |
+
+---
+
+## Relationship to existing ADRs
+
+| ADR | Relationship |
+|-----|-------------|
+| [ADR-0001](adr-0001-gitops-over-terraform-helm.md) | Policies land as ArgoCD `Application`s from git paths — consistent with GitOps-only; no `kubectl apply`. |
+| [ADR-0003](adr-0003-decoupled-no-spof.md) | Deny-by-default is the decoupled, explicit posture; no single catch-all rule is a SPOF. |
+| [ADR-0004](adr-0004-no-fabricated-content.md) | Policies are only declared after ADR-0014's Cilium is active — otherwise they'd be silent no-ops (fabricated safety). |
+| [ADR-0008](adr-0008-envoy-gateway-not-traefik.md) | CNI swap leaves Envoy Gateway intact; `NetworkPolicy` operates below the ingress L7 layer. |
+| [ADR-0012](adr-0012-istio-ambient-not-sidecar.md) | `NetworkPolicy` and Istio `AuthorizationPolicy` are complementary, not redundant. |
+| [ADR-0014](adr-0014-cilium-not-flannel-policy.md) | **Prerequisite.** Cilium must be active before any policy is functional. |
+| [ADR-0017](adr-0017-pod-security-standards-restricted.md) | Companion security ADR (host network controls vs pod security controls). |
