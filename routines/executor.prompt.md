@@ -14,7 +14,7 @@ STEP 4 — Implement just that item. Hard rules:
 
 STEP 5 — Validate: run `make ci` and fix until green. If you can't get the chosen item green this run, fall through to the next feasible item. If nothing can be done cleanly, do NOT open a half-baked PR — go to STEP 6b instead.
 
-STEP 6 — Deliver. When `make ci` is green: in ROADMAP.md check the item [x] and move it to the Done section referencing the PR; create a new branch auto/<short-slug>, commit, and push the branch; open a PR with `gh pr create` (clear title; body = what changed + why + a note that this is an autonomous scheduled run). Do NOT push to main. Do NOT merge the PR.
+STEP 6 — Deliver. When `make ci` is green: in ROADMAP.md check the item [x] and move it to the Done section referencing the PR; create a new branch auto/<short-slug>, commit, and push the branch; open a PR with `gh pr create` (clear title; body = what changed + why + a note that this is an autonomous scheduled run). If the ROADMAP item text references `RFC #NNN`, add `Closes #NNN` to the PR body — GitHub will auto-close the RFC issue when the PR merges. Do NOT push to main. Do NOT merge the PR.
 
 STEP 6b — No actionable work? Prompt the maintainer; never go silent. If the "Now / next" lane is empty or everything left is 🟡/🔴 blocked on a human, do NOT fabricate make-work and do NOT stop silently. Run `gh issue list --state open --search "executor idle"`; if an `executor idle — needs work` issue is already open, add a comment refreshing it, otherwise `gh issue create` one. @-mention the maintainer and list what's blocked + which decision/RFC/ADR is owed to unblock it. One issue, refreshed each idle run — never a new one every run.
 
