@@ -1,0 +1,81 @@
+# Inkless traffic generator: a small producer + consumer pair that talks to the
+# inkless broker over PLAINTEXT (in-cluster only). Produces one message every few
+# seconds and consumes them with a named group, so the kafka-exporter metrics on
+# the "Lab — Inkless" dashboard — topic partitions, current offset rate, consumer
+# group lag — carry real movement instead of staying at zero. On-demand: lives in
+# gitops/inkless/ so it comes up with `make inkless-up` and goes away with
+# `make inkless-down`.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inkless-load
+  namespace: inkless
+  labels:
+    app: inkless-load
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inkless-load
+  template:
+    metadata:
+      labels:
+        app: inkless-load
+    spec:
+      containers:
+        - name: producer
+          image: bitnami/kafka:3.7
+          env:
+            - name: BOOTSTRAP
+              value: inkless.inkless.svc.cluster.local:9092
+            - name: TOPIC
+              value: demo
+          command:
+            - /bin/bash
+            - -c
+            - |
+              echo "inkless-load: waiting for broker $BOOTSTRAP..."
+              until kafka-broker-api-versions.sh --bootstrap-server "$BOOTSTRAP" >/dev/null 2>&1; do sleep 5; done
+              kafka-topics.sh --bootstrap-server "$BOOTSTRAP" --create --topic "$TOPIC" \
+                --partitions 3 --replication-factor 1 --if-not-exists >/dev/null
+              echo "inkless-load: producing to topic '$TOPIC'"
+              n=0
+              while true; do
+                n=$((n + 1))
+                printf 'key%d:hello %s\n' "$n" "$(date -u +%FT%TZ)" \
+                  | kafka-console-producer.sh --bootstrap-server "$BOOTSTRAP" \
+                      --topic "$TOPIC" --property "parse.key=true" --property "key.separator=:" >/dev/null 2>&1 || true
+                sleep 3
+              done
+          resources:
+            requests:
+              cpu: 20m
+              memory: 256Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
+        - name: consumer
+          image: bitnami/kafka:3.7
+          env:
+            - name: BOOTSTRAP
+              value: inkless.inkless.svc.cluster.local:9092
+            - name: TOPIC
+              value: demo
+            - name: GROUP
+              value: demo-consumer
+          command:
+            - /bin/bash
+            - -c
+            - |
+              echo "inkless-load: waiting for broker $BOOTSTRAP..."
+              until kafka-broker-api-versions.sh --bootstrap-server "$BOOTSTRAP" >/dev/null 2>&1; do sleep 5; done
+              echo "inkless-load: consuming '$TOPIC' as group '$GROUP'"
+              kafka-console-consumer.sh --bootstrap-server "$BOOTSTRAP" \
+                --topic "$TOPIC" --group "$GROUP" --from-beginning >/dev/null
+          resources:
+            requests:
+              cpu: 20m
+              memory: 256Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
