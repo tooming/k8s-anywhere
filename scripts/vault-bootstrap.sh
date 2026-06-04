@@ -61,7 +61,8 @@ v secrets list 2>/dev/null | grep -q '^secret/' || { echo "[vault] enabling kv-v
 #   secret/garage/s3      -> garage-s3 (Mimir/Loki/Tempo)           [garage-bootstrap]
 #   secret/grafana/admin  -> grafana-admin (Grafana admin login)    [here]
 #   secret/rabbitmq/default -> rabbitmq-creds (RabbitMQ default user) [here]
-#   secret/redis/default    -> redis-creds (Redis requirepass)       [here]
+#   secret/valkey/default   -> valkey-creds (Valkey requirepass)     [here]
+#   secret/redis/default    -> redis-creds (transition alias, one release) [here]
 #   secret/artifactory/registry -> artifactory-registry (imagePullSecret + CI creds) [here]
 #   secret/capstone/app   -> capstone-app-creds (capstone app credential) [here]
 #   secret/inkless/postgres -> inkless-postgres-creds (on-demand; broker+pg) [here]
@@ -71,7 +72,9 @@ v kv get secret/aws/moto >/dev/null 2>&1 || { echo "[vault] writing secret/aws/m
 v kv get secret/grafana/admin >/dev/null 2>&1 || { echo "[vault] writing secret/grafana/admin"; v kv put secret/grafana/admin admin-user=admin admin-password="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/tidb/demo >/dev/null 2>&1 || { echo "[vault] writing secret/tidb/demo"; v kv put secret/tidb/demo username=demo password="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/rabbitmq/default >/dev/null 2>&1 || { echo "[vault] writing secret/rabbitmq/default"; v kv put secret/rabbitmq/default username=lab password="$(openssl rand -hex 16)" >/dev/null; }
-v kv get secret/redis/default >/dev/null 2>&1 || { echo "[vault] writing secret/redis/default"; v kv put secret/redis/default password="$(openssl rand -hex 16)" >/dev/null; }
+v kv get secret/valkey/default >/dev/null 2>&1 || { echo "[vault] writing secret/valkey/default"; v kv put secret/valkey/default password="$(openssl rand -hex 16)" >/dev/null; }
+# Keep secret/redis/default for one release to avoid stalling in-flight deployments during transition.
+v kv get secret/redis/default >/dev/null 2>&1 || { echo "[vault] writing secret/redis/default (transition alias)"; v kv put secret/redis/default password="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/artifactory/registry >/dev/null 2>&1 || { echo "[vault] writing secret/artifactory/registry"; v kv put secret/artifactory/registry username=admin password="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/capstone/app >/dev/null 2>&1 || { echo "[vault] writing secret/capstone/app"; v kv put secret/capstone/app app-key="$(openssl rand -hex 32)" >/dev/null; }
 v kv get secret/inkless/postgres >/dev/null 2>&1 || { echo "[vault] writing secret/inkless/postgres"; v kv put secret/inkless/postgres password="$(openssl rand -hex 16)" >/dev/null; }

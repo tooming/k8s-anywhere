@@ -1,7 +1,7 @@
 {
-  "uid": "lab-redis",
-  "title": "Lab — Redis",
-  "tags": ["lab", "data", "redis"],
+  "uid": "lab-valkey",
+  "title": "Lab — Valkey",
+  "tags": ["lab", "data", "valkey"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
@@ -11,19 +11,19 @@
   "annotations": { "list": [] },
   "panels": [
     {
-      "id": 1, "type": "text", "title": "About Redis",
+      "id": 1, "type": "text", "title": "About Valkey",
       "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
       "options": {
         "mode": "markdown",
-        "content": "## Redis — always-on cache / key-value store\n\nSingle-node Redis (`data` namespace) with auth via `--requirepass` (Vault `secret/redis/default` → ESO Secret `redis-creds`). Metrics come from the **redis_exporter** sidecar on `:9121`, scraped by Alloy. The `redis-load` demo generates real SET/GET/INCR traffic.\n\nADR-0005 lab trade-off: one replica recovers in place; production uses Sentinel/Cluster (ADR-0010)."
+        "content": "## Valkey — always-on cache / key-value store\n\nSingle-node Valkey (`data` namespace) with auth via `--requirepass` (Vault `secret/valkey/default` → ESO Secret `valkey-creds`). Metrics come from the **redis_exporter** sidecar on `:9121`, scraped by Alloy. The `valkey-load` demo generates real SET/GET/INCR traffic.\n\nADR-0005 lab trade-off: one replica recovers in place; production uses Valkey Cluster (ADR-0018)."
       }
     },
     {
-      "id": 2, "type": "stat", "title": "Redis Up",
+      "id": 2, "type": "stat", "title": "Valkey Up",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "redis_up{job=\"redis\"}", "instant": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "redis_up{job=\"valkey\"}", "instant": true }
       ],
       "fieldConfig": {
         "defaults": {
@@ -40,7 +40,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "redis_connected_clients{job=\"redis\"}", "instant": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "redis_connected_clients{job=\"valkey\"}", "instant": true }
       ],
       "fieldConfig": { "defaults": { "unit": "none", "noValue": "no data" }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
@@ -50,7 +50,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "redis_memory_used_bytes{job=\"redis\"} / 1024 / 1024", "instant": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "redis_memory_used_bytes{job=\"valkey\"} / 1024 / 1024", "instant": true }
       ],
       "fieldConfig": { "defaults": { "unit": "none", "decimals": 1, "noValue": "no data" }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
@@ -60,7 +60,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "redis_db_keys{job=\"redis\", db=\"db0\"}", "instant": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "redis_db_keys{job=\"valkey\", db=\"db0\"}", "instant": true }
       ],
       "fieldConfig": { "defaults": { "unit": "none", "noValue": "0" }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
@@ -70,7 +70,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(redis_commands_processed_total{job=\"redis\"}[5m])", "legendFormat": "commands/sec", "range": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(redis_commands_processed_total{job=\"valkey\"}[5m])", "legendFormat": "commands/sec", "range": true }
       ],
       "fieldConfig": { "defaults": { "unit": "ops", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } }
@@ -80,8 +80,8 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(redis_keyspace_hits_total{job=\"redis\"}[5m])", "legendFormat": "hits", "range": true },
-        { "refId": "B", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(redis_keyspace_misses_total{job=\"redis\"}[5m])", "legendFormat": "misses", "range": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(redis_keyspace_hits_total{job=\"valkey\"}[5m])", "legendFormat": "hits", "range": true },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(redis_keyspace_misses_total{job=\"valkey\"}[5m])", "legendFormat": "misses", "range": true }
       ],
       "fieldConfig": { "defaults": { "unit": "ops", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
@@ -91,17 +91,17 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "redis_memory_used_bytes{job=\"redis\"}", "legendFormat": "used", "range": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "redis_memory_used_bytes{job=\"valkey\"}", "legendFormat": "used", "range": true }
       ],
       "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } }
     },
     {
-      "id": 9, "type": "timeseries", "title": "Pod CPU (container=redis)",
+      "id": 9, "type": "timeseries", "title": "Pod CPU (container=valkey)",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(container_cpu_usage_seconds_total{namespace=\"data\", pod=~\"redis-.*\", container=\"redis\"}[5m])", "legendFormat": "cpu", "range": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(container_cpu_usage_seconds_total{namespace=\"data\", pod=~\"valkey-.*\", container=\"valkey\"}[5m])", "legendFormat": "cpu", "range": true }
       ],
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } }

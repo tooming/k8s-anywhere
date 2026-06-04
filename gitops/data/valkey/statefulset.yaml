@@ -1,50 +1,50 @@
-# Single-node Redis with AOF off + an RDB snapshot every 60s (lab-grade durability on a
-# 1Gi PVC). Auth is enforced via --requirepass from the redis-creds Secret (Vault → ESO).
+# Single-node Valkey with AOF off + an RDB snapshot every 60s (lab-grade durability on a
+# 1Gi PVC). Auth is enforced via --requirepass from the valkey-creds Secret (Vault → ESO).
 # A redis_exporter sidecar exposes Prometheus metrics on :9121, scraped by Alloy and
-# shown on the "Lab — Redis" dashboard. ADR-0005: single replica recovers in place;
-# production uses Sentinel/Cluster (ADR-0010).
+# shown on the "Lab — Valkey" dashboard. ADR-0005: single replica recovers in place;
+# production uses Valkey Cluster (ADR-0018).
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: redis
+  name: valkey
   namespace: data
   labels:
-    app: redis
+    app: valkey
 spec:
-  serviceName: redis
+  serviceName: valkey
   replicas: 1
   selector:
     matchLabels:
-      app: redis
+      app: valkey
   template:
     metadata:
       labels:
-        app: redis
+        app: valkey
     spec:
       containers:
-        - name: redis
-          image: redis:7.4-alpine
+        - name: valkey
+          image: valkey/valkey:8.0-alpine
           args:
             - --requirepass
-            - $(REDIS_PASSWORD)
+            - $(VALKEY_PASSWORD)
             - --save
             - "60"
             - "1"
             - --appendonly
             - "no"
           ports:
-            - name: redis
+            - name: valkey
               containerPort: 6379
           env:
-            - name: REDIS_PASSWORD
+            - name: VALKEY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: redis-creds
+                  name: valkey-creds
                   key: password
             - name: REDISCLI_AUTH
               valueFrom:
                 secretKeyRef:
-                  name: redis-creds
+                  name: valkey-creds
                   key: password
           resources:
             requests:
@@ -55,12 +55,12 @@ spec:
               memory: 128Mi
           readinessProbe:
             exec:
-              command: ["redis-cli", "ping"]
+              command: ["valkey-cli", "ping"]
             initialDelaySeconds: 5
             periodSeconds: 15
           livenessProbe:
             exec:
-              command: ["redis-cli", "ping"]
+              command: ["valkey-cli", "ping"]
             initialDelaySeconds: 15
             periodSeconds: 30
           volumeMounts:
@@ -77,7 +77,7 @@ spec:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: redis-creds
+                  name: valkey-creds
                   key: password
           resources:
             requests:

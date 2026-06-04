@@ -1,0 +1,19 @@
+# Valkey service: 'valkey' for clients (the demo + any app), 'metrics' for Alloy to
+# scrape the redis_exporter sidecar. No HTTPRoute — Valkey has no web UI.
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey
+  namespace: data
+  labels:
+    app: valkey
+spec:
+  selector:
+    app: valkey
+  ports:
+    - name: valkey
+      port: 6379
+      targetPort: 6379
+    - name: metrics
+      port: 9121
+      targetPort: 9121
