@@ -184,6 +184,9 @@ graph TD
   envoy -->|"scrape controller :19001"| alloy
   envoy -->|"scrape proxy :19000/stats/prometheus"| alloy
 
+  %% --- Garage admin metrics ---
+  garage -->|"scrape :3903/metrics"| alloy
+
   %% --- ingress (north-south) ---
   user --> frontdoor
   frontdoor --> envoy
@@ -293,6 +296,8 @@ make up
 | Alloy → Envoy Gateway controller | scrape `:19001/metrics` → Mimir | `gitops/platform/observability-alloy.yaml` |
 | Alloy → Envoy proxy data plane | pod discovery, scrape `:19000/stats/prometheus` → Mimir | `gitops/platform/observability-alloy.yaml` |
 | Grafana dashboard — Lab — Envoy Gateway (Ingress) | Envoy proxy request rate, latency p50/p95/p99, 5xx ratio, upstream cluster health, active connections + controller-runtime reconcile metrics + KSM/cAdvisor pod stats | `grafana/dashboards/lab-envoy.json` |
+| Alloy → Garage admin metrics | scrape `:3903/metrics` → Mimir | `gitops/platform/observability-alloy.yaml` |
+| Grafana dashboard — Lab — Garage S3 (Object Storage) | API request rate by handler, error rate, block resync queue + rate, storage bytes, bucket/object counts + KSM/cAdvisor pod stats | `grafana/dashboards/lab-garage.json` |
 
 ## Notes
 - **Front door** (`:8000`, nginx docker container) is off-cluster and **not**
@@ -313,4 +318,5 @@ make up
 - **Capstone pipeline (steps 1–4 done)** — Step 1: `.gitlab-ci.yml` builds `gitops/apps/demo/Dockerfile` (HotROD wrapper) and pushes `docker-local/hello:$CI_COMMIT_SHORT_SHA` to Artifactory; credentials from Vault via masked CI vars. Step 2: `gitops/platform/capstone.yaml` (auto-synced ArgoCD Application) deploys the pipeline-built image from Artifactory to namespace `capstone`, using `imagePullSecret artifactory-registry` (ESO ExternalSecret). Step 3: `gitops/apps/capstone/route.yaml` exposes the app at `capstone.127.0.0.1.nip.io` via Envoy HTTPRoute (Gateway API). Step 4: `grafana/dashboards/lab-capstone.json` — "Lab — Capstone" dashboard with real pod/container metrics (Mimir/KSM/cAdvisor), Loki logs filtered to namespace `capstone`, and Tempo traces from the capstone app's OTLP instrumentation (ADR-0004: all data from real metrics). Step 5 (Vault secret + ExternalSecret for capstone app config) is still pending.
 - **ArgoCD dashboard** (`grafana/dashboards/lab-argocd.json`) — "Lab — ArgoCD (GitOps)" covers the GitOps reconcile loop learning objective: per-app sync/health state table (`argocd_app_info`), sync attempt rate by phase (`argocd_app_sync_total`), reconcile duration heatmap (`argocd_app_reconcile_duration_seconds_bucket`), repo-server git request latency (`argocd_git_request_duration_seconds_bucket`), ApplicationSet controller reconcile rate, and pod/container resource stats from KSM/cAdvisor. All four ArgoCD scrape targets are already configured in `observability-alloy.yaml` (no Alloy config change needed).
 - **Envoy Gateway dashboard** (`grafana/dashboards/lab-envoy.json`) — "Lab — Envoy Gateway (Ingress)" covers the north-south ingress (ADR-0008) and Gateway API learning objectives. Two new Alloy scrape jobs: `envoy-gateway-controller` (controller-runtime reconcile metrics at `envoy-gateway.envoy-gateway-system.svc:19001`) and `envoy-proxy` (Envoy data-plane `/stats/prometheus` at `:19000`, discovered via pod labels in `envoy-gateway-system` namespace). Panels: per-listener request rate, p50/p95/p99 latency (histogram), 5xx error ratio, upstream cluster active connections, controller reconcile rate + errors, and memory by container from cAdvisor. All data from real metrics (ADR-0004).
+- **Garage S3 dashboard** (`grafana/dashboards/lab-garage.json`) — "Lab — Garage S3 (Object Storage)" covers the S3-compatible-storage CHARTER learning objective (ADR-0002). One new Alloy scrape job: `garage` (Garage admin metrics at `garage.storage.svc.cluster.local:3903/metrics`). Panels: pod running + memory + restarts + ArgoCD sync state (KSM/cAdvisor); bucket count (`garage_bucket_count`) + total objects (`garage_object_count`) + storage used GiB (`garage_storage_bytes`) + block resync queue (`garage_block_resync_queue_length`); S3 API request rate by handler (`garage_s3_api_request_total`); S3 API error rate (`garage_s3_api_error_total`); block resync rate by status (`garage_block_resync_total`); storage bytes over time. All data from real metrics (ADR-0004).
 - Storage backups, true HA: out of scope (single host). See `docs/DR.md`.

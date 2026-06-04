@@ -124,3 +124,64 @@ setup() {
   run grep -q 'envoy_proxy' "$REPO/gitops/platform/observability-alloy.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- Lab — Garage S3 (Object Storage) dashboard -----------------------------------------
+
+@test "lab-garage.json dashboard exists in grafana/dashboards/" {
+  [ -f "$REPO/grafana/dashboards/lab-garage.json" ]
+}
+
+@test "lab-garage.json has uid lab-garage-storage" {
+  run grep -q '"uid": "lab-garage-storage"' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-garage.json has at least 10 panels" {
+  count=$(grep -c '"type":' "$REPO/grafana/dashboards/lab-garage.json")
+  [ "$count" -ge 10 ]
+}
+
+@test "lab-garage.json uses Mimir datasource for all metric panels" {
+  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-garage.json queries garage_bucket_count for bucket stats" {
+  run grep -q 'garage_bucket_count' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-garage.json queries garage_object_count for object stats" {
+  run grep -q 'garage_object_count' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-garage.json queries garage_block_resync for replication lag" {
+  run grep -q 'garage_block_resync' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-garage.json queries garage_storage_bytes for disk usage" {
+  run grep -q 'garage_storage_bytes' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-garage.json queries garage_s3_api for API request rate" {
+  run grep -q 'garage_s3_api' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-garage.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "docs/dependency-tree.md mentions lab-garage.json" {
+  run grep -q 'lab-garage' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
+
+@test "observability-alloy.yaml has garage scrape block" {
+  run grep -q 'prometheus.scrape "garage"' "$REPO/gitops/platform/observability-alloy.yaml"
+  [ "$status" -eq 0 ]
+}

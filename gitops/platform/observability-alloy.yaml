@@ -249,6 +249,18 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
+
+              // ---- Garage (S3-compatible object store) admin metrics -> Mimir ----
+              // Garage exposes Prometheus metrics at its admin port (:3903/metrics).
+              // No authentication is required for the metrics path. Feeds the
+              // "Lab — Garage S3" dashboard (ADR-0004, ADR-0002).
+              prometheus.scrape "garage" {
+                targets = [
+                  {"__address__" = "garage.storage.svc.cluster.local:3903", "job" = "garage"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
