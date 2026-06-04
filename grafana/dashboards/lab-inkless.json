@@ -92,7 +92,7 @@
     {
       "id": 2,
       "type": "stat",
-      "title": "PostgreSQL Pod Running",
+      "title": "Inkless Brokers Up",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -110,7 +110,7 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "max(kube_pod_status_phase{namespace=\"inkless\", phase=\"Running\"})",
+          "expr": "sum(kafka_brokers{job=\"inkless\"})",
           "instant": true
         }
       ],
@@ -370,7 +370,7 @@
     {
       "id": 7,
       "type": "stat",
-      "title": "Inkless ArgoCD Synced",
+      "title": "Kafka Topics",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -388,7 +388,7 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "argocd_app_info{name=\"inkless\", sync_status=\"Synced\"}",
+          "expr": "count(count by (topic) (kafka_topic_partitions{job=\"inkless\"}))",
           "instant": true
         }
       ],
@@ -420,7 +420,7 @@
               }
             }
           ],
-          "noValue": "OutOfSync"
+          "noValue": "0"
         },
         "overrides": []
       },
@@ -437,7 +437,7 @@
     {
       "id": 8,
       "type": "stat",
-      "title": "PostgreSQL ArgoCD Synced",
+      "title": "Under-replicated Partitions",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -455,7 +455,7 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "argocd_app_info{name=\"inkless\", sync_status=\"Synced\"}",
+          "expr": "sum(kafka_topic_partition_under_replicated_partition{job=\"inkless\"})",
           "instant": true
         }
       ],
@@ -468,12 +468,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": null
               },
               {
-                "color": "green",
+                "color": "yellow",
                 "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
               }
             ]
           },
@@ -487,7 +491,7 @@
               }
             }
           ],
-          "noValue": "OutOfSync"
+          "noValue": "0"
         },
         "overrides": []
       },
@@ -560,7 +564,7 @@
     {
       "id": 10,
       "type": "timeseries",
-      "title": "CPU usage (millicores)",
+      "title": "Kafka message ingest (offset/s)",
       "gridPos": {
         "h": 9,
         "w": 12,
@@ -578,18 +582,8 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "rate(container_cpu_usage_seconds_total{namespace=\"inkless\", container=\"inkless\"}[5m]) * 1000",
-          "legendFormat": "inkless",
-          "range": true
-        },
-        {
-          "refId": "B",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "mimir"
-          },
-          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"inkless\", container!=\"\"}[5m])) * 1000",
-          "legendFormat": "inkless-postgres",
+          "expr": "sum(rate(kafka_topic_partition_current_offset{job=\"inkless\"}[5m]))",
+          "legendFormat": "all topics",
           "range": true
         }
       ],
@@ -616,7 +610,7 @@
     {
       "id": 11,
       "type": "table",
-      "title": "Inkless ArgoCD apps",
+      "title": "Consumer group lag (top 20)",
       "gridPos": {
         "h": 7,
         "w": 24,
@@ -634,35 +628,9 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "argocd_app_info{name=~\"inkless\"}",
+          "expr": "topk(20, kafka_consumergroup_lag{job=\"inkless\"})",
           "instant": true,
           "format": "table"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Value": true,
-              "__name__": true,
-              "job": true,
-              "instance": true,
-              "dest_server": true,
-              "dest_namespace": true,
-              "namespace": true,
-              "project": true,
-              "repo": true,
-              "operation": true,
-              "autosync_enabled": true
-            },
-            "renameByName": {
-              "name": "Application",
-              "health_status": "Health",
-              "sync_status": "Sync"
-            }
-          }
         }
       ],
       "options": {
@@ -670,5 +638,5 @@
       }
     }
   ],
-  "description": "Aiven Inkless diskless Kafka broker and PostgreSQL batch coordinator"
+  "description": "Aiven Inkless diskless Kafka broker and PostgreSQL batch coordinator with kafka-exporter metrics scraped by Alloy"
 }

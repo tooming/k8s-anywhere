@@ -150,6 +150,21 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /opt/kafka-data
+        - name: exporter
+          image: danielqsj/kafka-exporter:v1.8.0
+          args:
+            - --kafka.server=localhost:9092
+            - --web.listen-address=:9308
+          ports:
+            - name: metrics
+              containerPort: 9308
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
 
   volumeClaimTemplates:
     - metadata:
