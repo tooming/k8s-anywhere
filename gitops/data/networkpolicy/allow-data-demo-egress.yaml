@@ -1,0 +1,27 @@
+# Allow egress from data-demo pods to RabbitMQ and Redis (ADR-0016).
+# rabbitmq-load talks to the management HTTP API on 15672.
+# redis-load talks to the Redis server on 6379.
+# Both generators stay within the data namespace — no cross-namespace egress needed.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-data-demo-egress
+  namespace: data
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - rabbitmq-load
+          - redis-load
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 15672
+          protocol: TCP
+        - port: 6379
+          protocol: TCP
+      to:
+        - podSelector: {}

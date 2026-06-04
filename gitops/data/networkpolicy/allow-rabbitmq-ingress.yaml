@@ -1,0 +1,29 @@
+# Allow ingress to RabbitMQ pods in the data namespace (ADR-0016).
+# Permits traffic on the AMQP port (5672), the management HTTP API (15672),
+# and the Prometheus metrics endpoint (15692) that Alloy scrapes.
+# Source: any pod in the data namespace (data-demo producers/consumers)
+# and any pod in the observability namespace (Alloy scraper).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-rabbitmq-ingress
+  namespace: data
+spec:
+  podSelector:
+    matchLabels:
+      app: rabbitmq
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 5672
+          protocol: TCP
+        - port: 15672
+          protocol: TCP
+        - port: 15692
+          protocol: TCP
+      from:
+        - podSelector: {}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability

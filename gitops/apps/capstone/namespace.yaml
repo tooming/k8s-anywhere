@@ -1,0 +1,13 @@
+# Explicit capstone namespace manifest with Pod Security Admission labels (ADR-0017).
+# Previously the namespace was created implicitly by ArgoCD / the ESO ExternalSecret.
+# Making it explicit lets us attach PSA labels so the in-cluster admission controller
+# enforces PSS restricted — preventing any future non-compliant pod from being scheduled.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capstone
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
