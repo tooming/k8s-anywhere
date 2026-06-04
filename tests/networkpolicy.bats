@@ -95,22 +95,22 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-redis-ingress.yaml exists in data/networkpolicy/" {
-  [ -f "$DATA_NP/allow-redis-ingress.yaml" ]
+@test "allow-valkey-ingress.yaml exists in data/networkpolicy/" {
+  [ -f "$DATA_NP/allow-valkey-ingress.yaml" ]
 }
 
-@test "allow-redis-ingress allows port 6379 (Redis)" {
-  run grep -q 'port: 6379' "$DATA_NP/allow-redis-ingress.yaml"
+@test "allow-valkey-ingress allows port 6379 (Valkey)" {
+  run grep -q 'port: 6379' "$DATA_NP/allow-valkey-ingress.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "allow-redis-ingress allows port 9121 (redis_exporter metrics)" {
-  run grep -q 'port: 9121' "$DATA_NP/allow-redis-ingress.yaml"
+@test "allow-valkey-ingress allows port 9121 (redis_exporter metrics)" {
+  run grep -q 'port: 9121' "$DATA_NP/allow-valkey-ingress.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "allow-redis-ingress targets pods with app: redis" {
-  run grep -q 'app: redis' "$DATA_NP/allow-redis-ingress.yaml"
+@test "allow-valkey-ingress targets pods with app: valkey" {
+  run grep -q 'app: valkey' "$DATA_NP/allow-valkey-ingress.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -118,10 +118,10 @@ setup() {
   [ -f "$DATA_NP/allow-data-demo-egress.yaml" ]
 }
 
-@test "allow-data-demo-egress selects rabbitmq-load and redis-load pods" {
+@test "allow-data-demo-egress selects rabbitmq-load and valkey-load pods" {
   run grep -q 'rabbitmq-load' "$DATA_NP/allow-data-demo-egress.yaml"
   [ "$status" -eq 0 ]
-  run grep -q 'redis-load' "$DATA_NP/allow-data-demo-egress.yaml"
+  run grep -q 'valkey-load' "$DATA_NP/allow-data-demo-egress.yaml"
   [ "$status" -eq 0 ]
 }
 

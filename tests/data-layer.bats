@@ -16,8 +16,8 @@ setup() {
   [[ "$output" == *"automated:"* ]]
 }
 
-@test "redis Application is auto-synced (always-on)" {
-  run grep -A3 'syncPolicy:' "$REPO/gitops/platform/redis.yaml"
+@test "valkey Application is auto-synced (always-on)" {
+  run grep -A3 'syncPolicy:' "$REPO/gitops/platform/valkey.yaml"
   [ "$status" -eq 0 ]
   [[ "$output" == *"automated:"* ]]
 }
@@ -34,8 +34,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "redis-creds ExternalSecret pulls from vault key redis/default" {
-  run grep -q 'key: redis/default' "$REPO/gitops/data/redis/externalsecret.yaml"
+@test "valkey-creds ExternalSecret pulls from vault key valkey/default" {
+  run grep -q 'key: valkey/default' "$REPO/gitops/data/valkey/externalsecret.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -47,16 +47,16 @@ setup() {
 }
 
 # --- observability: Alloy must scrape the data layer ------------------------
-@test "Alloy scrapes RabbitMQ (:15692) and Redis (:9121)" {
+@test "Alloy scrapes RabbitMQ (:15692) and Valkey (:9121)" {
   run grep -q 'rabbitmq.data.svc.cluster.local:15692' "$REPO/gitops/platform/observability-alloy.yaml"
   [ "$status" -eq 0 ]
-  run grep -q 'redis.data.svc.cluster.local:9121' "$REPO/gitops/platform/observability-alloy.yaml"
+  run grep -q 'valkey.data.svc.cluster.local:9121' "$REPO/gitops/platform/observability-alloy.yaml"
   [ "$status" -eq 0 ]
 }
 
-# --- security: Redis must require a password --------------------------------
-@test "redis enforces auth via --requirepass" {
-  run grep -q -- '--requirepass' "$REPO/gitops/data/redis/statefulset.yaml"
+# --- security: Valkey must require a password -------------------------------
+@test "valkey enforces auth via --requirepass" {
+  run grep -q -- '--requirepass' "$REPO/gitops/data/valkey/statefulset.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -67,7 +67,7 @@ setup() {
 }
 
 # --- dashboards exist (ADR-0004 real metrics) -------------------------------
-@test "Lab — RabbitMQ and Lab — Redis dashboards exist" {
+@test "Lab — RabbitMQ and Lab — Valkey dashboards exist" {
   [ -f "$REPO/grafana/dashboards/lab-rabbitmq.json" ]
-  [ -f "$REPO/grafana/dashboards/lab-redis.json" ]
+  [ -f "$REPO/grafana/dashboards/lab-valkey.json" ]
 }
