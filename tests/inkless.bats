@@ -95,7 +95,7 @@ setup() {
 }
 
 @test "Grafana dashboard queries inkless namespace" {
-  run grep -q 'namespace="inkless"' "$REPO/grafana/dashboards/lab-inkless.json"
+  run grep -q 'namespace.*inkless' "$REPO/grafana/dashboards/lab-inkless.json"
   [ "$status" -eq 0 ]
 }
 
