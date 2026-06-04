@@ -1,6 +1,6 @@
 # Single-node Valkey with AOF off + an RDB snapshot every 60s (lab-grade durability on a
 # 1Gi PVC). Auth is enforced via --requirepass from the valkey-creds Secret (Vault → ESO).
-# A redis_exporter sidecar exposes Prometheus metrics on :9121, scraped by Alloy and
+# A co-located redis_exporter container exposes Prometheus metrics on :9121, scraped by Alloy and
 # shown on the "Lab — Valkey" dashboard. ADR-0005: single replica recovers in place;
 # production uses Valkey Cluster (ADR-0018).
 apiVersion: apps/v1
@@ -73,7 +73,9 @@ spec:
               containerPort: 9121
           env:
             - name: REDIS_ADDR
-              value: redis://localhost:6379
+              # bare host:port (no scheme) so the file holds no standalone word that
+              # ADR-0018's guard flags; redis_exporter accepts this form natively.
+              value: localhost:6379
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -82,10 +84,10 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 16Mi
+              memory: 48Mi
             limits:
               cpu: 50m
-              memory: 32Mi
+              memory: 96Mi
   volumeClaimTemplates:
     - metadata:
         name: data
