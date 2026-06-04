@@ -22,6 +22,9 @@ spec:
     - name: controller
       port: 29090
       targetPort: 29090
+    - name: metrics
+      port: 9308
+      targetPort: 9308
   selector:
     app: inkless
 ---
@@ -37,5 +40,8 @@ spec:
     - name: kafka
       port: 9092
       targetPort: 9092
+    - name: metrics
+      port: 9308
+      targetPort: 9308
   selector:
     app: inkless

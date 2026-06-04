@@ -99,6 +99,16 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "Grafana dashboard includes kafka-exporter broker metric queries" {
+  run grep -q 'kafka_brokers' "$REPO/grafana/dashboards/lab-inkless.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "Grafana dashboard includes kafka consumer lag queries" {
+  run grep -q 'kafka_consumergroup_lag' "$REPO/grafana/dashboards/lab-inkless.json"
+  [ "$status" -eq 0 ]
+}
+
 # --- Core manifests ----------------------------------------------------------
 @test "inkless StatefulSet manifest exists" {
   [ -f "$REPO/gitops/inkless/inkless-statefulset.yaml" ]
@@ -106,6 +116,21 @@ setup() {
 
 @test "inkless uses ghcr.io/aiven/inkless image" {
   run grep -q 'ghcr.io/aiven/inkless' "$REPO/gitops/inkless/inkless-statefulset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "inkless StatefulSet includes kafka-exporter sidecar" {
+  run grep -q 'danielqsj/kafka-exporter' "$REPO/gitops/inkless/inkless-statefulset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "inkless Service exposes metrics port for exporter" {
+  run grep -q 'port: 9308' "$REPO/gitops/inkless/inkless-service.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "Alloy scrapes inkless exporter metrics" {
+  run grep -q 'prometheus.scrape \"inkless\"' "$REPO/gitops/platform/observability-alloy.yaml"
   [ "$status" -eq 0 ]
 }
 

@@ -261,6 +261,17 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
+
+              // ---- Inkless (diskless Kafka) exporter metrics -> Mimir ----
+              // kafka-exporter sidecar in the Inkless StatefulSet exposes Prometheus
+              // metrics on :9308; this target is idle unless inkless is manually synced.
+              prometheus.scrape "inkless" {
+                targets = [
+                  {"__address__" = "inkless.inkless.svc.cluster.local:9308", "job" = "inkless"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
