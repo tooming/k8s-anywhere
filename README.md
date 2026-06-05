@@ -26,10 +26,10 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Secrets** | Vault (KV v2) · External Secrets Operator |
 | **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
 | **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
-| **Data layer** | RabbitMQ (message broker + management UI) · Redis (cache / key-value) · redis_exporter · data-demo (traffic generator) |
+| **Data layer** | RabbitMQ (message broker + management UI) · Valkey (cache / key-value) · redis_exporter · data-demo (traffic generator) |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator) |
 | **CNI (bootstrap)** | Cilium (`make cilium-up` — run before `make argocd` on fresh clusters; ADR-0014) |
-| **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Artifactory OSS (`make artifactory-up` / `make artifactory-down`) · Istio ambient mesh (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn distributed block storage (`make longhorn-up` / `make longhorn-down`) · Aiven Inkless diskless Kafka (`make inkless-up` / `make inkless-down`) |
+| **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Artifactory OSS (`make artifactory-up` / `make artifactory-down`) · Istio ambient mesh — istio-base · istio-cni · istiod · ztunnel (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn distributed block storage (`make longhorn-up` / `make longhorn-down`) · Aiven Inkless diskless Kafka (`make inkless-up` / `make inkless-down`) |
 
 ## Prerequisites
 
@@ -56,7 +56,7 @@ for the full command list.
 ### Apply Grafana dashboard changes (localhost lab)
 
 Lab dashboards (`grafana/dashboards/*.json`, including `Lab — Grafana`, `Lab — Logs`,
-`Lab — Mimir`, `Lab — Profiles`, `Lab — RabbitMQ`, `Lab — Redis`, `Lab — Stack Health`,
+`Lab — Mimir`, `Lab — Profiles`, `Lab — RabbitMQ`, `Lab — Valkey`, `Lab — Stack Health`,
 `Lab — TiDB Demo App`, `Lab — Traces`, `Lab — Vault & Secrets`) are managed by Grafana
 native Git Sync (Pure Git), not a k8s sidecar. After editing them, run:
 
