@@ -25,6 +25,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 10001
         runAsGroup: 10001
+        fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
       imagePullSecrets:
@@ -51,6 +52,9 @@ spec:
                   name: capstone-app-creds
                   key: app-key
                   optional: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: 10m
@@ -58,6 +62,9 @@ spec:
             limits:
               cpu: 100m
               memory: 64Mi
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
