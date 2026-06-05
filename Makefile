@@ -312,6 +312,27 @@ define argocd-delete
 	kubectl -n argocd delete application $(1) --ignore-not-found
 endef
 
+# --- Cilium CNI (always-on once enabled; run before ArgoCD on fresh clusters) ----
+# Cilium replaces k3s-bundled Flannel (disable_default_cni=true — ADR-0014).
+# Bootstrap order: make cluster-up → make cilium-up → make argocd → rest of make up.
+# After the initial install, ArgoCD adopts the Helm release and manages it.
+.PHONY: cilium-up
+cilium-up: ## Install Cilium CNI via Helm — run BEFORE make argocd on fresh clusters (ADR-0014)
+	helm upgrade --install cilium cilium \
+		--repo https://helm.cilium.io \
+		--version 1.16.6 \
+		--namespace kube-system \
+		--create-namespace \
+		--set kubeProxyReplacement=true \
+		--set hubble.enabled=false \
+		--set operator.replicas=1 \
+		--wait --timeout 5m
+	@echo "Cilium CNI installed — pod networking active. Continue with: make argocd"
+
+.PHONY: cilium-down
+cilium-down: ## Remove Cilium CNI — WARNING: drops all pod networking; only during cluster teardown
+	helm uninstall cilium --namespace kube-system --ignore-not-found
+
 .PHONY: tidb-operator-up
 tidb-operator-up: ## Deploy TiDB Operator via ArgoCD manual sync (~256 MB; do after make up)
 	$(call argocd-sync,tidb-operator)

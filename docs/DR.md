@@ -10,6 +10,24 @@ make up          # bootstrap everything, in order
 make status      # VM RAM + per-namespace usage + unhealthy pods
 ```
 
+### Cilium bootstrap order (ADR-0014)
+
+The cluster is created with `--flannel-backend=none --disable-network-policy`
+(see `infra/live/local/cluster/terragrunt.hcl`). Flannel is disabled; **Cilium
+is the CNI.** Pods cannot start until Cilium is installed. On every fresh
+`make cluster-up`, install Cilium **before** `make argocd`:
+
+```sh
+make cluster-up   # k3d cluster — no CNI yet; pods stay ContainerCreating
+make cilium-up    # ← install Cilium first; pod networking now works
+make argocd       # ArgoCD pods start; then continue with `make up` from here
+# or simply re-run the full make up (it is idempotent):
+make up
+```
+
+`make cilium-up` uses `helm upgrade --install` directly (day-0 seam, per ADR-0001)
+and blocks until Cilium is ready. ArgoCD then adopts the Helm release on first sync.
+
 ## One-command DR test (`make dr-test`)
 
 Proves the recreate-from-code claim end to end: it **destroys the lab, rebuilds it
