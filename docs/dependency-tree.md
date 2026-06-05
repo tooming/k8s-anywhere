@@ -84,6 +84,10 @@ graph TD
       capstoneci["GitLab CI<br/>build-and-push pipeline<br/>(.gitlab-ci.yml)"]:::ondemand
       capstoneapp["capstone app<br/>Deployment + Service<br/>(capstone ns)"]:::gitops
     end
+    subgraph CILIUM["Cilium CNI — bootstrap step (before ArgoCD on fresh clusters)"]
+      ciliumagent["cilium-agent<br/>eBPF CNI DaemonSet<br/>(kube-system ns)"]:::ondemand
+      ciliumop["cilium-operator<br/>Deployment (~70 MB)"]:::ondemand
+    end
     subgraph ISTIO["Istio ambient — on-demand (manual sync only)"]
       istiobase["istio-base<br/>CRDs + RBAC<br/>(istio-system ns)"]:::ondemand
       istiocni["istio-cni<br/>node CNI plugin<br/>(ambient mode)"]:::ondemand
@@ -157,6 +161,9 @@ graph TD
   capstoneapp -.->|"OTLP :4318 (step 4)"| tempo
   mimir -.->|"capstone pod metrics (step 4)"| grafana
   loki -.->|"capstone logs (step 4)"| grafana
+
+  %% --- Cilium CNI bootstrap ---
+  ciliumagent -.->|"eBPF pod networking"| ciliumop
 
   %% --- Istio ambient on-demand chain ---
   istiobase -.->|"CRDs"| istiocni
@@ -245,6 +252,7 @@ make up
 | — | tidb-demo *(on-demand)* | Demo app reading TiDB creds from Vault via ExternalSecret; manual-sync only — use `make tidb-demo-up` |
 | — | artifactory *(on-demand)* | JFrog Artifactory OSS artifact + Docker registry (chart `jfrog/artifactory-oss` from `charts.jfrog.io`); manual-sync only — use `make artifactory-up` |
 | — | artifactory-extras *(on-demand)* | Envoy HTTPRoute for `artifactory.127.0.0.1.nip.io`; paired with the artifactory Application — use `make artifactory-up` |
+| — | cilium *(bootstrap — helm direct, before ArgoCD)* | Cilium CNI replacing k3s-bundled Flannel; eBPF kube-proxy replacement (chart `cilium/cilium` v1.16.6 from `https://helm.cilium.io`, namespace `kube-system`; `kubeProxyReplacement: true`, Hubble disabled for budget). Run `make cilium-up` immediately after `make cluster-up` — pod networking requires Cilium before ArgoCD or any workload can start (ADR-0014) |
 | — | istio-base *(on-demand, step 1)* | Istio CRDs + cluster-scoped RBAC (chart `istio/base` from `istio-release.storage.googleapis.com/charts`); manual-sync only — use `make istio-up` |
 | — | istio-cni *(on-demand, step 2)* | Istio CNI node plugin, ambient profile (chart `istio/cni`); must precede istiod — use `make istio-up` |
 | — | istiod *(on-demand, step 3)* | Istio control plane, ambient profile (chart `istio/istiod`); no sidecar injection (ADR-0012) — use `make istio-up` |
@@ -306,6 +314,7 @@ make up
 - **Front door** (`:8000`, nginx docker container) is off-cluster and **not**
   GitOps-managed — the stable entry that survives blue/green; it's the front-LB
   SPOF in [ADR-0005](decisions/adr-0005-spof-recreate-over-ha.md).
+- **Cilium** (`gitops/platform/cilium.yaml`) is the cluster's **CNI and kube-proxy replacement** (ADR-0014). Non-auto-synced because Cilium must be installed **before** ArgoCD on fresh clusters — `make cilium-up` runs `helm upgrade --install` directly (day-0 bootstrap seam) immediately after `make cluster-up`, before `make argocd`. Flannel is disabled (`disable_default_cni = true` in `infra/live/local/cluster/terragrunt.hcl`). Chart `cilium/cilium` v1.16.6 from `https://helm.cilium.io`, namespace `kube-system`; `kubeProxyReplacement: true`; Hubble disabled (~320 MB net addition; replaces Flannel ~80 MB). Once ArgoCD is running it adopts the Helm release. Use `make cilium-down` only during full cluster teardown.
 - **GitLab** is also off-cluster (docker), the git source ArgoCD reads from.
 - **Tempo** receives traces from the `hello` demo app (HotROD) via OTLP HTTP `:4318`. HotROD runs in `lab-demo` namespace and exports to `tempo.observability.svc.cluster.local:4318` via the standard `OTEL_EXPORTER_OTLP_ENDPOINT` env var. The "Lab — Traces" dashboard shows live span data.
 - **TiDB Operator** (`gitops/platform/tidb-operator.yaml`) is on-demand / manual-sync — ArgoCD discovers the Application but does not auto-deploy the operator. Use `make tidb-operator-up` / `make tidb-operator-down`. Installs into namespace `tidb-admin`.

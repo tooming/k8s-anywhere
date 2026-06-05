@@ -1,0 +1,47 @@
+# Cilium CNI — ADR-0014 follow-on.  Non-auto-synced: `make cilium-up` installs
+# Cilium before any other workload; only then does pod networking work.
+# See docs/DR.md §Cilium for the bootstrap ordering note.
+#
+# DO NOT add an `automated:` syncPolicy block — Cilium must be brought up
+# manually in the correct order (cluster → Cilium → ArgoCD → rest of stack).
+# Once the always-on stack is up, ArgoCD adopts and manages this release.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cilium
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://helm.cilium.io
+    chart: cilium
+    targetRevision: 1.16.6
+    helm:
+      releaseName: cilium
+      valuesObject:
+        # Replace kube-proxy entirely — ADR-0014 rationale (one fewer component)
+        kubeProxyReplacement: true
+        hubble:
+          enabled: false         # Hubble deferred: ~250-400 MB; not in 12 GB budget
+        operator:
+          replicas: 1            # single-node lab (ADR-0005)
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
