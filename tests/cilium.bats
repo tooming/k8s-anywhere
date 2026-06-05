@@ -14,7 +14,7 @@ setup() {
 }
 
 @test "cilium Application has no automated: block (bootstrap order requires manual sync)" {
-  run grep 'automated:' "$REPO/gitops/platform/cilium.yaml"
+  run grep -E '^[[:space:]]*automated:' "$REPO/gitops/platform/cilium.yaml"
   [ "$status" -eq 1 ]
 }
 
