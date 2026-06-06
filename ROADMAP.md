@@ -6,7 +6,7 @@ proposes items here (plan-only PRs) and an every-6h **executor** that implements
 per run. CHARTER = the goals; this file = the next steps.
 
 The always-on stack is already built (Envoy, Vault, External Secrets, Garage,
-the full LGTMP observability stack, moto/ACK/KRO, the RabbitMQ + Redis data layer,
+the full LGTMP observability stack, moto/ACK/KRO, the RabbitMQ + Valkey data layer,
 the demo app — ~28 ArgoCD apps). What's left is the heavy *on-demand* components,
 the end-to-end capstone, and cross-cutting hardening.
 
@@ -128,107 +128,123 @@ You review and merge plan PRs, same as implementation PRs.
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
 > through to the next.
 >
-> **Planner note (2026-06-04):** the observability gap-fillers (ArgoCD,
-> Envoy Gateway, Garage dashboards) and all five capstone steps have landed.
-> The two previously 🟡-blocked hardening tracks (RFC #82 NetworkPolicy,
-> RFC #83 securityContext) now have their binding ADRs (ADR-0016 and ADR-0017)
-> and are groomed below into 🟢 executor items. The Cilium follow-on
-> (ADR-0014) is the prerequisite for the NetworkPolicy items; land it first.
-> Issue #94 (ADR-0010 Redis → Valkey audit) is deferred until the first
-> industry-news-writer digest lands — do not swap without digest confirmation.
+> **Planner note (2026-06-06 — fan-out wave):** the previous *Now / next* lane is
+> empty — the Inkless dashboard `kafka_exporter` extension landed in PR #101 and
+> the Valkey swap landed in PR #106 (ADR-0018 supersedes ADR-0010), both moved to
+> *Done* below alongside the dashboard/Cilium/pilot items that had stayed checked
+> in-place. Issue #121 (executor idle — needs work) records that starvation;
+> refilling the lane here makes it obsolete.
 >
-> **Maintainer note (2026-06-06):** executor/reviewer are currently idle because
-> this lane was fully checked off. Refilled with one small 🟢 item below so the
-> loop can resume.
+> The next wave is the **ADR-0016 NetworkPolicy fan-out** (per its §4 staged
+> rollout: `data` pilot done, fan-out to remaining namespaces one PR at a time)
+> and the **ADR-0017 Pod Security Standards fan-out** (per its §Staged rollout:
+> `capstone` pilot done, fan-out + label-only carve-outs follow). Both ADRs are
+> already adopted, so per WAYS-OF-WORKING.md §2 these are 🟢 — the architect's
+> binding decision *is* the approval, no further RFC needed. The five items
+> below are ordered to (1) close each pilot loop by giving the other pilot its
+> missing layer, (2) protect the secrets plane, (3) cover the LGTMP stack, and
+> (4) record the label-only carve-outs for namespaces ADR-0017 keeps on
+> `baseline`. Cilium is already active (PR #112), so the NetworkPolicy
+> prerequisite is met.
 
-- [ ] 🟢 **Lab — Inkless Kafka dashboard: add real broker/consumer metrics.**
-  The current dashboard is KSM/cAdvisor-only. Extend Alloy scraping and the
-  dashboard so "Lab — Inkless" includes real `kafka_exporter` metrics (broker
-  up count, consumer-group lag, topic throughput) from the in-cluster exporter
-  already defined in `gitops/inkless/inkless-statefulset.yaml`. Keep ADR-0004:
-  real metrics only; no fabricated placeholders. Update bats assertions in
-  `tests/inkless.bats` and `docs/dependency-tree.md`.
+- [ ] 🟢 **NetworkPolicy fan-out — `capstone` namespace** (ADR-0016 §4
+  fan-out; closes the capstone pilot loop alongside the existing PSS
+  pilot). New overlay at `gitops/apps/capstone/networkpolicy/kustomization.yaml`
+  referencing the two shared templates under `gitops/network/policies/`
+  (`default-deny.yaml`, `allow-dns-and-apiserver.yaml`) plus per-workload
+  allows for the capstone Deployment's three real flows:
+  `allow-capstone-ingress-from-gateway.yaml` (TCP 8080 from Envoy proxy
+  pods in `envoy-gateway-system`); `allow-capstone-egress-tempo.yaml`
+  (egress to `observability` namespace pod-label `app=tempo`, TCP 4318
+  for OTLP HTTP traces — see the deployment's `OTEL_EXPORTER_OTLP_ENDPOINT`
+  env var). Image pulls are kubelet-level so no policy needed; the
+  rendered `capstone-app-creds` Secret is read in-pod, not over the
+  network. New auto-synced ArgoCD `Application`
+  `gitops/platform/capstone-networkpolicy.yaml` (sync-wave 4, same
+  `kustomize.buildOptions: --load-restrictor LoadRestrictionsNone`
+  pattern as the existing `data-networkpolicy` Application). Extend
+  `tests/networkpolicy.bats` with capstone-overlay assertions (templates
+  referenced, `policyTypes` shape, three per-workload allow rules
+  present). Update `docs/dependency-tree.md` with a capstone
+  NetworkPolicy note. ADR-0016 prerequisite (Cilium, ADR-0014) already
+  active.
 
-- [x] 🟢 **Lab — ArgoCD dashboard** (`grafana/dashboards/lab-argocd.json`).
-  Real ArgoCD metrics already scraped by Alloy (jobs `argocd-metrics`,
-  `argocd-server-metrics`, `argocd-repo-server`,
-  `argocd-applicationset-controller`). Panels: per-app sync state timeseries
-  (`argocd_app_info` by `name` / `sync_status` / `health_status`); reconcile
-  duration heatmap (`argocd_app_reconcile_bucket`); sync attempt rate
-  (`rate(argocd_app_sync_total[5m])` split by `phase`); repo-server git
-  request latency (`argocd_git_request_duration_seconds_bucket`);
-  ApplicationSet controller reconcile counts; pod-running / restart stats
-  from KSM (mirror the `lab-vault` stat-row pattern). Wire into the "Lab UIs"
-  panel; add bats tests asserting dashboard file exists, panel count, no
-  fabricated data, and dependency-tree mention. ADR-0004: real metrics only.
-- [x] 🟢 **Lab — Envoy Gateway dashboard** + Alloy scrape job
-  (`grafana/dashboards/lab-envoy.json` + scrape addition in
-  `gitops/platform/observability-alloy.yaml`). Add a `prometheus.scrape`
-  block for the Envoy Gateway data plane (`envoy.envoy-gateway-system` admin
-  stats port, `/stats/prometheus`) and the controller's controller-runtime
-  metrics endpoint. Dashboard panels: per-listener request rate, p50/p95/p99
-  request latency, 5xx ratio, upstream cluster health (`envoy_cluster_*`),
-  active connections, HTTPRoute count from KSM (`kube_*` Gateway API CRs if
-  KSM is configured for them; otherwise omit). Wire into "Lab UIs" panel +
-  bats + dependency-tree. ADR-0004: real metrics only. Single PR; clusterless
-  validation = `make ci`.
-- [x] 🟢 **Lab — Garage S3 dashboard** + Alloy scrape job
-  (`grafana/dashboards/lab-garage.json` + scrape addition in
-  `gitops/platform/observability-alloy.yaml`). Add a `prometheus.scrape`
-  block for Garage's admin port (`garage.storage.svc.cluster.local:3903`,
-  path `/metrics`). Panels: API request rate by verb (`garage_api_*`),
-  bucket / object counts (`garage_bucket_*`, `garage_object_*`), replication
-  lag (`garage_block_resync_*`), free disk (`garage_storage_*`), error rate.
-  Wire into "Lab UIs" panel + bats + dependency-tree. Covers the
-  S3-compatible-storage CHARTER learning objective. ADR-0004: real metrics
-  only.
+- [ ] 🟢 **PSS-restricted fan-out — `data` namespace** (ADR-0017
+  §Staged rollout; closes the `data` pilot loop alongside the existing
+  NetworkPolicy pilot). New explicit `gitops/data/namespace.yaml`
+  with the four PSA labels at `restricted` per ADR-0017 §Layer 2
+  (`pod-security.kubernetes.io/{enforce,enforce-version,warn,audit}`).
+  Pod- and container-level `securityContext` fields added to both data
+  StatefulSets (`gitops/data/rabbitmq/statefulset.yaml`,
+  `gitops/data/valkey/statefulset.yaml`) and the demo workloads under
+  `gitops/data/demo/`: pod-level `runAsNonRoot: true`,
+  `runAsUser`/`runAsGroup` non-zero (use RabbitMQ's documented UID 999
+  / Valkey's documented UID 999), `seccompProfile.type: RuntimeDefault`;
+  container-level `allowPrivilegeEscalation: false`, `privileged: false`,
+  `readOnlyRootFilesystem: true` with `emptyDir` mounts over any
+  remaining writable paths not already on the PVC (RabbitMQ's
+  `/var/lib/rabbitmq/mnesia/cache`, Valkey's `/tmp`); container
+  `capabilities.drop: [ALL]`. ADR-0017 carve-out table records `data`
+  as `restricted`-eligible. New `tests/securitycontext-data.bats`
+  asserting the namespace PSA labels and the same five `securityContext`
+  fields per workload. *(Note for executor: confirm the RabbitMQ and
+  Valkey container images can actually start non-root before flipping
+  `runAsNonRoot: true` — if either upstream image hard-codes root, file
+  a follow-up ADR-0017 §Per-workload-carve-out item instead of
+  weakening the namespace label.)*
 
-- [x] 🟢 **Cilium on-demand manifest + infra flip** (ADR-0014 follow-on,
-  RFC #82 prerequisite). `gitops/platform/cilium.yaml` — non-auto-synced
-  ArgoCD `Application`, chart `cilium/cilium` ≥ v1.16 from
-  `https://helm.cilium.io`, namespace `kube-system`,
-  `kubeProxyReplacement: true`, `hubble.enabled: false` (stays inside the
-  12 GB budget; Hubble deferred). Set `disable_default_cni = true` in
-  `infra/live/local/cluster/terragrunt.hcl` (atomic with the chart — ADR-0014
-  mandates that both land in the same PR). `make cilium-up` / `make cilium-down`
-  targets. `docs/DR.md` note: "after `make up`, run `make cilium-up` before any
-  workload". `tests/cilium.bats` (no `automated:` block in the Application; both
-  Makefile targets exist). ADR-0004: Cilium is always-on once enabled — it is
-  the network data plane, not on-demand. **This item is the prerequisite for the
-  two NetworkPolicy items below.**
+- [ ] 🟢 **NetworkPolicy fan-out — `vault` namespace** (ADR-0016 §4
+  fan-out; second-wave priority — protects the secrets plane). New
+  overlay at `gitops/vault/networkpolicy/kustomization.yaml` referencing
+  the two shared templates. Per-workload allows:
+  `allow-vault-from-eso.yaml` (ingress TCP 8200 from the
+  `external-secrets` namespace's ESO controller pods) and
+  `allow-vault-from-gateway.yaml` (ingress TCP 8200 from
+  `envoy-gateway-system` proxy pods for the existing
+  `vault.127.0.0.1.nip.io` HTTPRoute). No explicit egress allow needed
+  beyond the baseline: the `allow-dns-and-apiserver` template already
+  covers Vault's k8s-auth call to the k3s API. New auto-synced
+  `Application` `gitops/platform/vault-networkpolicy.yaml` (sync-wave 4,
+  same `LoadRestrictionsNone` pattern). Extend `tests/networkpolicy.bats`
+  with vault-overlay assertions (templates referenced, two per-workload
+  rules, both target TCP 8200). Update `docs/dependency-tree.md`.
 
-- [x] 🟢 **NetworkPolicy baseline — `data` namespace pilot** (ADR-0016,
-  RFC #82). Reusable templates under `gitops/network/policies/`:
-  `default-deny.yaml` (policyTypes: [Ingress, Egress], no rules) and
-  `allow-dns-and-apiserver.yaml` (egress UDP/TCP 53 to kube-dns pods in
-  `kube-system`; egress TCP 6443 to `10.43.0.1/32`). Pilot overlay:
-  `gitops/data/networkpolicy/kustomization.yaml` referencing both templates;
-  per-workload allows: `allow-rabbitmq-ingress.yaml` (ports 5672, 15692),
-  `allow-redis-ingress.yaml` (ports 6379, 9121),
-  `allow-data-demo-egress.yaml` (egress from the data-demo pods to RabbitMQ
-  and Redis). Wire overlay into the existing `data` ArgoCD `Application`.
-  `tests/networkpolicy.bats` asserting clusterless: both baseline templates
-  exist; `default-deny-all` has `policyTypes: [Ingress, Egress]` and no rules;
-  `data` overlay references both templates. `docs/dependency-tree.md` updated
-  with network-policy note. *(Blocked on Cilium item above.)*
+- [ ] 🟢 **NetworkPolicy fan-out — `observability` namespace** (ADR-0016
+  §4 fan-out; covers the LGTMP stack). New overlay at
+  `gitops/observability/networkpolicy/kustomization.yaml` referencing the
+  two shared templates. The flows to enumerate are extensive — Alloy
+  scrapes targets in every namespace (egress allows per scrape job
+  declared in `gitops/platform/observability-alloy.yaml`); Mimir, Loki,
+  Tempo, Pyroscope each write to Garage in `storage` namespace (egress
+  TCP 3900); Grafana reads from each backend over the cluster network
+  (intra-namespace egress); the Grafana HTTPRoute needs ingress on TCP
+  3000 from `envoy-gateway-system`. **If the PR crosses the ~400-line
+  WAYS-OF-WORKING.md §3 cap**, split as: PR 1 = baseline templates +
+  Grafana ingress + Alloy egress to `data` and `argocd` namespaces; file
+  three follow-up planner items (one per remaining wave: storage
+  backends, scrape-target namespaces, control-plane namespaces). New
+  auto-synced `Application` `gitops/platform/observability-networkpolicy.yaml`
+  (sync-wave 4). Extend `tests/networkpolicy.bats`. Update
+  `docs/dependency-tree.md`.
 
-- [x] 🟢 **securityContext hardening — `capstone` pilot** (ADR-0017, RFC #83).
-  `gitops/apps/capstone/namespace.yaml` — new explicit `Namespace` manifest for
-  `capstone` with the four PSA labels at `restricted`
-  (`pod-security.kubernetes.io/enforce: restricted`,
-  `…/warn: restricted`, `…/audit: restricted`,
-  `…/enforce-version: latest`). Update
-  `gitops/apps/capstone/deployment.yaml` — pod-level securityContext
-  (`runAsNonRoot: true`, `runAsUser: 10001`, `runAsGroup: 10001`,
-  `fsGroup: 10001`, `seccompProfile.type: RuntimeDefault`) and container-level
-  (`allowPrivilegeEscalation: false`, `privileged: false`,
-  `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`); add an
-  `emptyDir` mount for any writable path identified during review.
-  `tests/securitycontext.bats` asserting clusterless: deployment sets
-  `runAsNonRoot`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`,
-  `readOnlyRootFilesystem: true`, `seccompProfile.type: RuntimeDefault`; and
-  `capstone` namespace manifest carries the four PSA `restricted` labels.
-  `make ci` must pass.
+- [ ] 🟢 **PSS labels — non-restricted carve-out namespaces** (ADR-0017
+  §Per-namespace profile; label-only — no workload `securityContext`
+  changes). Add explicit namespace manifests carrying the carve-out
+  PSA labels for the four always-on namespaces ADR-0017 records as
+  `baseline`-only: `gitops/vault/namespace.yaml` (`vault` — `mlock`
+  needs `IPC_LOCK`), `gitops/storage/namespace.yaml` (`storage` — Garage
+  upstream image's non-root status not declared),
+  `gitops/tidb/namespace.yaml` (`tidb` — TiDB Operator caps),
+  `gitops/tidb-admin/namespace.yaml` (`tidb-admin` — same). Each
+  manifest sets `pod-security.kubernetes.io/{enforce,warn,audit}:
+  baseline` + `enforce-version: latest`. The on-demand `privileged`
+  carve-outs (`longhorn-system`, `istio-system`) land with their
+  respective bring-up PRs per ADR-0017 and are NOT included here.
+  Each namespace manifest is wired into its existing namespace's
+  ArgoCD `Application` source path (or as a small additional resource
+  in an existing overlay) so it auto-syncs. Extend
+  `tests/securitycontext.bats` with four assertions (one per labelled
+  namespace).
 
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
@@ -240,53 +256,28 @@ You review and merge plan PRs, same as implementation PRs.
 > auto-synced set (rule #4).
 
 ### Capstone — "tie it together" (learning-path step 5)
-> RFC #62 directs the capstone end-to-end pipeline. The in-lab registry is
-> **Artifactory** (RFC #58 → ADR-0011). The Artifactory manifests have landed and
-> step 1 is now done. Steps 2–5 are sequentially dependent — the planner should
-> promote **step 2** into *Now / next* now that step 1 has merged.
-
-- [x] 🟢 **Capstone step 1 — GitLab CI: build the demo app image and push it to
-  Artifactory.** Add `.gitlab-ci.yml` (or update if present) with a build job
-  that produces an image of the `hello` demo (or its capstone successor) and
-  pushes to the in-lab Artifactory Docker registry endpoint. Vault-stored
-  registry creds via ESO; no plaintext creds in CI vars. Clusterless gates:
-  `make ci` lints the YAML, structural bats. *(Blocked on the Artifactory
-  manifest item.)*
-- [x] 🟢 **Capstone step 3 — Envoy `HTTPRoute` for the capstone app**
-  (`capstone.127.0.0.1.nip.io`). Wire it into the Grafana "Lab UIs" panel so
-  `make lab-ui-check` covers it. *(Blocked on step 2.)*
-- [x] 🟢 **Capstone step 4 — Grafana dashboard tile for the capstone app**
-  ("Lab — Capstone"): real pod/container metrics + Loki log panel filtered to
-  the capstone namespace + Tempo traces panel if the app is OTel-instrumented
-  (see the Tempo-producer item above). ADR-0004: real metrics only.
-  *(Blocked on step 2.)*
-- [x] 🟢 **Capstone step 5 — Vault secret + `ExternalSecret` for the capstone
-  app.** Seed via `scripts/vault-bootstrap.sh` (mirror the `tidb/demo` pattern);
-  `ExternalSecret` in `gitops/secrets/`. *(Blocked on step 2.)*
+> RFC #62's end-to-end pipeline is **complete** — all five steps (GitLab CI
+> build → ArgoCD deploy → Envoy HTTPRoute → Grafana tile → Vault `ExternalSecret`)
+> shipped via the `auto/capstone-step-{1..5}` PRs and live in *Done* below. The
+> capstone NetworkPolicy fan-out item in *Now / next* completes the
+> defence-in-depth layer for the pipeline-deployed pod.
 
 ### Cross-cutting hardening & quality (always-safe filler)
 > Use these when nothing above can be done cleanly in a single run. Mixed tiers —
-> the 🟡 items still need a human RFC before the executor builds them.
+> the 🟡 items still need a human (or architect) RFC before the executor builds them.
 
-- [x] 🟡 Add default-deny `NetworkPolicy` per namespace + the minimal allows each
-  component needs. (RFC #82 → ADR-0014 Cilium prerequisite landed; ADR-0016
-  NetworkPolicy decision adopted. Groomed into 🟢 items in *Now / next* above:
-  Cilium manifest item + NetworkPolicy baseline pilot item.)
-- [x] 🟡 Harden `securityContext` (runAsNonRoot, drop ALL caps, readOnlyRootFilesystem
-  where viable) across manifests. (RFC #83 → ADR-0017 adopted. Groomed into 🟢
-  securityContext hardening — capstone pilot item in *Now / next* above.)
-- [ ] 🟡 **ADR-0010 revisit — Redis → Valkey swap** (issue #94, pending first
-  industry-news-writer digest). The architect's ADR audit flagged that Valkey (LF
-  BSD-3 fork, cloud-provider default in 2026) may now supersede Redis. Decision
-  explicitly deferred until `docs/industry/` contains its first digest entry —
-  "a 'supersede' call should not be made without digest confirmation" (issue #94).
-  When the digest lands: re-evaluate, write ADR-0018 superseding ADR-0010 if
-  confirmed, and add a swap item (`gitops/data/redis/ → valkey/`) to *Now / next*.
+_Currently empty — both prior 🟡 entries (NetworkPolicy default-deny, securityContext
+hardening) have been groomed into the 🟢 fan-out items in *Now / next* above (ADR-0016
+and ADR-0017 are adopted). The ADR-0010 Redis→Valkey swap (issue #94) landed as ADR-0018
+in PR #106 and is in *Done* below. Future 🟡 items land here when the architect routine
+files a new RFC issue but the planner hasn't yet split it._
 
 ---
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **Lab — Inkless Kafka dashboard: real broker/consumer metrics** — Extended `grafana/dashboards/lab-inkless.json` with five `kafka_exporter`-sourced queries: `kafka_brokers{job="inkless"}` (broker up count), `kafka_topic_partitions` (topic count), `kafka_topic_partition_under_replicated_partition` (replication health), `kafka_topic_partition_current_offset` (throughput, rate-based), and `kafka_consumergroup_lag` (top-20 by lag). New Alloy scrape job `prometheus.scrape "inkless"` in `gitops/platform/observability-alloy.yaml` targets the kafka-exporter sidecar at `inkless.inkless.svc.cluster.local:9308`. `tests/inkless.bats` asserts the broker (`kafka_brokers`) and consumer-lag (`kafka_consumergroup_lag`) queries are present and that the kafka-exporter sidecar is declared on the StatefulSet. ADR-0004: all data from real metrics. (copilot/get-metrics-from-inkless, PR #101)
+- [x] **ADR-0018 — Valkey as the lab's cache / key-value store (supersedes ADR-0010)** — Industry-news-writer's first digest (`docs/industry/2026-W23-digest.md`) confirmed the supersede call: Valkey on BSD-3 under Linux Foundation governance is now the cloud-provider default (AWS ElastiCache for Valkey GA Oct 2024; GCP Memorystore added Valkey support). ADR-0018 written; manifests swapped at `gitops/platform/valkey.yaml` + `gitops/data/valkey/` (single-node StatefulSet with `redis_exporter` sidecar, Service on 6379/9121, ExternalSecret). Vault path `secret/valkey/default` seeded; `gitops/data/demo/valkey-load.yaml` generates continuous real SET/GET/INCR traffic; `grafana/dashboards/lab-valkey.json` renamed (queries unchanged — `redis_exporter` metric names are identical against Valkey). The pilot NetworkPolicy overlay's `allow-valkey-ingress.yaml` (TCP 6379, 9121) already references the new workload. Closes issue #94. (copilot/gt-94-update-documentation, PR #106; exporter-memory follow-up fix/valkey-exporter-memory, PR #109)
 - [x] **securityContext hardening — `capstone` pilot** (ADR-0017, RFC #83) — Added `gitops/apps/capstone/namespace.yaml` (explicit `Namespace` manifest with four PSA `restricted` labels: `enforce`, `enforce-version: latest`, `warn`, `audit`). Updated `gitops/apps/capstone/deployment.yaml` with full PSS-restricted securityContext: pod-level (`runAsNonRoot: true`, `runAsUser/runAsGroup/fsGroup: 10001`, `seccompProfile.type: RuntimeDefault`) and container-level (`allowPrivilegeEscalation: false`, `privileged: false`, `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`); added `emptyDir` volume + `/tmp` volumeMount for the writable ephemeral path required by `readOnlyRootFilesystem: true`. 11 clusterless bats tests in `tests/securitycontext.bats` (namespace PSA label checks, deployment runAsNonRoot, seccompProfile, allowPrivilegeEscalation, readOnlyRootFilesystem, capabilities.drop, no-privileged). ADR-0017 (pod security standards restricted) already adopted. (copilot/reviewer-idle-no-agent-prs)
 - [x] **NetworkPolicy baseline — `data` namespace pilot** (ADR-0016, RFC #82) — Added `gitops/platform/data-networkpolicy.yaml` (auto-synced ArgoCD `Application`, wave 4, Kustomize overlay with `--load-restrictor LoadRestrictionsNone` to resolve cross-directory template references). The overlay applies five NetworkPolicy objects to the `data` namespace: `default-deny-all` (Ingress + Egress floor), `allow-dns-and-apiserver` (kube-dns UDP/TCP 53 + k3s apiserver 10.43.0.1/32:6443), `allow-rabbitmq-ingress` (AMQP 5672, management 15672, Prometheus 15692), `allow-valkey-ingress` (Valkey 6379, redis_exporter 9121), `allow-data-demo-egress` (rabbitmq-load + valkey-load outbound to their targets). Shared baseline templates remain in `gitops/network/policies/` for reuse by future namespace overlays. 25 clusterless bats tests in `tests/networkpolicy.bats` (file existence, policyTypes shape, podSelectors, ports, kustomization references). `docs/dependency-tree.md` already updated with the network-policy note. Also updated `.routines-applied` to resolve a pre-existing CI failure caused by a prior commit that added/edited routine files without running `make routines-mark-applied` — maintainer should apply the three changed routines (architect, executor, industry-news-writer) via RemoteTrigger after merging. (auto/networkpolicy-data-pilot)
 - [x] **Cilium on-demand manifest + infra flip** (ADR-0014 follow-on) — Added `gitops/platform/cilium.yaml` (non-auto-synced ArgoCD `Application`, chart `cilium/cilium` v1.16.6 from `https://helm.cilium.io`, namespace `kube-system`; `kubeProxyReplacement: true`; Hubble disabled for budget); set `disable_default_cni = true` in `infra/live/local/cluster/terragrunt.hcl` (Flannel + bundled NetworkPolicy controller disabled — ADR-0014 atomic requirement); `make cilium-up` (`helm upgrade --install`, day-0 bootstrap seam — run before `make argocd` on fresh clusters) / `make cilium-down` targets; `docs/DR.md` bootstrap order note (cluster-up → cilium-up → argocd → rest of stack); 10 bats tests in `tests/cilium.bats` (file exists, no automated: block, kube-system namespace, helm.cilium.io source, kubeProxyReplacement true, Hubble disabled, disable_default_cni true, both make targets, DR.md documents the step); `docs/dependency-tree.md` and `README.md` updated (CILIUM subgraph, sync-wave row, notes entry). Unblocks the two NetworkPolicy items. (auto/cilium-manifest-infra-flip)
