@@ -15,12 +15,18 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
 
 - **Always-on core** (built): k3d + ArgoCD + GitLab + Envoy Gateway + Vault + External
   Secrets + Garage + the full LGTMP observability stack + moto/ACK/KRO + a demo app
-  (~25 ArgoCD Applications).
+  (~28 ArgoCD Applications).
+- **Always-on next wave** (planned, ~500 MB total within budget): **Kyverno** (admission
+  policy — validation, mutation, image verification); **Argo Rollouts** (SLO-driven
+  canary delivery via Envoy traffic-splitting); **Velero** (cluster + PVC backup to
+  Garage); **Trivy Operator** (continuous vulnerability + SBOM scanning).
 - **Heavy / on-demand** (planned): a distributed database (TiDB), an artifact registry
   (Artifactory or Nexus), a service mesh + UI (Istio ambient + Kiali), and distributed
   storage (Longhorn) — each brought up *one at a time* within the 12 GB budget.
-- **Capstone — the full inner loop**: GitLab CI builds an image → ArgoCD deploys it →
-  Envoy routes it → Grafana shows its metrics & logs → Vault holds its secrets.
+- **Capstone — the full inner loop**: GitLab CI builds *and signs* an image (cosign) →
+  Kyverno verifies the signature on admit → ArgoCD deploys it → Argo Rollouts canaries it
+  on real Mimir SLOs → Envoy routes it → Grafana shows its metrics & logs → Vault holds
+  its secrets → Velero backs up its state.
 
 ## Learning objectives (why each piece exists)
 
@@ -28,8 +34,13 @@ The lab should let a learner internalize, hands-on: the **GitOps reconcile loop*
 bootstrap vs. in-cluster GitOps**; the **secrets flow** (Vault → External Secrets →
 workload); **north-south ingress** via the Gateway API; the **observability pipeline**
 (metrics, logs, traces, profiles); **S3-compatible storage**; **cloud control-plane
-patterns** (ACK/KRO against a mock); and **DR / blue-green** on a single host. The
-sequenced path lives in [docs/00-architecture.md](docs/00-architecture.md).
+patterns** (ACK/KRO against a mock); **DR / blue-green** on a single host;
+**admission-time policy** (Kyverno: validation, mutation, image verification);
+**progressive delivery** (canary releases gated by real SLO metrics, not timers);
+**stateful backup & restore** (Velero against Garage — restore is exercised, not
+assumed); and **supply-chain security** end-to-end (cosign signing in CI, Kyverno
+verifyImages on admit, continuous Trivy scanning + SBOMs). The sequenced path lives
+in [docs/00-architecture.md](docs/00-architecture.md).
 
 ## Quality bars (invariants every change must keep true)
 
@@ -37,6 +48,12 @@ sequenced path lives in [docs/00-architecture.md](docs/00-architecture.md).
   Terraform/Terragrunt *only* bootstraps. (ADR-0001)
 - **Recreate-from-code.** `make up` rebuilds the whole lab; DR is verified, not assumed
   (`make dr-verify` / `dr-test` / blue-green). (ADR-0005)
+- **Stateful DR is exercised.** Every stateful namespace (`data`, `tidb`, `capstone`,
+  `vault`) has a Velero schedule and a `make dr-restore` path that recovers it from the
+  latest backup — not just re-creates the workload from manifest.
+- **Images are signed and verified.** Every image deployed into the cluster is signed
+  by the lab's cosign key in CI and admitted by a Kyverno `verifyImages` policy; an
+  unsigned image is rejected at admission.
 - **Clusterless gates stay green.** `make ci` (lint + validate + test + drift checks) is
   the floor and runs on every push.
 - **Fits the 16 GB reality.** The always-on stack lives in the 12 GB VM (~7 GB used);
