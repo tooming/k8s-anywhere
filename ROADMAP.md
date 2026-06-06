@@ -266,11 +266,39 @@ You review and merge plan PRs, same as implementation PRs.
 > Use these when nothing above can be done cleanly in a single run. Mixed tiers —
 > the 🟡 items still need a human (or architect) RFC before the executor builds them.
 
-_Currently empty — both prior 🟡 entries (NetworkPolicy default-deny, securityContext
-hardening) have been groomed into the 🟢 fan-out items in *Now / next* above (ADR-0016
-and ADR-0017 are adopted). The ADR-0010 Redis→Valkey swap (issue #94) landed as ADR-0018
-in PR #106 and is in *Done* below. Future 🟡 items land here when the architect routine
-files a new RFC issue but the planner hasn't yet split it._
+- [ ] 🟢 **Lab — Cloud control-plane (moto / ACK / KRO) dashboard**
+  (CHARTER gap — *cloud control-plane patterns (ACK/KRO against a mock)* is a
+  named learning objective and the quality bar requires real observability for
+  every always-on component; this is the only always-on piece with no
+  dashboard, see `grafana/dashboards/` against the always-on Application list).
+  New `grafana/dashboards/lab-cloud-control-plane.json` modelled on the
+  `lab-vault.json` stat-row pattern, three subsections — **moto** (pod running
+  / memory / CPU / restarts from KSM+cAdvisor, ArgoCD sync state for the `moto`
+  Application; namespace `moto`); **ACK S3** (same five metrics for the
+  `ack-s3` Application's controller Deployment in namespace `ack-system`, plus
+  a Loki logs panel filtered to the ACK controller pod showing reconciles
+  against `kind=Bucket`); **KRO** (same five metrics for the KRO controller in
+  namespace `ack-system`, plus a stat panel counting `kubectl get
+  resourcegraphdefinitions` instances and a logs panel for the KRO controller
+  pod showing RGD reconciles). About-text panel cites the
+  `ack-demo-bucket` + `app-data` instance as the live demo objects to watch
+  reconcile. All data from real KSM/cAdvisor/ArgoCD/Loki sources already
+  scraped by Alloy — no new scrape jobs needed (ADR-0004). Wire the dashboard
+  into the Grafana "Lab UIs" stack-health panel row list. Add
+  `tests/observability.bats` assertions (file exists, three subsection
+  headings present, no Prometheus query references metrics not currently
+  scraped). Update `docs/dependency-tree.md` with a brief note that the
+  cloud-control-plane stack now has a dashboard. *(Note for executor: if ACK
+  or KRO controller pods expose controller-runtime metrics on a
+  `:8080/metrics`-style port, do NOT add a scrape job in this PR — file that
+  as a follow-up planner item; this PR stays clusterless-verifiable.)*
+
+_Future 🟡 entries land here when the architect routine files a new RFC issue
+but the planner hasn't yet split it. The two prior 🟡 entries (NetworkPolicy
+default-deny, securityContext hardening) have been groomed into the 🟢
+fan-out items in *Now / next* above (ADR-0016 and ADR-0017 are adopted). The
+ADR-0010 Redis→Valkey swap (issue #94) landed as ADR-0018 in PR #106 and is
+in *Done* below._
 
 ---
 
