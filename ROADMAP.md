@@ -136,6 +136,18 @@ You review and merge plan PRs, same as implementation PRs.
 > (ADR-0014) is the prerequisite for the NetworkPolicy items; land it first.
 > Issue #94 (ADR-0010 Redis → Valkey audit) is deferred until the first
 > industry-news-writer digest lands — do not swap without digest confirmation.
+>
+> **Maintainer note (2026-06-06):** executor/reviewer are currently idle because
+> this lane was fully checked off. Refilled with one small 🟢 item below so the
+> loop can resume.
+
+- [ ] 🟢 **Lab — Inkless Kafka dashboard: add real broker/consumer metrics.**
+  The current dashboard is KSM/cAdvisor-only. Extend Alloy scraping and the
+  dashboard so "Lab — Inkless" includes real `kafka_exporter` metrics (broker
+  up count, consumer-group lag, topic throughput) from the in-cluster exporter
+  already defined in `gitops/inkless/inkless-statefulset.yaml`. Keep ADR-0004:
+  real metrics only; no fabricated placeholders. Update bats assertions in
+  `tests/inkless.bats` and `docs/dependency-tree.md`.
 
 - [x] 🟢 **Lab — ArgoCD dashboard** (`grafana/dashboards/lab-argocd.json`).
   Real ArgoCD metrics already scraped by Alloy (jobs `argocd-metrics`,
