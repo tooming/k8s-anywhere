@@ -139,6 +139,6 @@ un-defer:
 | Path | Role |
 |------|------|
 | `gitops/platform/longhorn.yaml` | ArgoCD Application — non-auto-synced; chart `longhorn/longhorn` from `https://charts.longhorn.io` |
-| `gitops/network/longhorn-route.yaml` (or `gitops/longhorn/route.yaml`) | Envoy `HTTPRoute` for the Longhorn UI (`longhorn.127.0.0.1.nip.io`) |
+| `gitops/longhorn/route.yaml` | Envoy `HTTPRoute` for the Longhorn UI (`longhorn.127.0.0.1.nip.io`) |
 | `Makefile` | `longhorn-up` and `longhorn-down` targets |
 | `tests/platform.bats` | bats assertion: Longhorn Application has no `automated:` block |
