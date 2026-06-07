@@ -45,7 +45,7 @@ ingress and egress by default.
 
 Named for the flow they permit (e.g. `allow-grafana-to-mimir`,
 `allow-eso-from-vault`). One YAML file per flow, co-located with the workload
-it serves (e.g. `gitops/observability/networkpolicy-allow-grafana-to-mimir.yaml`).
+it serves (e.g. `gitops/observability/networkpolicy/allow-grafana-to-mimir.yaml`).
 No catch-all "allow same namespace" — every edge is explicit.
 
 ### 3. Reusable templates
@@ -127,7 +127,7 @@ The detailed CNI-choice rationale lives in ADR-0014. Summary:
 | `gitops/network/policies/allow-dns-and-apiserver.yaml` | Reusable DNS+API allow template |
 | `gitops/data/networkpolicy/kustomization.yaml` | Pilot overlay for `data` namespace |
 | `gitops/data/networkpolicy/allow-rabbitmq-ingress.yaml` | Allow ingress to RabbitMQ (5672, 15692) |
-| `gitops/data/networkpolicy/allow-redis-ingress.yaml` | Allow ingress to Redis (6379, 9121) |
+| `gitops/data/networkpolicy/allow-valkey-ingress.yaml` | Allow ingress to Valkey (6379, 9121) |
 | `gitops/data/networkpolicy/allow-data-demo-egress.yaml` | Allow data-demo → RabbitMQ + Redis |
 | `tests/networkpolicy.bats` | Clusterless YAML structural tests |
 | `docs/dependency-tree.md` | Note on `data` namespace policy posture |
