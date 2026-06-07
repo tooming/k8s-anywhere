@@ -86,9 +86,8 @@ items come from a separate **weekly planner** routine (also runnable on-demand) 
 
 - reads [CHARTER.md](CHARTER.md) (the north-star) + the repo state + this file + open PRs
   + **open GitHub issues** (the intake queue), then produces items two ways:
-  - **gap analysis** — a charter target not yet built, a Goal not yet covered, an
-    Objective not on track for its date, or a quality bar not yet met, becomes a
-    proposed item;
+  - **gap analysis** — a charter target not yet built, a Core Value not upheld, a Goal
+    not yet covered, or an Objective not on track for its date, becomes a proposed item;
   - **intake grooming** — each open issue is a user work request of any size; the planner
     sizes it and splits it into one or more concrete, single-PR-sized items;
 - opens a **plan-only PR** on a `plan/<slug>` branch that edits **only this file** —
