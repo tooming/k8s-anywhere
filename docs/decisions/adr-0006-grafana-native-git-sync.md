@@ -36,9 +36,9 @@ credentials or Vault's unseal key (ADR-0001 corollary).
   bootstrap token) and read by the Git Sync bootstrap seam, which hands it to Grafana via
   the Repository's `secure.token` (stored encrypted *inside* Grafana). No workload reads
   it at runtime, so no ExternalSecret is needed — the token never lands in git either way.
-- Removes on cutover: the k8s-sidecar dashboard config, the
-  `gitops/observability/dashboards/` ConfigMaps, and the `observability-dashboards`
-  ArgoCD Application. **Community dashboards (gnetId) are unaffected** — separate provider.
+- Removes on cutover: the k8s-sidecar dashboard config, the sidecar dashboard
+  ConfigMaps, and the `observability-dashboards` ArgoCD Application. **Community
+  dashboards (gnetId) are unaffected** — separate provider.
 
 **Status.** **Adopted.** Implemented + verified live: Grafana 13.0.1 syncs the lab
 dashboards (`grafana/dashboards/` in the repo) from GitLab over the TLS proxy; the
