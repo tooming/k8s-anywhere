@@ -28,19 +28,54 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
   on real Mimir SLOs → Envoy routes it → Grafana shows its metrics & logs → Vault holds
   its secrets → Velero backs up its state.
 
-## Learning objectives (why each piece exists)
+## Goals (qualitative — what a learner internalizes)
 
-The lab should let a learner internalize, hands-on: the **GitOps reconcile loop**; **IaC
-bootstrap vs. in-cluster GitOps**; the **secrets flow** (Vault → External Secrets →
-workload); **north-south ingress** via the Gateway API; the **observability pipeline**
-(metrics, logs, traces, profiles); **S3-compatible storage**; **cloud control-plane
-patterns** (ACK/KRO against a mock); **DR / blue-green** on a single host;
-**admission-time policy** (Kyverno: validation, mutation, image verification);
-**progressive delivery** (canary releases gated by real SLO metrics, not timers);
-**stateful backup & restore** (Velero against Garage — restore is exercised, not
-assumed); and **supply-chain security** end-to-end (cosign signing in CI, Kyverno
-verifyImages on admit, continuous Trivy scanning + SBOMs). The sequenced path lives
-in [docs/00-architecture.md](docs/00-architecture.md).
+The directional outcomes a learner should walk away with — *what* success looks like,
+without committing to *when* or *how much*. The lab should let a learner internalize,
+hands-on: the **GitOps reconcile loop**; **IaC bootstrap vs. in-cluster GitOps**; the
+**secrets flow** (Vault → External Secrets → workload); **north-south ingress** via the
+Gateway API; the **observability pipeline** (metrics, logs, traces, profiles);
+**S3-compatible storage**; **cloud control-plane patterns** (ACK/KRO against a mock);
+**DR / blue-green** on a single host; **admission-time policy** (Kyverno: validation,
+mutation, image verification); **progressive delivery** (canary releases gated by real
+SLO metrics, not timers); **stateful backup & restore** (Velero against Garage —
+restore is exercised, not assumed); and **supply-chain security** end-to-end (cosign
+signing in CI, Kyverno verifyImages on admit, continuous Trivy scanning + SBOMs). The
+sequenced path lives in [docs/00-architecture.md](docs/00-architecture.md).
+
+## Objectives (measurable, time-bound)
+
+The bars that turn goals into proof. Each is specific, measurable, and has a date — so
+the planner can flag "missed objective" as a gap, not just absence-of-feature. Dates
+are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
+
+- **O1 — Tier 1 next-wave deployed.** By **2026-12-31**, all four next-wave components
+  (Kyverno, Argo Rollouts, Velero, Trivy Operator) are auto-synced ArgoCD
+  `Application`s with their own ADR, real-metric Grafana dashboard, and bats coverage.
+  *Measured by:* presence checks in `make ci` (one Application + one dashboard + one
+  ADR per component).
+- **O2 — Default-deny + PSS-restricted everywhere.** By **2026-09-30**, every namespace
+  either enforces default-deny NetworkPolicy (ADR-0016) **and** PSS-restricted labels
+  (ADR-0017), or has an ADR-cited carve-out in ADR-0017's per-namespace profile table.
+  *Measured by:* `tests/networkpolicy.bats` + `tests/securitycontext.bats` cover every
+  namespace in `gitops/`.
+- **O3 — Stateful DR is exercised.** By **2026-12-31**, `make dr-restore` recovers
+  every stateful namespace (`data`, `tidb`, `capstone`, `vault`) from its latest
+  Velero backup in under 10 minutes wall-clock on the maintainer's hardware.
+  *Measured by:* a bats target that times the restore and fails over budget.
+- **O4 — Every image is signed and verified.** By **2026-12-31**, 100% of images
+  deployed into the cluster are cosign-signed in CI and admitted by a Kyverno
+  `verifyImages` `ClusterPolicy`; an unsigned image push to the capstone Application
+  fails admission. *Measured by:* a CI step that pushes an unsigned image and asserts
+  Kyverno rejection.
+- **O5 — Every always-on component has a real-metric dashboard.** By **2026-09-30**,
+  every Application in `gitops/bootstrap/root-app.yaml`'s auto-synced set has a
+  matching `grafana/dashboards/lab-<name>.json` with at least one panel backed by a
+  real (auto-discovered) data source — no stub dashboards. *Measured by:* a drift
+  check wired into `make ci`.
+- **O6 — Capstone end-to-end under 15 min.** By **2026-12-31**, a fresh `make up` to
+  a Tempo-traced capstone request takes under 15 minutes on the maintainer's hardware,
+  measured by a `make capstone-demo` target that wall-clocks the path.
 
 ## Quality bars (invariants every change must keep true)
 
@@ -67,6 +102,7 @@ in [docs/00-architecture.md](docs/00-architecture.md).
 ## How this drives the ROADMAP
 
 The weekly **planner** routine reads this charter + the actual repo and proposes concrete
-ROADMAP items for the gaps (a target not yet built, a quality bar not yet met, a learning
-objective not yet covered). The every-5h **executor** routine implements one item per
-run. To steer the lab, change the goals here — the roadmap, and then the work, follow.
+ROADMAP items for the gaps (a target not yet built, a quality bar not yet met, a Goal
+not yet covered, an Objective not yet on track for its date). The every-5h **executor**
+routine implements one item per run. To steer the lab, change the goals here — the
+roadmap, and then the work, follow.
