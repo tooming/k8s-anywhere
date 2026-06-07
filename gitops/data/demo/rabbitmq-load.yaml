@@ -20,6 +20,12 @@ spec:
       labels:
         app: rabbitmq-load
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: rabbitmq-load
           image: curlimages/curl:8.10.1
@@ -55,6 +61,16 @@ spec:
                   -d '{"count":10,"ackmode":"ack_requeue_false","encoding":"auto"}' >/dev/null || true
                 sleep 5
               done
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: 10m
@@ -62,3 +78,6 @@ spec:
             limits:
               cpu: 50m
               memory: 48Mi
+      volumes:
+        - name: tmp
+          emptyDir: {}
