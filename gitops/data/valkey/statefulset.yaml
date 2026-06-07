@@ -21,6 +21,13 @@ spec:
       labels:
         app: valkey
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: valkey
           image: valkey/valkey:8.0-alpine
@@ -46,6 +53,13 @@ spec:
                 secretKeyRef:
                   name: valkey-creds
                   key: password
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               cpu: 25m
@@ -66,6 +80,8 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: tmp
+              mountPath: /tmp
         - name: exporter
           image: oliver006/redis_exporter:v1.62.0-alpine
           ports:
@@ -81,6 +97,13 @@ spec:
                 secretKeyRef:
                   name: valkey-creds
                   key: password
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               cpu: 10m
@@ -88,6 +111,9 @@ spec:
             limits:
               cpu: 50m
               memory: 96Mi
+      volumes:
+        - name: tmp
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: data

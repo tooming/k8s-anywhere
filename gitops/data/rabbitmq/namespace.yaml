@@ -1,0 +1,13 @@
+# Explicit data namespace manifest with Pod Security Admission labels (ADR-0017).
+# Placed in the rabbitmq Application path (wave 3) so the PSA enforcement is set
+# before workloads are scheduled. Uses the restricted profile — ADR-0017 §Per-namespace
+# profile records data as restricted-eligible (RabbitMQ and Valkey support non-root).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
