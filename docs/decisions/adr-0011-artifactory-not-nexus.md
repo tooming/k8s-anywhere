@@ -110,6 +110,6 @@ Vault-stored registry credentials flow to GitLab CI via ESO — no plaintext cre
 | Path | Role |
 |------|------|
 | `gitops/platform/artifactory.yaml` | ArgoCD Application — non-auto-synced; chart `jfrog/artifactory-oss` from `https://charts.jfrog.io` |
-| `gitops/platform/artifactory/route.yaml` | Envoy `HTTPRoute` for the Artifactory UI / Docker registry |
+| `gitops/artifactory/route.yaml` | Envoy `HTTPRoute` for the Artifactory UI / Docker registry |
 | `Makefile` | `artifactory-up` and `artifactory-down` targets |
 | `tests/platform.bats` | bats assertion: Artifactory Application has no `automated:` block |
