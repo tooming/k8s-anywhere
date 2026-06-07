@@ -57,11 +57,11 @@ are out of scope for a 12 GB single-host lab and are noted in
 
 ## Files
 
-| Path | Role |
+| ADR-0010 path (historical) | Replaced by (ADR-0018 / current) |
 |------|------|
-| `gitops/platform/redis.yaml` | ArgoCD Application (auto-synced, sync-wave 3) |
-| `gitops/data/redis/statefulset.yaml` | Single-node Redis + redis_exporter sidecar, persistent `/data` |
-| `gitops/data/redis/service.yaml` | Ports 6379 (redis), 9121 (metrics) |
-| `gitops/data/redis/externalsecret.yaml` | `redis-creds` ← Vault `secret/redis/default` |
-| `gitops/data/demo/redis-load.yaml` | Demo client generating real SET/GET/INCR traffic |
-| `grafana/dashboards/lab-redis.json` | "Lab — Redis" dashboard (real metrics) |
+| `gitops/platform/redis.yaml` | `gitops/platform/valkey.yaml` |
+| `gitops/data/redis/statefulset.yaml` | `gitops/data/valkey/statefulset.yaml` |
+| `gitops/data/redis/service.yaml` | `gitops/data/valkey/service.yaml` |
+| `gitops/data/redis/externalsecret.yaml` | `gitops/data/valkey/externalsecret.yaml` |
+| `gitops/data/demo/redis-load.yaml` | `gitops/data/demo/valkey-load.yaml` |
+| `grafana/dashboards/lab-redis.json` | `grafana/dashboards/lab-valkey.json` |
