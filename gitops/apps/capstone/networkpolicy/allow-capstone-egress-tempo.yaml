@@ -1,0 +1,26 @@
+# Allow egress from the capstone pod to Tempo for OTLP HTTP traces (ADR-0016).
+# The capstone app sends spans via OTEL_EXPORTER_OTLP_ENDPOINT pointing to
+# tempo.observability.svc.cluster.local:4318 (OTLP HTTP). The default-deny-all
+# floor blocks this egress without an explicit allow.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-capstone-egress-tempo
+  namespace: capstone
+spec:
+  podSelector:
+    matchLabels:
+      app: capstone
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 4318
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              app: tempo
