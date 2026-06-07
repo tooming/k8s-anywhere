@@ -151,8 +151,7 @@ No existing ADR is contradicted; this is a new decision in a domain (CNI choice)
 
 | Path | Role |
 |------|------|
-| `gitops/platform/cilium.yaml` | Non-auto-synced ArgoCD `Application`, chart `cilium/cilium` ≥ v1.16, namespace `kube-system`. |
-| `gitops/network/cilium-config.yaml` | `kubeProxyReplacement: true`, `hubble.enabled: false`. |
+| `gitops/platform/cilium.yaml` | Non-auto-synced ArgoCD `Application`, chart `cilium/cilium` ≥ v1.16, namespace `kube-system`; inline `valuesObject` sets `kubeProxyReplacement: true`, `hubble.enabled: false`. |
 | `Makefile` | `cilium-up` / `cilium-down` targets. |
 | `infra/live/local/cluster/terragrunt.hcl` | Flip `disable_default_cni = true`. |
 | `docs/DR.md` | "After `make up`, run `make cilium-up` before any workload" note. |
