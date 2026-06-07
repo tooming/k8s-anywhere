@@ -148,7 +148,7 @@ You review and merge plan PRs, same as implementation PRs.
 > `baseline`. Cilium is already active (PR #112), so the NetworkPolicy
 > prerequisite is met.
 
-- [ ] 🟢 **NetworkPolicy fan-out — `capstone` namespace** (ADR-0016 §4
+- [x] 🟢 **NetworkPolicy fan-out — `capstone` namespace** (ADR-0016 §4
   fan-out; closes the capstone pilot loop alongside the existing PSS
   pilot). New overlay at `gitops/apps/capstone/networkpolicy/kustomization.yaml`
   referencing the two shared templates under `gitops/network/policies/`
@@ -168,7 +168,7 @@ You review and merge plan PRs, same as implementation PRs.
   referenced, `policyTypes` shape, three per-workload allow rules
   present). Update `docs/dependency-tree.md` with a capstone
   NetworkPolicy note. ADR-0016 prerequisite (Cilium, ADR-0014) already
-  active.
+  active. (auto/networkpolicy-capstone-fanout)
 
 - [ ] 🟢 **PSS-restricted fan-out — `data` namespace** (ADR-0017
   §Staged rollout; closes the `data` pilot loop alongside the existing
@@ -305,6 +305,7 @@ in *Done* below._
 
 ## Done
 <!-- Autonomous runs: move completed items here with their PR number. -->
+- [x] **NetworkPolicy fan-out — `capstone` namespace** (ADR-0016 §4 fan-out) — Added Kustomize overlay at `gitops/apps/capstone/networkpolicy/` (kustomization.yaml + two per-workload allow rules) pulling the shared `default-deny.yaml` and `allow-dns-and-apiserver.yaml` baseline templates. `allow-capstone-ingress-from-gateway.yaml` permits ingress on TCP 8080 from Envoy proxy pods (`app.kubernetes.io/component=proxy`) in `envoy-gateway-system`. `allow-capstone-egress-tempo.yaml` permits egress on TCP 4318 (OTLP HTTP) to Tempo pods (`app=tempo`) in `observability`. New auto-synced ArgoCD `Application` `gitops/platform/capstone-networkpolicy.yaml` (wave 4, `--load-restrictor LoadRestrictionsNone`). 17 new bats tests in `tests/networkpolicy.bats` (kustomization structure, per-workload allow rules, port and namespace selectors, ArgoCD Application shape). `docs/dependency-tree.md` updated with a capstone NetworkPolicy note. Closes the capstone defence-in-depth layer alongside the existing PSS pilot. (auto/networkpolicy-capstone-fanout)
 - [x] **Lab — Inkless Kafka dashboard: real broker/consumer metrics** — Extended `grafana/dashboards/lab-inkless.json` with five `kafka_exporter`-sourced queries: `kafka_brokers{job="inkless"}` (broker up count), `kafka_topic_partitions` (topic count), `kafka_topic_partition_under_replicated_partition` (replication health), `kafka_topic_partition_current_offset` (throughput, rate-based), and `kafka_consumergroup_lag` (top-20 by lag). New Alloy scrape job `prometheus.scrape "inkless"` in `gitops/platform/observability-alloy.yaml` targets the kafka-exporter sidecar at `inkless.inkless.svc.cluster.local:9308`. `tests/inkless.bats` asserts the broker (`kafka_brokers`) and consumer-lag (`kafka_consumergroup_lag`) queries are present and that the kafka-exporter sidecar is declared on the StatefulSet. ADR-0004: all data from real metrics. (copilot/get-metrics-from-inkless, PR #101)
 - [x] **ADR-0018 — Valkey as the lab's cache / key-value store (supersedes ADR-0010)** — Industry-news-writer's first digest (`docs/industry/2026-W23-digest.md`) confirmed the supersede call: Valkey on BSD-3 under Linux Foundation governance is now the cloud-provider default (AWS ElastiCache for Valkey GA Oct 2024; GCP Memorystore added Valkey support). ADR-0018 written; manifests swapped at `gitops/platform/valkey.yaml` + `gitops/data/valkey/` (single-node StatefulSet with `redis_exporter` sidecar, Service on 6379/9121, ExternalSecret). Vault path `secret/valkey/default` seeded; `gitops/data/demo/valkey-load.yaml` generates continuous real SET/GET/INCR traffic; `grafana/dashboards/lab-valkey.json` renamed (queries unchanged — `redis_exporter` metric names are identical against Valkey). The pilot NetworkPolicy overlay's `allow-valkey-ingress.yaml` (TCP 6379, 9121) already references the new workload. Closes issue #94. (copilot/gt-94-update-documentation, PR #106; exporter-memory follow-up fix/valkey-exporter-memory, PR #109)
 - [x] **securityContext hardening — `capstone` pilot** (ADR-0017, RFC #83) — Added `gitops/apps/capstone/namespace.yaml` (explicit `Namespace` manifest with four PSA `restricted` labels: `enforce`, `enforce-version: latest`, `warn`, `audit`). Updated `gitops/apps/capstone/deployment.yaml` with full PSS-restricted securityContext: pod-level (`runAsNonRoot: true`, `runAsUser/runAsGroup/fsGroup: 10001`, `seccompProfile.type: RuntimeDefault`) and container-level (`allowPrivilegeEscalation: false`, `privileged: false`, `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`); added `emptyDir` volume + `/tmp` volumeMount for the writable ephemeral path required by `readOnlyRootFilesystem: true`. 11 clusterless bats tests in `tests/securitycontext.bats` (namespace PSA label checks, deployment runAsNonRoot, seccompProfile, allowPrivilegeEscalation, readOnlyRootFilesystem, capabilities.drop, no-privileged). ADR-0017 (pod security standards restricted) already adopted. (copilot/reviewer-idle-no-agent-prs)

@@ -1,0 +1,15 @@
+# NetworkPolicy Kustomize overlay for the capstone namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates and adds capstone-specific allow rules for
+# the three real network flows: ingress from Envoy Gateway (TCP 8080) and egress
+# to Tempo in the observability namespace (OTLP HTTP TCP 4318).
+# Wired into gitops/platform/capstone-networkpolicy.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: capstone
+
+resources:
+  - ../../../network/policies/default-deny.yaml
+  - ../../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-capstone-ingress-from-gateway.yaml
+  - allow-capstone-egress-tempo.yaml
