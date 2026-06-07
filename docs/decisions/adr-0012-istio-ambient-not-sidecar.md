@@ -1,7 +1,7 @@
 # ADR-0012 — Istio ambient mesh + Kiali on-demand (not sidecar)
 
-**Status.** Adopted. Decision taken in RFC #59. Manifests pending (next two ROADMAP items);
-will live in `gitops/istio/` and `gitops/platform/istio-*.yaml` /
+**Status.** Adopted. Decision taken in RFC #59. Manifests landed in
+`gitops/platform/istiod.yaml`, `gitops/platform/ztunnel.yaml`, and peers /
 `gitops/platform/kiali.yaml` (non-auto-synced ArgoCD `Application`s) and brought up
 with `make istio-up` / `make kiali-up`.
 
@@ -111,16 +111,15 @@ running Istio + Longhorn + Artifactory simultaneously would be tight. Therefore:
 
 ---
 
-## Files (once the manifest items land)
+## Files
 
 | Path | Role |
 |------|------|
 | `gitops/platform/istio-base.yaml` | ArgoCD Application — chart `istio/base` (CRDs + namespace) |
-| `gitops/platform/istio-istiod.yaml` | ArgoCD Application — chart `istio/istiod` (control plane) |
+| `gitops/platform/istiod.yaml` | ArgoCD Application — chart `istio/istiod` (control plane) |
 | `gitops/platform/istio-cni.yaml` | ArgoCD Application — chart `istio/cni` (CNI plugin) |
-| `gitops/platform/istio-ztunnel.yaml` | ArgoCD Application — chart `istio/ztunnel` (node-level L4 proxy) |
+| `gitops/platform/ztunnel.yaml` | ArgoCD Application — chart `istio/ztunnel` (node-level L4 proxy) |
 | `gitops/platform/kiali.yaml` | ArgoCD Application — chart `kiali-server` from `https://kiali.org/helm-charts` |
-| `gitops/istio/` | Chart values overrides or extra manifests (if needed) |
-| `gitops/network/kiali-route.yaml` | Envoy `HTTPRoute` for the Kiali UI |
+| `gitops/kiali/route.yaml` | Envoy `HTTPRoute` for the Kiali UI |
 | `Makefile` | `istio-up`, `istio-down`, `kiali-up`, `kiali-down` targets |
 | `tests/platform.bats` | bats assertions: no `automated:` block on any Istio/Kiali Application |
