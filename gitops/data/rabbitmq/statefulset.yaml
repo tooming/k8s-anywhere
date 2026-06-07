@@ -78,6 +78,8 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/rabbitmq
+            - name: logs
+              mountPath: /var/log/rabbitmq
             - name: config
               mountPath: /etc/rabbitmq/enabled_plugins
               subPath: enabled_plugins
@@ -90,6 +92,8 @@ spec:
         - name: config
           configMap:
             name: rabbitmq-config
+        - name: logs
+          emptyDir: {}
         - name: tmp
           emptyDir: {}
   volumeClaimTemplates:
