@@ -1,0 +1,28 @@
+# Allow OTLP HTTP ingress to Tempo pods from trace-producing namespaces (ADR-0016).
+# Two always-on workloads ship spans to tempo.observability.svc.cluster.local:4318
+# via the standard OTEL_EXPORTER_OTLP_ENDPOINT env var:
+#   capstone app (namespace capstone) — capstone deployment (capstone step 4);
+#   HotROD demo app (namespace lab-demo) — sends live example traces continuously.
+# Without this allow, the default-deny floor silently drops incoming trace data.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-tempo-ingress-otlp
+  namespace: observability
+spec:
+  podSelector:
+    matchLabels:
+      app: tempo
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 4318
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: capstone
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: lab-demo
