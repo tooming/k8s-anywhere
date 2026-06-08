@@ -1,0 +1,23 @@
+# NetworkPolicy Kustomize overlay for the observability namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates and adds observability-specific allow rules
+# for the LGTMP stack's network flows:
+#   - intra-namespace traffic (Alloy → Mimir/Loki/Pyroscope writes, Grafana → backends,
+#     KSM ← Alloy scrape, LGTMP self-metric scrapes);
+#   - Grafana HTTPRoute ingress from Envoy Gateway proxy pods (TCP 3000);
+#   - Tempo OTLP HTTP ingress from capstone + lab-demo trace producers (TCP 4318);
+#   - Alloy external scrape egress (argocd, data, envoy-gateway-system, inkless, nodes);
+#   - LGTMP S3-backend writes + Alloy metrics scrape to storage namespace (TCP 3900/3903).
+# Wired into gitops/platform/observability-networkpolicy.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-intra-namespace.yaml
+  - allow-grafana-ingress-from-gateway.yaml
+  - allow-tempo-ingress-otlp.yaml
+  - allow-alloy-egress-external.yaml
+  - allow-egress-storage.yaml

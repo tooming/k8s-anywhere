@@ -1,0 +1,35 @@
+# observability-networkpolicy — default-deny + allowlist NetworkPolicies for the
+# observability namespace (ADR-0016 §4 fan-out; covers the LGTMP stack).
+# Applies the shared baseline templates (default-deny-all, allow-dns-and-apiserver)
+# plus per-workload allow rules for the LGTMP stack's network flows:
+#   intra-namespace traffic; Grafana HTTPRoute ingress (TCP 3000);
+#   Tempo OTLP HTTP ingress from trace producers (TCP 4318);
+#   Alloy external scrape egress; LGTMP → Garage S3 + metrics egress.
+# ALWAYS-ON: automated sync alongside the LGTMP Applications (same namespace).
+# The kustomization references templates from ../../network/policies/ — the
+# kustomize.buildOptions flag lifts the out-of-tree load restriction.
+# Wave 4: after LGTMP components (wave 2) have created the observability namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/observability/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
