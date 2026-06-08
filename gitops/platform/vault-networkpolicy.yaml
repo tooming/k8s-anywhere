@@ -1,0 +1,34 @@
+# vault-networkpolicy — default-deny + allowlist NetworkPolicies for the vault namespace
+# (ADR-0016 §4 fan-out; protects the secrets plane). Applies the shared baseline templates
+# (default-deny-all, allow-dns-and-apiserver) plus per-workload allow rules for the Vault
+# server's two real ingress flows: ESO controller (k8s auth + secret reads on TCP 8200)
+# and Envoy Gateway proxy (vault.127.0.0.1.nip.io HTTPRoute on TCP 8200).
+# The allow-dns-and-apiserver baseline already covers Vault's k8s-auth call to the API.
+# ALWAYS-ON: automated sync alongside the vault Application (same namespace).
+# The kustomization references templates from ../../network/policies/ — the
+# kustomize.buildOptions flag lifts the out-of-tree load restriction for this overlay.
+# Wave 4: after vault (wave 1) and vault-extras (wave 2) have created the vault namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/vault/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
