@@ -1,0 +1,16 @@
+# NetworkPolicy Kustomize overlay for the vault namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates and adds vault-specific allow rules for
+# the two real ingress flows: ingress from ESO controller (k8s auth + secret reads
+# on TCP 8200) and ingress from Envoy Gateway proxy (UI HTTPRoute on TCP 8200).
+# The allow-dns-and-apiserver baseline already covers Vault's k8s-auth API calls.
+# Wired into gitops/platform/vault-networkpolicy.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: vault
+
+resources:
+  - ../../../network/policies/default-deny.yaml
+  - ../../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-vault-from-eso.yaml
+  - allow-vault-from-gateway.yaml

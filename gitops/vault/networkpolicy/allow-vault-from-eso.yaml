@@ -1,0 +1,28 @@
+# Allow ingress to the Vault server pod from the ESO controller (ADR-0016).
+# The External Secrets Operator controller authenticates to Vault via k8s auth
+# and reads KV secrets over TCP 8200. Without this allow, the default-deny-all
+# floor blocks ESO from reaching Vault, breaking secret sync for all ExternalSecrets
+# in the cluster (grafana, garage, mimir, loki, tempo, pyroscope, rabbitmq, valkey…).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-vault-from-eso
+  namespace: vault
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: vault
+      component: server
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8200
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: external-secrets
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: external-secrets

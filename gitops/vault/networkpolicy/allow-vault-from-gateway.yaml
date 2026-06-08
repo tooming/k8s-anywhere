@@ -1,0 +1,27 @@
+# Allow ingress to the Vault server pod from Envoy Gateway proxy pods (ADR-0016).
+# The vault.127.0.0.1.nip.io HTTPRoute (gitops/vault/httproute.yaml) routes traffic
+# from Envoy proxy pods in envoy-gateway-system to the Vault UI on TCP 8200.
+# Without this allow, the default-deny-all floor blocks proxied UI traffic.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-vault-from-gateway
+  namespace: vault
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: vault
+      component: server
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8200
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: proxy
