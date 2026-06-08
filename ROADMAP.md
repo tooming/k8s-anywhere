@@ -128,24 +128,26 @@ You review and merge plan PRs, same as implementation PRs.
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
 > through to the next.
 >
-> **Planner note (2026-06-06 — fan-out wave):** the previous *Now / next* lane is
-> empty — the Inkless dashboard `kafka_exporter` extension landed in PR #101 and
-> the Valkey swap landed in PR #106 (ADR-0018 supersedes ADR-0010), both moved to
-> *Done* below alongside the dashboard/Cilium/pilot items that had stayed checked
-> in-place. Issue #121 (executor idle — needs work) records that starvation;
-> refilling the lane here makes it obsolete.
+> **Planner note (2026-06-08 — fan-out queue refill):** the 2026-06-06 wave
+> partly landed — capstone NetworkPolicy (#130) and data PSS (#139) are *Done*,
+> vault NetworkPolicy is in flight as PR #147. With observability NP + the PSS
+> label-only carve-out as the only remaining items, the lane would starve
+> within ~2 executor cycles. This refill continues the **ADR-0016 §4 fan-out
+> order** (`argocd`, `vault`✓in-flight, `observability`✓queued, `storage`,
+> `lab-gateway`, `moto`, `ack-system`; `tidb`/`tidb-admin` deferred — on-demand
+> namespaces) and the **ADR-0017 §Staged rollout** continuation (PSS-restricted
+> layer-1+layer-2 for `observability`, the largest namespace by workload
+> count). All items below remain 🟢 — both ADRs are adopted (WAYS-OF-WORKING.md
+> §2: the architect's binding decision *is* the approval).
 >
-> The next wave is the **ADR-0016 NetworkPolicy fan-out** (per its §4 staged
-> rollout: `data` pilot done, fan-out to remaining namespaces one PR at a time)
-> and the **ADR-0017 Pod Security Standards fan-out** (per its §Staged rollout:
-> `capstone` pilot done, fan-out + label-only carve-outs follow). Both ADRs are
-> already adopted, so per WAYS-OF-WORKING.md §2 these are 🟢 — the architect's
-> binding decision *is* the approval, no further RFC needed. The five items
-> below are ordered to (1) close each pilot loop by giving the other pilot its
-> missing layer, (2) protect the secrets plane, (3) cover the LGTMP stack, and
-> (4) record the label-only carve-outs for namespaces ADR-0017 keeps on
-> `baseline`. Cilium is already active (PR #112), so the NetworkPolicy
-> prerequisite is met.
+> **O2 clock note.** CHARTER **Objective O2** (default-deny NetworkPolicy +
+> PSS-restricted across every namespace) is dated **2026-09-30** — ~3.5
+> months out. After this refill, the remaining always-on gaps after these
+> items merge are: PSS for `argocd` (🟡, see *Cross-cutting* — touches
+> `infra/modules/argocd/values.yaml`), PSS for `moto`/`ack-system`/`lab-gateway`
+> (🟢, follow-on planner item), NP for `tidb`/`tidb-admin` (🟢, lower-priority
+> since on-demand). The next planner run should top the lane back up once
+> these items burn down.
 
 - [x] 🟢 **NetworkPolicy fan-out — `capstone` namespace** (ADR-0016 §4
   fan-out; closes the capstone pilot loop alongside the existing PSS
@@ -244,6 +246,133 @@ You review and merge plan PRs, same as implementation PRs.
   `tests/securitycontext.bats` with four assertions (one per labelled
   namespace).
 
+- [ ] 🟢 **NetworkPolicy fan-out — `storage` namespace (Garage)**
+  (ADR-0016 §4 fan-out; Garage is the lab's S3 backplane for Mimir /
+  Loki / Tempo / Pyroscope / Inkless / Artifactory — a permissive
+  default leaks across every observability and storage tenant). New
+  overlay at `gitops/storage/networkpolicy/kustomization.yaml` pulling
+  the two shared baseline templates. Per-workload allows the executor
+  enumerates from the live integration map:
+  `allow-garage-s3-from-observability.yaml` (ingress TCP 3900 + 3902 +
+  3903 from the four LGTMP writers in `observability` —
+  `mimir`/`loki`/`tempo`/`pyroscope` pod-label selectors) and
+  `allow-garage-s3-from-inkless.yaml` (ingress TCP 3900 from `inkless`
+  namespace — KIP-1150 diskless Kafka uses Garage for log segments).
+  Intra-namespace gossip TCP 3901 between Garage pods is allowed by the
+  baseline (no explicit rule needed — same-namespace pods are not
+  denied by `default-deny-all` once the deny is paired with explicit
+  rules). Artifactory is on-demand so its allow lands with the
+  artifactory bring-up RFC, not here. No new egress allow needed
+  beyond the baseline (Garage doesn't egress to other namespaces).
+  New auto-synced `Application`
+  `gitops/platform/storage-networkpolicy.yaml` (sync-wave 4, same
+  `LoadRestrictionsNone` pattern as the existing
+  `data-networkpolicy`/`capstone-networkpolicy`/`vault-networkpolicy`).
+  Extend `tests/networkpolicy.bats` with storage-overlay assertions.
+  Update `docs/dependency-tree.md` with a storage NetworkPolicy note.
+
+- [ ] 🟢 **NetworkPolicy fan-out — `argocd` namespace** (ADR-0016 §4
+  fan-out; ArgoCD is the entire GitOps reconcile plane — the highest
+  blast-radius non-secrets namespace). The namespace is Terraform-
+  created at bootstrap (`infra/modules/argocd/`) so the **NetworkPolicy
+  application itself stays 🟢** — the policy is a regular ArgoCD
+  Application syncing a Kustomize overlay to the existing namespace.
+  New overlay at `gitops/argocd/networkpolicy/kustomization.yaml`
+  pulling the two shared templates. Per-workload allows the executor
+  enumerates from the live ArgoCD component map: ingress TCP 8080 to
+  `argocd-server` from `envoy-gateway-system` proxy pods (for the
+  `argocd.127.0.0.1.nip.io` HTTPRoute); intra-namespace ingress from
+  `argocd-application-controller` and `argocd-server` to
+  `argocd-repo-server` TCP 8081 and to `argocd-redis` TCP 6379;
+  intra-namespace ingress to `argocd-applicationset-controller` TCP
+  7000 from the application controller. Egress: GitLab on the host
+  (`host.k3d.internal:8929` — `to.ipBlock` covering the k3d host
+  network range; the planner-derived address is the k3d host bridge
+  CIDR, executor reads it from `infra/live/local/cluster/`) for repo
+  fetches; egress to the k8s API for resource reconcile (covered by
+  the `allow-dns-and-apiserver` baseline). New auto-synced
+  `Application` `gitops/platform/argocd-networkpolicy.yaml` (sync-wave
+  4, `LoadRestrictionsNone`). Extend `tests/networkpolicy.bats`.
+  Update `docs/dependency-tree.md`. **Note for executor:** this PR
+  hardens NetworkPolicy only — the *PSS-restricted* labels +
+  `valuesObject.podSecurityContext` for the argocd Helm release are
+  🟡 (`infra/` change) and tracked separately in *Cross-cutting*
+  below.
+
+- [ ] 🟢 **NetworkPolicy fan-out — `moto` + `ack-system` namespaces**
+  (ADR-0016 §4 fan-out; bundled because the two namespaces are a
+  tightly-coupled mock-cloud-control-plane pair — ACK controllers in
+  `ack-system` call moto's HTTP API in `moto`, and KRO in `ack-system`
+  reconciles `ResourceGraphDefinition`s against the ACK controllers).
+  Two overlays:
+  `gitops/moto/networkpolicy/kustomization.yaml` — baseline + ingress
+  TCP 5000 from `ack-system` pods (ACK controllers) +
+  `lab-demo`/`capstone` if any demo workload hits moto directly (check
+  live ACK demo bucket flow); and
+  `gitops/ack/networkpolicy/kustomization.yaml` — baseline + egress
+  TCP 5000 to `moto` namespace + intra-namespace ingress between ACK
+  controllers and KRO. Per-workload allows the executor enumerates
+  from the deployed Applications (`ack-s3`, `kro`, `ack-resources`,
+  `kro-resources`). Two new auto-synced `Application`s
+  (`gitops/platform/moto-networkpolicy.yaml`,
+  `gitops/platform/ack-networkpolicy.yaml`), both sync-wave 4. Extend
+  `tests/networkpolicy.bats`. Update `docs/dependency-tree.md`.
+  **Note for executor:** if this PR crosses the ~400-line cap per
+  WAYS-OF-WORKING.md §3, ship `moto` first and file `ack-system` as a
+  follow-up.
+
+- [ ] 🟢 **NetworkPolicy fan-out — `lab-gateway` namespace** (ADR-0016
+  §4 fan-out; the Gateway listener namespace). The namespace today
+  holds only the Gateway CR (no pods — Envoy proxy pods live in
+  `envoy-gateway-system`), so this PR is small but future-proofs the
+  namespace: any pod added later inherits the default-deny floor.
+  New overlay at `gitops/network/networkpolicy/kustomization.yaml`
+  (the namespace's manifest source path is `gitops/network/` per
+  `gitops/platform/lab-gateway.yaml`) pulling only the two shared
+  baseline templates (`default-deny.yaml`,
+  `allow-dns-and-apiserver.yaml`) — no per-workload allows needed.
+  New auto-synced `Application`
+  `gitops/platform/lab-gateway-networkpolicy.yaml` (sync-wave 4,
+  `LoadRestrictionsNone`). Extend `tests/networkpolicy.bats` with
+  lab-gateway-overlay assertions (templates referenced, no extra
+  rules, only the baseline). Update `docs/dependency-tree.md`. **Note
+  for executor:** Envoy proxy pods themselves live in
+  `envoy-gateway-system` — that namespace's NetworkPolicy will be a
+  separate, larger item once the architect RFCs the proxy/data-plane
+  egress requirements (it's effectively the cluster's ingress
+  gateway, so its egress fan-out matches every backend Service).
+
+- [ ] 🟢 **PSS-restricted fan-out — `observability` namespace** (ADR-0017
+  §Staged rollout; LGTMP stack — the largest namespace by workload
+  count). ADR-0017's carve-out table records `observability` as
+  `restricted`-eligible. Per the data-PSS pilot pattern: add explicit
+  `gitops/observability/namespace.yaml` (or graft labels onto whichever
+  existing namespace manifest the wave-2 observability Applications
+  create) with the four PSA labels at `restricted`. Then patch the
+  Helm-chart `valuesObject` on each LGTMP Application
+  (`gitops/platform/observability-mimir.yaml`,
+  `observability-loki.yaml`, `observability-tempo.yaml`,
+  `observability-pyroscope.yaml`, `observability-grafana.yaml`,
+  `observability-alloy.yaml`, `observability-ksm.yaml`,
+  `observability-node-exporter.yaml`) with chart-specific
+  `podSecurityContext` / `containerSecurityContext` (or chart-named
+  equivalent — Grafana uses `securityContext` under `grafana:`,
+  Mimir/Loki/Tempo/Pyroscope under their respective top-level
+  components; executor checks each chart). Per ADR-0017 §Layer 1:
+  pod-level `runAsNonRoot: true`, non-zero
+  `runAsUser`/`runAsGroup`/`fsGroup`, `seccompProfile.type:
+  RuntimeDefault`; container-level `allowPrivilegeEscalation: false`,
+  `readOnlyRootFilesystem: true` (with `emptyDir` overlays where each
+  chart writes), `capabilities.drop: [ALL]`. **node-exporter is a
+  DaemonSet that needs `hostPID`/`hostNetwork` to read host metrics —
+  ADR-0017 §Per-workload field carve-outs covers this**; the executor
+  flags it in the PR and applies the restricted profile only to the
+  pods that can take it. **If the PR crosses ~400 lines**, split as:
+  PR 1 = namespace label + Grafana + Alloy + KSM; follow-up PRs split
+  by chart family. New `tests/securitycontext-observability.bats`
+  asserting the namespace PSA labels and per-workload securityContext
+  fields. Update `docs/dependency-tree.md`.
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
@@ -291,12 +420,76 @@ You review and merge plan PRs, same as implementation PRs.
   `:8080/metrics`-style port, do NOT add a scrape job in this PR — file that
   as a follow-up planner item; this PR stays clusterless-verifiable.)*
 
+- [ ] 🟡 **Kyverno admission engine** (CHARTER **Objective O1**, due
+  **2026-12-31**: Kyverno is one of four Tier 1 next-wave components
+  that must be auto-synced ArgoCD `Application`s with their own ADR +
+  real-metric Grafana dashboard + bats coverage by the deadline).
+  Kyverno also gates **Objective O4** (cosign-signed images verified
+  at admission via `verifyImages` ClusterPolicy). Awaiting an
+  architect RFC for: (a) Helm chart source + version + footprint vs.
+  the 12 GB always-on budget; (b) the supporting ADR (likely
+  ADR-0019); (c) the initial ClusterPolicy set — validation
+  (PSS-restricted as a backstop to ADR-0017), mutation (e.g. inject
+  pod-security defaults), and the `verifyImages` policy for O4; (d)
+  the dashboard scrape target (Kyverno exposes
+  `/metrics` on TCP 8000). Per WAYS-OF-WORKING.md §2 this is 🟡 —
+  growing the always-on footprint + security-adjacent + new
+  dependency. **Executor must not pick this up unprompted.** The
+  planner will split into 🟢 items the run after the RFC issue lands.
+
+- [ ] 🟡 **Argo Rollouts** (CHARTER **Objective O1**, due **2026-12-31**:
+  the second of four Tier 1 next-wave components — supports the
+  CHARTER goal *progressive delivery (canary releases gated by real
+  SLO metrics, not timers)* and the capstone-vision *Argo Rollouts
+  canaries on real Mimir SLOs → Envoy routes it*). Awaiting an
+  architect RFC for: (a) Helm chart vs. install YAML; (b) ADR
+  (probably ADR-0020); (c) the AnalysisTemplate sourced from Mimir
+  (`prometheus` provider) — the Mimir scrape endpoint already exists
+  per the Mimir Application; (d) the Envoy Gateway traffic-split
+  integration (Argo Rollouts supports Gateway API via
+  `gatewayAPI.gatewayClass` — ADR-0008 stays compatible); (e)
+  dashboard from real Rollouts controller metrics. 🟡 — new always-on
+  component + new dependency + Makefile/CI integration.
+
+- [ ] 🟡 **Velero** (CHARTER **Objective O1**, due **2026-12-31**: the
+  third Tier 1 next-wave component; also **gates Objective O3**
+  (`make dr-restore` recovers every stateful namespace —
+  `data`/`tidb`/`capstone`/`vault` — from its latest Velero backup in
+  under 10 min). Awaiting an architect RFC for: (a) Helm chart vs.
+  manifest install; (b) ADR (probably ADR-0021); (c) the Garage S3
+  bucket layout (Velero backups go to a `velero` bucket in the
+  existing Garage instance — ADR-0002); (d) the `Schedule` set — one
+  per stateful namespace per CHARTER Core Value *Stateful DR is
+  exercised*; (e) the dashboard panels showing last-backup-age per
+  Schedule (real Velero `/metrics`); (f) the `make dr-restore` make
+  target that ties this to O3. 🟡 — new always-on component +
+  Makefile change + security-adjacent (Garage credentials).
+
+- [ ] 🟡 **Trivy Operator** (CHARTER **Objective O1**, due
+  **2026-12-31**: the fourth Tier 1 next-wave component; covers the
+  CHARTER goal *supply-chain security end-to-end (Trivy continuous
+  scanning + SBOMs)*). Awaiting an architect RFC for: (a) Helm chart
+  + version + footprint; (b) ADR (probably ADR-0022); (c) the
+  `VulnerabilityReport` / `ConfigAuditReport` CR set the operator
+  emits; (d) the SBOM generation flow (Trivy can emit SBOMs as CR
+  attachments — wire to the capstone GitLab CI build for the
+  *signed-and-scanned* capstone vision); (e) dashboard showing
+  CVE-by-severity counts per workload from real
+  `trivy_image_vulnerabilities` metrics. 🟡 — new always-on
+  component + new dependency.
+
 _Future 🟡 entries land here when the architect routine files a new RFC issue
-but the planner hasn't yet split it. The two prior 🟡 entries (NetworkPolicy
-default-deny, securityContext hardening) have been groomed into the 🟢
-fan-out items in *Now / next* above (ADR-0016 and ADR-0017 are adopted). The
-ADR-0010 Redis→Valkey swap (issue #94) landed as ADR-0018 in PR #106 and is
-in *Done* below._
+but the planner hasn't yet split it. The four entries above are CHARTER **O1**
+placeholders — the architect routine (weekly Tue) needs to file an `rfc`-
+labelled issue for each. The two prior 🟡 entries (NetworkPolicy default-deny,
+securityContext hardening) have been groomed into the 🟢 fan-out items in
+*Now / next* above (ADR-0016 and ADR-0017 are adopted). The ADR-0010
+Redis→Valkey swap (issue #94) landed as ADR-0018 in PR #106 and is in *Done*
+below. A separate 🟡 entry for **PSS-restricted hardening of the `argocd`
+namespace** (touches `infra/modules/argocd/values.yaml` per WAYS-OF-WORKING.md
+§2 — `infra/` bootstrap change) is implicit in the O2 clock-note above; the
+planner will surface it as its own item once the rest of the 🟢 PSS fan-out
+burns down._
 
 ---
 
