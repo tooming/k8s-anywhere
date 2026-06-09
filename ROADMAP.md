@@ -420,7 +420,7 @@ You review and merge plan PRs, same as implementation PRs.
   `:8080/metrics`-style port, do NOT add a scrape job in this PR — file that
   as a follow-up planner item; this PR stays clusterless-verifiable.)*
 
-- [ ] 🟡 **Kyverno admission engine** (CHARTER **Objective O1**, due
+- [ ] 🟡 **Kyverno admission engine** (RFC #153) (CHARTER **Objective O1**, due
   **2026-12-31**: Kyverno is one of four Tier 1 next-wave components
   that must be auto-synced ArgoCD `Application`s with their own ADR +
   real-metric Grafana dashboard + bats coverage by the deadline).
@@ -437,7 +437,7 @@ You review and merge plan PRs, same as implementation PRs.
   dependency. **Executor must not pick this up unprompted.** The
   planner will split into 🟢 items the run after the RFC issue lands.
 
-- [ ] 🟡 **Argo Rollouts** (CHARTER **Objective O1**, due **2026-12-31**:
+- [ ] 🟡 **Argo Rollouts** (RFC #154) (CHARTER **Objective O1**, due **2026-12-31**:
   the second of four Tier 1 next-wave components — supports the
   CHARTER goal *progressive delivery (canary releases gated by real
   SLO metrics, not timers)* and the capstone-vision *Argo Rollouts
@@ -451,7 +451,7 @@ You review and merge plan PRs, same as implementation PRs.
   dashboard from real Rollouts controller metrics. 🟡 — new always-on
   component + new dependency + Makefile/CI integration.
 
-- [ ] 🟡 **Velero** (CHARTER **Objective O1**, due **2026-12-31**: the
+- [ ] 🟡 **Velero** (RFC #155) (CHARTER **Objective O1**, due **2026-12-31**: the
   third Tier 1 next-wave component; also **gates Objective O3**
   (`make dr-restore` recovers every stateful namespace —
   `data`/`tidb`/`capstone`/`vault` — from its latest Velero backup in
@@ -465,7 +465,7 @@ You review and merge plan PRs, same as implementation PRs.
   target that ties this to O3. 🟡 — new always-on component +
   Makefile change + security-adjacent (Garage credentials).
 
-- [ ] 🟡 **Trivy Operator** (CHARTER **Objective O1**, due
+- [ ] 🟡 **Trivy Operator** (RFC #156) (CHARTER **Objective O1**, due
   **2026-12-31**: the fourth Tier 1 next-wave component; covers the
   CHARTER goal *supply-chain security end-to-end (Trivy continuous
   scanning + SBOMs)*). Awaiting an architect RFC for: (a) Helm chart
@@ -479,9 +479,11 @@ You review and merge plan PRs, same as implementation PRs.
   component + new dependency.
 
 _Future 🟡 entries land here when the architect routine files a new RFC issue
-but the planner hasn't yet split it. The four entries above are CHARTER **O1**
-placeholders — the architect routine (weekly Tue) needs to file an `rfc`-
-labelled issue for each. The two prior 🟡 entries (NetworkPolicy default-deny,
+but the planner hasn't yet split it. The four entries above all have RFC
+issues filed by the architect routine (2026-W23): Kyverno → #153 (ADR-0019);
+Argo Rollouts → #154 (ADR-0020); Velero → #155 (ADR-0021); Trivy Operator →
+#156 (ADR-0022). The next planner run grooms each into 🟢 single-PR items.
+The two prior 🟡 entries (NetworkPolicy default-deny,
 securityContext hardening) have been groomed into the 🟢 fan-out items in
 *Now / next* above (ADR-0016 and ADR-0017 are adopted). The ADR-0010
 Redis→Valkey swap (issue #94) landed as ADR-0018 in PR #106 and is in *Done*
