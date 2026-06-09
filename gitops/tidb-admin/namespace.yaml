@@ -1,10 +1,10 @@
-# PSA carve-out: TiDB Operator renders pods that require elevated capabilities
-# (TiKV needs SYS_PTRACE for profiling; PD uses extended scheduling interfaces).
-# ADR-0017 §Per-namespace profile records tidb as baseline-only.
+# PSA carve-out: the TiDB Operator controller and scheduler pods need elevated
+# capabilities (admission webhook, privileged job runners). ADR-0017 §Per-namespace
+# profile records tidb-admin as baseline-only.
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: tidb
+  name: tidb-admin
   labels:
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/enforce-version: latest

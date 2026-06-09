@@ -1,0 +1,21 @@
+# TiDB Operator namespace — applies PSA baseline labels to tidb-admin.
+# ON-DEMAND: no automated: block — syncs alongside tidb-operator-up.
+# Do NOT add automated: here; TiDB lives outside the always-on 12 GB stack.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tidb-admin-extras
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/tidb-admin
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tidb-admin
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
