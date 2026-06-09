@@ -68,3 +68,33 @@ setup() {
   run grep -q 'privileged: true' "$DEPLOY"
   [ "$status" -eq 1 ]
 }
+
+# --- baseline carve-out namespaces (ADR-0017 §Per-namespace profile) ----------
+
+@test "vault namespace.yaml enforces PSS baseline" {
+  NS="$REPO/gitops/vault/namespace.yaml"
+  [ -f "$NS" ]
+  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$NS"
+  [ "$status" -eq 0 ]
+}
+
+@test "storage namespace.yaml enforces PSS baseline" {
+  NS="$REPO/gitops/storage/garage/namespace.yaml"
+  [ -f "$NS" ]
+  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$NS"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb namespace.yaml enforces PSS baseline" {
+  NS="$REPO/gitops/tidb/namespace.yaml"
+  [ -f "$NS" ]
+  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$NS"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb-admin namespace.yaml enforces PSS baseline" {
+  NS="$REPO/gitops/tidb-admin/namespace.yaml"
+  [ -f "$NS" ]
+  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$NS"
+  [ "$status" -eq 0 ]
+}

@@ -1,0 +1,12 @@
+# PSA carve-out: the upstream Garage image does not declare an explicit non-root
+# user; the restricted profile would block it until upstream publishes a confirmed
+# non-root image. ADR-0017 §Per-namespace profile records storage as baseline-only.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: storage
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/audit: baseline
