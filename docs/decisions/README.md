@@ -26,3 +26,7 @@ rationale travels with the code.
   - [ADR-0016](adr-0016-default-deny-networkpolicy.md) — Default-deny NetworkPolicy per namespace (Cilium-enforced)
   - [ADR-0017](adr-0017-pod-security-standards-restricted.md) — Pod Security Standards `restricted` profile across all namespaces
   - [ADR-0018](adr-0018-valkey-not-redis.md) — Valkey as the lab's cache / key-value store (supersedes ADR-0010)
+  - [ADR-0019](adr-0019-kyverno-admission-engine.md) — Kyverno as the lab's admission policy engine (not OPA Gatekeeper)
+  - [ADR-0020](adr-0020-argo-rollouts-progressive-delivery.md) — Argo Rollouts for progressive delivery (SLO-gated canaries via Envoy Gateway API)
+  - [ADR-0021](adr-0021-velero-backup-restore.md) — Velero for cluster + PVC backup/restore to Garage S3
+  - [ADR-0022](adr-0022-trivy-operator-supply-chain.md) — Trivy Operator for continuous vulnerability + SBOM scanning
