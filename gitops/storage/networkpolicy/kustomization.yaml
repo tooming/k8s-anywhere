@@ -1,0 +1,17 @@
+# NetworkPolicy Kustomize overlay for the storage namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates and adds per-workload allow rules for
+# Garage's two real ingress flows: from the LGTMP stack in observability (S3 writes
+# on TCP 3900 + Alloy metrics scrape on TCP 3903) and from the Inkless broker in the
+# inkless namespace (diskless Kafka log-segment S3 writes on TCP 3900).
+# No egress allows needed beyond the baseline — Garage does not reach other namespaces.
+# Wired into gitops/platform/storage-networkpolicy.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: storage
+
+resources:
+  - ../../../network/policies/default-deny.yaml
+  - ../../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-garage-s3-from-observability.yaml
+  - allow-garage-s3-from-inkless.yaml
