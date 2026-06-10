@@ -40,8 +40,8 @@ routine's model/cadence is a PR that edits this table.
 
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch | Max tier |
 |---|---|---|---|---|---|---|
-| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run | 8h (3/day) · Sonnet 4.6 | `auto/*` | 🟢 Green |
-| Executor 4th slot | `trig_011X276UrgGJWLsgC9Apneok` | @tooming | same prompt as the executor; fills the day's 5th quota slot | 04:00 UTC daily except Thu · Sonnet 4.6 | `auto/*` | 🟢 Green |
+| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run; empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager) so no slot is wasted | 8h (3/day) · Sonnet 4.6 | `auto/*` (fallback roles keep their own prefixes) | 🟢 Green |
+| Executor 4th slot | `trig_011X276UrgGJWLsgC9Apneok` | @tooming | same prompt as the executor (incl. the fallback chain); fills the day's 5th quota slot | 04:00 UTC daily except Thu · Sonnet 4.6 | `auto/*` | 🟢 Green |
 | Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @tooming | grooms CHARTER gaps + issues → ROADMAP | Mon + Thu 06:00 UTC · Opus 4.7 | `plan/*` | 🟢 Green |
 | Architect | `trig_01SpewghyraZDSrLoGA32nBe` | @tooming | researches best practices → opens RFC issues for 🟡 items | weekly Tue · Opus 4.7 | `arch/*` | 🟢 Green |
 | Triager | `trig_01E6ugxYJY6yGzwvSHSgFaCx` | @tooming | labels open issues with domain / tier / priority | Wed + Sat 12:00 UTC · Sonnet 4.6 | — (labels) | 🟢 Green |
