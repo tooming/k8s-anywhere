@@ -41,6 +41,7 @@ routine's model/cadence is a PR that edits this table.
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch | Max tier |
 |---|---|---|---|---|---|---|
 | Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run | 8h (3/day) · Sonnet 4.6 | `auto/*` | 🟢 Green |
+| Executor 4th slot | `trig_011X276UrgGJWLsgC9Apneok` | @tooming | same prompt as the executor; fills the day's 5th quota slot | 04:00 UTC daily except Thu · Sonnet 4.6 | `auto/*` | 🟢 Green |
 | Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @tooming | grooms CHARTER gaps + issues → ROADMAP | Mon + Thu 06:00 UTC · Opus 4.7 | `plan/*` | 🟢 Green |
 | Architect | `trig_01SpewghyraZDSrLoGA32nBe` | @tooming | researches best practices → opens RFC issues for 🟡 items | weekly Tue · Opus 4.7 | `arch/*` | 🟢 Green |
 | Triager | `trig_01E6ugxYJY6yGzwvSHSgFaCx` | @tooming | labels open issues with domain / tier / priority | Wed + Sat 12:00 UTC · Sonnet 4.6 | — (labels) | 🟢 Green |
@@ -153,19 +154,21 @@ _Process:_
 
 - **Free quota: 5 routine runs per rolling 24h.** Beyond that, runs use usage credits *only
   if* the "additional runs" toggle is on (otherwise they're skipped — a hard free cap).
-  Current allocation (reviewer retired 2026-06-10; its slot restored the executor to 3/day):
-  - **Mon:** executor (3) + planner (1) = 4
-  - **Tue:** executor (3) + architect (1) = 4
-  - **Wed:** executor (3) + triager (1) = 4
+  Current allocation runs at the cap every day — all slots filled, none wasted (reviewer
+  retired 2026-06-10; a second executor trigger adds a 4th run on non-Thursday days,
+  since one cron expression can't encode "4/day except Thu"):
+  - **Mon:** executor (4) + planner (1) = 5
+  - **Tue:** executor (4) + architect (1) = 5
+  - **Wed:** executor (4) + triager (1) = 5
   - **Thu:** executor (3) + planner (1) + upgrade-drafter (1) = 5
-  - **Fri:** executor (3) + doc-drift-author (1) = 4
-  - **Sat:** executor (3) + triager (1) = 4
-  - **Sun:** executor (3) + industry-news-writer (1) = 4
+  - **Fri:** executor (4) + doc-drift-author (1) = 5
+  - **Sat:** executor (4) + triager (1) = 5
+  - **Sun:** executor (4) + industry-news-writer (1) = 5
 
-  Thursday runs at the cap; every other day has one slot of headroom. Adding any new
-  routine or raising any cadence still has to clear Thursday — that requires cutting a
-  slot or enabling the paid "additional runs" toggle. (The local verifier and operator
-  are invoked by hand on the maintainer's machine; they have no cron and no quota cost.)
+  No headroom — adding any new routine or raising any cadence requires cutting an
+  executor slot or enabling the paid "additional runs" toggle. (The local verifier and
+  operator are invoked by hand on the maintainer's machine; they have no cron and no
+  quota cost.)
 - Spend scales with **cadence × model × routine count**; the registry records all three, and
   the routine's owner is accountable for it.
 - **Scale-out rule:** add agents or raise cadence only when there is review capacity to
