@@ -1,0 +1,26 @@
+# Allow argocd-repo-server to reach the GitLab instance on the Docker host for git
+# clone/fetch (ADR-0016). ArgoCD Application sources point to
+# http://host.k3d.internal:8929/lab/k8s-lab.git; the repo-server is the component
+# that performs the actual git operations. host.k3d.internal resolves to the Docker
+# bridge gateway (address assigned at cluster creation time, not predetermined in
+# manifests). Using 0.0.0.0/0 restricted to port 8929 follows the same pragmatic
+# pattern as the Alloy kubelet CIDR in the observability NetworkPolicy.
+# The allow-dns-and-apiserver baseline covers k8s API calls for all pods.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argocd-repo-server-egress-gitlab
+  namespace: argocd
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 8929
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0

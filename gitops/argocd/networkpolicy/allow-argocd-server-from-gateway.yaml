@@ -1,0 +1,27 @@
+# Allow ingress to the argocd-server pod from Envoy Gateway proxy pods (ADR-0016).
+# The argocd.127.0.0.1.nip.io HTTPRoute (gitops/network/argocd-route.yaml) routes
+# traffic from Envoy proxy pods in envoy-gateway-system to the ArgoCD UI and API
+# on TCP 8080 (the container port; the argocd-server Service maps 80→8080 externally).
+# server.insecure=true is set in infra/modules/argocd/values.yaml, so plain HTTP.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argocd-server-from-gateway
+  namespace: argocd
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: proxy

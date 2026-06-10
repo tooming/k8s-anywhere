@@ -1,0 +1,25 @@
+# Allow all pods within the argocd namespace to communicate with each other (ADR-0016).
+# ArgoCD has many intra-namespace flows:
+#   argocd-server → argocd-repo-server (gRPC :8081, manifest generation);
+#   argocd-application-controller → argocd-repo-server (gRPC :8081, sync);
+#   argocd-server → argocd-cache (:6379, session state);
+#   argocd-application-controller → argocd-cache (:6379, app state);
+#   argocd-applicationset-controller ← argocd-server (:7000, webhook callbacks).
+# A single broad intra-namespace allow is correct — every component is a tightly-coupled
+# part of the same ArgoCD control plane.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argocd-intra-namespace
+  namespace: argocd
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}
