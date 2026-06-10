@@ -1,0 +1,24 @@
+# Allow ingress to the moto pod from ACK S3 controller pods in ack-system (ADR-0016).
+# The ACK S3 controller reconciles kind: Bucket CRs by calling moto's AWS-compatible
+# HTTP API at moto.moto.svc:5000 (configured via endpoint_url in the ack-s3 Application).
+# This is the sole control-plane flow for ack-demo-bucket and kro-demo-bucket — without
+# this allow, default-deny-all blocks all ACK reconcile operations silently.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-moto-from-ack
+  namespace: moto
+spec:
+  podSelector:
+    matchLabels:
+      app: moto
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 5000
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ack-system

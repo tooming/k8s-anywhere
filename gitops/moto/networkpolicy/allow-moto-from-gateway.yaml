@@ -1,0 +1,26 @@
+# Allow ingress to the moto pod from Envoy Gateway proxy pods (ADR-0016).
+# The moto HTTPRoute (moto.127.0.0.1.nip.io) routes HTTP traffic through the Envoy
+# proxy in envoy-gateway-system to the moto server on TCP 5000. Without this allow,
+# default-deny-all blocks the HTTPRoute and the moto web console is unreachable.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-moto-from-gateway
+  namespace: moto
+spec:
+  podSelector:
+    matchLabels:
+      app: moto
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 5000
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: proxy
