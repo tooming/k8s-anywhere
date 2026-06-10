@@ -6,11 +6,14 @@
 environment_id: env_014NJKuQoEb7PAi3PXaFW2B9   # Anthropic cloud (Default)
 source: https://github.com/tooming/k8s-lab     # repo cloned into each run
 
-# Quota math (WAYS-OF-WORKING.md §5 — 5 runs / rolling 24h free):
-#   executor 3/day baseline, plus one daily routine-of-the-day:
-#   Mon=planner, Tue=architect, Wed=triager, Thu=upgrade-drafter + planner,
-#   Fri=doc-drift, Sat=triager, Sun=industry-news-writer.
-#   Thursday hits the 5/day cap (3+upgrade+planner); other days run at 4/5.
+# Quota math (WAYS-OF-WORKING.md §5 — 5 runs / rolling 24h free; ALL slots filled):
+#   executor 3/day baseline + a 4th executor run on every non-Thursday day (the
+#   "slot filler" trigger below — a second trigger reusing executor.prompt.md,
+#   because one cron expression can't encode "4/day except Thu"), plus one daily
+#   routine-of-the-day: Mon=planner, Tue=architect, Wed=triager,
+#   Thu=upgrade-drafter + planner, Fri=doc-drift, Sat=triager, Sun=industry-news-writer.
+#   Every day runs at the 5/day cap: Mon–Wed/Fri–Sun = executor 4 + daily 1;
+#   Thu = executor 3 + planner + upgrade-drafter.
 #   The standalone reviewer routine was RETIRED (its daily slot funded the executor's
 #   return to 3/day): cron-based review kept lagging PR-open — PRs were merged between
 #   slots and the reviewer filed idle issues (see #160). First-pass review now happens
@@ -31,6 +34,18 @@ routines:
     prompt_file: executor.prompt.md
     branch_prefix: auto/           # PRs land on auto/<slug>
     max_tier: green                # WAYS-OF-WORKING.md autonomy tier
+
+  # The EXECUTOR'S 4th DAILY SLOT — same prompt, fires 04:00 UTC every day EXCEPT
+  # Thursday (cron day 4), where planner + upgrade-drafter take the two extra slots.
+  - name: k8s-lab autonomous dev (slot filler)
+    trigger_id: trig_011X276UrgGJWLsgC9Apneok
+    cron: "0 4 * * 0-3,5,6"        # 04:00 UTC daily except Thu — fills the 5th quota slot
+    model: claude-sonnet-4-6
+    enabled: true
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    prompt_file: executor.prompt.md   # SAME prompt as the main executor — keep them in lockstep
+    branch_prefix: auto/           # PRs land on auto/<slug>
+    max_tier: green
 
   # The PLANNER — grooms CHARTER gaps + GitHub issues into ROADMAP items.
   - name: k8s-lab planner
