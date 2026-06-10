@@ -1,0 +1,15 @@
+# NetworkPolicy Kustomize overlay for the lab-gateway namespace (ADR-0016 §4 fan-out).
+# Pulls only the two shared baseline templates — default-deny-all floor and
+# allow-dns-and-apiserver. No per-workload allow rules are needed: the lab-gateway
+# namespace today holds only the Gateway CR (no pods run here; Envoy proxy pods live
+# in envoy-gateway-system). The baseline future-proofs the namespace so any pod added
+# later inherits the default-deny floor automatically.
+# Wired into gitops/platform/lab-gateway-networkpolicy.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: lab-gateway
+
+resources:
+  - ../policies/default-deny.yaml
+  - ../policies/allow-dns-and-apiserver.yaml

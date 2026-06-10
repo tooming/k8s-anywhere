@@ -14,6 +14,7 @@ setup() {
   ARGOCD_NP="$REPO/gitops/argocd/networkpolicy"
   MOTO_NP="$REPO/gitops/moto/networkpolicy"
   ACK_NP="$REPO/gitops/ack/networkpolicy"
+  GATEWAY_NP="$REPO/gitops/network/networkpolicy"
 }
 
 # --- Shared baseline templates -----------------------------------------------
@@ -730,5 +731,61 @@ setup() {
 
 @test "ack-networkpolicy ArgoCD Application targets the ack-system namespace" {
   run grep -q 'namespace: ack-system' "$REPO/gitops/platform/ack-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- lab-gateway namespace overlay (ADR-0016 §4 fan-out) ----------------------
+
+@test "lab-gateway networkpolicy kustomization.yaml exists" {
+  [ -f "$GATEWAY_NP/kustomization.yaml" ]
+}
+
+@test "lab-gateway kustomization sets namespace: lab-gateway" {
+  run grep -q 'namespace: lab-gateway' "$GATEWAY_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-gateway kustomization references the shared default-deny template" {
+  run grep -q 'policies/default-deny.yaml' "$GATEWAY_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-gateway kustomization references the shared allow-dns-and-apiserver template" {
+  run grep -q 'policies/allow-dns-and-apiserver.yaml' "$GATEWAY_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-gateway kustomization has only two resources (baseline templates, no extra rules)" {
+  run grep -c '^\s*-' "$GATEWAY_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+  [ "$output" -eq 2 ]
+}
+
+@test "lab-gateway-networkpolicy ArgoCD Application file exists" {
+  [ -f "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml" ]
+}
+
+@test "lab-gateway-networkpolicy ArgoCD Application has automated sync enabled" {
+  run grep -q 'automated:' "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-gateway-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-gateway-networkpolicy ArgoCD Application targets the lab-gateway namespace" {
+  run grep -q 'namespace: lab-gateway' "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-gateway-networkpolicy ArgoCD Application is sync-wave 4" {
+  run grep -q 'sync-wave: "4"' "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-gateway-networkpolicy ArgoCD Application sources from gitops/network/networkpolicy" {
+  run grep -q 'path: gitops/network/networkpolicy' "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml"
   [ "$status" -eq 0 ]
 }
