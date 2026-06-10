@@ -12,6 +12,8 @@ setup() {
   VAULT_NP="$REPO/gitops/vault/networkpolicy"
   STORAGE_NP="$REPO/gitops/storage/networkpolicy"
   ARGOCD_NP="$REPO/gitops/argocd/networkpolicy"
+  MOTO_NP="$REPO/gitops/moto/networkpolicy"
+  ACK_NP="$REPO/gitops/ack/networkpolicy"
 }
 
 # --- Shared baseline templates -----------------------------------------------
@@ -604,5 +606,129 @@ setup() {
 
 @test "argocd-networkpolicy ArgoCD Application targets the argocd namespace" {
   run grep -q 'namespace: argocd' "$REPO/gitops/platform/argocd-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- moto namespace overlay (ADR-0016 §4 fan-out) --------------------------------
+
+@test "moto networkpolicy kustomization.yaml exists" {
+  [ -f "$MOTO_NP/kustomization.yaml" ]
+}
+
+@test "moto kustomization sets namespace: moto" {
+  run grep -q 'namespace: moto' "$MOTO_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "moto kustomization references the shared default-deny template" {
+  run grep -q 'network/policies/default-deny.yaml' "$MOTO_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "moto kustomization references the shared allow-dns-and-apiserver template" {
+  run grep -q 'network/policies/allow-dns-and-apiserver.yaml' "$MOTO_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-moto-from-ack.yaml exists in moto/networkpolicy/" {
+  [ -f "$MOTO_NP/allow-moto-from-ack.yaml" ]
+}
+
+@test "allow-moto-from-ack allows port 5000 (moto HTTP API)" {
+  run grep -q 'port: 5000' "$MOTO_NP/allow-moto-from-ack.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-moto-from-ack targets pods with app: moto" {
+  run grep -q 'app: moto' "$MOTO_NP/allow-moto-from-ack.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-moto-from-ack allows ingress from ack-system namespace" {
+  run grep -q 'kubernetes.io/metadata.name: ack-system' "$MOTO_NP/allow-moto-from-ack.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-moto-from-gateway.yaml exists in moto/networkpolicy/" {
+  [ -f "$MOTO_NP/allow-moto-from-gateway.yaml" ]
+}
+
+@test "allow-moto-from-gateway allows port 5000 (moto HTTP API)" {
+  run grep -q 'port: 5000' "$MOTO_NP/allow-moto-from-gateway.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-moto-from-gateway allows ingress from envoy-gateway-system namespace" {
+  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$MOTO_NP/allow-moto-from-gateway.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-moto-from-gateway allows ingress from Envoy proxy pods" {
+  run grep -q 'app.kubernetes.io/component: proxy' "$MOTO_NP/allow-moto-from-gateway.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "moto-networkpolicy ArgoCD Application has automated sync enabled" {
+  run grep -q 'automated:' "$REPO/gitops/platform/moto-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "moto-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/moto-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "moto-networkpolicy ArgoCD Application targets the moto namespace" {
+  run grep -q 'namespace: moto' "$REPO/gitops/platform/moto-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- ack-system namespace overlay (ADR-0016 §4 fan-out) --------------------------
+
+@test "ack networkpolicy kustomization.yaml exists" {
+  [ -f "$ACK_NP/kustomization.yaml" ]
+}
+
+@test "ack kustomization sets namespace: ack-system" {
+  run grep -q 'namespace: ack-system' "$ACK_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "ack kustomization references the shared default-deny template" {
+  run grep -q 'network/policies/default-deny.yaml' "$ACK_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "ack kustomization references the shared allow-dns-and-apiserver template" {
+  run grep -q 'network/policies/allow-dns-and-apiserver.yaml' "$ACK_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-ack-egress-moto.yaml exists in ack/networkpolicy/" {
+  [ -f "$ACK_NP/allow-ack-egress-moto.yaml" ]
+}
+
+@test "allow-ack-egress-moto allows egress to port 5000 (moto HTTP API)" {
+  run grep -q 'port: 5000' "$ACK_NP/allow-ack-egress-moto.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-ack-egress-moto allows egress to moto namespace" {
+  run grep -q 'kubernetes.io/metadata.name: moto' "$ACK_NP/allow-ack-egress-moto.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "ack-networkpolicy ArgoCD Application has automated sync enabled" {
+  run grep -q 'automated:' "$REPO/gitops/platform/ack-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "ack-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/ack-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "ack-networkpolicy ArgoCD Application targets the ack-system namespace" {
+  run grep -q 'namespace: ack-system' "$REPO/gitops/platform/ack-networkpolicy.yaml"
   [ "$status" -eq 0 ]
 }

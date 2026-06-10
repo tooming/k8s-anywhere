@@ -1,0 +1,34 @@
+# moto-networkpolicy — default-deny + allowlist NetworkPolicies for the moto namespace
+# (ADR-0016 §4 fan-out; moto is the in-cluster AWS mock that ACK S3 controller targets
+# instead of real AWS). Applies the shared baseline templates (default-deny-all,
+# allow-dns-and-apiserver) plus per-workload allow rules: ingress from ACK S3 controller
+# pods in ack-system (TCP 5000, AWS HTTP API calls) and from Envoy Gateway proxy pods in
+# envoy-gateway-system (TCP 5000, moto.127.0.0.1.nip.io HTTPRoute).
+# ALWAYS-ON: automated sync alongside the moto Application (same namespace).
+# The kustomization references templates from ../../network/policies/ — the
+# kustomize.buildOptions flag lifts the out-of-tree load restriction for this overlay.
+# Wave 4: after moto (wave 1) has created the moto namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: moto-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/moto/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: moto
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

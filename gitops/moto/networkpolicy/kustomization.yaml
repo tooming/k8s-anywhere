@@ -1,0 +1,17 @@
+# NetworkPolicy Kustomize overlay for the moto namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates and adds moto-specific allow rules for
+# the two real ingress flows: ingress from the ACK S3 controller in ack-system
+# (AWS HTTP API calls on TCP 5000) and from Envoy Gateway proxy pods in
+# envoy-gateway-system (moto.127.0.0.1.nip.io HTTPRoute on TCP 5000).
+# moto does not initiate outbound connections — no egress allows needed beyond baseline.
+# Wired into gitops/platform/moto-networkpolicy.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: moto
+
+resources:
+  - ../../../network/policies/default-deny.yaml
+  - ../../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-moto-from-ack.yaml
+  - allow-moto-from-gateway.yaml
