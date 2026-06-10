@@ -24,7 +24,10 @@ source: https://github.com/tooming/k8s-lab     # repo cloned into each run
 #   the architect's ADR audit cycle (see issue #94 / docs/industry/).
 
 routines:
-  # The EXECUTOR — implements one ROADMAP item per run.
+  # The EXECUTOR — implements one ROADMAP item per run. If its lane is empty it does
+  # NOT waste the slot: STEP 6b escalates through the blocking roles' own prompts
+  # (planner → architect → upgrade-drafter → doc-drift-author → triager) until one
+  # delivers; the idle issue is the last resort only when the whole chain is empty.
   - name: k8s-lab autonomous dev
     trigger_id: trig_01CRtpmaS1scBQL74xKqmfvS
     cron: "0 */8 * * *"            # every 8h = 3/day (restored from 2/day — reviewer retirement freed the slot)
