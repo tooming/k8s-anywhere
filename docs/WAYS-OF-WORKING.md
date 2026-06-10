@@ -16,6 +16,13 @@
    binding technical decisions (RFCs, ADRs); the planner sequences them; the executor
    implements. The human's only gate is the merge button on the resulting PRs. Agents
    *propose* what ships; humans decide *whether* to ship it by merging or closing.
+   **The merge button is the maintainer's ONLY touchpoint.** The maintainer does not work
+   issues. An agent must never assign the maintainer an action item it can perform itself
+   with the tools it has (creating/applying labels, re-tagging, commenting, closing its
+   own issues, opening follow-up issues) — "maintainer: please do X" in an issue is a
+   routine bug unless X is genuinely 🔴 Red (secrets, repo settings, branch protection,
+   a CHARTER/governance decision). If a tool call fails, fall back to `gh` before
+   escalating; escalate only what §2 actually reserves for humans.
 3. **The repo is the only rulebook agents obey.** Remote agents see only what's in git, so
    [CHARTER.md](../CHARTER.md), the [ROADMAP.md](../ROADMAP.md) rules, the ADRs in
    [decisions/](decisions/), and this doc are the *complete* set of rules. A governance
