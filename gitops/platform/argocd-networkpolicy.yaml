@@ -1,0 +1,41 @@
+# argocd-networkpolicy — default-deny + allowlist NetworkPolicies for the argocd namespace
+# (ADR-0016 §4 fan-out; ArgoCD is the GitOps reconcile plane — highest blast-radius
+# non-secrets namespace). Applies the shared baseline templates (default-deny-all,
+# allow-dns-and-apiserver) plus per-workload allow rules:
+#   allow-argocd-server-from-gateway: ingress TCP 8080 from Envoy proxy pods
+#     (envoy-gateway-system) for the argocd.127.0.0.1.nip.io HTTPRoute;
+#   allow-argocd-from-alloy: ingress on metrics ports 8080/8082/8083/8084 from
+#     Alloy (observability ns) for the four ArgoCD *-metrics scrape targets;
+#   allow-argocd-intra-namespace: broad intra-namespace allow-all covering
+#     controller ↔ repo-server (gRPC 8081), controller/server ↔ argocd-cache (6379),
+#     appset ↔ server (7000);
+#   allow-argocd-repo-server-egress-gitlab: egress TCP 8929 from argocd-repo-server
+#     to GitLab on the Docker host (git clone/fetch for all Application sources).
+# The allow-dns-and-apiserver baseline covers k8s API calls for all pods.
+# ALWAYS-ON: automated sync alongside the ArgoCD installation (same namespace).
+# Wave 4: argocd namespace already exists (Terraform bootstrap); policies apply after
+# the waves 1–3 namespaces that argocd watches are created.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/argocd/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
