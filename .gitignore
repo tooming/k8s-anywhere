@@ -17,6 +17,7 @@ kubeconfig
 .env
 .env.*
 /secrets/
+infra/secrets/
 *.pem
 *.key
 *-key.pem
