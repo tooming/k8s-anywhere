@@ -1,0 +1,35 @@
+# Reject pod images that use ':latest' tag or specify no tag at all.
+# Objective O4 pre-requisite: every lab image must be pinned so cosign signatures
+# are verifiable. background: true generates PolicyReports for existing resources
+# (background scan does NOT evict running pods; only new admissions are blocked).
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/description: >-
+      Rejects any container image using ':latest' tag or with no tag (ADR-0019).
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  - name: disallow-latest-tag
+    match:
+      any:
+      - resources:
+          kinds: [Pod]
+    validate:
+      message: "Image tag is required and must not be ':latest'."
+      foreach:
+      - list: "request.object.spec.containers"
+        deny:
+          conditions:
+            any:
+            - key: "{{ ends_with(element.image, ':latest') }}"
+              operator: Equals
+              value: true
+            - key: "{{ contains(element.image, ':') }}"
+              operator: Equals
+              value: false

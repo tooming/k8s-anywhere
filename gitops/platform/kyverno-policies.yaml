@@ -1,0 +1,34 @@
+# kyverno-policies — the four initial ClusterPolicies (ADR-0019, RFC #153):
+#   require-pod-security-restricted (validate Enforce, backs ADR-0017)
+#   disallow-latest-tag             (validate Enforce)
+#   add-default-seccomp             (mutate, injects seccompProfile=RuntimeDefault)
+#   verify-image-signatures         (verifyImages Audit, Objective O4 — flip to Enforce
+#                                    once cosign-bootstrap.sh + CI signing are wired)
+#
+# Sync-wave 5: after kyverno-extras (wave 0, namespace) and kyverno (wave 1, CRDs)
+# have installed the ClusterPolicy CRD and Kyverno's admission webhook is live.
+# Plain directory mode (no kustomization.yaml) — ArgoCD applies every YAML file in
+# gitops/kyverno/policies/ as a standalone manifest (non-recursive).
+# ALWAYS-ON: automated sync alongside the kyverno engine.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno-policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/kyverno/policies
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,40 @@
+# Verifies cosign signatures on images pushed to the in-cluster Artifactory
+# registry (ADR-0019, CHARTER Objective O4). Scoped to artifactory.127.0.0.1.nip.io/**
+# so upstream chart images (Grafana, Vault, etc.) that are NOT lab-signed are never
+# rejected. The cosign public key is seeded by scripts/cosign-bootstrap.sh into the
+# Secret cosign-public-key in namespace kyverno.
+#
+# Audit mode + failurePolicy: Ignore until the cosign signing step in .gitlab-ci.yml
+# is wired (separate planner item: cosign-bootstrap-script). A follow-up item flips
+# this to Enforce + failurePolicy: Fail once O4 is end-to-end green. background: false
+# because image verification requires the live registry manifest during admission;
+# background scans cannot verify signatures without a running registry connection.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-image-signatures
+  annotations:
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/description: >-
+      Verifies cosign signatures on Artifactory images (ADR-0019, Objective O4).
+      Audit + failurePolicy Ignore until the cosign CI signing pipeline lands.
+spec:
+  validationFailureAction: Audit
+  failurePolicy: Ignore
+  background: false
+  rules:
+  - name: verify-artifactory-signatures
+    match:
+      any:
+      - resources:
+          kinds: [Pod]
+    verifyImages:
+    - imageReferences:
+      - "artifactory.127.0.0.1.nip.io/**"
+      attestors:
+      - entries:
+        - keys:
+            publicKeySecret:
+              name: cosign-public-key
+              namespace: kyverno
