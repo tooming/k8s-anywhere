@@ -1,0 +1,14 @@
+# Explicit observability namespace manifest with Pod Security Admission labels (ADR-0017).
+# Placed in the mimir Application path (wave 1) so PSA enforcement is set before any
+# observability pods are scheduled. PSA profile: restricted — all LGTMP pods are
+# non-root-capable (mimir/loki/tempo/pyroscope: UID 10001, grafana: UID 472, alloy: UID 473).
+# node-exporter carries a per-workload carve-out (hostPID/hostNetwork disabled to comply).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

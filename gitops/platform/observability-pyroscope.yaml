@@ -21,7 +21,7 @@ spec:
     helm:
       releaseName: pyroscope
       valuesObject:
-        # don't deploy the bundled MinIO — we use Garage
+        # disable the bundled object-store chart — we use Garage (ADR-0002)
         minio:
           enabled: false
         # the chart also bundles its own Alloy (annotation-based pprof scraper).
@@ -32,6 +32,23 @@ spec:
           enabled: false
         pyroscope:
           replicaCount: 1
+          # Pod Security Standards restricted (ADR-0017). Pyroscope image runs as UID 10001.
+          # readOnlyRootFilesystem carve-out: Pyroscope writes profile data to PVC-backed
+          # storage and temp WAL; tightening to true is a follow-up item.
+          podSecurityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
           persistence:
             enabled: true
             size: 4Gi

@@ -17,6 +17,19 @@ spec:
       releaseName: kube-state-metrics
       valuesObject:
         fullnameOverride: kube-state-metrics
+        podSecurityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
+        containerSecurityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
         resources:
           requests:
             cpu: 10m

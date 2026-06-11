@@ -20,7 +20,23 @@ spec:
         controller:
           type: deployment
           replicas: 1
+          podSecurityContext:
+            runAsNonRoot: true
+            runAsUser: 473
+            runAsGroup: 473
+            seccompProfile:
+              type: RuntimeDefault
         alloy:
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            # readOnlyRootFilesystem carve-out: Alloy writes its WAL to /tmp/alloy
+            # (chart-created emptyDir); tightening to true is a follow-up item once
+            # the storagePath volume is verified writable under restricted policy.
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               cpu: 50m
@@ -263,7 +279,7 @@ spec:
               }
 
               // ---- Inkless (diskless Kafka) exporter metrics -> Mimir ----
-              // kafka-exporter sidecar in the Inkless StatefulSet exposes Prometheus
+              // kafka-exporter co-located container in the Inkless StatefulSet exposes Prometheus
               // metrics on :9308; this target is idle unless inkless is manually synced.
               prometheus.scrape "inkless" {
                 targets = [

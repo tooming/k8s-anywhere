@@ -19,6 +19,13 @@ spec:
       annotations:
         checksum/config: loki-garage-v1
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: loki
           image: grafana/loki:3.7.2
@@ -40,6 +47,13 @@ spec:
           ports:
             - name: http
               containerPort: 3100
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           readinessProbe:
             httpGet:
               path: /ready
@@ -59,6 +73,8 @@ spec:
               mountPath: /etc/loki
             - name: data
               mountPath: /loki
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: config
           configMap:
@@ -66,3 +82,5 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: loki-data
+        - name: tmp
+          emptyDir: {}
