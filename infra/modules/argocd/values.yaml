@@ -12,6 +12,12 @@ configs:
   params:
     # Serve plain HTTP. We port-forward for now and terminate TLS at Envoy later.
     server.insecure: true
+  cm:
+    # All kustomizations in this repo use cross-directory resource references
+    # (e.g. ../../network/policies/default-deny.yaml). Set globally so ArgoCD
+    # doesn't need per-Application overrides that may not propagate through
+    # ApplicationSet template rendering.
+    kustomize.buildOptions: --load-restrictor LoadRestrictionsNone
 
 # Components we don't need in the lab — trimmed to save RAM.
 dex:

@@ -13,8 +13,8 @@ kind: Kustomization
 namespace: argocd
 
 resources:
-  - ../../../network/policies/default-deny.yaml
-  - ../../../network/policies/allow-dns-and-apiserver.yaml
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
   - allow-argocd-server-from-gateway.yaml
   - allow-argocd-from-alloy.yaml
   - allow-argocd-intra-namespace.yaml
