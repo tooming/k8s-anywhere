@@ -20,13 +20,22 @@ case "$fp" in
 esac
 [ -f "$fp" ] || exit 0
 
+# Scan only the lines this edit *added* — pre-existing vendor usage in unchanged lines
+# should not block unrelated edits.  For untracked (new) files, check everything.
+if git -C "$ROOT" ls-files --error-unmatch "$fp" >/dev/null 2>&1; then
+  added_content="$(git -C "$ROOT" diff HEAD -- "$fp" 2>/dev/null | sed -n '/^+[^+]/s/^+//p' || true)"
+  [ -n "$added_content" ] || exit 0
+else
+  added_content="$(cat "$fp")"
+fi
+
 hits=""
 for adr in "$ROOT"/docs/decisions/adr-*-not-*.md; do
   [ -e "$adr" ] || continue
   rejected="$(basename "$adr" .md | sed -E 's/.*-not-//')"
   [ -n "$rejected" ] || continue
-  if grep -qiw "$rejected" "$fp"; then
-    hits="$hits"$'\n'"  - '$rejected' (rejected by $(basename "$adr")) appears in ${fp##*/}"
+  if printf '%s' "$added_content" | grep -qiw "$rejected"; then
+    hits="$hits"$'\n'"  - '$rejected' (rejected by $(basename "$adr")) introduced in ${fp##*/}"
   fi
 done
 

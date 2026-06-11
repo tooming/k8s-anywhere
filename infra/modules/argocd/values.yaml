@@ -3,6 +3,10 @@
 
 global:
   domain: argocd.localhost
+  # Pin to latest (master) to include the /applicationsets UI route (merged post-v3.4.3, not yet in a stable release).
+  # TODO: drop this override once argo-cd chart >= the version that ships the expose-appset-ui commit (#26666).
+  image:
+    tag: latest
 
 configs:
   params:

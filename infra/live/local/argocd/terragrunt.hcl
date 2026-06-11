@@ -30,5 +30,5 @@ generate "provider" {
 }
 
 inputs = {
-  chart_version = "9.5.15"
+  chart_version = "9.5.20"
 }
