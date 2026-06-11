@@ -66,6 +66,7 @@ test: ## Run the bats unit tests (probe math, DR guards, drift detectors)
 ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/lint.sh
 	@bash scripts/validate-manifests.sh
+	@bash scripts/validate-kustomize.sh
 	@bash scripts/validate-terraform.sh
 	@bash scripts/test.sh
 	@bash scripts/readme-check.sh

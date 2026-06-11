@@ -11,6 +11,6 @@ kind: Kustomization
 namespace: ack-system
 
 resources:
-  - ../../../network/policies/default-deny.yaml
-  - ../../../network/policies/allow-dns-and-apiserver.yaml
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
   - allow-ack-egress-moto.yaml

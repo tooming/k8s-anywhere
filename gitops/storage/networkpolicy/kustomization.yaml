@@ -11,7 +11,7 @@ kind: Kustomization
 namespace: storage
 
 resources:
-  - ../../../network/policies/default-deny.yaml
-  - ../../../network/policies/allow-dns-and-apiserver.yaml
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
   - allow-garage-s3-from-observability.yaml
   - allow-garage-s3-from-inkless.yaml
