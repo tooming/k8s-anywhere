@@ -11,7 +11,7 @@ These fire on cron from claude.ai; they only see what's in git, never the live c
 | File | What |
 |------|------|
 | [`routines.yaml`](routines.yaml) | per-routine metadata: `trigger_id`, `cron`, `model`, env, tools, `prompt_file` |
-| [`executor.prompt.md`](executor.prompt.md) | the executor's prompt (every-8h implementer, `auto/*` PRs) |
+| [`executor.prompt.md`](executor.prompt.md) | the executor's prompt (nightly implementer, 21–23:00 + 00:00 UTC, `auto/*` PRs) |
 | [`planner.prompt.md`](planner.prompt.md) | the planner's prompt (Mon + Thu groomer, `plan/*` PRs) |
 | [`architect.prompt.md`](architect.prompt.md) | the architect's prompt (weekly Tue RFC opener, `arch/*` PRs) |
 | [`triager.prompt.md`](triager.prompt.md) | the triager's prompt (Wed + Sat issue labeller — labels only, never PRs) |

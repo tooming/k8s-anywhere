@@ -14,6 +14,24 @@ source: https://github.com/tooming/k8s-lab     # repo cloned into each run
 #   Thu=upgrade-drafter + planner, Fri=doc-drift, Sat=triager, Sun=industry-news-writer.
 #   Every day runs at the 5/day cap: Mon–Wed/Fri–Sun = executor 4 + daily 1;
 #   Thu = executor 3 + planner + upgrade-drafter.
+#
+# NIGHT-TIME SCHEDULE + CREDIT SAFETY (rolling-24h-proof):
+#   All runs fire in a fixed nightly window — five FIXED clock-times every day:
+#     21:00, 22:00, 23:00, 00:00, 01:00 UTC.
+#   In the maintainer's TZ (Europe/Tallinn) that is ~23:00–04:00 local year-round
+#   — 21:00–01:00 UTC lands at night in both EET (UTC+2, winter) and EEST (UTC+3,
+#   summer), so no slot ever drifts into the working day across a DST flip.
+#   Why these EXACT times (not just "sometime at night"): the free cap is 5 runs
+#   per ROLLING 24h, not per calendar day. Because the SET of fire-times is
+#   identical every day (only WHICH routine fills each slot changes), every
+#   rolling 24h window contains exactly 5 runs — so the schedule can never spill
+#   past the free cap into paid "additional runs" credits. Clustering at night
+#   WITHOUT fixing the times would let two nights' runs fall inside one 24h
+#   window (6+ runs) and burn credits; fixed daily times make that impossible.
+#   Slot map (constant every day; identity varies):
+#     21:00 / 22:00 / 23:00 UTC = executor base (3/day, all 7 days)
+#     00:00 UTC = executor slot-filler (Mon–Wed,Fri–Sun) OR upgrade-drafter (Thu)
+#     01:00 UTC = routine-of-the-day (planner/architect/triager/doc-drift/news)
 #   The standalone reviewer routine was RETIRED (its daily slot funded the executor's
 #   return to 3/day): cron-based review kept lagging PR-open — PRs were merged between
 #   slots and the reviewer filed idle issues (see #160). First-pass review now happens
@@ -30,7 +48,7 @@ routines:
   # delivers; the idle issue is the last resort only when the whole chain is empty.
   - name: k8s-lab autonomous dev
     trigger_id: trig_01CRtpmaS1scBQL74xKqmfvS
-    cron: "0 */8 * * *"            # every 8h = 3/day (restored from 2/day — reviewer retirement freed the slot)
+    cron: "0 21-23 * * *"          # 21:00/22:00/23:00 UTC = 3/day, all at night (was "0 */8 * * *" daytime)
     model: claude-sonnet-4-6
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
@@ -38,11 +56,12 @@ routines:
     branch_prefix: auto/           # PRs land on auto/<slug>
     max_tier: green                # WAYS-OF-WORKING.md autonomy tier
 
-  # The EXECUTOR'S 4th DAILY SLOT — same prompt, fires 04:00 UTC every day EXCEPT
-  # Thursday (cron day 4), where planner + upgrade-drafter take the two extra slots.
+  # The EXECUTOR'S 4th DAILY SLOT — same prompt, fires 00:00 UTC every day EXCEPT
+  # Thursday (cron day 4), where upgrade-drafter takes the 00:00 slot and planner
+  # takes the 01:00 slot instead.
   - name: k8s-lab autonomous dev (slot filler)
     trigger_id: trig_011X276UrgGJWLsgC9Apneok
-    cron: "0 4 * * 0-3,5,6"        # 04:00 UTC daily except Thu — fills the 5th quota slot
+    cron: "0 0 * * 0-3,5,6"        # 00:00 UTC daily except Thu (Thu's 00:00 slot → upgrade-drafter)
     model: claude-sonnet-4-6
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
@@ -53,7 +72,7 @@ routines:
   # The PLANNER — grooms CHARTER gaps + GitHub issues into ROADMAP items.
   - name: k8s-lab planner
     trigger_id: trig_015uWP3Hv1LTREpKzzkMkpUE
-    cron: "0 6 * * 1,4"           # twice weekly, Mon + Thu 06:00 UTC (~09:00 Europe/Tallinn) — bumped from weekly after PR #124
+    cron: "0 1 * * 1,4"           # twice weekly, Mon + Thu 01:00 UTC (~04:00 Europe/Tallinn, night) — 5th nightly slot
     model: claude-opus-4-7
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
@@ -64,7 +83,7 @@ routines:
   # The ARCHITECT — researches best practices and opens RFC issues for 🟡 backlog items.
   - name: k8s-lab architect
     trigger_id: trig_01SpewghyraZDSrLoGA32nBe
-    cron: "0 6 * * 2"             # weekly, Tuesdays 06:00 UTC (day after the planner)
+    cron: "0 1 * * 2"             # weekly, Tuesdays 01:00 UTC (~04:00 Europe/Tallinn, night) — 5th nightly slot
     model: claude-opus-4-7
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
@@ -80,7 +99,7 @@ routines:
   # The TRIAGER — labels open GitHub issues with domain / tier / priority.
   - name: k8s-lab triager
     trigger_id: trig_01E6ugxYJY6yGzwvSHSgFaCx
-    cron: "0 12 * * 3,6"           # Wed + Sat 12:00 UTC (~15:00 Europe/Tallinn), 2/week
+    cron: "0 1 * * 3,6"            # Wed + Sat 01:00 UTC (~04:00 Europe/Tallinn, night), 2/week — 5th nightly slot
     model: claude-sonnet-4-6
     enabled: true
     allowed_tools: [Bash, Read, Glob, Grep]   # labels-only — no Write/Edit, no PRs
@@ -91,7 +110,7 @@ routines:
   # The UPGRADE DRAFTER — bumps existing chart/image versions, one PR per run.
   - name: k8s-lab upgrade-drafter
     trigger_id: trig_01UyN9qcTFvWD14k38tn49K1
-    cron: "0 9 * * 4"              # weekly, Thursdays 09:00 UTC
+    cron: "0 0 * * 4"              # weekly, Thursdays 00:00 UTC (~03:00 Europe/Tallinn, night) — Thu's 4th nightly slot
     model: claude-sonnet-4-6
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
@@ -102,7 +121,7 @@ routines:
   # The DOC-DRIFT AUTHOR — reconciles README + dependency-tree + lab-UI drift.
   - name: k8s-lab doc-drift-author
     trigger_id: trig_01AibRNtdZLqLu3a58jDxnFk
-    cron: "0 9 * * 5"              # weekly, Fridays 09:00 UTC
+    cron: "0 1 * * 5"              # weekly, Fridays 01:00 UTC (~04:00 Europe/Tallinn, night) — 5th nightly slot
     model: claude-sonnet-4-6
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
@@ -115,7 +134,7 @@ routines:
   # Replaced the learning-post-writer in the Sun quota slot to unblock ADR audits.
   - name: k8s-lab industry-news-writer
     trigger_id: trig_01GNuyixzT3TBDF7Mk4ZeSTr
-    cron: "0 8 * * 0"              # weekly, Sundays 08:00 UTC (before architect's Tue 06:00)
+    cron: "0 1 * * 0"              # weekly, Sundays 01:00 UTC (~04:00 Europe/Tallinn, night) — 5th nightly slot, still before architect's Tue
     model: claude-sonnet-4-6
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]

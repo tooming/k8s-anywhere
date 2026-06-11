@@ -40,14 +40,14 @@ routine's model/cadence is a PR that edits this table.
 
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch | Max tier |
 |---|---|---|---|---|---|---|
-| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run; empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager) so no slot is wasted | 8h (3/day) · Sonnet 4.6 | `auto/*` (fallback roles keep their own prefixes) | 🟢 Green |
-| Executor 4th slot | `trig_011X276UrgGJWLsgC9Apneok` | @tooming | same prompt as the executor (incl. the fallback chain); fills the day's 5th quota slot | 04:00 UTC daily except Thu · Sonnet 4.6 | `auto/*` | 🟢 Green |
-| Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @tooming | grooms CHARTER gaps + issues → ROADMAP | Mon + Thu 06:00 UTC · Opus 4.7 | `plan/*` | 🟢 Green |
-| Architect | `trig_01SpewghyraZDSrLoGA32nBe` | @tooming | researches best practices → opens RFC issues for 🟡 items | weekly Tue · Opus 4.7 | `arch/*` | 🟢 Green |
-| Triager | `trig_01E6ugxYJY6yGzwvSHSgFaCx` | @tooming | labels open issues with domain / tier / priority | Wed + Sat 12:00 UTC · Sonnet 4.6 | — (labels) | 🟢 Green |
-| Upgrade drafter | `trig_01UyN9qcTFvWD14k38tn49K1` | @tooming | bumps existing chart/image versions, one PR per run | weekly Thu 09:00 UTC · Sonnet 4.6 | `upgrade/*` | 🟢 Green |
-| Doc-drift author | `trig_01AibRNtdZLqLu3a58jDxnFk` | @tooming | reconciles README + dependency-tree + lab-UI drift | weekly Fri 09:00 UTC · Sonnet 4.6 | `sync/*` | 🟢 Green |
-| Industry-news writer | `trig_01GNuyixzT3TBDF7Mk4ZeSTr` | @tooming | weekly upstream-news digest under `docs/industry/` (feeds the architect's ADR audit) | weekly Sun 08:00 UTC · Sonnet 4.6 | `digest/*` | 🟢 Green |
+| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run; empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager) so no slot is wasted | 21–23:00 UTC nightly (3/day) · Sonnet 4.6 | `auto/*` (fallback roles keep their own prefixes) | 🟢 Green |
+| Executor 4th slot | `trig_011X276UrgGJWLsgC9Apneok` | @tooming | same prompt as the executor (incl. the fallback chain); fills the day's 5th quota slot | 00:00 UTC daily except Thu · Sonnet 4.6 | `auto/*` | 🟢 Green |
+| Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @tooming | grooms CHARTER gaps + issues → ROADMAP | Mon + Thu 01:00 UTC · Opus 4.7 | `plan/*` | 🟢 Green |
+| Architect | `trig_01SpewghyraZDSrLoGA32nBe` | @tooming | researches best practices → opens RFC issues for 🟡 items | weekly Tue 01:00 UTC · Opus 4.7 | `arch/*` | 🟢 Green |
+| Triager | `trig_01E6ugxYJY6yGzwvSHSgFaCx` | @tooming | labels open issues with domain / tier / priority | Wed + Sat 01:00 UTC · Sonnet 4.6 | — (labels) | 🟢 Green |
+| Upgrade drafter | `trig_01UyN9qcTFvWD14k38tn49K1` | @tooming | bumps existing chart/image versions, one PR per run | weekly Thu 00:00 UTC · Sonnet 4.6 | `upgrade/*` | 🟢 Green |
+| Doc-drift author | `trig_01AibRNtdZLqLu3a58jDxnFk` | @tooming | reconciles README + dependency-tree + lab-UI drift | weekly Fri 01:00 UTC · Sonnet 4.6 | `sync/*` | 🟢 Green |
+| Industry-news writer | `trig_01GNuyixzT3TBDF7Mk4ZeSTr` | @tooming | weekly upstream-news digest under `docs/industry/` (feeds the architect's ADR audit) | weekly Sun 01:00 UTC · Sonnet 4.6 | `digest/*` | 🟢 Green |
 
 > **Retired — Reviewer** (`trig_01Dw7US6aZmJo8XZwDikoNkG`, daily 17:30 UTC, retired
 > 2026-06-10): cron-based review structurally lagged PR-open — PRs were merged between
@@ -169,6 +169,16 @@ _Process:_
   executor slot or enabling the paid "additional runs" toggle. (The local verifier and
   operator are invoked by hand on the maintainer's machine; they have no cron and no
   quota cost.)
+- **Night-time window + rolling-24h credit safety.** All runs fire in a fixed nightly
+  window at **five fixed clock-times every day — 21:00, 22:00, 23:00, 00:00, 01:00 UTC**
+  (~23:00–04:00 in the maintainer's Europe/Tallinn TZ, night in both EET and EEST so no
+  DST flip drifts a slot into the working day). The times are *fixed* deliberately: the
+  free cap is per **rolling** 24h, not per calendar day, so because the set of fire-times
+  is identical every day (only which routine fills each slot changes), every rolling 24h
+  window holds exactly 5 runs and the schedule can never spill into paid "additional runs"
+  credits. Clustering at night *without* fixing the times would let two nights' runs land
+  in one 24h window (6+ runs) and burn credits. Slots: 21/22/23:00 = executor base;
+  00:00 = executor slot-filler (or upgrade-drafter on Thu); 01:00 = routine-of-the-day.
 - Spend scales with **cadence × model × routine count**; the registry records all three, and
   the routine's owner is accountable for it.
 - **Scale-out rule:** add agents or raise cadence only when there is review capacity to
