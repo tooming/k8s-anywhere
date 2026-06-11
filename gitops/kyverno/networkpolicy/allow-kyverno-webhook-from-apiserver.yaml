@@ -1,0 +1,23 @@
+# Allow the kube-apiserver to reach the Kyverno admission webhook on TCP 9443
+# (ADR-0016). Kyverno registers MutatingWebhookConfiguration and
+# ValidatingWebhookConfiguration resources; the API server calls back on TCP
+# 9443 for every pod admission request. Without this allow, the default-deny-all
+# floor blocks webhook callbacks and every pod creation in the cluster fails.
+# The kube-apiserver IP (10.43.0.1/32) is the k3s cluster service IP — same
+# ipBlock pattern used by allow-dns-and-apiserver.yaml (ADR-0016 shared baseline).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kyverno-webhook-from-apiserver
+  namespace: kyverno
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 9443
+          protocol: TCP
+      from:
+        - ipBlock:
+            cidr: 10.43.0.1/32
