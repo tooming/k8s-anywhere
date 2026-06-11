@@ -213,17 +213,17 @@ setup() {
 }
 
 @test "capstone-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/capstone-networkpolicy.yaml"
+  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "capstone-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/capstone-networkpolicy.yaml"
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "capstone-networkpolicy ArgoCD Application targets the capstone namespace" {
-  run grep -q 'namespace: capstone' "$REPO/gitops/platform/capstone-networkpolicy.yaml"
+  run grep -q 'destNamespace: capstone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -308,17 +308,17 @@ setup() {
 }
 
 @test "observability-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/observability-networkpolicy.yaml"
+  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "observability-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/observability-networkpolicy.yaml"
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "observability-networkpolicy ArgoCD Application targets the observability namespace" {
-  run grep -q 'namespace: observability' "$REPO/gitops/platform/observability-networkpolicy.yaml"
+  run grep -q 'destNamespace: observability' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -389,17 +389,17 @@ setup() {
 }
 
 @test "vault-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/vault-networkpolicy.yaml"
+  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "vault-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/vault-networkpolicy.yaml"
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "vault-networkpolicy ArgoCD Application targets the vault namespace" {
-  run grep -q 'namespace: vault' "$REPO/gitops/platform/vault-networkpolicy.yaml"
+  run grep -q 'destNamespace: vault' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -473,17 +473,17 @@ setup() {
 }
 
 @test "storage-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/storage-networkpolicy.yaml"
+  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "storage-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/storage-networkpolicy.yaml"
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "storage-networkpolicy ArgoCD Application targets the storage namespace" {
-  run grep -q 'namespace: storage' "$REPO/gitops/platform/storage-networkpolicy.yaml"
+  run grep -q 'destNamespace: storage' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -596,17 +596,17 @@ setup() {
 }
 
 @test "argocd-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/argocd-networkpolicy.yaml"
+  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "argocd-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/argocd-networkpolicy.yaml"
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "argocd-networkpolicy ArgoCD Application targets the argocd namespace" {
-  run grep -q 'namespace: argocd' "$REPO/gitops/platform/argocd-networkpolicy.yaml"
+  run grep -q 'destNamespace: argocd' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -670,17 +670,17 @@ setup() {
 }
 
 @test "moto-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/moto-networkpolicy.yaml"
+  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "moto-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/moto-networkpolicy.yaml"
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "moto-networkpolicy ArgoCD Application targets the moto namespace" {
-  run grep -q 'namespace: moto' "$REPO/gitops/platform/moto-networkpolicy.yaml"
+  run grep -q 'destNamespace: moto' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -720,17 +720,17 @@ setup() {
 }
 
 @test "ack-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/ack-networkpolicy.yaml"
+  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "ack-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/ack-networkpolicy.yaml"
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "ack-networkpolicy ArgoCD Application targets the ack-system namespace" {
-  run grep -q 'namespace: ack-system' "$REPO/gitops/platform/ack-networkpolicy.yaml"
+  run grep -q 'destNamespace: ack-system' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -762,30 +762,30 @@ setup() {
 }
 
 @test "lab-gateway-networkpolicy ArgoCD Application file exists" {
-  [ -f "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml" ]
+  [ -f "$REPO/gitops/platform/networkpolicy-appset.yaml" ]
 }
 
 @test "lab-gateway-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml"
+  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "lab-gateway-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml"
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "lab-gateway-networkpolicy ArgoCD Application targets the lab-gateway namespace" {
-  run grep -q 'namespace: lab-gateway' "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml"
+  run grep -q 'destNamespace: lab-gateway' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "lab-gateway-networkpolicy ArgoCD Application is sync-wave 4" {
-  run grep -q 'sync-wave: "4"' "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml"
+  run grep -q 'sync-wave: "4"' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "lab-gateway-networkpolicy ArgoCD Application sources from gitops/network/networkpolicy" {
-  run grep -q 'path: gitops/network/networkpolicy' "$REPO/gitops/platform/lab-gateway-networkpolicy.yaml"
+  run grep -q 'gitops/network/networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
