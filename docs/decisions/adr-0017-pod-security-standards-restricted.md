@@ -114,7 +114,7 @@ so the executor never silently applies the wrong label.
 | `tidb` / `tidb-admin` | `baseline` | TiDB operator pods need additional capabilities; `baseline` is HashiCorp/PingCAP's documented recommendation. |
 | `moto` / `ack-system` | `restricted` | Stateless HTTP mock; non-root-capable. |
 | `lab-gateway` | `restricted` | Envoy Gateway; runs as non-root. |
-| `vault` | `baseline` | Vault needs `IPC_LOCK` to `mlock` its memory and prevent secret swap-to-disk. `restricted` forbids it; `baseline` is HashiCorp's recommended profile. |
+| `vault` | `baseline` | Vault needs `IPC_LOCK` to `mlock` its memory and prevent secret swap-to-disk. `restricted` forbids it; `baseline` is HashiCorp's recommended profile. Re-evaluated 2026-06-11 (audit #157) — **kept**; see [§Re-evaluation log](#re-evaluation-log). |
 | `longhorn-system` | `privileged` | longhorn-manager and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, and host `/dev`. Block storage cannot work under `restricted`. |
 | `istio-system` | `privileged` | istio-cni runs as a DaemonSet that mutates host CNI config; ztunnel requires `NET_ADMIN`. Both fail under `restricted`. |
 | `kube-system` | unchanged | k3s-managed; out of scope. |
@@ -159,6 +159,40 @@ so the executor never silently applies the wrong label.
 | `gitops/apps/capstone/namespace.yaml` | Explicit `capstone` namespace manifest with four PSA `restricted` labels |
 | `gitops/apps/capstone/deployment.yaml` | Pod- and container-level `securityContext` fields; `emptyDir` for write targets |
 | `tests/securitycontext.bats` | Clusterless YAML structural tests: deployment sets `runAsNonRoot`, `allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`, `readOnlyRootFilesystem: true`, `seccompProfile.type: RuntimeDefault`; namespace carries the four PSA labels |
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a carve-out that survives a review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-06-11 — `vault` carve-out kept (audit [#157](https://github.com/tooming/k8s-lab/issues/157))
+
+**Trigger.** `docs/industry/2026-W23-digest.md` → "Vault v2.0.2 — 2026-06-05":
+the `cap_ipc_lock` capability is no longer granted to the `vault` binary at build
+time, so a Vault configured with `disable_mlock = true` no longer needs
+`IPC_LOCK` — which is the sole justification for the `vault: baseline` row above.
+
+**Decision: keep `vault: baseline`.** The lab runs the Vault Helm chart `0.32.0`
+on the 1.21.x line (`gitops/platform/vault.yaml`; the unsealer pins
+`hashicorp/vault:1.21.2`). The release that drops `cap_ipc_lock` is named only in
+the synthetic weekly digest — there is no pinnable chart/image to actually deploy,
+so flipping the carve-out now would assert a security posture the running binary
+does not have ([ADR-0004](adr-0004-no-fabricated-content.md)). Adding
+`disable_mlock = true` to the *current* image in isolation would permit secret
+swap-to-disk without the offsetting `restricted` tightening — a net regression —
+so it is not done alone either.
+
+**Flip condition (what reopens this).** A real, pinnable Vault chart/image whose
+binary no longer holds `cap_ipc_lock` becomes deployable in the lab. The executor
+PR is then: bump the Vault chart/image + set `disable_mlock = true`; flip
+`gitops/vault/namespace.yaml` PSA labels `baseline → restricted` and add the
+standard §Layer 1 `securityContext` (with `emptyDir` for any non-PVC write path);
+update the `vault` row above. Until then the 🟢 PSS-labels carve-out fan-out keeps
+`vault` at `baseline` so we never ship a carve-out we are about to remove.
 
 ---
 

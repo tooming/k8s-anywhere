@@ -1,7 +1,7 @@
 # .routines-applied — sha256 of each routines/* file at last apply.
 # Updated by: scripts/routines-mark-applied.sh (`make routines-mark-applied`).
 # Drift checker: scripts/routines-check.sh (`make routines-check`, in `make ci`).
-routines/architect.prompt.md sha256=dd18c5930016c4df1ca02d648f0d99fc44267c0e3886eda27332f0b5bfd1c8ae
+routines/architect.prompt.md sha256=da5fc46ce4f7d8d8c7f924737c56b443b8bae0a78b5bb5440c7458bdb280f5c5
 routines/doc-drift-author.prompt.md sha256=de9a451df73fa1e7f6bcb27d2ee53ef0651b887221d906d76acb2a3a78ee3668
 routines/executor.prompt.md sha256=95eeb0104b7d99567ce32cef69a004a8eb903ad6ec17ed9fe5761a978049bb24
 routines/industry-news-writer.prompt.md sha256=60505ffff3c7ae15934a2aaafbf89112a920714f1e38812a7448bf7a2ccb7574
