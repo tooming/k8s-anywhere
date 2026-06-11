@@ -278,6 +278,26 @@ spec:
                 scrape_interval = "30s"
               }
 
+              // ---- Kyverno (admission policy engine) metrics -> Mimir ----
+              // Kyverno 3.x splits into four controllers, each exposing Prometheus
+              // metrics on :8000 via its own `*-controller-metrics` Service. There is
+              // no single kyverno-svc-metrics in 3.x, and kyverno-svc is the admission
+              // webhook (443->9443), not metrics. policy-result + admission-review
+              // series come from the admission/background controllers; we scrape all
+              // four so the "Lab — Kyverno" dashboard reflects real state (ADR-0004,
+              // ADR-0019). The metrics NetworkPolicy allow (port 8000, podSelector {})
+              // already covers every kyverno pod regardless of Service name.
+              prometheus.scrape "kyverno" {
+                targets = [
+                  {"__address__" = "kyverno-admission-controller-metrics.kyverno.svc.cluster.local:8000", "job" = "kyverno"},
+                  {"__address__" = "kyverno-background-controller-metrics.kyverno.svc.cluster.local:8000", "job" = "kyverno"},
+                  {"__address__" = "kyverno-cleanup-controller-metrics.kyverno.svc.cluster.local:8000", "job" = "kyverno"},
+                  {"__address__" = "kyverno-reports-controller-metrics.kyverno.svc.cluster.local:8000", "job" = "kyverno"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
               // ---- Inkless (diskless Kafka) exporter metrics -> Mimir ----
               // kafka-exporter co-located container in the Inkless StatefulSet exposes Prometheus
               // metrics on :9308; this target is idle unless inkless is manually synced.
