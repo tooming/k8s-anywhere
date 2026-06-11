@@ -1,0 +1,25 @@
+# Allow Alloy in the observability namespace to scrape Kyverno metrics on TCP 8000
+# (ADR-0016). The Kyverno admission controller exposes Prometheus metrics at
+# :8000/metrics via the kyverno-svc Service; the kyverno scrape job in
+# observability-alloy.yaml targets kyverno-svc.kyverno.svc.cluster.local:8000
+# and feeds the "Lab — Kyverno" dashboard with real policy-result counters (ADR-0004).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kyverno-metrics-from-observability
+  namespace: kyverno
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8000
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: alloy

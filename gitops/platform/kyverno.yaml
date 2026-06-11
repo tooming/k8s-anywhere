@@ -1,0 +1,54 @@
+# Kyverno admission policy engine (ADR-0019, CHARTER Objective O1).
+# Helm chart kyverno/kyverno from https://kyverno.github.io/kyverno/.
+# Single-replica per controller (ADR-0005 lab trade-off; production uses 3+).
+# Memory limits per ADR-0019 §"Footprint controls": admission 256Mi,
+# background 128Mi, cleanup 64Mi, reports 128Mi — ~200–300 MB steady-state.
+# Ships the engine and CRDs (ClusterPolicy, PolicyReport, …). ClusterPolicies
+# land in the kyverno-policies Application (sync-wave 5, separate PR).
+# ALWAYS-ON: automated sync; kyverno-extras (wave 0) pre-creates the namespace
+# with PSA baseline labels before the Helm release schedules any pods.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://kyverno.github.io/kyverno/
+    chart: kyverno
+    targetRevision: 3.3.4
+    helm:
+      releaseName: kyverno
+      valuesObject:
+        admissionController:
+          replicas: 1
+          resources:
+            limits:
+              memory: 256Mi
+        backgroundController:
+          replicas: 1
+          resources:
+            limits:
+              memory: 128Mi
+        cleanupController:
+          replicas: 1
+          resources:
+            limits:
+              memory: 64Mi
+        reportsController:
+          replicas: 1
+          resources:
+            limits:
+              memory: 128Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,35 @@
+# kyverno-networkpolicy — default-deny + allowlist NetworkPolicies for the kyverno
+# namespace (ADR-0016 §4 fan-out; admission policy engine). Applies the shared
+# baseline templates (default-deny-all, allow-dns-and-apiserver) plus per-workload
+# allow rules: kube-apiserver webhook callback on TCP 9443 and Alloy metrics scrape
+# from observability on TCP 8000.
+# The allow-dns-and-apiserver baseline covers Kyverno's k8s API calls (policy
+# reconcile, leader election, admission review fan-out).
+# ALWAYS-ON: automated sync alongside the kyverno Application (same namespace).
+# The kustomization references templates from ../../network/policies/ — the
+# kustomize.buildOptions flag lifts the out-of-tree load restriction for this overlay.
+# Wave 4: after kyverno (wave 1) and kyverno-extras (wave 0) have created the namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/kyverno/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

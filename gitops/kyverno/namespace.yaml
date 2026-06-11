@@ -1,0 +1,13 @@
+# PSA carve-out: Kyverno admission controller mounts webhook TLS material via
+# fsGroup which requires the baseline profile (restricted would block it).
+# ADR-0017 §Per-namespace profile records kyverno as baseline-only; re-evaluate
+# when the chart documents restricted compatibility (see ADR-0019).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kyverno
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/audit: baseline

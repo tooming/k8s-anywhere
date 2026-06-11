@@ -1,0 +1,28 @@
+# kyverno-extras — applies the kyverno namespace.yaml (PSA baseline labels, ADR-0017)
+# before the Kyverno Helm Application (sync-wave 1) schedules pods. Running at wave 0
+# ensures the namespace's enforce/warn/audit labels are in place before ArgoCD deploys
+# the Helm release. Also serves as the landing zone for future day-0 resources such as
+# the cosign-public-key ConfigMap seeded by scripts/cosign-bootstrap.sh (ADR-0019).
+# ALWAYS-ON: automated sync alongside kyverno.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/kyverno
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,17 @@
+# NetworkPolicy Kustomize overlay for the kyverno namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates and adds kyverno-specific allow rules for
+# the admission webhook callback from the kube-apiserver (TCP 9443) and the Alloy
+# metrics scrape from the observability namespace (TCP 8000).
+# The allow-dns-and-apiserver baseline covers Kyverno's k8s API calls (policy
+# reconcile, leader election, and admission review fan-out to the apiserver).
+# Wired into gitops/platform/kyverno-networkpolicy.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kyverno
+
+resources:
+  - ../../../network/policies/default-deny.yaml
+  - ../../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-kyverno-webhook-from-apiserver.yaml
+  - allow-kyverno-metrics-from-observability.yaml
