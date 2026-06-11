@@ -27,6 +27,11 @@ spec:
           existingSecret: grafana-admin
           userKey: admin-user
           passwordKey: admin-password
+        # Disable the chart's built-in init-chown-data container (runs as root + CHOWN,
+        # violates PSS restricted/ADR-0017). fsGroup: 472 in podSecurityContext is
+        # sufficient — Kubernetes chowns the PVC to gid 472 on mount.
+        initChownData:
+          enabled: false
         # Pod Security Standards restricted (ADR-0017). Grafana image runs as UID 472.
         # readOnlyRootFilesystem carve-out: Grafana writes plugin state and session data
         # beyond the PVC-backed /var/lib/grafana; tightening is a follow-up item.
