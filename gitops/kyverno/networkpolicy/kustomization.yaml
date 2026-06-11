@@ -11,7 +11,7 @@ kind: Kustomization
 namespace: kyverno
 
 resources:
-  - ../../../network/policies/default-deny.yaml
-  - ../../../network/policies/allow-dns-and-apiserver.yaml
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
   - allow-kyverno-webhook-from-apiserver.yaml
   - allow-kyverno-metrics-from-observability.yaml
