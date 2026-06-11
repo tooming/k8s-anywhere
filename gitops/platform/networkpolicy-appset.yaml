@@ -1,0 +1,66 @@
+# networkpolicy-appset — ADR-0016 §4 fan-out as an ApplicationSet.
+# Replaces the 9 standalone *-networkpolicy Application manifests with a single
+# List-generator ApplicationSet, making the per-namespace NetworkPolicy fan-out
+# visible in the ArgoCD ApplicationSet UI (list page + tree-view + slide-out).
+# Wave 3: ApplicationSet object is planted before the generated Applications at wave 4.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  generators:
+    - list:
+        elements:
+          - appName: ack-networkpolicy
+            gitPath: gitops/ack/networkpolicy
+            destNamespace: ack-system
+          - appName: argocd-networkpolicy
+            gitPath: gitops/argocd/networkpolicy
+            destNamespace: argocd
+          - appName: capstone-networkpolicy
+            gitPath: gitops/apps/capstone/networkpolicy
+            destNamespace: capstone
+          - appName: data-networkpolicy
+            gitPath: gitops/data/networkpolicy
+            destNamespace: data
+          - appName: lab-gateway-networkpolicy
+            gitPath: gitops/network/networkpolicy
+            destNamespace: lab-gateway
+          - appName: moto-networkpolicy
+            gitPath: gitops/moto/networkpolicy
+            destNamespace: moto
+          - appName: observability-networkpolicy
+            gitPath: gitops/observability/networkpolicy
+            destNamespace: observability
+          - appName: storage-networkpolicy
+            gitPath: gitops/storage/networkpolicy
+            destNamespace: storage
+          - appName: vault-networkpolicy
+            gitPath: gitops/vault/networkpolicy
+            destNamespace: vault
+  template:
+    metadata:
+      name: "{{appName}}"
+      namespace: argocd
+      annotations:
+        argocd.argoproj.io/sync-wave: "4"
+    spec:
+      project: default
+      source:
+        repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+        targetRevision: main
+        path: "{{gitPath}}"
+        kustomize:
+          buildOptions: "--load-restrictor LoadRestrictionsNone"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{destNamespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
