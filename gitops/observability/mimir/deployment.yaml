@@ -21,6 +21,13 @@ spec:
         # (plain manifest has no auto-checksum like Helm charts do).
         checksum/config: s3-garage-v2
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: mimir
           image: grafana/mimir:3.0.6
@@ -42,6 +49,13 @@ spec:
           ports:
             - name: http
               containerPort: 9009
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           readinessProbe:
             httpGet:
               path: /ready
@@ -61,6 +75,8 @@ spec:
               mountPath: /etc/mimir
             - name: data
               mountPath: /data
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: config
           configMap:
@@ -68,3 +84,5 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: mimir-data
+        - name: tmp
+          emptyDir: {}

@@ -27,6 +27,23 @@ spec:
           existingSecret: grafana-admin
           userKey: admin-user
           passwordKey: admin-password
+        # Pod Security Standards restricted (ADR-0017). Grafana image runs as UID 472.
+        # readOnlyRootFilesystem carve-out: Grafana writes plugin state and session data
+        # beyond the PVC-backed /var/lib/grafana; tightening is a follow-up item.
+        podSecurityContext:
+          runAsNonRoot: true
+          runAsUser: 472
+          runAsGroup: 472
+          fsGroup: 472
+          seccompProfile:
+            type: RuntimeDefault
+        containerSecurityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+              - ALL
         # persist grafana.db (users + sessions) so restarts don't force re-login
         persistence:
           enabled: true
@@ -59,6 +76,18 @@ spec:
         extraInitContainers:
           - name: ca-bundle
             image: docker.io/grafana/grafana:13.0.1
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 472
+              runAsGroup: 472
+              allowPrivilegeEscalation: false
+              privileged: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+              seccompProfile:
+                type: RuntimeDefault
             command:
               - /bin/sh
               - -c
@@ -167,7 +196,7 @@ spec:
               gnetId: 17781
               revision: 1
               datasource: Mimir
-        # No k8s-sidecar: lab dashboards now sync from GitLab via native Git Sync
+        # No k8s-configmap-watcher: lab dashboards now sync from GitLab via native Git Sync
         # (ADR-0006). The community dashboards above (gnetId) use a separate file
         # provider and are unaffected.
         extraObjects:

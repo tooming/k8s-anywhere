@@ -18,6 +18,27 @@ spec:
     helm:
       releaseName: node-exporter
       valuesObject:
+        # Disable host namespaces — PSS restricted prohibits hostPID/hostNetwork.
+        # In k3d the "nodes" are Docker containers so host-PID/network visibility
+        # adds no meaningful value; container-level metrics are sufficient.
+        hostPID: false
+        hostNetwork: false
+        # Disable hostPath volume for host root FS — PSS restricted prohibits hostPath.
+        hostRootFsMount:
+          enabled: false
+        podSecurityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
+        containerSecurityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
         # run on every node (incl. any tainted control-plane)
         tolerations:
           - operator: Exists
