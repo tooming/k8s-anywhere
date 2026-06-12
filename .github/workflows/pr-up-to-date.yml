@@ -1,0 +1,52 @@
+name: pr-up-to-date
+
+# Hard gate: every PR branch must be on top of main before it can merge.
+# This prevents the ROADMAP.md / dependency-tree.md conflict pile-up that
+# happens when multiple long-lived branches all diverge from the same base.
+#
+# Fix locally:  git fetch origin && git rebase origin/main
+# Or use:       make rebase-prs  (rebases all open PR branches in one shot)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  up-to-date:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Check out the actual PR head, not the synthetic merge commit
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }}
+
+      - name: Verify branch is on top of base
+        run: |
+          merge_base=$(git merge-base HEAD origin/${{ github.base_ref }})
+          base_head=$(git rev-parse origin/${{ github.base_ref }})
+
+          if [ "$merge_base" = "$base_head" ]; then
+            echo "✓ Branch is up to date with ${{ github.base_ref }}."
+            exit 0
+          fi
+
+          behind=$(git log --oneline "${merge_base}..origin/${{ github.base_ref }}" | wc -l | tr -d ' ')
+          echo "✗ Branch is ${behind} commit(s) behind ${{ github.base_ref }}."
+          echo ""
+          echo "Commits on ${{ github.base_ref }} not yet in this branch:"
+          git log --oneline "${merge_base}..origin/${{ github.base_ref }}"
+          echo ""
+          echo "Fix with:"
+          echo "  git fetch origin"
+          echo "  git rebase origin/${{ github.base_ref }}"
+          echo ""
+          echo "Or rebase all open PRs at once:"
+          echo "  make rebase-prs"
+          exit 1
