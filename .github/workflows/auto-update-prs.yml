@@ -1,12 +1,10 @@
 name: auto-update-prs
 
-# When main advances, immediately try to update every open PR branch via
-# GitHub's native "merge base into head" mechanism. This keeps PR branches
-# current and prevents the conflict pile-up that blocks merges.
-#
-# For clean PRs (no content conflicts): the branch is updated automatically.
-# For conflicted PRs: the API call fails gracefully; the pr-up-to-date CI
-#   gate will catch it and tell the author to rebase manually.
+# When main advances, rebase every open PR branch on top of it.
+# Uses git rebase (not GitHub's merge-based updateBranch API) so that
+# ROADMAP.md / dependency-tree.md — files every PR touches — never accumulate
+# merge-conflict markers. Clean rebases are force-pushed; conflicted branches
+# are left unchanged and the pr-up-to-date CI gate catches them.
 
 on:
   push:
@@ -14,17 +12,37 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
+  pull-requests: read
 
 jobs:
-  update-pr-branches:
+  rebase-pr-branches:
     runs-on: ubuntu-latest
     steps:
-      - name: Update open PR branches
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Use a token with push rights (default GITHUB_TOKEN is enough for
+          # same-repo branches when "Allow GitHub Actions to create and approve
+          # pull requests" is enabled in repo settings).
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch all PR branches
+        run: git fetch --all --prune -q
+
+      - name: Rebase open PR branches onto main
         uses: actions/github-script@v7
+        env:
+          MAIN_SHA: ${{ github.sha }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { execSync } = require('child_process');
+
             const pulls = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -37,42 +55,78 @@ jobs:
             let updated = 0, skipped = 0, failed = 0;
 
             for (const pr of pulls.data) {
-              // Skip PRs where head is already at or ahead of main
-              try {
-                const comparison = await github.rest.repos.compareCommits({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  base: pr.head.sha,
-                  head: context.sha,
-                });
+              const branch = pr.head.ref;
+              const headSha = pr.head.sha;
+              const remote = `origin/${branch}`;
 
-                if (comparison.data.ahead_by === 0) {
-                  console.log(`  skip PR #${pr.number} "${pr.title}" — already up to date`);
+              // Check if already on top of main
+              try {
+                const mergeBase = execSync(
+                  `git merge-base ${remote} origin/main`, { encoding: 'utf8' }
+                ).trim();
+                const mainHead = execSync(
+                  'git rev-parse origin/main', { encoding: 'utf8' }
+                ).trim();
+                if (mergeBase === mainHead) {
+                  console.log(`  skip PR #${pr.number} "${branch}" — already on top of main`);
                   skipped++;
                   continue;
                 }
               } catch (e) {
-                // comparison API can fail on diverged branches; try update anyway
+                console.log(`  skip PR #${pr.number} "${branch}" — could not determine merge-base: ${e.message}`);
+                skipped++;
+                continue;
               }
 
+              // Find the topmost non-merge commit on the branch
+              // (skip any auto-update merge commits so we rebase the real work)
+              let commitsToPick;
               try {
-                await github.rest.pulls.updateBranch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: pr.number,
-                });
-                console.log(`  ✓ updated PR #${pr.number} "${pr.title}"`);
+                const log = execSync(
+                  `git log --no-merges --format=%H origin/main..${remote}`,
+                  { encoding: 'utf8' }
+                ).trim();
+                commitsToPick = log ? log.split('\n').reverse() : [];
+              } catch (e) {
+                console.log(`  skip PR #${pr.number} "${branch}" — log failed: ${e.message}`);
+                skipped++;
+                continue;
+              }
+
+              if (commitsToPick.length === 0) {
+                console.log(`  skip PR #${pr.number} "${branch}" — no non-merge commits above main`);
+                skipped++;
+                continue;
+              }
+
+              console.log(`  rebase PR #${pr.number} "${branch}" (${commitsToPick.length} commit(s))`);
+
+              try {
+                // Work on a detached HEAD from main
+                execSync('git checkout --detach origin/main -q', { stdio: 'pipe' });
+                execSync(`git cherry-pick ${commitsToPick.join(' ')} -q`, { stdio: 'pipe' });
+
+                const newSha = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+                execSync(
+                  `git push origin HEAD:refs/heads/${branch} --force-with-lease="${branch}:${headSha}"`,
+                  { stdio: 'pipe' }
+                );
+                console.log(`    ✓ force-pushed ${branch} → ${newSha.slice(0, 12)}`);
                 updated++;
               } catch (e) {
-                // 422 = merge conflict or update not needed
-                const msg = e.message || String(e);
-                if (msg.includes('merge conflict') || msg.includes('422')) {
-                  console.log(`  ⚠ PR #${pr.number} "${pr.title}" has conflicts — manual rebase required`);
-                } else {
-                  console.log(`  ✗ PR #${pr.number} "${pr.title}" update failed: ${msg}`);
-                }
+                // cherry-pick conflict — abort and leave branch as-is
+                try { execSync('git cherry-pick --abort', { stdio: 'pipe' }); } catch (_) {}
+                try { execSync('git checkout main -q', { stdio: 'pipe' }); } catch (_) {}
+                console.log(`    ⚠ conflict — ${branch} needs manual rebase`);
                 failed++;
               }
             }
 
-            console.log(`\nSummary: ${updated} updated, ${skipped} already current, ${failed} need manual rebase`);
+            // Return to main
+            try { execSync('git checkout main -q', { stdio: 'pipe' }); } catch (_) {}
+
+            const summary = `\nSummary: ${updated} rebased, ${skipped} already current, ${failed} need manual rebase`;
+            console.log(summary);
+            if (failed > 0) {
+              core.warning(`${failed} PR branch(es) have conflicts and need manual rebase`);
+            }
