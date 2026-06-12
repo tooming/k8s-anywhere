@@ -1,0 +1,25 @@
+# Allow Alloy in the observability namespace to scrape Trivy Operator metrics
+# on TCP 8080 (ADR-0016). Trivy Operator exposes Prometheus metrics at :8080/metrics;
+# the trivy-operator scrape job in observability-alloy.yaml targets this port and
+# feeds the "Lab — Trivy Operator" dashboard with real CVE and SBOM counts (ADR-0004,
+# ADR-0022). podSelector {} covers every trivy-system pod's :8080 metrics port.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-trivy-metrics-from-observability
+  namespace: trivy-system
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: alloy

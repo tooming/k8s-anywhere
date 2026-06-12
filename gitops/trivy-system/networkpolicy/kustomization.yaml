@@ -1,0 +1,17 @@
+# NetworkPolicy Kustomize overlay for the trivy-system namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates and adds trivy-specific allow rules for:
+# - ingress TCP 8080 from Alloy (observability) for Prometheus metrics scrape
+# - egress TCP 443 to 0.0.0.0/0 for vuln-DB pull from ghcr.io (ADR-0022 §Vuln-DB mirror)
+# The allow-dns-and-apiserver baseline covers the operator's k8s API calls
+# (workload watch, CR emit, leader election).
+# Wired into gitops/platform/trivy-system-networkpolicy.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: trivy-system
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-trivy-metrics-from-observability.yaml
+  - allow-trivy-egress-vdb.yaml

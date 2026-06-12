@@ -1,0 +1,57 @@
+# Trivy Operator continuous vulnerability + SBOM scanner (ADR-0022, CHARTER O1).
+# Helm chart aqua/trivy-operator from https://aquasecurity.github.io/helm-charts/.
+# PSA baseline (scan-job pods unpack arbitrary OCI artifacts — restricted
+# is not compatible; controller itself is restricted-capable but the chart
+# applies one profile to both). trivy-extras (wave 0) pre-creates the namespace
+# with PSA baseline labels before the Helm release schedules pods.
+# ALWAYS-ON: automated sync; scanner footprint: ~300-450 MiB steady-state.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trivy-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://aquasecurity.github.io/helm-charts/
+    chart: trivy-operator
+    targetRevision: 0.30.0
+    helm:
+      releaseName: trivy-operator
+      valuesObject:
+        operator:
+          vulnerabilityScannerEnabled: true
+          configAuditScannerEnabled: true
+          rbacAssessmentScannerEnabled: true
+          exposedSecretScannerEnabled: true
+          sbomGeneration: true
+          clusterComplianceEnabled: true
+          excludeNamespaces: kube-system,kube-public,kube-node-lease
+          targetNamespaces: ""
+          resources:
+            limits:
+              memory: 256Mi
+        trivy:
+          resources:
+            requests:
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          storageClassName: ""
+          storageSize: "5Gi"
+        nodeCollector:
+          enabled: true
+          resources:
+            limits:
+              memory: 64Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: trivy-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

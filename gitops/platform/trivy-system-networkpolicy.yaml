@@ -1,0 +1,35 @@
+# trivy-system-networkpolicy — default-deny + allowlist NetworkPolicies for the
+# trivy-system namespace (ADR-0016 §4 fan-out; Trivy Operator supply-chain scanner).
+# Applies the shared baseline templates (default-deny-all, allow-dns-and-apiserver)
+# plus per-workload allow rules: Alloy metrics scrape on TCP 8080 and egress TCP 443
+# to ghcr.io for vuln-DB refresh (ADR-0022 §Vuln-DB mirror).
+# The allow-dns-and-apiserver baseline covers the operator's k8s API calls
+# (workload watch, CR emit for VulnerabilityReport/SbomReport, leader election).
+# ALWAYS-ON: automated sync alongside the trivy-operator Application (same namespace).
+# The kustomization references templates from ../../network/policies/ — the
+# kustomize.buildOptions flag lifts the out-of-tree load restriction for this overlay.
+# Wave 4: after trivy-operator (wave 1) and trivy-extras (wave 0) have created the namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trivy-system-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/trivy-system/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: trivy-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

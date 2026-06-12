@@ -308,6 +308,20 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
+
+              // ---- Trivy Operator (supply-chain CVE + SBOM scanner) -> Mimir ----
+              // Trivy Operator exposes Prometheus metrics at :8080/metrics; feeds the
+              // "Lab — Trivy Operator" dashboard with real trivy_image_vulnerabilities,
+              // trivy_sbom_reports_total, and trivy_config_audit_checks_total (ADR-0022,
+              // ADR-0004). The NetworkPolicy allow (port 8080, trivy-system ns) is in
+              // gitops/trivy-system/networkpolicy/allow-trivy-metrics-from-observability.yaml.
+              prometheus.scrape "trivy_operator" {
+                targets = [
+                  {"__address__" = "trivy-operator.trivy-system.svc.cluster.local:8080", "job" = "trivy-operator"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "60s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

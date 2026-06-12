@@ -1,0 +1,23 @@
+# Allow Trivy Operator to pull the vulnerability database from ghcr.io
+# (ADR-0016, ADR-0022 §"Vuln-DB mirror"). The default Trivy vuln-DB lives at
+# ghcr.io/aquasecurity/trivy-db (~80 MiB, refreshed every 6h); the mirror IP
+# is not stable so an ipBlock 0.0.0.0/0 egress on TCP 443 is the pragmatic
+# pattern (same as allow-argocd-repo-server-egress-gitlab.yaml for git-over-HTTPS
+# and the Alloy kubelet CIDR). This is the only continuous external egress added
+# by Trivy — recorded explicitly so a future "offline lab" RFC knows the bytes.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-trivy-egress-vdb
+  namespace: trivy-system
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 443
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
