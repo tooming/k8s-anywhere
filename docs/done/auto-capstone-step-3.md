@@ -1,0 +1,3 @@
+# Capstone step 3 — Envoy `HTTPRoute` for the capstone app
+
+- [x] **Capstone step 3 — Envoy `HTTPRoute` for the capstone app** — Added `gitops/apps/capstone/route.yaml` (HTTPRoute `capstone.127.0.0.1.nip.io` → capstone Service port 8080, namespace `capstone`; auto-synced via the existing capstone ArgoCD Application); updated the Grafana "Lab UIs" panel in `grafana/dashboards/stack-health.json` (new capstone row, :8000 front door); 6 new bats tests in `tests/capstone.bats` (route file exists, kind, hostname, port, gateway, Lab UIs panel); `docs/dependency-tree.md` updated (CAPSTONE subgraph now shows capstone app node + step 3 ingress edge, integration-edges table rows, notes entry updated to cover steps 1–3). (auto/capstone-step-3)
