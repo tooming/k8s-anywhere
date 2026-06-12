@@ -129,18 +129,10 @@ routines:
     branch_prefix: sync/           # PRs land on sync/docs-drift-YYYY-WW
     max_tier: green
 
-  # The INDUSTRY-NEWS-WRITER — produces docs/industry/YYYY-W##-digest.md each week.
-  # Runs Sundays so the digest is ready when the architect runs on Tuesdays.
-  # Replaced the learning-post-writer in the Sun quota slot to unblock ADR audits.
-  - name: k8s-lab industry-news-writer
-    trigger_id: trig_01GNuyixzT3TBDF7Mk4ZeSTr
-    cron: "0 1 * * 0"              # weekly, Sundays 01:00 UTC (~04:00 Europe/Tallinn, night) — 5th nightly slot, still before architect's Tue
-    model: claude-sonnet-4-6
-    enabled: true
-    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
-    prompt_file: industry-news-writer.prompt.md
-    branch_prefix: digest/         # PRs land on digest/YYYY-W##
-    max_tier: green
+  # The INDUSTRY-NEWS-WRITER was RETIRED 2026-06-13: news-gathering folded directly
+  # into architect STEP 1 (the architect now queries GitHub releases itself each run).
+  # The backend trigger trig_01GNuyixzT3TBDF7Mk4ZeSTr is kept DISABLED (no delete API).
+  # The weekly-roundup-writer orphan trig_01RJfm9AC8YJqFqc4KKQWxJb is also disabled.
 
 # Local-only roles (NOT remote routines — they need Colima and the live cluster).
 # Invoked on demand by the maintainer; not registered with the backend, no cron,
