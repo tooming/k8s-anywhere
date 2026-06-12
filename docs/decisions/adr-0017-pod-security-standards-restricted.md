@@ -115,6 +115,10 @@ so the executor never silently applies the wrong label.
 | `moto` / `ack-system` | `restricted` | Stateless HTTP mock; non-root-capable. |
 | `lab-gateway` | `restricted` | Envoy Gateway; runs as non-root. |
 | `vault` | `baseline` | Vault needs `IPC_LOCK` to `mlock` its memory and prevent secret swap-to-disk. `restricted` forbids it; `baseline` is HashiCorp's recommended profile. Re-evaluated 2026-06-11 (audit #157) — **kept**; see [§Re-evaluation log](#re-evaluation-log). |
+| `kyverno` | `baseline` | Kyverno admission controller mounts webhook TLS material via `fsGroup`; PSS `restricted` forbids it. Per ADR-0019 §"Per-namespace profile update". Re-evaluate when the upstream chart documents `restricted` compatibility. |
+| `velero` | `baseline` | Velero node-agent DaemonSet requires `hostPath` volumes to mount `/var/lib/kubelet/pods` for Kopia FS-backup; `hostPath` is forbidden by PSS `restricted`. Controller itself is restricted-compliant (UID 65534). Per ADR-0021 §"PSA profile". Re-evaluate if a future Velero release supports a non-hostPath backup path. |
+| `argo-rollouts` | `restricted` | Controller and dashboard both run as non-root (UID 65532), no host volumes, no privileged containers. Per ADR-0020 §"NetworkPolicy + PSS". |
+| `trivy-system` | `baseline` | Trivy scan-job pods pull and unpack arbitrary OCI layer tarballs, exceeding `restricted`. Operator pod itself is restricted-compliant; chart applies one PSA profile to both. Per ADR-0022 §"PSA profile". Re-evaluate per chart upgrade. |
 | `longhorn-system` | `privileged` | longhorn-manager and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, and host `/dev`. Block storage cannot work under `restricted`. |
 | `istio-system` | `privileged` | istio-cni runs as a DaemonSet that mutates host CNI config; ztunnel requires `NET_ADMIN`. Both fail under `restricted`. |
 | `kube-system` | unchanged | k3s-managed; out of scope. |

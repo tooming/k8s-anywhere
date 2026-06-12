@@ -98,3 +98,16 @@ setup() {
   run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$NS"
   [ "$status" -eq 0 ]
 }
+
+@test "kyverno namespace.yaml exists and enforces PSS baseline" {
+  NS="$REPO/gitops/kyverno/namespace.yaml"
+  [ -f "$NS" ]
+  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$NS"
+  [ "$status" -eq 0 ]
+}
+
+@test "kyverno namespace.yaml has enforce-version: latest" {
+  NS="$REPO/gitops/kyverno/namespace.yaml"
+  run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$NS"
+  [ "$status" -eq 0 ]
+}
