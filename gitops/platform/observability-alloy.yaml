@@ -322,6 +322,20 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "60s"
               }
+
+              // ---- Velero (backup/restore controller) metrics -> Mimir ----
+              // Velero exposes Prometheus metrics on :8085/metrics; feeds the
+              // "Lab — Velero" dashboard with real backup last-successful-timestamp,
+              // partial-failure counters, and restore outcomes (ADR-0021, ADR-0004).
+              // The NetworkPolicy allow (port 8085) is in
+              // gitops/velero/networkpolicy/allow-velero-metrics-from-observability.yaml.
+              prometheus.scrape "velero" {
+                targets = [
+                  {"__address__" = "velero.velero.svc.cluster.local:8085", "job" = "velero"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

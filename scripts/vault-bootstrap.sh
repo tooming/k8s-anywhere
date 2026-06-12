@@ -59,6 +59,7 @@ v secrets list 2>/dev/null | grep -q '^secret/' || { echo "[vault] enabling kv-v
 #   secret/garage/server -> garage-secrets (Garage server)         [here]
 #   secret/aws/moto       -> ack-aws-creds (ACK->moto, dummy creds) [here]
 #   secret/garage/s3      -> garage-s3 (Mimir/Loki/Tempo)           [garage-bootstrap]
+#   secret/velero/s3      -> cloud-credentials (Velero S3 key)      [garage-bootstrap]
 #   secret/grafana/admin  -> grafana-admin (Grafana admin login)    [here]
 #   secret/rabbitmq/default -> rabbitmq-creds (RabbitMQ default user) [here]
 #   secret/valkey/default   -> valkey-creds (Valkey requirepass)     [here]

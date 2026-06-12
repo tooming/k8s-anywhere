@@ -94,6 +94,9 @@ graph TD
       argorolloutsctrl["argo-rollouts controller<br/>progressive delivery + canary<br/>(metrics :8090)"]:::gitops
       argorolloutsdash["argo-rollouts-dashboard<br/>canary step visualiser<br/>(UI :3100)"]:::gitops
     end
+    subgraph VELERO["Velero — always-on (velero ns, ADR-0021)"]
+      veleroctl["velero<br/>backup controller + node-agent<br/>(metrics :8085, S3 → Garage)"]:::gitops
+    end
     subgraph CILIUM["Cilium CNI — bootstrap step (before ArgoCD on fresh clusters)"]
       ciliumagent["cilium-agent<br/>eBPF CNI DaemonSet<br/>(kube-system ns)"]:::ondemand
       ciliumop["cilium-operator<br/>Deployment (~70 MB)"]:::ondemand
@@ -214,6 +217,11 @@ graph TD
   %% --- Argo Rollouts progressive delivery ---
   envoy -->|"rollouts.127.0.0.1.nip.io"| argorolloutsdash
   argorolloutsctrl -->|"AnalysisTemplate SLO query :8080"| mimir
+
+  %% --- Velero backup/restore ---
+  veleroctl -->|"S3 PUT/GET :3900 (bucket velero)"| garage
+  veleroctl -->|"scrape :8085"| alloy
+  eso -->|"cloud-credentials ← velero/s3"| veleroctl
 
   %% --- ingress (north-south) ---
   user --> frontdoor

@@ -1,0 +1,64 @@
+# Velero backup/restore controller + node-agent (ADR-0021, CHARTER O1 + O3).
+# Helm chart vmware-tanzu/velero from https://vmware-tanzu.github.io/helm-charts.
+# Garage S3 backend (ADR-0002): bucket velero, s3ForcePathStyle=true.
+# Kopia FS-snapshot uploader (NOT restic — deprecated Velero 1.14+, per ADR-0021).
+# cloud-credentials Secret rendered by gitops/secrets/velero-s3-externalsecret.yaml
+# from Vault path secret/velero/s3 (seeded by garage-bootstrap.sh).
+# velero-extras (wave 0) pre-creates the namespace with PSA restricted labels before
+# the Helm release schedules pods (mirrors kyverno-extras + trivy-extras pattern).
+# ALWAYS-ON: automated sync; footprint: ~250-450 MiB (controller + node-agent DaemonSet).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: velero
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://vmware-tanzu.github.io/helm-charts
+    chart: velero
+    targetRevision: 8.4.1
+    helm:
+      releaseName: velero
+      valuesObject:
+        credentials:
+          useSecret: true
+          existingSecret: cloud-credentials
+        configuration:
+          defaultVolumesToFsBackup: true
+          features: EnableCSI
+          uploaderType: kopia
+          backupStorageLocation:
+          - name: default
+            provider: aws
+            bucket: velero
+            credential:
+              name: cloud-credentials
+              key: cloud
+            config:
+              region: garage
+              s3ForcePathStyle: "true"
+              s3Url: http://garage.storage.svc.cluster.local:3900
+        deployNodeAgent: true
+        resources:
+          requests:
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+        nodeAgent:
+          resources:
+            requests:
+              memory: 64Mi
+            limits:
+              memory: 192Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: velero
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,19 @@
+# NetworkPolicy Kustomize overlay for the velero namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates and adds velero-specific allow rules for:
+# - ingress TCP 8085 from Alloy (observability) for Prometheus metrics scrape
+# - egress TCP 3900 to storage namespace for Garage S3 backup writes/reads
+# - egress (any port) to backed-up namespace pods for Kopia PV reads (data/tidb/capstone/vault)
+# The allow-dns-and-apiserver baseline covers the controller's k8s API calls
+# (workload watch, backup CRD emit, leader election).
+# Wired into gitops/platform/velero-networkpolicy.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: velero
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-velero-metrics-from-observability.yaml
+  - allow-velero-egress-storage.yaml
+  - allow-velero-egress-kopia-pv.yaml

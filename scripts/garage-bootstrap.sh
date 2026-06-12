@@ -112,9 +112,44 @@ fi
 g bucket create inkless >/dev/null 2>&1 || true
 g bucket allow --read --write inkless --key inkless-key >/dev/null 2>&1 || true
 
+# velero key + bucket (always-on; created at bootstrap so the velero Application works
+# immediately once the cloud-credentials Secret is rendered by ESO). Stores creds at
+# secret/velero/s3 (same Vault-path pattern as inkless/s3 and garage/s3).
+if ! g key info velero-key >/dev/null 2>&1; then
+  echo "[garage] creating access key velero-key"
+  g key create velero-key >/dev/null 2>&1
+fi
+VKOUT=$(g key info --show-secret velero-key 2>/dev/null || true)
+VKID=$(printf '%s\n' "$VKOUT" | awk -F': *' '
+  BEGIN { IGNORECASE = 1 }
+  $1 ~ /^(access[ _-]?key([ _-]?id)?|key[ _-]?id)$/ {
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+    print $2
+    exit
+  }' | tr -d '"' || true)
+VKSEC=$(printf '%s\n' "$VKOUT" | awk -F': *' '
+  BEGIN { IGNORECASE = 1 }
+  $1 ~ /^(secret[ _-]?access[ _-]?key|secret[ _-]?key)$/ {
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+    print $2
+    exit
+  }' | tr -d '"' || true)
+[ -n "$VKID" ]  || VKID=$(printf '%s'  "$VKOUT" | grep -oiE 'GK[0-9a-f]{20,}' | head -1 || true)
+[ -n "$VKSEC" ] || VKSEC=$(printf '%s' "$VKOUT" | grep -oiE '[0-9a-f]{64}'     | head -1 || true)
+[[ "$(echo "$VKSEC" | tr '[:upper:]' '[:lower:]')" == redacted* || "$VKSEC" == "*" ]] && VKSEC=""
+if [ -n "$VKID" ] && [ -n "$VKSEC" ]; then
+  TOKEN=$(kubectl -n "$VNS" get secret vault-keys -o jsonpath='{.data.root-token}' | base64 -d)
+  kubectl -n "$VNS" exec vault-0 -- env VAULT_TOKEN="$TOKEN" vault kv put secret/velero/s3 access-key-id="$VKID" secret-access-key="$VKSEC" >/dev/null
+  echo "[garage] ensured secret/velero/s3 in Vault (key $VKID)"
+else
+  echo "[garage] WARNING: could not resolve velero-key id/secret — secret/velero/s3 not written"
+fi
+g bucket create velero >/dev/null 2>&1 || true
+g bucket allow --read --write velero --key velero-key >/dev/null 2>&1 || true
+
 # secret/garage/s3 was just (re)written above; nudge ESO so the garage-s3
 # ExternalSecrets (Mimir/Loki/Tempo + storage) pick it up now instead of waiting
 # for their refreshInterval. Best-effort.
 kubectl annotate externalsecret -A --all force-sync="$(date +%s)" --overwrite >/dev/null 2>&1 || true
 
-echo "[garage] bootstrap complete (buckets: mimir, mimir-ruler, loki, tempo, pyroscope, inkless)"
+echo "[garage] bootstrap complete (buckets: mimir, mimir-ruler, loki, tempo, pyroscope, inkless, velero)"
