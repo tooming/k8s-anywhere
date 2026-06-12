@@ -82,7 +82,7 @@ for branch in "${BRANCHES[@]}"; do
 
   # Create temp worktree to avoid touching the working tree
   tmpdir=$(mktemp -d)
-  trap "rm -rf $tmpdir" EXIT
+  trap 'rm -rf -- "$tmpdir"' EXIT
 
   git worktree add --detach "$tmpdir" "$remote_ref" -q 2>/dev/null
 
