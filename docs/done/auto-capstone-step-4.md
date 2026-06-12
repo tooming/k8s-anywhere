@@ -1,0 +1,3 @@
+# Capstone step 4 — Grafana dashboard tile for the capstone app
+
+- [x] **Capstone step 4 — Grafana dashboard tile for the capstone app** ("Lab — Capstone"): Added `grafana/dashboards/lab-capstone.json` with 10 panels — About text, 4 stat panels (pod running / memory / restarts / ArgoCD sync from Mimir/KSM/cAdvisor), 2 timeseries panels (memory + CPU), log rate + logs panels (Loki, filtered to namespace `capstone`), and a Tempo traces table (TraceQL `{.service.name=~"capstone|frontend|..."}` matching the HotROD service names the capstone app emits). All data from real metrics (ADR-0004). 6 new bats tests in `tests/capstone.bats`; `docs/dependency-tree.md` updated (CAPSTONE subgraph, integration edges, notes). (auto/capstone-step-4)
