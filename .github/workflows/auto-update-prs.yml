@@ -1,0 +1,78 @@
+name: auto-update-prs
+
+# When main advances, immediately try to update every open PR branch via
+# GitHub's native "merge base into head" mechanism. This keeps PR branches
+# current and prevents the conflict pile-up that blocks merges.
+#
+# For clean PRs (no content conflicts): the branch is updated automatically.
+# For conflicted PRs: the API call fails gracefully; the pr-up-to-date CI
+#   gate will catch it and tell the author to rebase manually.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-pr-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update open PR branches
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pulls = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              base: 'main',
+              per_page: 100,
+            });
+
+            console.log(`Found ${pulls.data.length} open PR(s) targeting main`);
+            let updated = 0, skipped = 0, failed = 0;
+
+            for (const pr of pulls.data) {
+              // Skip PRs where head is already at or ahead of main
+              try {
+                const comparison = await github.rest.repos.compareCommits({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  base: pr.head.sha,
+                  head: context.sha,
+                });
+
+                if (comparison.data.ahead_by === 0) {
+                  console.log(`  skip PR #${pr.number} "${pr.title}" — already up to date`);
+                  skipped++;
+                  continue;
+                }
+              } catch (e) {
+                // comparison API can fail on diverged branches; try update anyway
+              }
+
+              try {
+                await github.rest.pulls.updateBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                });
+                console.log(`  ✓ updated PR #${pr.number} "${pr.title}"`);
+                updated++;
+              } catch (e) {
+                // 422 = merge conflict or update not needed
+                const msg = e.message || String(e);
+                if (msg.includes('merge conflict') || msg.includes('422')) {
+                  console.log(`  ⚠ PR #${pr.number} "${pr.title}" has conflicts — manual rebase required`);
+                } else {
+                  console.log(`  ✗ PR #${pr.number} "${pr.title}" update failed: ${msg}`);
+                }
+                failed++;
+              }
+            }
+
+            console.log(`\nSummary: ${updated} updated, ${skipped} already current, ${failed} need manual rebase`);

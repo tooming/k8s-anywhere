@@ -62,6 +62,10 @@ validate: ## Schema-validate gitops manifests (kubeconform) + terraform (fmt/val
 test: ## Run the bats unit tests (probe math, DR guards, drift detectors)
 	@bash scripts/test.sh
 
+.PHONY: rebase-prs
+rebase-prs: ## Show which open PR branches need rebasing (PUSH=1 to also force-push)
+	@bash scripts/rebase-open-prs.sh $(if $(PUSH),--push)
+
 .PHONY: ci
 ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/lint.sh
