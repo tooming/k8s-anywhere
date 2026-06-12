@@ -29,6 +29,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Data layer** | RabbitMQ (message broker + management UI) · Valkey (cache / key-value) · redis_exporter · data-demo (traffic generator) |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator) |
 | **CNI (bootstrap)** | Cilium (`make cilium-up` — run before `make argocd` on fresh clusters; ADR-0014) |
+| **Policy** | Kyverno (NetworkPolicy per-namespace default-deny fan-out · admission policy engine; ADR-0016, ADR-0019) |
 | **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Artifactory OSS (`make artifactory-up` / `make artifactory-down`) · Istio ambient mesh — istio-base · istio-cni · istiod · ztunnel (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn distributed block storage (`make longhorn-up` / `make longhorn-down`) · Aiven Inkless diskless Kafka (`make inkless-up` / `make inkless-down`) |
 
 ## Prerequisites
