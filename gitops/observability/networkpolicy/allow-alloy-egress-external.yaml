@@ -57,6 +57,22 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: inkless
+    # Kyverno admission engine metrics (:8000) — four controller Services.
+    - ports:
+        - port: 8000
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kyverno
+    # Trivy Operator metrics (:8080) — supply-chain CVE / SBOM scanner.
+    - ports:
+        - port: 8080
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: trivy-system
     # kubelet + cAdvisor on cluster nodes (:10250). Alloy uses the node-role
     # Kubernetes discovery which resolves to per-node IP addresses outside
     # the pod CIDR, so an ipBlock CIDR covers the entire address space.

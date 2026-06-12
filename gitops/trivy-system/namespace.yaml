@@ -1,0 +1,14 @@
+# PSA carve-out: scan-job pods pull and unpack arbitrary OCI artifacts which
+# exceeds the restricted profile. The controller itself is restricted-compatible
+# but the chart applies one PSA label to both operator and ephemeral scan jobs.
+# ADR-0017 §Per-namespace profile records trivy-system as baseline; ADR-0022.
+# Re-evaluate per chart upgrade once the chart documents restricted compatibility.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: trivy-system
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/audit: baseline
