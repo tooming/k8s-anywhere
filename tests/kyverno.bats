@@ -151,3 +151,92 @@ setup() {
   run sh -c "ls $REPO/docs/decisions/adr-0019-*.md"
   [ "$status" -eq 0 ]
 }
+
+# --- kyverno-policies Application (sync-wave 5, after engine CRDs) -----------
+@test "kyverno-policies Application exists" {
+  [ -f "$REPO/gitops/platform/kyverno-policies.yaml" ]
+}
+
+@test "kyverno-policies Application runs at sync-wave 5" {
+  run grep -q 'argocd.argoproj.io/sync-wave: "5"' "$REPO/gitops/platform/kyverno-policies.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "kyverno-policies Application is auto-synced (always-on)" {
+  run grep -q 'automated:' "$REPO/gitops/platform/kyverno-policies.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "kyverno-policies Application sources gitops/kyverno/policies" {
+  run grep -q 'path: gitops/kyverno/policies' "$REPO/gitops/platform/kyverno-policies.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- Four ClusterPolicy files exist ------------------------------------------
+@test "require-pod-security-restricted ClusterPolicy file exists" {
+  [ -f "$REPO/gitops/kyverno/policies/require-pod-security-restricted.yaml" ]
+}
+
+@test "disallow-latest-tag ClusterPolicy file exists" {
+  [ -f "$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml" ]
+}
+
+@test "add-default-seccomp ClusterPolicy file exists" {
+  [ -f "$REPO/gitops/kyverno/policies/add-default-seccomp.yaml" ]
+}
+
+@test "verify-image-signatures ClusterPolicy file exists" {
+  [ -f "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml" ]
+}
+
+# --- PSS backstop policy structural checks -----------------------------------
+@test "PSS backstop skips namespaces labelled pod-security.kubernetes.io/enforce=baseline" {
+  run grep -q 'pod-security.kubernetes.io/enforce' "$REPO/gitops/kyverno/policies/require-pod-security-restricted.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'baseline' "$REPO/gitops/kyverno/policies/require-pod-security-restricted.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "PSS backstop skips namespaces labelled pod-security.kubernetes.io/enforce=privileged" {
+  run grep -q 'privileged' "$REPO/gitops/kyverno/policies/require-pod-security-restricted.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "PSS backstop is in Enforce mode (backstops ADR-0017)" {
+  run grep -q 'validationFailureAction: Enforce' "$REPO/gitops/kyverno/policies/require-pod-security-restricted.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- seccomp mutation structural checks --------------------------------------
+@test "add-default-seccomp uses patchStrategicMerge shape" {
+  run grep -q 'patchStrategicMerge' "$REPO/gitops/kyverno/policies/add-default-seccomp.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "add-default-seccomp injects RuntimeDefault via conditional anchor" {
+  run grep -q 'seccompProfile' "$REPO/gitops/kyverno/policies/add-default-seccomp.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'RuntimeDefault' "$REPO/gitops/kyverno/policies/add-default-seccomp.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- verifyImages policy structural checks -----------------------------------
+@test "verify-image-signatures references the Artifactory registry pattern" {
+  run grep -q 'artifactory.127.0.0.1.nip.io' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "verify-image-signatures is in Audit mode until cosign CI is wired" {
+  run grep -q 'validationFailureAction: Audit' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "verify-image-signatures has failurePolicy: Ignore (lab functional before cosign CI lands)" {
+  run grep -q 'failurePolicy: Ignore' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "verify-image-signatures references the cosign-public-key Secret in kyverno namespace" {
+  run grep -q 'cosign-public-key' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
+  [ "$status" -eq 0 ]
+}

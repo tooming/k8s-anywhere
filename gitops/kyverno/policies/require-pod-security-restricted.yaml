@@ -1,0 +1,49 @@
+# Backstop for ADR-0017 (PSS-restricted): reject pods that omit the required
+# security fields at admission time. Skips namespaces with a PSA baseline or
+# privileged label so ADR-0017 carve-out namespaces (vault, storage, tidb, etc.)
+# are excluded automatically — no hard-coded namespace list to maintain.
+# background: true generates PolicyReports for already-running resources.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-pod-security-restricted
+  annotations:
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/category: Pod Security
+    policies.kyverno.io/description: >-
+      Ensures every pod meets PSS-restricted requirements (ADR-0017). Excludes
+      namespaces labelled pod-security.kubernetes.io/enforce=baseline or =privileged.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  - name: require-pss-restricted
+    match:
+      any:
+      - resources:
+          kinds: [Pod]
+    exclude:
+      any:
+      - resources:
+          namespaces: [kube-system, kube-public, kube-node-lease]
+      - resources:
+          namespaceSelector:
+            matchExpressions:
+            - key: pod-security.kubernetes.io/enforce
+              operator: In
+              values: [baseline, privileged]
+    validate:
+      message: >-
+        Pod must satisfy PSS-restricted: runAsNonRoot=true, allowPrivilegeEscalation=false,
+        capabilities.drop=[ALL], seccompProfile.type=RuntimeDefault (ADR-0017).
+      pattern:
+        spec:
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+          - securityContext:
+              allowPrivilegeEscalation: false
+              runAsNonRoot: true
+              capabilities:
+                drop: ["ALL"]

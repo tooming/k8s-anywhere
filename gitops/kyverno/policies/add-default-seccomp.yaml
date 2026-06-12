@@ -1,0 +1,26 @@
+# Mutate: inject seccompProfile.type=RuntimeDefault at pod level when absent.
+# Defence-in-depth alongside the require-pod-security-restricted validate policy.
+# The +(seccompProfile) conditional anchor means "only patch if the field is missing"
+# so workloads that already set seccompProfile are not overwritten (ADR-0019).
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: add-default-seccomp
+  annotations:
+    policies.kyverno.io/severity: low
+    policies.kyverno.io/category: Pod Security
+    policies.kyverno.io/description: >-
+      Injects seccompProfile.type=RuntimeDefault at pod level when absent (ADR-0019).
+spec:
+  rules:
+  - name: add-default-seccomp
+    match:
+      any:
+      - resources:
+          kinds: [Pod]
+    mutate:
+      patchStrategicMerge:
+        spec:
+          securityContext:
+            +(seccompProfile):
+              type: RuntimeDefault
