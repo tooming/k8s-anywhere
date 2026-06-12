@@ -515,7 +515,7 @@ You review and merge plan PRs, same as implementation PRs.
   is in the combined "ADR-0017 amendment" docs item below.
   (auto/trivy-operator)
 
-- [ ] 🟢 **ADR-0017 amendment — four Tier 1 next-wave namespace
+- [x] 🟢 **ADR-0017 amendment — four Tier 1 next-wave namespace
   rows** (CHARTER **Objective O2** record-keeping; docs-only).
   Small docs PR adding four rows to the ADR-0017
   §"Per-namespace profile" table for the namespaces introduced
