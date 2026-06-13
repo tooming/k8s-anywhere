@@ -289,6 +289,10 @@ dr-verify: ## Assert the lab is healthy end-to-end (real checks, no rebuild)
 dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=cluster|full|machine
 	bash scripts/dr-destroy.sh $(SCOPE)
 
+.PHONY: dr-restore
+dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
+	@./scripts/dr-restore.sh data tidb capstone vault
+
 .PHONY: dr-bluegreen
 dr-bluegreen: ## Zero-downtime blue/green DR: stand up a green cluster + cut over, prove no outage
 	bash scripts/dr-bluegreen.sh

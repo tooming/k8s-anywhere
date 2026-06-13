@@ -354,7 +354,7 @@ You review and merge plan PRs, same as implementation PRs.
   `defaultVolumesToFsBackup: true` present on each).
   (auto/velero-schedules)
 
-- [ ] 🟢 **make dr-restore + scripts/dr-restore.sh — Objective O3
+- [x] 🟢 **make dr-restore + scripts/dr-restore.sh — Objective O3
   enabler** (CHARTER **Objective O3**, due **2026-12-31**: the
   explicit `< 10 min` wall-clock bar for restoring every stateful
   namespace from its latest Velero backup. RFC #155 acceptance
