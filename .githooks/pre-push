@@ -14,6 +14,26 @@ else
   B=; R=; G=; Z=
 fi
 
+# Check that the branch is on top of origin/main before pushing.
+# Catches the case where main moved while we were working and the branch was
+# never rebased — auto-update-prs only fires on main pushes, so if no PR was
+# open at that moment the branch can silently drift behind.
+git fetch origin main -q 2>/dev/null || true
+CURRENT=$(git rev-parse --abbrev-ref HEAD)
+if [[ "$CURRENT" != "main" ]]; then
+  MERGE_BASE=$(git merge-base HEAD origin/main 2>/dev/null || true)
+  MAIN_HEAD=$(git rev-parse origin/main 2>/dev/null || true)
+  if [[ -n "$MERGE_BASE" && -n "$MAIN_HEAD" && "$MERGE_BASE" != "$MAIN_HEAD" ]]; then
+    BEHIND=$(git log --oneline "${MERGE_BASE}..origin/main" | wc -l | tr -d ' ')
+    echo ""
+    echo "${R}${B}[pre-push] Branch is ${BEHIND} commit(s) behind main — push blocked.${Z}"
+    echo "Rebase first:  git fetch origin && git rebase origin/main"
+    echo "Or rebase all: make rebase-prs PUSH=1"
+    echo "To skip (emergencies only): git push --no-verify"
+    exit 1
+  fi
+fi
+
 echo "${B}[pre-push] Running clusterless CI gates (make ci)…${Z}"
 
 if make -C "$ROOT" ci; then
