@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Pre-push hook: run the full clusterless CI gate before every push.
+# Blocks the push if any gate fails — same checks GitHub Actions runs.
+#
+# Install once per clone:  make install-hooks
+# Skip in emergencies:     git push --no-verify
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [ -t 1 ]; then
+  B=$'\033[1m'; R=$'\033[31m'; G=$'\033[32m'; Z=$'\033[0m'
+else
+  B=; R=; G=; Z=
+fi
+
+echo "${B}[pre-push] Running clusterless CI gates (make ci)…${Z}"
+
+if make -C "$ROOT" ci; then
+  echo "${G}[pre-push] All gates passed — push proceeding.${Z}"
+  exit 0
+else
+  echo ""
+  echo "${R}${B}[pre-push] CI gate FAILED — push blocked.${Z}"
+  echo "Fix the errors above, then push again."
+  echo "To skip (emergencies only): git push --no-verify"
+  exit 1
+fi

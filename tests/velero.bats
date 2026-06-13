@@ -170,12 +170,12 @@ setup() {
 }
 
 @test "velero kopia-pv egress rule allows egress to data namespace" {
-  run grep -q '- data' "$REPO/gitops/velero/networkpolicy/allow-velero-egress-kopia-pv.yaml"
+  run grep -q -- '- data' "$REPO/gitops/velero/networkpolicy/allow-velero-egress-kopia-pv.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "velero kopia-pv egress rule allows egress to vault namespace" {
-  run grep -q '- vault' "$REPO/gitops/velero/networkpolicy/allow-velero-egress-kopia-pv.yaml"
+  run grep -q -- '- vault' "$REPO/gitops/velero/networkpolicy/allow-velero-egress-kopia-pv.yaml"
   [ "$status" -eq 0 ]
 }
 

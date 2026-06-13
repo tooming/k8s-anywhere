@@ -1,7 +1,7 @@
 # Velero backup/restore controller + node-agent (ADR-0021, CHARTER O1 + O3).
 # Helm chart vmware-tanzu/velero from https://vmware-tanzu.github.io/helm-charts.
 # Garage S3 backend (ADR-0002): bucket velero, s3ForcePathStyle=true.
-# Kopia FS-snapshot uploader (NOT restic — deprecated Velero 1.14+, per ADR-0021).
+# Kopia FS-snapshot uploader (ADR-0021 §Uploader; uploaderType: kopia).
 # cloud-credentials Secret rendered by gitops/secrets/velero-s3-externalsecret.yaml
 # from Vault path secret/velero/s3 (seeded by garage-bootstrap.sh).
 # velero-extras (wave 0) pre-creates the namespace with PSA restricted labels before

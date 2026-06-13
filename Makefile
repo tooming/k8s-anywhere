@@ -77,6 +77,12 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/lab-ui-check.sh
 	@bash scripts/routines-check.sh
 
+.PHONY: install-hooks
+install-hooks: ## Wire up .githooks/ as the local git hooks directory (run once per clone)
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/pre-push
+	@echo "  ok  pre-push hook installed (make ci runs before every push)"
+
 .PHONY: preflight
 preflight: ## Check required CLI tools are installed
 	@missing=0; for t in $(REQUIRED_TOOLS); do \
