@@ -428,7 +428,7 @@ You review and merge plan PRs, same as implementation PRs.
   to ADR-0017 is a separate small docs item (see "ADR-0017
   amendment" below). (auto/argo-rollouts-controller)
 
-- [ ] 🟢 **Capstone Rollout overlay + success-rate
+- [x] 🟢 **Capstone Rollout overlay + success-rate
   AnalysisTemplate** (CHARTER **Objective O1** + the capstone
   "Argo Rollouts canaries on real Mimir SLOs → Envoy routes it"
   vision, RFC #154). Wait for the Argo Rollouts controller PR
