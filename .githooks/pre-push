@@ -14,25 +14,22 @@ else
   B=; R=; G=; Z=
 fi
 
-# Check that the branch is on top of origin/main before pushing.
+# Check that the branch is on top of <remote>/main before pushing.
+# Git passes the push destination as $1 — no remote detection needed.
 # Catches the case where main moved while we were working and the branch was
 # never rebased — auto-update-prs only fires on main pushes, so if no PR was
 # open at that moment the branch can silently drift behind.
-REMOTE=$(git for-each-ref --format='%(upstream:remotename)' refs/heads/main 2>/dev/null | head -1)
-if [[ -z "$REMOTE" ]]; then
-  REMOTE=$(git remote -v | grep 'github\.com' | awk '{print $1}' | head -1)
-fi
-REMOTE=${REMOTE:-origin}
+REMOTE=${1:-origin}
 git fetch "$REMOTE" main -q 2>/dev/null || true
 CURRENT=$(git rev-parse --abbrev-ref HEAD)
 if [[ "$CURRENT" != "main" ]]; then
   MERGE_BASE=$(git merge-base HEAD "$REMOTE/main" 2>/dev/null || true)
   MAIN_HEAD=$(git rev-parse "$REMOTE/main" 2>/dev/null || true)
   if [[ -n "$MERGE_BASE" && -n "$MAIN_HEAD" && "$MERGE_BASE" != "$MAIN_HEAD" ]]; then
-    BEHIND=$(git log --oneline "${MERGE_BASE}..origin/main" | wc -l | tr -d ' ')
+    BEHIND=$(git log --oneline "${MERGE_BASE}..${REMOTE}/main" | wc -l | tr -d ' ')
     echo ""
     echo "${R}${B}[pre-push] Branch is ${BEHIND} commit(s) behind main — push blocked.${Z}"
-    echo "Rebase first:  git fetch origin && git rebase origin/main"
+    echo "Rebase first:  git fetch $REMOTE && git rebase $REMOTE/main"
     echo "Or rebase all: make rebase-prs PUSH=1"
     echo "To skip (emergencies only): git push --no-verify"
     exit 1
