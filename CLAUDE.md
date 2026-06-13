@@ -16,6 +16,17 @@ Before proposing OR implementing any technical/tooling choice, consult
 - ADR-0004: never fabricate content as real state; **verify before asserting** that
   something is deployed/working.
 
+## Git hooks — run once per clone
+At the start of every session (including worktrees), run:
+
+```
+make install-hooks
+```
+
+This wires `.githooks/pre-push` so that `make ci` runs before every push. The setting
+lives in `.git/config` and is not committed, so it must be re-applied after any fresh
+clone or worktree creation.
+
 ## Always open a PR
 After pushing changes to the feature branch, **always open a pull request** for them
 (unless the user says otherwise). Don't wait to be asked.
