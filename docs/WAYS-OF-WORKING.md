@@ -128,7 +128,7 @@ _GitHub repo settings (configured 2026-06-13):_
 
 - **Branch protection on `main`** — active. Rules enforced (no bypass, admins included):
   - PR required before merging; no direct pushes to `main`.
-  - ≥ 1 approval required; stale approvals dismissed on new commits.
+  - Approvals not required (solo maintainer — merge is the approval gate).
   - CODEOWNERS review required (routes PRs to domain owners by path).
   - Required status checks (all must pass): `lint`, `manifests`, `terraform`,
     `kustomize`, `unit`, `drift` (from the `ci` workflow) and `up-to-date`
