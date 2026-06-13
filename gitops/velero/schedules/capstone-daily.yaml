@@ -1,0 +1,18 @@
+# capstone-daily — Velero Schedule for the capstone namespace (the end-to-end demo
+# app deployed by the GitLab CI → ArgoCD pipeline). ADR-0021 §"Schedule set" +
+# CHARTER Objective O3. Cron 03:00 UTC, third of the four spread windows. The capstone
+# pilot has no PVCs today (ADR-0021 §"Schedule set" table) so this captures resources;
+# defaultVolumesToFsBackup stays true so any PVC added later is picked up automatically.
+# 7-day (168h) retention.
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: capstone-daily
+  namespace: velero
+spec:
+  schedule: "0 3 * * *"
+  template:
+    ttl: 168h
+    includedNamespaces:
+    - capstone
+    defaultVolumesToFsBackup: true

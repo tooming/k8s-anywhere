@@ -1,0 +1,18 @@
+# vault-daily — Velero Schedule for the vault namespace (the file-backend PVC holding
+# Vault's sealed storage). ADR-0021 §"Schedule set" + CHARTER Objective O3. Cron 03:30
+# UTC, last of the four spread windows. Backing up the Vault file-backend PVC is what
+# makes the lab's "recreate over HA" honest for secrets (ADR-0005 / ADR-0021): the
+# recreate path restores data, not just manifests. defaultVolumesToFsBackup captures the
+# Vault PVC via Kopia. 7-day (168h) retention.
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: vault-daily
+  namespace: velero
+spec:
+  schedule: "30 3 * * *"
+  template:
+    ttl: 168h
+    includedNamespaces:
+    - vault
+    defaultVolumesToFsBackup: true

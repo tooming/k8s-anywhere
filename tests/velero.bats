@@ -241,6 +241,68 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- Schedules (ADR-0021 §"Schedule set"; one per stateful namespace) ---------
+@test "velero-schedules Application exists" {
+  [ -f "$REPO/gitops/platform/velero-schedules.yaml" ]
+}
+
+@test "velero-schedules Application runs at sync-wave 5 (after the controller + CRD)" {
+  run grep -q 'argocd.argoproj.io/sync-wave: "5"' "$REPO/gitops/platform/velero-schedules.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "velero-schedules Application targets the gitops/velero/schedules path" {
+  run grep -q 'path: gitops/velero/schedules' "$REPO/gitops/platform/velero-schedules.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "velero-schedules Application is auto-synced (always-on; Schedules are cheap CRs)" {
+  run grep -q 'automated:' "$REPO/gitops/platform/velero-schedules.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# Each Schedule: exists, is a velero.io/v1 Schedule, has the documented cron + TTL +
+# namespace, and sets defaultVolumesToFsBackup so PVCs are captured via Kopia.
+@test "data-daily Schedule exists with cron 0 2, ttl 168h, namespace data" {
+  f="$REPO/gitops/velero/schedules/data-daily.yaml"
+  [ -f "$f" ]
+  grep -q 'kind: Schedule' "$f"
+  grep -q 'schedule: "0 2 \* \* \*"' "$f"
+  grep -q 'ttl: 168h' "$f"
+  grep -qE '^[[:space:]]*- data$' "$f"
+  grep -q 'defaultVolumesToFsBackup: true' "$f"
+}
+
+@test "tidb-daily Schedule exists with cron 30 2, ttl 168h, namespace tidb" {
+  f="$REPO/gitops/velero/schedules/tidb-daily.yaml"
+  [ -f "$f" ]
+  grep -q 'kind: Schedule' "$f"
+  grep -q 'schedule: "30 2 \* \* \*"' "$f"
+  grep -q 'ttl: 168h' "$f"
+  grep -qE '^[[:space:]]*- tidb$' "$f"
+  grep -q 'defaultVolumesToFsBackup: true' "$f"
+}
+
+@test "capstone-daily Schedule exists with cron 0 3, ttl 168h, namespace capstone" {
+  f="$REPO/gitops/velero/schedules/capstone-daily.yaml"
+  [ -f "$f" ]
+  grep -q 'kind: Schedule' "$f"
+  grep -q 'schedule: "0 3 \* \* \*"' "$f"
+  grep -q 'ttl: 168h' "$f"
+  grep -qE '^[[:space:]]*- capstone$' "$f"
+  grep -q 'defaultVolumesToFsBackup: true' "$f"
+}
+
+@test "vault-daily Schedule exists with cron 30 3, ttl 168h, namespace vault" {
+  f="$REPO/gitops/velero/schedules/vault-daily.yaml"
+  [ -f "$f" ]
+  grep -q 'kind: Schedule' "$f"
+  grep -q 'schedule: "30 3 \* \* \*"' "$f"
+  grep -q 'ttl: 168h' "$f"
+  grep -qE '^[[:space:]]*- vault$' "$f"
+  grep -q 'defaultVolumesToFsBackup: true' "$f"
+}
+
 # --- ADR documentation -------------------------------------------------------
 @test "ADR-0021 (Velero) document exists" {
   run sh -c "ls $REPO/docs/decisions/adr-0021-*.md"
