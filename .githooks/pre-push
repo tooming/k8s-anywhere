@@ -18,11 +18,16 @@ fi
 # Catches the case where main moved while we were working and the branch was
 # never rebased — auto-update-prs only fires on main pushes, so if no PR was
 # open at that moment the branch can silently drift behind.
-git fetch origin main -q 2>/dev/null || true
+REMOTE=$(git for-each-ref --format='%(upstream:remotename)' refs/heads/main 2>/dev/null | head -1)
+if [[ -z "$REMOTE" ]]; then
+  REMOTE=$(git remote -v | grep 'github\.com' | awk '{print $1}' | head -1)
+fi
+REMOTE=${REMOTE:-origin}
+git fetch "$REMOTE" main -q 2>/dev/null || true
 CURRENT=$(git rev-parse --abbrev-ref HEAD)
 if [[ "$CURRENT" != "main" ]]; then
-  MERGE_BASE=$(git merge-base HEAD origin/main 2>/dev/null || true)
-  MAIN_HEAD=$(git rev-parse origin/main 2>/dev/null || true)
+  MERGE_BASE=$(git merge-base HEAD "$REMOTE/main" 2>/dev/null || true)
+  MAIN_HEAD=$(git rev-parse "$REMOTE/main" 2>/dev/null || true)
   if [[ -n "$MERGE_BASE" && -n "$MAIN_HEAD" && "$MERGE_BASE" != "$MAIN_HEAD" ]]; then
     BEHIND=$(git log --oneline "${MERGE_BASE}..origin/main" | wc -l | tr -d ' ')
     echo ""
