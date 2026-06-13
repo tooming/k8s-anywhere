@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# post-merge hook: after any merge on main, rebase all open PR branches onto it.
+# Fires on: git pull (ff or merge), git merge.
+# Install: make install-hooks
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Only act when on main — merging feature branches locally shouldn't trigger this
+CURRENT_BRANCH=$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)
+[[ "$CURRENT_BRANCH" == "main" ]] || exit 0
+
+if [ -t 1 ]; then
+  B=$'\033[1m'; G=$'\033[32m'; Y=$'\033[33m'; Z=$'\033[0m'
+else
+  B=; G=; Y=; Z=
+fi
+
+echo ""
+echo "${B}[post-merge] main updated — rebasing open PR branches…${Z}"
+
+if make -C "$ROOT" rebase-prs PUSH=1 2>&1; then
+  echo "${G}[post-merge] All open PR branches are up to date.${Z}"
+else
+  echo "${Y}[post-merge] Some branches have conflicts — resolve manually:${Z}"
+  echo "  make rebase-prs PUSH=1"
+fi
+exit 0
