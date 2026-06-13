@@ -7,13 +7,10 @@ environment_id: env_014NJKuQoEb7PAi3PXaFW2B9   # Anthropic cloud (Default)
 source: https://github.com/tooming/k8s-lab     # repo cloned into each run
 
 # Quota math (WAYS-OF-WORKING.md §5 — 5 runs / rolling 24h free; ALL slots filled):
-#   executor 3/day baseline + a 4th executor run on every non-Thursday day (the
-#   "slot filler" trigger below — a second trigger reusing executor.prompt.md,
-#   because one cron expression can't encode "4/day except Thu"), plus one daily
-#   routine-of-the-day: Mon=planner, Tue=architect, Wed=executor,
-#   Thu=upgrade-drafter + planner, Fri=doc-drift, Sat=executor, Sun=executor.
-#   Every day runs at the 5/day cap: Mon/Tue/Fri = executor 4 + daily 1;
-#   Wed/Sat/Sun = executor 5; Thu = executor 3 + planner + upgrade-drafter.
+#   Two executor triggers cover all 5 daily slots, every day of the week.
+#     21:00 / 22:00 / 23:00 UTC = trigger 1 (3/day)
+#     00:00 / 01:00 UTC         = trigger 2 (2/day)
+#   Total: exactly 5 executor runs/day, 7 days/week. One prompt, one model.
 #
 # NIGHT-TIME SCHEDULE + CREDIT SAFETY (rolling-24h-proof):
 #   All runs fire in a fixed nightly window — five FIXED clock-times every day:
@@ -21,36 +18,25 @@ source: https://github.com/tooming/k8s-lab     # repo cloned into each run
 #   In the maintainer's TZ (Europe/Tallinn) that is ~23:00–04:00 local year-round
 #   — 21:00–01:00 UTC lands at night in both EET (UTC+2, winter) and EEST (UTC+3,
 #   summer), so no slot ever drifts into the working day across a DST flip.
-#   Why these EXACT times (not just "sometime at night"): the free cap is 5 runs
-#   per ROLLING 24h, not per calendar day. Because the SET of fire-times is
-#   identical every day (only WHICH routine fills each slot changes), every
-#   rolling 24h window contains exactly 5 runs — so the schedule can never spill
-#   past the free cap into paid "additional runs" credits. Clustering at night
-#   WITHOUT fixing the times would let two nights' runs fall inside one 24h
-#   window (6+ runs) and burn credits; fixed daily times make that impossible.
-#   Slot map (constant every day; identity varies):
-#     21:00 / 22:00 / 23:00 UTC = executor base (3/day, all 7 days)
-#     00:00 UTC = executor slot-filler (Mon–Wed,Fri–Sun) OR upgrade-drafter (Thu)
-#     01:00 UTC = routine-of-the-day (planner/architect/executor/doc-drift)
-#   The standalone reviewer routine was RETIRED (its daily slot funded the executor's
-#   return to 3/day): cron-based review kept lagging PR-open — PRs were merged between
-#   slots and the reviewer filed idle issues (see #160). First-pass review now happens
-#   IN the producing run: every PR-producing routine (executor/planner/architect/
-#   upgrade-drafter) self-reviews its diff and posts a `[self-review]` comment +
-#   `self-reviewed` label before its run ends. Merge stays human (Red-tier).
-#   The standalone triager was RETIRED 2026-06-13: it can only label, never produce
-#   PRs, so idle runs wasted the quota slot (see #191). Triage coverage is preserved
-#   via the executor's STEP 6b fallback chain (step 5). Wed/Sat/Sun 01:00 are now
-#   executor slots (third trigger below — "Wed/Sat/Sun").
+#   Why these EXACT times: the free cap is 5 runs per ROLLING 24h, not per calendar
+#   day. Because the set of fire-times is identical every day, every rolling 24h
+#   window contains exactly 5 runs — the schedule can never spill past the free cap.
+#
+# FALLBACK CHAIN (executor.prompt.md STEP 6b):
+#   The executor prompt has a full fallback chain for when its ROADMAP lane is empty:
+#   planner → architect → upgrade-drafter → doc-drift → triager → idle issue.
+#   Specialist role prompts (planner.prompt.md, architect.prompt.md, etc.) are kept
+#   in-repo as the fallback chain targets and on-demand invocations. They are no longer
+#   registered as dedicated scheduled triggers — their slots were absorbed here.
 
 routines:
-  # The EXECUTOR — implements one ROADMAP item per run. If its lane is empty it does
-  # NOT waste the slot: STEP 6b escalates through the blocking roles' own prompts
-  # (planner → architect → upgrade-drafter → doc-drift-author → triager) until one
-  # delivers; the idle issue is the last resort only when the whole chain is empty.
+  # THE EXECUTOR — implements one ROADMAP item per run, or falls back through the
+  # role chain (STEP 6b): planner → architect → upgrade-drafter → doc-drift →
+  # triager. Every run ends with a self-reviewed PR, a fallback deliverable, or —
+  # only when the entire chain is empty — a refreshed maintainer-prompt issue.
   - name: k8s-lab autonomous dev
     trigger_id: trig_01CRtpmaS1scBQL74xKqmfvS
-    cron: "0 21-23 * * *"          # 21:00/22:00/23:00 UTC = 3/day, all at night (was "0 */8 * * *" daytime)
+    cron: "0 21-23 * * *"          # 21:00/22:00/23:00 UTC — 3/day, all 7 days
     model: claude-sonnet-4-6
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
@@ -58,91 +44,35 @@ routines:
     branch_prefix: auto/           # PRs land on auto/<slug>
     max_tier: green                # WAYS-OF-WORKING.md autonomy tier
 
-  # The EXECUTOR'S 4th DAILY SLOT — same prompt, fires 00:00 UTC every day EXCEPT
-  # Thursday (cron day 4), where upgrade-drafter takes the 00:00 slot and planner
-  # takes the 01:00 slot instead.
-  - name: k8s-lab autonomous dev (slot filler)
+  # THE EXECUTOR'S 4th + 5th DAILY SLOTS — same prompt, fires 00:00 and 01:00 UTC
+  # every day (cron hour range 0-1). Covers the slots previously held by the
+  # slot-filler (00:00), the triager (Wed+Sat 01:00), the industry-news-writer
+  # (Sun 01:00), the planner (Mon+Thu 01:00), the architect (Tue 01:00), and the
+  # doc-drift-author (Fri 01:00). All retired 2026-06-13 (see disabled entries below).
+  - name: k8s-lab autonomous dev (daily 00:00+01:00)
     trigger_id: trig_011X276UrgGJWLsgC9Apneok
-    cron: "0 0 * * 0-3,5,6"        # 00:00 UTC daily except Thu (Thu's 00:00 slot → upgrade-drafter)
+    cron: "0 0-1 * * *"            # 00:00+01:00 UTC — 2/day, all 7 days
     model: claude-sonnet-4-6
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
-    prompt_file: executor.prompt.md   # SAME prompt as the main executor — keep them in lockstep
+    prompt_file: executor.prompt.md   # SAME prompt — keep triggers in lockstep
     branch_prefix: auto/           # PRs land on auto/<slug>
     max_tier: green
 
-  # The PLANNER — grooms CHARTER gaps + GitHub issues into ROADMAP items.
-  - name: k8s-lab planner
-    trigger_id: trig_015uWP3Hv1LTREpKzzkMkpUE
-    cron: "0 1 * * 1,4"           # twice weekly, Mon + Thu 01:00 UTC (~04:00 Europe/Tallinn, night) — 5th nightly slot
-    model: claude-opus-4-7
-    enabled: true
-    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
-    prompt_file: planner.prompt.md
-    branch_prefix: plan/           # plan-only PRs land on plan/<slug>
-    max_tier: green
-
-  # The ARCHITECT — researches best practices and opens RFC issues for 🟡 backlog items.
-  - name: k8s-lab architect
-    trigger_id: trig_01SpewghyraZDSrLoGA32nBe
-    cron: "0 1 * * 2"             # weekly, Tuesdays 01:00 UTC (~04:00 Europe/Tallinn, night) — 5th nightly slot
-    model: claude-opus-4-7
-    enabled: true
-    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
-    prompt_file: architect.prompt.md
-    branch_prefix: arch/           # PRs land on arch/<slug>
-    max_tier: green                # ROADMAP grooming + GitHub issues only
-
-  # The REVIEWER was retired 2026-06-10: first-pass review now happens inside each
-  # PR-producing run (the `[self-review]` step in executor/planner/architect/
-  # upgrade-drafter prompts). The backend trigger trig_01Dw7US6aZmJo8XZwDikoNkG is
-  # kept DISABLED (the trigger API has no delete) so this file remains the audit trail.
-
-  # The TRIAGER was RETIRED 2026-06-13: it can only label issues, never produce PRs,
-  # so idle runs wasted the quota slot (see #191). Triage coverage is preserved via
-  # the executor's STEP 6b fallback chain (step 5 — triager). The backend trigger
-  # trig_01E6ugxYJY6yGzwvSHSgFaCx is kept DISABLED (the trigger API has no delete).
-
-  # The EXECUTOR'S Wed/Sat/Sun SLOT — same prompt as the main executor; fills the
-  # three 01:00 UTC slots freed by retiring the triager (Wed/Sat) and the
-  # industry-news-writer (Sun). Every day now runs exactly 5 executor slots or
-  # executor + a specialist (planner/architect/upgrade-drafter/doc-drift).
-  - name: k8s-lab autonomous dev (Wed/Sat/Sun)
-    trigger_id: trig_012iaXwG6Pf8XeKCCEshY351
-    cron: "0 1 * * 0,3,6"          # 01:00 UTC Wed(3) + Sat(6) + Sun(0) — 5th nightly slot
-    model: claude-sonnet-4-6
-    enabled: true
-    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
-    prompt_file: executor.prompt.md   # SAME prompt as the main executor — keep them in lockstep
-    branch_prefix: auto/             # PRs land on auto/<slug>
-    max_tier: green
-
-  # The UPGRADE DRAFTER — bumps existing chart/image versions, one PR per run.
-  - name: k8s-lab upgrade-drafter
-    trigger_id: trig_01UyN9qcTFvWD14k38tn49K1
-    cron: "0 0 * * 4"              # weekly, Thursdays 00:00 UTC (~03:00 Europe/Tallinn, night) — Thu's 4th nightly slot
-    model: claude-sonnet-4-6
-    enabled: true
-    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
-    prompt_file: upgrade-drafter.prompt.md
-    branch_prefix: upgrade/        # PRs land on upgrade/<component>-<from>-to-<to>
-    max_tier: green                # same-source bumps only (see prompt's tier note)
-
-  # The DOC-DRIFT AUTHOR — reconciles README + dependency-tree + lab-UI drift.
-  - name: k8s-lab doc-drift-author
-    trigger_id: trig_01AibRNtdZLqLu3a58jDxnFk
-    cron: "0 1 * * 5"              # weekly, Fridays 01:00 UTC (~04:00 Europe/Tallinn, night) — 5th nightly slot
-    model: claude-sonnet-4-6
-    enabled: true
-    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
-    prompt_file: doc-drift-author.prompt.md
-    branch_prefix: sync/           # PRs land on sync/docs-drift-YYYY-WW
-    max_tier: green
-
-  # The INDUSTRY-NEWS-WRITER was RETIRED 2026-06-13: news-gathering folded directly
-  # into architect STEP 1 (the architect now queries GitHub releases itself each run).
-  # The backend trigger trig_01GNuyixzT3TBDF7Mk4ZeSTr is kept DISABLED (no delete API).
-  # The weekly-roundup-writer orphan trig_01RJfm9AC8YJqFqc4KKQWxJb is also disabled.
+  # ── RETIRED TRIGGERS (no delete API — kept as audit trail) ──────────────────
+  # All retired triggers are DISABLED in the backend. Their slots are absorbed by
+  # the two executor triggers above. Their prompt files are kept in-repo as fallback
+  # chain targets (executor STEP 6b) and on-demand local invocations.
+  #
+  # Reviewer    trig_01Dw7US6aZmJo8XZwDikoNkG  retired 2026-06-10 (see #160)
+  # Planner     trig_015uWP3Hv1LTREpKzzkMkpUE  retired 2026-06-13 (absorbed)
+  # Architect   trig_01SpewghyraZDSrLoGA32nBe  retired 2026-06-13 (absorbed)
+  # Upgrade     trig_01UyN9qcTFvWD14k38tn49K1  retired 2026-06-13 (absorbed)
+  # Doc-drift   trig_01AibRNtdZLqLu3a58jDxnFk  retired 2026-06-13 (absorbed)
+  # Triager     trig_01E6ugxYJY6yGzwvSHSgFaCx  retired 2026-06-13 (see #191)
+  # News-writer trig_01GNuyixzT3TBDF7Mk4ZeSTr  retired 2026-06-13 (absorbed into architect STEP 1)
+  # Wed/Sat/Sun trig_012iaXwG6Pf8XeKCCEshY351  retired 2026-06-13 (superseded by 0 0-1 * * *)
+  # Roundup     trig_01RJfm9AC8YJqFqc4KKQWxJb  retired (orphan)
 
 # Local-only roles (NOT remote routines — they need Colima and the live cluster).
 # Invoked on demand by the maintainer; not registered with the backend, no cron,
