@@ -27,7 +27,8 @@ if [ "${ahead:-0}" -eq 0 ] && command -v gh >/dev/null 2>&1; then
   has_commits_over_main="$(git rev-list --count github/main..HEAD 2>/dev/null || echo 0)"
   if [ "${has_commits_over_main:-0}" -gt 0 ]; then
     pr_state="$(gh pr view --json state -q .state 2>/dev/null || echo '')"
-    [ "$pr_state" != "OPEN" ] && no_pr=1
+    # MERGED means the work is done — no action needed.
+    [ "$pr_state" != "OPEN" ] && [ "$pr_state" != "MERGED" ] && no_pr=1
   fi
 fi
 
