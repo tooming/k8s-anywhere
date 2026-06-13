@@ -334,7 +334,7 @@ You review and merge plan PRs, same as implementation PRs.
   the next item; the `make dr-restore` Make target lands in the
   item after that. (auto/velero-controller)
 
-- [ ] 🟢 **Velero Schedules — four stateful namespaces** (CHARTER
+- [x] 🟢 **Velero Schedules — four stateful namespaces** (CHARTER
   **Objective O1** + gates **Objective O3**, RFC #155 — see
   ADR-0021 §"Schedule set" for binding cron + TTL). Wait for the
   Velero controller PR above to merge first (CRDs need to exist
