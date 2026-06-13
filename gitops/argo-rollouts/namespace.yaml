@@ -1,0 +1,14 @@
+# Explicit argo-rollouts namespace manifest with Pod Security Admission labels (ADR-0017).
+# The Argo Rollouts controller and dashboard both run non-root — no carve-out from
+# PSS restricted is needed (upstream chart uses UID 65532, no hostPath, no privileged
+# containers). Synced by argo-rollouts-extras (wave 0) before the Helm release (wave 1)
+# so enforcement is in place before any pod is scheduled.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argo-rollouts
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

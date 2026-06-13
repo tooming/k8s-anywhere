@@ -1,0 +1,48 @@
+# Argo Rollouts progressive delivery controller (ADR-0020, CHARTER Objective O1).
+# Helm chart argo/argo-rollouts from https://argoproj.github.io/argo-helm.
+# Single controller replica + 1 dashboard replica (ADR-0005 lab trade-off).
+# Dashboard enabled — visualises canary steps in real time; exposed via HTTPRoute
+# rollouts.127.0.0.1.nip.io (gitops/argo-rollouts/route.yaml, via argo-rollouts-extras).
+# Traffic-router plugin: argoproj-labs/gatewayAPI v0.5.0 integrates with Envoy Gateway
+# HTTPRoute weight rewrites for canary traffic splitting (ADR-0008 + ADR-0020 §Traffic-router).
+# ALWAYS-ON: automated sync; argo-rollouts-extras (wave 0) pre-creates the namespace
+# with PSA restricted labels before the Helm release schedules pods.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-rollouts
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-rollouts
+    targetRevision: 2.40.0
+    helm:
+      releaseName: argo-rollouts
+      valuesObject:
+        controller:
+          replicas: 1
+          resources:
+            limits:
+              memory: 128Mi
+          trafficRouterPlugins: |
+            - name: argoproj-labs/gatewayAPI
+              location: https://github.com/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi/releases/download/v0.5.0/gatewayapi-plugin-linux-amd64
+        dashboard:
+          enabled: true
+          replicas: 1
+          resources:
+            limits:
+              memory: 64Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-rollouts
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

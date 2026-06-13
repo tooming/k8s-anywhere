@@ -1,0 +1,29 @@
+# argo-rollouts-extras — applies the argo-rollouts namespace.yaml (PSA restricted
+# labels, ADR-0017) and the rollouts-dashboard HTTPRoute before the Argo Rollouts
+# Helm Application (sync-wave 1) schedules pods. Running at wave 0 ensures the
+# namespace's enforce/warn/audit labels are in place before ArgoCD deploys the
+# Helm release. The HTTPRoute (rollouts.127.0.0.1.nip.io → dashboard :3100) lands
+# here so it is always-on alongside the controller.
+# ALWAYS-ON: automated sync alongside argo-rollouts.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-rollouts-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/argo-rollouts
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-rollouts
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

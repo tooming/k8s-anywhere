@@ -379,7 +379,7 @@ You review and merge plan PRs, same as implementation PRs.
   decision, so the planner grooms it as 🟢 (the architect's RFC
   is the approval). (auto/dr-restore-script)
 
-- [ ] 🟢 **Argo Rollouts controller** (CHARTER **Objective O1**,
+- [x] 🟢 **Argo Rollouts controller** (CHARTER **Objective O1**,
   RFC #154 — see
   [ADR-0020](docs/decisions/adr-0020-argo-rollouts-progressive-delivery.md)
   for the binding chart values, plug-in install, and

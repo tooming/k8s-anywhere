@@ -1,0 +1,24 @@
+# Allow Envoy Gateway proxy pods to reach the Argo Rollouts dashboard on TCP 3100
+# (ADR-0016). The Envoy proxy pods serve the rollouts.127.0.0.1.nip.io HTTPRoute
+# by forwarding to the argo-rollouts-dashboard Service on port 3100. The proxy
+# component label selects the Envoy data-plane pods in envoy-gateway-system only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argo-rollouts-dashboard-from-gateway
+  namespace: argo-rollouts
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 3100
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: proxy
