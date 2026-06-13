@@ -1,0 +1,13 @@
+# PSA restricted profile for the velero namespace (ADR-0017).
+# Velero controller runs non-root; node-agent DaemonSet uses a per-workload
+# hostPath carve-out matching the node-exporter pattern in ADR-0017 §"Per-workload
+# field carve-outs". See ADR-0021 §"NetworkPolicy + PSS".
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: velero
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

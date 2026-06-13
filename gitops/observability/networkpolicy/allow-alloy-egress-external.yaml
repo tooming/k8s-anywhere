@@ -73,6 +73,14 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: trivy-system
+    # Velero backup/restore controller metrics (:8085).
+    - ports:
+        - port: 8085
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: velero
     # kubelet + cAdvisor on cluster nodes (:10250). Alloy uses the node-role
     # Kubernetes discovery which resolves to per-node IP addresses outside
     # the pod CIDR, so an ipBlock CIDR covers the entire address space.

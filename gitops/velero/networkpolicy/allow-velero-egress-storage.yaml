@@ -1,0 +1,22 @@
+# Allow Velero controller and node-agent to reach the in-cluster Garage S3
+# backend on TCP 3900 (ADR-0016, ADR-0002). Velero writes backups to and reads
+# restores from the Garage `velero` bucket via the S3 API. The Garage Service
+# lives in the storage namespace and is addressed as
+# garage.storage.svc.cluster.local:3900 per ADR-0021 §"Garage backend".
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-velero-egress-storage
+  namespace: velero
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 3900
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: storage

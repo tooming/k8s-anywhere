@@ -1,0 +1,35 @@
+# velero-networkpolicy — default-deny + allowlist NetworkPolicies for the velero
+# namespace (ADR-0016 §4 fan-out; backup/restore controller + node-agent). Applies
+# the shared baseline templates (default-deny-all, allow-dns-and-apiserver) plus
+# per-workload allow rules: Alloy metrics scrape on TCP 8085, Garage S3 egress on
+# TCP 3900, and Kopia PV-read egress to backed-up namespaces (data/tidb/capstone/vault).
+# The allow-dns-and-apiserver baseline covers the controller's k8s API calls
+# (backup/restore CRD watch, leader election, node-agent DaemonSet coordination).
+# ALWAYS-ON: automated sync alongside the velero Application (same namespace).
+# The kustomization references templates from ../../network/policies/ — the
+# kustomize.buildOptions flag lifts the out-of-tree load restriction for this overlay.
+# Wave 4: after velero (wave 1) and velero-extras (wave 0) have created the namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: velero-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/velero/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: velero
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -273,7 +273,7 @@ You review and merge plan PRs, same as implementation PRs.
   "wire cosign-bootstrap into make up" follow-up the next planner
   cycle files once this lands). (auto/cosign-bootstrap-script)
 
-- [ ] 🟢 **Velero controller + Garage S3 backend** (CHARTER
+- [x] 🟢 **Velero controller + Garage S3 backend** (CHARTER
   **Objective O1** + gates **Objective O3**, RFC #155 — see
   [ADR-0021](docs/decisions/adr-0021-velero-backup-restore.md) for
   the binding chart values, Garage backend shape, and
