@@ -124,15 +124,25 @@ or CODEOWNERS; force-push, branch/data deletion, history rewrite; editing CHARTE
 
 ## 4. Review & merge gate (identical for humans and agents)
 
-_⚙ to wire (GitHub repo settings):_
+_GitHub repo settings (configured 2026-06-13):_
 
-- **Branch protection on `main`:** no direct pushes; PR required; required status check =
-  CI (`make ci`); ≥ 1 human approval (≥ 2 for Yellow-tier changes); **CODEOWNERS** review
-  required; no self-approval / self-merge; linear history (which also retires the
-  planner/executor rebase wrinkle).
-- **`CODEOWNERS`** routes each PR to its owning humans by path (e.g.
-  `gitops/observability/` → the observability owners). An agent PR is **never** approved by
-  an agent.
+- **Branch protection on `main`** — active. Rules enforced (no bypass, admins included):
+  - PR required before merging; no direct pushes to `main`.
+  - ≥ 1 approval required; stale approvals dismissed on new commits.
+  - CODEOWNERS review required (routes PRs to domain owners by path).
+  - Required status checks (all must pass): `lint`, `manifests`, `terraform`,
+    `kustomize`, `unit`, `drift` (from the `ci` workflow) and `up-to-date`
+    (from `pr-up-to-date`).
+  - Branches must be up to date with `main` before merging.
+  - Linear history enforced (no merge commits on `main`).
+  - All conversations must be resolved before merging.
+
+_⚙ still to wire:_
+
+- **`CODEOWNERS`** — file exists but all domain owners are `@tbd` (see §7 ownership
+  map). As the team grows, replace `@tbd` entries with real owners; until then the
+  CODEOWNERS requirement is satisfied by the maintainer (@tooming) for all paths.
+  An agent PR is **never** approved by an agent.
 
 _Process:_
 
