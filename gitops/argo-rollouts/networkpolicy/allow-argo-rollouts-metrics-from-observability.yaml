@@ -1,0 +1,25 @@
+# Allow Alloy in the observability namespace to scrape Argo Rollouts controller
+# metrics on TCP 8090 (ADR-0016). The argo-rollouts chart exposes a Prometheus
+# metrics service (argo-rollouts-metrics) at :8090/metrics; the Alloy scrape job
+# will target this once the follow-up dashboard+scrape PR lands. podSelector {}
+# keeps the allow pod-name-agnostic so it covers any argo-rollouts pod.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argo-rollouts-metrics-from-observability
+  namespace: argo-rollouts
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8090
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: alloy
