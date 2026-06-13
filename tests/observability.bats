@@ -185,3 +185,69 @@ setup() {
   run grep -q 'prometheus.scrape "garage"' "$REPO/gitops/platform/observability-alloy.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- Lab — Cloud Control Plane (moto / ACK / KRO) dashboard -------------------
+
+@test "lab-cloud-control-plane.json dashboard exists in grafana/dashboards/" {
+  [ -f "$REPO/grafana/dashboards/lab-cloud-control-plane.json" ]
+}
+
+@test "lab-cloud-control-plane.json has uid lab-cloud-control-plane" {
+  run grep -q '"uid": "lab-cloud-control-plane"' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-cloud-control-plane.json has moto subsection heading" {
+  run grep -q 'moto — AWS mock' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-cloud-control-plane.json has ACK S3 subsection heading" {
+  run grep -q 'ACK S3 — Bucket controller' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-cloud-control-plane.json has KRO subsection heading" {
+  run grep -q 'KRO — Resource Orchestrator' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-cloud-control-plane.json uses Mimir datasource for metric panels" {
+  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-cloud-control-plane.json uses Loki datasource for log panels" {
+  run grep -q '"uid": "loki"' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-cloud-control-plane.json queries kube_pod_status_phase for pod health" {
+  run grep -q 'kube_pod_status_phase' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-cloud-control-plane.json queries container_memory_working_set_bytes for memory" {
+  run grep -q 'container_memory_working_set_bytes' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-cloud-control-plane.json queries argocd_app_info for sync state" {
+  run grep -q 'argocd_app_info' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-cloud-control-plane.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "lab-cloud-control-plane.json does not reference unscraped controller-runtime metrics" {
+  run grep -qE 'controller_runtime|workqueue_depth' "$REPO/grafana/dashboards/lab-cloud-control-plane.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "docs/dependency-tree.md mentions lab-cloud-control-plane dashboard" {
+  run grep -q 'lab-cloud-control-plane' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
