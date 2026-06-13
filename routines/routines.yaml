@@ -10,10 +10,10 @@ source: https://github.com/tooming/k8s-lab     # repo cloned into each run
 #   executor 3/day baseline + a 4th executor run on every non-Thursday day (the
 #   "slot filler" trigger below — a second trigger reusing executor.prompt.md,
 #   because one cron expression can't encode "4/day except Thu"), plus one daily
-#   routine-of-the-day: Mon=planner, Tue=architect, Wed=triager,
-#   Thu=upgrade-drafter + planner, Fri=doc-drift, Sat=triager, Sun=industry-news-writer.
-#   Every day runs at the 5/day cap: Mon–Wed/Fri–Sun = executor 4 + daily 1;
-#   Thu = executor 3 + planner + upgrade-drafter.
+#   routine-of-the-day: Mon=planner, Tue=architect, Wed=executor,
+#   Thu=upgrade-drafter + planner, Fri=doc-drift, Sat=executor, Sun=executor.
+#   Every day runs at the 5/day cap: Mon/Tue/Fri = executor 4 + daily 1;
+#   Wed/Sat/Sun = executor 5; Thu = executor 3 + planner + upgrade-drafter.
 #
 # NIGHT-TIME SCHEDULE + CREDIT SAFETY (rolling-24h-proof):
 #   All runs fire in a fixed nightly window — five FIXED clock-times every day:
@@ -31,15 +31,17 @@ source: https://github.com/tooming/k8s-lab     # repo cloned into each run
 #   Slot map (constant every day; identity varies):
 #     21:00 / 22:00 / 23:00 UTC = executor base (3/day, all 7 days)
 #     00:00 UTC = executor slot-filler (Mon–Wed,Fri–Sun) OR upgrade-drafter (Thu)
-#     01:00 UTC = routine-of-the-day (planner/architect/triager/doc-drift/news)
+#     01:00 UTC = routine-of-the-day (planner/architect/executor/doc-drift)
 #   The standalone reviewer routine was RETIRED (its daily slot funded the executor's
 #   return to 3/day): cron-based review kept lagging PR-open — PRs were merged between
 #   slots and the reviewer filed idle issues (see #160). First-pass review now happens
 #   IN the producing run: every PR-producing routine (executor/planner/architect/
 #   upgrade-drafter) self-reviews its diff and posts a `[self-review]` comment +
 #   `self-reviewed` label before its run ends. Merge stays human (Red-tier).
-#   learning-post-writer was replaced by industry-news-writer (Sun slot) to unblock
-#   the architect's ADR audit cycle (see issue #94 / docs/industry/).
+#   The standalone triager was RETIRED 2026-06-13: it can only label, never produce
+#   PRs, so idle runs wasted the quota slot (see #191). Triage coverage is preserved
+#   via the executor's STEP 6b fallback chain (step 5). Wed/Sat/Sun 01:00 are now
+#   executor slots (third trigger below — "Wed/Sat/Sun").
 
 routines:
   # The EXECUTOR — implements one ROADMAP item per run. If its lane is empty it does
@@ -96,16 +98,24 @@ routines:
   # upgrade-drafter prompts). The backend trigger trig_01Dw7US6aZmJo8XZwDikoNkG is
   # kept DISABLED (the trigger API has no delete) so this file remains the audit trail.
 
-  # The TRIAGER — labels open GitHub issues with domain / tier / priority.
-  - name: k8s-lab triager
-    trigger_id: trig_01E6ugxYJY6yGzwvSHSgFaCx
-    cron: "0 1 * * 3,6"            # Wed + Sat 01:00 UTC (~04:00 Europe/Tallinn, night), 2/week — 5th nightly slot
+  # The TRIAGER was RETIRED 2026-06-13: it can only label issues, never produce PRs,
+  # so idle runs wasted the quota slot (see #191). Triage coverage is preserved via
+  # the executor's STEP 6b fallback chain (step 5 — triager). The backend trigger
+  # trig_01E6ugxYJY6yGzwvSHSgFaCx is kept DISABLED (the trigger API has no delete).
+
+  # The EXECUTOR'S Wed/Sat/Sun SLOT — same prompt as the main executor; fills the
+  # three 01:00 UTC slots freed by retiring the triager (Wed/Sat) and the
+  # industry-news-writer (Sun). Every day now runs exactly 5 executor slots or
+  # executor + a specialist (planner/architect/upgrade-drafter/doc-drift).
+  - name: k8s-lab autonomous dev (Wed/Sat/Sun)
+    trigger_id: trig_012iaXwG6Pf8XeKCCEshY351
+    cron: "0 1 * * 0,3,6"          # 01:00 UTC Wed(3) + Sat(6) + Sun(0) — 5th nightly slot
     model: claude-sonnet-4-6
     enabled: true
-    allowed_tools: [Bash, Read, Glob, Grep]   # labels-only — no Write/Edit, no PRs
-    prompt_file: triager.prompt.md
-    branch_prefix: ""              # no branch — labels via gh
-    max_tier: green                # labels only
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    prompt_file: executor.prompt.md   # SAME prompt as the main executor — keep them in lockstep
+    branch_prefix: auto/             # PRs land on auto/<slug>
+    max_tier: green
 
   # The UPGRADE DRAFTER — bumps existing chart/image versions, one PR per run.
   - name: k8s-lab upgrade-drafter
