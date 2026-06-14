@@ -1,0 +1,132 @@
+# Capstone Rollout overlay — progressive delivery via Argo Rollouts (ADR-0020, RFC #154).
+# Separate file from deployment.yaml per RFC #154 binding spec. The existing Deployment
+# stays as the "no-canary" reference; scale it to 0 replicas before activating the Rollout
+# to avoid both managing the same pod label selector (a follow-up planner item will delete
+# the Deployment once the Rollout proves out in a live demo).
+#
+# Canary strategy: two weight gates (10% → 50% → 100%), each preceded by a 60s pause and
+# followed by a Mimir-backed success-rate analysis (≥ 95% http_requests_total 2xx ratio,
+# ADR-0020 §"AnalysisTemplate"). The gatewayAPI traffic-router plugin rewrites the
+# capstone HTTPRoute's backendRefs weight field on each step (Envoy Gateway / ADR-0008).
+# The capstone-stable and capstone-canary Services below are managed by the Rollout
+# controller — it updates their selectors to point at the stable / canary ReplicaSets.
+#
+# To trigger a canary: kubectl argo rollouts set image capstone capstone=<new-image>
+# The Rollout will not produce live traffic splits until that command is run on a cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: capstone
+  namespace: capstone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: capstone
+  template:
+    metadata:
+      labels:
+        app: capstone
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        - name: artifactory-registry
+      containers:
+        - name: capstone
+          image: artifactory.127.0.0.1.nip.io/docker-local/hello:latest
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8080
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://tempo.observability.svc.cluster.local:4318"
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: capstone-app-creds
+                  key: app-key
+                  optional: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: tmp
+          emptyDir: {}
+  strategy:
+    canary:
+      canaryService: capstone-canary
+      stableService: capstone-stable
+      trafficRouting:
+        plugins:
+          argoproj-labs/gatewayAPI:
+            httpRoute:
+              name: capstone
+              namespace: capstone
+      steps:
+      - setWeight: 10
+      - pause:
+          duration: 60s
+      - analysis:
+          templates:
+          - templateName: success-rate
+          args:
+          - name: namespace
+            value: capstone
+      - setWeight: 50
+      - pause:
+          duration: 60s
+      - analysis:
+          templates:
+          - templateName: success-rate
+          args:
+          - name: namespace
+            value: capstone
+---
+# capstone-stable Service: stable-side traffic target. The Rollout controller updates
+# this service's selector to point at the stable ReplicaSet; the HTTPRoute backendRef
+# weight for stable traffic is rewritten per step by the gatewayAPI plugin.
+apiVersion: v1
+kind: Service
+metadata:
+  name: capstone-stable
+  namespace: capstone
+spec:
+  selector:
+    app: capstone
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+# capstone-canary Service: canary-side traffic target. The Rollout controller updates
+# this service's selector to point at the canary ReplicaSet during progressive delivery.
+apiVersion: v1
+kind: Service
+metadata:
+  name: capstone-canary
+  namespace: capstone
+spec:
+  selector:
+    app: capstone
+  ports:
+    - port: 8080
+      targetPort: 8080
