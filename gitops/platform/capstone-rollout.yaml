@@ -1,0 +1,30 @@
+# capstone-rollout — deploys the Argo Rollouts AnalysisTemplate catalogue for the
+# capstone canary (ADR-0020, RFC #154). Syncs gitops/argo-rollouts/analysistemplates/
+# to the capstone namespace so the success-rate AnalysisTemplate is co-located with
+# the Rollout that references it by templateName.
+# Sync-wave 5: after argo-rollouts (wave 1) installs the AnalysisTemplate CRD and
+# after capstone (wave 4) creates the capstone namespace. Plain directory mode (no
+# kustomization.yaml) — ArgoCD applies every YAML in the analysistemplates/ directory.
+# ALWAYS-ON: auto-synced; AnalysisTemplate instances carry no resource footprint.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: capstone-rollout
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/argo-rollouts/analysistemplates
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: capstone
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
