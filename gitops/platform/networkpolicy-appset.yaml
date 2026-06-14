@@ -38,6 +38,12 @@ spec:
           - appName: storage-networkpolicy
             gitPath: gitops/storage/networkpolicy
             destNamespace: storage
+          - appName: tidb-networkpolicy
+            gitPath: gitops/tidb/networkpolicy
+            destNamespace: tidb
+          - appName: tidb-admin-networkpolicy
+            gitPath: gitops/tidb-admin/networkpolicy
+            destNamespace: tidb-admin
           - appName: vault-networkpolicy
             gitPath: gitops/vault/networkpolicy
             destNamespace: vault

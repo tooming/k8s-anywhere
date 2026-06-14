@@ -1,0 +1,14 @@
+# NetworkPolicy Kustomize overlay for the tidb-admin namespace (ADR-0016 §4 fan-out).
+# tidb-admin holds the TiDB Operator controller and scheduler — on-demand like TiDB
+# itself, but the NetworkPolicy overlay is auto-synced so the default-deny floor is
+# already in place when `make tidb-operator-up` brings the operator up.
+# Wired into gitops/platform/networkpolicy-appset.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tidb-admin
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-tidb-admin-egress-tidb.yaml

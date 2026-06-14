@@ -600,7 +600,7 @@ You review and merge plan PRs, same as implementation PRs.
   WAYS-OF-WORKING.md §3, ship `moto` + `lab-gateway` first and
   file `ack-system` as a follow-up. (auto/pss-moto-ack-labgateway)
 
-- [ ] 🟢 **NetworkPolicy fan-out — `tidb` + `tidb-admin`
+- [x] 🟢 **NetworkPolicy fan-out — `tidb` + `tidb-admin`
   namespaces** (CHARTER **Objective O2**, due **2026-09-30**;
   ADR-0016 §4 fan-out completion — these are on-demand
   namespaces so the policy only takes effect after
