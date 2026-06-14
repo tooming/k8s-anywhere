@@ -667,59 +667,49 @@ You review and merge plan PRs, same as implementation PRs.
   the per-workload `podSecurityContext` requires editing
   `infra/modules/argocd/values.yaml` (Helm-chart values for the argocd
   release) — that's an `infra/` bootstrap change, which
-  WAYS-OF-WORKING.md §2 classifies as 🟡. **Awaiting an architect RFC**
-  for: (a) whether to flip the namespace PSA enforcement label
-  directly in `infra/modules/argocd/values.yaml` (Helm chart-supplied
-  PSA labels) or in a separate ArgoCD-Application-managed Namespace
-  manifest that re-labels the existing Terraform namespace (which is
-  what the prior argocd-NetworkPolicy item does); (b) which ArgoCD
-  controllers need carve-outs (the application-controller
-  `runAsNonRoot: true` with a non-zero UID is well-documented; the
-  repo-server's git working dir is the only known
-  `readOnlyRootFilesystem: true` blocker); (c) the rollout sequence
-  (apply the namespace label first as `warn`/`audit` only, observe,
-  then flip `enforce`). Executor must not pick this up unprompted.
-  The planner will split into 🟢 items the run after the RFC issue
-  lands.
+  WAYS-OF-WORKING.md §2 classifies as 🟡. **(RFC #205)** — architect
+  decision: (a) use a standalone `gitops/argocd/namespace.yaml`
+  (ArgoCD SSA onto the Terraform namespace, no infra/ touch for labels);
+  (b) two-phase rollout: Phase 1 `warn`+`audit` labels only (🟢
+  immediately); Phase 2 add `global.podSecurityContext` +
+  `global.containerSecurityContext` + `emptyDir` at `/tmp` for
+  `repoServer` and `server` in `infra/modules/argocd/values.yaml`,
+  then flip `enforce: restricted`; (c) no carve-outs needed — all
+  ArgoCD components are `restricted`-compatible after the emptyDir
+  overlays. The planner will split into two 🟢 Phase items on its
+  next run.
 
 - [ ] 🟡 **NetworkPolicy fan-out — `envoy-gateway-system` namespace**
   (CHARTER **Objective O2**, due **2026-09-30**; ADR-0016 §4 fan-out
   remainder — flagged by the prior `lab-gateway-networkpolicy` Done
   item: Envoy proxy pods live in `envoy-gateway-system` and that
-  namespace's NetworkPolicy is a larger item once the architect RFCs
-  the proxy/data-plane egress requirements — it's effectively the
-  cluster's ingress gateway, so its egress fan-out matches every
-  backend Service. **Awaiting an architect RFC** for: (a) whether to
-  enumerate egress allows per backend Service (high-maintenance — adds
-  a fan-out for every new HTTPRoute) or use a coarse-grained
-  `namespaceSelector` allow per namespace that hosts a backend (looser
-  but matches the ADR-0008 shared-gateway pattern); (b) ingress allows
-  for the listener ports the Gateway exposes (TCP 8000 + 8443 on host
-  `127.0.0.1.nip.io`); (c) ingress allow on TCP 19000 + 19001 from
-  `observability` for the existing Alloy scrape jobs (already in
-  `gitops/platform/observability-alloy.yaml`); (d) the
-  envoy-gateway-system controller's egress to the kube-apiserver for
-  Gateway API reconciliation. Executor must not pick this up
-  unprompted. The planner will split into 🟢 items the run after the
-  RFC issue lands.
+  namespace's NetworkPolicy is a larger item). **(RFC #206)** —
+  architect decision: (a) use coarse-grained `namespaceSelector`
+  per backend namespace (no per-Service enumeration; proxy egress
+  allows all ports to the twelve named backend namespaces, updated
+  per new HTTPRoute); (b) ingress TCP 10080 from `ipBlock 0.0.0.0/0`
+  for the proxy listener (Envoy maps Service port 80 → container port
+  10080; executor verifies actual port before finalizing); (c) ingress
+  TCP 19000 + 19001 from `observability` for Alloy scrape (proxy
+  admin + controller metrics); (d) controller egress to kube-apiserver
+  covered by baseline `allow-dns-and-apiserver.yaml` template; (e)
+  four per-flow allow files (`controller-metrics`, `proxy-metrics`,
+  `proxy-listener`, `proxy-backend-egress`) + new Application
+  `gitops/platform/envoy-gateway-system-networkpolicy.yaml`
+  (sync-wave 4). The planner will split into a 🟢 executor item on
+  its next run.
 
 - [ ] 🟡 **ADR-0017 audit — vault PSA-restricted after Vault v2.0.2
-  upgrade** (issue #157, `adr-audit` label). The architect routine
-  surfaced that Vault v2.0.2 drops `cap_ipc_lock` from its container
-  image, meaning the existing `vault: baseline` carve-out in
-  ADR-0017's per-namespace profile table can be retired *if* the lab
-  bumps Vault to v2.0.2+ **and** sets `disable_mlock = true` in the
-  Vault config. The audit issue's "Recommendation" is *Revisit* — not
-  a binding decision — so the next architect cycle owns the call
-  (either edit ADR-0017 in place or supersede it). Executor must not
-  pick this up unprompted. The planner will split into 🟢 items the
-  run after the follow-up RFC issue lands. The dependent work is:
-  (a) image bump of the vault Application to v2.0.2+;
-  (b) `disable_mlock = true` in the vault config;
-  (c) `gitops/vault/namespace.yaml` PSA labels flip baseline →
-  restricted; (d) PSS-restricted `securityContext` on the vault
-  Deployment + `emptyDir` for writable paths outside its PVC;
-  (e) ADR-0017 row update.
+  upgrade** (issue #157 — resolved as **keep** on 2026-06-11; see
+  ADR-0017 §"Re-evaluation log"). The audit determined: keep
+  `vault: baseline` until a real, pinnable chart/image that no longer
+  holds `cap_ipc_lock` is available. The flip condition is documented
+  in the ADR. **No RFC or 🟢 executor item is needed now.** This
+  ROADMAP entry is a reminder: when the Vault Helm chart ships an image
+  that drops `cap_ipc_lock`, open a new `adr-audit` issue to trigger
+  the Convert path (bump chart + `disable_mlock = true` + flip labels
+  baseline → restricted + ADR-0017 row update). Until then, the
+  executor skips this item.
 
 _Future 🟡 entries land here when the architect routine files a new RFC
 issue but the planner hasn't yet split it. The four 2026-W23 RFCs
@@ -731,7 +721,10 @@ executor builds top-down without waiting for further architect input.
 The two prior 🟡 entries (NetworkPolicy default-deny, securityContext
 hardening) remain groomed into the 🟢 fan-out items in *Now / next*
 (ADR-0016 and ADR-0017 are adopted). The ADR-0010 Redis→Valkey swap
-(issue #94) landed as ADR-0018 in PR #106 and is in *Done*._
+(issue #94) landed as ADR-0018 in PR #106 and is in *Done*. The two
+remaining 🟡 O2 gaps (PSS argocd, NP envoy-gateway-system) received
+architect RFCs #205 and #206 on 2026-06-14; the planner will split
+them into 🟢 executor items on its next run._
 
 ---
 
