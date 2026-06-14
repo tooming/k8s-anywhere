@@ -428,7 +428,7 @@ You review and merge plan PRs, same as implementation PRs.
   to ADR-0017 is a separate small docs item (see "ADR-0017
   amendment" below). (auto/argo-rollouts-controller)
 
-- [ ] 🟢 **Capstone Rollout overlay + success-rate
+- [x] 🟢 **Capstone Rollout overlay + success-rate
   AnalysisTemplate** (CHARTER **Objective O1** + the capstone
   "Argo Rollouts canaries on real Mimir SLOs → Envoy routes it"
   vision, RFC #154). Wait for the Argo Rollouts controller PR
@@ -533,7 +533,7 @@ You review and merge plan PRs, same as implementation PRs.
   manifest isn't merged yet, skip that row and file a follow-up
   planner item. (auto/adr-0017-next-wave-rows)
 
-- [ ] 🟢 **Lab — Cloud control-plane (moto / ACK / KRO)
+- [x] 🟢 **Lab — Cloud control-plane (moto / ACK / KRO)
   dashboard** (CHARTER **Objective O5**, due **2026-09-30**:
   every always-on component has a real-metric Grafana dashboard.
   Promoted from *Cross-cutting* — this is the only always-on
