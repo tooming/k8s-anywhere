@@ -22,6 +22,13 @@ spec:
       # which moto_server misreads as its listen port and crashes. Disable the
       # service-link env vars and set MOTO_PORT explicitly.
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: moto
           image: motoserver/moto:5.2.1
@@ -42,6 +49,12 @@ spec:
               port: 5000
             initialDelaySeconds: 5
             periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               cpu: 25m
@@ -49,3 +62,9 @@ spec:
             limits:
               cpu: 250m
               memory: 256Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
