@@ -27,6 +27,19 @@ spec:
             limits:
               cpu: 250m
               memory: 256Mi
+          podSecurityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            fsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
   destination:
     server: https://kubernetes.default.svc
     namespace: kro

@@ -1,0 +1,13 @@
+# Explicit ack-system namespace with Pod Security Admission labels (ADR-0017).
+# ack-system hosts the ACK S3 controller (Helm) and the KRO resources
+# (RGD + S3BucketClaim instances). Both are stock controller-runtime workloads
+# that run non-root, so the full restricted profile applies.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ack-system
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

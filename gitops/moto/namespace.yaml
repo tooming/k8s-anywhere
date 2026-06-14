@@ -1,0 +1,13 @@
+# Explicit moto namespace with Pod Security Admission labels (ADR-0017).
+# moto is a Python/FastAPI AWS-emulator running as uid 65534 (nobody) — it does
+# not require root or any Linux capabilities, so the full restricted profile is
+# achievable. PSA restricted backstops the pod-level securityContext below.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: moto
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

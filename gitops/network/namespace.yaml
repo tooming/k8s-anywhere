@@ -1,0 +1,13 @@
+# Explicit lab-gateway namespace with Pod Security Admission labels (ADR-0017).
+# lab-gateway holds only Gateway API objects (GatewayClass, Gateway, HTTPRoute).
+# Envoy proxy pods live in envoy-gateway-system, not here — this namespace has
+# NO running pods, so restricted PSA labels are trivially safe.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-gateway
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

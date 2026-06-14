@@ -567,7 +567,7 @@ You review and merge plan PRs, same as implementation PRs.
   planner item; this PR stays clusterless-verifiable.)*
   (auto/cloud-control-plane-dashboard)
 
-- [ ] 🟢 **PSS-restricted fan-out — `moto` + `ack-system`
+- [x] 🟢 **PSS-restricted fan-out — `moto` + `ack-system`
   namespaces + `lab-gateway` labels** (CHARTER **Objective O2**,
   due **2026-09-30**; ADR-0017 §"Staged rollout" continuation —
   closes the always-on `restricted`-eligible fan-out except
