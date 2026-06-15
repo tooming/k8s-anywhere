@@ -336,6 +336,20 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
+
+              // ---- Argo Rollouts (progressive delivery controller) metrics -> Mimir ----
+              // Argo Rollouts exposes controller-runtime metrics on :8090/metrics; feeds
+              // the "Lab — Argo Rollouts" dashboard with real reconcile rate, rollout phase
+              // distribution, and canary weight series (ADR-0020, ADR-0004). The
+              // NetworkPolicy allow (port 8090, ingress from observability) is pre-wired in
+              // gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-metrics-from-observability.yaml.
+              prometheus.scrape "argo_rollouts" {
+                targets = [
+                  {"__address__" = "argo-rollouts-metrics.argo-rollouts.svc.cluster.local:8090", "job" = "argo-rollouts"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

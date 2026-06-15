@@ -659,7 +659,7 @@ You review and merge plan PRs, same as implementation PRs.
   §3, ship `tidb-admin` (small) first and file `tidb` as a
   follow-up. (auto/networkpolicy-tidb-fanout)
 
-- [ ] 🟢 **Argo Rollouts dashboard + Alloy scrape job** (CHARTER **Objective O1** +
+- [x] 🟢 **Argo Rollouts dashboard + Alloy scrape job** (CHARTER **Objective O1** +
   **O5**; deferred from `auto/argo-rollouts-controller` per the 400-line budget rule
   — see `docs/done/2026-06-13-argo-rollouts-controller.md` and the
   `docs/dependency-tree.md` Argo Rollouts note). The NetworkPolicy ingress on TCP

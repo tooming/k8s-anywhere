@@ -1,9 +1,8 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for Argo Rollouts (progressive delivery controller, ADR-0020).
 # Validates GitOps wiring (Application shape, chart pin, plug-in install block),
-# namespace PSA labels, HTTPRoute, and NetworkPolicy overlay — no running cluster required.
-# NOTE: Alloy scrape job + Grafana dashboard (lab-argo-rollouts.json) tests are deferred
-# to the follow-up PR (split per executor note to stay within the ~400 line PR budget).
+# namespace PSA labels, HTTPRoute, NetworkPolicy overlay, Alloy scrape job, and
+# Grafana dashboard — no running cluster required.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -224,4 +223,55 @@ setup() {
 @test "ADR-0020 (Argo Rollouts) document exists" {
   run sh -c "ls $REPO/docs/decisions/adr-0020-*.md"
   [ "$status" -eq 0 ]
+}
+
+# --- Alloy scrape job (metrics -> Mimir, deferred from controller PR) ---------
+@test "observability-alloy.yaml contains argo_rollouts scrape job block" {
+  run grep -q 'prometheus.scrape "argo_rollouts"' "$REPO/gitops/platform/observability-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argo_rollouts scrape job targets argo-rollouts-metrics service on :8090" {
+  run grep -q 'argo-rollouts-metrics.argo-rollouts.svc.cluster.local:8090' "$REPO/gitops/platform/observability-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argo_rollouts scrape job forwards to mimir remote_write receiver" {
+  run grep -A5 'prometheus.scrape "argo_rollouts"' "$REPO/gitops/platform/observability-alloy.yaml"
+  [[ "$output" == *"prometheus.remote_write.mimir.receiver"* ]]
+}
+
+# --- Grafana dashboard (lab-argo-rollouts.json, deferred from controller PR) --
+@test "lab-argo-rollouts.json dashboard file exists" {
+  [ -f "$REPO/grafana/dashboards/lab-argo-rollouts.json" ]
+}
+
+@test "lab-argo-rollouts.json uid matches file name convention" {
+  run grep -q '"uid": "lab-argo-rollouts"' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-argo-rollouts.json references controller_runtime_reconcile_total (real metric, ADR-0004)" {
+  run grep -q 'controller_runtime_reconcile_total' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-argo-rollouts.json references rollout_phase (real metric, ADR-0004)" {
+  run grep -q 'rollout_phase' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-argo-rollouts.json references rollout_canary_weight (real metric, ADR-0004)" {
+  run grep -q 'rollout_canary_weight' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-argo-rollouts.json uses mimir datasource uid (X-Scope-OrgID via datasource config)" {
+  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-argo-rollouts.json contains no placeholder or fabricated data strings (ADR-0004)" {
+  run grep -iE '"(placeholder|fabricated|dummy|fake|example_metric)"' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
+  [ "$status" -ne 0 ]
 }
