@@ -163,6 +163,19 @@ You review and merge plan PRs, same as implementation PRs.
 > **WIP / size discipline reminder.** Per WAYS-OF-WORKING.md §3, target ≤ 400
 > changed lines per PR. Items below that risk crossing the cap carry a
 > "split if oversized" executor note matching the RFC's own split guidance.
+>
+> **Planner note (2026-06-14 — O1/O5 dashboard tail + O4/O6 RFC surface).** Two
+> deferred Tier 1 next-wave Grafana dashboards are now the highest-value 🟢 items:
+> the Argo Rollouts dashboard + Alloy scrape job (explicitly deferred in
+> `docs/done/2026-06-13-argo-rollouts-controller.md`; NP ingress pre-wired) and the
+> Trivy Operator dashboard (explicitly deferred in `docs/done/auto-trivy-operator.md`;
+> Alloy scrape already wired). Both are required by CHARTER O1 ("each next-wave
+> component … with real-metric Grafana dashboard") and O5 ("every always-on component
+> has a real-metric dashboard by 2026-09-30"). The tidb/tidb-admin NetworkPolicy
+> fan-out (the last O2 tail item) is in-flight as PR #203. Two new 🟡 Cross-cutting
+> entries below surface the remaining O4 work (cosign signing in GitLab CI +
+> verifyImages Enforce flip) and O6 work (make capstone-demo wall-clock target), both
+> awaiting architect RFCs before the planner can groom them into 🟢 executor items.
 
 - [x] 🟢 **Kyverno engine + observability** (CHARTER **Objective O1**,
   RFC #153 — see
@@ -638,6 +651,56 @@ You review and merge plan PRs, same as implementation PRs.
   §3, ship `tidb-admin` (small) first and file `tidb` as a
   follow-up. (auto/networkpolicy-tidb-fanout)
 
+- [ ] 🟢 **Argo Rollouts dashboard + Alloy scrape job** (CHARTER **Objective O1** +
+  **O5**; deferred from `auto/argo-rollouts-controller` per the 400-line budget rule
+  — see `docs/done/2026-06-13-argo-rollouts-controller.md` and the
+  `docs/dependency-tree.md` Argo Rollouts note). The NetworkPolicy ingress on TCP
+  8090 from `observability` is pre-wired; the scrape job and dashboard are the only
+  missing pieces. Add `prometheus.scrape "argo_rollouts"` block to
+  `gitops/platform/observability-alloy.yaml` (single static target
+  `argo-rollouts-metrics.argo-rollouts.svc.cluster.local:8090`; `scrape_interval =
+  "30s"`; mirrors the adjacent `trivy_operator` / `velero` scrape pattern). New
+  `grafana/dashboards/lab-argo-rollouts.json` ("Lab — Argo Rollouts (Progressive
+  Delivery)") modelled on `lab-kyverno.json` stat-row: stat panels for controller
+  running + rollouts-dashboard running (KSM
+  `kube_deployment_status_replicas_available{namespace="argo-rollouts"}`); ArgoCD
+  sync state (`argocd_app_info{name=~"argo-rollouts.*"}`); reconcile rate timeseries
+  (`controller_runtime_reconcile_total{controller="rollout"}`); Rollout phase
+  distribution stat panels from `rollout_phase{phase=~"Healthy|Paused|Degraded"}`;
+  canary weight gauge (`rollout_canary_weight`). All panels real Mimir data with
+  `X-Scope-OrgID: lab` tenant header (ADR-0004 — no fabricated data; if a metric
+  is not yet emitted before a Rollout runs, document it in the panel description and
+  do NOT substitute a placeholder). The `rollouts.127.0.0.1.nip.io:8000` row in the
+  stack-health Lab UIs panel was added in the controller PR — no new row needed.
+  Extend `tests/argo-rollouts.bats`: scrape job block for `"argo_rollouts"` exists
+  in `observability-alloy.yaml`; `lab-argo-rollouts.json` exists; dashboard
+  references `controller_runtime_reconcile_total`; no fabricated/placeholder data.
+  Update `docs/dependency-tree.md` Argo Rollouts note to confirm Alloy scrape and
+  dashboard are now present. (auto/argo-rollouts-dashboard)
+
+- [ ] 🟢 **Trivy Operator dashboard** (CHARTER **Objective O1** + **O5**; deferred
+  from `auto/trivy-operator` per the 400-line budget rule — see
+  `docs/done/auto-trivy-operator.md` and the `docs/dependency-tree.md` Trivy note:
+  "Dashboard `grafana/dashboards/lab-trivy.json` is the next planner item
+  (ADR-0004 compliance)"). The Alloy scrape job (`prometheus.scrape "trivy_operator"`
+  targeting `trivy-operator.trivy-system.svc.cluster.local:8080`) is already wired in
+  `gitops/platform/observability-alloy.yaml` — no scrape change needed. New
+  `grafana/dashboards/lab-trivy.json` ("Lab — Trivy Operator (Supply Chain)")
+  modelled on `lab-kyverno.json` stat-row: operator running (KSM
+  `kube_deployment_status_replicas_available{namespace="trivy-system"}`); ArgoCD
+  sync state; CVE-by-severity stat panels (Critical / High / Medium / Low) from
+  `trivy_image_vulnerabilities{severity=~"CRITICAL|HIGH|MEDIUM|LOW"}` aggregated
+  across all workloads; top-10 vulnerable-workload bar chart (sum by `resource` label
+  with `topk(10, …)`); configAudit pass/fail pie
+  (`trivy_config_audit_checks_total{severity=…}`); SBOM report count stat panel
+  (`trivy_sbom_reports_total` by namespace — direct CHARTER supply-chain goal).
+  All panels real Mimir data (ADR-0004 — any panel whose metric has not yet emitted
+  a series must show "No data" naturally, not a fabricated fallback). Extend
+  `tests/trivy-operator.bats`: `lab-trivy.json` exists; dashboard references
+  `trivy_image_vulnerabilities`; references `trivy_sbom_reports_total`; no
+  fabricated/placeholder data. Update `docs/dependency-tree.md` Trivy note to
+  confirm dashboard present. (auto/trivy-dashboard)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
@@ -721,6 +784,43 @@ You review and merge plan PRs, same as implementation PRs.
   Deployment + `emptyDir` for writable paths outside its PVC;
   (e) ADR-0017 row update.
 
+- [ ] 🟡 **O4 completion — cosign signing in GitLab CI + verifyImages Enforce flip**
+  (CHARTER **Objective O4**, due **2026-12-31**: "an unsigned image push to the
+  capstone Application fails admission"). The cosign keypair bootstrap script
+  (`scripts/cosign-bootstrap.sh`) and the verifyImages `ClusterPolicy` (currently
+  `failurePolicy: Ignore` + `validationFailureAction: Audit`) have both landed.
+  Remaining work — all 🟡: (a) wire `scripts/cosign-bootstrap.sh` into `make up`
+  so the `cosign-public-key` ConfigMap is seeded in the `kyverno` namespace before
+  ArgoCD syncs the verifyImages policy (Makefile change); (b) add a `cosign sign`
+  step in `.gitlab-ci.yml` after `docker push` so the capstone image is signed at
+  build time with the lab's private key (CI change); (c) flip
+  `gitops/kyverno/policies/verify-image-signatures.yaml` from
+  `failurePolicy: Ignore` / `validationFailureAction: Audit` to `Enforce` once CI
+  signing is verified end-to-end (security-adjacent). **Awaiting an architect RFC**
+  specifying: the exact GitLab CI `cosign sign` step shape (flags, key path,
+  `COSIGN_EXPERIMENTAL`, OCI manifest reference format); the `make up` wiring
+  sequence (cosign-bootstrap runs after vault-bootstrap and before ArgoCD sync);
+  and the Audit→Enforce flip timing and rollback path. Executor must not pick this
+  up unprompted. The planner will groom into three 🟢 items (Makefile, CI, flip)
+  the run after the RFC issue lands.
+
+- [ ] 🟡 **O6 — make capstone-demo wall-clock target** (CHARTER **Objective O6**,
+  due **2026-12-31**: "`make up` to a Tempo-traced capstone request in under 15
+  minutes on the maintainer's hardware"). Needs a `make capstone-demo` target
+  (Makefile change — 🟡) that: waits for ArgoCD to report the capstone Application
+  Healthy; sends a synthetic HTTP request to `capstone.127.0.0.1.nip.io:8000`;
+  asserts a Vault `ExternalSecret` is Ready; verifies a Tempo trace was received
+  (query Tempo HTTP API for a recent trace from the capstone service); fails if total
+  wall-clock exceeds 900s (15 min Objective bar). Also needs `tests/capstone-demo.bats`
+  (clusterless structural: script exists + is executable + 900s budget check present).
+  **Awaiting an architect RFC** clarifying: (a) whether the wall-clock scope is the
+  full `make up + demo` path or the demo-only post-cluster-ready path; (b) how Tempo
+  trace verification is best expressed (live-query vs. a structural log-grep vs. a
+  `make capstone-demo-live` companion target); (c) the exact Makefile boundary and
+  whether a `make capstone-demo` + `make capstone-demo-down` split is needed.
+  Executor must not pick this up unprompted. The planner will groom into 🟢 items
+  (script, Makefile target, bats) the run after the RFC lands.
+
 _Future 🟡 entries land here when the architect routine files a new RFC
 issue but the planner hasn't yet split it. The four 2026-W23 RFCs
 (Kyverno → #153 / ADR-0019; Argo Rollouts → #154 / ADR-0020; Velero →
@@ -731,7 +831,10 @@ executor builds top-down without waiting for further architect input.
 The two prior 🟡 entries (NetworkPolicy default-deny, securityContext
 hardening) remain groomed into the 🟢 fan-out items in *Now / next*
 (ADR-0016 and ADR-0017 are adopted). The ADR-0010 Redis→Valkey swap
-(issue #94) landed as ADR-0018 in PR #106 and is in *Done*._
+(issue #94) landed as ADR-0018 in PR #106 and is in *Done*. The two
+new 🟡 entries above (O4 cosign-CI + O6 capstone-demo target) were
+surfaced 2026-06-14 gap analysis; they await architect RFCs to unlock
+the Makefile/CI/security-adjacent work they require._
 
 ---
 
