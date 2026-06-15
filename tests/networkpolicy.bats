@@ -15,6 +15,8 @@ setup() {
   MOTO_NP="$REPO/gitops/moto/networkpolicy"
   ACK_NP="$REPO/gitops/ack/networkpolicy"
   GATEWAY_NP="$REPO/gitops/network/networkpolicy"
+  TIDB_NP="$REPO/gitops/tidb/networkpolicy"
+  TIDB_ADMIN_NP="$REPO/gitops/tidb-admin/networkpolicy"
 }
 
 # --- Shared baseline templates -----------------------------------------------
@@ -787,5 +789,140 @@ setup() {
 
 @test "lab-gateway-networkpolicy ArgoCD Application sources from gitops/network/networkpolicy" {
   run grep -q 'gitops/network/networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- tidb namespace overlay (ADR-0016 §4 fan-out) --------------------------------
+
+@test "tidb networkpolicy kustomization.yaml exists" {
+  [ -f "$TIDB_NP/kustomization.yaml" ]
+}
+
+@test "tidb kustomization sets namespace: tidb" {
+  run grep -q 'namespace: tidb' "$TIDB_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb kustomization references the shared default-deny template" {
+  run grep -q 'network/policies/default-deny.yaml' "$TIDB_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb kustomization references the shared allow-dns-and-apiserver template" {
+  run grep -q 'network/policies/allow-dns-and-apiserver.yaml' "$TIDB_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-tidb-intra-namespace.yaml exists in tidb/networkpolicy/" {
+  [ -f "$TIDB_NP/allow-tidb-intra-namespace.yaml" ]
+}
+
+@test "allow-tidb-intra-namespace allows both Ingress and Egress policyTypes" {
+  run grep -c 'Ingress\|Egress' "$TIDB_NP/allow-tidb-intra-namespace.yaml"
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 2 ]
+}
+
+@test "allow-tidb-intra-namespace uses an empty podSelector (matches all pods)" {
+  run grep -q 'podSelector: {}' "$TIDB_NP/allow-tidb-intra-namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-tidb-from-tidb-admin.yaml exists in tidb/networkpolicy/" {
+  [ -f "$TIDB_NP/allow-tidb-from-tidb-admin.yaml" ]
+}
+
+@test "allow-tidb-from-tidb-admin allows ingress from tidb-admin namespace" {
+  run grep -q 'kubernetes.io/metadata.name: tidb-admin' "$TIDB_NP/allow-tidb-from-tidb-admin.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-tidb-from-tidb-admin allows egress to tidb-admin namespace" {
+  run grep -q 'tidb-admin' "$TIDB_NP/allow-tidb-from-tidb-admin.yaml"
+  [ "$status" -eq 0 ]
+  run grep -c 'tidb-admin' "$TIDB_NP/allow-tidb-from-tidb-admin.yaml"
+  [ "$output" -ge 2 ]
+}
+
+@test "allow-tidb-kubelet-egress.yaml exists in tidb/networkpolicy/" {
+  [ -f "$TIDB_NP/allow-tidb-kubelet-egress.yaml" ]
+}
+
+@test "allow-tidb-kubelet-egress allows port 10250 (TiKV topology probe to kubelet)" {
+  run grep -q 'port: 10250' "$TIDB_NP/allow-tidb-kubelet-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-tidb-kubelet-egress uses an ipBlock for node CIDR" {
+  run grep -q 'ipBlock:' "$TIDB_NP/allow-tidb-kubelet-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-tidb-from-observability.yaml exists in tidb/networkpolicy/" {
+  [ -f "$TIDB_NP/allow-tidb-from-observability.yaml" ]
+}
+
+@test "allow-tidb-from-observability allows port 10080 (TiDB status / Alloy scrape)" {
+  run grep -q 'port: 10080' "$TIDB_NP/allow-tidb-from-observability.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-tidb-from-observability allows ingress from observability namespace" {
+  run grep -q 'kubernetes.io/metadata.name: observability' "$TIDB_NP/allow-tidb-from-observability.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb-networkpolicy ArgoCD Application targets the tidb namespace" {
+  run grep -q 'destNamespace: tidb' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb-networkpolicy ArgoCD Application sources from gitops/tidb/networkpolicy" {
+  run grep -q 'gitops/tidb/networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- tidb-admin namespace overlay (ADR-0016 §4 fan-out) --------------------------
+
+@test "tidb-admin networkpolicy kustomization.yaml exists" {
+  [ -f "$TIDB_ADMIN_NP/kustomization.yaml" ]
+}
+
+@test "tidb-admin kustomization sets namespace: tidb-admin" {
+  run grep -q 'namespace: tidb-admin' "$TIDB_ADMIN_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb-admin kustomization references the shared default-deny template" {
+  run grep -q 'network/policies/default-deny.yaml' "$TIDB_ADMIN_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb-admin kustomization references the shared allow-dns-and-apiserver template" {
+  run grep -q 'network/policies/allow-dns-and-apiserver.yaml' "$TIDB_ADMIN_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-tidb-admin-egress-tidb.yaml exists in tidb-admin/networkpolicy/" {
+  [ -f "$TIDB_ADMIN_NP/allow-tidb-admin-egress-tidb.yaml" ]
+}
+
+@test "allow-tidb-admin-egress-tidb allows egress to tidb namespace" {
+  run grep -q 'kubernetes.io/metadata.name: tidb' "$TIDB_ADMIN_NP/allow-tidb-admin-egress-tidb.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-tidb-admin-egress-tidb uses Egress policyType" {
+  run grep -q 'Egress' "$TIDB_ADMIN_NP/allow-tidb-admin-egress-tidb.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb-admin-networkpolicy ArgoCD Application targets the tidb-admin namespace" {
+  run grep -q 'destNamespace: tidb-admin' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb-admin-networkpolicy ArgoCD Application sources from gitops/tidb-admin/networkpolicy" {
+  run grep -q 'gitops/tidb-admin/networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
