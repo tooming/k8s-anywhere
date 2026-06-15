@@ -709,6 +709,82 @@ You review and merge plan PRs, same as implementation PRs.
   fabricated/placeholder data. Update `docs/dependency-tree.md` Trivy note to
   confirm dashboard present. (auto/trivy-dashboard)
 
+- [ ] 🟢 **ArgoCD PSS Phase 1 — namespace warn+audit labels** (CHARTER
+  **Objective O2**, due **2026-09-30**; RFC #205 — ADR-0017 argocd PSS
+  two-phase rollout, Phase 1 🟢 immediately). Create
+  `gitops/argocd/namespace.yaml` with PSA labels `warn: restricted`,
+  `audit: restricted`, `warn-version: latest`, `audit-version: latest`
+  only — `enforce` label is absent (that is Phase 2). ArgoCD
+  Server-Side-Applies this onto the existing Terraform-created
+  namespace; no `infra/` touch needed (SSA merges labels safely). Deliver
+  via a new auto-synced ArgoCD `Application`
+  `gitops/platform/argocd-extras.yaml` (sync-wave 0,
+  `LoadRestrictionsNone`, `CreateNamespace=false` — namespace is
+  pre-created by Terraform; this Application only manages the PSA
+  labels). Follow the existing `kyverno-extras` / `trivy-extras` naming
+  convention — RFC #205 refers to it as `argocd-namespace.yaml` but the
+  repo uses the `-extras` suffix for this class of Application. Extend
+  `tests/securitycontext.bats` asserting: `gitops/argocd/namespace.yaml`
+  exists; the four warn/audit labels are present; `enforce` label is
+  absent. Update `docs/dependency-tree.md` with an argocd PSS Phase 1
+  note. `docs/done/2026-06-15-argocd-pss-warn-audit.md` required.
+  (auto/argocd-pss-warn-audit)
+
+- [ ] 🟢 **ArgoCD PSS Phase 2 — securityContext hardening + enforce
+  flip** (CHARTER **Objective O2**, RFC #205 — Phase 2; buildable after
+  Phase 1 is **verified green in cluster** by maintainer). Update
+  `infra/modules/argocd/values.yaml` adding the exact
+  `global.podSecurityContext` + `global.containerSecurityContext` block
+  from RFC #205 §Decision (`runAsNonRoot: true`, `runAsUser/Group: 1000`,
+  `seccompProfile.type: RuntimeDefault`; `allowPrivilegeEscalation:
+  false`, `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`);
+  add `emptyDir` at `/tmp` for `repoServer` (git clone scratch) and
+  `server` (session token files) via `volumes` + `volumeMounts`. Update
+  `gitops/argocd/namespace.yaml` to add `enforce: restricted` +
+  `enforce-version: latest`. Verify the bundled `argocd-redis`
+  sub-chart's own securityContext is not adversely overridden by the
+  global block — add per-component override if needed. Extend
+  `tests/securitycontext.bats` asserting `enforce: restricted` label is
+  present in `gitops/argocd/namespace.yaml`. `docs/done/` entry required.
+  **Executor note:** the `infra/` touch is 🟡 by default, but RFC #205
+  (the architect's binding decision per WAYS-OF-WORKING.md §2) explicitly
+  names this `infra/` change as part of the implementation spec — the
+  RFC IS the approval; no additional human sign-off needed before
+  building. (auto/argocd-pss-enforce)
+
+- [ ] 🟢 **NetworkPolicy fan-out — `envoy-gateway-system` namespace**
+  (CHARTER **Objective O2**, due **2026-09-30**; RFC #206 — ADR-0016 §4
+  fan-out completion; closes the last always-on namespace without a
+  NetworkPolicy floor). Two pod types need distinct policies
+  (differentiated by `podSelector`). Create
+  `gitops/envoy-gateway-system/networkpolicy/kustomization.yaml`
+  referencing the two baseline templates
+  (`../../network/policies/default-deny.yaml`,
+  `../../network/policies/allow-dns-and-apiserver.yaml`) plus four allow
+  files: `allow-envoy-controller-metrics-ingress.yaml` (ingress TCP 19001
+  from `namespaceSelector: kubernetes.io/metadata.name: observability`;
+  `podSelector: app.kubernetes.io/name: envoy-gateway`);
+  `allow-envoy-proxy-metrics-ingress.yaml` (ingress TCP 19000 from
+  `observability`; `podSelector: app.kubernetes.io/name: envoy-proxy`);
+  `allow-envoy-proxy-listener-ingress.yaml` (ingress TCP 10080 from
+  `ipBlock: cidr: 0.0.0.0/0`; `podSelector: app.kubernetes.io/name:
+  envoy-proxy` — **executor must verify the actual proxy container port
+  before finalizing**; RFC #206 §Decision notes the lab maps Service
+  port 80 → container 10080, but verify against the pod spec);
+  `allow-envoy-proxy-backend-egress.yaml` (egress from proxy pods to the
+  twelve named backend namespaces via `namespaceSelector` with
+  `matchExpressions: operator: In`, no port restriction — backend list
+  per RFC #206: `argocd`, `capstone`, `vault`, `observability`, `data`,
+  `storage`, `moto`, `ack-system`, `argo-rollouts`, `kyverno`, `velero`,
+  `trivy-system`). New auto-synced `Application`
+  `gitops/platform/envoy-gateway-system-networkpolicy.yaml` (sync-wave 4,
+  `LoadRestrictionsNone`) — same pattern as all other `*-networkpolicy`
+  Applications. Extend `tests/networkpolicy.bats`: kustomization exists;
+  baseline refs present; each allow file exists and targets the correct
+  port + selector per above; Application file present. Update
+  `docs/dependency-tree.md` with envoy-gateway-system NP note.
+  `docs/done/` entry required. (auto/envoy-gateway-system-networkpolicy)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
@@ -727,48 +803,20 @@ You review and merge plan PRs, same as implementation PRs.
 
 ### Cross-cutting hardening & quality (always-safe filler)
 > Use these when nothing above can be done cleanly in a single run. Mixed tiers —
-> the 🟡 items still need an architect RFC before the executor builds them. The
-> 🟢 cloud-control-plane dashboard item that previously lived here has been
-> promoted to *Now / next* above (CHARTER **O5** carrier).
+> the 🟡 items without an RFC still need an architect RFC before the executor builds
+> them. Items that received RFCs (#205, #206) have been groomed into 🟢 items in
+> *Now / next* above (planner 2026-06-15). The 🟢 cloud-control-plane dashboard
+> item that previously lived here has been promoted to *Now / next* above (CHARTER
+> **O5** carrier).
 
-- [ ] 🟡 **PSS-restricted hardening — `argocd` namespace** (CHARTER
-  **Objective O2**, due **2026-09-30**; ADR-0017 §"Staged rollout"
-  remainder — the namespace is bootstrap-created by Terraform in
-  `infra/modules/argocd/`, so flipping the namespace PSA labels and
-  the per-workload `podSecurityContext` requires editing
-  `infra/modules/argocd/values.yaml` (Helm-chart values for the argocd
-  release) — that's an `infra/` bootstrap change, which
-  WAYS-OF-WORKING.md §2 classifies as 🟡. **(RFC #205)** — architect
-  decision: (a) use a standalone `gitops/argocd/namespace.yaml`
-  (ArgoCD SSA onto the Terraform namespace, no infra/ touch for labels);
-  (b) two-phase rollout: Phase 1 `warn`+`audit` labels only (🟢
-  immediately); Phase 2 add `global.podSecurityContext` +
-  `global.containerSecurityContext` + `emptyDir` at `/tmp` for
-  `repoServer` and `server` in `infra/modules/argocd/values.yaml`,
-  then flip `enforce: restricted`; (c) no carve-outs needed — all
-  ArgoCD components are `restricted`-compatible after the emptyDir
-  overlays. The planner will split into two 🟢 Phase items on its
-  next run.
+- ~~🟡 **PSS-restricted hardening — `argocd` namespace**~~ (RFC #205)
+  **Groomed ↗** into two 🟢 Phase items in *Now / next* above
+  (`auto/argocd-pss-warn-audit` + `auto/argocd-pss-enforce`),
+  planner run 2026-06-15.
 
-- [ ] 🟡 **NetworkPolicy fan-out — `envoy-gateway-system` namespace**
-  (CHARTER **Objective O2**, due **2026-09-30**; ADR-0016 §4 fan-out
-  remainder — flagged by the prior `lab-gateway-networkpolicy` Done
-  item: Envoy proxy pods live in `envoy-gateway-system` and that
-  namespace's NetworkPolicy is a larger item). **(RFC #206)** —
-  architect decision: (a) use coarse-grained `namespaceSelector`
-  per backend namespace (no per-Service enumeration; proxy egress
-  allows all ports to the twelve named backend namespaces, updated
-  per new HTTPRoute); (b) ingress TCP 10080 from `ipBlock 0.0.0.0/0`
-  for the proxy listener (Envoy maps Service port 80 → container port
-  10080; executor verifies actual port before finalizing); (c) ingress
-  TCP 19000 + 19001 from `observability` for Alloy scrape (proxy
-  admin + controller metrics); (d) controller egress to kube-apiserver
-  covered by baseline `allow-dns-and-apiserver.yaml` template; (e)
-  four per-flow allow files (`controller-metrics`, `proxy-metrics`,
-  `proxy-listener`, `proxy-backend-egress`) + new Application
-  `gitops/platform/envoy-gateway-system-networkpolicy.yaml`
-  (sync-wave 4). The planner will split into a 🟢 executor item on
-  its next run.
+- ~~🟡 **NetworkPolicy fan-out — `envoy-gateway-system` namespace**~~
+  (RFC #206) **Groomed ↗** into a 🟢 item in *Now / next* above
+  (`auto/envoy-gateway-system-networkpolicy`), planner run 2026-06-15.
 
 - [ ] 🟡 **ADR-0017 audit — vault PSA-restricted after Vault v2.0.2
   upgrade** (issue #157 — resolved as **keep** on 2026-06-11; see
