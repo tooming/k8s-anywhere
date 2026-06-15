@@ -686,7 +686,7 @@ You review and merge plan PRs, same as implementation PRs.
   Update `docs/dependency-tree.md` Argo Rollouts note to confirm Alloy scrape and
   dashboard are now present. (auto/argo-rollouts-dashboard)
 
-- [ ] 🟢 **Trivy Operator dashboard** (CHARTER **Objective O1** + **O5**; deferred
+- [x] 🟢 **Trivy Operator dashboard** (CHARTER **Objective O1** + **O5**; deferred
   from `auto/trivy-operator` per the 400-line budget rule — see
   `docs/done/auto-trivy-operator.md` and the `docs/dependency-tree.md` Trivy note:
   "Dashboard `grafana/dashboards/lab-trivy.json` is the next planner item

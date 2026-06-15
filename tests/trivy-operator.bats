@@ -147,3 +147,38 @@ setup() {
   run grep -q 'trivy-system' "$REPO/gitops/observability/networkpolicy/allow-alloy-egress-external.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- Grafana dashboard (ADR-0004: real metrics only) --------------------------
+@test "lab-trivy.json dashboard exists in grafana/dashboards/" {
+  [ -f "$REPO/grafana/dashboards/lab-trivy.json" ]
+}
+
+@test "lab-trivy.json references trivy_image_vulnerabilities (CVE-by-severity panels)" {
+  run grep -q 'trivy_image_vulnerabilities' "$REPO/grafana/dashboards/lab-trivy.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-trivy.json references trivy_sbom_reports_total (CHARTER supply-chain goal)" {
+  run grep -q 'trivy_sbom_reports_total' "$REPO/grafana/dashboards/lab-trivy.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-trivy.json references trivy_config_audit_checks_total (configAudit panel)" {
+  run grep -q 'trivy_config_audit_checks_total' "$REPO/grafana/dashboards/lab-trivy.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-trivy.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-trivy.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "lab-trivy.json uses Mimir datasource uid" {
+  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-trivy.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "docs/dependency-tree.md Trivy note confirms dashboard is present" {
+  run grep -q 'lab-trivy.json' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
