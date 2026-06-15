@@ -125,6 +125,14 @@ You review and merge plan PRs, same as implementation PRs.
 > needs an architect RFC *first* — the executor still must not build it unprompted, but
 > the architect's RFC is binding (no human-approval step) and the planner grooms it into
 > 🟢 items on its next run; **🔴 Red** humans only. *Now / next* holds only 🟢 items.
+>
+> **Conflict-free editing (binding rule).** Add/edit the discrete 🟡/🟢/🔴 **items**
+> inline here as normal. But record any per-run **narrative commentary** (grooming
+> summaries, "what was filed/unblocked this run") as a new file under
+> [`docs/backlog/`](docs/backlog/) (`YYYY-MM-DD-<slug>.md`) — never by appending to the
+> footer paragraph at the end of this section. One file per run means concurrent PRs
+> never touch the same lines. Same rule, same reason as `## Done` →
+> [`docs/done/`](docs/done/).
 
 ### Now / next
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
@@ -812,22 +820,14 @@ You review and merge plan PRs, same as implementation PRs.
   (script, Makefile target, bats) the run after the RFC lands.
 
 _Future 🟡 entries land here when the architect routine files a new RFC
-issue but the planner hasn't yet split it. The four 2026-W23 RFCs
-(Kyverno → #153 / ADR-0019; Argo Rollouts → #154 / ADR-0020; Velero →
-#155 / ADR-0021; Trivy Operator → #156 / ADR-0022) have been groomed
-into 🟢 single-PR items in *Now / next* above (this planner run,
-2026-06-11). All four ADRs (0019-0022) are merged on `main`, so the
-executor builds top-down without waiting for further architect input.
-The two prior 🟡 entries (NetworkPolicy default-deny, securityContext
-hardening) remain groomed into the 🟢 fan-out items in *Now / next*
-(ADR-0016 and ADR-0017 are adopted). The ADR-0010 Redis→Valkey swap
-(issue #94) landed as ADR-0018 in PR #106 and is in *Done*. The two
-remaining 🟡 O2 gaps (PSS argocd, NP envoy-gateway-system) received
-architect RFCs #205 and #206 on 2026-06-14; the planner will split
-them into 🟢 executor items on its next run. The new 🟡 entries above
-(O4 cosign-CI + O6 capstone-demo target) were surfaced 2026-06-14 gap
-analysis; they await architect RFCs to unlock the Makefile/CI/
-security-adjacent work they require._
+issue but the planner hasn't yet split it._
+
+Per-run grooming notes (which 🟡 items got RFCs, which were groomed into 🟢,
+which ADRs landed) live in [`docs/backlog/`](docs/backlog/) — one Markdown file
+per run, named `YYYY-MM-DD-<slug>.md`. Do **not** append run narrative to this
+section; each PR writing its own file is what keeps concurrent PRs conflict-free.
+<!-- Autonomous runs: record per-run grooming notes as docs/backlog/YYYY-MM-DD-<slug>.md — do NOT append narrative to this paragraph (concurrent PRs conflict on it; see docs/backlog/README.md). The discrete 🟡 items above stay here. -->
+
 
 ---
 
