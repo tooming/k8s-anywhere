@@ -1,0 +1,23 @@
+# Allow egress from tidb pods to kubelet on TCP 10250 (ADR-0016).
+# TiKV uses a topology-aware scheduling probe that queries the kubelet API
+# (TCP 10250) on each node to read zone/region labels for replica placement.
+# Node IPs are not stable in the lab (Docker bridge range changes across restarts)
+# so an ipBlock 0.0.0.0/0 scoped to port 10250 is the pragmatic approach —
+# the same pattern used for Alloy's kubelet/cAdvisor scrape in the observability
+# namespace (gitops/observability/networkpolicy/allow-alloy-egress-external.yaml).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-tidb-kubelet-egress
+  namespace: tidb
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 10250
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0

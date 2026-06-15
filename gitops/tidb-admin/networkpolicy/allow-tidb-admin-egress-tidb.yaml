@@ -1,0 +1,20 @@
+# Allow egress from tidb-admin pods to the tidb namespace (ADR-0016).
+# The TiDB Operator controller (in tidb-admin) reconciles TidbCluster CRs by
+# directly managing PD, TiKV, and TiDB pods in the tidb namespace via the k8s
+# API. The allow-dns-and-apiserver baseline covers the controller's k8s API calls;
+# this policy covers direct pod-to-pod operator flows (health probes, rolling
+# restart coordination) between tidb-admin and tidb namespace pods.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-tidb-admin-egress-tidb
+  namespace: tidb-admin
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: tidb
