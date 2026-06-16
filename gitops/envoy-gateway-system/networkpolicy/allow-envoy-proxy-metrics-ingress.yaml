@@ -1,0 +1,24 @@
+# Allow ingress to Envoy data-plane proxy pods from Alloy for metrics scraping
+# (ADR-0016, RFC #206). The Alloy scrape job `envoy-proxy` targets proxy pods in
+# envoy-gateway-system on TCP 19000 (/stats/prometheus), discovered via pod labels
+# (already wired in gitops/platform/observability-alloy.yaml and already allowed by
+# the Alloy egress rule in gitops/observability/networkpolicy/allow-alloy-egress-external.yaml).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-envoy-proxy-metrics-ingress
+  namespace: envoy-gateway-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: proxy
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 19000
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
