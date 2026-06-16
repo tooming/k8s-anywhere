@@ -29,4 +29,4 @@ floor; Phase 2 completes the enforcement flip once the Helm values are ready.
 
 ## PR
 
-PR #TBD — auto/argocd-pss-warn-audit
+PR #217 — https://github.com/tooming/k8s-lab/pull/217
