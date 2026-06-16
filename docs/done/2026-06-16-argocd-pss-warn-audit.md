@@ -16,6 +16,17 @@ and flips `enforce: restricted`.
 | `gitops/platform/argocd-extras.yaml` | ArgoCD `Application` (sync-wave 0, SSA) that patches the Terraform-created argocd namespace with the labels |
 | `tests/securitycontext.bats` | Six new bats assertions: namespace file exists, warn label, audit label, argocd-extras Application exists, targets correct path, uses ServerSideApply |
 
+## Completion gaps (closed in follow-up PR)
+
+PR #217 landed the core implementation but left three gaps that were closed in a follow-up executor run:
+
+| Gap | Fix |
+|-----|-----|
+| ROADMAP item never checked [x] | Checked off in follow-up PR |
+| `enforce`-absent assertion missing from `tests/securitycontext.bats` | New `@test "argocd namespace.yaml does NOT have enforce label (Phase 1 only)"` added |
+| `gitops/platform/argocd-extras.yaml` missing `CreateNamespace=false` + `LoadRestrictionsNone=true` | Both syncOptions added to match ROADMAP spec |
+| `docs/dependency-tree.md` missing argocd PSS Phase 1 note | Note added after argocd network policy entry |
+
 ## Why Phase 1 only
 
 The argocd namespace is created by Terraform bootstrap (`infra/modules/argocd`).
