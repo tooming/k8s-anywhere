@@ -1,0 +1,29 @@
+# argocd-extras — patches the argocd namespace with Phase 1 PSA warn/audit labels
+# (RFC #205, ADR-0017 §Staged rollout). The argocd namespace is Terraform-created
+# (infra/modules/argocd); this Application SSAs only the namespace.yaml labels onto
+# it without touching Terraform-owned fields. sync-wave 0 so labels land before any
+# ArgoCD component reconcile. Phase 2 (enforce flip + Helm securityContext values) is
+# a separate 🟡 item awaiting infra/ changes in infra/modules/argocd/values.yaml.
+# ALWAYS-ON: automated sync alongside the argocd bootstrap.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
