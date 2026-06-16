@@ -111,3 +111,33 @@ setup() {
   run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$NS"
   [ "$status" -eq 0 ]
 }
+
+# --- argocd namespace Phase 1 PSA labels (RFC #205, ADR-0017) -----------------
+
+@test "argocd namespace.yaml exists" {
+  [ -f "$REPO/gitops/argocd/namespace.yaml" ]
+}
+
+@test "argocd namespace.yaml has warn: restricted (Phase 1)" {
+  run grep -q 'pod-security.kubernetes.io/warn: restricted' "$REPO/gitops/argocd/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argocd namespace.yaml has audit: restricted (Phase 1)" {
+  run grep -q 'pod-security.kubernetes.io/audit: restricted' "$REPO/gitops/argocd/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argocd-extras Application exists" {
+  [ -f "$REPO/gitops/platform/argocd-extras.yaml" ]
+}
+
+@test "argocd-extras Application targets gitops/argocd" {
+  run grep -q 'path: gitops/argocd' "$REPO/gitops/platform/argocd-extras.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argocd-extras Application uses ServerSideApply" {
+  run grep -q 'ServerSideApply=true' "$REPO/gitops/platform/argocd-extras.yaml"
+  [ "$status" -eq 0 ]
+}

@@ -830,7 +830,7 @@ You review and merge plan PRs, same as implementation PRs.
   baseline → restricted + ADR-0017 row update). Until then, the
   executor skips this item.
 
-- [ ] 🟡 **O4 completion — cosign signing in GitLab CI + verifyImages Enforce flip**
+- [ ] 🟡 **O4 completion — cosign signing in GitLab CI + verifyImages Enforce flip** (RFC #214)
   (CHARTER **Objective O4**, due **2026-12-31**: "an unsigned image push to the
   capstone Application fails admission"). The cosign keypair bootstrap script
   (`scripts/cosign-bootstrap.sh`) and the verifyImages `ClusterPolicy` (currently
@@ -850,7 +850,7 @@ You review and merge plan PRs, same as implementation PRs.
   up unprompted. The planner will groom into three 🟢 items (Makefile, CI, flip)
   the run after the RFC issue lands.
 
-- [ ] 🟡 **O6 — make capstone-demo wall-clock target** (CHARTER **Objective O6**,
+- [ ] 🟡 **O6 — make capstone-demo wall-clock target** (RFC #215) (CHARTER **Objective O6**,
   due **2026-12-31**: "`make up` to a Tempo-traced capstone request in under 15
   minutes on the maintainer's hardware"). Needs a `make capstone-demo` target
   (Makefile change — 🟡) that: waits for ArgoCD to report the capstone Application
