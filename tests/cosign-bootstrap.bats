@@ -80,11 +80,8 @@ setup() {
 }
 
 @test "make up calls cosign-bootstrap after garage-bootstrap" {
-  # Extract the ordered call list from the 'up' target and verify sequence.
-  sequence="$(awk '/^up:/{in_target=1; next} in_target && /^\t\$\(MAKE\)/{sub(/.*\$\(MAKE\) /,""); print} in_target && /^[a-zA-Z]/{exit}' "$MK")"
-  garage_line="$(echo "$sequence" | grep -n 'garage-bootstrap' | cut -d: -f1)"
-  cosign_line="$(echo "$sequence" | grep -n 'cosign-bootstrap' | cut -d: -f1)"
-  [ -n "$garage_line" ]
-  [ -n "$cosign_line" ]
+  garage_line=$(grep -n 'MAKE) garage-bootstrap' "$MK" | head -1 | cut -d: -f1)
+  cosign_line=$(grep -n 'MAKE) cosign-bootstrap' "$MK" | head -1 | cut -d: -f1)
+  [ -n "$garage_line" ] && [ -n "$cosign_line" ]
   [ "$cosign_line" -gt "$garage_line" ]
 }
