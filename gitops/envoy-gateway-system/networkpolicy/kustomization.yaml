@@ -1,0 +1,22 @@
+# NetworkPolicy Kustomize overlay for the envoy-gateway-system namespace (ADR-0016 §4 fan-out).
+# Closes the last always-on namespace without a default-deny floor (RFC #206).
+# Pulls the two shared baseline templates and adds envoy-gateway-specific allow rules
+# for: Alloy metrics scrape of the controller on TCP 19001; Alloy metrics scrape of
+# the data-plane proxy on TCP 19000; north-south listener traffic on TCP 10080
+# (Envoy proxy container port — the Service maps port 80 → container 10080); proxy-pod
+# egress to the twelve backend namespaces it proxies HTTPRoute traffic into.
+# The allow-dns-and-apiserver baseline covers both controller and proxy k8s API calls
+# (Gateway reconciliation, EndpointSlice watches, leader election).
+# Wired into gitops/platform/envoy-gateway-system-networkpolicy.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: envoy-gateway-system
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-envoy-controller-metrics-ingress.yaml
+  - allow-envoy-proxy-metrics-ingress.yaml
+  - allow-envoy-proxy-listener-ingress.yaml
+  - allow-envoy-proxy-backend-egress.yaml

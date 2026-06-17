@@ -717,7 +717,7 @@ You review and merge plan PRs, same as implementation PRs.
   fabricated/placeholder data. Update `docs/dependency-tree.md` Trivy note to
   confirm dashboard present. (auto/trivy-dashboard)
 
-- [ ] 🟢 **ArgoCD PSS Phase 1 — namespace warn+audit labels** (CHARTER
+- [x] 🟢 **ArgoCD PSS Phase 1 — namespace warn+audit labels** (CHARTER
   **Objective O2**, due **2026-09-30**; RFC #205 — ADR-0017 argocd PSS
   two-phase rollout, Phase 1 🟢 immediately). Create
   `gitops/argocd/namespace.yaml` with PSA labels `warn: restricted`,
@@ -760,7 +760,7 @@ You review and merge plan PRs, same as implementation PRs.
   RFC IS the approval; no additional human sign-off needed before
   building. (auto/argocd-pss-enforce)
 
-- [ ] 🟢 **NetworkPolicy fan-out — `envoy-gateway-system` namespace**
+- [x] 🟢 **NetworkPolicy fan-out — `envoy-gateway-system` namespace**
   (CHARTER **Objective O2**, due **2026-09-30**; RFC #206 — ADR-0016 §4
   fan-out completion; closes the last always-on namespace without a
   NetworkPolicy floor). Two pod types need distinct policies
