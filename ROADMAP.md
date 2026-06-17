@@ -709,7 +709,7 @@ You review and merge plan PRs, same as implementation PRs.
   fabricated/placeholder data. Update `docs/dependency-tree.md` Trivy note to
   confirm dashboard present. (auto/trivy-dashboard)
 
-- [ ] 🟢 **ArgoCD PSS Phase 1 — namespace warn+audit labels** (CHARTER
+- [x] 🟢 **ArgoCD PSS Phase 1 — namespace warn+audit labels** (CHARTER
   **Objective O2**, due **2026-09-30**; RFC #205 — ADR-0017 argocd PSS
   two-phase rollout, Phase 1 🟢 immediately). Create
   `gitops/argocd/namespace.yaml` with PSA labels `warn: restricted`,

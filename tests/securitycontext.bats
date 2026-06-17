@@ -141,3 +141,8 @@ setup() {
   run grep -q 'ServerSideApply=true' "$REPO/gitops/platform/argocd-extras.yaml"
   [ "$status" -eq 0 ]
 }
+
+@test "argocd namespace.yaml does NOT have enforce label (Phase 1 only)" {
+  run grep -q 'pod-security.kubernetes.io/enforce' "$REPO/gitops/argocd/namespace.yaml"
+  [ "$status" -eq 1 ]
+}
