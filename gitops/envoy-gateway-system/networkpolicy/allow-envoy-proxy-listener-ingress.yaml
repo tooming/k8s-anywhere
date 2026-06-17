@@ -1,0 +1,25 @@
+# Allow ingress to Envoy data-plane proxy pods from any source on the north-south
+# listener port (ADR-0016, RFC #206). The Envoy Gateway Service maps port 80 to
+# container port 10080; all external traffic entering the cluster (from the host's
+# loopback via k3d port-mapping) arrives on this port. The ipBlock 0.0.0.0/0 covers
+# both the host loopback CIDR and any pod CIDR that the proxy already forwarded to
+# the listener — the same pragmatic pattern used for the ArgoCD repo-server's GitLab
+# egress (no stable single CIDR, so the full range is used).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-envoy-proxy-listener-ingress
+  namespace: envoy-gateway-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: proxy
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 10080
+          protocol: TCP
+      from:
+        - ipBlock:
+            cidr: 0.0.0.0/0

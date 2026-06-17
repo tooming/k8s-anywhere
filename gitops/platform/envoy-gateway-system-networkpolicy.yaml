@@ -1,0 +1,38 @@
+# envoy-gateway-system-networkpolicy — default-deny + allowlist NetworkPolicies for
+# the envoy-gateway-system namespace (ADR-0016 §4 fan-out, RFC #206; closes the last
+# always-on namespace without a default-deny floor).
+# Applies the shared baseline templates (default-deny-all, allow-dns-and-apiserver)
+# plus per-workload allow rules: Alloy metrics scrape of the Envoy Gateway controller
+# on TCP 19001; Alloy metrics scrape of Envoy data-plane proxy pods on TCP 19000;
+# north-south listener ingress on TCP 10080 (Service port 80 → container 10080);
+# proxy-pod egress to the twelve backend namespaces it routes HTTPRoute traffic into.
+# The controller pod's k8s API calls (Gateway reconciliation, EndpointSlice watches,
+# leader election) are covered by the allow-dns-and-apiserver baseline.
+# ALWAYS-ON: automated sync alongside the envoy-gateway Application (wave 0).
+# The kustomization references templates from ../../network/policies/ — the
+# kustomize.buildOptions flag lifts the out-of-tree load restriction for this overlay.
+# Wave 4: envoy-gateway is wave 0, so the namespace pre-exists before wave 4 applies.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: envoy-gateway-system-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/envoy-gateway-system/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: envoy-gateway-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

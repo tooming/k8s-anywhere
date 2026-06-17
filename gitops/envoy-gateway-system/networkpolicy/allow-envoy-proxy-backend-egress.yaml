@@ -1,0 +1,37 @@
+# Allow egress from Envoy data-plane proxy pods to all twelve backend namespaces
+# (ADR-0016, RFC #206). The proxy forwards HTTPRoute traffic to Services in these
+# namespaces; a default-deny floor without this rule would silently drop every
+# HTTPRoute response, breaking all lab UIs. No port restriction is applied because
+# the backend container ports vary per namespace (8080, 8200, 5000, 3000, etc.) and
+# the canonical port list lives in each backend's own Service spec. The matchExpressions
+# operator:In pattern matches the velero egress-kopia-pv precedent.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-envoy-proxy-backend-egress
+  namespace: envoy-gateway-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: proxy
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values:
+                  - argocd
+                  - capstone
+                  - vault
+                  - observability
+                  - data
+                  - storage
+                  - moto
+                  - ack-system
+                  - argo-rollouts
+                  - kyverno
+                  - velero
+                  - trivy-system

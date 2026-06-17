@@ -17,6 +17,7 @@ setup() {
   GATEWAY_NP="$REPO/gitops/network/networkpolicy"
   TIDB_NP="$REPO/gitops/tidb/networkpolicy"
   TIDB_ADMIN_NP="$REPO/gitops/tidb-admin/networkpolicy"
+  ENVOY_GW_NP="$REPO/gitops/envoy-gateway-system/networkpolicy"
 }
 
 # --- Shared baseline templates -----------------------------------------------
@@ -924,5 +925,138 @@ setup() {
 
 @test "tidb-admin-networkpolicy ArgoCD Application sources from gitops/tidb-admin/networkpolicy" {
   run grep -q 'gitops/tidb-admin/networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- envoy-gateway-system namespace overlay (ADR-0016 §4 fan-out, RFC #206) ---------
+
+@test "envoy-gateway-system networkpolicy kustomization.yaml exists" {
+  [ -f "$ENVOY_GW_NP/kustomization.yaml" ]
+}
+
+@test "envoy-gateway-system kustomization sets namespace: envoy-gateway-system" {
+  run grep -q 'namespace: envoy-gateway-system' "$ENVOY_GW_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system kustomization references the shared default-deny template" {
+  run grep -q 'network/policies/default-deny.yaml' "$ENVOY_GW_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system kustomization references the shared allow-dns-and-apiserver template" {
+  run grep -q 'network/policies/allow-dns-and-apiserver.yaml' "$ENVOY_GW_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-controller-metrics-ingress.yaml exists in envoy-gateway-system/networkpolicy/" {
+  [ -f "$ENVOY_GW_NP/allow-envoy-controller-metrics-ingress.yaml" ]
+}
+
+@test "allow-envoy-controller-metrics-ingress allows port 19001 (controller metrics)" {
+  run grep -q 'port: 19001' "$ENVOY_GW_NP/allow-envoy-controller-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-controller-metrics-ingress allows ingress from observability namespace" {
+  run grep -q 'kubernetes.io/metadata.name: observability' "$ENVOY_GW_NP/allow-envoy-controller-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-controller-metrics-ingress targets controller pods by name label" {
+  run grep -q 'app.kubernetes.io/name: envoy-gateway' "$ENVOY_GW_NP/allow-envoy-controller-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-metrics-ingress.yaml exists in envoy-gateway-system/networkpolicy/" {
+  [ -f "$ENVOY_GW_NP/allow-envoy-proxy-metrics-ingress.yaml" ]
+}
+
+@test "allow-envoy-proxy-metrics-ingress allows port 19000 (proxy stats)" {
+  run grep -q 'port: 19000' "$ENVOY_GW_NP/allow-envoy-proxy-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-metrics-ingress allows ingress from observability namespace" {
+  run grep -q 'kubernetes.io/metadata.name: observability' "$ENVOY_GW_NP/allow-envoy-proxy-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-metrics-ingress targets proxy pods by component label" {
+  run grep -q 'app.kubernetes.io/component: proxy' "$ENVOY_GW_NP/allow-envoy-proxy-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-listener-ingress.yaml exists in envoy-gateway-system/networkpolicy/" {
+  [ -f "$ENVOY_GW_NP/allow-envoy-proxy-listener-ingress.yaml" ]
+}
+
+@test "allow-envoy-proxy-listener-ingress allows port 10080 (north-south listener)" {
+  run grep -q 'port: 10080' "$ENVOY_GW_NP/allow-envoy-proxy-listener-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-listener-ingress uses an ipBlock for external traffic" {
+  run grep -q 'ipBlock:' "$ENVOY_GW_NP/allow-envoy-proxy-listener-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-listener-ingress targets proxy pods by component label" {
+  run grep -q 'app.kubernetes.io/component: proxy' "$ENVOY_GW_NP/allow-envoy-proxy-listener-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-backend-egress.yaml exists in envoy-gateway-system/networkpolicy/" {
+  [ -f "$ENVOY_GW_NP/allow-envoy-proxy-backend-egress.yaml" ]
+}
+
+@test "allow-envoy-proxy-backend-egress uses Egress policyType" {
+  run grep -q 'Egress' "$ENVOY_GW_NP/allow-envoy-proxy-backend-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-backend-egress includes all twelve backend namespaces" {
+  run grep -c 'argocd\|capstone\|vault\|observability\|data\|storage\|moto\|ack-system\|argo-rollouts\|kyverno\|velero\|trivy-system' \
+    "$ENVOY_GW_NP/allow-envoy-proxy-backend-egress.yaml"
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 12 ]
+}
+
+@test "allow-envoy-proxy-backend-egress uses matchExpressions operator In" {
+  run grep -q 'operator: In' "$ENVOY_GW_NP/allow-envoy-proxy-backend-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-backend-egress targets proxy pods by component label" {
+  run grep -q 'app.kubernetes.io/component: proxy' "$ENVOY_GW_NP/allow-envoy-proxy-backend-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system-networkpolicy Application file exists" {
+  [ -f "$REPO/gitops/platform/envoy-gateway-system-networkpolicy.yaml" ]
+}
+
+@test "envoy-gateway-system-networkpolicy Application targets envoy-gateway-system namespace" {
+  run grep -q 'namespace: envoy-gateway-system' "$REPO/gitops/platform/envoy-gateway-system-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system-networkpolicy Application sources from gitops/envoy-gateway-system/networkpolicy" {
+  run grep -q 'gitops/envoy-gateway-system/networkpolicy' "$REPO/gitops/platform/envoy-gateway-system-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system-networkpolicy Application has automated sync" {
+  run grep -q 'automated:' "$REPO/gitops/platform/envoy-gateway-system-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system-networkpolicy Application has LoadRestrictionsNone buildOption" {
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/envoy-gateway-system-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system-networkpolicy Application is at sync-wave 4" {
+  run grep -q 'sync-wave: "4"' "$REPO/gitops/platform/envoy-gateway-system-networkpolicy.yaml"
   [ "$status" -eq 0 ]
 }

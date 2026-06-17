@@ -184,6 +184,14 @@ You review and merge plan PRs, same as implementation PRs.
 > entries below surface the remaining O4 work (cosign signing in GitLab CI +
 > verifyImages Enforce flip) and O6 work (make capstone-demo wall-clock target), both
 > awaiting architect RFCs before the planner can groom them into 🟢 executor items.
+>
+> **Planner note (2026-06-16 — RFC #214 + #215 groomed into 🟢 O4/O6 items).** Architect
+> run 2026-06-16 filed RFC #214 (O4: cosign CI signing + verifyImages Enforce flip) and
+> RFC #215 (O6: `make capstone-demo` wall-clock target). Both are now groomed: four new
+> 🟢 items added below — three from RFC #214 (cosign `make up` wiring → CI sign stage →
+> verifyImages Enforce flip, in that dependency order) and one from RFC #215 (capstone-demo
+> target, standalone). The two formerly-🟡 Cross-cutting O4/O6 entries are marked
+> "Groomed ↗".
 
 - [x] 🟢 **Kyverno engine + observability** (CHARTER **Objective O1**,
   RFC #153 — see
@@ -709,7 +717,7 @@ You review and merge plan PRs, same as implementation PRs.
   fabricated/placeholder data. Update `docs/dependency-tree.md` Trivy note to
   confirm dashboard present. (auto/trivy-dashboard)
 
-- [ ] 🟢 **ArgoCD PSS Phase 1 — namespace warn+audit labels** (CHARTER
+- [x] 🟢 **ArgoCD PSS Phase 1 — namespace warn+audit labels** (CHARTER
   **Objective O2**, due **2026-09-30**; RFC #205 — ADR-0017 argocd PSS
   two-phase rollout, Phase 1 🟢 immediately). Create
   `gitops/argocd/namespace.yaml` with PSA labels `warn: restricted`,
@@ -752,7 +760,7 @@ You review and merge plan PRs, same as implementation PRs.
   RFC IS the approval; no additional human sign-off needed before
   building. (auto/argocd-pss-enforce)
 
-- [ ] 🟢 **NetworkPolicy fan-out — `envoy-gateway-system` namespace**
+- [x] 🟢 **NetworkPolicy fan-out — `envoy-gateway-system` namespace**
   (CHARTER **Objective O2**, due **2026-09-30**; RFC #206 — ADR-0016 §4
   fan-out completion; closes the last always-on namespace without a
   NetworkPolicy floor). Two pod types need distinct policies
@@ -785,6 +793,74 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with envoy-gateway-system NP note.
   `docs/done/` entry required. (auto/envoy-gateway-system-networkpolicy)
 
+- [ ] 🟢 **cosign-bootstrap wiring into `make up`** (CHARTER **Objective O4**, RFC #214
+  Item 1; `scripts/cosign-bootstrap.sh` already merged in `auto/cosign-bootstrap-script`).
+  Add a `cosign-bootstrap` phony target to `Makefile` calling `bash
+  scripts/cosign-bootstrap.sh` (mirrors `make vault-bootstrap` / `make garage-bootstrap`
+  pattern). Insert `$(MAKE) cosign-bootstrap` into the `make up` target **after**
+  `$(MAKE) garage-bootstrap` and **before** `$(MAKE) grafana-gitsync-bootstrap` per RFC
+  #214 §Decision (kyverno namespace is synced by ArgoCD by the time garage-bootstrap
+  completes; the script is idempotent). Extend `tests/cosign-bootstrap.bats` with two
+  structural assertions: Makefile `cosign-bootstrap` target exists; the `make up`
+  insertion order is correct (grep for the two adjacent calls in the documented sequence).
+  `make ci` must pass. **Executor note:** Makefile change is normally 🟡 but RFC #214
+  explicitly names this target in its binding Decision — the RFC IS the approval per
+  WAYS-OF-WORKING.md §2. (auto/cosign-make-up-wiring)
+
+- [ ] 🟢 **`cosign sign` stage in `.gitlab-ci.yml`** (CHARTER **Objective O4**, RFC #214
+  Item 2; wait for `auto/cosign-make-up-wiring` to merge first). Add `sign` to the
+  `stages:` list. New `sign-image` job: `image: bitnami/cosign:2`; variables
+  `COSIGN_PASSWORD: ""` and `COSIGN_EXPERIMENTAL: "0"` (disables Rekor transparency
+  upload — no outbound internet in lab); `before_script` copies `$COSIGN_KEY` (GitLab
+  File CI variable) to `/tmp/cosign/cosign.key`; `script` runs `cosign sign --key
+  /tmp/cosign/cosign.key --allow-insecure-registry --registry-username "$ARTIFACTORY_USER"
+  --registry-password "$ARTIFACTORY_PASSWORD" "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"`
+  (pushes `.sig` OCI tag back to Artifactory; `--allow-insecure-registry` because the
+  Artifactory route uses HTTP); `after_script: [rm -rf /tmp/cosign]`; `needs:
+  [build-and-push]`; `rules: if $CI_COMMIT_BRANCH == "main"`. Add a comment above the
+  job explaining `COSIGN_KEY` is a GitLab CI File variable the maintainer must set
+  (masked, type File — same doc pattern as existing `ARTIFACTORY_USER`/`ARTIFACTORY_PASSWORD`
+  comment block). `make ci` must pass. **Executor note:** CI change is normally 🟡 but
+  RFC #214 explicitly specifies this job in its binding Decision — the RFC IS the approval.
+  (auto/cosign-ci-sign-step)
+
+- [ ] 🟢 **`make capstone-demo` + `scripts/capstone-demo.sh`** (CHARTER **Objective O6**,
+  RFC #215 — demo-only wall-clock scope, 900 s budget; no dependency on other items).
+  New `scripts/capstone-demo.sh` per RFC #215 §Decision: records `START_EPOCH`; (1) waits
+  for capstone ArgoCD app Healthy (`argocd app wait capstone --health --timeout 120`; exits
+  1 on timeout); (2) asserts capstone ExternalSecret Ready (`kubectl -n capstone get
+  externalsecret` jsonpath `.status.conditions[?(@.type=="Ready")].status == "True"` within
+  30 s); (3) sends synthetic curl to `http://capstone.127.0.0.1.nip.io:8000/` asserting
+  HTTP 200; (4) verifies a Tempo trace via `kubectl -n observability port-forward
+  svc/tempo-query-frontend 3100:3100 &` + Tempo HTTP `/api/search?service.name=capstone`
+  (OS-portable `date` arithmetic per RFC #215 — macOS `-v-5M` vs Linux
+  `$(( $(date +%s) - 300 ))`); (5) enforces 900 s budget with per-step elapsed check;
+  (6) prints a summary table (elapsed per step + total, same pattern as
+  `scripts/dr-restore.sh`). New `make capstone-demo` phony target (`##@ Capstone` section
+  or nearest existing section) calling `bash scripts/capstone-demo.sh`. New
+  `tests/capstone-demo.bats` (clusterless structural): script exists + is executable; 900 s
+  budget check present; `argocd app wait capstone` invocation present;
+  `tempo-query-frontend` present; `externalsecret` check present. Update `docs/DR.md` with
+  a `## Capstone demo (O6)` section (prereqs: healthy cluster + `argocd` CLI logged in;
+  900 s budget). **Executor note:** `make capstone-demo` is a live-cluster target (like
+  `make dr-restore`), not a `make ci` gate; the bats tests are clusterless and must pass
+  without a live cluster. Makefile change is RFC #215-approved per WAYS-OF-WORKING.md §2.
+  (auto/capstone-demo-target)
+
+- [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
+  RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
+  maintainer confirms at least one CI run pushed a `.sig` tag to Artifactory** — check
+  `curl http://artifactory.127.0.0.1.nip.io:8000/artifactory/docker-local/hello/.sig`
+  returns 200). Edit `gitops/kyverno/policies/verify-image-signatures.yaml`:
+  `validationFailureAction: Audit` → `validationFailureAction: Enforce`;
+  `failurePolicy: Ignore` → `failurePolicy: Fail`. Extend `tests/kyverno-policies.bats`
+  (or `tests/kyverno.bats`) asserting `Enforce` and `Fail` values are present in the
+  policy file. PR body must document the flip condition and the rollback path (revert
+  both fields to `Audit` + `Ignore`, push → ArgoCD syncs within 30 s, no cluster
+  downtime per RFC #214 §"Rollback path"). `make ci` must pass. **Executor note:** this
+  item has a maintainer-confirmation prerequisite; skip to the next item if the condition
+  cannot be verified this run. (auto/cosign-enforce-flip)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
@@ -805,9 +881,10 @@ You review and merge plan PRs, same as implementation PRs.
 > Use these when nothing above can be done cleanly in a single run. Mixed tiers —
 > the 🟡 items without an RFC still need an architect RFC before the executor builds
 > them. Items that received RFCs (#205, #206) have been groomed into 🟢 items in
-> *Now / next* above (planner 2026-06-15). The 🟢 cloud-control-plane dashboard
-> item that previously lived here has been promoted to *Now / next* above (CHARTER
-> **O5** carrier).
+> *Now / next* above (planner 2026-06-15); RFCs #214 + #215 groomed 2026-06-16
+> (four new 🟢 items — three from RFC #214, one from RFC #215). The 🟢
+> cloud-control-plane dashboard item that previously lived here has been promoted
+> to *Now / next* above (CHARTER **O5** carrier).
 
 - ~~🟡 **PSS-restricted hardening — `argocd` namespace**~~ (RFC #205)
   **Groomed ↗** into two 🟢 Phase items in *Now / next* above
@@ -830,42 +907,14 @@ You review and merge plan PRs, same as implementation PRs.
   baseline → restricted + ADR-0017 row update). Until then, the
   executor skips this item.
 
-- [ ] 🟡 **O4 completion — cosign signing in GitLab CI + verifyImages Enforce flip** (RFC #214)
-  (CHARTER **Objective O4**, due **2026-12-31**: "an unsigned image push to the
-  capstone Application fails admission"). The cosign keypair bootstrap script
-  (`scripts/cosign-bootstrap.sh`) and the verifyImages `ClusterPolicy` (currently
-  `failurePolicy: Ignore` + `validationFailureAction: Audit`) have both landed.
-  Remaining work — all 🟡: (a) wire `scripts/cosign-bootstrap.sh` into `make up`
-  so the `cosign-public-key` ConfigMap is seeded in the `kyverno` namespace before
-  ArgoCD syncs the verifyImages policy (Makefile change); (b) add a `cosign sign`
-  step in `.gitlab-ci.yml` after `docker push` so the capstone image is signed at
-  build time with the lab's private key (CI change); (c) flip
-  `gitops/kyverno/policies/verify-image-signatures.yaml` from
-  `failurePolicy: Ignore` / `validationFailureAction: Audit` to `Enforce` once CI
-  signing is verified end-to-end (security-adjacent). **Awaiting an architect RFC**
-  specifying: the exact GitLab CI `cosign sign` step shape (flags, key path,
-  `COSIGN_EXPERIMENTAL`, OCI manifest reference format); the `make up` wiring
-  sequence (cosign-bootstrap runs after vault-bootstrap and before ArgoCD sync);
-  and the Audit→Enforce flip timing and rollback path. Executor must not pick this
-  up unprompted. The planner will groom into three 🟢 items (Makefile, CI, flip)
-  the run after the RFC issue lands.
+- ~~🟡 **O4 completion — cosign signing in GitLab CI + verifyImages Enforce flip**~~
+  (RFC #214) **Groomed ↗** into three 🟢 items in *Now / next* above
+  (`auto/cosign-make-up-wiring` + `auto/cosign-ci-sign-step` +
+  `auto/cosign-enforce-flip`), planner run 2026-06-16.
 
-- [ ] 🟡 **O6 — make capstone-demo wall-clock target** (RFC #215) (CHARTER **Objective O6**,
-  due **2026-12-31**: "`make up` to a Tempo-traced capstone request in under 15
-  minutes on the maintainer's hardware"). Needs a `make capstone-demo` target
-  (Makefile change — 🟡) that: waits for ArgoCD to report the capstone Application
-  Healthy; sends a synthetic HTTP request to `capstone.127.0.0.1.nip.io:8000`;
-  asserts a Vault `ExternalSecret` is Ready; verifies a Tempo trace was received
-  (query Tempo HTTP API for a recent trace from the capstone service); fails if total
-  wall-clock exceeds 900s (15 min Objective bar). Also needs `tests/capstone-demo.bats`
-  (clusterless structural: script exists + is executable + 900s budget check present).
-  **Awaiting an architect RFC** clarifying: (a) whether the wall-clock scope is the
-  full `make up + demo` path or the demo-only post-cluster-ready path; (b) how Tempo
-  trace verification is best expressed (live-query vs. a structural log-grep vs. a
-  `make capstone-demo-live` companion target); (c) the exact Makefile boundary and
-  whether a `make capstone-demo` + `make capstone-demo-down` split is needed.
-  Executor must not pick this up unprompted. The planner will groom into 🟢 items
-  (script, Makefile target, bats) the run after the RFC lands.
+- ~~🟡 **O6 — make capstone-demo wall-clock target**~~ (RFC #215) **Groomed ↗**
+  into one 🟢 item in *Now / next* above (`auto/capstone-demo-target`),
+  planner run 2026-06-16.
 
 _Future 🟡 entries land here when the architect routine files a new RFC
 issue but the planner hasn't yet split it._
