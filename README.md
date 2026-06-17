@@ -25,11 +25,13 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Ingress** | Envoy Gateway (north-south, Gateway API) |
 | **Secrets** | Vault (KV v2) · External Secrets Operator |
 | **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
+| **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · daily Schedules for data / tidb / capstone / vault; ADR-0021) |
 | **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
 | **Data layer** | RabbitMQ (message broker + management UI) · Valkey (cache / key-value) · redis_exporter · data-demo (traffic generator) |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator) |
 | **CNI (bootstrap)** | Cilium (`make cilium-up` — run before `make argocd` on fresh clusters; ADR-0014) |
-| **Policy** | Kyverno (NetworkPolicy per-namespace default-deny fan-out · admission policy engine; ADR-0016, ADR-0019) |
+| **Policy & supply chain** | Kyverno (NetworkPolicy default-deny fan-out · `kyverno-policies` ClusterPolicies: PSS-restricted validate + seccomp mutate + verifyImages; ADR-0016, ADR-0019) · Trivy Operator (continuous CVE scanning + SBOM generation; ADR-0022) |
+| **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller + `capstone-rollout` AnalysisTemplate — Mimir SLO-gated canary steps via Envoy Gateway traffic-split; ADR-0020) |
 | **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Artifactory OSS (`make artifactory-up` / `make artifactory-down`) · Istio ambient mesh — istio-base · istio-cni · istiod · ztunnel (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn distributed block storage (`make longhorn-up` / `make longhorn-down`) · Aiven Inkless diskless Kafka (`make inkless-up` / `make inkless-down`) |
 
 ## Prerequisites
@@ -56,10 +58,16 @@ for the full command list.
 
 ### Apply Grafana dashboard changes (localhost lab)
 
-Lab dashboards (`grafana/dashboards/*.json`, including `Lab — Grafana`, `Lab — Logs`,
-`Lab — Mimir`, `Lab — Profiles`, `Lab — RabbitMQ`, `Lab — Valkey`, `Lab — Stack Health`,
-`Lab — TiDB Demo App`, `Lab — Traces`, `Lab — Vault & Secrets`) are managed by Grafana
-native Git Sync (Pure Git), not a k8s sidecar. After editing them, run:
+Lab dashboards (`grafana/dashboards/*.json`) are managed by Grafana
+native Git Sync (Pure Git), not a k8s sidecar. Current dashboards:
+`Lab — Argo Rollouts (Progressive Delivery)` · `Lab — ArgoCD (GitOps)` · `Lab — Capstone` ·
+`Lab — Cloud Control Plane (moto / ACK / KRO)` · `Lab — Envoy Gateway (Ingress)` ·
+`Lab — Garage S3 (Object Storage)` · `Lab — Git Sync` · `Lab — Grafana` ·
+`Lab — Inkless (Diskless Kafka)` · `Lab — Kyverno (Admission Policy)` · `Lab — Logs` ·
+`Lab — Mimir` · `Lab — Profiles` · `Lab — RabbitMQ` · `Lab — Stack Health` ·
+`Lab — TiDB Demo App` · `Lab — Traces` · `Lab — Trivy Operator (Supply Chain)` ·
+`Lab — Valkey` · `Lab — Vault & Secrets` · `Lab — Velero (Backup & Restore)`.
+After editing them, run:
 
 ```sh
 make gitlab-push                # push dashboard JSON changes to the lab's GitOps source
@@ -84,6 +92,8 @@ After `make up`, UIs are served via the stable front door on **`:8000`**
 | S3 browser | http://s3.127.0.0.1.nip.io:8000 |
 | moto (AWS mock) | http://moto.127.0.0.1.nip.io:8000/moto-api/ |
 | RabbitMQ | http://rabbitmq.127.0.0.1.nip.io:8000 |
+| Argo Rollouts | http://rollouts.127.0.0.1.nip.io:8000 |
+| Capstone *(demo app)* | http://capstone.127.0.0.1.nip.io:8000 |
 | GitLab | http://localhost:8929 |
 | Artifactory *(on-demand)* | http://artifactory.127.0.0.1.nip.io:8000 |
 | Kiali *(on-demand)* | http://kiali.127.0.0.1.nip.io:8000 |
