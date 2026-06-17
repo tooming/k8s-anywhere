@@ -2,8 +2,8 @@
 # Day-0 seam: generate a cosign keypair and seed the public key into the
 # 'cosign-public-key' ConfigMap in the 'kyverno' namespace.
 # ADR-0019 §"Cosign keypair management". Safe to re-run (idempotent).
-# NOT wired into 'make up' yet — run manually once the cluster is up and
-# kyverno is synced. The follow-up planner item wires it into make up.
+# Wired into 'make up' after garage-bootstrap (kyverno namespace is synced
+# by ArgoCD by then; RFC #214 §Decision).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -7,6 +7,7 @@
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   SCRIPT="$REPO/scripts/cosign-bootstrap.sh"
+  MK="$REPO/Makefile"
 }
 
 # --- script presence and executability ---------------------------------------
@@ -69,4 +70,18 @@ setup() {
   fi
   run grep -q 'artifactory.127.0.0.1.nip.io' "$POLICY"
   [ "$status" -eq 0 ]
+}
+
+# --- Makefile wiring (RFC #214 Item 1) ----------------------------------------
+
+@test "Makefile has a cosign-bootstrap target" {
+  run grep -q '^cosign-bootstrap:' "$MK"
+  [ "$status" -eq 0 ]
+}
+
+@test "make up calls cosign-bootstrap after garage-bootstrap" {
+  garage_line=$(grep -n 'MAKE) garage-bootstrap' "$MK" | head -1 | cut -d: -f1)
+  cosign_line=$(grep -n 'MAKE) cosign-bootstrap' "$MK" | head -1 | cut -d: -f1)
+  [ -n "$garage_line" ] && [ -n "$cosign_line" ]
+  [ "$cosign_line" -gt "$garage_line" ]
 }
