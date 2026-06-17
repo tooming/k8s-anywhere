@@ -105,6 +105,7 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) vault-bootstrap
 	$(MAKE) gitlab-tls-bootstrap
 	$(MAKE) garage-bootstrap
+	$(MAKE) cosign-bootstrap
 	$(MAKE) frontdoor
 	$(MAKE) grafana-gitsync-bootstrap
 	@echo ""
@@ -235,6 +236,10 @@ vault-unseal: ## Manually unseal Vault from the vault-keys Secret
 .PHONY: garage-bootstrap
 garage-bootstrap: ## Assign Garage layout + create key/buckets + push S3 key to Vault (idempotent)
 	bash scripts/garage-bootstrap.sh
+
+.PHONY: cosign-bootstrap
+cosign-bootstrap: ## Generate cosign keypair + seed cosign-public-key ConfigMap in kyverno namespace (idempotent, ADR-0019)
+	bash scripts/cosign-bootstrap.sh
 
 .PHONY: gitlab-tls-bootstrap
 gitlab-tls-bootstrap: ## Mint mkcert TLS for the GitLab HTTPS proxy + publish CA to cluster + start proxy (idempotent, ADR-0006)

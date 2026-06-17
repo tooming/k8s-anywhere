@@ -793,7 +793,7 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with envoy-gateway-system NP note.
   `docs/done/` entry required. (auto/envoy-gateway-system-networkpolicy)
 
-- [ ] 🟢 **cosign-bootstrap wiring into `make up`** (CHARTER **Objective O4**, RFC #214
+- [x] 🟢 **cosign-bootstrap wiring into `make up`** (CHARTER **Objective O4**, RFC #214
   Item 1; `scripts/cosign-bootstrap.sh` already merged in `auto/cosign-bootstrap-script`).
   Add a `cosign-bootstrap` phony target to `Makefile` calling `bash
   scripts/cosign-bootstrap.sh` (mirrors `make vault-bootstrap` / `make garage-bootstrap`
