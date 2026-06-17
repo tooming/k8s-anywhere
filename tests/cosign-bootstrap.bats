@@ -85,3 +85,62 @@ setup() {
   [ -n "$garage_line" ] && [ -n "$cosign_line" ]
   [ "$cosign_line" -gt "$garage_line" ]
 }
+
+# --- .gitlab-ci.yml sign stage (RFC #214 Item 2) ------------------------------
+
+setup_ci() {
+  CI_FILE="$REPO/.gitlab-ci.yml"
+}
+
+@test ".gitlab-ci.yml exists" {
+  setup_ci
+  [ -f "$CI_FILE" ]
+}
+
+@test ".gitlab-ci.yml declares a 'sign' stage" {
+  setup_ci
+  run grep -q '^\s*- sign$' "$CI_FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test ".gitlab-ci.yml has a sign-image job" {
+  setup_ci
+  run grep -q '^sign-image:' "$CI_FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "sign-image job uses bitnami/cosign:2 image" {
+  setup_ci
+  run grep -q 'bitnami/cosign:2' "$CI_FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "sign-image job disables Rekor (COSIGN_EXPERIMENTAL: \"0\")" {
+  setup_ci
+  run grep -q 'COSIGN_EXPERIMENTAL.*"0"' "$CI_FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "sign-image job uses --allow-insecure-registry (HTTP Artifactory route)" {
+  setup_ci
+  run grep -q '\-\-allow-insecure-registry' "$CI_FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "sign-image job signs the short-SHA tagged image" {
+  setup_ci
+  run grep -q 'CI_COMMIT_SHORT_SHA' "$CI_FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "sign-image job needs build-and-push" {
+  setup_ci
+  run grep -q 'build-and-push' "$CI_FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "sign-image job cleans up /tmp/cosign in after_script" {
+  setup_ci
+  run grep -q 'rm -rf /tmp/cosign' "$CI_FILE"
+  [ "$status" -eq 0 ]
+}

@@ -807,7 +807,7 @@ You review and merge plan PRs, same as implementation PRs.
   explicitly names this target in its binding Decision — the RFC IS the approval per
   WAYS-OF-WORKING.md §2. (auto/cosign-make-up-wiring)
 
-- [ ] 🟢 **`cosign sign` stage in `.gitlab-ci.yml`** (CHARTER **Objective O4**, RFC #214
+- [x] 🟢 **`cosign sign` stage in `.gitlab-ci.yml`** (CHARTER **Objective O4**, RFC #214
   Item 2; wait for `auto/cosign-make-up-wiring` to merge first). Add `sign` to the
   `stages:` list. New `sign-image` job: `image: bitnami/cosign:2`; variables
   `COSIGN_PASSWORD: ""` and `COSIGN_EXPERIMENTAL: "0"` (disables Rekor transparency
