@@ -1,5 +1,6 @@
-# Capstone CI pipeline (step 1 of 5): builds the hello demo image and pushes it
-# to the in-lab Artifactory Docker registry. Runs on the local GitLab instance.
+# Capstone CI pipeline: builds the hello demo image, pushes it to the in-lab
+# Artifactory Docker registry, and cosign-signs the pushed image.
+# Runs on the local GitLab instance.
 #
 # Credential prerequisites (no plaintext stored here — all values live in Vault):
 #   1. make vault-bootstrap          seeds secret/artifactory/registry in Vault
@@ -9,15 +10,25 @@
 #        ARTIFACTORY_USER     ← username field from step 2
 #        ARTIFACTORY_PASSWORD ← password field from step 2
 #
+# Cosign signing prerequisites (RFC #214 — Objective O4):
+#   4. make cosign-bootstrap         generates infra/secrets/cosign/cosign.key + cosign.pub
+#   5. In GitLab → Settings → CI/CD → Variables, add a masked variable of type File:
+#        COSIGN_KEY           ← contents of infra/secrets/cosign/cosign.key
+#      (type = File, masked, protected — GitLab writes the value to a temp file
+#       and exposes its path in $COSIGN_KEY; never store the raw key as a plain variable)
+#
 # Component prerequisites:
 #   make artifactory-up              Artifactory must be running before first push
 #   Create a local Docker repository named "docker-local" in the Artifactory UI
 #
 # The in-cluster ESO ExternalSecret (gitops/secrets/artifactory-registry-externalsecret.yaml)
 # makes the same credentials available to pods as an imagePullSecret in namespace capstone.
+# The Kyverno verifyImages ClusterPolicy (gitops/kyverno/policies/verify-image-signatures.yaml)
+# enforces that only cosign-signed images are admitted once $COSIGN_KEY is set here.
 
 stages:
   - build
+  - sign
 
 variables:
   REGISTRY: "artifactory.127.0.0.1.nip.io"
@@ -43,5 +54,36 @@ build-and-push:
     - docker push "$REGISTRY/$IMAGE_NAME:latest"
   after_script:
     - docker logout "$REGISTRY" || true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+sign-image:
+  stage: sign
+  image: bitnami/cosign:2
+  # COSIGN_KEY must be a GitLab CI variable of type File (masked, protected).
+  # GitLab writes the file content to a temp path and exposes it as $COSIGN_KEY.
+  # Set it in: GitLab → Settings → CI/CD → Variables → Add variable
+  #   Key:   COSIGN_KEY
+  #   Type:  File
+  #   Value: contents of infra/secrets/cosign/cosign.key  (from make cosign-bootstrap)
+  #   Mask:  enabled   Protected: enabled
+  variables:
+    COSIGN_PASSWORD: ""
+    # Disable Rekor transparency-log upload — no outbound internet in the lab.
+    COSIGN_EXPERIMENTAL: "0"
+  before_script:
+    - mkdir -p /tmp/cosign
+    - cp "$COSIGN_KEY" /tmp/cosign/cosign.key
+  script:
+    - cosign sign
+        --key /tmp/cosign/cosign.key
+        --allow-insecure-registry
+        --registry-username "$ARTIFACTORY_USER"
+        --registry-password "$ARTIFACTORY_PASSWORD"
+        "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+  after_script:
+    - rm -rf /tmp/cosign
+  needs:
+    - build-and-push
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
