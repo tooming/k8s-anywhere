@@ -358,14 +358,26 @@ endef
 # Cilium replaces k3s-bundled Flannel (disable_default_cni=true — ADR-0014).
 # Bootstrap order: make cluster-up → make cilium-up → make argocd → rest of make up.
 # After the initial install, ArgoCD adopts the Helm release and manages it.
+#
+# kube-proxy-free (kubeProxyReplacement=true) requires the real kube-apiserver
+# host:port: with no kube-proxy, a pod that is NOT co-located with the apiserver
+# cannot reach the kubernetes ClusterIP (10.43.0.1) until Cilium itself programs
+# it — a chicken-and-egg that leaves the apiserver unreachable. We read the
+# endpoint k3d assigned (deterministic only per-run, so derive it, don't hardcode).
 .PHONY: cilium-up
 cilium-up: ## Install Cilium CNI via Helm — run BEFORE make argocd on fresh clusters (ADR-0014)
+	@api_host="$$(kubectl get endpoints kubernetes -o jsonpath='{.subsets[0].addresses[0].ip}')"; \
+	api_port="$$(kubectl get endpoints kubernetes -o jsonpath='{.subsets[0].ports[0].port}')"; \
+	[ -n "$$api_host" ] && [ -n "$$api_port" ] || { echo "cilium-up: could not resolve kube-apiserver endpoint — is the cluster up?" >&2; exit 1; }; \
+	echo "[cilium] kube-proxy-free apiserver endpoint: k8sServiceHost=$$api_host k8sServicePort=$$api_port"; \
 	helm upgrade --install cilium cilium \
 		--repo https://helm.cilium.io \
 		--version 1.16.6 \
 		--namespace kube-system \
 		--create-namespace \
 		--set kubeProxyReplacement=true \
+		--set k8sServiceHost=$$api_host \
+		--set k8sServicePort=$$api_port \
 		--set hubble.enabled=false \
 		--set operator.replicas=1 \
 		--wait --timeout 5m

@@ -21,6 +21,12 @@ spec:
       valuesObject:
         # Replace kube-proxy entirely — ADR-0014 rationale (one fewer component)
         kubeProxyReplacement: true
+        # NOTE: kube-proxy-free also needs k8sServiceHost/k8sServicePort (the real
+        # kube-apiserver endpoint). That value is the k3d server node IP, which is
+        # per-run and not portable, so it is NOT pinned here — `make cilium-up`
+        # derives and sets it at bootstrap. This app is manual-sync (no automated
+        # block below) precisely so it never re-renders without it. If you DO sync
+        # this app by hand, re-run `make cilium-up` afterward to restore the endpoint.
         hubble:
           enabled: false         # Hubble deferred: ~250-400 MB; not in 12 GB budget
         operator:
