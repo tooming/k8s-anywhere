@@ -824,7 +824,7 @@ You review and merge plan PRs, same as implementation PRs.
   RFC #214 explicitly specifies this job in its binding Decision — the RFC IS the approval.
   (auto/cosign-ci-sign-step)
 
-- [ ] 🟢 **`make capstone-demo` + `scripts/capstone-demo.sh`** (CHARTER **Objective O6**,
+- [x] 🟢 **`make capstone-demo` + `scripts/capstone-demo.sh`** (CHARTER **Objective O6**,
   RFC #215 — demo-only wall-clock scope, 900 s budget; no dependency on other items).
   New `scripts/capstone-demo.sh` per RFC #215 §Decision: records `START_EPOCH`; (1) waits
   for capstone ArgoCD app Healthy (`argocd app wait capstone --health --timeout 120`; exits

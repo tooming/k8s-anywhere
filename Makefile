@@ -315,6 +315,12 @@ dr-bluegreen-promote: ## Complete blue/green: green->FULL + verify + cutover + R
 frontdoor: ## Ensure the stable front door is up on :8000 -> active cluster (canonical lab entry; UIs use :8000)
 	bash scripts/frontdoor-ensure.sh
 
+##@ Capstone (demo + learning path)
+
+.PHONY: capstone-demo
+capstone-demo: ## Run the end-to-end capstone demo: ArgoCD health → ExternalSecret → HTTP 200 → Tempo trace (O6, 900 s budget)
+	bash scripts/capstone-demo.sh
+
 ##@ On-demand components (heavy; not auto-synced — bring up manually)
 
 # Drive ArgoCD via kubectl, not the argocd CLI: the CLI needs a logged-in

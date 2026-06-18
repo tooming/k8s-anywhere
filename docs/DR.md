@@ -78,6 +78,52 @@ architecture, Garage S3 backend wiring, and Objective O3 rationale.
 
 ---
 
+## Capstone demo (`make capstone-demo`)
+
+Runs the end-to-end capstone learning-path demo and verifies the full pipeline is
+healthy within the **CHARTER Objective O6 budget of 900 s (15 min)** wall-clock.
+
+```sh
+make capstone-demo
+```
+
+### Pre-requisites
+
+- A healthy, running lab cluster (`make up` complete, all apps Synced + Healthy).
+- `argocd` CLI installed and logged in:
+  ```sh
+  make argocd-password    # print the admin password
+  argocd login localhost:8080 --username admin --password <password> --insecure
+  ```
+- `kubectl` configured to the active cluster context.
+- The capstone Application deployed and the `capstone.127.0.0.1.nip.io` HTTPRoute
+  reachable through Envoy on port 8000.
+
+### What it checks (four steps)
+
+| # | Check | Tool | Budget |
+|---|-------|------|--------|
+| 1 | capstone ArgoCD Application is `Healthy` | `argocd app wait capstone --health` | 120 s timeout |
+| 2 | capstone `ExternalSecret` status is `Ready` | `kubectl -n capstone get externalsecret` (jsonpath poll) | 30 s |
+| 3 | `http://capstone.127.0.0.1.nip.io:8000/` returns HTTP 200 | `curl` | — |
+| 4 | A Tempo trace exists for `service.name=capstone` (5-min look-back) | `kubectl port-forward` + Tempo `/api/search` | — |
+
+Step 4 warns rather than hard-failing if Tempo is reachable but no trace exists yet
+(traces only appear after at least one HTTP request hits the capstone endpoint). Send
+a `curl http://capstone.127.0.0.1.nip.io:8000/` first if you want a trace immediately.
+
+### Budget enforcement
+
+`scripts/capstone-demo.sh` checks the running total after each step and prints a
+summary table (elapsed per step + total) at the end. Exit code 1 if any step fails
+or the total exceeds 900 s (Objective O6 requirement).
+
+See [ADR-0020](decisions/adr-0020-argo-rollouts-progressive-delivery.md) for the
+progressive-delivery context and [RFC #215](https://github.com/tooming/k8s-lab/issues/215)
+for the original acceptance criteria.
+
+---
+
 ## One-command DR test (`make dr-test`)
 
 Proves the recreate-from-code claim end to end: it **destroys the lab, rebuilds it
