@@ -97,6 +97,7 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) colima-up
 	$(MAKE) tfstate-up
 	$(MAKE) cluster-up
+	$(MAKE) cilium-up
 	$(MAKE) coredns-host-alias
 	$(MAKE) argocd
 	$(MAKE) gitlab-up

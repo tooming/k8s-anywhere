@@ -55,6 +55,25 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- make up wires cilium-up in the right place (ADR-0014) ------------------
+# Regression guard: a fresh cluster has NO CNI, so cilium-up must run inside the
+# 'up' recipe, after cluster-up and before coredns-host-alias (CoreDNS can't
+# schedule until pod networking exists). Commit f81f172 disabled Flannel but
+# forgot this wiring, breaking from-scratch `make up`.
+@test "make up calls cilium-up" {
+  run grep -n 'MAKE) cilium-up' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}
+
+@test "make up calls cilium-up after cluster-up and before coredns-host-alias" {
+  cluster_line=$(grep -n 'MAKE) cluster-up' "$REPO/Makefile" | head -1 | cut -d: -f1)
+  cilium_line=$(grep -n 'MAKE) cilium-up' "$REPO/Makefile" | head -1 | cut -d: -f1)
+  coredns_line=$(grep -n 'MAKE) coredns-host-alias' "$REPO/Makefile" | head -1 | cut -d: -f1)
+  [ -n "$cluster_line" ] && [ -n "$cilium_line" ] && [ -n "$coredns_line" ]
+  [ "$cluster_line" -lt "$cilium_line" ]
+  [ "$cilium_line" -lt "$coredns_line" ]
+}
+
 # --- DR.md documents the bootstrap ordering --------------------------------
 @test "DR.md documents cilium-up bootstrap step" {
   run grep 'cilium-up' "$REPO/docs/DR.md"
