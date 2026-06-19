@@ -192,6 +192,16 @@ You review and merge plan PRs, same as implementation PRs.
 > verifyImages Enforce flip, in that dependency order) and one from RFC #215 (capstone-demo
 > target, standalone). The two formerly-🟡 Cross-cutting O4/O6 entries are marked
 > "Groomed ↗".
+>
+> **Planner note (2026-06-18 — O5 gap: External Secrets dashboard; O2 gaps surfaced to
+> architect).** Gap analysis found one new 🟢 O5 item: the `external-secrets` Application
+> is auto-synced but has no Alloy scrape job and no Grafana dashboard — inserted above the
+> two blocked items so the executor lane stays active. Two new 🟡 O2 items surface PSS
+> gaps in the `external-secrets` and `envoy-gateway-system` namespaces (both absent from
+> ADR-0017 §"Per-namespace profile"; both need architect RFCs before the planner can groom
+> them into 🟢 items). The two existing blocked items (ArgoCD PSS Phase 2 + verifyImages
+> Enforce flip) remain unbuilt — each requires explicit maintainer cluster confirmation
+> before the executor may proceed (noted in their item text).
 
 - [x] 🟢 **Kyverno engine + observability** (CHARTER **Objective O1**,
   RFC #153 — see
@@ -738,6 +748,35 @@ You review and merge plan PRs, same as implementation PRs.
   note. `docs/done/2026-06-15-argocd-pss-warn-audit.md` required.
   (auto/argocd-pss-warn-audit)
 
+- [ ] 🟢 **External Secrets dashboard + Alloy scrape** (CHARTER **Objective O5**,
+  due **2026-09-30**; O5 gap — `external-secrets` is auto-synced in
+  `gitops/bootstrap/root-app.yaml` but has no Alloy scrape job and no Grafana
+  dashboard. The ESO controller exposes Prometheus metrics at `:8080/metrics`
+  by default via controller-runtime; no chart `valuesObject` change needed to
+  enable metrics collection). Add `prometheus.scrape "external_secrets"` block
+  to `gitops/platform/observability-alloy.yaml` targeting
+  `external-secrets.external-secrets.svc.cluster.local:8080`; `scrape_interval =
+  "30s"`; mirrors the adjacent `kyverno` / `trivy_operator` / `velero` /
+  `argo_rollouts` scrape pattern. New `grafana/dashboards/lab-external-secrets.json`
+  ("Lab — External Secrets") modelled on `lab-kyverno.json` stat-row: ESO
+  controller running (KSM
+  `kube_deployment_status_replicas_available{namespace="external-secrets"}`);
+  ArgoCD sync state (`argocd_app_info{name="external-secrets"}`); ExternalSecret
+  sync success rate timeseries
+  (`externalsecret_sync_calls_total{status="success"}` by namespace); sync error
+  count stat (`externalsecret_sync_calls_total{status="error"}`); sync duration
+  p95 (`externalsecret_sync_calls_duration_seconds_bucket`). All panels use real
+  Mimir data with `X-Scope-OrgID: lab` tenant header (ADR-0004 — no fabricated
+  data; if a metric has not yet emitted a series, the panel shows "No data"
+  naturally). No HTTPRoute — ESO has no web UI, so no Lab UIs panel row needed
+  (`make lab-ui-check` unaffected). Extend `tests/observability.bats` with four
+  assertions: scrape job block `"external_secrets"` exists in
+  `observability-alloy.yaml`; `lab-external-secrets.json` exists; dashboard
+  references `externalsecret_sync_calls_total`; no fabricated/placeholder data.
+  Update `docs/dependency-tree.md` with External Secrets dashboard note (parallel
+  to the Argo Rollouts / Trivy dashboard notes added in recent runs). `docs/done/`
+  entry required. (auto/external-secrets-dashboard)
+
 - [ ] 🟢 **ArgoCD PSS Phase 2 — securityContext hardening + enforce
   flip** (CHARTER **Objective O2**, RFC #205 — Phase 2; buildable after
   Phase 1 is **verified green in cluster** by maintainer). Update
@@ -915,6 +954,35 @@ You review and merge plan PRs, same as implementation PRs.
 - ~~🟡 **O6 — make capstone-demo wall-clock target**~~ (RFC #215) **Groomed ↗**
   into one 🟢 item in *Now / next* above (`auto/capstone-demo-target`),
   planner run 2026-06-16.
+
+- [ ] 🟡 **PSS hardening — `external-secrets` namespace** (CHARTER **Objective O2**,
+  due **2026-09-30**; O2 gap surfaced 2026-06-18 — `external-secrets` namespace is
+  absent from ADR-0017 §"Per-namespace profile" table and has no
+  `gitops/external-secrets/namespace.yaml` with PSA labels). The ESO
+  controller-manager and webhook pods use controller-runtime defaults (UID 65534,
+  non-root), suggesting `restricted` is achievable — but the `valuesObject.podSecurityContext`
+  / `containerSecurityContext` fields must be audited against the current chart
+  before the enforce label is added. Needs an **architect RFC** to: (a) audit the
+  `external-secrets` chart's default securityContext and confirm PSS-`restricted`
+  compatibility; (b) specify any `valuesObject` patches needed in
+  `gitops/platform/external-secrets.yaml`; (c) approve the ADR-0017 namespace row
+  (`restricted` or `baseline`). Once the RFC lands, the planner grooms into a 🟢
+  executor item (namespace PSA labels + any chart securityContext patches +
+  ADR-0017 table row + bats assertions).
+
+- [ ] 🟡 **PSS hardening — `envoy-gateway-system` namespace** (CHARTER **Objective O2**,
+  due **2026-09-30**; O2 gap surfaced 2026-06-18 — `envoy-gateway-system` received
+  NetworkPolicy in `auto/envoy-gateway-system-networkpolicy` but has no PSA labels
+  and is absent from ADR-0017 §"Per-namespace profile"). Two distinct pod types
+  (controller `app.kubernetes.io/name: envoy-gateway` and proxy
+  `app.kubernetes.io/name: envoy-proxy`) run in this namespace; the proxy binds low
+  ports via the Service, and the controller mutates EnvoyProxy CRs — both may need
+  elevated capabilities that preclude `restricted`. Needs an **architect RFC** to:
+  (a) review the Envoy Gateway chart's actual securityContext for both pod types
+  (at the version currently pinned in `gitops/platform/envoy-gateway.yaml`); (b)
+  determine the correct PSA label (`restricted`, `baseline`, or `privileged`); (c)
+  specify any `valuesObject` patches; (d) add the ADR-0017 namespace row. Once the
+  RFC lands, the planner grooms into a 🟢 executor item.
 
 _Future 🟡 entries land here when the architect routine files a new RFC
 issue but the planner hasn't yet split it._
