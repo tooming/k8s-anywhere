@@ -20,6 +20,12 @@
             "command": "make install-hooks",
             "timeout": 10,
             "statusMessage": "Wiring git pre-push hook"
+          },
+          {
+            "type": "command",
+            "command": "make rebase-prs PUSH=1",
+            "timeout": 120,
+            "statusMessage": "Rebasing open PR branches onto main (PRs merge on GitHub, so post-merge hook never fires — catch up here)"
           }
         ]
       }
