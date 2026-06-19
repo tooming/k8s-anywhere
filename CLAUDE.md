@@ -31,6 +31,21 @@ clone or worktree creation.
 After pushing changes to the feature branch, **always open a pull request** for them
 (unless the user says otherwise). Don't wait to be asked.
 
+## Keep other PRs rebased after every push
+PR merges happen on GitHub (not via local `git pull`), so the `post-merge` hook
+never fires automatically. After every push to a feature branch, run:
+
+```
+make rebase-prs PUSH=1
+```
+
+This rebases all open PR branches onto the current main, preventing merge conflicts
+from accumulating. Branches with content conflicts are flagged and left unchanged for
+manual resolution — but the pre-push hook already blocks pushing a branch that's behind
+main, so catching up early is always easier than resolving conflicts later.
+
+The `SessionStart` hook also runs this automatically at the start of each session.
+
 ## Routines: edit-then-apply is one atomic step
 Editing a `routines/*.prompt.md` file (or `routines.yaml`) in-repo does **not** change
 the live claude.ai trigger. The "apply" step that pushes the new content to the trigger
