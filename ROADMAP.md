@@ -956,33 +956,27 @@ You review and merge plan PRs, same as implementation PRs.
   planner run 2026-06-16.
 
 - [ ] 🟡 **PSS hardening — `external-secrets` namespace** (CHARTER **Objective O2**,
-  due **2026-09-30**; O2 gap surfaced 2026-06-18 — `external-secrets` namespace is
-  absent from ADR-0017 §"Per-namespace profile" table and has no
-  `gitops/external-secrets/namespace.yaml` with PSA labels). The ESO
-  controller-manager and webhook pods use controller-runtime defaults (UID 65534,
-  non-root), suggesting `restricted` is achievable — but the `valuesObject.podSecurityContext`
-  / `containerSecurityContext` fields must be audited against the current chart
-  before the enforce label is added. Needs an **architect RFC** to: (a) audit the
-  `external-secrets` chart's default securityContext and confirm PSS-`restricted`
-  compatibility; (b) specify any `valuesObject` patches needed in
-  `gitops/platform/external-secrets.yaml`; (c) approve the ADR-0017 namespace row
-  (`restricted` or `baseline`). Once the RFC lands, the planner grooms into a 🟢
-  executor item (namespace PSA labels + any chart securityContext patches +
-  ADR-0017 table row + bats assertions).
+  RFC #229 — architect decision 2026-06-19). The `external-secrets` namespace is
+  absent from ADR-0017 §"Per-namespace profile". ESO 2.x controller runs as UID
+  65534 (`nobody`), no host volumes, no special capabilities — `restricted`-eligible.
+  Add `gitops/external-secrets/namespace.yaml` with all four PSA labels at
+  `restricted`; add `gitops/platform/external-secrets-extras.yaml` (sync-wave 0,
+  `ServerSideApply=true`, `CreateNamespace=false`); patch `gitops/platform/external-secrets.yaml`
+  `valuesObject` with `global.podSecurityContext` + `global.containerSecurityContext`
+  per RFC #229 §Decision. Add ADR-0017 row + `tests/securitycontext.bats` extension.
+  (auto/pss-external-secrets)
 
 - [ ] 🟡 **PSS hardening — `envoy-gateway-system` namespace** (CHARTER **Objective O2**,
-  due **2026-09-30**; O2 gap surfaced 2026-06-18 — `envoy-gateway-system` received
-  NetworkPolicy in `auto/envoy-gateway-system-networkpolicy` but has no PSA labels
-  and is absent from ADR-0017 §"Per-namespace profile"). Two distinct pod types
-  (controller `app.kubernetes.io/name: envoy-gateway` and proxy
-  `app.kubernetes.io/name: envoy-proxy`) run in this namespace; the proxy binds low
-  ports via the Service, and the controller mutates EnvoyProxy CRs — both may need
-  elevated capabilities that preclude `restricted`. Needs an **architect RFC** to:
-  (a) review the Envoy Gateway chart's actual securityContext for both pod types
-  (at the version currently pinned in `gitops/platform/envoy-gateway.yaml`); (b)
-  determine the correct PSA label (`restricted`, `baseline`, or `privileged`); (c)
-  specify any `valuesObject` patches; (d) add the ADR-0017 namespace row. Once the
-  RFC lands, the planner grooms into a 🟢 executor item.
+  RFC #230 — architect decision 2026-06-19). The `envoy-gateway-system` namespace is
+  absent from ADR-0017 §"Per-namespace profile". Two pod types share the namespace:
+  the Gateway controller (non-root, restricted-compatible) and the Envoy proxy
+  data-plane (default UID 0 in `gateway-helm` v1.8.0). Setting the namespace to
+  `restricted` risks breaking north-south traffic; `baseline` is the safe carve-out.
+  Add `gitops/envoy-gateway-system/namespace.yaml` with all four PSA labels at
+  `baseline`; add `gitops/platform/envoy-gateway-system-extras.yaml` (sync-wave 0,
+  `ServerSideApply=true`, `CreateNamespace=false`). Add ADR-0017 row (with explicit
+  flip condition to `restricted`) + `tests/securitycontext.bats` extension.
+  (auto/pss-envoy-gateway-system)
 
 _Future 🟡 entries land here when the architect routine files a new RFC
 issue but the planner hasn't yet split it._
