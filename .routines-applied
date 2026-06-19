@@ -1,12 +1,12 @@
 # .routines-applied — sha256 of each routines/* file at last apply.
 # Updated by: scripts/routines-mark-applied.sh (`make routines-mark-applied`).
 # Drift checker: scripts/routines-check.sh (`make routines-check`, in `make ci`).
-routines/architect.prompt.md sha256=72547e21d88b63af319da5dc0ab47beb64f920b3c32f1944b7041c4a92515316
+routines/architect.prompt.md sha256=249240f62b9ec6556486ed6c2b63d165b8494e1461b5d7eddea954ee13212289
 routines/doc-drift-author.prompt.md sha256=de9a451df73fa1e7f6bcb27d2ee53ef0651b887221d906d76acb2a3a78ee3668
 routines/executor.prompt.md sha256=f18739bbdfd6d0926adc7475caa2215be6ddf083cefad480fbb0dc39bff3d0b2
 routines/learning-post-writer.prompt.md sha256=6e751afac8edbe9fa23b5b6bb9d80e2a8c46ca6da5ec336927b2a09f0bb90d6d
 routines/operator.prompt.md sha256=254729e703697deada05cabbfcc030c3d8b8494ee4c4ae3e51f31641f384f042
-routines/planner.prompt.md sha256=b0c786392b40ca9979aac1c0e0e88dfbfaedc45f533772d07a613f46884d4349
+routines/planner.prompt.md sha256=0ee3080c4ab137f8d85e8fcd514367949c1a971ece0cb9a77344a56fdeb7c25b
 routines/triager.prompt.md sha256=4dc47541a44c65a11462dd6f796e7703d78018ff66eb079b824aed53d2aadf44
 routines/upgrade-drafter.prompt.md sha256=2c39d46f000009f2bcdf327e349086ee6dd5153ba5380efc19e2ba74da9911d6
 routines/verifier.prompt.md sha256=64d0ea04cf6d48f2f730fbacac1b45da730048da2f60592000a1a2e56f084b4c

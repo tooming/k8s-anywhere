@@ -978,14 +978,17 @@ You review and merge plan PRs, same as implementation PRs.
   flip condition to `restricted`) + `tests/securitycontext.bats` extension.
   (auto/pss-envoy-gateway-system)
 
-_Future 🟡 entries land here when the architect routine files a new RFC
-issue but the planner hasn't yet split it._
+_New 🟡 items proposed by the architect live in
+[`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until
+the planner absorbs them here. Do **not** append new 🟡 items directly to this
+section; concurrent arch + plan PRs both appending here is what causes merge
+conflicts._
 
 Per-run grooming notes (which 🟡 items got RFCs, which were groomed into 🟢,
 which ADRs landed) live in [`docs/backlog/`](docs/backlog/) — one Markdown file
 per run, named `YYYY-MM-DD-<slug>.md`. Do **not** append run narrative to this
 section; each PR writing its own file is what keeps concurrent PRs conflict-free.
-<!-- Autonomous runs: record per-run grooming notes as docs/backlog/YYYY-MM-DD-<slug>.md — do NOT append narrative to this paragraph (concurrent PRs conflict on it; see docs/backlog/README.md). The discrete 🟡 items above stay here. -->
+<!-- Autonomous runs: new 🟡 items → docs/roadmap/incoming/YYYY-MM-DD-arch-<slug>.md (NOT inline here). Grooming notes → docs/backlog/YYYY-MM-DD-<slug>.md. The planner absorbs incoming/ into ROADMAP.md on its next run. -->
 
 
 ---
