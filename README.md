@@ -22,16 +22,16 @@ cluster, deployed by ArgoCD (one `Application` per component).
 |-------|-------|
 | **Bootstrap (IaC)** | Terraform · Terragrunt · k3d (k3s-in-Docker) |
 | **GitOps** | GitLab (git source, omnibus container) · ArgoCD (engine, app-of-apps) |
-| **Ingress** | Envoy Gateway (north-south, Gateway API) |
+| **Ingress** | Envoy Gateway (north-south, Gateway API · `envoy-gateway-system-networkpolicy` default-deny overlay; ADR-0008, ADR-0016) |
 | **Secrets** | Vault (KV v2) · External Secrets Operator |
 | **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
-| **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · daily Schedules for data / tidb / capstone / vault; ADR-0021) |
+| **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · `velero-schedules` daily Schedules for data / tidb / capstone / vault · `velero-networkpolicy` default-deny overlay; ADR-0021) |
 | **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
 | **Data layer** | RabbitMQ (message broker + management UI) · Valkey (cache / key-value) · redis_exporter · data-demo (traffic generator) |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator) |
 | **CNI (bootstrap)** | Cilium (`make cilium-up` — run before `make argocd` on fresh clusters; ADR-0014) |
-| **Policy & supply chain** | Kyverno (NetworkPolicy default-deny fan-out · `kyverno-policies` ClusterPolicies: PSS-restricted validate + seccomp mutate + verifyImages; ADR-0016, ADR-0019) · Trivy Operator (continuous CVE scanning + SBOM generation; ADR-0022) |
-| **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller + `capstone-rollout` AnalysisTemplate — Mimir SLO-gated canary steps via Envoy Gateway traffic-split; ADR-0020) |
+| **Policy & supply chain** | Kyverno (NetworkPolicy default-deny fan-out · `kyverno-policies` ClusterPolicies: PSS-restricted validate + seccomp mutate + verifyImages; ADR-0016, ADR-0019) · Trivy Operator (`trivy-system-networkpolicy` default-deny overlay; continuous CVE scanning + SBOM generation; ADR-0022) |
+| **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller + `capstone-rollout` AnalysisTemplate — Mimir SLO-gated canary steps via Envoy Gateway traffic-split · `argo-rollouts-networkpolicy` default-deny overlay; ADR-0020) |
 | **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Artifactory OSS (`make artifactory-up` / `make artifactory-down`) · Istio ambient mesh — istio-base · istio-cni · istiod · ztunnel (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn distributed block storage (`make longhorn-up` / `make longhorn-down`) · Aiven Inkless diskless Kafka (`make inkless-up` / `make inkless-down`) |
 
 ## Prerequisites
