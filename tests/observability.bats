@@ -251,3 +251,22 @@ setup() {
   run grep -q 'lab-cloud-control-plane' "$REPO/docs/dependency-tree.md"
   [ "$status" -eq 0 ]
 }
+
+@test "observability-alloy.yaml has external_secrets scrape block" {
+  run grep -q 'prometheus.scrape "external_secrets"' "$REPO/gitops/platform/observability-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-external-secrets.json dashboard exists in grafana/dashboards/" {
+  [ -f "$REPO/grafana/dashboards/lab-external-secrets.json" ]
+}
+
+@test "lab-external-secrets.json references externalsecret_sync_calls_total" {
+  run grep -q 'externalsecret_sync_calls_total' "$REPO/grafana/dashboards/lab-external-secrets.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-external-secrets.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-external-secrets.json"
+  [ "$status" -eq 1 ]
+}

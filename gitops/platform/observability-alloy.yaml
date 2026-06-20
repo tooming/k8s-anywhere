@@ -350,6 +350,19 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
+
+              // ---- External Secrets Operator (ESO) metrics -> Mimir ----
+              // ESO exposes controller-runtime Prometheus metrics at :8080/metrics by
+              // default (no chart valuesObject change needed). Feeds the "Lab — External
+              // Secrets" dashboard with real externalsecret_sync_calls_total,
+              // externalsecret_sync_calls_duration_seconds series (ADR-0004).
+              prometheus.scrape "external_secrets" {
+                targets = [
+                  {"__address__" = "external-secrets.external-secrets.svc.cluster.local:8080", "job" = "external-secrets"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
