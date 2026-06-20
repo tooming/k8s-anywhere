@@ -363,6 +363,21 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
+
+              // ---- Alloy self-metrics -> Mimir ----
+              // Alloy exposes its own Prometheus metrics at :12345/metrics (the default
+              // listenAddr). Feeds the "Lab — Grafana Alloy (Collector)" dashboard with
+              // real prometheus_sd_discovered_targets, prometheus_tsdb_head_samples_appended_total,
+              // prometheus_remote_storage_sent_bytes_total, and alloy_component_evaluation_seconds
+              // series (ADR-0004, ADR-0005 O5 gap). A stable ClusterIP Service is provided
+              // by the alloy Helm chart, so the static target is reliable.
+              prometheus.scrape "alloy_self" {
+                targets = [
+                  {"__address__" = "alloy.observability.svc.cluster.local:12345", "job" = "alloy"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

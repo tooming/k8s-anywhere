@@ -1,0 +1,100 @@
+{
+  "uid": "lab-alloy",
+  "title": "Lab — Grafana Alloy (Collector)",
+  "tags": ["lab"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Alloy Pod Running",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "kube_deployment_status_replicas_available{namespace=\"observability\", deployment=~\"alloy.*\"}", "instant": true } ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+          "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } } ],
+          "noValue": "not deployed"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 2, "type": "stat", "title": "ArgoCD Sync State",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "argocd_app_info{name=\"alloy\", sync_status=\"Synced\"}", "instant": true } ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+          "mappings": [ { "type": "value", "options": { "1": { "text": "Synced" } } } ],
+          "noValue": "OutOfSync"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 3, "type": "stat", "title": "Active Scrape Targets",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(prometheus_sd_discovered_targets{job=\"alloy\"})", "instant": true } ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 1 }, { "color": "green", "value": 5 } ] },
+          "noValue": "n/a"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Samples ingested /s",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(prometheus_tsdb_head_samples_appended_total{job=\"alloy\"}[5m])", "legendFormat": "samples/s", "range": true }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Remote write bytes /s (to Mimir)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(prometheus_remote_storage_sent_bytes_total{job=\"alloy\"}[5m])", "legendFormat": "bytes/s", "range": true }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Component evaluation time /s (alloy_component_evaluation_seconds_sum)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(alloy_component_evaluation_seconds_sum{job=\"alloy\"}[5m])", "legendFormat": "{{component_id}}", "range": true }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    }
+  ]
+}
