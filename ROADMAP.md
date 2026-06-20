@@ -902,7 +902,7 @@ You review and merge plan PRs, same as implementation PRs.
   item has a maintainer-confirmation prerequisite; skip to the next item if the condition
   cannot be verified this run. (auto/cosign-enforce-flip)
 
-- [ ] 🟢 **Lab — Grafana Alloy self-monitoring dashboard + self-scrape** (CHARTER
+- [x] 🟢 **Lab — Grafana Alloy self-monitoring dashboard + self-scrape** (CHARTER
   **Objective O5**, due **2026-09-30**; O5 gap — `observability-alloy` is
   auto-synced in `gitops/bootstrap/root-app.yaml` but has no scrape job for
   its own metrics and no Grafana dashboard. The Alloy chart exposes metrics at

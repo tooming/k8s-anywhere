@@ -270,3 +270,49 @@ setup() {
   run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-external-secrets.json"
   [ "$status" -eq 1 ]
 }
+
+# --- Lab — Grafana Alloy (Collector) self-monitoring dashboard ---------------
+
+@test "observability-alloy.yaml has alloy_self scrape block" {
+  run grep -q 'prometheus.scrape "alloy_self"' "$REPO/gitops/platform/observability-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-alloy.json dashboard exists in grafana/dashboards/" {
+  [ -f "$REPO/grafana/dashboards/lab-alloy.json" ]
+}
+
+@test "lab-alloy.json has uid lab-alloy" {
+  run grep -q '"uid": "lab-alloy"' "$REPO/grafana/dashboards/lab-alloy.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-alloy.json uses Mimir datasource" {
+  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-alloy.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-alloy.json references prometheus_sd_discovered_targets" {
+  run grep -q 'prometheus_sd_discovered_targets' "$REPO/grafana/dashboards/lab-alloy.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-alloy.json references prometheus_tsdb_head_samples_appended_total" {
+  run grep -q 'prometheus_tsdb_head_samples_appended_total' "$REPO/grafana/dashboards/lab-alloy.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-alloy.json references alloy_component_evaluation_seconds_sum" {
+  run grep -q 'alloy_component_evaluation_seconds_sum' "$REPO/grafana/dashboards/lab-alloy.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-alloy.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-alloy.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "docs/dependency-tree.md mentions lab-alloy.json" {
+  run grep -q 'lab-alloy' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
