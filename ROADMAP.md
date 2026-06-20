@@ -872,7 +872,7 @@ You review and merge plan PRs, same as implementation PRs.
   is security-adjacent (🟡 by default) but RFC #229 is the binding architect decision
   (WAYS-OF-WORKING.md §2) — the RFC IS the approval. (auto/pss-external-secrets)
 
-- [ ] 🟢 **PSS-baseline hardening — `envoy-gateway-system` namespace** (CHARTER **Objective O2**,
+- [x] 🟢 **PSS-baseline hardening — `envoy-gateway-system` namespace** (CHARTER **Objective O2**,
   due **2026-09-30**; RFC #230 — architect decision 2026-06-19). Add
   `gitops/envoy-gateway-system/namespace.yaml` with all four PSA labels at `baseline`
   (`enforce: baseline`, `enforce-version: latest`, `warn: baseline`, `audit: baseline`).

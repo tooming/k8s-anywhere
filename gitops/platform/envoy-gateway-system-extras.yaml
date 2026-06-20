@@ -1,0 +1,31 @@
+# envoy-gateway-system-extras — patches the envoy-gateway-system namespace with PSA baseline
+# labels (RFC #230, ADR-0017 §Per-namespace profile). Running at sync-wave 0 ensures labels
+# land alongside the envoy-gateway Helm Application (also wave 0) so enforcement is in place
+# before any Envoy proxy or controller pod is scheduled.
+# The namespace is pre-created by the envoy-gateway Helm chart; CreateNamespace=false avoids
+# a race where SSA would orphan the namespace on prune.
+# ALWAYS-ON: automated sync alongside envoy-gateway.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: envoy-gateway-system-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/envoy-gateway-system
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: envoy-gateway-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
+      - LoadRestrictionsNone=true
