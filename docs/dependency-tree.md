@@ -346,6 +346,8 @@ make up
 | Argo Rollouts controller → Mimir | AnalysisTemplate SLO queries `:8080/prometheus` (`X-Scope-OrgID: lab`) | `gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-egress-mimir.yaml` |
 | Alloy → Argo Rollouts controller metrics | scrape `argo-rollouts-metrics.argo-rollouts.svc:8090/metrics` → Mimir (job `argo-rollouts`) | `gitops/platform/observability-alloy.yaml` |
 | Grafana dashboard — Lab — Argo Rollouts (Progressive Delivery) | controller running + dashboard running + ArgoCD sync (KSM); reconcile rate (`controller_runtime_reconcile_total`); Rollout phase distribution + canary weight (real Mimir data; phase/weight panels show "no data" naturally until a Rollout resource exists — ADR-0004) | `grafana/dashboards/lab-argo-rollouts.json` |
+| Alloy → External Secrets Operator metrics | scrape `external-secrets.external-secrets.svc:8080/metrics` → Mimir (job `external-secrets`; controller-runtime metrics enabled by default — no chart change needed) | `gitops/platform/observability-alloy.yaml` |
+| Grafana dashboard — Lab — External Secrets | ESO controller running + ArgoCD sync (KSM); sync success rate (`externalsecret_sync_calls_total{status="success"}` by namespace); sync error count (`externalsecret_sync_calls_total{status="error"}`); sync duration p95 (`externalsecret_sync_calls_duration_seconds_bucket`) — all real Mimir data; panels show "No data" naturally until ESO emits series (ADR-0004). No HTTPRoute — ESO has no web UI. | `grafana/dashboards/lab-external-secrets.json` |
 
 ## Notes
 - **Front door** (`:8000`, nginx docker container) is off-cluster and **not**

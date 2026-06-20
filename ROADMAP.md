@@ -748,7 +748,7 @@ You review and merge plan PRs, same as implementation PRs.
   note. `docs/done/2026-06-15-argocd-pss-warn-audit.md` required.
   (auto/argocd-pss-warn-audit)
 
-- [ ] 🟢 **External Secrets dashboard + Alloy scrape** (CHARTER **Objective O5**,
+- [x] 🟢 **External Secrets dashboard + Alloy scrape** (CHARTER **Objective O5**,
   due **2026-09-30**; O5 gap — `external-secrets` is auto-synced in
   `gitops/bootstrap/root-app.yaml` but has no Alloy scrape job and no Grafana
   dashboard. The ESO controller exposes Prometheus metrics at `:8080/metrics`
