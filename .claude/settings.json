@@ -54,6 +54,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/securitycontext-tests-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking securitycontext.bats freeze"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/adr-guard-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking ADR compliance"

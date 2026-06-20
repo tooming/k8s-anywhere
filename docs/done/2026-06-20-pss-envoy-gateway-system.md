@@ -21,7 +21,7 @@ maintainer verifies north-south traffic unaffected after the label flip.
 |------|------|
 | `gitops/envoy-gateway-system/namespace.yaml` | New Namespace manifest with all four PSA `baseline` labels |
 | `gitops/platform/envoy-gateway-system-extras.yaml` | New ArgoCD `Application` (sync-wave 0, `ServerSideApply=true`, `CreateNamespace=false`) — SSA-patches labels onto the namespace before any pod is scheduled |
-| `tests/securitycontext.bats` | 9 new structural assertions (namespace file exists, four PSA baseline labels, enforce:restricted absent, extras Application exists, targets correct path, uses ServerSideApply) |
+| `tests/securitycontext-envoy-gateway-system.bats` | 9 structural assertions in their own per-scope file (namespace file exists, four PSA baseline labels, enforce:restricted absent, extras Application exists, targets correct path, uses ServerSideApply) — kept out of the shared `securitycontext.bats` monolith to avoid the parallel-PR EOF-append merge conflict |
 | `docs/dependency-tree.md` | Wave 0 table updated; new PSS baseline bullet added after envoy-gateway-system networkpolicy entry |
 | `ROADMAP.md` | Item checked `[x]` |
 

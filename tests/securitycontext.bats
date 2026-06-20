@@ -2,6 +2,13 @@
 # Clusterless structural tests for Pod Security Standards hardening (ADR-0017, RFC #83).
 # Asserts the capstone pilot Deployment and Namespace manifest carry all required
 # PSS restricted fields without spinning up a cluster.
+#
+# FROZEN — do NOT add new @test blocks here. Two parallel PSS fan-out PRs appending a
+# per-namespace block to this file's EOF is what caused the recurring merge conflict
+# (#238 vs #239). New per-namespace / per-scope security-context tests go in their own
+# tests/securitycontext-<scope>.bats file (see -data, -observability, -envoy-gateway-system).
+# This freeze is enforced mechanically by scripts/securitycontext-tests-check.sh (make ci);
+# if you intentionally rename/edit an existing test here, run `make securitycontext-tests-mark`.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -199,50 +206,5 @@ setup() {
 
 @test "external-secrets chart valuesObject drops ALL capabilities" {
   run grep -q '"ALL"' "$REPO/gitops/platform/external-secrets.yaml"
-  [ "$status" -eq 0 ]
-}
-
-# --- envoy-gateway-system namespace PSA baseline labels (RFC #230, ADR-0017) --------
-
-@test "envoy-gateway-system namespace.yaml exists" {
-  [ -f "$REPO/gitops/envoy-gateway-system/namespace.yaml" ]
-}
-
-@test "envoy-gateway-system namespace enforces PSS baseline" {
-  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$REPO/gitops/envoy-gateway-system/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "envoy-gateway-system namespace has enforce-version: latest" {
-  run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$REPO/gitops/envoy-gateway-system/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "envoy-gateway-system namespace has warn: baseline" {
-  run grep -q 'pod-security.kubernetes.io/warn: baseline' "$REPO/gitops/envoy-gateway-system/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "envoy-gateway-system namespace has audit: baseline" {
-  run grep -q 'pod-security.kubernetes.io/audit: baseline' "$REPO/gitops/envoy-gateway-system/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "envoy-gateway-system namespace does NOT enforce restricted (safety check)" {
-  run grep -q 'pod-security.kubernetes.io/enforce: restricted' "$REPO/gitops/envoy-gateway-system/namespace.yaml"
-  [ "$status" -eq 1 ]
-}
-
-@test "envoy-gateway-system-extras Application exists" {
-  [ -f "$REPO/gitops/platform/envoy-gateway-system-extras.yaml" ]
-}
-
-@test "envoy-gateway-system-extras Application targets gitops/envoy-gateway-system" {
-  run grep -q 'path: gitops/envoy-gateway-system' "$REPO/gitops/platform/envoy-gateway-system-extras.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "envoy-gateway-system-extras Application uses ServerSideApply" {
-  run grep -q 'ServerSideApply=true' "$REPO/gitops/platform/envoy-gateway-system-extras.yaml"
   [ "$status" -eq 0 ]
 }

@@ -43,6 +43,15 @@ lab-ui-check: ## Check the Grafana "Lab UIs" panel matches the HTTPRoutes in git
 roadmap-check: ## Check ROADMAP.md has no inline planner notes (per-run narrative belongs in docs/backlog/)
 	@bash scripts/roadmap-check.sh
 
+.PHONY: securitycontext-tests-check
+securitycontext-tests-check: ## Check tests/securitycontext.bats stays frozen (new PSS tests go in securitycontext-<scope>.bats)
+	@bash scripts/securitycontext-tests-check.sh
+
+.PHONY: securitycontext-tests-mark
+securitycontext-tests-mark: ## Refresh tests/.securitycontext-titles — run ONLY after an intentional rename/edit of a monolith test
+	@grep -oE '^@test "[^"]*"' tests/securitycontext.bats | sort > tests/.securitycontext-titles
+	@echo "  ok  tests/.securitycontext-titles refreshed ($$(wc -l < tests/.securitycontext-titles | tr -d ' ') titles)"
+
 .PHONY: routines-check
 routines-check: ## Check routines/*.prompt.md match the last apply (catches edits not synced to claude.ai triggers)
 	@bash scripts/routines-check.sh
@@ -80,6 +89,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/readme-check.sh
 	@bash scripts/lab-ui-check.sh
 	@bash scripts/roadmap-check.sh
+	@bash scripts/securitycontext-tests-check.sh
 	@bash scripts/routines-check.sh
 
 .PHONY: install-hooks

@@ -55,3 +55,20 @@ setup() {
   run bash "$REPO/scripts/roadmap-check.sh"
   [ "$status" -eq 0 ]
 }
+
+# --- securitycontext-tests-check ---------------------------------------------
+@test "securitycontext-tests-check: passes when the monolith matches its snapshot" {
+  run env SECCTX_TESTS_ROOT="$FIX/securitycontext-tests-check/in-sync" bash "$REPO/scripts/securitycontext-tests-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "securitycontext-tests-check: fails when a new @test is appended to the frozen monolith" {
+  run env SECCTX_TESTS_ROOT="$FIX/securitycontext-tests-check/drift" bash "$REPO/scripts/securitycontext-tests-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FROZEN"* ]]
+}
+
+@test "securitycontext-tests-check: passes on the real repo tests/securitycontext.bats" {
+  run bash "$REPO/scripts/securitycontext-tests-check.sh"
+  [ "$status" -eq 0 ]
+}
