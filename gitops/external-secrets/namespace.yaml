@@ -1,0 +1,14 @@
+# PSA restricted profile for the external-secrets namespace (ADR-0017, RFC #229).
+# ESO 2.x controller-manager, cert-controller, and webhook all run as UID 65534
+# (nobody), no host volumes, no special capabilities — no carve-out from restricted
+# needed. Synced by external-secrets-extras (wave 0) before the Helm release (wave 1)
+# so enforcement is in place before any pod is scheduled.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-secrets
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

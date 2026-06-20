@@ -146,3 +146,58 @@ setup() {
   run grep -q 'pod-security.kubernetes.io/enforce' "$REPO/gitops/argocd/namespace.yaml"
   [ "$status" -eq 1 ]
 }
+
+# --- external-secrets namespace PSA restricted labels (RFC #229, ADR-0017) ----
+
+@test "external-secrets namespace.yaml exists" {
+  [ -f "$REPO/gitops/external-secrets/namespace.yaml" ]
+}
+
+@test "external-secrets namespace.yaml enforces PSS restricted" {
+  run grep -q 'pod-security.kubernetes.io/enforce: restricted' "$REPO/gitops/external-secrets/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "external-secrets namespace.yaml has enforce-version: latest" {
+  run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$REPO/gitops/external-secrets/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "external-secrets namespace.yaml has warn: restricted" {
+  run grep -q 'pod-security.kubernetes.io/warn: restricted' "$REPO/gitops/external-secrets/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "external-secrets namespace.yaml has audit: restricted" {
+  run grep -q 'pod-security.kubernetes.io/audit: restricted' "$REPO/gitops/external-secrets/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "external-secrets-extras Application exists" {
+  [ -f "$REPO/gitops/platform/external-secrets-extras.yaml" ]
+}
+
+@test "external-secrets-extras Application targets gitops/external-secrets" {
+  run grep -q 'path: gitops/external-secrets' "$REPO/gitops/platform/external-secrets-extras.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "external-secrets-extras Application uses ServerSideApply" {
+  run grep -q 'ServerSideApply=true' "$REPO/gitops/platform/external-secrets-extras.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "external-secrets chart valuesObject sets runAsNonRoot: true" {
+  run grep -q 'runAsNonRoot: true' "$REPO/gitops/platform/external-secrets.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "external-secrets chart valuesObject sets readOnlyRootFilesystem: true" {
+  run grep -q 'readOnlyRootFilesystem: true' "$REPO/gitops/platform/external-secrets.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "external-secrets chart valuesObject drops ALL capabilities" {
+  run grep -q '"ALL"' "$REPO/gitops/platform/external-secrets.yaml"
+  [ "$status" -eq 0 ]
+}
