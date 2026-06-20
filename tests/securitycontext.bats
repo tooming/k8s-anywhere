@@ -2,6 +2,13 @@
 # Clusterless structural tests for Pod Security Standards hardening (ADR-0017, RFC #83).
 # Asserts the capstone pilot Deployment and Namespace manifest carry all required
 # PSS restricted fields without spinning up a cluster.
+#
+# FROZEN — do NOT add new @test blocks here. Two parallel PSS fan-out PRs appending a
+# per-namespace block to this file's EOF is what caused the recurring merge conflict
+# (#238 vs #239). New per-namespace / per-scope security-context tests go in their own
+# tests/securitycontext-<scope>.bats file (see -data, -observability, -envoy-gateway-system).
+# This freeze is enforced mechanically by scripts/securitycontext-tests-check.sh (make ci);
+# if you intentionally rename/edit an existing test here, run `make securitycontext-tests-mark`.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
