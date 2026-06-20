@@ -210,6 +210,15 @@ You review and merge plan PRs, same as implementation PRs.
 > The two formerly-🟡 Cross-cutting entries are marked "Groomed ↗". After these two land,
 > the remaining always-on O2 gaps are ArgoCD PSS Phase 2 (needs cluster verification) and
 > the verifyImages Enforce flip (needs `.sig` tag confirmation) — both noted in their items.
+>
+> **Planner note (2026-06-20 — O5 gap-fill: observability infrastructure dashboards).**
+> Gap analysis found three auto-synced Applications that lack a `lab-*.json` dashboard,
+> violating CHARTER O5 ("every Application in root-app.yaml's auto-synced set has a
+> real-metric dashboard by 2026-09-30"): `observability-alloy`, `observability-ksm`,
+> `observability-node-exporter`. All are confirmed auto-synced (no `# ON-DEMAND:` guard);
+> KSM and Node Exporter metrics are already scraped; Alloy needs a self-scrape job
+> added before a dashboard can meet ADR-0004. Three new 🟢 items added at the tail of
+> *Now / next* below. Full analysis in `docs/backlog/2026-06-20-o5-observability-gap.md`.
 
 - [x] 🟢 **Kyverno engine + observability** (CHARTER **Objective O1**,
   RFC #153 — see
@@ -944,6 +953,78 @@ You review and merge plan PRs, same as implementation PRs.
   downtime per RFC #214 §"Rollback path"). `make ci` must pass. **Executor note:** this
   item has a maintainer-confirmation prerequisite; skip to the next item if the condition
   cannot be verified this run. (auto/cosign-enforce-flip)
+
+- [ ] 🟢 **Lab — Grafana Alloy self-monitoring dashboard + self-scrape** (CHARTER
+  **Objective O5**, due **2026-09-30**; O5 gap — `observability-alloy` is
+  auto-synced in `gitops/bootstrap/root-app.yaml` but has no scrape job for
+  its own metrics and no Grafana dashboard. The Alloy chart exposes metrics at
+  port 12345 via the default `listenAddr`; the chart also creates a ClusterIP
+  Service so a static scrape target is stable). Add `prometheus.scrape "alloy_self"`
+  block to `gitops/platform/observability-alloy.yaml` (static target
+  `alloy.observability.svc.cluster.local:12345`; `scrape_interval = "30s"`;
+  mirrors the adjacent `external_secrets` / `kyverno` / `argo_rollouts` pattern).
+  New `grafana/dashboards/lab-alloy.json` ("Lab — Grafana Alloy (Collector)")
+  modelled on `lab-kyverno.json` stat-row: Alloy pod running (KSM
+  `kube_deployment_status_replicas_available{namespace="observability",deployment=~"alloy.*"}`);
+  ArgoCD sync state (`argocd_app_info{name="alloy"}`); active scrape targets
+  (`prometheus_sd_discovered_targets{job="alloy"}`); samples ingested rate
+  (`rate(prometheus_tsdb_head_samples_appended_total[5m]){job="alloy"}`);
+  remote_write component health (`prometheus_remote_storage_sent_bytes_total{job="alloy"}`);
+  Alloy component errors (`alloy_component_evaluation_seconds_sum` filtered by
+  `namespace="observability"`). All panels real Mimir data with `X-Scope-OrgID: lab`
+  (ADR-0004 — any panel whose metric has not yet emitted a series shows "No data"
+  naturally). No HTTPRoute (Alloy has no web UI; port 12345 is metrics-only; `make
+  lab-ui-check` unaffected). Extend `tests/observability.bats`: scrape block
+  `"alloy_self"` exists in `observability-alloy.yaml`; `lab-alloy.json` exists;
+  dashboard references `prometheus_sd_discovered_targets`; no fabricated data.
+  Update `docs/dependency-tree.md` with Alloy self-scrape + dashboard note.
+  `docs/done/` entry required. (auto/alloy-self-monitoring)
+
+- [ ] 🟢 **Lab — Kube State Metrics cluster-health dashboard** (CHARTER
+  **Objective O5**, due **2026-09-30**; O5 gap — `observability-ksm` is
+  auto-synced in `gitops/bootstrap/root-app.yaml` but has no Grafana dashboard.
+  KSM metrics are already scraped via the `prometheus.scrape "ksm"` block in
+  `gitops/platform/observability-alloy.yaml` — no new scrape job needed). New
+  `grafana/dashboards/lab-ksm.json` ("Lab — Cluster Health (KSM)") providing a
+  K8s resource state overview: pod phase distribution stat panels
+  (`kube_pod_status_phase{phase=~"Running|Pending|Failed|Succeeded"}` across all
+  namespaces); deployment replica health (sum of
+  `kube_deployment_status_replicas_available` vs
+  `kube_deployment_spec_replicas`); PersistentVolumeClaim phase
+  (`kube_persistentvolumeclaim_status_phase` by namespace + claim); node
+  readiness (`kube_node_status_condition{condition="Ready",status="true"}`);
+  KSM self-health stat (`kube_state_metrics_build_info` version label +
+  `kube_state_metrics_watch_total` by resource for watch health). Modelled on
+  `lab-kyverno.json` stat-row: KSM pod running (KSM
+  `kube_deployment_status_replicas_available{namespace="observability",deployment=~"ksm.*"}`);
+  ArgoCD sync state. All panels real Mimir data (ADR-0004). No HTTPRoute. Extend
+  `tests/observability.bats`: `lab-ksm.json` exists; dashboard references
+  `kube_pod_status_phase`; references `kube_state_metrics_build_info`; no
+  fabricated data. Update `docs/dependency-tree.md` with KSM dashboard note.
+  `docs/done/` entry required. (auto/ksm-cluster-health-dashboard)
+
+- [ ] 🟢 **Lab — Node Exporter cluster-vitals dashboard** (CHARTER
+  **Objective O5**, due **2026-09-30**; O5 gap — `observability-node-exporter`
+  is auto-synced in `gitops/bootstrap/root-app.yaml` but has no Grafana
+  dashboard. Node Exporter metrics are already scraped via the
+  `prometheus.scrape "node_exporter"` block — no new scrape job needed). New
+  `grafana/dashboards/lab-node-exporter.json` ("Lab — Node Vitals") showing
+  host-level infrastructure metrics: CPU usage gauge
+  (`1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))`); memory pressure
+  gauge (`1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)`);
+  disk usage per mount
+  (`1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} /
+  node_filesystem_size_bytes)` by device); network throughput timeseries
+  (`rate(node_network_receive_bytes_total[5m])` +
+  `rate(node_network_transmit_bytes_total[5m])` by interface, excluding
+  `lo`); node uptime stat (`time() - node_boot_time_seconds`);
+  node-exporter pod running (KSM); ArgoCD sync state. Modelled on
+  `lab-kyverno.json` stat-row format. All panels real Mimir data (ADR-0004).
+  No HTTPRoute. Extend `tests/observability.bats`: `lab-node-exporter.json`
+  exists; dashboard references `node_cpu_seconds_total`; references
+  `node_memory_MemAvailable_bytes`; no fabricated data. Update
+  `docs/dependency-tree.md` with node-exporter dashboard note.
+  `docs/done/` entry required. (auto/node-exporter-vitals-dashboard)
 
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
