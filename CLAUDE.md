@@ -1,5 +1,26 @@
 # k8s-lab — working agreement
 
+## Every bugfix must prevent recurrence (fix + mechanical guard)
+A bugfix is **not done** when the symptom is gone. Every bugfix has two deliverables:
+
+1. **Fix it** — resolve the immediate problem.
+2. **Stop the whole class from recurring** — add a *mechanical* guard so the same kind of
+   bug cannot silently come back: a CI gate, a git/PostToolUse hook, a test, or a
+   structural change that removes the failure mode entirely (the strongest option —
+   eliminate the footgun, don't just detect it).
+
+This is the default for **all** bugfixes; you don't need to be asked. It is the
+mechanical-over-skills principle applied to fixes: enforce the invariant in code/CI,
+**never** via "I'll remember" or a forgettable note. Prefer, in order: (a) make the bug
+*impossible* by construction; (b) a CI gate wired into `make ci`; (c) a hook that nudges
+at edit/push time; (d) a test that fails on regression. Mirror the existing drift-guard
+pattern — `scripts/<thing>-check.sh` + `make <thing>-check` in `make ci` + a `PostToolUse`
+sync-hook + bats coverage in `tests/drift-detectors.bats` (see `readme-check`,
+`roadmap-check`, `securitycontext-tests-check`).
+
+If a class genuinely **cannot** be guarded mechanically, say so explicitly in the PR and
+explain why — don't silently ship a symptom-only patch.
+
 ## Architecture decisions are binding
 Before proposing OR implementing any technical/tooling choice, consult
 `docs/decisions/` (the ADRs). They are binding, not advisory.
