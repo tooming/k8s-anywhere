@@ -201,3 +201,48 @@ setup() {
   run grep -q '"ALL"' "$REPO/gitops/platform/external-secrets.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- envoy-gateway-system namespace PSA baseline labels (RFC #230, ADR-0017) --------
+
+@test "envoy-gateway-system namespace.yaml exists" {
+  [ -f "$REPO/gitops/envoy-gateway-system/namespace.yaml" ]
+}
+
+@test "envoy-gateway-system namespace enforces PSS baseline" {
+  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$REPO/gitops/envoy-gateway-system/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system namespace has enforce-version: latest" {
+  run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$REPO/gitops/envoy-gateway-system/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system namespace has warn: baseline" {
+  run grep -q 'pod-security.kubernetes.io/warn: baseline' "$REPO/gitops/envoy-gateway-system/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system namespace has audit: baseline" {
+  run grep -q 'pod-security.kubernetes.io/audit: baseline' "$REPO/gitops/envoy-gateway-system/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system namespace does NOT enforce restricted (safety check)" {
+  run grep -q 'pod-security.kubernetes.io/enforce: restricted' "$REPO/gitops/envoy-gateway-system/namespace.yaml"
+  [ "$status" -eq 1 ]
+}
+
+@test "envoy-gateway-system-extras Application exists" {
+  [ -f "$REPO/gitops/platform/envoy-gateway-system-extras.yaml" ]
+}
+
+@test "envoy-gateway-system-extras Application targets gitops/envoy-gateway-system" {
+  run grep -q 'path: gitops/envoy-gateway-system' "$REPO/gitops/platform/envoy-gateway-system-extras.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "envoy-gateway-system-extras Application uses ServerSideApply" {
+  run grep -q 'ServerSideApply=true' "$REPO/gitops/platform/envoy-gateway-system-extras.yaml"
+  [ "$status" -eq 0 ]
+}
