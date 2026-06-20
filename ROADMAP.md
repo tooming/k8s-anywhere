@@ -851,7 +851,7 @@ You review and merge plan PRs, same as implementation PRs.
   without a live cluster. Makefile change is RFC #215-approved per WAYS-OF-WORKING.md §2.
   (auto/capstone-demo-target)
 
-- [ ] 🟢 **PSS-restricted hardening — `external-secrets` namespace** (CHARTER **Objective O2**,
+- [x] 🟢 **PSS-restricted hardening — `external-secrets` namespace** (CHARTER **Objective O2**,
   due **2026-09-30**; RFC #229 — architect decision 2026-06-19). Add
   `gitops/external-secrets/namespace.yaml` with all four PSA labels at `restricted`
   (`enforce: restricted`, `enforce-version: latest`, `warn: restricted`,
