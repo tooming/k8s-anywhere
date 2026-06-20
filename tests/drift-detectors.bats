@@ -38,3 +38,20 @@ setup() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"front-door port :8000"* ]]
 }
+
+# --- roadmap-check -----------------------------------------------------------
+@test "roadmap-check: passes when ROADMAP has no inline planner note" {
+  run env ROADMAPCHECK_ROOT="$FIX/roadmap-check/in-sync" bash "$REPO/scripts/roadmap-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "roadmap-check: fails on an inline dated planner note" {
+  run env ROADMAPCHECK_ROOT="$FIX/roadmap-check/drift" bash "$REPO/scripts/roadmap-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"inline planner note"* ]]
+}
+
+@test "roadmap-check: passes on the real repo ROADMAP.md" {
+  run bash "$REPO/scripts/roadmap-check.sh"
+  [ "$status" -eq 0 ]
+}

@@ -39,6 +39,10 @@ readme-check: ## Check README.md is in sync with the Makefile + tools (drift det
 lab-ui-check: ## Check the Grafana "Lab UIs" panel matches the HTTPRoutes in gitops
 	@bash scripts/lab-ui-check.sh
 
+.PHONY: roadmap-check
+roadmap-check: ## Check ROADMAP.md has no inline planner notes (per-run narrative belongs in docs/backlog/)
+	@bash scripts/roadmap-check.sh
+
 .PHONY: routines-check
 routines-check: ## Check routines/*.prompt.md match the last apply (catches edits not synced to claude.ai triggers)
 	@bash scripts/routines-check.sh
@@ -75,6 +79,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/test.sh
 	@bash scripts/readme-check.sh
 	@bash scripts/lab-ui-check.sh
+	@bash scripts/roadmap-check.sh
 	@bash scripts/routines-check.sh
 
 .PHONY: install-hooks
