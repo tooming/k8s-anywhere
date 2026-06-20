@@ -48,6 +48,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/roadmap-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking ROADMAP planner-note sync"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/adr-guard-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking ADR compliance"

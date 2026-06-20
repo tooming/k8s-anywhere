@@ -128,27 +128,18 @@ You review and merge plan PRs, same as implementation PRs.
 >
 > **Conflict-free editing (binding rule).** Add/edit the discrete 🟡/🟢/🔴 **items**
 > inline here as normal. But record any per-run **narrative commentary** (grooming
-> summaries, "what was filed/unblocked this run") as a new file under
-> [`docs/backlog/`](docs/backlog/) (`YYYY-MM-DD-<slug>.md`) — never by appending to the
-> footer paragraph at the end of this section. One file per run means concurrent PRs
-> never touch the same lines. Same rule, same reason as `## Done` →
-> [`docs/done/`](docs/done/).
+> summaries, "what was filed/unblocked this run", `**Planner note (…)**` blocks) as a
+> new file under [`docs/backlog/`](docs/backlog/) (`YYYY-MM-DD-<slug>.md`) — **never
+> inline anywhere in this file**: not as a header block at the top of a section, not as
+> a footer paragraph at the end of one. (Putting them at the top instead of the bottom
+> caused the exact same conflict twice — PRs #209 and #236.) One file per run means
+> concurrent PRs never touch the same lines. This is enforced mechanically by
+> `make ci` (`scripts/roadmap-check.sh` fails on any inline `**Planner note (…)**`
+> block). Same rule, same reason as `## Done` → [`docs/done/`](docs/done/).
 
 ### Now / next
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
 > through to the next.
->
-> **Planner note (2026-06-11 — Tier 1 next-wave fan-out + O2 tail).** The
-> 2026-06-08 O2 fan-out wave has fully landed (capstone/data/vault/observability
-> NetworkPolicies + PSS for capstone/data/observability + PSS labels for
-> vault/storage/tidb/tidb-admin + storage/argocd/moto/ack/lab-gateway NPs —
-> all in *Done*). Two architect waves landed this week: (a) all four Tier 1
-> next-wave ADRs are merged — ADR-0019 (Kyverno), ADR-0020 (Argo Rollouts),
-> ADR-0021 (Velero), ADR-0022 (Trivy Operator); and (b) RFC issues #153–#156
-> carry the binding implementation specs. Per WAYS-OF-WORKING.md §2, the
-> architect's decision *is* the approval — the planner grooms each RFC's
-> *Acceptance criteria* into 🟢 single-PR executor items here, no human-RFC
-> step needed.
 >
 > Backlog order: **CHARTER Objective O1** (Tier 1 next-wave deployed by
 > 2026-12-31) is the highest-priority outstanding objective. Within O1, items
@@ -172,53 +163,10 @@ You review and merge plan PRs, same as implementation PRs.
 > changed lines per PR. Items below that risk crossing the cap carry a
 > "split if oversized" executor note matching the RFC's own split guidance.
 >
-> **Planner note (2026-06-14 — O1/O5 dashboard tail + O4/O6 RFC surface).** Two
-> deferred Tier 1 next-wave Grafana dashboards are now the highest-value 🟢 items:
-> the Argo Rollouts dashboard + Alloy scrape job (explicitly deferred in
-> `docs/done/2026-06-13-argo-rollouts-controller.md`; NP ingress pre-wired) and the
-> Trivy Operator dashboard (explicitly deferred in `docs/done/auto-trivy-operator.md`;
-> Alloy scrape already wired). Both are required by CHARTER O1 ("each next-wave
-> component … with real-metric Grafana dashboard") and O5 ("every always-on component
-> has a real-metric dashboard by 2026-09-30"). The tidb/tidb-admin NetworkPolicy
-> fan-out (the last O2 tail item) is in-flight as PR #203. Two new 🟡 Cross-cutting
-> entries below surface the remaining O4 work (cosign signing in GitLab CI +
-> verifyImages Enforce flip) and O6 work (make capstone-demo wall-clock target), both
-> awaiting architect RFCs before the planner can groom them into 🟢 executor items.
->
-> **Planner note (2026-06-16 — RFC #214 + #215 groomed into 🟢 O4/O6 items).** Architect
-> run 2026-06-16 filed RFC #214 (O4: cosign CI signing + verifyImages Enforce flip) and
-> RFC #215 (O6: `make capstone-demo` wall-clock target). Both are now groomed: four new
-> 🟢 items added below — three from RFC #214 (cosign `make up` wiring → CI sign stage →
-> verifyImages Enforce flip, in that dependency order) and one from RFC #215 (capstone-demo
-> target, standalone). The two formerly-🟡 Cross-cutting O4/O6 entries are marked
-> "Groomed ↗".
->
-> **Planner note (2026-06-18 — O5 gap: External Secrets dashboard; O2 gaps surfaced to
-> architect).** Gap analysis found one new 🟢 O5 item: the `external-secrets` Application
-> is auto-synced but has no Alloy scrape job and no Grafana dashboard — inserted above the
-> two blocked items so the executor lane stays active. Two new 🟡 O2 items surface PSS
-> gaps in the `external-secrets` and `envoy-gateway-system` namespaces (both absent from
-> ADR-0017 §"Per-namespace profile"; both need architect RFCs before the planner can groom
-> them into 🟢 items). The two existing blocked items (ArgoCD PSS Phase 2 + verifyImages
-> Enforce flip) remain unbuilt — each requires explicit maintainer cluster confirmation
-> before the executor may proceed (noted in their item text).
->
-> **Planner note (2026-06-20 — RFC #229 + #230 groomed into 🟢 O2 PSS items).** Architect
-> run 2026-06-19 filed RFC #229 (O2: PSS `restricted` for `external-secrets`) and RFC #230
-> (O2: PSS `baseline` for `envoy-gateway-system`). Both are now groomed into two new 🟢
-> items added below, ordered before the blocked items so the executor has actionable work.
-> The two formerly-🟡 Cross-cutting entries are marked "Groomed ↗". After these two land,
-> the remaining always-on O2 gaps are ArgoCD PSS Phase 2 (needs cluster verification) and
-> the verifyImages Enforce flip (needs `.sig` tag confirmation) — both noted in their items.
->
-> **Planner note (2026-06-20 — O5 gap-fill: observability infrastructure dashboards).**
-> Gap analysis found three auto-synced Applications that lack a `lab-*.json` dashboard,
-> violating CHARTER O5 ("every Application in root-app.yaml's auto-synced set has a
-> real-metric dashboard by 2026-09-30"): `observability-alloy`, `observability-ksm`,
-> `observability-node-exporter`. All are confirmed auto-synced (no `# ON-DEMAND:` guard);
-> KSM and Node Exporter metrics are already scraped; Alloy needs a self-scrape job
-> added before a dashboard can meet ADR-0004. Three new 🟢 items added at the tail of
-> *Now / next* below. Full analysis in `docs/backlog/2026-06-20-o5-observability-gap.md`.
+> _Per-run planner narrative (what was groomed/filed/unblocked each run) lives in
+> [`docs/backlog/`](docs/backlog/), one dated file per run — never inline here (see
+> the **Conflict-free editing** binding rule above). History through 2026-06-20:
+> [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
 - [x] 🟢 **Kyverno engine + observability** (CHARTER **Objective O1**,
   RFC #153 — see
