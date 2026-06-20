@@ -27,4 +27,4 @@ maintainer verifies north-south traffic unaffected after the label flip.
 
 ## PR
 
-PR #TBD — auto/pss-envoy-gateway-system
+PR #239 — https://github.com/tooming/k8s-lab/pull/239
