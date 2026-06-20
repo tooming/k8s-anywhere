@@ -202,6 +202,14 @@ You review and merge plan PRs, same as implementation PRs.
 > them into 🟢 items). The two existing blocked items (ArgoCD PSS Phase 2 + verifyImages
 > Enforce flip) remain unbuilt — each requires explicit maintainer cluster confirmation
 > before the executor may proceed (noted in their item text).
+>
+> **Planner note (2026-06-20 — RFC #229 + #230 groomed into 🟢 O2 PSS items).** Architect
+> run 2026-06-19 filed RFC #229 (O2: PSS `restricted` for `external-secrets`) and RFC #230
+> (O2: PSS `baseline` for `envoy-gateway-system`). Both are now groomed into two new 🟢
+> items added below, ordered before the blocked items so the executor has actionable work.
+> The two formerly-🟡 Cross-cutting entries are marked "Groomed ↗". After these two land,
+> the remaining always-on O2 gaps are ArgoCD PSS Phase 2 (needs cluster verification) and
+> the verifyImages Enforce flip (needs `.sig` tag confirmation) — both noted in their items.
 
 - [x] 🟢 **Kyverno engine + observability** (CHARTER **Objective O1**,
   RFC #153 — see
@@ -886,6 +894,43 @@ You review and merge plan PRs, same as implementation PRs.
   without a live cluster. Makefile change is RFC #215-approved per WAYS-OF-WORKING.md §2.
   (auto/capstone-demo-target)
 
+- [ ] 🟢 **PSS-restricted hardening — `external-secrets` namespace** (CHARTER **Objective O2**,
+  due **2026-09-30**; RFC #229 — architect decision 2026-06-19). Add
+  `gitops/external-secrets/namespace.yaml` with all four PSA labels at `restricted`
+  (`enforce: restricted`, `enforce-version: latest`, `warn: restricted`,
+  `audit: restricted`). Add new auto-synced `Application`
+  `gitops/platform/external-secrets-extras.yaml` (sync-wave 0, `ServerSideApply=true`,
+  `CreateNamespace=false` — namespace pre-created by the existing `external-secrets`
+  Application; follows the `argocd-extras` / `kyverno-extras` naming convention). Patch
+  `gitops/platform/external-secrets.yaml` `valuesObject` with `global.podSecurityContext`
+  (`runAsNonRoot: true`, `runAsUser: 65534`, `runAsGroup: 65534`, `seccompProfile.type:
+  RuntimeDefault`) + `global.containerSecurityContext` (`allowPrivilegeEscalation: false`,
+  `readOnlyRootFilesystem: true`, `capabilities.drop: ["ALL"]`) per RFC #229 §Decision. If
+  `readOnlyRootFilesystem: true` causes a startup failure, add an `emptyDir` at `/tmp` via
+  `extraVolumes`/`extraVolumeMounts` in `valuesObject`; do NOT relax `readOnlyRootFilesystem`
+  without a follow-up issue. Add `external-secrets → restricted` row to ADR-0017
+  §"Per-namespace profile" table citing RFC #229. Extend `tests/securitycontext.bats`:
+  namespace PSA-label assertions + `runAsNonRoot: true` in the chart `valuesObject`. `make
+  ci` must pass. `docs/done/` entry required. **Executor note:** the `valuesObject` patch
+  is security-adjacent (🟡 by default) but RFC #229 is the binding architect decision
+  (WAYS-OF-WORKING.md §2) — the RFC IS the approval. (auto/pss-external-secrets)
+
+- [ ] 🟢 **PSS-baseline hardening — `envoy-gateway-system` namespace** (CHARTER **Objective O2**,
+  due **2026-09-30**; RFC #230 — architect decision 2026-06-19). Add
+  `gitops/envoy-gateway-system/namespace.yaml` with all four PSA labels at `baseline`
+  (`enforce: baseline`, `enforce-version: latest`, `warn: baseline`, `audit: baseline`).
+  Add new auto-synced `Application` `gitops/platform/envoy-gateway-system-extras.yaml`
+  (sync-wave 0, `ServerSideApply=true`, `CreateNamespace=false` — namespace pre-created by
+  the existing `envoy-gateway` Application; follows the `argocd-extras` / `kyverno-extras`
+  naming convention). **No workload securityContext patches in this PR** — `baseline` does
+  not require field-level securityContext changes; proxy pod root UID is the documented
+  carve-out (RFC #230 §Rationale). Add `envoy-gateway-system → baseline` row to ADR-0017
+  §"Per-namespace profile" table with explicit flip condition to `restricted` (when
+  `gateway-helm` chart supports non-root proxy pods), citing RFC #230. Extend
+  `tests/securitycontext.bats`: namespace PSA-label assertions; assert `enforce: baseline`
+  present and `enforce: restricted` absent (safety check). `make ci` must pass. `docs/done/`
+  entry required. (auto/pss-envoy-gateway-system)
+
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
   maintainer confirms at least one CI run pushed a `.sig` tag to Artifactory** — check
@@ -921,7 +966,9 @@ You review and merge plan PRs, same as implementation PRs.
 > the 🟡 items without an RFC still need an architect RFC before the executor builds
 > them. Items that received RFCs (#205, #206) have been groomed into 🟢 items in
 > *Now / next* above (planner 2026-06-15); RFCs #214 + #215 groomed 2026-06-16
-> (four new 🟢 items — three from RFC #214, one from RFC #215). The 🟢
+> (four new 🟢 items — three from RFC #214, one from RFC #215); RFCs #229 + #230
+> groomed 2026-06-20 (two new 🟢 PSS items — `restricted` for `external-secrets`,
+> `baseline` for `envoy-gateway-system`). The 🟢
 > cloud-control-plane dashboard item that previously lived here has been promoted
 > to *Now / next* above (CHARTER **O5** carrier).
 
@@ -955,28 +1002,13 @@ You review and merge plan PRs, same as implementation PRs.
   into one 🟢 item in *Now / next* above (`auto/capstone-demo-target`),
   planner run 2026-06-16.
 
-- [ ] 🟡 **PSS hardening — `external-secrets` namespace** (CHARTER **Objective O2**,
-  RFC #229 — architect decision 2026-06-19). The `external-secrets` namespace is
-  absent from ADR-0017 §"Per-namespace profile". ESO 2.x controller runs as UID
-  65534 (`nobody`), no host volumes, no special capabilities — `restricted`-eligible.
-  Add `gitops/external-secrets/namespace.yaml` with all four PSA labels at
-  `restricted`; add `gitops/platform/external-secrets-extras.yaml` (sync-wave 0,
-  `ServerSideApply=true`, `CreateNamespace=false`); patch `gitops/platform/external-secrets.yaml`
-  `valuesObject` with `global.podSecurityContext` + `global.containerSecurityContext`
-  per RFC #229 §Decision. Add ADR-0017 row + `tests/securitycontext.bats` extension.
-  (auto/pss-external-secrets)
+- ~~🟡 **PSS hardening — `external-secrets` namespace**~~ (RFC #229)
+  **Groomed ↗** into a 🟢 item in *Now / next* above
+  (`auto/pss-external-secrets`), planner run 2026-06-20.
 
-- [ ] 🟡 **PSS hardening — `envoy-gateway-system` namespace** (CHARTER **Objective O2**,
-  RFC #230 — architect decision 2026-06-19). The `envoy-gateway-system` namespace is
-  absent from ADR-0017 §"Per-namespace profile". Two pod types share the namespace:
-  the Gateway controller (non-root, restricted-compatible) and the Envoy proxy
-  data-plane (default UID 0 in `gateway-helm` v1.8.0). Setting the namespace to
-  `restricted` risks breaking north-south traffic; `baseline` is the safe carve-out.
-  Add `gitops/envoy-gateway-system/namespace.yaml` with all four PSA labels at
-  `baseline`; add `gitops/platform/envoy-gateway-system-extras.yaml` (sync-wave 0,
-  `ServerSideApply=true`, `CreateNamespace=false`). Add ADR-0017 row (with explicit
-  flip condition to `restricted`) + `tests/securitycontext.bats` extension.
-  (auto/pss-envoy-gateway-system)
+- ~~🟡 **PSS hardening — `envoy-gateway-system` namespace**~~ (RFC #230)
+  **Groomed ↗** into a 🟢 item in *Now / next* above
+  (`auto/pss-envoy-gateway-system`), planner run 2026-06-20.
 
 _New 🟡 items proposed by the architect live in
 [`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until
