@@ -220,12 +220,30 @@ gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the re
 		)
 	@$(MAKE) gitlab-push
 
+# A from-scratch `make up` hits two GitLab-auth footguns at this step, both fatal
+# with the same "HTTP Basic: Access denied" 401:
+#   1. Activation race — on a freshly-booted GitLab the git-over-HTTP path
+#      (workhorse/gitlab-shell) lags the Rails API in recognizing a brand-new PAT.
+#      terragrunt already used the token, but `git push` moments later still 401s.
+#      Gate the push on a git-receive-pack probe (curl, bypasses any credential
+#      store) until GitLab accepts the token for git.
+#   2. Stale cached credential — the host's credential helper (e.g. osxkeychain)
+#      persists across GitLab rebuilds and serves a dead token from a previous
+#      instance ahead of our helper. Push with an isolated helper list (reset, then
+#      only the repo helper that reads gitlab/.gitlab-token) so nothing stale wins.
 .PHONY: gitlab-push
 gitlab-push: ## Push main to the local GitLab repo
 	@git remote remove gitlab 2>/dev/null || true; \
 		git remote add gitlab "$(GITLAB_REMOTE_URL)"; \
-		git config credential."http://localhost:8929".helper "$(REPO_DIR)/scripts/gitlab-credential-helper.sh"; \
-		git push $(GITLAB_PUSH_FLAGS) -u gitlab main || { \
+		pat="$$(cat $(REPO_DIR)/gitlab/.gitlab-token 2>/dev/null)"; \
+		printf 'waiting for GitLab to accept the PAT for git push'; \
+		for i in $$(seq 1 30); do \
+			code="$$(curl -s -o /dev/null -w '%{http_code}' --user "root:$$pat" "http://localhost:8929/lab/k8s-lab.git/info/refs?service=git-receive-pack" 2>/dev/null)"; \
+			[ "$$code" = "200" ] && { printf ' ready\n'; break; }; \
+			printf '.'; sleep 2; \
+		done; \
+		git -c credential.helper= -c credential.helper="$(REPO_DIR)/scripts/gitlab-credential-helper.sh" \
+			push $(GITLAB_PUSH_FLAGS) -u gitlab main || { \
 			rc="$$?"; \
 			if [ -z "$(GITLAB_PUSH_FLAGS)" ]; then \
 				echo "gitlab push failed. If the local GitLab branch should be overwritten, rerun 'make gitlab-force-push'." >&2; \
