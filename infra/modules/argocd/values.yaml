@@ -34,6 +34,14 @@ applicationSet:
       cpu: 25m
       memory: 64Mi
 
+# The cold-start of `make up` is a sync storm: ArgoCD renders + reconciles ~50
+# Applications (many Helm/Kustomize) at once — far above steady-state load. With
+# the chart-default tiny CPU requests and 1s health-probe timeouts, the two hot
+# components (application-controller, repo-server) get CPU-starved, miss the 1s
+# probe, and kubelet crashloops them, so ArgoCD never converges (ESO/garage/… stay
+# Missing and the bootstrap scripts time out). Give them enough CPU for the storm
+# and relax the probe timeout so transient cold-start slowness isn't fatal.
+#
 # metrics.enabled creates the *-metrics Services that Alloy scrapes for the
 # stack-health dashboard (app sync/health, controller, repo-server, api).
 controller:
@@ -41,16 +49,28 @@ controller:
     enabled: true
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 250m
+      memory: 512Mi
+  # application-controller has no livenessProbe by default; only readiness.
+  readinessProbe:
+    timeoutSeconds: 5
 
 repoServer:
   metrics:
     enabled: true
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  livenessProbe:
+    timeoutSeconds: 5
+    initialDelaySeconds: 20
+  readinessProbe:
+    timeoutSeconds: 5
+    initialDelaySeconds: 20
 
 server:
   metrics:
