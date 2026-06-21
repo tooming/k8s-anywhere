@@ -1,32 +1,37 @@
 # Reusable allow-DNS-and-apiserver egress policy (ADR-0016).
-# Permits every pod in the namespace to resolve DNS (kube-dns UDP/TCP 53)
-# and reach the k3s Kubernetes API server (10.43.0.1/32 TCP 6443).
-# Without this a deny-all namespace cannot start any workload successfully.
-# The consuming namespace's Kustomize overlay sets the namespace via a patch.
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
+# Permits every pod in the namespace to resolve DNS (kube-dns UDP/TCP 53) and
+# reach the Kubernetes API server. The consuming namespace's Kustomize overlay
+# sets the namespace. Without this a deny-all namespace cannot start workloads.
+#
+# This is a CiliumNetworkPolicy, NOT a plain NetworkPolicy, on purpose (ADR-0014):
+# under Cilium's kube-proxy-free datapath the API server is given Cilium's reserved
+# `kube-apiserver` identity, and the ClusterIP (10.43.0.1) is socket-LB-translated to
+# the real endpoint BEFORE egress policy is evaluated. A plain NetworkPolicy `ipBlock`
+# rule (whether 10.43.0.1/32 or the node IP) therefore never matches API-server
+# traffic, and every deny-all namespace is silently cut off from the apiserver.
+# `toEntities: kube-apiserver` is the only rule Cilium matches for that traffic.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
 metadata:
   name: allow-dns-and-apiserver
 spec:
-  podSelector: {}
-  policyTypes:
-    - Egress
+  endpointSelector: {}
   egress:
-    - ports:
-        - port: 53
-          protocol: UDP
-        - port: 53
-          protocol: TCP
-      to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-          podSelector:
-            matchLabels:
-              k8s-app: kube-dns
-    - ports:
-        - port: 6443
-          protocol: TCP
-      to:
-        - ipBlock:
-            cidr: 10.43.0.1/32
+    # DNS: every pod must resolve names via CoreDNS (kube-dns) in kube-system.
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Kubernetes API server: reserved identity, survives kube-proxy-free translation.
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
