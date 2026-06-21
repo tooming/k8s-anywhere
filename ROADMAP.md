@@ -951,7 +951,7 @@ You review and merge plan PRs, same as implementation PRs.
   fabricated data. Update `docs/dependency-tree.md` with KSM dashboard note.
   `docs/done/` entry required. (auto/ksm-cluster-health-dashboard)
 
-- [ ] 🟢 **Lab — Node Exporter cluster-vitals dashboard** (CHARTER
+- [x] 🟢 **Lab — Node Exporter cluster-vitals dashboard** (CHARTER
   **Objective O5**, due **2026-09-30**; O5 gap — `observability-node-exporter`
   is auto-synced in `gitops/bootstrap/root-app.yaml` but has no Grafana
   dashboard. Node Exporter metrics are already scraped via the
