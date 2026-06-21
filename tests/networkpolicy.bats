@@ -47,18 +47,33 @@ setup() {
   [ -f "$POLICIES/allow-dns-and-apiserver.yaml" ]
 }
 
-@test "allow-dns-and-apiserver policy allows UDP port 53" {
-  run grep -q 'port: 53' "$POLICIES/allow-dns-and-apiserver.yaml"
+@test "allow-dns-and-apiserver is a CiliumNetworkPolicy (kube-proxy-free entity match)" {
+  # ADR-0014: a plain-NetworkPolicy ipBlock can't match the apiserver's reserved
+  # Cilium identity under kube-proxy-free, so this baseline must be a CNP.
+  run grep -q 'kind: CiliumNetworkPolicy' "$POLICIES/allow-dns-and-apiserver.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-dns-and-apiserver policy allows DNS on port 53 (UDP)" {
+  run grep -qE 'port: "?53"?' "$POLICIES/allow-dns-and-apiserver.yaml"
   [ "$status" -eq 0 ]
   run grep -q 'UDP' "$POLICIES/allow-dns-and-apiserver.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "allow-dns-and-apiserver policy allows TCP port 6443 to the k3s API CIDR" {
-  run grep -q 'port: 6443' "$POLICIES/allow-dns-and-apiserver.yaml"
+@test "allow-dns-and-apiserver allows the apiserver via the kube-apiserver entity on 6443" {
+  run grep -qE 'port: "?6443"?' "$POLICIES/allow-dns-and-apiserver.yaml"
   [ "$status" -eq 0 ]
-  run grep -q '10.43.0.1/32' "$POLICIES/allow-dns-and-apiserver.yaml"
+  run grep -q 'kube-apiserver' "$POLICIES/allow-dns-and-apiserver.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "allow-dns-and-apiserver does NOT gate the apiserver behind an ipBlock CIDR (regression guard)" {
+  # The ipBlock approach silently cuts every deny-all namespace off from the
+  # apiserver under Cilium kube-proxy-free — see ADR-0014 / the fix commit.
+  # Inspect rule lines only (skip the explanatory comment block).
+  run bash -c "grep -v '^[[:space:]]*#' '$POLICIES/allow-dns-and-apiserver.yaml' | grep -q 'ipBlock'"
+  [ "$status" -eq 1 ]
 }
 
 @test "allow-dns-and-apiserver policy targets kube-dns pods in kube-system" {
