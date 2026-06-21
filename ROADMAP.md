@@ -974,6 +974,72 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with node-exporter dashboard note.
   `docs/done/` entry required. (auto/node-exporter-vitals-dashboard)
 
+- [ ] 🟢 **NetworkPolicy fan-out — `external-secrets` namespace** (CHARTER
+  **Objective O2**, due **2026-09-30**; ADR-0016 §4 fan-out completion —
+  the `external-secrets` namespace received PSA labels via `auto/pss-external-secrets`
+  but has no default-deny NetworkPolicy overlay; it is the last always-on namespace
+  without an ADR-0016 floor). Add
+  `gitops/external-secrets/networkpolicy/kustomization.yaml` referencing the two
+  baseline templates (`../../network/policies/default-deny.yaml`,
+  `../../network/policies/allow-dns-and-apiserver.yaml`) plus two allow files:
+  `allow-eso-metrics-ingress.yaml` (ingress TCP 8080 from `namespaceSelector:
+  kubernetes.io/metadata.name: observability`; `podSelector: app.kubernetes.io/name:
+  external-secrets`); `allow-eso-vault-egress.yaml` (egress TCP 8200 to
+  `namespaceSelector: kubernetes.io/metadata.name: vault`; `podSelector:
+  app.kubernetes.io/name: external-secrets` — ESO calls the Vault k8s auth endpoint
+  to review tokens). Add an `external-secrets-networkpolicy` entry to the
+  `networkpolicy-appset.yaml` list generator (`gitPath:
+  gitops/external-secrets/networkpolicy`, `destNamespace: external-secrets`). Sync
+  policy is `automated: {prune: true, selfHeal: true}` via the appset template.
+  Extend `tests/networkpolicy.bats` with external-secrets overlay assertions:
+  kustomization exists; baseline refs present; allow-metrics-ingress on port 8080
+  present; allow-vault-egress on port 8200 present. Update `docs/dependency-tree.md`.
+  `docs/done/` entry required. (auto/networkpolicy-external-secrets)
+
+- [ ] 🟢 **PSS-restricted + NetworkPolicy — `kro` namespace** (CHARTER
+  **Objective O2**, due **2026-09-30**; O2 gap — the `kro` namespace hosts the KRO
+  controller (auto-synced via `gitops/platform/kro.yaml`) but has neither PSA labels
+  nor a NetworkPolicy overlay; ADR-0017 §"Per-namespace profile" has no `kro` row).
+  Two changes bundled (both small): (a) PSA labels: add `gitops/kro/namespace.yaml`
+  with all four PSA labels at `restricted` (`enforce: restricted`,
+  `enforce-version: latest`, `warn: restricted`, `audit: restricted`); add new
+  auto-synced `Application` `gitops/platform/kro-extras.yaml` (sync-wave 0,
+  `ServerSideApply=true`, `CreateNamespace=false` — namespace pre-created by the
+  existing `kro` Application; follows the `argocd-extras` / `kyverno-extras` naming
+  convention); add `kro → restricted` row to ADR-0017 §"Per-namespace profile" table
+  (the chart `kro.yaml` already carries hardened `podSecurityContext` +
+  `containerSecurityContext`; `restricted` is safe). (b) NetworkPolicy: add
+  `gitops/kro/networkpolicy/kustomization.yaml` referencing the two baseline templates
+  plus `allow-kro-ack-egress.yaml` (egress to `ack-system` namespace — KRO reconciles
+  ACK S3 Bucket CRs; no port restriction per the existing appset pattern). Add
+  `kro-networkpolicy` entry to `networkpolicy-appset.yaml` (`gitPath:
+  gitops/kro/networkpolicy`, `destNamespace: kro`). New
+  `tests/securitycontext-kro.bats`: namespace PSA-label assertions; `enforce:
+  restricted` present; `kro-extras` Application file exists. Extend
+  `tests/networkpolicy.bats` with kro overlay assertions. `make ci` must pass.
+  `docs/done/` entry required. (auto/pss-kro-namespace)
+
+- [ ] 🟢 **Lab — s3manager (S3 bucket browser) dashboard** (CHARTER **Objective O5**,
+  due **2026-09-30**; O5 gap — `s3manager` is auto-synced in the always-on stack
+  (`gitops/platform/s3manager.yaml`) but has no Grafana dashboard;
+  `grafana/dashboards/lab-s3manager.json` is absent). New
+  `grafana/dashboards/lab-s3manager.json` ("Lab — s3manager (S3 Browser)") modelled
+  on `lab-kyverno.json` stat-row: s3manager pod running (KSM
+  `kube_deployment_status_replicas_available{namespace="storage",deployment="s3manager"}`);
+  ArgoCD sync state (`argocd_app_info{name="s3manager"}`); memory usage (cAdvisor
+  `container_memory_working_set_bytes{namespace="storage",container="s3manager"}`);
+  CPU usage rate (cAdvisor
+  `rate(container_cpu_usage_seconds_total{namespace="storage",container="s3manager"}[5m])`).
+  Note: `cloudlena/s3manager` does not expose Prometheus metrics; all panels use KSM +
+  cAdvisor data already scraped by Alloy (ADR-0004 — real auto-discovered data only;
+  any panel whose metric is not yet emitting a series naturally shows "No data"). No
+  new HTTPRoute row needed — the `s3.127.0.0.1.nip.io:8000` row already exists in the
+  "Lab UIs" panel; `make lab-ui-check` is unaffected. Extend `tests/observability.bats`:
+  `lab-s3manager.json` exists; dashboard references
+  `kube_deployment_status_replicas_available`; no fabricated/placeholder data. Update
+  `docs/dependency-tree.md` with s3manager dashboard note. `docs/done/` entry required.
+  (auto/s3manager-dashboard)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
