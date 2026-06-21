@@ -928,7 +928,7 @@ You review and merge plan PRs, same as implementation PRs.
   Update `docs/dependency-tree.md` with Alloy self-scrape + dashboard note.
   `docs/done/` entry required. (auto/alloy-self-monitoring)
 
-- [ ] 🟢 **Lab — Kube State Metrics cluster-health dashboard** (CHARTER
+- [x] 🟢 **Lab — Kube State Metrics cluster-health dashboard** (CHARTER
   **Objective O5**, due **2026-09-30**; O5 gap — `observability-ksm` is
   auto-synced in `gitops/bootstrap/root-app.yaml` but has no Grafana dashboard.
   KSM metrics are already scraped via the `prometheus.scrape "ksm"` block in

@@ -316,3 +316,54 @@ setup() {
   run grep -q 'lab-alloy' "$REPO/docs/dependency-tree.md"
   [ "$status" -eq 0 ]
 }
+
+# --- Lab — Cluster Health (KSM) dashboard ------------------------------------
+
+@test "lab-ksm.json dashboard exists in grafana/dashboards/" {
+  [ -f "$REPO/grafana/dashboards/lab-ksm.json" ]
+}
+
+@test "lab-ksm.json has uid lab-ksm" {
+  run grep -q '"uid": "lab-ksm"' "$REPO/grafana/dashboards/lab-ksm.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-ksm.json uses Mimir datasource" {
+  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-ksm.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-ksm.json references kube_pod_status_phase" {
+  run grep -q 'kube_pod_status_phase' "$REPO/grafana/dashboards/lab-ksm.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-ksm.json references kube_state_metrics_build_info" {
+  run grep -q 'kube_state_metrics_build_info' "$REPO/grafana/dashboards/lab-ksm.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-ksm.json references kube_deployment_status_replicas_available" {
+  run grep -q 'kube_deployment_status_replicas_available' "$REPO/grafana/dashboards/lab-ksm.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-ksm.json references kube_persistentvolumeclaim_status_phase" {
+  run grep -q 'kube_persistentvolumeclaim_status_phase' "$REPO/grafana/dashboards/lab-ksm.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-ksm.json references kube_node_status_condition" {
+  run grep -q 'kube_node_status_condition' "$REPO/grafana/dashboards/lab-ksm.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-ksm.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-ksm.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "docs/dependency-tree.md mentions lab-ksm dashboard" {
+  run grep -q 'lab-ksm' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
