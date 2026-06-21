@@ -367,3 +367,59 @@ setup() {
   run grep -q 'lab-ksm' "$REPO/docs/dependency-tree.md"
   [ "$status" -eq 0 ]
 }
+
+# --- Lab — Node Vitals (Node Exporter) dashboard -----------------------------
+
+@test "lab-node-exporter.json dashboard exists in grafana/dashboards/" {
+  [ -f "$REPO/grafana/dashboards/lab-node-exporter.json" ]
+}
+
+@test "lab-node-exporter.json has uid lab-node-exporter" {
+  run grep -q '"uid": "lab-node-exporter"' "$REPO/grafana/dashboards/lab-node-exporter.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-node-exporter.json uses Mimir datasource" {
+  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-node-exporter.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-node-exporter.json references node_cpu_seconds_total" {
+  run grep -q 'node_cpu_seconds_total' "$REPO/grafana/dashboards/lab-node-exporter.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-node-exporter.json references node_memory_MemAvailable_bytes" {
+  run grep -q 'node_memory_MemAvailable_bytes' "$REPO/grafana/dashboards/lab-node-exporter.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-node-exporter.json references node_filesystem_avail_bytes for disk usage" {
+  run grep -q 'node_filesystem_avail_bytes' "$REPO/grafana/dashboards/lab-node-exporter.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-node-exporter.json references node_network_receive_bytes_total for throughput" {
+  run grep -q 'node_network_receive_bytes_total' "$REPO/grafana/dashboards/lab-node-exporter.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-node-exporter.json references node_network_transmit_bytes_total for throughput" {
+  run grep -q 'node_network_transmit_bytes_total' "$REPO/grafana/dashboards/lab-node-exporter.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-node-exporter.json references node_boot_time_seconds for uptime" {
+  run grep -q 'node_boot_time_seconds' "$REPO/grafana/dashboards/lab-node-exporter.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-node-exporter.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-node-exporter.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "docs/dependency-tree.md mentions lab-node-exporter dashboard" {
+  run grep -q 'lab-node-exporter' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
