@@ -1,0 +1,17 @@
+# NetworkPolicy Kustomize overlay for the external-secrets namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates and adds ESO-specific allow rules for:
+# - ingress TCP 8080 from Alloy (observability) for Prometheus metrics scrape
+# - egress TCP 8200 to vault namespace for ClusterSecretStore token review calls
+# The allow-dns-and-apiserver baseline covers the controller's k8s API calls
+# (SecretStore watch, ExternalSecret reconcile, leader election).
+# Wired into gitops/platform/networkpolicy-appset.yaml (auto-synced, wave 4 via appset).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: external-secrets
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-eso-metrics-ingress.yaml
+  - allow-eso-vault-egress.yaml

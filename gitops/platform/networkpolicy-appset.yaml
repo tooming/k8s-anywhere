@@ -26,6 +26,9 @@ spec:
           - appName: data-networkpolicy
             gitPath: gitops/data/networkpolicy
             destNamespace: data
+          - appName: external-secrets-networkpolicy
+            gitPath: gitops/external-secrets/networkpolicy
+            destNamespace: external-secrets
           - appName: lab-gateway-networkpolicy
             gitPath: gitops/network/networkpolicy
             destNamespace: lab-gateway
