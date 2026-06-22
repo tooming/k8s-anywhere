@@ -21,6 +21,29 @@ fi
 # open at that moment the branch can silently drift behind.
 REMOTE=${1:-origin}
 git fetch "$REMOTE" main -q 2>/dev/null || true
+
+# Refuse to push to a branch whose PR is already MERGED (stray-commit-on-a-dead-
+# branch guard). Git feeds the refs being pushed on stdin as
+# "<local ref> <local oid> <remote ref> <remote oid>" lines; check each
+# non-deletion head ref. Enforced only where gh is available (degrades to a no-op
+# otherwise — see scripts/check-merged-pr-push.sh).
+merged_pr_block=0
+while read -r _localref localoid remoteref _remoteoid; do
+  [[ -z "${remoteref:-}" ]] && continue
+  case "$remoteref" in refs/heads/*) br="${remoteref#refs/heads/}" ;; *) continue ;; esac
+  [[ "$localoid" =~ ^0+$ ]] && continue          # branch deletion — allow
+  if ! bash "$ROOT/scripts/check-merged-pr-push.sh" "$br"; then
+    merged_pr_block=1
+  fi
+done
+if [[ "$merged_pr_block" -eq 1 ]]; then
+  echo ""
+  echo "${R}${B}[pre-push] Push targets a MERGED PR branch — blocked.${Z}"
+  echo "Create a new branch + PR for the follow-up work."
+  echo "To skip (emergencies only): git push --no-verify"
+  exit 1
+fi
+
 CURRENT=$(git rev-parse --abbrev-ref HEAD)
 if [[ "$CURRENT" != "main" ]]; then
   MERGE_BASE=$(git merge-base HEAD "$REMOTE/main" 2>/dev/null || true)
