@@ -83,8 +83,13 @@ validate: ## Schema-validate gitops manifests (kubeconform) + terraform (fmt/val
 test: ## Run the bats unit tests (probe math, DR guards, drift detectors)
 	@bash scripts/test.sh
 
+.PHONY: prune-branches
+prune-branches: ## Show stale PR branches (merged / unrelated history) — PUSH=1 to delete them
+	@bash scripts/prune-stale-branches.sh $(if $(PUSH),--push)
+
 .PHONY: rebase-prs
-rebase-prs: ## Show which open PR branches need rebasing (PUSH=1 to also force-push)
+rebase-prs: ## Prune stale branches, then show/rebase the open PR branches (PUSH=1 to also mutate)
+	@bash scripts/prune-stale-branches.sh $(if $(PUSH),--push) || echo "  · prune skipped (no branch-delete permission here) — run 'make prune-branches PUSH=1' where deletes are allowed"
 	@bash scripts/rebase-open-prs.sh $(if $(PUSH),--push)
 
 .PHONY: ci
