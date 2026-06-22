@@ -1,0 +1,22 @@
+# Allow ESO controller to reach Vault on TCP 8200 for ClusterSecretStore token review
+# calls (k8s auth method — the controller POSTs to /v1/auth/kubernetes/login and the
+# Vault server reviews the service-account token against the k8s API).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-eso-vault-egress
+  namespace: external-secrets
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: external-secrets
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 8200
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: vault
