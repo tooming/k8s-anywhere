@@ -1,0 +1,17 @@
+# PSA restricted profile for the kro namespace (ADR-0017, ROADMAP auto/pss-kro-namespace).
+# The KRO controller (kro chart v0.4.1) already ships with a hardened
+# podSecurityContext (runAsNonRoot: true, UID 65534, seccompProfile RuntimeDefault)
+# and containerSecurityContext (allowPrivilegeEscalation: false,
+# readOnlyRootFilesystem: true, capabilities.drop: [ALL]) via gitops/platform/kro.yaml
+# valuesObject — no workload securityContext patch needed in this PR.
+# Synced by kro-extras (wave 0) before the kro Helm Application (wave 3) so
+# enforcement is in place before any pod is scheduled.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kro
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

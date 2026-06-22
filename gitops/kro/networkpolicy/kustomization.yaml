@@ -1,0 +1,15 @@
+# NetworkPolicy Kustomize overlay for the kro namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates (default-deny-all + allow-dns-and-apiserver)
+# and adds a kro-specific egress allow for the KRO controller to reach the ack-system
+# namespace where the ACK S3 controller runs. KRO reconciles ACK S3 Bucket CRs by
+# composing them via its S3BucketClaim ResourceGraphDefinition.
+# Wired into gitops/platform/networkpolicy-appset.yaml (auto-synced, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kro
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-kro-ack-egress.yaml

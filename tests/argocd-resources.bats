@@ -10,6 +10,9 @@
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   VALS="$REPO/infra/modules/argocd/values.yaml"
+  # yqs(): yq-variant-robust scalar read (strips quoting differences). Bare yq
+  # calls are forbidden in bats tests — see scripts/yq-raw-check.sh.
+  load lib/yq
 }
 
 # "250m" -> 250 ; "1" -> 1000 (millicores)
@@ -25,20 +28,20 @@ cpu_millis() {
 }
 
 @test "repo-server requests >= 200m CPU (survives the make up sync storm)" {
-  run cpu_millis "$(yq '.repoServer.resources.requests.cpu' "$VALS")"
+  run cpu_millis "$(yqs '.repoServer.resources.requests.cpu' "$VALS")"
   [ "$output" -ge 200 ]
 }
 
 @test "repo-server probes relax the chart-default 1s timeout" {
-  [ "$(yq '.repoServer.livenessProbe.timeoutSeconds' "$VALS")" -ge 3 ]
-  [ "$(yq '.repoServer.readinessProbe.timeoutSeconds' "$VALS")" -ge 3 ]
+  [ "$(yqs '.repoServer.livenessProbe.timeoutSeconds' "$VALS")" -ge 3 ]
+  [ "$(yqs '.repoServer.readinessProbe.timeoutSeconds' "$VALS")" -ge 3 ]
 }
 
 @test "application-controller requests >= 200m CPU" {
-  run cpu_millis "$(yq '.controller.resources.requests.cpu' "$VALS")"
+  run cpu_millis "$(yqs '.controller.resources.requests.cpu' "$VALS")"
   [ "$output" -ge 200 ]
 }
 
 @test "application-controller readiness relaxes the chart-default 1s timeout" {
-  [ "$(yq '.controller.readinessProbe.timeoutSeconds' "$VALS")" -ge 3 ]
+  [ "$(yqs '.controller.readinessProbe.timeoutSeconds' "$VALS")" -ge 3 ]
 }

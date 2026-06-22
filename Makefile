@@ -47,6 +47,14 @@ roadmap-check: ## Check ROADMAP.md has no inline planner notes (per-run narrativ
 securitycontext-tests-check: ## Check tests/securitycontext.bats stays frozen (new PSS tests go in securitycontext-<scope>.bats)
 	@bash scripts/securitycontext-tests-check.sh
 
+.PHONY: networkpolicy-tests-check
+networkpolicy-tests-check: ## Check tests/networkpolicy.bats stays baseline-only (per-namespace tests go in networkpolicy-<scope>.bats)
+	@bash scripts/networkpolicy-tests-check.sh
+
+.PHONY: yq-raw-check
+yq-raw-check: ## Check bats tests read yq scalars via yqs() (no bare yq calls — variant-quoting guard)
+	@bash scripts/yq-raw-check.sh
+
 .PHONY: securitycontext-tests-mark
 securitycontext-tests-mark: ## Refresh tests/.securitycontext-titles — run ONLY after an intentional rename/edit of a monolith test
 	@grep -oE '^@test "[^"]*"' tests/securitycontext.bats | sort > tests/.securitycontext-titles
@@ -90,6 +98,8 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/lab-ui-check.sh
 	@bash scripts/roadmap-check.sh
 	@bash scripts/securitycontext-tests-check.sh
+	@bash scripts/networkpolicy-tests-check.sh
+	@bash scripts/yq-raw-check.sh
 	@bash scripts/routines-check.sh
 
 .PHONY: install-hooks
