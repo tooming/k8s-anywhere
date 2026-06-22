@@ -1040,6 +1040,44 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with s3manager dashboard note. `docs/done/` entry required.
   (auto/s3manager-dashboard)
 
+- [ ] 🟢 **PSA baseline + NetworkPolicy — `lab-demo` namespace** (CHARTER **Objective
+  O2**, due **2026-09-30**; O2 fan-out gap — the `lab-demo` namespace hosts the
+  always-on HotROD demo Application (`gitops/platform/demo.yaml`, `automated:
+  {prune: true, selfHeal: true}`) but has no PSA labels and no default-deny
+  NetworkPolicy floor; it is absent from ADR-0017 §"Per-namespace profile". Three
+  small changes bundled because each is tiny individually:
+  (a) **PSA labels** — add `gitops/apps/demo/namespace.yaml` with all four PSA
+  labels at `baseline` (`enforce: baseline`, `enforce-version: latest`, `warn:
+  baseline`, `audit: baseline`). `restricted` is not yet viable —
+  `jaegertracing/example-hotrod` runs as root (no `USER` instruction in the upstream
+  Dockerfile); `baseline` blocks privileged containers and host-namespace use while
+  permitting the root UID. Document the flip condition to `restricted` in ADR-0017's
+  `lab-demo` row: when the image ships a non-root UID or is superseded by the
+  capstone build.
+  (b) **NetworkPolicy** — add
+  `gitops/apps/demo/networkpolicy/kustomization.yaml` referencing the two shared
+  baseline templates (`../../network/policies/default-deny.yaml`,
+  `../../network/policies/allow-dns-and-apiserver.yaml`) plus one allow file:
+  `allow-demo-egress-tempo.yaml` (egress TCP 4318 to `namespaceSelector:
+  kubernetes.io/metadata.name: observability` — HotROD sends OTLP traces to
+  `tempo.observability.svc.cluster.local:4318` continuously; the observability
+  NetworkPolicy already has the matching ingress allow in
+  `allow-tempo-ingress-otlp.yaml`). No ingress allow needed — `lab-demo` has no
+  HTTPRoute (the HotROD Service is not exposed via Envoy Gateway).
+  (c) **appset entry** — add `lab-demo-networkpolicy` entry to the
+  `networkpolicy-appset.yaml` list generator (`gitPath:
+  gitops/apps/demo/networkpolicy`, `destNamespace: lab-demo`). Sync policy is
+  `automated: {prune: true, selfHeal: true}` via the appset template — same as all
+  other ADR-0016 floor Applications.
+  Add `lab-demo → baseline` row to ADR-0017 §"Per-namespace profile" table, citing
+  the upstream root-UID constraint and the flip condition. New
+  `tests/networkpolicy-lab-demo.bats`: kustomization exists; baseline refs present;
+  `allow-demo-egress-tempo.yaml` exists targeting TCP 4318 to `observability`. New
+  `tests/securitycontext-lab-demo.bats`: `gitops/apps/demo/namespace.yaml` exists;
+  `enforce: baseline` present; `enforce: restricted` absent (safety check). Update
+  `docs/dependency-tree.md` with `lab-demo` PSA + NP note. `docs/done/` entry
+  required. `make ci` must pass. (auto/pss-np-lab-demo)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
