@@ -974,7 +974,7 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with node-exporter dashboard note.
   `docs/done/` entry required. (auto/node-exporter-vitals-dashboard)
 
-- [ ] 🟢 **NetworkPolicy fan-out — `external-secrets` namespace** (CHARTER
+- [x] 🟢 **NetworkPolicy fan-out — `external-secrets` namespace** (CHARTER
   **Objective O2**, due **2026-09-30**; ADR-0016 §4 fan-out completion —
   the `external-secrets` namespace received PSA labels via `auto/pss-external-secrets`
   but has no default-deny NetworkPolicy overlay; it is the last always-on namespace

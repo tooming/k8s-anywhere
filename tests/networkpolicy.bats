@@ -18,6 +18,7 @@ setup() {
   TIDB_NP="$REPO/gitops/tidb/networkpolicy"
   TIDB_ADMIN_NP="$REPO/gitops/tidb-admin/networkpolicy"
   ENVOY_GW_NP="$REPO/gitops/envoy-gateway-system/networkpolicy"
+  ESO_NP="$REPO/gitops/external-secrets/networkpolicy"
 }
 
 # --- Shared baseline templates -----------------------------------------------
@@ -1073,5 +1074,79 @@ setup() {
 
 @test "envoy-gateway-system-networkpolicy Application is at sync-wave 4" {
   run grep -q 'sync-wave: "4"' "$REPO/gitops/platform/envoy-gateway-system-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- external-secrets namespace overlay (ADR-0016 §4 fan-out) --------------------
+
+@test "external-secrets networkpolicy kustomization.yaml exists" {
+  [ -f "$ESO_NP/kustomization.yaml" ]
+}
+
+@test "external-secrets kustomization sets namespace: external-secrets" {
+  run grep -q 'namespace: external-secrets' "$ESO_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "external-secrets kustomization references the shared default-deny template" {
+  run grep -q 'network/policies/default-deny.yaml' "$ESO_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "external-secrets kustomization references the shared allow-dns-and-apiserver template" {
+  run grep -q 'network/policies/allow-dns-and-apiserver.yaml' "$ESO_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-eso-metrics-ingress.yaml exists in external-secrets/networkpolicy/" {
+  [ -f "$ESO_NP/allow-eso-metrics-ingress.yaml" ]
+}
+
+@test "allow-eso-metrics-ingress allows port 8080 (ESO controller-runtime metrics)" {
+  run grep -q 'port: 8080' "$ESO_NP/allow-eso-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-eso-metrics-ingress allows ingress from observability namespace" {
+  run grep -q 'kubernetes.io/metadata.name: observability' "$ESO_NP/allow-eso-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-eso-metrics-ingress targets ESO controller pods by name label" {
+  run grep -q 'app.kubernetes.io/name: external-secrets' "$ESO_NP/allow-eso-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-eso-vault-egress.yaml exists in external-secrets/networkpolicy/" {
+  [ -f "$ESO_NP/allow-eso-vault-egress.yaml" ]
+}
+
+@test "allow-eso-vault-egress allows port 8200 (Vault k8s auth endpoint)" {
+  run grep -q 'port: 8200' "$ESO_NP/allow-eso-vault-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-eso-vault-egress targets vault namespace" {
+  run grep -q 'kubernetes.io/metadata.name: vault' "$ESO_NP/allow-eso-vault-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-eso-vault-egress uses Egress policyType" {
+  run grep -q 'Egress' "$ESO_NP/allow-eso-vault-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "networkpolicy-appset.yaml contains external-secrets-networkpolicy entry" {
+  run grep -q 'external-secrets-networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "networkpolicy-appset.yaml references gitops/external-secrets/networkpolicy path" {
+  run grep -q 'gitops/external-secrets/networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-alloy-egress-external.yaml includes external-secrets egress on port 8080" {
+  run grep -q 'kubernetes.io/metadata.name: external-secrets' "$OBS_NP/allow-alloy-egress-external.yaml"
   [ "$status" -eq 0 ]
 }
