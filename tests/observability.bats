@@ -423,3 +423,44 @@ setup() {
   run grep -q 'lab-node-exporter' "$REPO/docs/dependency-tree.md"
   [ "$status" -eq 0 ]
 }
+
+# --- Lab — s3manager (S3 Browser) dashboard ----------------------------------
+
+@test "lab-s3manager.json dashboard exists in grafana/dashboards/" {
+  [ -f "$REPO/grafana/dashboards/lab-s3manager.json" ]
+}
+
+@test "lab-s3manager.json has uid lab-s3manager" {
+  run grep -q '"uid": "lab-s3manager"' "$REPO/grafana/dashboards/lab-s3manager.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-s3manager.json uses Mimir datasource" {
+  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-s3manager.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-s3manager.json references kube_deployment_status_replicas_available" {
+  run grep -q 'kube_deployment_status_replicas_available' "$REPO/grafana/dashboards/lab-s3manager.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-s3manager.json references container_memory_working_set_bytes for memory" {
+  run grep -q 'container_memory_working_set_bytes' "$REPO/grafana/dashboards/lab-s3manager.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-s3manager.json references container_cpu_usage_seconds_total for CPU" {
+  run grep -q 'container_cpu_usage_seconds_total' "$REPO/grafana/dashboards/lab-s3manager.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-s3manager.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-s3manager.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "docs/dependency-tree.md mentions lab-s3manager dashboard" {
+  run grep -q 'lab-s3manager' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
