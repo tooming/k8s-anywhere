@@ -25,7 +25,7 @@ analysis and groomed into a new 🟢 Now/next item:
 - `inkless` namespace (on-demand, `gitops/inkless/`) — no namespace.yaml, no PSA
   labels, no NetworkPolicy. The Inkless StatefulSet uses `ghcr.io/aiven/inkless:latest`
   with unknown UID/securityContext requirements; kafka-exporter sidecar also needs
-  assessment. Filed as GitHub issue for the architect to research and RFC.
+  assessment. Filed as GitHub issue #255 for the architect to research and RFC.
 
 **No open issues to groom** (GitHub issue list empty at run time).
 **No `docs/roadmap/incoming/` files to absorb** (directory contains only README.md).
