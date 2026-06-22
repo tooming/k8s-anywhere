@@ -1019,7 +1019,7 @@ You review and merge plan PRs, same as implementation PRs.
   `tests/networkpolicy.bats` with kro overlay assertions. `make ci` must pass.
   `docs/done/` entry required. (auto/pss-kro-namespace)
 
-- [ ] 🟢 **Lab — s3manager (S3 bucket browser) dashboard** (CHARTER **Objective O5**,
+- [x] 🟢 **Lab — s3manager (S3 bucket browser) dashboard** (CHARTER **Objective O5**,
   due **2026-09-30**; O5 gap — `s3manager` is auto-synced in the always-on stack
   (`gitops/platform/s3manager.yaml`) but has no Grafana dashboard;
   `grafana/dashboards/lab-s3manager.json` is absent). New
