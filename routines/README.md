@@ -17,6 +17,7 @@ These fire on cron from claude.ai; they only see what's in git, never the live c
 | [`triager.prompt.md`](triager.prompt.md) | the triager's prompt (Wed + Sat issue labeller — labels only, never PRs) |
 | [`upgrade-drafter.prompt.md`](upgrade-drafter.prompt.md) | the upgrade drafter's prompt (weekly Thu version-bump PR, `upgrade/*`) |
 | [`doc-drift-author.prompt.md`](doc-drift-author.prompt.md) | the doc-drift author's prompt (weekly Fri README/dependency-tree/lab-UI reconciliation, `sync/*`) |
+| [`janitor.prompt.md`](janitor.prompt.md) | the janitor's prompt (executor STEP 6b fallback — one bounded, behavior-preserving codebase-health cleanup, `chore/*`; no separate trigger) |
 | [`industry-news-writer.prompt.md`](industry-news-writer.prompt.md) | the industry-news writer's prompt (weekly Sun digest in `docs/industry/`, `digest/*` — feeds the architect's ADR audit) |
 
 > **Retired routines:** the **reviewer** (daily first-pass PR review) was retired

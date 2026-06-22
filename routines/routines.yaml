@@ -17,7 +17,7 @@ source: https://github.com/tooming/k8s-lab     # repo cloned into each run
 #
 # FALLBACK CHAIN (executor.prompt.md STEP 6b):
 #   When the ROADMAP lane is empty the executor escalates through:
-#   planner → architect → upgrade-drafter → doc-drift → triager → idle issue.
+#   planner → architect → upgrade-drafter → doc-drift → triager → janitor → idle issue.
 #   Specialist prompt files are kept in-repo as fallback targets and for on-demand
 #   local invocations (see local_roles below). They are no longer separate triggers.
 
