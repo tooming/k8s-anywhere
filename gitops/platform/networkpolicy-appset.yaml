@@ -50,6 +50,9 @@ spec:
           - appName: kro-networkpolicy
             gitPath: gitops/kro/networkpolicy
             destNamespace: kro
+          - appName: lab-demo-networkpolicy
+            gitPath: gitops/apps/demo/networkpolicy
+            destNamespace: lab-demo
           - appName: vault-networkpolicy
             gitPath: gitops/vault/networkpolicy
             destNamespace: vault
