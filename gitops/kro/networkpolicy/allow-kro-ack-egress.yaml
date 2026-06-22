@@ -1,0 +1,19 @@
+# Allow KRO controller pods in the kro namespace to egress to the ack-system
+# namespace (ADR-0016). KRO's S3BucketClaim ResourceGraphDefinition composes ACK
+# S3 Bucket CRs — the controller needs to reach the ACK S3 webhook in ack-system
+# to validate and create Bucket objects. No port restriction: the ACK webhook port
+# may vary per chart version; namespaceSelector scoping is the security boundary.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kro-ack-egress
+  namespace: kro
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ack-system

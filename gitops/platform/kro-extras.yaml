@@ -1,0 +1,30 @@
+# kro-extras — applies the kro namespace.yaml (PSA restricted labels, ADR-0017,
+# ROADMAP auto/pss-kro-namespace) before the kro Helm Application (sync-wave 3)
+# schedules pods. Running at wave 0 ensures the namespace's enforce/warn/audit labels
+# are in place before ArgoCD deploys the Helm release.
+# The namespace is created by the kro Application (CreateNamespace=true) so this
+# Application SSAs only the PSA labels without re-creating the namespace.
+# ALWAYS-ON: automated sync alongside kro.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kro-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/kro
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kro
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false

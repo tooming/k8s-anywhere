@@ -1,0 +1,132 @@
+#!/usr/bin/env bats
+# Clusterless structural tests for the argocd namespace NetworkPolicy overlay
+# (ADR-0016 §4 fan-out). Per-scope file — NOT part of the shared
+# tests/networkpolicy.bats baseline — so parallel fan-out PRs never collide at a
+# shared EOF (the #247 vs #248 conflict). Shared overlay paths come from
+# tests/lib/networkpolicy-paths.bash. Guard: scripts/networkpolicy-tests-check.sh.
+
+setup() {
+  load lib/networkpolicy-paths
+}
+
+# --- argocd namespace overlay (ADR-0016 §4 fan-out) ---------------------------
+@test "argocd networkpolicy kustomization.yaml exists" {
+  [ -f "$ARGOCD_NP/kustomization.yaml" ]
+}
+
+@test "argocd kustomization sets namespace: argocd" {
+  run grep -q 'namespace: argocd' "$ARGOCD_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argocd kustomization references the shared default-deny template" {
+  run grep -q 'network/policies/default-deny.yaml' "$ARGOCD_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argocd kustomization references the shared allow-dns-and-apiserver template" {
+  run grep -q 'network/policies/allow-dns-and-apiserver.yaml' "$ARGOCD_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-server-from-gateway.yaml exists in argocd/networkpolicy/" {
+  [ -f "$ARGOCD_NP/allow-argocd-server-from-gateway.yaml" ]
+}
+
+@test "allow-argocd-server-from-gateway allows port 8080 (ArgoCD server HTTP)" {
+  run grep -q 'port: 8080' "$ARGOCD_NP/allow-argocd-server-from-gateway.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-server-from-gateway targets argocd-server pods" {
+  run grep -q 'app.kubernetes.io/name: argocd-server' "$ARGOCD_NP/allow-argocd-server-from-gateway.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-server-from-gateway allows ingress from envoy-gateway-system namespace" {
+  run grep -q 'envoy-gateway-system' "$ARGOCD_NP/allow-argocd-server-from-gateway.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-server-from-gateway allows ingress from Envoy proxy pods" {
+  run grep -q 'app.kubernetes.io/component: proxy' "$ARGOCD_NP/allow-argocd-server-from-gateway.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-from-alloy.yaml exists in argocd/networkpolicy/" {
+  [ -f "$ARGOCD_NP/allow-argocd-from-alloy.yaml" ]
+}
+
+@test "allow-argocd-from-alloy allows metrics port 8082 (application-controller)" {
+  run grep -q 'port: 8082' "$ARGOCD_NP/allow-argocd-from-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-from-alloy allows metrics port 8083 (argocd-server-metrics)" {
+  run grep -q 'port: 8083' "$ARGOCD_NP/allow-argocd-from-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-from-alloy allows metrics port 8084 (repo-server-metrics)" {
+  run grep -q 'port: 8084' "$ARGOCD_NP/allow-argocd-from-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-from-alloy allows ingress from observability namespace" {
+  run grep -q 'kubernetes.io/metadata.name: observability' "$ARGOCD_NP/allow-argocd-from-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-from-alloy allows ingress from Alloy pods" {
+  run grep -q 'app.kubernetes.io/name: alloy' "$ARGOCD_NP/allow-argocd-from-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-intra-namespace.yaml exists in argocd/networkpolicy/" {
+  [ -f "$ARGOCD_NP/allow-argocd-intra-namespace.yaml" ]
+}
+
+@test "allow-argocd-intra-namespace allows both Ingress and Egress policyTypes" {
+  run grep -c 'Ingress\|Egress' "$ARGOCD_NP/allow-argocd-intra-namespace.yaml"
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 2 ]
+}
+
+@test "allow-argocd-intra-namespace uses an empty podSelector (matches all pods)" {
+  run grep -q 'podSelector: {}' "$ARGOCD_NP/allow-argocd-intra-namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-repo-server-egress-gitlab.yaml exists in argocd/networkpolicy/" {
+  [ -f "$ARGOCD_NP/allow-argocd-repo-server-egress-gitlab.yaml" ]
+}
+
+@test "allow-argocd-repo-server-egress-gitlab allows port 8929 (GitLab HTTP)" {
+  run grep -q 'port: 8929' "$ARGOCD_NP/allow-argocd-repo-server-egress-gitlab.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-repo-server-egress-gitlab targets argocd-repo-server pods" {
+  run grep -q 'app.kubernetes.io/name: argocd-repo-server' "$ARGOCD_NP/allow-argocd-repo-server-egress-gitlab.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-repo-server-egress-gitlab uses an ipBlock for the host CIDR" {
+  run grep -q 'ipBlock:' "$ARGOCD_NP/allow-argocd-repo-server-egress-gitlab.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argocd-networkpolicy ArgoCD Application has automated sync enabled" {
+  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argocd-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argocd-networkpolicy ArgoCD Application targets the argocd namespace" {
+  run grep -q 'destNamespace: argocd' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}

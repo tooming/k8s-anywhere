@@ -996,7 +996,7 @@ You review and merge plan PRs, same as implementation PRs.
   present; allow-vault-egress on port 8200 present. Update `docs/dependency-tree.md`.
   `docs/done/` entry required. (auto/networkpolicy-external-secrets)
 
-- [ ] 🟢 **PSS-restricted + NetworkPolicy — `kro` namespace** (CHARTER
+- [x] 🟢 **PSS-restricted + NetworkPolicy — `kro` namespace** (CHARTER
   **Objective O2**, due **2026-09-30**; O2 gap — the `kro` namespace hosts the KRO
   controller (auto-synced via `gitops/platform/kro.yaml`) but has neither PSA labels
   nor a NetworkPolicy overlay; ADR-0017 §"Per-namespace profile" has no `kro` row).

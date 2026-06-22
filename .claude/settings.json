@@ -60,6 +60,18 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/networkpolicy-tests-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking networkpolicy.bats split"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/yq-raw-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking bats yq usage"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/adr-guard-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking ADR compliance"

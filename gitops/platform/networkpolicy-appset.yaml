@@ -47,6 +47,9 @@ spec:
           - appName: tidb-admin-networkpolicy
             gitPath: gitops/tidb-admin/networkpolicy
             destNamespace: tidb-admin
+          - appName: kro-networkpolicy
+            gitPath: gitops/kro/networkpolicy
+            destNamespace: kro
           - appName: vault-networkpolicy
             gitPath: gitops/vault/networkpolicy
             destNamespace: vault

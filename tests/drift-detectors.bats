@@ -72,3 +72,37 @@ setup() {
   run bash "$REPO/scripts/securitycontext-tests-check.sh"
   [ "$status" -eq 0 ]
 }
+
+# --- networkpolicy-tests-check -----------------------------------------------
+@test "networkpolicy-tests-check: passes when the monolith is baseline-only" {
+  run env NETPOL_TESTS_ROOT="$FIX/networkpolicy-tests-check/in-sync" bash "$REPO/scripts/networkpolicy-tests-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "networkpolicy-tests-check: fails when a per-namespace overlay test leaks into the monolith" {
+  run env NETPOL_TESTS_ROOT="$FIX/networkpolicy-tests-check/drift" bash "$REPO/scripts/networkpolicy-tests-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"namespace overlay"* ]]
+}
+
+@test "networkpolicy-tests-check: passes on the real repo tests/networkpolicy.bats" {
+  run bash "$REPO/scripts/networkpolicy-tests-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+# --- yq-raw-check ------------------------------------------------------------
+@test "yq-raw-check: passes when no bats test calls yq directly" {
+  run env YQRAW_CHECK_ROOT="$FIX/yq-raw-check/in-sync" bash "$REPO/scripts/yq-raw-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "yq-raw-check: fails when a bats test uses a bare yq call" {
+  run env YQRAW_CHECK_ROOT="$FIX/yq-raw-check/drift" bash "$REPO/scripts/yq-raw-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bare 'yq'"* ]]
+}
+
+@test "yq-raw-check: passes on the real repo tests/" {
+  run bash "$REPO/scripts/yq-raw-check.sh"
+  [ "$status" -eq 0 ]
+}
