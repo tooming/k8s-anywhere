@@ -1040,7 +1040,7 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with s3manager dashboard note. `docs/done/` entry required.
   (auto/s3manager-dashboard)
 
-- [ ] 🟢 **PSA baseline + NetworkPolicy — `lab-demo` namespace** (CHARTER **Objective
+- [x] 🟢 **PSA baseline + NetworkPolicy — `lab-demo` namespace** (CHARTER **Objective
   O2**, due **2026-09-30**; O2 fan-out gap — the `lab-demo` namespace hosts the
   always-on HotROD demo Application (`gitops/platform/demo.yaml`, `automated:
   {prune: true, selfHeal: true}`) but has no PSA labels and no default-deny

@@ -1,0 +1,15 @@
+# Explicit lab-demo namespace manifest with Pod Security Admission labels (ADR-0017).
+# PSA profile is `baseline` (not `restricted`) because the upstream
+# jaegertracing/example-hotrod image runs as root (no USER instruction). `baseline`
+# blocks privileged containers and host-namespace use while permitting the root UID.
+# Flip condition to `restricted`: when the image ships a non-root UID or is replaced
+# by the capstone-built image (see ADR-0017 §Per-namespace profile, lab-demo row).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-demo
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/audit: baseline
