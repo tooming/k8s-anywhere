@@ -1078,7 +1078,7 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with `lab-demo` PSA + NP note. `docs/done/` entry
   required. `make ci` must pass. (auto/pss-np-lab-demo)
 
-- [ ] 🟢 **PSA baseline + NetworkPolicy — `inkless` namespace** (CHARTER **Objective O2**,
+- [x] 🟢 **PSA baseline + NetworkPolicy — `inkless` namespace** (CHARTER **Objective O2**,
   due **2026-09-30**; RFC #257 — architect decision 2026-06-23; closes O2 fan-out for the
   last on-demand namespace missing PSA labels and a NetworkPolicy floor). Two changes
   bundled (both small, same shape as `auto/pss-np-lab-demo`): (a) **PSA labels** — add
