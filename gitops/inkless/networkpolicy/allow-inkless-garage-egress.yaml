@@ -1,0 +1,23 @@
+# Allow egress from inkless pods to Garage S3 in the storage namespace (ADR-0016, ADR-0002).
+# The Inkless broker streams topic segments to Garage S3 as the diskless storage backend
+# (KIP-1150 implementation). Endpoint: garage.storage.svc.cluster.local:3900 (ADR-0002).
+# All inkless pods need this egress; podSelector: {} matches broker, postgres, and kafka-load
+# (only the broker actually connects to Garage, but the overmatch is safe and avoids
+# label churn if new intra-namespace components are added).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-inkless-garage-egress
+  namespace: inkless
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 3900
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: storage

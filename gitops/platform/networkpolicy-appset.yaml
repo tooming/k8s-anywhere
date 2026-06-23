@@ -56,6 +56,9 @@ spec:
           - appName: vault-networkpolicy
             gitPath: gitops/vault/networkpolicy
             destNamespace: vault
+          - appName: inkless-networkpolicy
+            gitPath: gitops/inkless/networkpolicy
+            destNamespace: inkless
   template:
     metadata:
       name: "{{appName}}"
