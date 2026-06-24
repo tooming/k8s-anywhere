@@ -123,3 +123,55 @@ setup() {
   run bash "$REPO/scripts/git-fixture-isolation-check.sh"
   [ "$status" -eq 0 ]
 }
+
+# --- routines-author-check ---------------------------------------------------
+# The executor (auto/* branch, cloud "Claude <noreply@anthropic.com>" commits) has
+# no RemoteTrigger tool, so it can't apply a routine change to the live trigger.
+# This guard fails when an executor-authored change edits a routine file. Branch
+# and changed-file list are injected via env so the logic is testable without a
+# live git history.
+
+@test "routines-author-check: FAILS when an auto/* change edits a routine prompt" {
+  run env ROUTINES_AUTHOR_BRANCH="auto/foo" \
+          ROUTINES_AUTHOR_FILES=$'routines/executor.prompt.md\ngitops/x.yaml' \
+          bash "$REPO/scripts/routines-author-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"executor-authored change"* ]]
+  [[ "$output" == *"routines/executor.prompt.md"* ]]
+}
+
+@test "routines-author-check: FAILS when an auto/* change edits routines.yaml" {
+  run env ROUTINES_AUTHOR_BRANCH="auto/bar" \
+          ROUTINES_AUTHOR_FILES=$'routines.yaml' \
+          bash "$REPO/scripts/routines-author-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"routines.yaml"* ]]
+}
+
+@test "routines-author-check: passes when an auto/* change touches no routine files" {
+  run env ROUTINES_AUTHOR_BRANCH="auto/foo" \
+          ROUTINES_AUTHOR_FILES=$'gitops/x.yaml\ndocs/done/2026-06-25-foo.md' \
+          bash "$REPO/scripts/routines-author-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "routines-author-check: passes when an INTERACTIVE branch edits a routine prompt (it can apply)" {
+  run env ROUTINES_AUTHOR_BRANCH="chore/edit-routines" \
+          ROUTINES_AUTHOR_FILES=$'routines/executor.prompt.md' \
+          bash "$REPO/scripts/routines-author-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "routines-author-check: FAILS on a cloud-authored routine edit even off the auto/* prefix" {
+  run env ROUTINES_AUTHOR_BRANCH="chore/sneaky" \
+          ROUTINES_AUTHOR_IS_CLOUD=1 \
+          ROUTINES_AUTHOR_FILES=$'routines/planner.prompt.md' \
+          bash "$REPO/scripts/routines-author-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cloud identity"* ]]
+}
+
+@test "routines-author-check: passes on the real repo (this branch makes no routine edits)" {
+  run bash "$REPO/scripts/routines-author-check.sh"
+  [ "$status" -eq 0 ]
+}

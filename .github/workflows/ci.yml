@@ -68,7 +68,15 @@ jobs:
   drift:
     runs-on: ubuntu-latest
     steps:
+      # Full history + main: routines-author-check derives the merge-base and the
+      # commit author to decide whether an executor-authored (auto/*) change edited
+      # a routine file. The other drift checks don't need it but it's harmless.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch main for drift comparison
+        run: git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main || true
       - run: bash scripts/readme-check.sh
       - run: bash scripts/lab-ui-check.sh
       - run: bash scripts/routines-check.sh
+      - run: bash scripts/routines-author-check.sh
