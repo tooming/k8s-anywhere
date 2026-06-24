@@ -464,3 +464,85 @@ setup() {
   run grep -q 'lab-s3manager' "$REPO/docs/dependency-tree.md"
   [ "$status" -eq 0 ]
 }
+
+# --- Lab — demo (HotROD) dashboard -------------------------------------------
+
+@test "lab-demo.json dashboard exists in grafana/dashboards/" {
+  [ -f "$REPO/grafana/dashboards/lab-demo.json" ]
+}
+
+@test "lab-demo.json has uid lab-demo" {
+  run grep -q '"uid": "lab-demo"' "$REPO/grafana/dashboards/lab-demo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-demo.json uses Mimir datasource" {
+  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-demo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-demo.json references kube_deployment_status_replicas_available with namespace=lab-demo" {
+  run grep -q 'kube_deployment_status_replicas_available{namespace=\\"lab-demo\\"' "$REPO/grafana/dashboards/lab-demo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-demo.json references container_memory_working_set_bytes for memory" {
+  run grep -q 'container_memory_working_set_bytes{namespace=\\"lab-demo\\"' "$REPO/grafana/dashboards/lab-demo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-demo.json references container_cpu_usage_seconds_total for CPU" {
+  run grep -q 'container_cpu_usage_seconds_total{namespace=\\"lab-demo\\"' "$REPO/grafana/dashboards/lab-demo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-demo.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-demo.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "docs/dependency-tree.md mentions lab-demo dashboard" {
+  run grep -q 'lab-demo' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
+
+# --- Lab — data-demo (Traffic Generators) dashboard --------------------------
+
+@test "lab-data-demo.json dashboard exists in grafana/dashboards/" {
+  [ -f "$REPO/grafana/dashboards/lab-data-demo.json" ]
+}
+
+@test "lab-data-demo.json has uid lab-data-demo" {
+  run grep -q '"uid": "lab-data-demo"' "$REPO/grafana/dashboards/lab-data-demo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-data-demo.json uses Mimir datasource" {
+  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-data-demo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-data-demo.json references kube_deployment_status_replicas_available with deployment=rabbitmq-load in namespace data" {
+  run grep -q 'kube_deployment_status_replicas_available{namespace=\\"data\\",deployment=\\"rabbitmq-load\\"' "$REPO/grafana/dashboards/lab-data-demo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-data-demo.json references kube_deployment_status_replicas_available with deployment=valkey-load" {
+  run grep -q 'kube_deployment_status_replicas_available{namespace=\\"data\\",deployment=\\"valkey-load\\"' "$REPO/grafana/dashboards/lab-data-demo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-data-demo.json references container_memory_working_set_bytes for rabbitmq-load memory" {
+  run grep -q 'container_memory_working_set_bytes{namespace=\\"data\\",container=\\"rabbitmq-load\\"' "$REPO/grafana/dashboards/lab-data-demo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-data-demo.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-data-demo.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "docs/dependency-tree.md mentions lab-data-demo dashboard" {
+  run grep -q 'lab-data-demo' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}

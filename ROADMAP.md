@@ -1112,7 +1112,7 @@ You review and merge plan PRs, same as implementation PRs.
   exists targeting the documented port + selector; appset entry `inkless-networkpolicy`
   present. `docs/done/` entry required. `make ci` must pass. (auto/pss-np-inkless)
 
-- [ ] 🟢 **Lab — `demo` + `data-demo` dashboards (O5 completion)** (CHARTER **Objective O5**,
+- [x] 🟢 **Lab — `demo` + `data-demo` dashboards (O5 completion)** (CHARTER **Objective O5**,
   due **2026-09-30**; O5 gap — `demo` (HotROD in `lab-demo` namespace) and `data-demo`
   (data-layer traffic generators in `data` namespace) are the last two auto-synced
   always-on Applications without a `grafana/dashboards/lab-<name>.json`, leaving O5
