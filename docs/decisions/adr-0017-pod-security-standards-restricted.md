@@ -107,7 +107,7 @@ so the executor never silently applies the wrong label.
 | Namespace | PSA profile | Reason |
 |-----------|-------------|--------|
 | `capstone` | `restricted` | Pilot; workload is fully owned by us. |
-| `argocd` | `restricted` | ArgoCD components run as non-root; no special capabilities. |
+| `argocd` | `restricted` | ArgoCD components run as UID 1000 (non-root), `readOnlyRootFilesystem: true`, no capabilities. Phase 2 (RFC #205) adds `global.podSecurityContext` + `global.containerSecurityContext` to `infra/modules/argocd/values.yaml` and flips `enforce: restricted`. |
 | `observability` | `restricted` | LGTMP stack; containers are non-root-capable. |
 | `storage` (Garage) | `baseline` | Upstream Garage image does not yet declare an explicit non-root user required by `restricted`. Re-evaluate per upstream release. |
 | `data` | `restricted` | RabbitMQ + Redis both support non-root operation. |

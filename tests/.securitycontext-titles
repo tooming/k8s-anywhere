@@ -1,4 +1,4 @@
-@test "argocd namespace.yaml does NOT have enforce label (Phase 1 only)"
+@test "argocd namespace.yaml enforces PSS restricted (Phase 2)"
 @test "argocd namespace.yaml exists"
 @test "argocd namespace.yaml has audit: restricted (Phase 1)"
 @test "argocd namespace.yaml has warn: restricted (Phase 1)"

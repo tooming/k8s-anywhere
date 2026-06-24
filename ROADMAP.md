@@ -742,7 +742,7 @@ You review and merge plan PRs, same as implementation PRs.
   to the Argo Rollouts / Trivy dashboard notes added in recent runs). `docs/done/`
   entry required. (auto/external-secrets-dashboard)
 
-- [ ] 🟢 **ArgoCD PSS Phase 2 — securityContext hardening + enforce
+- [x] 🟢 **ArgoCD PSS Phase 2 — securityContext hardening + enforce
   flip** (CHARTER **Objective O2**, RFC #205 — Phase 2; buildable after
   Phase 1 is **verified green in cluster** by maintainer). Update
   `infra/modules/argocd/values.yaml` adding the exact
