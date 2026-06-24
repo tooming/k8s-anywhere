@@ -1,0 +1,43 @@
+name: close-idle-on-delivery
+
+# When the executor merges a productive auto/* PR it is, by definition, no longer
+# idle — so close any open "executor idle — needs work" prompt it filed when the
+# lane was starved. Those meta-issues never carry a `Closes #NNN` link from the
+# delivering PR, so GitHub can't auto-close them. Mechanical guard for the gap that
+# left #262 open after #261/#264 refilled and delivered the lane.
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  issues: write
+
+jobs:
+  close-idle:
+    # Only when a real executor PR (auto/* head branch) actually merged.
+    if: ${{ github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'auto/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close stale "executor idle — needs work" issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          # Exact-prefix match (em-dash-safe) so unrelated issues are never touched.
+          mapfile -t nums < <(
+            gh issue list --state open --search 'executor idle in:title' \
+              --json number,title \
+              --jq '.[] | select(.title | startswith("executor idle")) | .number'
+          )
+          if [ "${#nums[@]}" -eq 0 ]; then
+            echo "No open 'executor idle' issues — nothing to close."
+            exit 0
+          fi
+          for n in "${nums[@]}"; do
+            echo "Closing #$n (superseded by merged auto/* PR #$PR)"
+            gh issue close "$n" \
+              --comment "Lane is no longer idle — the executor delivered a productive \`auto/*\` PR (#$PR), so this stale idle prompt is auto-closed. (Filed when the lane was starved; superseded by real work.)"
+          done
