@@ -1,0 +1,109 @@
+{
+  "uid": "lab-data-demo",
+  "title": "Lab — data-demo (Traffic Generators)",
+  "tags": ["lab"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1, "type": "text", "title": "About this dashboard",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "## Lab — data-demo (Traffic Generators)\n\nThis dashboard surfaces KSM + cAdvisor metrics for the **data-demo traffic generators** (`rabbitmq-load` and `valkey-load`) running in namespace `data`. These workloads exist to drive real continuous traffic into RabbitMQ and Valkey so those dashboards show non-zero metrics, not idle brokers. Neither workload exposes Prometheus metrics directly — all panels use KSM + cAdvisor data already scraped by Alloy (ADR-0004). Panels show \"No data\" naturally until Alloy emits a series for the pod."
+      }
+    },
+    {
+      "id": 2, "type": "stat", "title": "rabbitmq-load Running",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 3 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "kube_deployment_status_replicas_available{namespace=\"data\",deployment=\"rabbitmq-load\"}", "instant": true } ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+          "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } } ],
+          "noValue": "not deployed"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 3, "type": "stat", "title": "valkey-load Running",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 3 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "kube_deployment_status_replicas_available{namespace=\"data\",deployment=\"valkey-load\"}", "instant": true } ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+          "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } } ],
+          "noValue": "not deployed"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 4, "type": "stat", "title": "ArgoCD Sync State",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 3 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "argocd_app_info{name=\"data-demo\", sync_status=\"Synced\"}", "instant": true } ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+          "mappings": [ { "type": "value", "options": { "1": { "text": "Synced" } } } ],
+          "noValue": "OutOfSync"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 5, "type": "stat", "title": "rabbitmq-load Memory (MiB)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 3 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "container_memory_working_set_bytes{namespace=\"data\",container=\"rabbitmq-load\"} / 1024 / 1024", "instant": true } ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 1, "noValue": "n/a" },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "CPU Usage Rate",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 7 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(container_cpu_usage_seconds_total{namespace=\"data\",container=\"rabbitmq-load\"}[5m])", "legendFormat": "rabbitmq-load cpu", "range": true },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(container_cpu_usage_seconds_total{namespace=\"data\",container=\"valkey-load\"}[5m])", "legendFormat": "valkey-load cpu", "range": true }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Memory Working Set (MiB)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 7 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "container_memory_working_set_bytes{namespace=\"data\",container=\"rabbitmq-load\"} / 1024 / 1024", "legendFormat": "rabbitmq-load MiB", "range": true },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "container_memory_working_set_bytes{namespace=\"data\",container=\"valkey-load\"} / 1024 / 1024", "legendFormat": "valkey-load MiB", "range": true }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    }
+  ]
+}
