@@ -6,6 +6,20 @@
 # github remote-tracking refs. gh pr view is only called when everything
 # else is clean and commits exist over github/main.
 set -uo pipefail
+
+# Loop guard FIRST (before any git work): a Stop hook that exits 2 re-invokes
+# the agent, which stops again, which re-fires this hook — an infinite reminder
+# loop on state the agent can't or won't change (e.g. pre-existing WIP it didn't
+# author). Claude sets "stop_hook_active":true in the stdin payload when it is
+# ALREADY continuing because of a prior Stop-hook block; honour it and allow the
+# stop, so we nag at most once per turn instead of forever. Read stdin only when
+# piped, so a manual `bash …` invocation (tty stdin) never hangs on `cat`.
+input=""
+[ -t 0 ] || input="$(cat 2>/dev/null || true)"
+if printf '%s' "$input" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; then
+  exit 0
+fi
+
 cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null || exit 0
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
