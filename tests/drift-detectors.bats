@@ -106,3 +106,20 @@ setup() {
   run bash "$REPO/scripts/yq-raw-check.sh"
   [ "$status" -eq 0 ]
 }
+
+# --- git-fixture-isolation-check ---------------------------------------------
+@test "git-fixture-isolation-check: passes when a fixture test unsets GIT_DIR" {
+  run env GITFIX_CHECK_ROOT="$FIX/git-fixture-isolation-check/in-sync" bash "$REPO/scripts/git-fixture-isolation-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "git-fixture-isolation-check: fails when a git-fixture test never unsets GIT_DIR" {
+  run env GITFIX_CHECK_ROOT="$FIX/git-fixture-isolation-check/drift" bash "$REPO/scripts/git-fixture-isolation-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"never unsets GIT_DIR"* ]]
+}
+
+@test "git-fixture-isolation-check: passes on the real repo tests/" {
+  run bash "$REPO/scripts/git-fixture-isolation-check.sh"
+  [ "$status" -eq 0 ]
+}

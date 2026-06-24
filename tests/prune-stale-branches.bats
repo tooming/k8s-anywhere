@@ -10,6 +10,11 @@
 # the prune from nuking live work.
 
 setup() {
+  # Isolate from the GIT_* env git exports when `make ci` runs from inside a hook
+  # (e.g. pre-push). Without this, the fixture's `git` commands below resolve to
+  # the real repo via the inherited GIT_DIR/GIT_WORK_TREE instead of the throwaway
+  # clone, and every test fails. Guarded by scripts/git-fixture-isolation-check.sh.
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_COMMON_DIR GIT_NAMESPACE
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   SCRIPT="$REPO/scripts/prune-stale-branches.sh"
   WORK="$(mktemp -d)"
