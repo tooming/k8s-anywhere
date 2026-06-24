@@ -85,3 +85,13 @@ SAME session, before the PR is considered complete:
 from `.routines-applied` — that's the enforcement. A `PostToolUse` hook
 (`scripts/routines-sync-hook.sh`) nudges you the moment you save an edit, so the apply
 step is never silently forgotten. Background: see [routines/README.md](routines/README.md).
+
+`routines-check` only proves the file matches `.routines-applied` — it **cannot** prove
+the *live* trigger carries that content (CI has no claude.ai token). The hole that left:
+the cloud executor has **no `RemoteTrigger` tool**, so it can edit a routine prompt, run
+`make routines-mark-applied`, stay green, and the live trigger silently drifts (it did —
+#251/#263). That footgun is removed structurally by `scripts/routines-author-check.sh`
+(`make routines-author-check`, in `make ci` + the GitHub Actions `drift` job): it **fails
+any executor-authored change — `auto/*` branch or `Claude <noreply@anthropic.com>` commit
+— that touches a routine file.** So only interactive sessions (which can apply) edit
+routine files; from an autonomous run, open an issue for a human instead.

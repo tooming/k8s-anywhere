@@ -72,6 +72,10 @@ routines-check: ## Check routines/*.prompt.md match the last apply (catches edit
 routines-mark-applied: ## Refresh .routines-applied — run ONLY after applying current routines via Claude Code RemoteTrigger
 	@bash scripts/routines-mark-applied.sh
 
+.PHONY: routines-author-check
+routines-author-check: ## Fail if an executor-authored (auto/*) change edits routine files — the executor can't apply them to the live trigger (drift detector)
+	@bash scripts/routines-author-check.sh
+
 ##@ Quality gates (clusterless; run on every commit + in CI)
 
 .PHONY: lint
@@ -111,6 +115,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/yq-raw-check.sh
 	@bash scripts/git-fixture-isolation-check.sh
 	@bash scripts/routines-check.sh
+	@bash scripts/routines-author-check.sh
 
 .PHONY: install-hooks
 install-hooks: ## Wire up .githooks/ as the local git hooks directory (run once per clone)

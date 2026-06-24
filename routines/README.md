@@ -54,6 +54,26 @@ managed OAuth — there is **no exposed token to `curl`** from CI. So Claude Cod
 token becomes available, wrap it as `make routines-apply` / `make routines-check` and
 add the latter to the `ci` gate.
 
+## Why the autonomous executor may not edit these files
+
+The cloud executor runs with `allowed_tools = [Bash, Read, Write, Edit, Glob, Grep]` —
+**no `RemoteTrigger`**. So it physically *cannot* apply a routine change to the live
+trigger. If it edits a `*.prompt.md` and runs `make routines-mark-applied`,
+`routines-check` stays green (the snapshot matches the file) while the **live trigger
+silently drifts** from the repo. That is exactly how the merged JANITOR rung (#251) and
+the `docs/done/` STEP 6 went missing from the live executor trigger until #263 repaired
+them by hand.
+
+`routines-check` can't catch this — CI has no claude.ai token to compare against the
+live trigger. So the footgun is removed *structurally*: **`scripts/routines-author-check.sh`**
+(`make routines-author-check`, wired into `make ci` and the GitHub Actions `drift` job)
+**fails any executor-authored change that touches a routine file.** "Executor-authored"
+= the branch matches `routines.yaml`'s `branch_prefix` (`auto/`) *or* the commit author
+is the cloud identity `Claude <noreply@anthropic.com>`. The result: only interactive
+Claude Code sessions — which *can* `RemoteTrigger update` + `make routines-mark-applied`
+in the same session — ever change routine files. If the executor needs a routine change,
+it opens an issue for a human instead (the same way it defers any other out-of-tier work).
+
 ## Checking running state & drift
 
 Ask Claude Code to *"list routines"* (`RemoteTrigger list`) and compare against
