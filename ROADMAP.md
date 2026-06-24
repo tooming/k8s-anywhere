@@ -1112,6 +1112,45 @@ You review and merge plan PRs, same as implementation PRs.
   exists targeting the documented port + selector; appset entry `inkless-networkpolicy`
   present. `docs/done/` entry required. `make ci` must pass. (auto/pss-np-inkless)
 
+- [ ] 🟢 **Lab — `demo` + `data-demo` dashboards (O5 completion)** (CHARTER **Objective O5**,
+  due **2026-09-30**; O5 gap — `demo` (HotROD in `lab-demo` namespace) and `data-demo`
+  (data-layer traffic generators in `data` namespace) are the last two auto-synced
+  always-on Applications without a `grafana/dashboards/lab-<name>.json`, leaving O5
+  incomplete before its 2026-09-30 deadline. Two small dashboards bundled (same
+  KSM/cAdvisor stat-row pattern — no new scrape jobs needed; Alloy already scrapes
+  KSM and cAdvisor):
+  (a) New `grafana/dashboards/lab-demo.json` ("Lab — demo (HotROD)") modelled on
+  `lab-kyverno.json` stat-row: demo pod running (KSM
+  `kube_deployment_status_replicas_available{namespace="lab-demo",deployment="hello"}`);
+  ArgoCD sync state (`argocd_app_info{name="demo"}`); memory usage (cAdvisor
+  `container_memory_working_set_bytes{namespace="lab-demo",container="hello"}`); CPU
+  usage rate (cAdvisor
+  `rate(container_cpu_usage_seconds_total{namespace="lab-demo",container="hello"}[5m])`).
+  Note: `jaegertracing/example-hotrod` does not expose Prometheus metrics; span/trace
+  data is visible in `lab-traces.json` (Tempo). Document this in the dashboard's
+  about-text panel (ADR-0004 — no fabricated data; any panel not yet emitting shows
+  "No data" naturally). No HTTPRoute row in the Lab UIs panel (HotROD is not exposed
+  via Envoy Gateway); `make lab-ui-check` unaffected.
+  (b) New `grafana/dashboards/lab-data-demo.json` ("Lab — data-demo (Traffic
+  Generators)") modelled on the same stat-row: rabbitmq-load pod running (KSM
+  `kube_deployment_status_replicas_available{namespace="data",deployment="rabbitmq-load"}`);
+  valkey-load pod running
+  (`kube_deployment_status_replicas_available{namespace="data",deployment="valkey-load"}`);
+  ArgoCD sync state (`argocd_app_info{name="data-demo"}`); memory for rabbitmq-load
+  (cAdvisor
+  `container_memory_working_set_bytes{namespace="data",container="rabbitmq-load"}`).
+  Note: these workloads exist to drive real traffic into RabbitMQ and Valkey so those
+  dashboards show non-zero metrics; document this in the about-text panel. No HTTPRoute.
+  Extend `tests/observability.bats` with four assertions: `lab-demo.json` exists;
+  references `kube_deployment_status_replicas_available` with `namespace="lab-demo"`;
+  no fabricated/placeholder data; `lab-data-demo.json` exists; references
+  `kube_deployment_status_replicas_available` with `deployment="rabbitmq-load"` in
+  namespace `data`; no fabricated/placeholder data. Update `docs/dependency-tree.md`
+  with brief `demo` and `data-demo` dashboard notes. `docs/done/` entry required.
+  `make ci` must pass. **Executor note:** if the PR crosses ~400 lines per
+  WAYS-OF-WORKING.md §3, ship `lab-demo.json` first and file `lab-data-demo.json` as
+  a follow-up. (auto/demo-data-demo-dashboards)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
