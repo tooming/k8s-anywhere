@@ -24,4 +24,4 @@ building. (auto/argocd-pss-enforce)
 
 ## PR
 
-#TBD — auto/argocd-pss-enforce
+#268 — https://github.com/tooming/k8s-lab/pull/268
