@@ -7,6 +7,22 @@ global:
   # TODO: drop this override once argo-cd chart >= the version that ships the expose-appset-ui commit (#26666).
   image:
     tag: latest
+  # PSS restricted — Phase 2 (RFC #205, ADR-0017). ArgoCD components run as UID 1000 (non-root).
+  # These global fields apply to ArgoCD's own deployments (controller, repo-server, server,
+  # applicationset-controller); the bundled session-cache sub-chart retains its own settings.
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
 
 configs:
   params:
@@ -71,6 +87,12 @@ repoServer:
   readinessProbe:
     timeoutSeconds: 5
     initialDelaySeconds: 20
+  volumes:
+    - name: tmp
+      emptyDir: {}
+  volumeMounts:
+    - name: tmp
+      mountPath: /tmp
 
 server:
   metrics:
@@ -79,6 +101,12 @@ server:
     requests:
       cpu: 50m
       memory: 128Mi
+  volumes:
+    - name: tmp
+      emptyDir: {}
+  volumeMounts:
+    - name: tmp
+      mountPath: /tmp
 
 redis:
   resources:

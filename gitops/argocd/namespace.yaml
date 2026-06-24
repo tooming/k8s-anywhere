@@ -1,16 +1,16 @@
-# argocd namespace — Phase 1 PSA labels (RFC #205, ADR-0017 §Per-namespace profile).
-# Sets warn + audit at restricted to surface non-compliant pods in cluster events and
-# audit logs before Phase 2 adds securityContext fields to the ArgoCD Helm values
-# and flips the enforce label to restricted.
+# argocd namespace — Phase 2 PSA labels (RFC #205, ADR-0017 §Per-namespace profile).
+# Adds enforce: restricted to the Phase 1 warn+audit labels now that infra/modules/argocd/values.yaml
+# carries the global.podSecurityContext + global.containerSecurityContext block that makes
+# ArgoCD components PSS restricted-compliant (UID 1000, readOnlyRootFilesystem, no caps).
 # The argocd namespace is created by Terraform bootstrap (infra/modules/argocd) — this
-# manifest patches only the PSA warn/audit labels via ArgoCD SSA (argocd-extras App).
-# Phase 2: add global.podSecurityContext + global.containerSecurityContext overrides in
-# infra/modules/argocd/values.yaml and flip enforce: restricted.
+# manifest patches only the PSA labels via ArgoCD SSA (argocd-extras Application).
 apiVersion: v1
 kind: Namespace
 metadata:
   name: argocd
   labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/warn-version: latest
     pod-security.kubernetes.io/audit: restricted

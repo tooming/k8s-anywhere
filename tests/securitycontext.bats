@@ -149,9 +149,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "argocd namespace.yaml does NOT have enforce label (Phase 1 only)" {
-  run grep -q 'pod-security.kubernetes.io/enforce' "$REPO/gitops/argocd/namespace.yaml"
-  [ "$status" -eq 1 ]
+@test "argocd namespace.yaml enforces PSS restricted (Phase 2)" {
+  run grep -q 'pod-security.kubernetes.io/enforce: restricted' "$REPO/gitops/argocd/namespace.yaml"
+  [ "$status" -eq 0 ]
 }
 
 # --- external-secrets namespace PSA restricted labels (RFC #229, ADR-0017) ----
