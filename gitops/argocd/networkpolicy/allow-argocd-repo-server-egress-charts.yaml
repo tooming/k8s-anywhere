@@ -1,0 +1,32 @@
+# Allow argocd-repo-server to pull Helm charts from upstream registries (ADR-0016).
+# Platform Applications source public Helm repos and OCI registries; repo-server runs
+# the `helm pull` calls that fetch them. With the argocd default-deny floor, repo-server
+# can otherwise reach only GitLab:8929, so cold-cache Helm apps hang and `make up`
+# never converges.
+#
+# Chart repositories and OCI blob stores are CDN-backed with rotating IPs. Cilium
+# toFQDNs was tested here, but repo-server resolves kube-dns through the service
+# ClusterIP in this kube-proxy-free lab and Cilium did not populate the FQDN cache
+# for those lookups. Match the existing Trivy vuln-DB precedent instead: allow only
+# TCP 443 to external IPs. This keeps the blast radius scoped to HTTPS egress from
+# repo-server while preserving a reliable rebuild path.
+#
+# Wired into gitops/argocd/networkpolicy/kustomization.yaml (auto-synced, wave 4).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argocd-repo-server-egress-charts
+  namespace: argocd
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 443
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0

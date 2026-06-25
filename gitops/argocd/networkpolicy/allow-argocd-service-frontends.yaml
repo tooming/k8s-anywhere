@@ -1,0 +1,24 @@
+# Allow ArgoCD components to use ArgoCD ClusterIP service frontends (ADR-0016).
+# The intra-namespace NetworkPolicy covers pod-to-pod traffic, but Cilium's
+# kube-proxy-free datapath can evaluate ClusterIP service frontends as service-CIDR
+# identities before pod identity. Keep this CNP port-scoped to the ArgoCD control
+# plane ports that components use through Services.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-argocd-service-frontends
+spec:
+  endpointSelector: {}
+  egress:
+    - toCIDR:
+        - 10.43.0.0/16
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+            - port: "7000"
+              protocol: TCP
+            - port: "8080"
+              protocol: TCP
+            - port: "8081"
+              protocol: TCP

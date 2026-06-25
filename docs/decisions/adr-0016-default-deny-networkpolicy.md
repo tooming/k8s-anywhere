@@ -35,7 +35,7 @@ lab namespace, using the following pattern:
 | Name | Selector | policyTypes | Rule |
 |------|----------|-------------|------|
 | `default-deny-all` | `podSelector: {}` | `[Ingress, Egress]` | no rules (deny everything) |
-| `allow-dns-and-apiserver` | `podSelector: {}` | `[Egress]` | UDP/TCP 53 to `kube-system` pods (`k8s-app: kube-dns`); TCP 6443 to `10.43.0.1/32` (k3s API) |
+| `allow-dns-and-apiserver` | `podSelector: {}` | `[Egress]` | UDP/TCP 53 to `kube-system` pods (`k8s-app: kube-dns`) plus DNS service frontends; TCP 443/6443 to the k3s API service/frontends |
 
 These two are the universal floor — every namespace gets both. Together they
 let a pod resolve DNS and reach the Kubernetes API while blocking all other
