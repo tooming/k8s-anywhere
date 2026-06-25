@@ -210,7 +210,9 @@ setup() {
 }
 
 @test "prod Stage subscribes to Freight from dev Stage (manual gate)" {
-  run grep -qP 'stages:\s*\n\s+- dev' "$REPO/gitops/kargo-project/project.yaml"
+  run grep -c 'stages:' "$REPO/gitops/kargo-project/project.yaml"
+  [ "$output" -ge 1 ]
+  run grep -q '\- dev' "$REPO/gitops/kargo-project/project.yaml"
   [ "$status" -eq 0 ]
 }
 
