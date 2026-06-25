@@ -10,6 +10,14 @@
 # rule (whether 10.43.0.1/32 or the node IP) therefore never matches API-server
 # traffic, and every deny-all namespace is silently cut off from the apiserver.
 # `toEntities: kube-apiserver` is the only rule Cilium matches for that traffic.
+#
+# DNS is the inverse footgun in this lab: pods send DNS to the kube-dns Service
+# frontend (10.43.0.10), and Cilium may evaluate that service IP before matching
+# the CoreDNS pod identity. Keep the pod-identity rule, but also allow only
+# TCP/UDP 53 to the service CIDR so DNS works on fresh `make up` rebuilds without
+# a live-only bridge policy. The Kubernetes API has the same service-frontend
+# shape for in-cluster clients (10.43.0.1:443), so that exact ClusterIP is allowed
+# alongside Cilium's reserved kube-apiserver identity.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -28,10 +36,29 @@ spec:
               protocol: UDP
             - port: "53"
               protocol: TCP
+    # DNS service frontend: kube-proxy-free Cilium can evaluate the ClusterIP
+    # before pod identity, so permit DNS ports to Service CIDRs only.
+    - toCIDR:
+        - 10.43.0.0/16
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # Kubernetes API service frontend used by in-cluster clients.
+    - toCIDR:
+        - 10.43.0.1/32
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
     # Kubernetes API server: reserved identity, survives kube-proxy-free translation.
     - toEntities:
         - kube-apiserver
       toPorts:
         - ports:
+            - port: "443"
+              protocol: TCP
             - port: "6443"
               protocol: TCP

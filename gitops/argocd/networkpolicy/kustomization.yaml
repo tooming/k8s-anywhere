@@ -4,7 +4,9 @@
 # ingress from Envoy Gateway proxy (argocd.127.0.0.1.nip.io HTTPRoute on TCP 8080);
 # ingress from Alloy (metrics scrape on ports 8080/8082/8083/8084);
 # intra-namespace allow-all (controller ↔ repo-server ↔ argocd-cache ↔ server ↔ appset);
-# egress from argocd-repo-server to GitLab on the host (TCP 8929, git clone/fetch).
+# egress to ArgoCD ClusterIP service frontends (TCP 6379/7000/8080/8081);
+# egress from argocd-repo-server to GitLab on the host (TCP 8929, git clone/fetch);
+# egress from argocd-repo-server to public Helm chart registries (TCP 443).
 # The allow-dns-and-apiserver baseline covers all pods' k8s API calls.
 # Wired into gitops/platform/argocd-networkpolicy.yaml (auto-synced, wave 4).
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -18,4 +20,6 @@ resources:
   - allow-argocd-server-from-gateway.yaml
   - allow-argocd-from-alloy.yaml
   - allow-argocd-intra-namespace.yaml
+  - allow-argocd-service-frontends.yaml
   - allow-argocd-repo-server-egress-gitlab.yaml
+  - allow-argocd-repo-server-egress-charts.yaml

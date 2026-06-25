@@ -69,3 +69,23 @@ setup() {
   run grep -q 'k8s-app: kube-dns' "$POLICIES/allow-dns-and-apiserver.yaml"
   [ "$status" -eq 0 ]
 }
+
+@test "allow-dns-and-apiserver permits DNS to the kube-proxy-free service CIDR" {
+  # kube-proxy-free Cilium can evaluate the kube-dns ClusterIP frontend before pod
+  # identity, so DNS ports must also be allowed to the service CIDR (toCIDR, not ipBlock).
+  run grep -q '10.43.0.0/16' "$POLICIES/allow-dns-and-apiserver.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-dns-and-apiserver service-CIDR allowance is DNS-port scoped" {
+  run bash -c "grep -A6 '10.43.0.0/16' '$POLICIES/allow-dns-and-apiserver.yaml' | grep -q 'port: \"53\"'"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-dns-and-apiserver permits the apiserver service frontend on 443" {
+  # In-cluster clients reach the apiserver via the 10.43.0.1:443 ClusterIP frontend.
+  run grep -q '10.43.0.1/32' "$POLICIES/allow-dns-and-apiserver.yaml"
+  [ "$status" -eq 0 ]
+  run grep -qE 'port: "?443"?' "$POLICIES/allow-dns-and-apiserver.yaml"
+  [ "$status" -eq 0 ]
+}
