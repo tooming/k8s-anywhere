@@ -116,6 +116,43 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "allow-argocd-repo-server-egress-charts.yaml exists in argocd/networkpolicy/" {
+  [ -f "$ARGOCD_NP/allow-argocd-repo-server-egress-charts.yaml" ]
+}
+
+@test "allow-argocd-repo-server-egress-charts allows TCP 443 (Helm/OCI chart pull)" {
+  run grep -qE 'port: "?443"?' "$ARGOCD_NP/allow-argocd-repo-server-egress-charts.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-repo-server-egress-charts targets argocd-repo-server pods" {
+  run grep -q 'app.kubernetes.io/name: argocd-repo-server' "$ARGOCD_NP/allow-argocd-repo-server-egress-charts.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-service-frontends.yaml exists in argocd/networkpolicy/" {
+  [ -f "$ARGOCD_NP/allow-argocd-service-frontends.yaml" ]
+}
+
+@test "allow-argocd-service-frontends is a CiliumNetworkPolicy (kube-proxy-free frontend match)" {
+  run grep -q 'kind: CiliumNetworkPolicy' "$ARGOCD_NP/allow-argocd-service-frontends.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-argocd-service-frontends permits the Redis and repo-server service ports" {
+  run grep -q 'port: "6379"' "$ARGOCD_NP/allow-argocd-service-frontends.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'port: "8081"' "$ARGOCD_NP/allow-argocd-service-frontends.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argocd networkpolicy kustomization wires both repo-server egress policies + service frontends" {
+  run grep -q 'allow-argocd-repo-server-egress-charts.yaml' "$ARGOCD_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'allow-argocd-service-frontends.yaml' "$ARGOCD_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "argocd-networkpolicy ArgoCD Application has automated sync enabled" {
   run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
