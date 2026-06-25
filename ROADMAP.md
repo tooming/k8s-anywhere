@@ -1151,6 +1151,53 @@ You review and merge plan PRs, same as implementation PRs.
   WAYS-OF-WORKING.md §3, ship `lab-demo.json` first and file `lab-data-demo.json` as
   a follow-up. (auto/demo-data-demo-dashboards)
 
+- [ ] 🟢 **`docs/00-architecture.md` — current-state rewrite** (CHARTER **Core Values**
+  §"Docs & dashboards don't drift"; docs-only). The file is 70 lines and was written when
+  the platform had ~8 components; it now runs ~28 ArgoCD Applications across four
+  categories (always-on core, LGTMP observability, Tier 1 next-wave, on-demand heavy)
+  and the doc mentions none of the new components. Rewrite `docs/00-architecture.md` to
+  reflect the current platform state:
+  (a) **Updated tool table** — expand the "Who does what" table to cover the full
+  always-on stack: Cilium (CNI), External Secrets Operator, Garage (S3), s3manager,
+  RabbitMQ, Valkey, Alloy, Mimir, Loki, Tempo, Pyroscope, Grafana, kube-state-metrics,
+  node-exporter, moto, ACK S3, KRO, Kyverno, Argo Rollouts, Velero, Trivy Operator, and
+  the capstone pipeline (cosign → verifyImages → progressive canary). Describe each
+  tool's role in one line. Group rows by layer (matching the README table structure so
+  they stay in sync).
+  (b) **Updated learning path** — the current five-step path ends with "Tie it together"
+  via GitLab CI; expand to cover the full CHARTER Goals: supply-chain security
+  (cosign → Kyverno verifyImages), progressive delivery (Argo Rollouts canary on Mimir
+  SLOs), stateful backup/restore (Velero → `make dr-restore`), and continuous scanning
+  (Trivy Operator). The existing steps 0–5 can stay; add steps 6–9 or rewrite them.
+  (c) **Updated diagram** — either expand the ASCII diagram or replace it with a prose
+  description of the platform's current data-flow layers: bootstrap → GitOps → ingress
+  → workloads → secrets → observability → security (admission + supply-chain) → backup.
+  No new CI gates; no new code. All assertions about what's deployed must reflect what's
+  actually in `gitops/` (ADR-0004 — no fabricated state). `make ci` must pass.
+  `docs/done/` entry required. (auto/architecture-doc-rewrite)
+
+- [ ] 🟢 **ADR-0017 `velero` PSA row correction + `docs/dependency-tree.md` stale
+  notes** (CHARTER **Core Values** §"Docs & dashboards don't drift"; docs-only, two
+  small corrections bundled because both are tiny). (a) **ADR-0017 velero row**: the
+  per-namespace profile table currently says `velero → baseline`, but the actual
+  `gitops/velero/namespace.yaml` enforces `restricted` and `tests/velero.bats` asserts
+  `enforce: restricted`. The implementation uses a per-workload annotation on the
+  node-agent DaemonSet for the `hostPath` carve-out (matching the node-exporter pattern
+  in ADR-0017 §"Per-workload field carve-outs"), making the `restricted` profile viable.
+  Update the ADR-0017 table: `velero | restricted | Controller runs non-root (UID
+  65534); node-agent DaemonSet uses a per-workload annotation to mount
+  `/var/lib/kubelet/pods` for Kopia FS-backup (matches the node-exporter hostPath
+  carve-out pattern in §"Per-workload field carve-outs"). Per ADR-0021 §"PSA profile"
+  (implementation adopted restricted, overriding the initial baseline estimate).`
+  (b) **dependency-tree.md stale notes**: fix two stale references — (1) the capstone
+  subgraph label `"Capstone — build pipeline (steps 1–4 done; step 5 pending)"` should
+  read `"Capstone — build pipeline (all 5 steps done)"` (step 5 shipped in
+  `auto/capstone-step-5`, see `docs/done/auto-capstone-step-5.md`); (2) the argocd
+  PSS Phase 1 note says `"Phase 2 (separate ROADMAP item, pending …)"` but Phase 2
+  shipped in `auto/argocd-pss-enforce` (see `docs/done/`). Remove or update that
+  parenthetical. No code changes. `make ci` must pass. `docs/done/` entry required.
+  (auto/adr0017-velero-row-depTree-fix)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
@@ -1174,9 +1221,16 @@ You review and merge plan PRs, same as implementation PRs.
 > *Now / next* above (planner 2026-06-15); RFCs #214 + #215 groomed 2026-06-16
 > (four new 🟢 items — three from RFC #214, one from RFC #215); RFCs #229 + #230
 > groomed 2026-06-20 (two new 🟢 PSS items — `restricted` for `external-secrets`,
-> `baseline` for `envoy-gateway-system`). The 🟢
-> cloud-control-plane dashboard item that previously lived here has been promoted
+> `baseline` for `envoy-gateway-system`). Two new 🟢 docs-only items groomed
+> 2026-06-25 (architecture doc rewrite + ADR-0017/dependency-tree corrections). The
+> 🟢 cloud-control-plane dashboard item that previously lived here has been promoted
 > to *Now / next* above (CHARTER **O5** carrier).
+>
+> **O4 gap (surfaced 2026-06-25):** CHARTER O4 is measured by "a CI step that
+> pushes an unsigned image and asserts Kyverno rejection." This step does not exist
+> yet. It depends on the verifyImages flip to Enforce (the unchecked item above) AND
+> needs an architect RFC to define the exact GitLab CI job shape, unsigned-image
+> source, and rejection assertion method before the executor can build it.
 
 - ~~🟡 **PSS-restricted hardening — `argocd` namespace**~~ (RFC #205)
   **Groomed ↗** into two 🟢 Phase items in *Now / next* above
