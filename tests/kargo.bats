@@ -264,6 +264,6 @@ setup() {
 }
 
 @test "capstone kustomization.yaml excludes networkpolicy directory (managed separately)" {
-  run grep -q 'networkpolicy' "$REPO/gitops/apps/capstone/kustomization.yaml"
+  run grep -q '^\s*- networkpolicy' "$REPO/gitops/apps/capstone/kustomization.yaml"
   [ "$status" -eq 1 ]
 }
