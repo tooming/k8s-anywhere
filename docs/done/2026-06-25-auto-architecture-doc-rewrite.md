@@ -27,4 +27,4 @@ actually in `gitops/` (ADR-0004 — no fabricated state). `make ci` must pass.
 
 ## PR
 
-https://github.com/tooming/k8s-lab/pull/275
+https://github.com/tooming/k8s-lab/pull/273
