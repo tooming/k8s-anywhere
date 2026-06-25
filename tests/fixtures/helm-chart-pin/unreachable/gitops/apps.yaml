@@ -1,0 +1,12 @@
+# Fixture: a Helm-chart Application whose repo is offline (stub returns UNREACHABLE
+# for any repoURL containing "unreachable"). Network-tolerance contract: the checker
+# must SKIP it, NOT fail — a transient outage can never turn the gate red.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: offline-repo
+spec:
+  source:
+    repoURL: https://unreachable.test/charts
+    chart: widget
+    targetRevision: 1.0.0

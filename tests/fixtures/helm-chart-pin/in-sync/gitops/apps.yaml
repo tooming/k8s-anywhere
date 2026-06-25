@@ -1,0 +1,21 @@
+# Fixture: a Helm-chart Application whose pin resolves (stub -> OK), plus a
+# git-sourced Application with no chart: (must be ignored by the checker).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: good-chart
+spec:
+  source:
+    repoURL: https://example.test/charts
+    chart: widget
+    targetRevision: 1.0.0
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: git-sourced
+spec:
+  source:
+    repoURL: https://github.com/example/repo
+    path: gitops/thing
+    targetRevision: main

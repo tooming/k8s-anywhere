@@ -1,0 +1,12 @@
+# Fixture: a Helm-chart Application pinning a version the (reachable) repo doesn't
+# have — the stub returns MISSING for any `*-missing` version. This is the velero
+# 8.4.1 bug class; the checker must FAIL and name the Application.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bad-pin
+spec:
+  source:
+    repoURL: https://example.test/charts
+    chart: widget
+    targetRevision: 9.9.9-missing
