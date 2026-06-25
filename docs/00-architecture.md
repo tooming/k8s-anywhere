@@ -139,7 +139,7 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **Kyverno** | Admission policy engine. Three always-on `ClusterPolicy` objects: (1) validate PSS `restricted` across all namespaces; (2) mutate missing `seccompProfile: RuntimeDefault`; (3) `verifyImages` — asserts every image is cosign-signed before admission. Kyverno also fans out `NetworkPolicy` default-deny overlays via a `kyverno-policies` Application. (ADR-0019) |
+| **Kyverno** | Admission policy engine. Three always-on `ClusterPolicy` objects: (1) validate PSS `restricted` across all namespaces; (2) mutate missing `seccompProfile: RuntimeDefault`; (3) `verifyImages` — audits that images are cosign-signed (currently `Audit`; flip to `Enforce` is a separate ROADMAP item gated on maintainer confirmation). Kyverno also fans out `NetworkPolicy` default-deny overlays via a `kyverno-policies` Application. (ADR-0019) |
 | **Trivy Operator** | Continuous CVE scanning + SBOM generation. Watches all pods and produces `VulnerabilityReport` / `SbomReport` CRs; a Grafana dashboard surfaces the findings. `trivy-system-networkpolicy` default-deny overlay. (ADR-0022) |
 
 ### Progressive delivery
@@ -191,7 +191,7 @@ GitLab CI
                             Vault ExternalSecret (DB/registry creds)
 ```
 
-On every GitLab CI push a signed `hello:SHA` image lands in Artifactory. ArgoCD updates the capstone `Rollout`; Kyverno blocks it at admission if the image has no `.sig` attached. Once admitted, Argo Rollouts canaries traffic using Envoy's weighted-backend split, gating on a Mimir success-rate AnalysisTemplate. All activity is observable in Grafana.
+On every GitLab CI push a signed `hello:SHA` image lands in Artifactory. ArgoCD updates the capstone `Rollout`; Kyverno's `verifyImages` policy audits signature presence (currently `Audit` mode — enforcement flip is a separate ROADMAP item). Once admitted, Argo Rollouts canaries traffic using Envoy's weighted-backend split, gating on a Mimir success-rate AnalysisTemplate. All activity is observable in Grafana.
 
 ## Suggested learning path
 
