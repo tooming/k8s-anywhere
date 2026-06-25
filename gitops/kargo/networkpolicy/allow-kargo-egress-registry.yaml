@@ -1,0 +1,25 @@
+# Allow Kargo controller pods to reach the Artifactory Docker registry on TCP 443
+# (ADR-0016). The Kargo Warehouse polls image digests from the in-lab Artifactory
+# registry (artifactory.127.0.0.1.nip.io/docker-local/hello) to detect new Freight.
+# The registry is served by Envoy Gateway on port 443 (HTTPS front door); Kargo
+# reaches it via the nip.io hostname which resolves to the cluster's ingress address.
+# Also allows egress to the capstone namespace's Envoy-proxied registry endpoint.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kargo-egress-registry
+  namespace: kargo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 443
+          protocol: TCP
+        - port: 80
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: artifactory

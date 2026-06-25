@@ -1,0 +1,27 @@
+# kargo-project — applies the Kargo Project, Warehouse, and Stage resources that
+# define the capstone promotion pipeline (ADR-0023). The Project CR (cluster-scoped)
+# creates and manages the capstone-pipeline namespace; Warehouse and Stage resources
+# live in that namespace. ArgoCD syncs the manifests; Kargo's Project controller
+# reconciles the namespace labels and lifecycle.
+# Wave 6: after kargo (wave 1) installs the Kargo CRDs and the kargo-project
+# namespace can be managed by the Kargo Project controller.
+# ON-DEMAND: pairs with the kargo Application. No auto-sync block.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-project
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/kargo-project
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: capstone-pipeline
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

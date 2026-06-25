@@ -1,0 +1,30 @@
+# kargo-networkpolicy — default-deny + allowlist NetworkPolicies for the kargo
+# namespace (ADR-0016 §4 fan-out; promotion-orchestration engine).
+# Applies the shared baseline templates (default-deny-all, allow-dns-and-apiserver)
+# plus per-workload allow rules: Envoy Gateway → kargo-api on TCP 80 (Kargo UI);
+# kube-apiserver → webhooks on TCP 9443 (admission webhook callbacks for Kargo CRDs);
+# kargo → argocd-server on TCP 80 (argocd-update promotion step);
+# kargo → Artifactory on TCP 443 (image digest discovery from Warehouse).
+# ON-DEMAND: pairs with the kargo Application. No auto-sync block.
+# Wave 4: after kargo (wave 1) and kargo-extras (wave 0).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/kargo/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kargo
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

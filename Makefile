@@ -511,3 +511,17 @@ inkless-up: ## Deploy Aiven Inkless (diskless Kafka) via ArgoCD manual sync (~1.
 .PHONY: inkless-down
 inkless-down: ## Remove Aiven Inkless and PostgreSQL (reclaims ~1.1 GB RAM; does not delete Garage bucket)
 	$(call argocd-delete,inkless)
+
+.PHONY: kargo-up
+kargo-up: ## Deploy Kargo promotion-orchestration engine via ArgoCD manual sync (~250-450 MB; do after make up)
+	$(call argocd-sync,kargo-extras)
+	$(call argocd-sync,kargo)
+	$(call argocd-sync,kargo-networkpolicy)
+	$(call argocd-sync,kargo-project)
+
+.PHONY: kargo-down
+kargo-down: ## Remove Kargo and its Envoy route (reclaims ~250-450 MB)
+	$(call argocd-delete,kargo-project)
+	$(call argocd-delete,kargo-networkpolicy)
+	$(call argocd-delete,kargo-extras)
+	$(call argocd-delete,kargo)
