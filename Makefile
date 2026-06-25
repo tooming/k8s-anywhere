@@ -76,6 +76,10 @@ routines-mark-applied: ## Refresh .routines-applied — run ONLY after applying 
 routines-author-check: ## Fail if an executor-authored (auto/*) change edits routine files — the executor can't apply them to the live trigger (drift detector)
 	@bash scripts/routines-author-check.sh
 
+.PHONY: helm-chart-pin-check
+helm-chart-pin-check: ## Check every Helm-chart Application pins a targetRevision that exists in its repo (network-tolerant drift detector)
+	@bash scripts/helm-chart-pin-check.sh
+
 ##@ Quality gates (clusterless; run on every commit + in CI)
 
 .PHONY: lint
@@ -116,6 +120,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/git-fixture-isolation-check.sh
 	@bash scripts/routines-check.sh
 	@bash scripts/routines-author-check.sh
+	@bash scripts/helm-chart-pin-check.sh
 
 .PHONY: install-hooks
 install-hooks: ## Wire up .githooks/ as the local git hooks directory (run once per clone)

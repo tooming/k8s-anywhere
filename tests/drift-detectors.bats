@@ -175,3 +175,33 @@ setup() {
   run bash "$REPO/scripts/routines-author-check.sh"
   [ "$status" -eq 0 ]
 }
+
+# --- helm-chart-pin-check ----------------------------------------------------
+# Resolved offline via a stub resolver (CHARTPIN_RESOLVER) so the suite never hits
+# the network; helm's real "not found" vs "cannot be reached" strings are verified
+# by hand. STUB="$FIX/helm-chart-pin/resolver-stub.sh".
+@test "helm-chart-pin-check: passes when every chart pin resolves (git-sourced apps ignored)" {
+  run env CHARTPINCHECK_ROOT="$FIX/helm-chart-pin/in-sync" \
+          CHARTPIN_RESOLVER="$FIX/helm-chart-pin/resolver-stub.sh" \
+          bash "$REPO/scripts/helm-chart-pin-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"good-chart"* ]]
+}
+
+@test "helm-chart-pin-check: FAILS when a chart pins a version missing from a reachable repo" {
+  run env CHARTPINCHECK_ROOT="$FIX/helm-chart-pin/drift" \
+          CHARTPIN_RESOLVER="$FIX/helm-chart-pin/resolver-stub.sh" \
+          bash "$REPO/scripts/helm-chart-pin-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bad-pin"* ]]
+  [[ "$output" == *"NOT found"* ]]
+}
+
+@test "helm-chart-pin-check: SKIPS (does not fail) when the repo is unreachable" {
+  run env CHARTPINCHECK_ROOT="$FIX/helm-chart-pin/unreachable" \
+          CHARTPIN_RESOLVER="$FIX/helm-chart-pin/resolver-stub.sh" \
+          bash "$REPO/scripts/helm-chart-pin-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"offline-repo"* ]]
+  [[ "$output" == *"skipped"* ]]
+}

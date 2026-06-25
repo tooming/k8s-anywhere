@@ -81,6 +81,12 @@
             "command": "bash scripts/routines-sync-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking routines sync"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/helm-chart-pin-sync-hook.sh",
+            "timeout": 60,
+            "statusMessage": "Checking Helm chart-version pin exists"
           }
         ]
       }
