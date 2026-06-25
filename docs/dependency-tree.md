@@ -116,6 +116,11 @@ graph TD
       inklessbroker["inkless-broker<br/>Aiven Inkless (KIP-1150)<br/>(inkless ns)"]:::ondemand
       inklesspg["inkless-postgres<br/>batch coordinator<br/>(inkless ns)"]:::ondemand
     end
+    subgraph KARGO["Kargo — on-demand (manual sync only, ADR-0023)"]
+      kargoapi["kargo-api<br/>promotion UI + API<br/>(kargo ns, UI :80)"]:::ondemand
+      kargoctrl["kargo-controller<br/>Warehouse + Stage reconciler<br/>(kargo ns)"]:::ondemand
+      kargoproject["capstone-pipeline Project<br/>Warehouse + dev/prod Stages<br/>(capstone-pipeline ns)"]:::ondemand
+    end
     subgraph DATA["Data layer — always-on (data ns)"]
       rabbitmq["RabbitMQ<br/>broker + mgmt UI + prometheus"]:::data
       redis["Valkey<br/>cache/KV + redis_exporter"]:::data
@@ -194,6 +199,13 @@ graph TD
   inklessbroker -.->|"JDBC batch coord"| inklesspg
   inklessbroker -.->|"S3 PUT/GET records"| garage
   inklessbroker -.->|"scrape :9308 (kafka-exporter)"| alloy
+
+  %% --- Kargo on-demand promotion pipeline ---
+  envoy -.->|"kargo.127.0.0.1.nip.io (on-demand)"| kargoapi
+  kargoctrl -.->|"image digest poll"| artifactory
+  kargoctrl -.->|"manages"| kargoproject
+  kargoctrl -.->|"argocd-update API :80"| argocd
+  kargoproject -.->|"Freight → dev → prod"| capstoneapp
 
   %% --- data layer (always-on) ---
   rabbitmq -->|"scrape :15692"| alloy

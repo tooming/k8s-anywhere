@@ -1,0 +1,23 @@
+# Allow the kube-apiserver to reach the Kargo webhooks-server on TCP 9443 (ADR-0016).
+# Kargo registers ValidatingWebhookConfiguration for its CRDs (Warehouse, Stage,
+# Freight); the API server calls back on TCP 9443 for validation on every create/update
+# of those resources. Without this allow, the default-deny-all floor blocks webhook
+# callbacks and every Kargo resource mutation in the cluster fails.
+# The kube-apiserver IP (10.43.0.1/32) is the k3s cluster service IP — same
+# ipBlock pattern used by allow-kyverno-webhook-from-apiserver.yaml (ADR-0016).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kargo-webhook-from-apiserver
+  namespace: kargo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 9443
+          protocol: TCP
+      from:
+        - ipBlock:
+            cidr: 10.43.0.1/32

@@ -1,0 +1,14 @@
+# Kustomize overlay for the capstone app directory. Enabling kustomize mode
+# lets the Kargo argocd-update promotion step inject kustomize.images overrides
+# (image digest) into the ArgoCD Application spec without modifying git — ArgoCD
+# stores the override in Application.spec.source.kustomize.images and applies it
+# at sync time. The networkpolicy/ subdirectory is excluded here; it is managed
+# by the separate capstone-networkpolicy Application (kustomize build with
+# --load-restrictor LoadRestrictionsNone for cross-directory policy templates).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - rollout.yaml
+  - route.yaml

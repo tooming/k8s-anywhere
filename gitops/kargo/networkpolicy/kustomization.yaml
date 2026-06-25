@@ -1,0 +1,21 @@
+# NetworkPolicy Kustomize overlay for the kargo namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates and adds kargo-specific allow rules for:
+# Envoy Gateway → kargo-api on TCP 80 (Kargo UI access);
+# kube-apiserver → webhooks-server on TCP 9443 (Kargo CRD admission webhooks);
+# kargo controller → argocd-server on TCP 80 (argocd-update promotion step);
+# kargo controller → Artifactory on TCP 443 (image digest discovery for Warehouse).
+# The allow-dns-and-apiserver baseline covers Kargo's k8s API calls (Warehouse/Stage
+# reconciliation, Freight creation, leader election).
+# Wired into gitops/platform/kargo-networkpolicy.yaml (ON-DEMAND, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kargo
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-kargo-api-from-gateway.yaml
+  - allow-kargo-webhook-from-apiserver.yaml
+  - allow-kargo-egress-argocd.yaml
+  - allow-kargo-egress-registry.yaml

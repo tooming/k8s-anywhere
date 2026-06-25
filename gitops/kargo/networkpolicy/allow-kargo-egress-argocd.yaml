@@ -1,0 +1,23 @@
+# Allow Kargo controller pods to reach the ArgoCD API server on TCP 80 (ADR-0016).
+# The Kargo argocd-update promotion step calls the ArgoCD API server to refresh and
+# sync Applications (capstone) after each stage promotion. ArgoCD server runs in
+# insecure mode (plain HTTP); the argocd-server Service maps TCP 80 → container 8080.
+# podSelector {} covers all Kargo pods (api, controller, webhooks-server — the
+# controller is the one that runs promotion steps, but keep it uniform).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kargo-egress-argocd
+  namespace: kargo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 80
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: argocd

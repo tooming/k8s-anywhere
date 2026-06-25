@@ -1,0 +1,26 @@
+# kargo-extras — applies the kargo namespace.yaml (PSA restricted labels, ADR-0017)
+# and the Kargo UI HTTPRoute before the Kargo Helm Application (sync-wave 1) schedules
+# pods. Running at wave 0 ensures the namespace's enforce/warn/audit labels are in place
+# before ArgoCD deploys the Helm release. The HTTPRoute (kargo.127.0.0.1.nip.io →
+# kargo-api :80) lands here so it is always available alongside the controller.
+# Also renders the ESO kargo-admin-credentials ExternalSecret (Vault secret/kargo/admin).
+# ON-DEMAND: pairs with the kargo Application. No auto-sync block.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/kargo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kargo
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

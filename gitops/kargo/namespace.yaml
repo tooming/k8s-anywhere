@@ -1,0 +1,14 @@
+# Explicit kargo namespace manifest with Pod Security Admission labels (ADR-0017).
+# Kargo pods (api, controller, webhooks-server) all run as uid 65532 non-root —
+# compatible with PSS restricted; no carve-out from the restricted profile needed.
+# Synced by kargo-extras (wave 0) before the Helm release (wave 1) schedules pods
+# so PSA enforcement is in place before any pod is admitted.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kargo
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

@@ -1,0 +1,64 @@
+# Kargo promotion-orchestration engine (ADR-0023).
+# Helm chart kargo from https://charts.kargo.io.
+# Single replica per component (ADR-0005 lab trade-off; production runs HA).
+# Plain HTTP inside the cluster (api.tls.selfSignedCert.generate: false); TLS
+# terminated at Envoy Gateway (ADR-0008). Admin credentials from Vault via ESO
+# (ExternalSecret kargo-admin-credentials, Vault path secret/kargo/admin).
+# kargo-extras (wave 0) pre-creates the kargo namespace with PSA restricted labels
+# (ADR-0017) before the Helm release schedules pods.
+# ON-DEMAND: no auto-sync block → ArgoCD discovers this Application but will NOT
+# auto-deploy it. Bring up with: make kargo-up
+# Tear down with:               make kargo-down
+# Do NOT enable auto-sync here — footprint (~250-450 MiB) requires manual intent
+# (ADR-0005, 12 GB VM budget).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://charts.kargo.io
+    chart: kargo
+    targetRevision: 1.2.0
+    helm:
+      releaseName: kargo
+      valuesObject:
+        api:
+          replicas: 1
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              memory: 64Mi
+          tls:
+            selfSignedCert:
+              generate: false
+          adminAccount:
+            enabled: true
+            passwordHashSecretKeyRef:
+              name: kargo-admin-credentials
+              key: password-hash
+        controller:
+          replicas: 1
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              memory: 32Mi
+        webhooksServer:
+          replicas: 1
+          resources:
+            limits:
+              memory: 64Mi
+            requests:
+              memory: 16Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kargo
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

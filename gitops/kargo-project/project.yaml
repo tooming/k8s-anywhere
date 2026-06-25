@@ -1,0 +1,98 @@
+# Kargo capstone-pipeline Project, Warehouse, and Stages (ADR-0023).
+# The Project (cluster-scoped) creates and manages the capstone-pipeline namespace.
+# Warehouse, Stage, and other Kargo resources are namespace-scoped under that project.
+#
+# Pipeline: Warehouse detects new capstone image digests from Artifactory →
+#   Stage dev (auto-promote) → argocd-update triggers ArgoCD sync →
+#   Stage prod (manual gate) → argocd-update after human approval in Kargo UI
+#
+# To promote manually: kubectl exec -n kargo deploy/kargo-controller -- \
+#   kargo promote --project capstone-pipeline --freight <id> --stage prod
+# Or use the Kargo UI at http://kargo.127.0.0.1.nip.io:8000
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Project
+metadata:
+  name: capstone-pipeline
+---
+# Warehouse: polls Artifactory for new digests of the capstone image.
+# tagSelectionStrategy: Digest — tracks every new image digest pushed to
+# artifactory.127.0.0.1.nip.io/docker-local/hello, regardless of tag name.
+# This fires on every `docker push` from the GitLab CI pipeline (step 1 of
+# the capstone inner loop) even though the image is always tagged :latest.
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: capstone
+  namespace: capstone-pipeline
+spec:
+  subscriptions:
+    - image:
+        repoURL: artifactory.127.0.0.1.nip.io/docker-local/hello
+        tagSelectionStrategy: Digest
+        discoveryLimit: 5
+---
+# Stage: dev
+# Subscribes directly to the Warehouse (sources.direct: true) so every new
+# Freight is automatically promoted here with no manual gate.
+# Promotion step: argocd-update refreshes the capstone ArgoCD Application with
+# the new image digest written into the kustomize images override — ArgoCD then
+# syncs the manifest and Argo Rollouts begins the canary progression.
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: dev
+  namespace: capstone-pipeline
+spec:
+  requestedFreight:
+    - origin:
+        kind: Warehouse
+        name: capstone
+      sources:
+        direct: true
+  promotionTemplate:
+    spec:
+      steps:
+        - uses: argocd-update
+          config:
+            apps:
+              - name: capstone
+                namespace: argocd
+                sources:
+                  - repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+                    images:
+                      - image: artifactory.127.0.0.1.nip.io/docker-local/hello
+                        newValue: Digest
+---
+# Stage: prod
+# Subscribes to Freight that has successfully transited the dev Stage
+# (sources.stages: [dev]) — only battle-tested Freight is eligible.
+# Requires explicit human approval via the Kargo UI or CLI (no automated
+# promotion policy here — manual gate is the key learning objective).
+# Promotion step: same argocd-update mechanism as dev; the value is the gate.
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: prod
+  namespace: capstone-pipeline
+spec:
+  requestedFreight:
+    - origin:
+        kind: Warehouse
+        name: capstone
+      sources:
+        stages:
+          - dev
+  promotionTemplate:
+    spec:
+      steps:
+        - uses: argocd-update
+          config:
+            apps:
+              - name: capstone
+                namespace: argocd
+                sources:
+                  - repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+                    images:
+                      - image: artifactory.127.0.0.1.nip.io/docker-local/hello
+                        newValue: Digest
