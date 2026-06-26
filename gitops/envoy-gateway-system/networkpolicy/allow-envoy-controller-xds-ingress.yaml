@@ -1,0 +1,31 @@
+# Allow the Envoy Gateway CONTROL PLANE (envoy-gateway) to receive the data-plane
+# proxy's xDS gRPC stream on TCP 18000 — ADR-0016 default-deny floor, RFC #206.
+#
+# default-deny-all denies ingress AND egress for every pod here, so the proxy→control
+# -plane xDS hop needs BOTH halves opened: the proxy's egress (allow-envoy-proxy-xds
+# -egress) and this ingress on the control plane. Without it the control plane silently
+# drops the proxy's config stream, the proxy never gets its listeners, fails its startup
+# probe, and CrashLoopBackOffs — taking the whole :8080 north-south data path down.
+#
+# Selected by control-plane=envoy-gateway (the canonical Envoy Gateway label): the pod's
+# app.kubernetes.io/name is "gateway-helm", NOT "envoy-gateway", so the name-based
+# selector the metrics-ingress rule uses would miss it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-envoy-controller-xds-ingress
+  namespace: envoy-gateway-system
+spec:
+  podSelector:
+    matchLabels:
+      control-plane: envoy-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: proxy
+      ports:
+        - protocol: TCP
+          port: 18000

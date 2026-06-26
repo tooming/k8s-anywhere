@@ -68,3 +68,39 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   [ "$status" -eq 0 ]
   [ "$output" -ge 1 ]
 }
+
+# --- gitlab/.env self-heal (gitlab-up can't run without GITLAB_ROOT_PASSWORD) -
+# gitlab/.env is gitignored, so a fresh clone has none and `docker compose up`
+# dies on interpolation. gitlab-env-ensure.sh creates it; gitlab-up must call it
+# FIRST so the failure mode is impossible by construction.
+@test "gitlab-env-ensure.sh exists and is executable" {
+  [ -x "$REPO/scripts/gitlab-env-ensure.sh" ]
+}
+
+@test "gitlab-up runs gitlab-env-ensure before 'docker compose up'" {
+  # The ensure call must precede the compose up line within the gitlab-up recipe.
+  run bash -c "awk '/^gitlab-up:/{f=1} f{print} f&&/docker compose up/{exit}' '$REPO/Makefile'"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"gitlab-env-ensure.sh"* ]]
+  ensure_line=$(printf '%s\n' "$output" | grep -n 'gitlab-env-ensure.sh' | head -1 | cut -d: -f1)
+  compose_line=$(printf '%s\n' "$output" | grep -n 'docker compose up' | head -1 | cut -d: -f1)
+  [ -n "$ensure_line" ] && [ -n "$compose_line" ] && [ "$ensure_line" -lt "$compose_line" ]
+}
+
+@test "gitlab-env-ensure.sh is idempotent (no-op when GITLAB_ROOT_PASSWORD already set)" {
+  run grep -c 'already has GITLAB_ROOT_PASSWORD' "$REPO/scripts/gitlab-env-ensure.sh"
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 1 ]
+}
+
+# --- grafana-gitsync wait must clear the cold-start dashboard download --------
+# download-dashboards curls each community gnetId dashboard from grafana.com at up
+# to --max-time 60s. If GRAFANA_WAIT is shorter than that budget, `make up` fails
+# its LAST step on a fresh lab. Keep the wait >= (#gnetId x 60) + startup headroom.
+@test "grafana-gitsync GRAFANA_WAIT covers the community-dashboard download budget" {
+  ndash=$(grep -c 'gnetId:' "$REPO/gitops/platform/observability-grafana.yaml")
+  wait=$(grep -oE 'GRAFANA_WAIT:-[0-9]+' "$REPO/scripts/grafana-gitsync-bootstrap.sh" | grep -oE '[0-9]+' | head -1)
+  [ -n "$wait" ]
+  budget=$(( ndash * 60 + 120 ))
+  [ "$wait" -ge "$budget" ]
+}

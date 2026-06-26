@@ -235,6 +235,7 @@ argocd: ## Install ArgoCD (Helm via Terraform)
 
 .PHONY: gitlab-up
 gitlab-up: ## Start GitLab omnibus and wait until healthy (first boot ~5 min)
+	@bash scripts/gitlab-env-ensure.sh
 	cd gitlab && docker compose up -d
 	@echo "waiting for GitLab to be healthy..."
 	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' gitlab 2>/dev/null)" = "healthy" ]; do sleep 10; done

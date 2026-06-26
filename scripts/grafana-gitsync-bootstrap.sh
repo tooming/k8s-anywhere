@@ -29,8 +29,13 @@ USER=$(kubectl -n "$ONS" get secret grafana-admin -o jsonpath='{.data.admin-user
 
 # Wait for Grafana to be healthy before making API calls.  On a from-scratch
 # bootstrap Grafana only starts once ESO has synced grafana-admin from Vault, and
-# then the init container must finish its CA-bundle build first.
-WAIT="${GRAFANA_WAIT:-300}"
+# then the init containers must finish: download-dashboards curls each community
+# gnetId dashboard from grafana.com (up to --max-time 60s each — 6 dashboards is a
+# ~360s worst case), then ca-bundle builds the CA bundle. The wait must clear that
+# whole cold start, or `make up` fails its LAST step on a fresh lab even though
+# Grafana is fine seconds later. Budget = (#gnetId dashboards x 60s) + startup
+# headroom; scripts/grafana-gitsync-wait-check.sh enforces it can't fall short.
+WAIT="${GRAFANA_WAIT:-600}"
 echo "[grafana-gitsync] waiting up to ${WAIT}s for Grafana to be healthy ($GRAFANA_URL)..."
 end=$((SECONDS + WAIT))
 while true; do
