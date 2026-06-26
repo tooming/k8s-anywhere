@@ -170,6 +170,9 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) frontdoor
 	$(MAKE) grafana-gitsync-bootstrap
 	@echo ""
+	@echo "--- verifying every always-on workload is actually Running+Ready ---"
+	@bash scripts/lab-health-check.sh   # gates the success banner: no "lab up" unless healthy
+	@echo ""
 	@echo "✅ lab up. UIs via the front door on :8000 — Grafana http://localhost:8000 · ArgoCD http://argocd.127.0.0.1.nip.io:8000 · run 'make creds' for logins, 'make status' for health"
 
 .PHONY: down
@@ -359,6 +362,10 @@ status: ## Show VM resources + per-namespace memory + any non-running pods
 	@echo "--- pods not Running/Completed ---"; \
 		kubectl get pods -A --no-headers 2>/dev/null | awk '$$4!="Running" && $$4!="Completed" {print "  "$$1"/"$$2"  "$$4}' || true
 	@echo "--- GitLab container ---"; docker ps --filter name=gitlab --format '  {{.Names}}  {{.Status}}' 2>/dev/null || true
+
+.PHONY: health
+health: ## Assert every always-on pod + workload is actually Running+Ready (exit 1 if not)
+	@bash scripts/lab-health-check.sh
 
 ##@ Disaster recovery (see docs/DR.md)
 
