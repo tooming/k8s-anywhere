@@ -216,6 +216,16 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "PSS backstop checks runAsNonRoot at the POD level (matches every lab manifest; kubelet-enforced)" {
+  # The pattern must require runAsNonRoot at the pod securityContext — that's where PSS,
+  # the PSA enforce=restricted label, and every plain-manifest workload set it. Demanding
+  # it at the CONTAINER level (which no lab workload does) makes the Enforce policy reject
+  # mimir/loki/tempo/moto/rabbitmq/valkey/… the instant the admission controller is healthy.
+  P="$REPO/gitops/kyverno/policies/require-pod-security-restricted.yaml"
+  [ "$(yqs '.spec.rules[0].validate.pattern.spec.securityContext.runAsNonRoot' "$P")" = "true" ]
+  [ "$(yqs '.spec.rules[0].validate.pattern.spec.containers[0].securityContext.runAsNonRoot // "absent"' "$P")" = "absent" ]
+}
+
 # --- seccomp mutation structural checks --------------------------------------
 @test "add-default-seccomp uses patchStrategicMerge shape" {
   run grep -q 'patchStrategicMerge' "$REPO/gitops/kyverno/policies/add-default-seccomp.yaml"
