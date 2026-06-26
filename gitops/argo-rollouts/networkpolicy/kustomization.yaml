@@ -1,7 +1,8 @@
 # NetworkPolicy Kustomize overlay for the argo-rollouts namespace (ADR-0016 §4 fan-out).
 # Pulls the two shared baseline templates and adds argo-rollouts-specific allow rules
 # for: Alloy metrics scrape from observability on TCP 8090; Envoy proxy dashboard
-# access on TCP 3100; egress to Mimir on TCP 8080 for AnalysisTemplate SLO queries.
+# access on TCP 3100; egress to Mimir on TCP 8080 for AnalysisTemplate SLO queries;
+# controller HTTPS egress (TCP 443) to fetch its traffic-router plugin from GitHub.
 # The allow-dns-and-apiserver baseline covers the controller's k8s API calls (Rollout
 # and AnalysisTemplate reconciliation, leader election, and canary weight patching).
 # Wired into gitops/platform/argo-rollouts-networkpolicy.yaml (auto-synced, wave 4).
@@ -16,3 +17,4 @@ resources:
   - allow-argo-rollouts-metrics-from-observability.yaml
   - allow-argo-rollouts-dashboard-from-gateway.yaml
   - allow-argo-rollouts-egress-mimir.yaml
+  - allow-argo-rollouts-controller-egress-plugins.yaml

@@ -54,6 +54,11 @@ data:
         insecure: true
         access_key_id: ${GARAGE_ACCESS_KEY_ID}
         secret_access_key: ${GARAGE_SECRET_ACCESS_KEY}
+    ruler:
+      # Same read-only-root trap as activity_tracker: the ruler's local rule-group
+      # scratch dir defaults to ./data-ruler/ (working dir), which is unwritable under
+      # readOnlyRootFilesystem and crashes -target=all on boot. Pin it to the PVC.
+      rule_path: /data/ruler
     store_gateway:
       sharding_ring:
         replication_factor: 1

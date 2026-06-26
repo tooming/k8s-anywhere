@@ -71,24 +71,38 @@ if [ -z "$MIMIR_YAML" ] || [ "$MIMIR_YAML" = "null" ]; then
   echo; exit 1
 fi
 
-# --- 1. activity_tracker.filepath must be set (its default is read-only) --------
-AT="$(printf '%s' "$MIMIR_YAML" | yq '.activity_tracker.filepath // ""' - 2>/dev/null)"
-if [ -z "$AT" ]; then
-  bad "activity_tracker.filepath is unset — Mimir defaults to ./metrics-activity.log on the read-only root and crashes on boot; set it under a writable mount (${WRITABLE[*]})"
-  fail=1
-elif under_writable "$AT"; then
-  ok "activity_tracker.filepath ($AT) is on a writable mount"
-else
-  bad "activity_tracker.filepath ($AT) is not under a writable mount (${WRITABLE[*]})"
-  fail=1
-fi
+# --- 1. settings whose DEFAULT is a ./ path on the read-only root MUST be set ----
+# These don't appear as a "/..." value when unset, so the path scan in step 2 can't
+# catch them — each silently defaults to the working dir and crashes -target=all on
+# boot. Pin every one under a writable mount. (key | yq-path | default it falls to)
+declare -a REQUIRED=(
+  "activity_tracker.filepath|.activity_tracker.filepath|./metrics-activity.log"
+  "ruler.rule_path|.ruler.rule_path|./data-ruler/"
+)
+declare -a REQVALS=()   # collected so step 2 doesn't double-report them
+for spec in "${REQUIRED[@]}"; do
+  IFS='|' read -r label path def <<<"$spec"
+  v="$(printf '%s' "$MIMIR_YAML" | yq "$path // \"\"" - 2>/dev/null)"
+  if [ -z "$v" ]; then
+    bad "$label is unset — Mimir defaults to $def on the read-only root and crashes on boot; set it under a writable mount (${WRITABLE[*]})"
+    fail=1
+  elif under_writable "$v"; then
+    ok "$label ($v) is on a writable mount"
+    REQVALS+=("$v")
+  else
+    bad "$label ($v) is not under a writable mount (${WRITABLE[*]})"
+    fail=1
+    REQVALS+=("$v")
+  fi
+done
 
 # --- 2. every absolute "/..." path in the config must be writable --------------
 # Host/endpoint/bucket values aren't absolute paths, so they don't start with "/".
 mapfile -t PATHS < <(printf '%s' "$MIMIR_YAML" | yq '.. | select(tag == "!!str") | select(test("^/"))' - 2>/dev/null | sort -u)
 for p in "${PATHS[@]}"; do
   [ -n "$p" ] || continue
-  [ "$p" = "$AT" ] && continue   # already reported above
+  skip_p=0; for rv in "${REQVALS[@]}"; do [ "$p" = "$rv" ] && skip_p=1; done
+  [ "$skip_p" -eq 1 ] && continue   # already reported above
   if under_writable "$p"; then
     ok "config path $p is on a writable mount"
   else

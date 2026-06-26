@@ -19,7 +19,7 @@ spec:
       annotations:
         # Bump when mimir.yaml changes so the pod restarts to read it
         # (plain manifest has no auto-checksum like Helm charts do).
-        checksum/config: s3-garage-v3-activitytracker
+        checksum/config: s3-garage-v4-ruler-rule-path
     spec:
       securityContext:
         runAsNonRoot: true

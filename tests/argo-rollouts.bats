@@ -157,6 +157,25 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- Controller plugin-download egress (controller → GitHub :443) ------------
+# The controller fetches its gatewayAPI traffic-router plugin from GitHub on boot;
+# default-deny blocks it ("dial tcp …:443: i/o timeout") and the controller exits.
+@test "argo-rollouts NetworkPolicy kustomization references the controller plugin-egress allow file" {
+  run grep -q 'allow-argo-rollouts-controller-egress-plugins.yaml' "$REPO/gitops/argo-rollouts/networkpolicy/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "controller plugin-egress allow file exists" {
+  [ -f "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-controller-egress-plugins.yaml" ]
+}
+
+@test "controller plugin-egress opens HTTPS (TCP 443) to external IPs, controller pods only" {
+  F="$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-controller-egress-plugins.yaml"
+  run grep -q 'port: 443' "$F"; [ "$status" -eq 0 ]
+  run grep -q 'app.kubernetes.io/component: rollouts-controller' "$F"; [ "$status" -eq 0 ]
+  run grep -q 'cidr: 0.0.0.0/0' "$F"; [ "$status" -eq 0 ]
+}
+
 # --- Metrics ingress allow (Alloy → controller :8090) ------------------------
 @test "metrics allow file exists" {
   [ -f "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-metrics-from-observability.yaml" ]
