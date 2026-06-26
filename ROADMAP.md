@@ -1151,7 +1151,7 @@ You review and merge plan PRs, same as implementation PRs.
   WAYS-OF-WORKING.md §3, ship `lab-demo.json` first and file `lab-data-demo.json` as
   a follow-up. (auto/demo-data-demo-dashboards)
 
-- [ ] 🟢 **`docs/00-architecture.md` — current-state rewrite** (CHARTER **Core Values**
+- [x] 🟢 **`docs/00-architecture.md` — current-state rewrite** (CHARTER **Core Values**
   §"Docs & dashboards don't drift"; docs-only). The file is 70 lines and was written when
   the platform had ~8 components; it now runs ~28 ArgoCD Applications across four
   categories (always-on core, LGTMP observability, Tier 1 next-wave, on-demand heavy)
@@ -1176,7 +1176,7 @@ You review and merge plan PRs, same as implementation PRs.
   actually in `gitops/` (ADR-0004 — no fabricated state). `make ci` must pass.
   `docs/done/` entry required. (auto/architecture-doc-rewrite)
 
-- [ ] 🟢 **ADR-0017 `velero` PSA row correction + `docs/dependency-tree.md` stale
+- [x] 🟢 **ADR-0017 `velero` PSA row correction + `docs/dependency-tree.md` stale
   notes** (CHARTER **Core Values** §"Docs & dashboards don't drift"; docs-only, two
   small corrections bundled because both are tiny). (a) **ADR-0017 velero row**: the
   per-namespace profile table currently says `velero → baseline`, but the actual
