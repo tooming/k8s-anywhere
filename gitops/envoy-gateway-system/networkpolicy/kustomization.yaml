@@ -6,7 +6,9 @@
 # (Envoy proxy container port — the Service maps port 80 → container 10080); proxy-pod
 # egress to the twelve backend namespaces it proxies HTTPRoute traffic into.
 # The allow-dns-and-apiserver baseline covers both controller and proxy k8s API calls
-# (Gateway reconciliation, EndpointSlice watches, leader election).
+# (Gateway reconciliation, EndpointSlice watches, leader election); a dedicated rule
+# adds the proxy→control-plane xDS hop (TCP 18000) that neither baseline nor the
+# backend-egress rule covered (without it the proxy can't fetch config and crashloops).
 # Wired into gitops/platform/envoy-gateway-system-networkpolicy.yaml (auto-synced, wave 4).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -20,3 +22,5 @@ resources:
   - allow-envoy-proxy-metrics-ingress.yaml
   - allow-envoy-proxy-listener-ingress.yaml
   - allow-envoy-proxy-backend-egress.yaml
+  - allow-envoy-proxy-xds-egress.yaml
+  - allow-envoy-controller-xds-ingress.yaml

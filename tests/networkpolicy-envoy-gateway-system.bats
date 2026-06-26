@@ -140,3 +140,40 @@ setup() {
   run grep -q 'sync-wave: "4"' "$REPO/gitops/platform/envoy-gateway-system-networkpolicy.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- proxy <-> control-plane xDS (TCP 18000) ---------------------------------
+# default-deny denies both directions, so the data-plane proxy's xDS stream to the
+# control plane needs BOTH the proxy egress and the control-plane ingress opened, or
+# the proxy never gets its config, fails its startup probe, and crashloops — taking
+# the whole :8080 north-south data path (every lab UI) down.
+@test "allow-envoy-proxy-xds-egress.yaml exists and is in the kustomization" {
+  [ -f "$ENVOY_GW_NP/allow-envoy-proxy-xds-egress.yaml" ]
+  run grep -q 'allow-envoy-proxy-xds-egress.yaml' "$ENVOY_GW_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-xds-egress opens proxy egress to the control plane on 18000" {
+  run grep -q 'app.kubernetes.io/component: proxy' "$ENVOY_GW_NP/allow-envoy-proxy-xds-egress.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'control-plane: envoy-gateway' "$ENVOY_GW_NP/allow-envoy-proxy-xds-egress.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'port: 18000' "$ENVOY_GW_NP/allow-envoy-proxy-xds-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-controller-xds-ingress.yaml exists and is in the kustomization" {
+  [ -f "$ENVOY_GW_NP/allow-envoy-controller-xds-ingress.yaml" ]
+  run grep -q 'allow-envoy-controller-xds-ingress.yaml' "$ENVOY_GW_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-controller-xds-ingress opens control-plane ingress from the proxy on 18000" {
+  # Must select the control plane by control-plane=envoy-gateway (its
+  # app.kubernetes.io/name is gateway-helm, so a name-based selector would miss it).
+  run grep -q 'control-plane: envoy-gateway' "$ENVOY_GW_NP/allow-envoy-controller-xds-ingress.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'app.kubernetes.io/component: proxy' "$ENVOY_GW_NP/allow-envoy-controller-xds-ingress.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'port: 18000' "$ENVOY_GW_NP/allow-envoy-controller-xds-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
