@@ -1,4 +1,5 @@
-# In-sync fixture: activity_tracker.filepath set, every path under /data (writable).
+# In-sync fixture: activity_tracker.filepath + ruler.rule_path set, every path under
+# /data (writable) — both unset-default settings the guard requires.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,6 +10,8 @@ data:
     multitenancy_enabled: true
     activity_tracker:
       filepath: /data/metrics-activity.log
+    ruler:
+      rule_path: /data/ruler
     blocks_storage:
       backend: s3
       s3:

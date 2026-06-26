@@ -1,0 +1,30 @@
+# Allow the Argo Rollouts controller HTTPS egress to download its traffic-router
+# plugin at startup (ADR-0016, ADR-0020 §Traffic-router). The controller fetches the
+# argoproj-labs/gatewayAPI plugin binary from
+# github.com/.../releases/download/v0.5.0/gatewayapi-plugin-linux-amd64 (302 → the
+# githubusercontent CDN) the moment it boots; with the default-deny floor that download
+# times out ("dial tcp …:443: i/o timeout") and the controller exits fatally before it
+# can manage any Rollout. (Only surfaces once trafficRouterPlugins parses as a list —
+# before that the controller died earlier, on unmarshal.)
+#
+# GitHub release assets are CDN-backed with rotating IPs and Cilium toFQDNs is
+# unreliable in this kube-proxy-free lab (see allow-argocd-repo-server-egress-charts),
+# so scope to TCP 443 egress to external IPs, controller pods only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argo-rollouts-controller-egress-plugins
+  namespace: argo-rollouts
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: rollouts-controller
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 443
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
