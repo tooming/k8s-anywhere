@@ -1,0 +1,17 @@
+# Drift fixture: plugin value is a "|" block-scalar STRING — double-encodes in the
+# rendered ConfigMap and crashloops the controller (cannot unmarshal []PluginItem).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-rollouts
+spec:
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-rollouts
+    targetRevision: 2.40.10
+    helm:
+      valuesObject:
+        controller:
+          trafficRouterPlugins: |
+            - name: argoproj-labs/gatewayAPI
+              location: https://example/plugin

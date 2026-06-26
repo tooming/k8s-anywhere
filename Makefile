@@ -80,6 +80,18 @@ routines-author-check: ## Fail if an executor-authored (auto/*) change edits rou
 helm-chart-pin-check: ## Check every Helm-chart Application pins a targetRevision that exists in its repo (network-tolerant drift detector)
 	@bash scripts/helm-chart-pin-check.sh
 
+.PHONY: argocd-crd-ssa-check
+argocd-crd-ssa-check: ## Check Applications whose chart ships an oversized CRD sync with ServerSideApply=true (network-tolerant drift detector)
+	@bash scripts/argocd-crd-ssa-check.sh
+
+.PHONY: rollouts-plugin-list-check
+rollouts-plugin-list-check: ## Check Argo Rollouts plugin Helm values are YAML lists, not strings (drift detector)
+	@bash scripts/rollouts-plugin-list-check.sh
+
+.PHONY: mimir-readonly-root-check
+mimir-readonly-root-check: ## Check every Mimir write path lands on a writable volume, not the read-only root (drift detector)
+	@bash scripts/mimir-readonly-root-check.sh
+
 ##@ Quality gates (clusterless; run on every commit + in CI)
 
 .PHONY: lint
@@ -121,6 +133,9 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/routines-check.sh
 	@bash scripts/routines-author-check.sh
 	@bash scripts/helm-chart-pin-check.sh
+	@bash scripts/argocd-crd-ssa-check.sh
+	@bash scripts/rollouts-plugin-list-check.sh
+	@bash scripts/mimir-readonly-root-check.sh
 
 .PHONY: install-hooks
 install-hooks: ## Wire up .githooks/ as the local git hooks directory (run once per clone)

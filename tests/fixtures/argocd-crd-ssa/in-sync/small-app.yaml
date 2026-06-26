@@ -1,0 +1,13 @@
+# In-sync: small-CRD chart without SSA — within the client-side-apply cap, so fine.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: smallcrd-app
+spec:
+  source:
+    repoURL: https://example.github.io/charts
+    chart: small-crd-chart
+    targetRevision: 1.0.0
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

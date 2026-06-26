@@ -1,0 +1,14 @@
+# Drift: oversized-CRD chart, NO server-side apply — repo-server fails forever with
+# "metadata.annotations: Too long" and the workload crashloops on its missing CRDs.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bigcrd-app
+spec:
+  source:
+    repoURL: https://example.github.io/charts
+    chart: big-crd-chart
+    targetRevision: 1.0.0
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

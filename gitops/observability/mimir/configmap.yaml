@@ -8,6 +8,11 @@ data:
     # Monolithic single-node Mimir (Grafana's documented single-process layout).
     # Multi-tenant: every write/read must carry the X-Scope-OrgID header.
     multitenancy_enabled: true
+    # readOnlyRootFilesystem (ADR-0017 PSS restricted) makes the working dir
+    # read-only, so the activity tracker's default ./metrics-activity.log can't be
+    # created and the process exits 1 on boot. Point it at the writable PVC (/data).
+    activity_tracker:
+      filepath: /data/metrics-activity.log
     server:
       http_listen_port: 9009
       log_level: warn

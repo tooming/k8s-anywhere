@@ -87,6 +87,24 @@
             "command": "bash scripts/helm-chart-pin-sync-hook.sh",
             "timeout": 60,
             "statusMessage": "Checking Helm chart-version pin exists"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/argocd-crd-ssa-sync-hook.sh",
+            "timeout": 90,
+            "statusMessage": "Checking oversized-CRD Application uses server-side apply"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/rollouts-plugin-list-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking Argo Rollouts plugin values are lists"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/mimir-readonly-root-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking Mimir write paths are writable"
           }
         ]
       }

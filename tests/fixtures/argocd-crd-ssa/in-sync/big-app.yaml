@@ -1,0 +1,14 @@
+# In-sync: oversized-CRD chart, synced WITH server-side apply — applies fine.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bigcrd-app
+spec:
+  source:
+    repoURL: https://example.github.io/charts
+    chart: big-crd-chart
+    targetRevision: 1.0.0
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
