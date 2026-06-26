@@ -26,6 +26,10 @@ kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
 WAIT="${HEALTH_WAIT:-90}"
 IV="${HEALTH_INTERVAL:-10}"
 ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo artifactory istio-system kiali longhorn-system inkless kargo ack-system capstone}"
+# Front-door UIs to probe (HTTP, from the host) — readiness of the pods behind Envoy
+# isn't enough: if the Envoy data plane is down, every :8080 UI is unreachable while the
+# pods still look fine. "url|name", space-separated. Set LAB_UI_PROBES= to skip.
+UI_PROBES="${LAB_UI_PROBES:-http://localhost:8080/api/health|grafana(:8080) http://argocd.127.0.0.1.nip.io:8080/healthz|argocd(:8080)}"
 
 if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; Y=; B=; Z=; fi
 ok()   { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
@@ -75,7 +79,16 @@ scan() {
     A_WL+="$kind $ns/$name  ready=$r"$'\n'
   done <<<"$wl"
 
-  [ -z "$A_POD" ] && [ -z "$A_WL" ]
+  # --- front door: the Envoy :8080 UIs must actually answer over HTTP -----------
+  F=""
+  local p url name code
+  for p in $UI_PROBES; do
+    url=${p%|*}; name=${p#*|}
+    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 6 "$url" 2>/dev/null)"
+    case "$code" in 2*|3*|401|403) ;; *) F+="$name unreachable via the Envoy front door (HTTP $code) — $url"$'\n' ;; esac
+  done
+
+  [ -z "$A_POD" ] && [ -z "$A_WL" ] && [ -z "$F" ]
 }
 
 printf '%s== lab health ==%s  (polling up to %ss for every always-on workload to be Running+Ready)\n' "$B" "$Z" "$WAIT"
@@ -87,11 +100,12 @@ while :; do
 done
 
 fail=0
-if [ -z "$A_POD" ] && [ -z "$A_WL" ]; then
-  ok "every always-on pod is Running+Ready and every always-on workload has all replicas Ready"
+if [ -z "$A_POD" ] && [ -z "$A_WL" ] && [ -z "${F:-}" ]; then
+  ok "every always-on pod Running+Ready, every workload's replicas Ready, and the Envoy front-door UIs answer"
 else
   [ -n "$A_POD" ] && { bad "always-on pods NOT Running+Ready:"; printf '%s' "$A_POD" | while read -r l; do [ -n "$l" ] && note "$l"; done; }
   [ -n "$A_WL" ]  && { bad "always-on workloads with replicas not Ready:"; printf '%s' "$A_WL" | while read -r l; do [ -n "$l" ] && note "$l"; done; }
+  [ -n "${F:-}" ] && { bad "front-door UIs unreachable (Envoy data path down even if pods look Ready):"; printf '%s' "$F" | while read -r l; do [ -n "$l" ] && note "$l"; done; }
   fail=1
 fi
 if [ -n "${O_POD:-}" ]; then
