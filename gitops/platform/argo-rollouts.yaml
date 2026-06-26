@@ -28,7 +28,13 @@ spec:
           resources:
             limits:
               memory: 128Mi
-          trafficRouterPlugins: |
+          # Must be a YAML *list*, not a block-scalar string: the chart runs the
+          # value through `toYaml` into the argo-rollouts-config ConfigMap, and the
+          # controller unmarshals that key as []types.PluginItem. A "|" string
+          # double-encodes (the rendered value becomes a nested "|" scalar), so the
+          # controller dies with "cannot unmarshal string into Go value of type
+          # []types.PluginItem" on boot.
+          trafficRouterPlugins:
             - name: argoproj-labs/gatewayAPI
               location: https://github.com/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi/releases/download/v0.5.0/gatewayapi-plugin-linux-amd64
         dashboard:

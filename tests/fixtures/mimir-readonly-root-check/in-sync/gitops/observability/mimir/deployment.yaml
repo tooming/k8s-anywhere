@@ -1,0 +1,30 @@
+# In-sync fixture: readOnlyRootFilesystem with writable /data (PVC) + /tmp (emptyDir).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mimir
+  namespace: observability
+spec:
+  template:
+    spec:
+      containers:
+        - name: mimir
+          image: grafana/mimir:3.0.6
+          securityContext:
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: config
+              mountPath: /etc/mimir
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: mimir-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: mimir-data
+        - name: tmp
+          emptyDir: {}

@@ -1,0 +1,20 @@
+# In-sync fixture: activity_tracker.filepath set, every path under /data (writable).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mimir-config
+  namespace: observability
+data:
+  mimir.yaml: |
+    multitenancy_enabled: true
+    activity_tracker:
+      filepath: /data/metrics-activity.log
+    blocks_storage:
+      backend: s3
+      s3:
+        endpoint: garage.storage.svc.cluster.local:3900
+        bucket_name: mimir
+      tsdb:
+        dir: /data/tsdb
+    compactor:
+      data_dir: /data/compactor

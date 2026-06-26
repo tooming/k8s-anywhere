@@ -6,6 +6,8 @@
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  # yqs(): yq-variant-robust scalar read (strips quoting differences).
+  load lib/yq
 }
 
 # --- ArgoCD Application shape (always-on, auto-synced) -----------------------
@@ -41,6 +43,13 @@ setup() {
 @test "argo-rollouts Application pins the gatewayAPI plugin at v0.5.0" {
   run grep -q 'v0.5.0' "$REPO/gitops/platform/argo-rollouts.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "argo-rollouts trafficRouterPlugins is a YAML list, not a string (else the controller crashloops)" {
+  # A "|" block scalar double-encodes into the ConfigMap and the controller dies with
+  # "cannot unmarshal string into Go value of type []types.PluginItem". Guard: it must
+  # be a sequence. See scripts/rollouts-plugin-list-check.sh.
+  [ "$(yqs '.spec.source.helm.valuesObject.controller.trafficRouterPlugins | tag' "$REPO/gitops/platform/argo-rollouts.yaml")" = "!!seq" ]
 }
 
 @test "argo-rollouts Application enables the dashboard" {

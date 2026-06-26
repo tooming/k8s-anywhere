@@ -52,3 +52,9 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      # Kyverno's clusterpolicies.kyverno.io / policies.kyverno.io CRDs are ~650 KB
+      # each — far over the 262144-byte cap on the kubectl client-side-apply
+      # annotation. Without server-side apply, repo-server can't apply them
+      # ("metadata.annotations: Too long"), so the policy CRDs never install and the
+      # admission controller CrashLoopBackOffs on its CRD sanity check.
+      - ServerSideApply=true

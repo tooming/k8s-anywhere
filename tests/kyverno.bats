@@ -7,6 +7,8 @@
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  # yqs(): yq-variant-robust scalar read (strips quoting differences).
+  load lib/yq
 }
 
 # --- ArgoCD Application shape (always-on, auto-synced) ------------------------
@@ -32,6 +34,13 @@ setup() {
 @test "kyverno Application targets the kyverno namespace" {
   run grep -q 'namespace: kyverno' "$REPO/gitops/platform/kyverno.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "kyverno Application syncs with ServerSideApply (its policy CRDs exceed the client-side-apply cap)" {
+  # clusterpolicies.kyverno.io / policies.kyverno.io are ~650 KB each, over the
+  # 262144-byte client-side-apply annotation limit; without SSA repo-server can't
+  # apply them and the admission controller crashloops. See scripts/argocd-crd-ssa-check.sh.
+  [ "$(yqs '.spec.syncPolicy.syncOptions | contains(["ServerSideApply=true"])' "$REPO/gitops/platform/kyverno.yaml")" = "true" ]
 }
 
 # --- kyverno-extras (namespace pre-creation, wave 0) -------------------------

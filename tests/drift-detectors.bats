@@ -205,3 +205,62 @@ setup() {
   [[ "$output" == *"offline-repo"* ]]
   [[ "$output" == *"skipped"* ]]
 }
+
+# --- argocd-crd-ssa-check ----------------------------------------------------
+# Rendered offline via a stub renderer (CRDSSA_RENDERER) so the suite never pulls a
+# real chart; the stub emits an oversized CRD for "big-crd-chart" and a tiny one for
+# "small-crd-chart". This proves the size-vs-SSA logic without helm/network.
+@test "argocd-crd-ssa-check: passes when an oversized-CRD Application uses ServerSideApply" {
+  run env CRDSSA_CHECK_ROOT="$FIX/argocd-crd-ssa/in-sync" \
+          CRDSSA_RENDERER="$FIX/argocd-crd-ssa/renderer-stub.sh" \
+          bash "$REPO/scripts/argocd-crd-ssa-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"bigcrd-app: SSA enabled"* ]]
+}
+
+@test "argocd-crd-ssa-check: FAILS when an oversized-CRD Application lacks ServerSideApply" {
+  run env CRDSSA_CHECK_ROOT="$FIX/argocd-crd-ssa/drift" \
+          CRDSSA_RENDERER="$FIX/argocd-crd-ssa/renderer-stub.sh" \
+          bash "$REPO/scripts/argocd-crd-ssa-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bigcrd-app"* ]]
+  [[ "$output" == *"ServerSideApply"* ]]
+}
+
+# --- rollouts-plugin-list-check ----------------------------------------------
+@test "rollouts-plugin-list-check: passes when plugin values are YAML lists" {
+  run env ROLLOUTS_PLUGIN_CHECK_ROOT="$FIX/rollouts-plugin-list-check/in-sync" \
+          bash "$REPO/scripts/rollouts-plugin-list-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "rollouts-plugin-list-check: FAILS when a plugin value is a block-scalar string" {
+  run env ROLLOUTS_PLUGIN_CHECK_ROOT="$FIX/rollouts-plugin-list-check/drift" \
+          bash "$REPO/scripts/rollouts-plugin-list-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"must be a YAML list"* ]]
+}
+
+@test "rollouts-plugin-list-check: passes on the real repo gitops" {
+  run bash "$REPO/scripts/rollouts-plugin-list-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+# --- mimir-readonly-root-check -----------------------------------------------
+@test "mimir-readonly-root-check: passes when every write path is on a writable mount" {
+  run env MIMIR_RWCHECK_ROOT="$FIX/mimir-readonly-root-check/in-sync" \
+          bash "$REPO/scripts/mimir-readonly-root-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "mimir-readonly-root-check: FAILS when activity_tracker.filepath is unset (read-only-root default)" {
+  run env MIMIR_RWCHECK_ROOT="$FIX/mimir-readonly-root-check/drift" \
+          bash "$REPO/scripts/mimir-readonly-root-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"writable mount"* ]]
+}
+
+@test "mimir-readonly-root-check: passes on the real repo mimir manifests" {
+  run bash "$REPO/scripts/mimir-readonly-root-check.sh"
+  [ "$status" -eq 0 ]
+}
