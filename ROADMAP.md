@@ -1176,7 +1176,7 @@ You review and merge plan PRs, same as implementation PRs.
   actually in `gitops/` (ADR-0004 — no fabricated state). `make ci` must pass.
   `docs/done/` entry required. (auto/architecture-doc-rewrite)
 
-- [ ] 🟢 **ADR-0017 `velero` PSA row correction + `docs/dependency-tree.md` stale
+- [x] 🟢 **ADR-0017 `velero` PSA row correction + `docs/dependency-tree.md` stale
   notes** (CHARTER **Core Values** §"Docs & dashboards don't drift"; docs-only, two
   small corrections bundled because both are tiny). (a) **ADR-0017 velero row**: the
   per-namespace profile table currently says `velero → baseline`, but the actual
