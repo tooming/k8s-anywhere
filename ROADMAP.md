@@ -1198,6 +1198,62 @@ You review and merge plan PRs, same as implementation PRs.
   parenthetical. No code changes. `make ci` must pass. `docs/done/` entry required.
   (auto/adr0017-velero-row-depTree-fix)
 
+- [ ] 🟢 **PSS `privileged` labels + NetworkPolicy — `longhorn-system`** (CHARTER
+  **Objective O2**, due **2026-09-30**; O2 fan-out completion — ADR-0017
+  §"Per-namespace profile" already lists `longhorn-system → privileged` (longhorn-manager
+  and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, host `/dev`; per
+  ADR-0013) but no `gitops/longhorn/namespace.yaml` with PSA labels exists yet. Two
+  changes bundled: (a) **PSA labels** — add `gitops/longhorn/namespace.yaml` with all
+  four PSA labels at `privileged` (`enforce: privileged`, `enforce-version: latest`,
+  `warn: privileged`, `audit: privileged`); add new auto-synced `Application`
+  `gitops/platform/longhorn-extras.yaml` (sync-wave 0, `ServerSideApply=true`,
+  `CreateNamespace=true` — an empty `longhorn-system` namespace with privileged labels
+  before `make longhorn-up` is harmless; follows the `kargo-extras` / `argocd-extras`
+  naming convention). (b) **NetworkPolicy** — add
+  `gitops/longhorn/networkpolicy/kustomization.yaml` referencing the two shared baseline
+  templates plus allow files: `allow-longhorn-intra-namespace.yaml` (intra-namespace
+  `podSelector: {}` — longhorn-manager ↔ longhorn-engine + csi-plugin communication);
+  `allow-longhorn-metrics-ingress.yaml` (ingress TCP 9500 from `observability` — Longhorn
+  exposes Prometheus metrics at `:9500/metrics`); egress to kube-apiserver via baseline.
+  Add `longhorn-networkpolicy` entry to `networkpolicy-appset.yaml` list generator
+  (`gitPath: gitops/longhorn/networkpolicy`, `destNamespace: longhorn-system`); sync
+  policy `automated: {prune: true, selfHeal: true}` via the appset template — same
+  on-demand NP pattern as `tidb-networkpolicy` (NP floor is in place before
+  `make longhorn-up` brings pods up). New `tests/securitycontext-longhorn.bats`:
+  `gitops/longhorn/namespace.yaml` exists; `enforce: privileged` present; `enforce:
+  restricted` absent (safety check). Extend `tests/networkpolicy.bats` with longhorn
+  overlay assertions (kustomization exists, baseline refs present, metrics-ingress on TCP
+  9500, appset entry `longhorn-networkpolicy` present). Update `docs/dependency-tree.md`
+  with a Longhorn PSS + NP note. `docs/done/` entry required. `make ci` must pass.
+  (auto/pss-np-longhorn)
+
+- [ ] 🟢 **PSS `privileged` labels + NetworkPolicy — `istio-system`** (CHARTER
+  **Objective O2**, due **2026-09-30**; O2 fan-out completion — ADR-0017
+  §"Per-namespace profile" already lists `istio-system → privileged` (istio-cni DaemonSet
+  mutates host CNI config; ztunnel requires `NET_ADMIN`; per ADR-0012) but no
+  `gitops/istio-system/namespace.yaml` exists. The istiod, istio-base, ztunnel, and
+  istio-cni Applications (all on-demand via `make istio-up`) deploy into this namespace.
+  Two changes bundled: (a) **PSA labels** — create `gitops/istio-system/namespace.yaml`
+  with all four PSA labels at `privileged` (`enforce: privileged`, `enforce-version:
+  latest`, `warn: privileged`, `audit: privileged`); add new auto-synced `Application`
+  `gitops/platform/istio-system-extras.yaml` (sync-wave 0, `ServerSideApply=true`,
+  `CreateNamespace=true` — harmless empty namespace before `make istio-up`; follows the
+  `kargo-extras` / `argocd-extras` naming convention). Confirm the ADR-0017
+  `istio-system → privileged` row cites ADR-0012 §"PSA profile" (add citation if
+  absent). (b) **NetworkPolicy** — add
+  `gitops/istio-system/networkpolicy/kustomization.yaml` referencing the two shared
+  baseline templates plus allow files: `allow-istio-intra-namespace.yaml`
+  (intra-namespace `podSelector: {}` — istiod control-plane internal traffic);
+  `allow-istio-metrics-ingress.yaml` (ingress TCP 15014 from `observability` — istiod
+  Prometheus scrape port); egress to kube-apiserver via baseline. Add
+  `istio-system-networkpolicy` entry to `networkpolicy-appset.yaml` (`gitPath:
+  gitops/istio-system/networkpolicy`, `destNamespace: istio-system`); sync policy
+  `automated: {prune: true, selfHeal: true}`. New `tests/securitycontext-istio.bats`:
+  `gitops/istio-system/namespace.yaml` exists; `enforce: privileged` present;
+  `enforce: restricted` absent. Extend `tests/networkpolicy.bats` with istio-system
+  overlay assertions. Update `docs/dependency-tree.md` with istio-system PSS + NP note.
+  `docs/done/` entry required. `make ci` must pass. (auto/pss-np-istio-system)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
@@ -1269,6 +1325,51 @@ You review and merge plan PRs, same as implementation PRs.
 - ~~🟡 **PSS hardening — `envoy-gateway-system` namespace**~~ (RFC #230)
   **Groomed ↗** into a 🟢 item in *Now / next* above
   (`auto/pss-envoy-gateway-system`), planner run 2026-06-20.
+
+- [ ] 🟡 **O4 completion gate — CI rejection test for unsigned images**
+  (CHARTER **Objective O4**, due **2026-12-31**; surfaced 2026-06-26). CHARTER O4
+  is measured by "a CI step that pushes an unsigned image and asserts Kyverno
+  rejection." The step does not exist yet. **Prerequisite:** `auto/cosign-enforce-flip`
+  must merge first (verifyImages `validationFailureAction: Enforce` must be live).
+  The architect must produce an RFC that decides: (a) the GitLab CI job shape — a
+  `verify-rejection` job that pushes a deliberately unsigned image tag to Artifactory
+  and expects ArgoCD/Kyverno admission to reject it within a timeout; (b) the
+  unsigned-image source — build a scratch/no-op image without cosign signing, OR
+  retag an already-present unsigned upstream image; (c) the rejection-assertion
+  method — poll `argocd app wait` for a `SyncFailed` event referencing the
+  `kyverno-policy:verify-image-signatures` policy, OR watch `kubectl get events`
+  for an admission webhook denial. When RFC lands, the planner will groom into one
+  🟢 executor item: `.gitlab-ci.yml` addition + bats structural test.
+
+- [ ] 🟡 **PSS profile decision + NetworkPolicy spec — `artifactory` namespace**
+  (CHARTER **Objective O2**, due **2026-09-30**; surfaced 2026-06-26). O2 gap —
+  `gitops/artifactory/` contains only a `route.yaml`; no `namespace.yaml` with PSA
+  labels and no NetworkPolicy overlay exist. `artifactory` is absent from ADR-0017
+  §"Per-namespace profile". ADR-0011 §"PSA profile" does not specify a level. The
+  Artifactory OSS JVM process (port 8081 Artifactory API, 8082 Docker registry)
+  is known to require specific filesystem layout and may use root-UID init steps;
+  the architect must audit the chart's `securityContext` and decide between
+  `baseline` (permits root UID, blocks privileged containers) and `privileged`
+  (if init containers or embedded Nginx require privileged). The architect should
+  also spec the NP allow-list: ingress TCP 8081/8082 from `envoy-gateway-system`
+  (HTTPRoute); egress TCP 3900 to `storage` (Garage S3 artifact storage per
+  ADR-0002); egress to `external-secrets` (indirectly via Vault for credentials).
+  When RFC lands, groom into a 🟢 item: `namespace.yaml` + extras `Application` +
+  NP overlay + appset/app entry + ADR-0017 row + bats. (auto/pss-np-artifactory)
+
+- [ ] 🟡 **PSS profile decision + NetworkPolicy spec — `kiali` namespace**
+  (CHARTER **Objective O2**, due **2026-09-30**; surfaced 2026-06-26). O2 gap —
+  `gitops/kiali/` contains only a `route.yaml`; no `namespace.yaml` and no
+  NetworkPolicy overlay. `kiali` is absent from ADR-0017 §"Per-namespace profile".
+  Kiali is an on-demand Istio mesh visualisation UI (ADR-0012; brought up with
+  `make istio-up`); its pods are generally non-root but the architect must confirm
+  by checking the `kiali/kiali-operator` and `kiali/kiali` chart security contexts.
+  The architect should also spec the NP allow-list: ingress TCP 20001 from
+  `envoy-gateway-system` (HTTPRoute); egress TCP 15014 to `istio-system` (istiod
+  health/metrics); egress TCP 8080/3100 to `observability` (Grafana + Loki
+  integration); egress to kube-apiserver via baseline. When RFC lands, groom into a
+  🟢 item: `namespace.yaml` + extras `Application` + NP overlay + appset/app entry +
+  ADR-0017 row + bats. (auto/pss-np-kiali)
 
 _New 🟡 items proposed by the architect live in
 [`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until
