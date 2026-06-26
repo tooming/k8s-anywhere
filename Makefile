@@ -171,9 +171,12 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) grafana-gitsync-bootstrap
 	@echo ""
 	@echo "--- verifying every always-on workload is actually Running+Ready ---"
-	@bash scripts/lab-health-check.sh   # gates the success banner: no "lab up" unless healthy
-	@echo ""
-	@echo "✅ lab up. UIs via the front door on :8000 — Grafana http://localhost:8000 · ArgoCD http://argocd.127.0.0.1.nip.io:8000 · run 'make creds' for logins, 'make status' for health"
+	@UI="UIs via the front door on :8000 — Grafana http://localhost:8000 · ArgoCD http://argocd.127.0.0.1.nip.io:8000 · run 'make creds' for logins"; \
+		if bash scripts/lab-health-check.sh; then \
+			echo ""; echo "✅ lab up — every always-on workload is healthy. $$UI"; \
+		else \
+			echo ""; echo "⚠️  bootstrap complete, but some always-on workloads are NOT healthy (see ✗ above). Run 'make health' to re-check. $$UI"; \
+		fi
 
 .PHONY: down
 down: ## Stop everything (cluster + GitLab + Colima). Data on PVCs/volumes is kept.
