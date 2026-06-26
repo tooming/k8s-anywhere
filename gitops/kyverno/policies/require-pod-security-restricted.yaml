@@ -36,14 +36,23 @@ spec:
       message: >-
         Pod must satisfy PSS-restricted: runAsNonRoot=true, allowPrivilegeEscalation=false,
         capabilities.drop=[ALL], seccompProfile.type=RuntimeDefault (ADR-0017).
+      # runAsNonRoot + seccompProfile are checked at the POD level — that's where PSS,
+      # the built-in PSA enforce=restricted label, AND every lab manifest set them (the
+      # kubelet enforces pod-level runAsNonRoot on all containers, so it's equivalent to
+      # container-level for security). The previous pattern demanded runAsNonRoot at the
+      # CONTAINER level only, which no lab workload sets — so while the admission
+      # controller was down nothing noticed, but the moment it recovered it rejected
+      # every plain-manifest pod (mimir, loki, tempo, moto, rabbitmq, valkey, …) on
+      # restart. allowPrivilegeEscalation + capabilities stay container-level (where the
+      # manifests set them, and where PSS scopes them).
       pattern:
         spec:
           securityContext:
+            runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
           containers:
           - securityContext:
               allowPrivilegeEscalation: false
-              runAsNonRoot: true
               capabilities:
                 drop: ["ALL"]
