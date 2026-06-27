@@ -3,8 +3,9 @@
 # pods. Running at wave 0 ensures the namespace's enforce/warn/audit labels are in place
 # before ArgoCD deploys the Helm release. The HTTPRoute (kargo.127.0.0.1.nip.io →
 # kargo-api :80) lands here so it is always available alongside the controller.
-# Also renders the ESO kargo-admin-credentials ExternalSecret (Vault secret/kargo/admin).
-# ON-DEMAND: pairs with the kargo Application. No auto-sync block.
+# ALWAYS-ON: auto-synced so the PSA restricted floor is in place before make kargo-up.
+# The namespace (PSA labels) and HTTPRoute (no backend until kargo-up) are zero-footprint
+# objects — safe to auto-sync even when the Kargo workload is not running.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -22,5 +23,9 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kargo
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
+      - ServerSideApply=true
       - CreateNamespace=true

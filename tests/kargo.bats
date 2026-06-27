@@ -1,8 +1,9 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for Kargo (promotion-orchestration engine, ADR-0023).
-# Validates GitOps wiring (Application shape, chart pin, ON-DEMAND guard),
-# namespace PSA labels, HTTPRoute, NetworkPolicy overlay, Kargo Project/Warehouse/Stage
-# shape, and admin ExternalSecret — no running cluster required.
+# Validates GitOps wiring (Application shape, chart pin, ON-DEMAND guard for the Helm
+# release, ALWAYS-ON for kargo-extras namespace pre-creation), namespace PSA labels,
+# HTTPRoute, NetworkPolicy overlay, Kargo Project/Warehouse/Stage shape, and admin
+# ExternalSecret — no running cluster required.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -73,9 +74,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "kargo-extras is ON-DEMAND (no automated sync block)" {
+@test "kargo-extras is ALWAYS-ON (has automated sync block; PSA floor before make kargo-up)" {
   run grep -q 'automated:' "$REPO/gitops/platform/kargo-extras.yaml"
-  [ "$status" -eq 1 ]
+  [ "$status" -eq 0 ]
 }
 
 # --- kargo-networkpolicy Application (wave 4) --------------------------------
