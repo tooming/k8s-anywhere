@@ -1,0 +1,17 @@
+# NetworkPolicy Kustomize overlay for the istio-system namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates (default-deny-all + allow-dns-and-apiserver)
+# and adds two istio-system-specific allow rules: intra-namespace (istiod <-> cni <->
+# ztunnel <-> kiali control-plane flows) and ingress from observability for Prometheus
+# scrape on TCP 15014. Wired into gitops/platform/networkpolicy-appset.yaml (wave 4).
+# ON-DEMAND topology: the policies auto-sync so the default-deny floor and per-workload
+# allows are already in place before `make istio-up` brings Istio component pods up.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: istio-system
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-istio-intra-namespace.yaml
+  - allow-istio-metrics-ingress.yaml
