@@ -1,0 +1,19 @@
+# Explicit istio-system namespace manifest with Pod Security Admission labels (ADR-0017).
+# PSA profile is `privileged` (not `restricted` or `baseline`) because:
+#   - istio-cni runs as a DaemonSet that mutates the host CNI config (requires host path
+#     access and NET_ADMIN capability; fails under restricted/baseline);
+#   - ztunnel runs as a per-node DaemonSet requiring NET_ADMIN to configure eBPF/iptables
+#     ambient mesh interception (fails under restricted/baseline).
+# Per ADR-0012 §"PSA profile" and ADR-0017 §"Per-namespace profile".
+# This namespace is pre-created by the auto-synced istio-system-extras Application
+# (gitops/platform/istio-system-extras.yaml, wave 0) so the PSA floor is in place
+# before `make istio-up` admits any Istio component pod.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-system
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: privileged
+    pod-security.kubernetes.io/audit: privileged

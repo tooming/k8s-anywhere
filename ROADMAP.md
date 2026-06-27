@@ -1227,7 +1227,7 @@ You review and merge plan PRs, same as implementation PRs.
   with a Longhorn PSS + NP note. `docs/done/` entry required. `make ci` must pass.
   (auto/pss-np-longhorn)
 
-- [ ] 🟢 **PSS `privileged` labels + NetworkPolicy — `istio-system`** (CHARTER
+- [x] 🟢 **PSS `privileged` labels + NetworkPolicy — `istio-system`** (CHARTER
   **Objective O2**, due **2026-09-30**; O2 fan-out completion — ADR-0017
   §"Per-namespace profile" already lists `istio-system → privileged` (istio-cni DaemonSet
   mutates host CNI config; ztunnel requires `NET_ADMIN`; per ADR-0012) but no
