@@ -1,0 +1,31 @@
+# istio-system-extras — applies the istio-system namespace.yaml (PSA privileged labels,
+# ADR-0017 §Per-namespace profile; ADR-0012 §PSA profile). Running at sync-wave 0 ensures
+# the namespace labels land before any Istio component Application (istio-base wave 1,
+# istiod wave 2, istio-cni wave 2, ztunnel wave 2) schedules pods. CreateNamespace=true
+# means the namespace with privileged labels is pre-created harmlessly — no Istio pods
+# start until `make istio-up` manually syncs the istio-base/istiod/istio-cni/ztunnel Apps.
+# ALWAYS-ON: auto-synced so the PSA floor is always present on the cluster regardless of
+# whether Istio itself is running (the empty namespace is cheap).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-system-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/istio-system
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

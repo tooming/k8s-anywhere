@@ -59,6 +59,9 @@ spec:
           - appName: inkless-networkpolicy
             gitPath: gitops/inkless/networkpolicy
             destNamespace: inkless
+          - appName: istio-system-networkpolicy
+            gitPath: gitops/istio-system/networkpolicy
+            destNamespace: istio-system
   template:
     metadata:
       name: "{{appName}}"
