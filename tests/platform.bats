@@ -102,9 +102,13 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-@test "longhorn-extras Application has no automated: block (on-demand only)" {
+# longhorn-extras IS auto-synced — it only pre-creates the longhorn-system
+# namespace with PSA privileged labels (ADR-0017) + the Envoy HTTPRoute, so the
+# privileged PSA floor is in place before `make longhorn-up` admits any pod.
+# (The heavy longhorn.yaml chart stays manual-sync, asserted above.)
+@test "longhorn-extras Application is auto-synced (namespace floor before longhorn-up)" {
   run grep 'automated:' "$REPO/gitops/platform/longhorn-extras.yaml"
-  [ "$status" -eq 1 ]
+  [ "$status" -eq 0 ]
 }
 
 # --- Envoy HTTPRoute wiring --------------------------------------------------
