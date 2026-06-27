@@ -1227,7 +1227,7 @@ You review and merge plan PRs, same as implementation PRs.
   with a Longhorn PSS + NP note. `docs/done/` entry required. `make ci` must pass.
   (auto/pss-np-longhorn)
 
-- [ ] 🟢 **PSS `privileged` labels + NetworkPolicy — `istio-system`** (CHARTER
+- [x] 🟢 **PSS `privileged` labels + NetworkPolicy — `istio-system`** (CHARTER
   **Objective O2**, due **2026-09-30**; O2 fan-out completion — ADR-0017
   §"Per-namespace profile" already lists `istio-system → privileged` (istio-cni DaemonSet
   mutates host CNI config; ztunnel requires `NET_ADMIN`; per ADR-0012) but no
@@ -1253,6 +1253,29 @@ You review and merge plan PRs, same as implementation PRs.
   `enforce: restricted` absent. Extend `tests/networkpolicy.bats` with istio-system
   overlay assertions. Update `docs/dependency-tree.md` with istio-system PSS + NP note.
   `docs/done/` entry required. `make ci` must pass. (auto/pss-np-istio-system)
+
+- [ ] 🟢 **ADR-0017 amendment — add `kargo` namespace row** (CHARTER **Objective O2**,
+  due **2026-09-30**; docs-only O2 gap — surfaced 2026-06-27 planner run). The
+  `kargo` namespace already carries `restricted` PSA labels in
+  `gitops/kargo/namespace.yaml` (Kargo api/controller/webhooks-server all run as
+  UID 65532, `restricted`-compatible) and a full default-deny NetworkPolicy overlay
+  in `gitops/kargo/networkpolicy/`, but the namespace is **absent** from ADR-0017
+  §"Per-namespace profile" — the table records every other PSA-labelled namespace
+  except kargo. Two changes bundled (both tiny): (a) **ADR-0017 table row** — add
+  `kargo → restricted | Kargo api/controller/webhooks-server all run as UID 65532
+  (non-root); no host volumes, no special capabilities. Per ROADMAP
+  auto/pss-kro-namespace pattern.` to the per-namespace profile table, placed after
+  the `kro → restricted` row (same non-root controller pattern, share the citation
+  convention). (b) **New `tests/securitycontext-kargo.bats`** — per-scope file
+  (NOT the frozen monolith per `scripts/securitycontext-tests-check.sh`): assert
+  `gitops/kargo/namespace.yaml` exists; `enforce: restricted` present;
+  `enforce: baseline` and `enforce: privileged` absent (safety checks);
+  `gitops/platform/kargo-extras.yaml` exists and its `syncPolicy` includes
+  `automated:` (auto-synced). No Makefile change, no new Application — the
+  `kargo-extras` Application already exists and is already auto-synced. Update
+  `docs/dependency-tree.md` with a kargo PSS note (parallel to the kro PSS note
+  added in `auto/pss-kro-namespace`). `docs/done/` entry required. `make ci` must
+  pass. (auto/adr-0017-kargo-row)
 
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
@@ -1370,6 +1393,43 @@ You review and merge plan PRs, same as implementation PRs.
   integration); egress to kube-apiserver via baseline. When RFC lands, groom into a
   🟢 item: `namespace.yaml` + extras `Application` + NP overlay + appset/app entry +
   ADR-0017 row + bats. (auto/pss-np-kiali)
+
+- [ ] 🟡 **Platform Governance layer — `gitops/governance/` structure**
+  (CHARTER **Core Values** §"Everything as code; GitOps deploys it"; surfaced
+  2026-06-27 from issue #283). The maintainer proposes consolidating all
+  cross-cutting governance resources (LimitRanges, ResourceQuotas, and possibly
+  Kyverno `ClusterPolicy` manifests) into a dedicated `gitops/governance/`
+  directory rather than scattering them across namespace subdirectories. This is an
+  architectural decision — the architect must decide: (a) the directory layout
+  (e.g. `gitops/governance/limitranges/`, `gitops/governance/resourcequotas/`,
+  and whether Kyverno policies stay in `gitops/kyverno/policies/` or migrate here);
+  (b) whether to introduce LimitRanges and ResourceQuotas at all — they don't exist
+  today; (c) how a new or updated ArgoCD `Application`/`ApplicationSet` would target
+  the structure; (d) whether the move is additive (new governance objects) or a
+  refactor (moving existing policy manifests). The architect should also note whether
+  this overlaps with ADR-0019 (Kyverno as policy engine) and how the two layers
+  divide responsibility. When RFC lands, the planner will groom into one or more 🟢
+  executor items per the RFC's split guidance. (arch/platform-governance)
+
+- [ ] 🟡 **Namespace Resource Profiles — standardized ResourceQuota tiers**
+  (CHARTER **Core Values** §"Fits the 16 GB reality"; surfaced 2026-06-27 from
+  issue #283). The maintainer proposes standardized per-namespace ResourceQuota +
+  LimitRange profiles (e.g. `tiny`, `small`, `medium`, `large`, `critical`) so
+  namespaces get consistent resource ceilings rather than ad-hoc per-chart values or
+  no ceiling at all. The architect must decide: (a) the profile tiers and their
+  CPU + memory request/limit values (must account for the 12 GB VM budget and the
+  always-on stack's ~7 GB used); (b) which existing namespaces map to which tier
+  (the ADR-0017 per-namespace profile table is the natural companion for this);
+  (c) enforcement mechanism — Kyverno `ClusterPolicy` (validates that the namespace
+  carries a profile label and a matching `ResourceQuota` exists) or direct
+  LimitRange/ResourceQuota objects per namespace; (d) handling of on-demand heavy
+  namespaces (`tidb`, `longhorn-system`, `istio-system`) that have highly variable
+  footprints; (e) whether profiles block the capstone or other workloads that may
+  need temporary burst. Prerequisite: the Platform Governance layer RFC above should
+  land first (it decides the directory home for these objects). When RFC lands, the
+  planner will groom into 🟢 executor items per the split guidance. One item per
+  profile tier or per namespace class is the likely decomposition.
+  (arch/namespace-resource-profiles)
 
 _New 🟡 items proposed by the architect live in
 [`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until
