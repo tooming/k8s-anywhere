@@ -1349,7 +1349,7 @@ You review and merge plan PRs, same as implementation PRs.
   **Groomed ↗** into a 🟢 item in *Now / next* above
   (`auto/pss-envoy-gateway-system`), planner run 2026-06-20.
 
-- [ ] 🟡 **O4 completion gate — CI rejection test for unsigned images**
+- [ ] 🟡 **O4 completion gate — CI rejection test for unsigned images** (RFC #289)
   (CHARTER **Objective O4**, due **2026-12-31**; surfaced 2026-06-26). CHARTER O4
   is measured by "a CI step that pushes an unsigned image and asserts Kyverno
   rejection." The step does not exist yet. **Prerequisite:** `auto/cosign-enforce-flip`
@@ -1364,7 +1364,7 @@ You review and merge plan PRs, same as implementation PRs.
   for an admission webhook denial. When RFC lands, the planner will groom into one
   🟢 executor item: `.gitlab-ci.yml` addition + bats structural test.
 
-- [ ] 🟡 **PSS profile decision + NetworkPolicy spec — `artifactory` namespace**
+- [ ] 🟡 **PSS profile decision + NetworkPolicy spec — `artifactory` namespace** (RFC #287)
   (CHARTER **Objective O2**, due **2026-09-30**; surfaced 2026-06-26). O2 gap —
   `gitops/artifactory/` contains only a `route.yaml`; no `namespace.yaml` with PSA
   labels and no NetworkPolicy overlay exist. `artifactory` is absent from ADR-0017
@@ -1380,7 +1380,7 @@ You review and merge plan PRs, same as implementation PRs.
   When RFC lands, groom into a 🟢 item: `namespace.yaml` + extras `Application` +
   NP overlay + appset/app entry + ADR-0017 row + bats. (auto/pss-np-artifactory)
 
-- [ ] 🟡 **PSS profile decision + NetworkPolicy spec — `kiali` namespace**
+- [ ] 🟡 **PSS profile decision + NetworkPolicy spec — `kiali` namespace** (RFC #288)
   (CHARTER **Objective O2**, due **2026-09-30**; surfaced 2026-06-26). O2 gap —
   `gitops/kiali/` contains only a `route.yaml`; no `namespace.yaml` and no
   NetworkPolicy overlay. `kiali` is absent from ADR-0017 §"Per-namespace profile".
