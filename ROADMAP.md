@@ -1254,7 +1254,7 @@ You review and merge plan PRs, same as implementation PRs.
   overlay assertions. Update `docs/dependency-tree.md` with istio-system PSS + NP note.
   `docs/done/` entry required. `make ci` must pass. (auto/pss-np-istio-system)
 
-- [ ] 🟢 **ADR-0017 amendment — add `kargo` namespace row** (CHARTER **Objective O2**,
+- [x] 🟢 **ADR-0017 amendment — add `kargo` namespace row** (CHARTER **Objective O2**,
   due **2026-09-30**; docs-only O2 gap — surfaced 2026-06-27 planner run). The
   `kargo` namespace already carries `restricted` PSA labels in
   `gitops/kargo/namespace.yaml` (Kargo api/controller/webhooks-server all run as
