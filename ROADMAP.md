@@ -1394,7 +1394,7 @@ You review and merge plan PRs, same as implementation PRs.
   🟢 item: `namespace.yaml` + extras `Application` + NP overlay + appset/app entry +
   ADR-0017 row + bats. (auto/pss-np-kiali)
 
-- [ ] 🟡 **Platform Governance layer — `gitops/governance/` structure**
+- [ ] 🟡 **Platform Governance layer — `gitops/governance/` structure** (RFC #293 — architect decision 2026-06-28)
   (CHARTER **Core Values** §"Everything as code; GitOps deploys it"; surfaced
   2026-06-27 from issue #283). The maintainer proposes consolidating all
   cross-cutting governance resources (LimitRanges, ResourceQuotas, and possibly
@@ -1411,7 +1411,7 @@ You review and merge plan PRs, same as implementation PRs.
   divide responsibility. When RFC lands, the planner will groom into one or more 🟢
   executor items per the RFC's split guidance. (arch/platform-governance)
 
-- [ ] 🟡 **Namespace Resource Profiles — standardized ResourceQuota tiers**
+- [ ] 🟡 **Namespace Resource Profiles — standardized ResourceQuota tiers** (RFC #294 — architect decision 2026-06-28)
   (CHARTER **Core Values** §"Fits the 16 GB reality"; surfaced 2026-06-27 from
   issue #283). The maintainer proposes standardized per-namespace ResourceQuota +
   LimitRange profiles (e.g. `tiny`, `small`, `medium`, `large`, `critical`) so
