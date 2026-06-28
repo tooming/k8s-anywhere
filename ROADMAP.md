@@ -1447,7 +1447,7 @@ You review and merge plan PRs, same as implementation PRs.
   with two per-pod allows (TCP 20001 ingress from `envoy-gateway-system`, TCP 9009
   egress to `observability`).
 
-- [ ] 🟡 **Platform Governance layer — `gitops/governance/` structure**
+- [ ] 🟡 **Platform Governance layer — `gitops/governance/` structure** (RFC #293 — architect decision 2026-06-28)
   (CHARTER **Core Values** §"Everything as code; GitOps deploys it"; surfaced
   2026-06-27 from issue #283). The maintainer proposes consolidating all
   cross-cutting governance resources (LimitRanges, ResourceQuotas, and possibly
@@ -1464,7 +1464,7 @@ You review and merge plan PRs, same as implementation PRs.
   divide responsibility. When RFC lands, the planner will groom into one or more 🟢
   executor items per the RFC's split guidance. (arch/platform-governance)
 
-- [ ] 🟡 **Namespace Resource Profiles — standardized ResourceQuota tiers**
+- [ ] 🟡 **Namespace Resource Profiles — standardized ResourceQuota tiers** (RFC #294 — architect decision 2026-06-28)
   (CHARTER **Core Values** §"Fits the 16 GB reality"; surfaced 2026-06-27 from
   issue #283). The maintainer proposes standardized per-namespace ResourceQuota +
   LimitRange profiles (e.g. `tiny`, `small`, `medium`, `large`, `critical`) so
