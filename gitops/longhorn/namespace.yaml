@@ -1,0 +1,19 @@
+# Explicit longhorn-system namespace manifest with Pod Security Admission labels (ADR-0017).
+# Longhorn-manager and longhorn-csi-plugin require SYS_ADMIN, mount propagation, and
+# host /dev — block storage cannot function under restricted or baseline. privileged is
+# the correct and documented profile for this namespace (ADR-0013 + ADR-0017
+# §Per-namespace profile). No securityContext field-level changes are needed — the
+# privileged label simply removes the PSA admission gate so Longhorn's DaemonSets and
+# CSI driver pods are admitted as-is by the upstream chart.
+# Synced by longhorn-extras (auto-synced, wave 0): the namespace with privileged labels
+# is created before `make longhorn-up` brings pods up, so PSA enforcement is in place
+# from the first admission.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: longhorn-system
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: privileged
+    pod-security.kubernetes.io/audit: privileged
