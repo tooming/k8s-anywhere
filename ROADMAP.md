@@ -1198,7 +1198,7 @@ You review and merge plan PRs, same as implementation PRs.
   parenthetical. No code changes. `make ci` must pass. `docs/done/` entry required.
   (auto/adr0017-velero-row-depTree-fix)
 
-- [ ] 🟢 **PSS `privileged` labels + NetworkPolicy — `longhorn-system`** (CHARTER
+- [x] 🟢 **PSS `privileged` labels + NetworkPolicy — `longhorn-system`** (CHARTER
   **Objective O2**, due **2026-09-30**; O2 fan-out completion — ADR-0017
   §"Per-namespace profile" already lists `longhorn-system → privileged` (longhorn-manager
   and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, host `/dev`; per
@@ -1277,6 +1277,87 @@ You review and merge plan PRs, same as implementation PRs.
   added in `auto/pss-kro-namespace`). `docs/done/` entry required. `make ci` must
   pass. (auto/adr-0017-kargo-row)
 
+- [ ] 🟢 **PSA `baseline` labels + NetworkPolicy — `artifactory` namespace** (CHARTER
+  **Objective O2**, due **2026-09-30**; RFC #287 — architect decision 2026-06-27). O2
+  fan-out completion for the on-demand Artifactory namespace. Two changes bundled:
+  (a) **PSA labels** — add `gitops/artifactory/namespace.yaml` with all four PSA labels
+  at `baseline` (`enforce: baseline`, `enforce-version: latest`, `warn: baseline`,
+  `audit: baseline`). JVM init containers run as root UID 0 for `chown`; main JVM
+  process runs as UID 1030; `restricted` is not viable without upstream chart changes
+  (`jfrog/artifactory-oss`); `baseline` blocks privileged containers and host namespaces
+  while permitting the init root UID. Update `gitops/platform/artifactory-extras.yaml`:
+  add `automated: {prune: true, selfHeal: true}` to `syncPolicy` + `argocd.argoproj.io/sync-wave:
+  "0"` annotation (mirrors `longhorn-extras` / `istio-system-extras` — pre-creates the
+  namespace with PSA floor before `make artifactory-up` admits pods). (b) **NetworkPolicy** —
+  add `gitops/artifactory/networkpolicy/kustomization.yaml` referencing the two shared
+  baseline templates (`../../network/policies/default-deny.yaml`,
+  `../../network/policies/allow-dns-and-apiserver.yaml`) plus
+  `allow-artifactory-ingress.yaml` (ingress TCP 8082 from `namespaceSelector:
+  kubernetes.io/metadata.name: envoy-gateway-system` — Envoy HTTPRoute proxies to the
+  `artifactory-oss` Service on port 8082 per `gitops/artifactory/route.yaml`) and
+  `allow-artifactory-garage-egress.yaml` (egress TCP 3900 to `namespaceSelector:
+  kubernetes.io/metadata.name: storage` — Garage S3 binary store per ADR-0002). Add
+  `artifactory-networkpolicy` entry to `gitops/platform/networkpolicy-appset.yaml`
+  (`gitPath: gitops/artifactory/networkpolicy`, `destNamespace: artifactory`); sync
+  policy is `automated: {prune: true, selfHeal: true}` via the appset template. Add
+  `artifactory → baseline` row to ADR-0017 §"Per-namespace profile" table with RFC
+  citation and flip condition (when upstream `jfrog/artifactory-oss` chart documents
+  `restricted`-compatible initContainers). New `tests/securitycontext-artifactory.bats`:
+  `gitops/artifactory/namespace.yaml` exists; `enforce: baseline` present; `enforce:
+  restricted` absent (safety check); `artifactory-extras` Application has `automated:`
+  block (auto-sync present). New `tests/networkpolicy-artifactory.bats`: kustomization
+  exists; baseline templates referenced; `allow-artifactory-ingress.yaml` exists
+  targeting TCP 8082 from `envoy-gateway-system`; `allow-artifactory-garage-egress.yaml`
+  exists targeting TCP 3900 to `storage`; appset entry `artifactory-networkpolicy`
+  present. `make ci` must pass. `docs/done/` entry required. (auto/pss-np-artifactory)
+
+- [ ] 🟢 **NetworkPolicy extensions — Kiali allows in `istio-system`** (CHARTER
+  **Objective O2**, due **2026-09-30**; RFC #288 — architect decision 2026-06-27;
+  dependency **already met**: `auto/pss-np-istio-system` (PR #285) is merged in main —
+  `gitops/istio-system/networkpolicy/` and the `istio-system-networkpolicy` appset entry
+  are confirmed present). Kiali co-resides in `istio-system` (no separate namespace per
+  RFC #288); its PSA profile is already covered by `istio-system → privileged` (PR #285).
+  This item adds two Kiali-specific per-pod NetworkPolicy allows to the existing overlay.
+  Add `gitops/istio-system/networkpolicy/allow-kiali-ingress.yaml` — ingress TCP 20001
+  from `namespaceSelector: kubernetes.io/metadata.name: envoy-gateway-system`; `podSelector:
+  app.kubernetes.io/name: kiali` (Envoy HTTPRoute `kiali.127.0.0.1.nip.io` per
+  `gitops/kiali/route.yaml`). Add
+  `gitops/istio-system/networkpolicy/allow-kiali-observability-egress.yaml` — egress TCP
+  9009 to `namespaceSelector: kubernetes.io/metadata.name: observability`; `podSelector:
+  app.kubernetes.io/name: kiali` (Kiali queries Mimir Prometheus at port 9009 per
+  `gitops/platform/kiali.yaml` `valuesObject.external_services.prometheus.url`). Update
+  `gitops/istio-system/networkpolicy/kustomization.yaml` to reference both new allow
+  files. Update ADR-0017 `istio-system → privileged` row to add parenthetical: "(Kiali
+  co-resides in this namespace; no separate `kiali` row needed.)". No new ArgoCD
+  Application or appset entry needed — the `istio-system-networkpolicy` appset entry from
+  PR #285 covers the full overlay directory (auto-synced via the appset template).
+  Extend `tests/networkpolicy-istio-system.bats`: `allow-kiali-ingress.yaml` exists and
+  targets TCP 20001 from `envoy-gateway-system`; `allow-kiali-observability-egress.yaml`
+  exists and targets TCP 9009 to `observability`; both are referenced in
+  `kustomization.yaml`. `make ci` must pass. `docs/done/` entry required.
+  (auto/kiali-np-istio-system)
+
+- [ ] 🟢 **O4 CI gate — `verify-image-rejection` job in GitLab CI** (CHARTER **Objective
+  O4**, due **2026-12-31**; RFC #289 — architect decision 2026-06-27; **pick up ONLY after
+  `auto/cosign-enforce-flip` merges** — check `grep -q "validationFailureAction: Enforce"
+  gitops/kyverno/policies/verify-image-signatures.yaml` returns 0 before starting). Add
+  `verify-rejection` to `stages:` list in `.gitlab-ci.yml` (after `sign`). New
+  `verify-image-rejection` job: `image: docker:24` + `docker:24-dind` service with
+  `--insecure-registry=artifactory.127.0.0.1.nip.io`; `before_script` logs in to
+  Artifactory + exports `KUBECONFIG` (GitLab CI File variable, same pattern as `COSIGN_KEY`
+  — add comment documenting masked, protected, type File requirement) + installs `kubectl`
+  via `apk`; `script` pulls `busybox:1.37.0`, retags to
+  `$REGISTRY/docker-local/test-unsigned:rejection-test`, pushes unsigned (no cosign sign
+  step), runs `kubectl run test-rejection-pod --image=... --restart=Never -n capstone`,
+  asserts Kyverno blocks admission (grep output for
+  `denied|policy|verify|signature|admission webhook` keywords); `after_script` deletes
+  the Pod + docker logout; `needs: [sign-image]`; `rules: if: $CI_COMMIT_BRANCH == "main"`.
+  New `tests/gitlab-ci.bats` (clusterless structural): `verify-rejection` appears in
+  `stages:` list; job references `test-unsigned:rejection-test`; `needs: [sign-image]`
+  present; `after_script` has `kubectl delete` cleanup; `KUBECONFIG` comment present.
+  `make ci` must pass. `docs/done/` entry required. **CI change is RFC #289-approved per
+  WAYS-OF-WORKING.md §2.** (auto/o4-ci-rejection-gate)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
@@ -1349,50 +1430,22 @@ You review and merge plan PRs, same as implementation PRs.
   **Groomed ↗** into a 🟢 item in *Now / next* above
   (`auto/pss-envoy-gateway-system`), planner run 2026-06-20.
 
-- [ ] 🟡 **O4 completion gate — CI rejection test for unsigned images** (RFC #289)
-  (CHARTER **Objective O4**, due **2026-12-31**; surfaced 2026-06-26). CHARTER O4
-  is measured by "a CI step that pushes an unsigned image and asserts Kyverno
-  rejection." The step does not exist yet. **Prerequisite:** `auto/cosign-enforce-flip`
-  must merge first (verifyImages `validationFailureAction: Enforce` must be live).
-  The architect must produce an RFC that decides: (a) the GitLab CI job shape — a
-  `verify-rejection` job that pushes a deliberately unsigned image tag to Artifactory
-  and expects ArgoCD/Kyverno admission to reject it within a timeout; (b) the
-  unsigned-image source — build a scratch/no-op image without cosign signing, OR
-  retag an already-present unsigned upstream image; (c) the rejection-assertion
-  method — poll `argocd app wait` for a `SyncFailed` event referencing the
-  `kyverno-policy:verify-image-signatures` policy, OR watch `kubectl get events`
-  for an admission webhook denial. When RFC lands, the planner will groom into one
-  🟢 executor item: `.gitlab-ci.yml` addition + bats structural test.
+- ~~🟡 **O4 completion gate — CI rejection test for unsigned images**~~
+  (RFC #289) **Groomed ↗** into a 🟢 item in *Now / next* above
+  (`auto/o4-ci-rejection-gate`), planner run 2026-06-28. Item carries the
+  `cosign-enforce-flip` prerequisite — executor skips until that item merges.
 
-- [ ] 🟡 **PSS profile decision + NetworkPolicy spec — `artifactory` namespace** (RFC #287)
-  (CHARTER **Objective O2**, due **2026-09-30**; surfaced 2026-06-26). O2 gap —
-  `gitops/artifactory/` contains only a `route.yaml`; no `namespace.yaml` with PSA
-  labels and no NetworkPolicy overlay exist. `artifactory` is absent from ADR-0017
-  §"Per-namespace profile". ADR-0011 §"PSA profile" does not specify a level. The
-  Artifactory OSS JVM process (port 8081 Artifactory API, 8082 Docker registry)
-  is known to require specific filesystem layout and may use root-UID init steps;
-  the architect must audit the chart's `securityContext` and decide between
-  `baseline` (permits root UID, blocks privileged containers) and `privileged`
-  (if init containers or embedded Nginx require privileged). The architect should
-  also spec the NP allow-list: ingress TCP 8081/8082 from `envoy-gateway-system`
-  (HTTPRoute); egress TCP 3900 to `storage` (Garage S3 artifact storage per
-  ADR-0002); egress to `external-secrets` (indirectly via Vault for credentials).
-  When RFC lands, groom into a 🟢 item: `namespace.yaml` + extras `Application` +
-  NP overlay + appset/app entry + ADR-0017 row + bats. (auto/pss-np-artifactory)
+- ~~🟡 **PSS profile decision + NetworkPolicy spec — `artifactory` namespace**~~
+  (RFC #287) **Groomed ↗** into a 🟢 item in *Now / next* above
+  (`auto/pss-np-artifactory`), planner run 2026-06-28. Decision: `baseline` profile;
+  NP allows TCP 8082 ingress from `envoy-gateway-system` + TCP 3900 egress to `storage`.
 
-- [ ] 🟡 **PSS profile decision + NetworkPolicy spec — `kiali` namespace** (RFC #288)
-  (CHARTER **Objective O2**, due **2026-09-30**; surfaced 2026-06-26). O2 gap —
-  `gitops/kiali/` contains only a `route.yaml`; no `namespace.yaml` and no
-  NetworkPolicy overlay. `kiali` is absent from ADR-0017 §"Per-namespace profile".
-  Kiali is an on-demand Istio mesh visualisation UI (ADR-0012; brought up with
-  `make istio-up`); its pods are generally non-root but the architect must confirm
-  by checking the `kiali/kiali-operator` and `kiali/kiali` chart security contexts.
-  The architect should also spec the NP allow-list: ingress TCP 20001 from
-  `envoy-gateway-system` (HTTPRoute); egress TCP 15014 to `istio-system` (istiod
-  health/metrics); egress TCP 8080/3100 to `observability` (Grafana + Loki
-  integration); egress to kube-apiserver via baseline. When RFC lands, groom into a
-  🟢 item: `namespace.yaml` + extras `Application` + NP overlay + appset/app entry +
-  ADR-0017 row + bats. (auto/pss-np-kiali)
+- ~~🟡 **PSS profile decision + NetworkPolicy spec — `kiali` namespace**~~
+  (RFC #288) **Groomed ↗** into a 🟢 item in *Now / next* above
+  (`auto/kiali-np-istio-system`), planner run 2026-06-28. Resolved: Kiali co-resides
+  in `istio-system` (no separate namespace); item extends the istio-system NP overlay
+  with two per-pod allows (TCP 20001 ingress from `envoy-gateway-system`, TCP 9009
+  egress to `observability`).
 
 - [ ] 🟡 **Platform Governance layer — `gitops/governance/` structure** (RFC #293 — architect decision 2026-06-28)
   (CHARTER **Core Values** §"Everything as code; GitOps deploys it"; surfaced
