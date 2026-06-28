@@ -62,6 +62,9 @@ spec:
           - appName: istio-system-networkpolicy
             gitPath: gitops/istio-system/networkpolicy
             destNamespace: istio-system
+          - appName: longhorn-networkpolicy
+            gitPath: gitops/longhorn/networkpolicy
+            destNamespace: longhorn-system
   template:
     metadata:
       name: "{{appName}}"

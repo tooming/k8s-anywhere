@@ -1,12 +1,19 @@
-# Longhorn extras — Envoy HTTPRoute and any supporting in-repo manifests.
-# ON-DEMAND: pairs with the longhorn Application. No auto-sync block.
-# Bring up with: make longhorn-up
-# Tear down with: make longhorn-down
+# longhorn-extras — pre-creates the longhorn-system namespace with PSA privileged labels
+# (ADR-0017 §Per-namespace profile, ADR-0013) and applies the Longhorn Envoy HTTPRoute.
+# Running at sync-wave 0 ensures the privileged namespace labels are in place before
+# `make longhorn-up` admits the longhorn-manager DaemonSet + CSI driver pods.
+# The namespace with privileged labels is harmless until Longhorn pods are scheduled;
+# creating it eagerly (CreateNamespace=true) is safe — no pods are scheduled here.
+# The main Longhorn chart Application (gitops/platform/longhorn.yaml) remains on-demand
+# (manual-sync only) so Longhorn never starts automatically within the 12 GB budget.
+# ALWAYS-ON: automated sync so the privileged namespace floor is always present.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: longhorn-extras
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:
@@ -17,6 +24,10 @@ spec:
     server: https://kubernetes.default.svc
     namespace: longhorn-system
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - LoadRestrictionsNone=true

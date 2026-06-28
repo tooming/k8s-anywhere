@@ -1198,7 +1198,7 @@ You review and merge plan PRs, same as implementation PRs.
   parenthetical. No code changes. `make ci` must pass. `docs/done/` entry required.
   (auto/adr0017-velero-row-depTree-fix)
 
-- [ ] 🟢 **PSS `privileged` labels + NetworkPolicy — `longhorn-system`** (CHARTER
+- [x] 🟢 **PSS `privileged` labels + NetworkPolicy — `longhorn-system`** (CHARTER
   **Objective O2**, due **2026-09-30**; O2 fan-out completion — ADR-0017
   §"Per-namespace profile" already lists `longhorn-system → privileged` (longhorn-manager
   and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, host `/dev`; per
