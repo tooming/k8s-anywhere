@@ -14,7 +14,12 @@
 #   2. every absolute path the config writes to (any "/..." scalar) is under a
 #      writable volumeMount (emptyDir / PVC) — configMap/secret mounts are read-only.
 #
-# Static + offline — pure yq/jq inspection, no network, no cluster.
+# Static + offline — python3/PyYAML inspection, no network, no cluster.
+# Uses python3 instead of yq+jq to be portable across yq variants: mikefarah/yq
+# (Go) uses -o=json and select(tag=="!!str") syntax; kislyuk/python-yq (the jq
+# wrapper installed in CI) doesn't understand those flags and produces empty output
+# with 2>/dev/null, turning every assertion into a silent false-negative/false-positive.
+# python3's yaml module is stable regardless of what yq is on PATH.
 # Run by `make mimir-readonly-root-check`, `make ci`, and the PostToolUse hook.
 # Exit 0 = every Mimir write path is writable; 1 = a path lands on the read-only root.
 set -uo pipefail
@@ -30,9 +35,9 @@ ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; }
 skip(){ printf '  %s·%s %s\n' "$Y" "$Z" "$1"; }
 
-for t in yq jq; do
-  command -v "$t" >/dev/null 2>&1 || { echo "$t not installed — skipping mimir read-only-root check"; exit 0; }
-done
+# Requires python3 + PyYAML (standard on any Linux CI box).
+# Replaces the original yq+jq dependency — see comment at the top of this file.
+python3 -c "import yaml" 2>/dev/null || { echo "python3-yaml not installed — skipping mimir read-only-root check"; exit 0; }
 
 if [ ! -f "$DEPLOY" ] || [ ! -f "$CM" ]; then
   skip "no mimir deployment/configmap at $DIR — nothing to check"; exit 0
@@ -44,10 +49,18 @@ fail=0
 # --- writable mounts: volumeMounts backed by an emptyDir or PVC volume ----------
 # configMap/secret/projected mounts are read-only, so they don't count.
 mapfile -t WRITABLE < <(
-  yq -o=json '.spec.template.spec' "$DEPLOY" 2>/dev/null | jq -r '
-    (.volumes // [] | map(select(.emptyDir or .persistentVolumeClaim) | .name)) as $w
-    | (.containers // [])[].volumeMounts // [] | .[]
-    | select(.name as $n | $w | index($n)) | .mountPath' 2>/dev/null | sort -u
+  python3 - "$DEPLOY" <<'PYEOF'
+import sys, yaml
+with open(sys.argv[1]) as f:
+    spec = yaml.safe_load(f)['spec']['template']['spec']
+w = {v['name'] for v in spec.get('volumes', [])
+     if 'emptyDir' in v or 'persistentVolumeClaim' in v}
+mounts = sorted({vm['mountPath']
+                 for c in spec.get('containers', [])
+                 for vm in c.get('volumeMounts', [])
+                 if vm['name'] in w})
+print('\n'.join(mounts))
+PYEOF
 )
 if [ "${#WRITABLE[@]}" -eq 0 ]; then
   bad "mimir Deployment declares no writable (emptyDir/PVC) volumeMounts — every write path will hit the read-only root"
@@ -65,8 +78,14 @@ under_writable() {
 }
 
 # --- pull mimir.yaml out of the ConfigMap and parse it -------------------------
-MIMIR_YAML="$(yq '.data["mimir.yaml"]' "$CM" 2>/dev/null)"
-if [ -z "$MIMIR_YAML" ] || [ "$MIMIR_YAML" = "null" ]; then
+MIMIR_YAML="$(python3 - "$CM" <<'PYEOF'
+import sys, yaml
+with open(sys.argv[1]) as f:
+    cm = yaml.safe_load(f)
+print((cm.get('data') or {}).get('mimir.yaml', ''), end='')
+PYEOF
+)"
+if [ -z "$MIMIR_YAML" ]; then
   bad "configmap.yaml has no data[\"mimir.yaml\"] — can't verify write paths"
   echo; exit 1
 fi
@@ -74,15 +93,26 @@ fi
 # --- 1. settings whose DEFAULT is a ./ path on the read-only root MUST be set ----
 # These don't appear as a "/..." value when unset, so the path scan in step 2 can't
 # catch them — each silently defaults to the working dir and crashes -target=all on
-# boot. Pin every one under a writable mount. (key | yq-path | default it falls to)
+# boot. Pin every one under a writable mount. (key | dotted-path | default it falls to)
 declare -a REQUIRED=(
-  "activity_tracker.filepath|.activity_tracker.filepath|./metrics-activity.log"
-  "ruler.rule_path|.ruler.rule_path|./data-ruler/"
+  "activity_tracker.filepath|activity_tracker.filepath|./metrics-activity.log"
+  "ruler.rule_path|ruler.rule_path|./data-ruler/"
 )
 declare -a REQVALS=()   # collected so step 2 doesn't double-report them
 for spec in "${REQUIRED[@]}"; do
   IFS='|' read -r label path def <<<"$spec"
-  v="$(printf '%s' "$MIMIR_YAML" | yq "$path // \"\"" - 2>/dev/null)"
+  # Pass MIMIR_YAML via env var — avoids the bash pipe-vs-heredoc stdin conflict
+  # (printf '%s' "$VAR" | python3 - arg <<'EOF' doesn't work: the heredoc wins
+  # and the pipe is silently dropped; the env-var route sidesteps that entirely).
+  v="$(MIMIR_CONTENT="$MIMIR_YAML" python3 - "$path" <<'PYEOF'
+import sys, os, yaml
+parts = sys.argv[1].split('.')
+data = yaml.safe_load(os.environ['MIMIR_CONTENT'])
+for p in parts:
+    data = data.get(p, '') if isinstance(data, dict) else ''
+print(data or '', end='')
+PYEOF
+)"
   if [ -z "$v" ]; then
     bad "$label is unset — Mimir defaults to $def on the read-only root and crashes on boot; set it under a writable mount (${WRITABLE[*]})"
     fail=1
@@ -98,7 +128,19 @@ done
 
 # --- 2. every absolute "/..." path in the config must be writable --------------
 # Host/endpoint/bucket values aren't absolute paths, so they don't start with "/".
-mapfile -t PATHS < <(printf '%s' "$MIMIR_YAML" | yq '.. | select(tag == "!!str") | select(test("^/"))' - 2>/dev/null | sort -u)
+mapfile -t PATHS < <(MIMIR_CONTENT="$MIMIR_YAML" python3 <<'PYEOF'
+import os, yaml
+data = yaml.safe_load(os.environ['MIMIR_CONTENT'])
+def walk(obj):
+    if isinstance(obj, str):
+        if obj.startswith('/'): yield obj
+    elif isinstance(obj, dict):
+        for v in obj.values(): yield from walk(v)
+    elif isinstance(obj, list):
+        for v in obj: yield from walk(v)
+print('\n'.join(sorted(set(walk(data)))))
+PYEOF
+)
 for p in "${PATHS[@]}"; do
   [ -n "$p" ] || continue
   skip_p=0; for rv in "${REQVALS[@]}"; do [ "$p" = "$rv" ] && skip_p=1; done
