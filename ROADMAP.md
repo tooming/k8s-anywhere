@@ -1277,7 +1277,7 @@ You review and merge plan PRs, same as implementation PRs.
   added in `auto/pss-kro-namespace`). `docs/done/` entry required. `make ci` must
   pass. (auto/adr-0017-kargo-row)
 
-- [ ] 🟢 **PSA `baseline` labels + NetworkPolicy — `artifactory` namespace** (CHARTER
+- [x] 🟢 **PSA `baseline` labels + NetworkPolicy — `artifactory` namespace** (CHARTER
   **Objective O2**, due **2026-09-30**; RFC #287 — architect decision 2026-06-27). O2
   fan-out completion for the on-demand Artifactory namespace. Two changes bundled:
   (a) **PSA labels** — add `gitops/artifactory/namespace.yaml` with all four PSA labels

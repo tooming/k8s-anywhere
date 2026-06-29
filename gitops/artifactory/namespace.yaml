@@ -1,0 +1,24 @@
+# Explicit artifactory namespace manifest with Pod Security Admission labels (ADR-0017).
+# PSA profile is `baseline` (not `restricted`) because:
+#   - JVM init containers in the jfrog/artifactory-oss chart run as root UID 0 for
+#     chown operations on Artifactory data directories;
+#   - the main JVM process runs as UID 1030, but `restricted` requires all containers
+#     (including initContainers) to run as non-root — the upstream chart does not yet
+#     document restricted-compatible initContainers.
+# `baseline` blocks privileged containers and host-namespace use while permitting the
+# root UID in initContainers. Per RFC #287 (architect decision 2026-06-27).
+# Flip condition: when the upstream `jfrog/artifactory-oss` chart documents
+# restricted-compatible initContainers.
+#
+# This namespace is pre-created by the auto-synced artifactory-extras Application
+# (gitops/platform/artifactory-extras.yaml, wave 0) so the PSA baseline floor is in
+# place before `make artifactory-up` admits any Artifactory pod.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: artifactory
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/audit: baseline
