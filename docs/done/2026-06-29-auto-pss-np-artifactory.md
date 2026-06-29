@@ -36,4 +36,4 @@ present. `make ci` must pass. (auto/pss-np-artifactory)
 
 ## PR
 
-PR #TBD — https://github.com/tooming/k8s-lab/pull/TBD
+PR #298 — https://github.com/tooming/k8s-lab/pull/298
