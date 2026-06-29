@@ -1311,7 +1311,7 @@ You review and merge plan PRs, same as implementation PRs.
   exists targeting TCP 3900 to `storage`; appset entry `artifactory-networkpolicy`
   present. `make ci` must pass. `docs/done/` entry required. (auto/pss-np-artifactory)
 
-- [ ] 🟢 **NetworkPolicy extensions — Kiali allows in `istio-system`** (CHARTER
+- [x] 🟢 **NetworkPolicy extensions — Kiali allows in `istio-system`** (CHARTER
   **Objective O2**, due **2026-09-30**; RFC #288 — architect decision 2026-06-27;
   dependency **already met**: `auto/pss-np-istio-system` (PR #285) is merged in main —
   `gitops/istio-system/networkpolicy/` and the `istio-system-networkpolicy` appset entry

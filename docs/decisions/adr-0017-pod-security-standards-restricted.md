@@ -126,7 +126,7 @@ so the executor never silently applies the wrong label.
 | `lab-demo` | `baseline` | The upstream `jaegertracing/example-hotrod` image runs as root (no `USER` instruction in the Dockerfile). `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when the image ships a non-root UID or is superseded by the capstone-built image. Per ROADMAP `auto/pss-np-lab-demo`. |
 | `inkless` | `baseline` | The Aiven Inkless broker image (`ghcr.io/aiven/inkless:latest`) runs as root UID 0 — no `USER` directive in the base image. `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when `ghcr.io/aiven/inkless` ships with an explicit non-root `USER` directive. Per RFC #257 (architect decision 2026-06-23). |
 | `longhorn-system` | `privileged` | longhorn-manager and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, and host `/dev`. Block storage cannot work under `restricted`. Per ADR-0013 §"PSA profile". |
-| `istio-system` | `privileged` | istio-cni runs as a DaemonSet that mutates host CNI config; ztunnel requires `NET_ADMIN`. Both fail under `restricted`. Per ADR-0012 §"PSA profile". |
+| `istio-system` | `privileged` | istio-cni runs as a DaemonSet that mutates host CNI config; ztunnel requires `NET_ADMIN`. Both fail under `restricted`. Per ADR-0012 §"PSA profile". (Kiali co-resides in this namespace; no separate `kiali` row needed. Per RFC #288.) |
 | `kube-system` | unchanged | k3s-managed; out of scope. |
 
 ---
