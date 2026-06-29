@@ -15,3 +15,5 @@ resources:
   - ../../network/policies/allow-dns-and-apiserver.yaml
   - allow-istio-intra-namespace.yaml
   - allow-istio-metrics-ingress.yaml
+  - allow-kiali-ingress.yaml
+  - allow-kiali-observability-egress.yaml

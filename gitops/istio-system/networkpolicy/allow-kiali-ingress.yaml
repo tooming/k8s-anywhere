@@ -1,0 +1,24 @@
+# Allow ingress to Kiali pods from Envoy Gateway so the HTTPRoute
+# kiali.127.0.0.1.nip.io:8000 (gitops/kiali/route.yaml) can reach the Kiali
+# Service on TCP 20001. Scoped to Kiali pods via podSelector so other
+# istio-system pods (istiod, ztunnel, istio-cni) are not affected.
+# Kiali co-resides in istio-system per RFC #288 / ADR-0012 §"Kiali namespace".
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kiali-ingress
+  namespace: istio-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: kiali
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 20001
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system

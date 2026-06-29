@@ -61,3 +61,52 @@ setup() {
   run grep -q 'gitops/istio-system/networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
+
+# Kiali allows (RFC #288)
+@test "allow-kiali-ingress.yaml exists" {
+  [ -f "$ISTIO_SYSTEM_NP/allow-kiali-ingress.yaml" ]
+}
+
+@test "allow-kiali-ingress targets TCP 20001 (Kiali web UI port)" {
+  run grep -q 'port: 20001' "$ISTIO_SYSTEM_NP/allow-kiali-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-kiali-ingress targets the envoy-gateway-system namespace" {
+  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$ISTIO_SYSTEM_NP/allow-kiali-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-kiali-ingress scoped to kiali podSelector" {
+  run grep -q 'app.kubernetes.io/name: kiali' "$ISTIO_SYSTEM_NP/allow-kiali-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-kiali-observability-egress.yaml exists" {
+  [ -f "$ISTIO_SYSTEM_NP/allow-kiali-observability-egress.yaml" ]
+}
+
+@test "allow-kiali-observability-egress targets TCP 9009 (Mimir Prometheus port)" {
+  run grep -q 'port: 9009' "$ISTIO_SYSTEM_NP/allow-kiali-observability-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-kiali-observability-egress targets the observability namespace" {
+  run grep -q 'kubernetes.io/metadata.name: observability' "$ISTIO_SYSTEM_NP/allow-kiali-observability-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-kiali-observability-egress scoped to kiali podSelector" {
+  run grep -q 'app.kubernetes.io/name: kiali' "$ISTIO_SYSTEM_NP/allow-kiali-observability-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "kustomization.yaml references allow-kiali-ingress.yaml" {
+  run grep -q 'allow-kiali-ingress.yaml' "$ISTIO_SYSTEM_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "kustomization.yaml references allow-kiali-observability-egress.yaml" {
+  run grep -q 'allow-kiali-observability-egress.yaml' "$ISTIO_SYSTEM_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
