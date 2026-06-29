@@ -65,6 +65,9 @@ spec:
           - appName: longhorn-networkpolicy
             gitPath: gitops/longhorn/networkpolicy
             destNamespace: longhorn-system
+          - appName: artifactory-networkpolicy
+            gitPath: gitops/artifactory/networkpolicy
+            destNamespace: artifactory
   template:
     metadata:
       name: "{{appName}}"
