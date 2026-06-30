@@ -1358,7 +1358,7 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required. **CI change is RFC #289-approved per
   WAYS-OF-WORKING.md §2.** (auto/o4-ci-rejection-gate)
 
-- [ ] 🟢 **Platform Governance appset — `gitops/governance/` structure +
+- [x] 🟢 **Platform Governance appset — `gitops/governance/` structure +
   ApplicationSet** (CHARTER **Core Values** §"Everything as code; GitOps deploys
   it", RFC #293 — architect decision 2026-06-28). Add
   `gitops/platform/governance-appset.yaml` (ApplicationSet with list-generator,
