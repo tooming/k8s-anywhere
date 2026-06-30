@@ -1,0 +1,17 @@
+# NetworkPolicy Kustomize overlay for the harbor namespace (ADR-0016 §4 fan-out).
+# Harbor is on-demand (manual-sync only) but the NetworkPolicy manifests are cheap
+# (no pods) so this overlay is auto-synced via the networkpolicy-appset, ensuring
+# the default-deny floor and per-workload allows are in place before `make harbor-up`
+# brings pods up. Wired into gitops/platform/networkpolicy-appset.yaml (wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: harbor
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-harbor-ingress.yaml
+  - allow-harbor-garage-egress.yaml
+  - allow-harbor-valkey-egress.yaml
+  - allow-harbor-intra-namespace.yaml

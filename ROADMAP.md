@@ -1446,7 +1446,7 @@ You review and merge plan PRs, same as implementation PRs.
   the Application + extras + namespace in PR 1 and the route + Lab-UIs wiring +
   bats as the next item. (auto/harbor-application)
 
-- [ ] 🟢 **Harbor NetworkPolicy floor + appset entry** (CHARTER **Core
+- [x] 🟢 **Harbor NetworkPolicy floor + appset entry** (CHARTER **Core
   Values**, RFC #297 / ADR-0024 — architect decision 2026-06-30; **NP fan-out
   pre-approved by ADR-0024 per WAYS-OF-WORKING.md §2**; **prerequisite:
   `auto/harbor-application` merges first**). Mirror the artifactory NP overlay

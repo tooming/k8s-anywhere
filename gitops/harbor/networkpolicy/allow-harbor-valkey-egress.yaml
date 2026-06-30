@@ -1,0 +1,23 @@
+# Allow egress from Harbor pods to Valkey in the data namespace (ADR-0016, ADR-0018).
+# Harbor is configured to use the platform Valkey instance as its external cache store
+# (valkey.data.svc.cluster.local:6379, ADR-0024 §"Minimal profile", ADR-0018).
+# Valkey serves as Harbor's cache and session store for the core and jobservice
+# components. Without this allow the default-deny floor blocks Harbor → Valkey
+# connections when Harbor is running.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-harbor-valkey-egress
+  namespace: harbor
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 6379
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: data

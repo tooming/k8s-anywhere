@@ -68,6 +68,9 @@ spec:
           - appName: artifactory-networkpolicy
             gitPath: gitops/artifactory/networkpolicy
             destNamespace: artifactory
+          - appName: harbor-networkpolicy
+            gitPath: gitops/harbor/networkpolicy
+            destNamespace: harbor
   template:
     metadata:
       name: "{{appName}}"
