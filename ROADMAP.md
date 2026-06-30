@@ -1402,6 +1402,138 @@ You review and merge plan PRs, same as implementation PRs.
   have LimitRange defaults. `make ci` must pass. `docs/done/` entry required.
   Closes #294. (auto/namespace-resource-profiles)
 
+- [ ] 🟢 **Harbor on-demand Application + namespace + Envoy route**
+  (CHARTER **Core Values** §"Everything as code; GitOps deploys it" +
+  **Objective O1**, RFC #297 /
+  [ADR-0024](docs/decisions/adr-0024-harbor-not-artifactory.md) — architect
+  decision 2026-06-30; **Yellow work — new chart source + namespace — is
+  pre-approved by the superseding ADR per WAYS-OF-WORKING.md §2**). First slice
+  of the Artifactory→Harbor migration. Add `gitops/platform/harbor.yaml`: a
+  **non-auto-synced** ArgoCD `Application` (NO `automated:` block — mirror
+  `gitops/platform/artifactory.yaml`), chart `harbor` from
+  `https://helm.goharbor.io` (pin a specific chart version at executor pickup —
+  current line is chart v1.16.x / appVersion v2.12.x), namespace `harbor`.
+  `valuesObject` **minimal profile** per ADR-0024 §"Minimal profile":
+  `trivy.enabled: false` (cluster scanning is Trivy Operator, ADR-0022),
+  `notary.enabled: false`, `expose.type: clusterIP` + `expose.tls.enabled:
+  false` (Envoy HTTPRoute fronts ingress, ADR-0008 — disable the chart's own
+  ingress), `externalURL: http://harbor.127.0.0.1.nip.io:8000`,
+  `persistence.imageChartStorage.type: s3` with the registry bucket pointed at
+  **Garage S3** (ADR-0002 — `regionendpoint` the in-cluster Garage Service in
+  `storage`; credentials via the existing Vault→ESO pattern, never inline),
+  `redis.type: external` pointed at the platform **Valkey** (ADR-0018, `data`
+  ns) where the chart allows; bundled internal Postgres is acceptable for the
+  first cut. Set modest `resources` requests/limits per enabled component
+  (core/registry/jobservice/portal). Add `gitops/platform/harbor-extras.yaml`
+  (auto-synced, sync-wave 0 — mirror `artifactory-extras.yaml`) sourcing
+  `gitops/harbor` so the namespace PSA floor + HTTPRoute exist before
+  `make harbor-up`. Add `gitops/harbor/namespace.yaml` with PSA **`restricted`**
+  + `enforce-version: latest` per ADR-0017/ADR-0024 (Harbor is Go/non-root →
+  target restricted, advancing the hardening track); fall back to `baseline`
+  only with a documented justification + flip condition (mirror the
+  `artifactory` namespace comment style) if a chart component genuinely cannot
+  render restricted-compatible even with `securityContext` overrides. Add
+  `gitops/harbor/route.yaml`: an Envoy `HTTPRoute` `harbor.127.0.0.1.nip.io`
+  (ADR-0008, parentRef `eg`/`lab-gateway`) backendRef'ing the Harbor
+  portal/core Service + port (mirror `gitops/artifactory/route.yaml`). Wire the
+  new UI into the Grafana "Lab UIs" panel (`grafana/dashboards/stack-health.json`)
+  so `make lab-ui-check` stays green. New `tests/harbor.bats`: Application has
+  **no** `automated:` block (on-demand); chart `harbor` from `helm.goharbor.io`
+  with a pinned version; `trivy.enabled: false` + `notary.enabled: false`;
+  storage type `s3`; namespace PSA labels present; route host
+  `harbor.127.0.0.1.nip.io`. `make ci` must pass. `docs/done/` entry required.
+  **Executor note:** if the PR crosses ~400 lines (WAYS-OF-WORKING.md §3), ship
+  the Application + extras + namespace in PR 1 and the route + Lab-UIs wiring +
+  bats as the next item. (auto/harbor-application)
+
+- [ ] 🟢 **Harbor NetworkPolicy floor + appset entry** (CHARTER **Core
+  Values**, RFC #297 / ADR-0024 — architect decision 2026-06-30; **NP fan-out
+  pre-approved by ADR-0024 per WAYS-OF-WORKING.md §2**; **prerequisite:
+  `auto/harbor-application` merges first**). Mirror the artifactory NP overlay
+  (ADR-0016 §4 fan-out). Add `gitops/harbor/networkpolicy/kustomization.yaml`
+  (`namespace: harbor`) referencing the shared
+  `../../network/policies/default-deny.yaml` +
+  `../../network/policies/allow-dns-and-apiserver.yaml`, plus:
+  `allow-harbor-ingress.yaml` (ingress from `envoy-gateway-system` to the Harbor
+  core/portal/registry ports), `allow-harbor-garage-egress.yaml` (egress TCP
+  3900 to the `storage` Garage S3 backend), and an egress allow to the platform
+  **Valkey** in `data` (Harbor's external Redis) — plus internal DB egress as
+  the chosen profile requires. Add a `harbor-networkpolicy` entry to
+  `gitops/platform/networkpolicy-appset.yaml` (auto-synced, wave 4 — mirror the
+  `artifactory-networkpolicy` entry: `appName: harbor-networkpolicy`,
+  `gitPath: gitops/harbor/networkpolicy`, `destNamespace: harbor`). Do **not**
+  remove the `artifactory-networkpolicy` entry yet (decommission item). Extend
+  `tests/harbor.bats`: NP overlay references default-deny + allow-dns-and-apiserver
+  + ingress-from-envoy + egress-to-storage; appset has the `harbor-networkpolicy`
+  entry. `make ci` must pass. `docs/done/` entry required.
+  (auto/harbor-networkpolicy)
+
+- [ ] 🟢 **`make harbor-up` / `harbor-down` targets** (CHARTER **Core Values**
+  §"Everything as code", RFC #297 / ADR-0024 — architect decision 2026-06-30;
+  **Makefile change pre-approved by ADR-0024 per WAYS-OF-WORKING.md §2**;
+  **prerequisite: `auto/harbor-application` merges first**). Add `make harbor-up`
+  (`$(call argocd-sync,harbor)` then `$(call argocd-sync,harbor-extras)`) and
+  `make harbor-down` (`$(call argocd-delete,harbor-extras)` then
+  `$(call argocd-delete,harbor)`) — mirror the existing
+  `artifactory-up`/`artifactory-down` targets exactly; keep the help text honest
+  (Harbor minimal profile, on-demand). Do **not** remove the
+  `artifactory-up/down` targets yet (decommission item). Extend
+  `tests/harbor.bats` (clusterless, structural): `harbor-up` and `harbor-down`
+  `.PHONY` targets present and each references both `harbor` and `harbor-extras`.
+  `make ci` must pass. `docs/done/` entry required. (auto/harbor-make-targets)
+
+- [ ] 🟢 **ADR-0017 amendment — `harbor` PSA row** (RFC #297 / ADR-0024 —
+  architect decision 2026-06-30; **prerequisite: `auto/harbor-application`
+  merges first** so the chosen profile is known). Add a `harbor` row to
+  ADR-0017's per-namespace profile table recording the profile the `harbor`
+  namespace actually carries (`restricted` if the chart rendered non-root, else
+  `baseline` with the documented justification + flip condition copied from the
+  namespace manifest). Pure docs. `make ci` must pass. `docs/done/` entry
+  required. (auto/harbor-pss-adr0017-row)
+
+- [ ] 🟢 **Capstone pipeline re-wire — Artifactory → Harbor registry host**
+  (CHARTER **Objective O4** + capstone RFC #62, RFC #297 / ADR-0024 — architect
+  decision 2026-06-30; **CI / security-adjacent changes pre-approved by ADR-0024
+  per WAYS-OF-WORKING.md §2**; **maintainer-confirmation prerequisite: pick up
+  ONLY after the maintainer confirms on #297 that the minimal Harbor profile was
+  measured on the live cluster and fits the 12 GB budget on-demand — the
+  ADR-0024 go/no-go gate; skip to the next item if it cannot be verified this
+  run**). Cut the capstone image flow over from `artifactory.127.0.0.1.nip.io`
+  to `harbor.127.0.0.1.nip.io`: `.gitlab-ci.yml` (registry host + login),
+  `gitops/secrets/artifactory-registry-externalsecret.yaml` → a `harbor-registry`
+  ExternalSecret (Vault path), `gitops/kargo-project/project.yaml`,
+  `gitops/apps/capstone/rollout.yaml` + `deployment.yaml` (image refs),
+  `gitops/kyverno/policies/verify-image-signatures.yaml` (verifyImages scope
+  `artifactory.127.0.0.1.nip.io/**` → `harbor.127.0.0.1.nip.io/**` — independent
+  of the separate Audit→Enforce flip item, coordinate if both are open),
+  `gitops/kargo/networkpolicy/allow-kargo-egress-registry.yaml`, and the README /
+  `docs/dependency-tree.md` references. Update the relevant bats (capstone /
+  kargo / kyverno) for the new host. `make ci` must pass. `docs/done/` entry
+  required. **Executor note:** if this crosses ~400 lines, split the
+  CI/secret/registry-credential cutover from the GitOps app/image-ref cutover.
+  (auto/harbor-capstone-rewire)
+
+- [ ] 🟢 **Decommission Artifactory manifests** (RFC #297 / ADR-0024 — architect
+  decision 2026-06-30; **maintainer-confirmation prerequisite: pick up ONLY
+  after `auto/harbor-capstone-rewire` merges AND the maintainer has confirmed the
+  Harbor footprint gate on #297; skip if not verifiable this run**). Remove
+  `gitops/platform/artifactory.yaml`, `gitops/platform/artifactory-extras.yaml`,
+  the entire `gitops/artifactory/` tree (namespace, route, networkpolicy), the
+  `make artifactory-up`/`artifactory-down` targets, the `artifactory-networkpolicy`
+  entry in `gitops/platform/networkpolicy-appset.yaml`, the `artifactory` row in
+  ADR-0017's profile table, the `artifactory` LimitRange entry in the governance
+  appset / `gitops/governance/`, the artifactory nodes/edges in
+  `docs/dependency-tree.md`, the now-superseded
+  `gitops/secrets/artifactory-registry-externalsecret.yaml`, and the artifactory
+  rows in README. Add a recurrence guard — extend `tests/harbor.bats` (or a
+  dedicated `tests/no-artifactory.bats`) asserting no `artifactory` ArgoCD
+  Application / route / make-target / appset entry remains (a
+  `grep -r artifactory gitops/ Makefile` guard allowing only historical
+  `docs/done/` + ADR-0011/0024 mentions). `make ci` must pass. `docs/done/` entry
+  required. **Closes #297** — the migration's final slice; close the issue once
+  this lands and the footprint gate is on record.
+  (auto/harbor-artifactory-decommission)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
