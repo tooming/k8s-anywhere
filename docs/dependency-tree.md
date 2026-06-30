@@ -80,6 +80,9 @@ graph TD
     subgraph ARTIF["Artifactory — on-demand (manual sync only)"]
       artifactory["Artifactory OSS<br/>artifact registry + Docker registry<br/>(artifactory ns)"]:::ondemand
     end
+    subgraph HARBOR["Harbor — on-demand (manual sync only, ADR-0024)"]
+      harbor["Harbor CNCF OCI registry<br/>(harbor ns; chart goharbor/harbor)"]:::ondemand
+    end
     subgraph CAPSTONE["Capstone — build pipeline (all 5 steps done)"]
       capstoneci["GitLab CI<br/>build-and-push pipeline<br/>(.gitlab-ci.yml)"]:::ondemand
       capstoneapp["capstone app<br/>Deployment + Service<br/>(capstone ns)"]:::gitops
@@ -169,6 +172,11 @@ graph TD
   %% --- TiDB on-demand chain ---
   tidbop -.->|"manages CRDs"| tidbcluster
   tidbcluster -.->|"DB endpoint"| tidbdemo
+
+  %% --- Harbor on-demand (ADR-0024) ---
+  envoy -.->|"harbor.127.0.0.1.nip.io (on-demand)"| harbor
+  garage -.->|"S3 :3900 harbor-registry bucket"| harbor
+  harbor -.->|"ESO → harbor-s3-creds"| eso
 
   %% --- Artifactory on-demand + capstone CI pipeline ---
   envoy -.->|"artifactory.127.0.0.1.nip.io (on-demand)"| artifactory
@@ -293,6 +301,8 @@ make up
 | — | tidb-demo *(on-demand)* | Demo app reading TiDB creds from Vault via ExternalSecret; manual-sync only — use `make tidb-demo-up` |
 | — | artifactory *(on-demand)* | JFrog Artifactory OSS artifact + Docker registry (chart `jfrog/artifactory-oss` from `charts.jfrog.io`); manual-sync only — use `make artifactory-up` |
 | — | artifactory-extras *(on-demand)* | Envoy HTTPRoute for `artifactory.127.0.0.1.nip.io`; paired with the artifactory Application — use `make artifactory-up` |
+| — | harbor *(on-demand, ADR-0024)* | Harbor CNCF OCI registry (chart `goharbor/harbor` v1.16.0 from `https://helm.goharbor.io`); minimal profile (Trivy/Notary disabled; Garage S3 backend; platform Valkey for cache; bundled Postgres); PSA `restricted`; manual-sync only — use `make harbor-up` (to be wired in next item) |
+| — | harbor-extras *(auto-synced, wave 0)* | Pre-creates `harbor` namespace with PSA `restricted` labels + Envoy HTTPRoute `harbor.127.0.0.1.nip.io`; always-on so the PSA floor is present before `make harbor-up` admits pods |
 | — | cilium *(bootstrap — helm direct, before ArgoCD)* | Cilium CNI replacing k3s-bundled Flannel; eBPF kube-proxy replacement (chart `cilium/cilium` v1.16.6 from `https://helm.cilium.io`, namespace `kube-system`; `kubeProxyReplacement: true`, Hubble disabled for budget). Run `make cilium-up` immediately after `make cluster-up` — pod networking requires Cilium before ArgoCD or any workload can start (ADR-0014) |
 | — | istio-base *(on-demand, step 1)* | Istio CRDs + cluster-scoped RBAC (chart `istio/base` from `istio-release.storage.googleapis.com/charts`); manual-sync only — use `make istio-up` |
 | — | istio-cni *(on-demand, step 2)* | Istio CNI node plugin, ambient profile (chart `istio/cni`); must precede istiod — use `make istio-up` |
@@ -332,6 +342,8 @@ make up
 | Alloy → RabbitMQ / Valkey | scrape `:15692` / `:9121` → Mimir | `gitops/platform/observability-alloy.yaml` |
 | data-demo → RabbitMQ / Valkey | AMQP publish/consume · Valkey SET/GET/INCR | `gitops/data/demo/` |
 | Envoy → rabbitmq.127.0.0.1.nip.io | HTTPRoute (management UI) | `gitops/data/rabbitmq/route.yaml` |
+| Envoy → harbor.127.0.0.1.nip.io *(on-demand, ADR-0024)* | HTTPRoute | `gitops/harbor/route.yaml` |
+| Harbor → Garage S3 `harbor-registry` bucket *(on-demand)* | S3 API `:3900` (ADR-0002) | `gitops/platform/harbor.yaml` values + `gitops/secrets/harbor-s3-externalsecret.yaml` |
 | Envoy → artifactory.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/artifactory/route.yaml` |
 | Envoy → kiali.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/kiali/route.yaml` |
 | istiod → Kiali *(on-demand)* | mesh config (xDS endpoint) | `gitops/platform/kiali.yaml` values |

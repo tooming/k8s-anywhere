@@ -1,0 +1,131 @@
+# Harbor CNCF OCI artifact registry (ADR-0024, supersedes ADR-0011).
+# Helm chart goharbor/harbor from https://helm.goharbor.io.
+# ON-DEMAND: no auto-sync block → ArgoCD discovers this Application but will NOT
+# auto-deploy it. Bring up with: make harbor-up
+# Tear down with:               make harbor-down
+# Do NOT enable auto-sync here — keep it on-demand (ADR-0024 §"12 GB gate").
+#
+# Minimal profile (ADR-0024 §"Minimal profile"):
+#   - trivy disabled: cluster scanning already handled by Trivy Operator (ADR-0022)
+#   - notary disabled: out of scope for first cut (OCI push/pull only)
+#   - expose.type=clusterIP + tls.enabled=false: Envoy HTTPRoute fronts ingress (ADR-0008)
+#   - persistence.imageChartStorage.type=s3: Garage S3 backend (ADR-0002)
+#   - database.type=internal: bundled Postgres acceptable for first cut
+#
+# ADR-0018 note: the `redis` key below is the Harbor chart's own API parameter name
+# for its cache/session dependency — it is not deploying Redis. The `type: external`
+# value redirects Harbor to use the platform Valkey instance (ADR-0018, `data` ns).
+# ADR-0024 §"Relationship to existing ADRs" explicitly names this reuse.
+#
+# S3 credentials (ADR-0002 — never inline): registry reads REGISTRY_STORAGE_S3_ACCESSKEY
+# and REGISTRY_STORAGE_S3_SECRETKEY from harbor-s3-creds Secret (ESO-rendered from
+# Vault secret/harbor/s3, seeded by garage-bootstrap.sh). Docker Distribution registry2
+# overrides config.yaml s3 values with REGISTRY_* environment variables.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: harbor
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://helm.goharbor.io
+    chart: harbor
+    targetRevision: 1.16.0
+    helm:
+      releaseName: harbor
+      valuesObject:
+        expose:
+          type: clusterIP
+          tls:
+            enabled: false
+        externalURL: http://harbor.127.0.0.1.nip.io:8000
+        trivy:
+          enabled: false
+        notary:
+          enabled: false
+        persistence:
+          resourcePolicy: keep
+          imageChartStorage:
+            type: s3
+            s3:
+              region: garage
+              bucket: harbor-registry
+              regionendpoint: http://garage.storage.svc.cluster.local:3900
+              encrypt: false
+              v4auth: true
+              secure: false
+              # Credentials injected via REGISTRY_STORAGE_S3_ACCESSKEY /
+              # REGISTRY_STORAGE_S3_SECRETKEY env vars from harbor-s3-creds
+              # Secret (ESO-rendered from Vault secret/harbor/s3).
+              accesskey: ""
+              secretkey: ""
+        database:
+          type: internal
+          internal:
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+        # ADR-0018: `redis` is the Harbor chart's API key name for its cache dependency.
+        # type=external redirects Harbor to use the platform Valkey (ADR-0018, data ns).
+        redis:
+          type: external
+          external:
+            addr: "valkey.data.svc.cluster.local:6379"
+            db: 1
+        registry:
+          registry:
+            # ESO renders harbor-s3-creds Secret from Vault secret/harbor/s3.
+            # Docker Distribution registry2 reads REGISTRY_STORAGE_S3_ACCESSKEY and
+            # REGISTRY_STORAGE_S3_SECRETKEY to override the empty config.yaml values.
+            extraEnvVarsSecret: harbor-s3-creds
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          controller:
+            resources:
+              requests:
+                cpu: 20m
+                memory: 64Mi
+              limits:
+                cpu: 200m
+                memory: 128Mi
+        core:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+        jobservice:
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+        portal:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: harbor
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

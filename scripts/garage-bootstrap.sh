@@ -147,9 +147,45 @@ fi
 g bucket create velero >/dev/null 2>&1 || true
 g bucket allow --read --write velero --key velero-key >/dev/null 2>&1 || true
 
+# harbor key + bucket (on-demand; created at bootstrap so make harbor-up works
+# immediately without a separate garage step). Stores the key at secret/harbor/s3.
+# ESO renders harbor-s3-creds Secret from this Vault path; registry reads credentials
+# via REGISTRY_STORAGE_S3_ACCESSKEY / REGISTRY_STORAGE_S3_SECRETKEY env vars.
+if ! g key info harbor-key >/dev/null 2>&1; then
+  echo "[garage] creating access key harbor-key"
+  g key create harbor-key >/dev/null 2>&1
+fi
+HKOUT=$(g key info --show-secret harbor-key 2>/dev/null || true)
+HKID=$(printf '%s\n' "$HKOUT" | awk -F': *' '
+  BEGIN { IGNORECASE = 1 }
+  $1 ~ /^(access[ _-]?key([ _-]?id)?|key[ _-]?id)$/ {
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+    print $2
+    exit
+  }' | tr -d '"' || true)
+HKSEC=$(printf '%s\n' "$HKOUT" | awk -F': *' '
+  BEGIN { IGNORECASE = 1 }
+  $1 ~ /^(secret[ _-]?access[ _-]?key|secret[ _-]?key)$/ {
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+    print $2
+    exit
+  }' | tr -d '"' || true)
+[ -n "$HKID" ]  || HKID=$(printf '%s'  "$HKOUT" | grep -oiE 'GK[0-9a-f]{20,}' | head -1 || true)
+[ -n "$HKSEC" ] || HKSEC=$(printf '%s' "$HKOUT" | grep -oiE '[0-9a-f]{64}'     | head -1 || true)
+[[ "$(echo "$HKSEC" | tr '[:upper:]' '[:lower:]')" == redacted* || "$HKSEC" == "*" ]] && HKSEC=""
+if [ -n "$HKID" ] && [ -n "$HKSEC" ]; then
+  TOKEN=$(kubectl -n "$VNS" get secret vault-keys -o jsonpath='{.data.root-token}' | base64 -d)
+  kubectl -n "$VNS" exec vault-0 -- env VAULT_TOKEN="$TOKEN" vault kv put secret/harbor/s3 access-key-id="$HKID" secret-access-key="$HKSEC" >/dev/null
+  echo "[garage] ensured secret/harbor/s3 in Vault (key $HKID)"
+else
+  echo "[garage] WARNING: could not resolve harbor-key id/secret — secret/harbor/s3 not written"
+fi
+g bucket create harbor-registry >/dev/null 2>&1 || true
+g bucket allow --read --write harbor-registry --key harbor-key >/dev/null 2>&1 || true
+
 # secret/garage/s3 was just (re)written above; nudge ESO so the garage-s3
 # ExternalSecrets (Mimir/Loki/Tempo + storage) pick it up now instead of waiting
 # for their refreshInterval. Best-effort.
 kubectl annotate externalsecret -A --all force-sync="$(date +%s)" --overwrite >/dev/null 2>&1 || true
 
-echo "[garage] bootstrap complete (buckets: mimir, mimir-ruler, loki, tempo, pyroscope, inkless, velero)"
+echo "[garage] bootstrap complete (buckets: mimir, mimir-ruler, loki, tempo, pyroscope, inkless, velero, harbor-registry)"
