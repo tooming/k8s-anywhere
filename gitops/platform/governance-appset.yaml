@@ -16,12 +16,65 @@ spec:
   generators:
     - list:
         elements:
+          # standard tier (RFC #294 mapping table)
           - appName: argocd-governance
             gitPath: gitops/governance/argocd
             destNamespace: argocd
           - appName: capstone-governance
             gitPath: gitops/governance/capstone
             destNamespace: capstone
+          - appName: kyverno-governance
+            gitPath: gitops/governance/kyverno
+            destNamespace: kyverno
+          - appName: external-secrets-governance
+            gitPath: gitops/governance/external-secrets
+            destNamespace: external-secrets
+          - appName: velero-governance
+            gitPath: gitops/governance/velero
+            destNamespace: velero
+          - appName: argo-rollouts-governance
+            gitPath: gitops/governance/argo-rollouts
+            destNamespace: argo-rollouts
+          - appName: trivy-system-governance
+            gitPath: gitops/governance/trivy-system
+            destNamespace: trivy-system
+          - appName: moto-governance
+            gitPath: gitops/governance/moto
+            destNamespace: moto
+          - appName: ack-system-governance
+            gitPath: gitops/governance/ack-system
+            destNamespace: ack-system
+          - appName: kro-governance
+            gitPath: gitops/governance/kro
+            destNamespace: kro
+          - appName: kargo-governance
+            gitPath: gitops/governance/kargo
+            destNamespace: kargo
+          - appName: lab-demo-governance
+            gitPath: gitops/governance/lab-demo
+            destNamespace: lab-demo
+          - appName: data-governance
+            gitPath: gitops/governance/data
+            destNamespace: data
+          - appName: storage-governance
+            gitPath: gitops/governance/storage
+            destNamespace: storage
+          - appName: vault-governance
+            gitPath: gitops/governance/vault
+            destNamespace: vault
+          - appName: lab-gateway-governance
+            gitPath: gitops/governance/lab-gateway
+            destNamespace: lab-gateway
+          # NOTE: the legacy on-demand registry namespace is intentionally omitted —
+          # ADR-0024 supersedes ADR-0011 and selects Harbor (RFC #297, manifests
+          # pending). A harbor governance overlay is added once its namespace lands.
+          - appName: kiali-governance
+            gitPath: gitops/governance/kiali
+            destNamespace: kiali
+          # heavy tier (RFC #294 mapping table)
+          - appName: observability-governance
+            gitPath: gitops/governance/observability
+            destNamespace: observability
   template:
     metadata:
       name: "{{appName}}"

@@ -1,0 +1,20 @@
+# Standard-tier LimitRange for the lab-gateway namespace (RFC #294 standard profile).
+# Container defaults so any pod without explicit requests/limits inherits a sane
+# floor + ceiling on the 16 GB host. Values are the RFC #294 "standard" tier.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: standard-limits
+  namespace: lab-gateway
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "50m"
+        memory: "64Mi"
+      max:
+        cpu: "2000m"
+        memory: "4Gi"
