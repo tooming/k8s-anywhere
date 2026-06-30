@@ -264,3 +264,16 @@ setup() {
   run bash "$REPO/scripts/mimir-readonly-root-check.sh"
   [ "$status" -eq 0 ]
 }
+
+# --- yq variant portability guard --------------------------------------------
+# mikefarah/yq (Go) and kislyuk/python-yq (jq wrapper) disagree on -o=json and
+# tag==""  syntax. Scripts using mikefarah-only flags produce empty output on a
+# kislyuk/python-yq installation (errors silently swallowed by 2>/dev/null),
+# turning assertions into false-negatives or false-positives. This bit the
+# mimir-readonly-root-check.sh (chore/fix-mimir-ci-check-yq-compat). Use
+# python3/PyYAML instead (portable; already the fix in that script).
+@test "no check script uses yq -o=json (mikefarah-only flag, breaks on kislyuk/python-yq)" {
+  run grep -rl 'yq -o=json' "$REPO/scripts/"
+  # grep exits 1 when no files match — that is the passing condition
+  [ "$status" -eq 1 ]
+}
