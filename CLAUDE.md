@@ -25,10 +25,21 @@ explain why — don't silently ship a symptom-only patch.
 Before proposing OR implementing any technical/tooling choice, consult
 `docs/decisions/` (the ADRs). They are binding, not advisory.
 
-- **Never** implement something that contradicts an ADR. If you think an ADR should
-  be revisited, **STOP and ask first** — name the ADR, explain why you'd deviate, and
-  let the user decide. Do not act against an ADR unprompted, even partially or in a
-  proposal/plan.
+- **Never silently *violate* an ADR.** Implementing something that contradicts a binding
+  ADR **without replacing it** — partially, or even in a proposal/plan — requires you to
+  **STOP and ask first**: name the ADR, explain why you'd deviate, and let the user decide.
+  This default binds every role.
+- **Superseding an ADR is the sanctioned exception, and it is the *architect's* call — not
+  a human pre-approval gate.** Per [WAYS-OF-WORKING.md §2](docs/WAYS-OF-WORKING.md) (Yellow
+  tier), authoring a *new* ADR that **supersedes** an existing one is architect-tier work:
+  the architect's decision *is* the approval, the planner grooms it into executor items
+  without waiting, and the maintainer's only gate is the **merge button** on the resulting
+  `arch/*` PR (precedent: ADR-0018 superseded ADR-0010). So when an `rfc` proposes replacing
+  a binding ADR, the routine ladder must **reach the architect and decide it** — do *not*
+  freeze it behind a "maintainer please accept" checkbox on the issue, which manufactures a
+  human touchpoint the working agreement deliberately removed (§0: "the merge button is the
+  maintainer's ONLY touchpoint"). Lower-tier roles (executor/planner) still never supersede
+  an ADR on their own — that authority is the architect's.
 - ADRs named `adr-NNNN-<chosen>-not-<rejected>.md` encode a **rejected** option — treat
   it as off-limits (e.g. ADR-0002: Garage, NOT MinIO).
 - A `SessionStart` hook (`scripts/adr-context-hook.sh`) surfaces every ADR's decision at
