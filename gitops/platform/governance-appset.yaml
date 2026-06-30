@@ -1,0 +1,47 @@
+# governance-appset — RFC #293 §"Platform Governance appset".
+# A single List-generator ApplicationSet that fans out per-namespace governance
+# objects (LimitRange defaults today; room for ResourceQuota / PriorityClass later)
+# from gitops/governance/<namespace>/ leaf overlays. Mirrors the networkpolicy-appset
+# pattern so the governance fan-out is visible in the ArgoCD ApplicationSet UI.
+# Kyverno ClusterPolicies are NOT moved here — they stay in gitops/kyverno/policies/.
+# Wave 3: the ApplicationSet object is planted before the generated Applications at wave 4.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: governance
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  generators:
+    - list:
+        elements:
+          - appName: argocd-governance
+            gitPath: gitops/governance/argocd
+            destNamespace: argocd
+          - appName: capstone-governance
+            gitPath: gitops/governance/capstone
+            destNamespace: capstone
+  template:
+    metadata:
+      name: "{{appName}}"
+      namespace: argocd
+      annotations:
+        argocd.argoproj.io/sync-wave: "4"
+    spec:
+      project: default
+      source:
+        repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+        targetRevision: main
+        path: "{{gitPath}}"
+        kustomize:
+          buildOptions: "--load-restrictor LoadRestrictionsNone"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{destNamespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
