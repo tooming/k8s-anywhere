@@ -1358,6 +1358,50 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required. **CI change is RFC #289-approved per
   WAYS-OF-WORKING.md §2.** (auto/o4-ci-rejection-gate)
 
+- [ ] 🟢 **Platform Governance appset — `gitops/governance/` structure +
+  ApplicationSet** (CHARTER **Core Values** §"Everything as code; GitOps deploys
+  it", RFC #293 — architect decision 2026-06-28). Add
+  `gitops/platform/governance-appset.yaml` (ApplicationSet with list-generator,
+  sync-wave annotation `"3"` on the ApplicationSet metadata; generated Applications
+  at sync-wave `"4"` via template annotation; auto-synced via template syncPolicy;
+  follows the existing `networkpolicy-appset.yaml` pattern). Each namespace that
+  needs governance objects gets a leaf directory `gitops/governance/<namespace>/`
+  containing `kustomization.yaml` + `limitrange.yaml`. Seed two entries to
+  demonstrate the pattern (`argocd` and `capstone` from the RFC #294 standard-tier
+  list). Each `kustomization.yaml` lists `resources: [limitrange.yaml]`; each
+  `limitrange.yaml` is a `standard`-tier LimitRange (`type: Container`;
+  `default.cpu: "500m"`, `default.memory: "512Mi"`; `defaultRequest.cpu: "50m"`,
+  `defaultRequest.memory: "64Mi"`; `max.cpu: "2000m"`, `max.memory: "4Gi"`).
+  Kyverno ClusterPolicies stay in `gitops/kyverno/policies/` — do NOT move them.
+  Update `docs/dependency-tree.md` with a governance layer note (parallel to the
+  networkpolicy-appset notes). New `tests/governance.bats`: governance-appset file
+  exists; is an ApplicationSet; has list-generator; has auto-sync template; the two
+  seed namespace dirs exist each with `kustomization.yaml` and `limitrange.yaml`.
+  `make ci` must pass. `docs/done/` entry required. Closes #293.
+  (auto/platform-governance-appset)
+
+- [ ] 🟢 **Namespace Resource Profiles — LimitRange defaults fan-out**
+  (CHARTER **Core Values** §"Fits the 16 GB reality", RFC #294 — architect
+  decision 2026-06-28; **prerequisite: `auto/platform-governance-appset` merges
+  first**). Extend `gitops/platform/governance-appset.yaml` list with all namespace
+  entries from the RFC #294 mapping table. Add
+  `gitops/governance/<namespace>/limitrange.yaml` for every `standard`-tier
+  namespace: `argocd`, `capstone`, `kyverno`, `external-secrets`, `velero`,
+  `argo-rollouts`, `trivy-system`, `moto`, `ack-system`, `kro`, `kargo`,
+  `lab-demo`, `data`, `storage`, `vault`, `lab-gateway`, `artifactory`, `kiali`.
+  Add `gitops/governance/observability/limitrange.yaml` with the `heavy` profile:
+  `default.cpu: "2000m"`, `default.memory: "2Gi"`; `defaultRequest.cpu: "100m"`,
+  `defaultRequest.memory: "128Mi"`; `max.cpu: "4000m"`, `max.memory: "8Gi"`.
+  Excluded namespaces (no LimitRange — document in PR body): `kube-system`,
+  `kube-public`, `kube-node-lease` (cluster-managed); `tidb`, `longhorn-system`,
+  `istio-system`, `inkless` (on-demand heavy — too variable for static defaults).
+  Extend `tests/governance.bats`: each namespace's `limitrange.yaml` exists; each
+  has `type: Container`; `defaultRequest.cpu: "50m"` present for standard-tier;
+  `default.memory: "2Gi"` present for `observability` (heavy tier). Update
+  `docs/dependency-tree.md` with a one-line note that all always-on namespaces
+  have LimitRange defaults. `make ci` must pass. `docs/done/` entry required.
+  Closes #294. (auto/namespace-resource-profiles)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
@@ -1447,42 +1491,13 @@ You review and merge plan PRs, same as implementation PRs.
   with two per-pod allows (TCP 20001 ingress from `envoy-gateway-system`, TCP 9009
   egress to `observability`).
 
-- [ ] 🟡 **Platform Governance layer — `gitops/governance/` structure** (RFC #293 — architect decision 2026-06-28)
-  (CHARTER **Core Values** §"Everything as code; GitOps deploys it"; surfaced
-  2026-06-27 from issue #283). The maintainer proposes consolidating all
-  cross-cutting governance resources (LimitRanges, ResourceQuotas, and possibly
-  Kyverno `ClusterPolicy` manifests) into a dedicated `gitops/governance/`
-  directory rather than scattering them across namespace subdirectories. This is an
-  architectural decision — the architect must decide: (a) the directory layout
-  (e.g. `gitops/governance/limitranges/`, `gitops/governance/resourcequotas/`,
-  and whether Kyverno policies stay in `gitops/kyverno/policies/` or migrate here);
-  (b) whether to introduce LimitRanges and ResourceQuotas at all — they don't exist
-  today; (c) how a new or updated ArgoCD `Application`/`ApplicationSet` would target
-  the structure; (d) whether the move is additive (new governance objects) or a
-  refactor (moving existing policy manifests). The architect should also note whether
-  this overlaps with ADR-0019 (Kyverno as policy engine) and how the two layers
-  divide responsibility. When RFC lands, the planner will groom into one or more 🟢
-  executor items per the RFC's split guidance. (arch/platform-governance)
+- ~~🟡 **Platform Governance layer — `gitops/governance/` structure**~~ (RFC #293)
+  **Groomed ↗** into a 🟢 item in *Now / next* above
+  (`auto/platform-governance-appset`), planner run 2026-06-30.
 
-- [ ] 🟡 **Namespace Resource Profiles — standardized ResourceQuota tiers** (RFC #294 — architect decision 2026-06-28)
-  (CHARTER **Core Values** §"Fits the 16 GB reality"; surfaced 2026-06-27 from
-  issue #283). The maintainer proposes standardized per-namespace ResourceQuota +
-  LimitRange profiles (e.g. `tiny`, `small`, `medium`, `large`, `critical`) so
-  namespaces get consistent resource ceilings rather than ad-hoc per-chart values or
-  no ceiling at all. The architect must decide: (a) the profile tiers and their
-  CPU + memory request/limit values (must account for the 12 GB VM budget and the
-  always-on stack's ~7 GB used); (b) which existing namespaces map to which tier
-  (the ADR-0017 per-namespace profile table is the natural companion for this);
-  (c) enforcement mechanism — Kyverno `ClusterPolicy` (validates that the namespace
-  carries a profile label and a matching `ResourceQuota` exists) or direct
-  LimitRange/ResourceQuota objects per namespace; (d) handling of on-demand heavy
-  namespaces (`tidb`, `longhorn-system`, `istio-system`) that have highly variable
-  footprints; (e) whether profiles block the capstone or other workloads that may
-  need temporary burst. Prerequisite: the Platform Governance layer RFC above should
-  land first (it decides the directory home for these objects). When RFC lands, the
-  planner will groom into 🟢 executor items per the split guidance. One item per
-  profile tier or per namespace class is the likely decomposition.
-  (arch/namespace-resource-profiles)
+- ~~🟡 **Namespace Resource Profiles — standardized ResourceQuota tiers**~~ (RFC #294)
+  **Groomed ↗** into a 🟢 item in *Now / next* above
+  (`auto/namespace-resource-profiles`), planner run 2026-06-30.
 
 _New 🟡 items proposed by the architect live in
 [`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until
