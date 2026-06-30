@@ -1,0 +1,34 @@
+# harbor-extras — pre-creates the harbor namespace with PSA restricted labels and
+# applies the Envoy HTTPRoute for harbor.127.0.0.1.nip.io (ADR-0008, ADR-0017, ADR-0024).
+# Running at sync-wave 0 ensures the namespace with restricted labels and the HTTPRoute
+# are in place before `make harbor-up` admits any Harbor pod. The empty namespace with
+# PSA labels is harmless when Harbor is not running.
+# PSA profile is `restricted` (Harbor core/registry/jobservice run as non-root UID 10000;
+# bundled Postgres uses Bitnami image non-root UID 1001). If a chart component proves
+# incompatible, fall back to `baseline` with documented justification + flip condition.
+# Per ADR-0024 §"PSA profile" (architect decision RFC #297, 2026-06-30).
+# ALWAYS-ON: automated sync so the PSA floor + HTTPRoute are always present regardless
+# of whether Harbor is currently running (the empty namespace with labels is cheap).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: harbor-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/harbor
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: harbor
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

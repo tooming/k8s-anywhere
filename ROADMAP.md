@@ -1402,7 +1402,7 @@ You review and merge plan PRs, same as implementation PRs.
   have LimitRange defaults. `make ci` must pass. `docs/done/` entry required.
   Closes #294. (auto/namespace-resource-profiles)
 
-- [ ] 🟢 **Harbor on-demand Application + namespace + Envoy route**
+- [x] 🟢 **Harbor on-demand Application + namespace + Envoy route**
   (CHARTER **Core Values** §"Everything as code; GitOps deploys it" +
   **Objective O1**, RFC #297 /
   [ADR-0024](docs/decisions/adr-0024-harbor-not-artifactory.md) — architect

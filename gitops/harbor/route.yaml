@@ -1,0 +1,28 @@
+# Route the Harbor UI and OCI registry endpoint through Envoy at
+# http://harbor.127.0.0.1.nip.io:8000 (front door). Listed in the Grafana
+# "Lab UIs" panel (stack-health.json) — kept in sync by `make lab-ui-check`.
+# ON-DEMAND: synced as part of harbor-extras Application (auto-synced, wave 0).
+# The harbor-extras Application pre-creates this HTTPRoute before `make harbor-up`
+# brings up the Harbor pods, so the front door exists as soon as the Application is
+# deployed regardless of whether Harbor is currently running.
+# Harbor exposes a unified HTTP endpoint on port 80 when expose.type=clusterIP and
+# expose.tls.enabled=false (ADR-0024 §"Minimal profile").
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: harbor
+  namespace: harbor
+spec:
+  parentRefs:
+    - name: eg
+      namespace: lab-gateway
+  hostnames:
+    - "harbor.127.0.0.1.nip.io"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: harbor
+          port: 80
