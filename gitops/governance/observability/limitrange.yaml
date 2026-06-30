@@ -1,0 +1,20 @@
+# Heavy-tier LimitRange for the observability namespace (RFC #294 heavy profile).
+# Mimir compactor + Loki ingestors carry a consistently large memory footprint, so
+# the defaults/ceilings are larger than the standard tier. Values are RFC #294 "heavy".
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: heavy-limits
+  namespace: observability
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "2000m"
+        memory: "2Gi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      max:
+        cpu: "4000m"
+        memory: "8Gi"

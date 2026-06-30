@@ -1380,7 +1380,7 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required. Closes #293.
   (auto/platform-governance-appset)
 
-- [ ] 🟢 **Namespace Resource Profiles — LimitRange defaults fan-out**
+- [x] 🟢 **Namespace Resource Profiles — LimitRange defaults fan-out**
   (CHARTER **Core Values** §"Fits the 16 GB reality", RFC #294 — architect
   decision 2026-06-28; **prerequisite: `auto/platform-governance-appset` merges
   first**). Extend `gitops/platform/governance-appset.yaml` list with all namespace
