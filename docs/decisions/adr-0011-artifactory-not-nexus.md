@@ -1,8 +1,11 @@
 # ADR-0011 — Artifactory as the on-demand artifact registry (not Nexus)
 
-**Status.** Adopted. Decision taken in RFC #58. Manifests pending (next ROADMAP item);
-will live in `gitops/platform/artifactory.yaml` (non-auto-synced ArgoCD `Application`)
-and brought up with `make artifactory-up`.
+**Status.** Superseded by [ADR-0024](adr-0024-harbor-not-artifactory.md). Harbor (CNCF
+graduated, Go runtime, Apache-2.0) replaces JFrog Artifactory OSS as the lab's on-demand
+OCI artifact registry — removing the JVM weight, the OSS feature walls, and the
+single-vendor governance risk this ADR conceded. The decision and full rationale are in
+ADR-0024; the Artifactory manifests are retired as part of grooming RFC #297. The original
+ADR-0011 reasoning is kept below for the historical record.
 
 ---
 

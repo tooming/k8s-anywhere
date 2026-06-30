@@ -18,7 +18,7 @@ rationale travels with the code.
   - [ADR-0008](adr-0008-envoy-gateway-not-traefik.md) — Envoy Gateway for north-south ingress (Gateway API, not Traefik)
   - [ADR-0009](adr-0009-rabbitmq-message-broker.md) — RabbitMQ as the lab's message broker (plain manifests, always-on)
   - [ADR-0010](adr-0010-redis-cache.md) — Redis as the lab's cache / key-value store — **Superseded by ADR-0018**
-  - [ADR-0011](adr-0011-artifactory-not-nexus.md) — Artifactory as the on-demand artifact registry (not Nexus)
+  - [ADR-0011](adr-0011-artifactory-not-nexus.md) — Artifactory as the on-demand artifact registry (not Nexus) — **Superseded by ADR-0024**
   - [ADR-0012](adr-0012-istio-ambient-not-sidecar.md) — Istio ambient mesh + Kiali on-demand (not sidecar)
   - [ADR-0013](adr-0013-longhorn-block-storage.md) — Longhorn distributed block storage on-demand
   - [ADR-0014](adr-0014-cilium-not-flannel-policy.md) — Cilium CNI, not k3s's bundled Flannel + NetworkPolicy controller
@@ -30,3 +30,5 @@ rationale travels with the code.
   - [ADR-0020](adr-0020-argo-rollouts-progressive-delivery.md) — Argo Rollouts for progressive delivery (SLO-gated canaries via Envoy Gateway API)
   - [ADR-0021](adr-0021-velero-backup-restore.md) — Velero for cluster + PVC backup/restore to Garage S3
   - [ADR-0022](adr-0022-trivy-operator-supply-chain.md) — Trivy Operator for continuous vulnerability + SBOM scanning
+  - [ADR-0023](adr-0023-kargo-promotion-pipeline.md) — Kargo for GitOps promotion pipelines (multi-stage, Warehouse-gated)
+  - [ADR-0024](adr-0024-harbor-not-artifactory.md) — Harbor as the on-demand artifact registry (supersedes ADR-0011)
