@@ -1,0 +1,23 @@
+# Allow egress from Harbor pods to Garage S3 in the storage namespace (ADR-0016,
+# ADR-0002). Harbor uses Garage as its S3-compatible image/chart storage backend
+# (persistence.imageChartStorage.type=s3, ADR-0024 §"Minimal profile").
+# Endpoint: garage.storage.svc.cluster.local:3900.
+# Without this allow the default-deny floor blocks Harbor registry → Garage S3
+# writes (push/pull image layers) when Harbor is running.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-harbor-garage-egress
+  namespace: harbor
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 3900
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: storage

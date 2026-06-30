@@ -190,3 +190,82 @@ setup() {
   run grep -q 'harbor.127.0.0.1.nip.io:8000' "$REPO/grafana/dashboards/stack-health.json"
   [ "$status" -eq 0 ]
 }
+
+# --- NetworkPolicy overlay (ADR-0016 §4 fan-out) ------------------------------
+@test "harbor networkpolicy kustomization exists" {
+  [ -f "$REPO/gitops/harbor/networkpolicy/kustomization.yaml" ]
+}
+
+@test "harbor networkpolicy kustomization references default-deny baseline" {
+  run grep -q 'default-deny.yaml' "$REPO/gitops/harbor/networkpolicy/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor networkpolicy kustomization references allow-dns-and-apiserver baseline" {
+  run grep -q 'allow-dns-and-apiserver.yaml' "$REPO/gitops/harbor/networkpolicy/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor allow-harbor-ingress.yaml exists" {
+  [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-ingress.yaml" ]
+}
+
+@test "harbor ingress allow targets port 80 from envoy-gateway-system" {
+  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' \
+    "$REPO/gitops/harbor/networkpolicy/allow-harbor-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor ingress allow is on port 80 (unified clusterIP expose)" {
+  run grep -q 'port: 80' "$REPO/gitops/harbor/networkpolicy/allow-harbor-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor allow-harbor-garage-egress.yaml exists" {
+  [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-garage-egress.yaml" ]
+}
+
+@test "harbor garage egress allow targets port 3900 to storage namespace" {
+  run grep -q 'kubernetes.io/metadata.name: storage' \
+    "$REPO/gitops/harbor/networkpolicy/allow-harbor-garage-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor garage egress allow uses port 3900" {
+  run grep -q 'port: 3900' "$REPO/gitops/harbor/networkpolicy/allow-harbor-garage-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor allow-harbor-valkey-egress.yaml exists" {
+  [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-valkey-egress.yaml" ]
+}
+
+@test "harbor Valkey egress allow targets port 6379 to data namespace (ADR-0018)" {
+  run grep -q 'kubernetes.io/metadata.name: data' \
+    "$REPO/gitops/harbor/networkpolicy/allow-harbor-valkey-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor Valkey egress allow uses port 6379" {
+  run grep -q 'port: 6379' "$REPO/gitops/harbor/networkpolicy/allow-harbor-valkey-egress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor allow-harbor-intra-namespace.yaml exists (internal DB + component traffic)" {
+  [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-intra-namespace.yaml" ]
+}
+
+@test "harbor intra-namespace allow has podSelector ingress" {
+  run grep -q 'podSelector: {}' "$REPO/gitops/harbor/networkpolicy/allow-harbor-intra-namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor-networkpolicy entry present in networkpolicy-appset.yaml" {
+  run grep -q 'harbor-networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor-networkpolicy appset entry uses gitops/harbor/networkpolicy path" {
+  run grep -q 'gitPath: gitops/harbor/networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
