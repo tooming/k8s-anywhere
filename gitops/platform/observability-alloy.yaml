@@ -378,6 +378,22 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
+
+              // ---- Kargo (GitOps promotion pipeline) metrics -> Mimir ----
+              // Kargo api, controller, and webhooks-server expose controller-runtime Prometheus
+              // metrics at :8080/metrics (chart v1.2.x default). Feeds the
+              // "Lab — Kargo (GitOps Promotion)" dashboard with real reconcile-rate, Stage
+              // promotion, Freight creation, and Warehouse reconcile series (ADR-0023, ADR-0004).
+              // The NetworkPolicy allow (TCP 8080 ingress from observability) is in
+              // gitops/kargo/networkpolicy/allow-kargo-metrics-ingress.yaml.
+              // This target is idle unless kargo is manually synced via make kargo-up.
+              prometheus.scrape "kargo" {
+                targets = [
+                  {"__address__" = "kargo-api.kargo.svc.cluster.local:8080", "job" = "kargo"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
