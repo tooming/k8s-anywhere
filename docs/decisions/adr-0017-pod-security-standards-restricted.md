@@ -128,6 +128,7 @@ so the executor never silently applies the wrong label.
 | `longhorn-system` | `privileged` | longhorn-manager and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, and host `/dev`. Block storage cannot work under `restricted`. Per ADR-0013 §"PSA profile". |
 | `istio-system` | `privileged` | istio-cni runs as a DaemonSet that mutates host CNI config; ztunnel requires `NET_ADMIN`. Both fail under `restricted`. Per ADR-0012 §"PSA profile". (Kiali co-resides in this namespace; no separate `kiali` row needed. Per RFC #288.) |
 | `artifactory` | `baseline` | JVM initContainers in `jfrog/artifactory-oss` run as root UID 0 for `chown`; main JVM process runs as UID 1030. `restricted` is not viable without upstream chart changes documenting restricted-compatible initContainers. **Flip condition:** when the upstream `jfrog/artifactory-oss` chart documents restricted-compatible initContainers. Per RFC #287 (architect decision 2026-06-27). |
+| `harbor` | `restricted` | Harbor is Go-based; core/registry/jobservice all run as non-root UID 10000; portal uses nginx with a non-root UID in the 1.16.x chart. No host volumes, no special capabilities. Per ADR-0024 / RFC #297 (architect decision 2026-06-30). |
 | `kube-system` | unchanged | k3s-managed; out of scope. |
 
 ---
