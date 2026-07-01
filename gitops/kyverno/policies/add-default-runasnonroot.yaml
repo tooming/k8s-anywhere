@@ -1,0 +1,67 @@
+# Mutate: inject pod-level runAsNonRoot=true when a pod ALREADY declares a
+# non-zero pod-level runAsUser but forgot to state runAsNonRoot. Defence-in-depth
+# alongside require-pod-security-restricted (ADR-0017) and add-default-seccomp
+# (ADR-0019) — same mutate-default pattern.
+#
+# Why this exists: some upstream charts set a non-root UID plus a compliant
+# CONTAINER securityContext (runAsNonRoot=true, drop ALL, seccomp) yet never set
+# runAsNonRoot at the POD level — goharbor/harbor 1.16.0 is the reference case
+# (pod securityContext = runAsUser:10000/fsGroup:10000 only, hardcoded in the
+# chart templates with no override key). require-pod-security-restricted checks
+# runAsNonRoot at the POD level (see its comment for why pod-level is the lab
+# convention), so those charts are rejected at admission even though every process
+# genuinely runs non-root. This mutate closes that gap structurally, so no chart
+# has to be forked and no namespace has to be carved down to `baseline`.
+#
+# Safety — this only ever ASSERTS a truth, never forces a root workload non-root:
+#   1. preconditions gate on pod-level runAsUser > 0 → a declared non-root UID.
+#      Root pods (runAsUser:0 or unset) never match, so they are untouched.
+#   2. the exclude block mirrors require-pod-security-restricted: baseline /
+#      privileged carve-out namespaces (vault, istio-system, tidb, …) are skipped,
+#      so their deliberately root-running init/JVM containers are never forced
+#      runAsNonRoot. No hard-coded namespace list — driven by the PSA enforce label.
+#   3. the +(runAsNonRoot) conditional anchor patches ONLY when the field is absent,
+#      so a workload that already sets runAsNonRoot (either value) is not overwritten.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: add-default-runasnonroot
+  annotations:
+    policies.kyverno.io/severity: low
+    policies.kyverno.io/category: Pod Security
+    policies.kyverno.io/description: >-
+      Injects pod-level runAsNonRoot=true when a pod declares a non-zero pod-level
+      runAsUser but omits runAsNonRoot (ADR-0019 defence-in-depth). Unblocks charts
+      like goharbor/harbor that run non-root but never state pod-level runAsNonRoot,
+      which require-pod-security-restricted (ADR-0017) checks at the pod level.
+spec:
+  rules:
+  - name: add-runasnonroot-when-nonroot-uid
+    match:
+      any:
+      - resources:
+          kinds: [Pod]
+    # Same carve-out set as require-pod-security-restricted: never mutate pods in
+    # namespaces that are deliberately baseline/privileged (root workloads live there).
+    exclude:
+      any:
+      - resources:
+          namespaces: [kube-system, kube-public, kube-node-lease]
+      - resources:
+          namespaceSelector:
+            matchExpressions:
+            - key: pod-security.kubernetes.io/enforce
+              operator: In
+              values: [baseline, privileged]
+    preconditions:
+      all:
+      # Only when a non-root UID is already declared at the pod level. `|| ` + backtick
+      # 0 backtick defaults the value to 0 when securityContext/runAsUser is absent.
+      - key: "{{ request.object.spec.securityContext.runAsUser || `0` }}"
+        operator: GreaterThan
+        value: 0
+    mutate:
+      patchStrategicMerge:
+        spec:
+          securityContext:
+            +(runAsNonRoot): true
