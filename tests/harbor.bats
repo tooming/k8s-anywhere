@@ -269,3 +269,34 @@ setup() {
   run grep -q 'gitPath: gitops/harbor/networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- Makefile harbor-up / harbor-down targets (auto/harbor-make-targets) ------
+@test "harbor-up .PHONY target exists in Makefile" {
+  run grep -q '\.PHONY: harbor-up' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor-up syncs the harbor Application" {
+  run grep -A5 '\.PHONY: harbor-up' "$REPO/Makefile"
+  [[ "$output" == *"argocd-sync,harbor)"* ]]
+}
+
+@test "harbor-up syncs harbor-extras (namespace PSA floor + route)" {
+  run grep -A5 '\.PHONY: harbor-up' "$REPO/Makefile"
+  [[ "$output" == *"argocd-sync,harbor-extras)"* ]]
+}
+
+@test "harbor-down .PHONY target exists in Makefile" {
+  run grep -q '\.PHONY: harbor-down' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor-down deletes harbor-extras before harbor" {
+  run grep -A5 '\.PHONY: harbor-down' "$REPO/Makefile"
+  [[ "$output" == *"argocd-delete,harbor-extras)"* ]]
+}
+
+@test "harbor-down deletes harbor Application" {
+  run grep -A5 '\.PHONY: harbor-down' "$REPO/Makefile"
+  [[ "$output" == *"argocd-delete,harbor)"* ]]
+}
