@@ -67,6 +67,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "allow-valkey-ingress permits the harbor namespace (Harbor cache/session, ADR-0024)" {
+  # Harbor uses Valkey as its cache/session store (ADR-0018/ADR-0024). Without this
+  # ingress rule, default-deny in the data namespace drops harbor-core's connection
+  # and it crashloops on a Valkey i/o timeout. Pairs with allow-harbor-valkey-egress.
+  run grep -q 'kubernetes.io/metadata.name: harbor' "$DATA_NP/allow-valkey-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "allow-data-demo-egress.yaml exists in data/networkpolicy/" {
   [ -f "$DATA_NP/allow-data-demo-egress.yaml" ]
 }

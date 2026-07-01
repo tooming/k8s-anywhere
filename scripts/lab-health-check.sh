@@ -26,6 +26,11 @@ kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
 WAIT="${HEALTH_WAIT:-90}"
 IV="${HEALTH_INTERVAL:-10}"
 ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo artifactory istio-system kiali longhorn-system inkless kargo ack-system capstone}"
+# Harbor is on-demand (ADR-0024, no auto-sync) — appended so `make harbor-up` never
+# makes the always-on health gate fail on Harbor pods still converging. Appended on its
+# own line (not merged into the default list above) so the outgoing on-demand registry
+# entry, which stays until its manifests are decommissioned, is left untouched.
+ONDEMAND_NS="$ONDEMAND_NS harbor"
 # Front-door UIs to probe (HTTP, from the host) — readiness of the pods behind Envoy
 # isn't enough: if the Envoy data plane is down, every :8080 UI is unreachable while the
 # pods still look fine. "url|name", space-separated. Set LAB_UI_PROBES= to skip.
