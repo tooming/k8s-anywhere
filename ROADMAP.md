@@ -1482,7 +1482,7 @@ You review and merge plan PRs, same as implementation PRs.
   `.PHONY` targets present and each references both `harbor` and `harbor-extras`.
   `make ci` must pass. `docs/done/` entry required. (auto/harbor-make-targets)
 
-- [ ] 🟢 **ADR-0017 amendment — `harbor` PSA row** (RFC #297 / ADR-0024 —
+- [x] 🟢 **ADR-0017 amendment — `harbor` PSA row** (RFC #297 / ADR-0024 —
   architect decision 2026-06-30; **prerequisite: `auto/harbor-application`
   merges first** so the chosen profile is known). Add a `harbor` row to
   ADR-0017's per-namespace profile table recording the profile the `harbor`
