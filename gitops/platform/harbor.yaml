@@ -76,6 +76,11 @@ spec:
           type: external
           external:
             addr: "valkey.data.svc.cluster.local:6379"
+            # Valkey runs with --requirepass (ADR-0018); authenticate via the
+            # REDIS_PASSWORD key in harbor-valkey-creds (ESO-rendered from Vault
+            # secret/valkey/default). Without it harbor-core/jobservice crashloop
+            # on `NOAUTH Authentication required`. See harbor-valkey-externalsecret.yaml.
+            existingSecret: harbor-valkey-creds
             db: 1
         registry:
           registry:
