@@ -1,0 +1,25 @@
+# Allow Alloy (observability namespace) to scrape node-exporter host metrics on
+# port 9100 (ADR-0016 default-deny floor + ADR-0003 Alloy→Mimir pipeline). Alloy
+# discovers node-exporter pods cluster-wide by label and scrapes their pod IP:9100;
+# this ingress rule is the node-exporter side of that path. Pairs with the alloy
+# egress rule to the node-exporter namespace in observability's
+# allow-alloy-egress-external.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-node-exporter-metrics-ingress
+  namespace: node-exporter
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus-node-exporter
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 9100
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability

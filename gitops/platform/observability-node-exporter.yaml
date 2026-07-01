@@ -51,7 +51,10 @@ spec:
             memory: 64Mi
   destination:
     server: https://kubernetes.default.svc
-    namespace: observability
+    # Dedicated PSA-privileged namespace (ADR-0017): node-exporter mounts /proc and
+    # /sys via hostPath, forbidden under both restricted AND baseline, so it cannot
+    # live in the restricted observability namespace. See gitops/node-exporter/namespace.yaml.
+    namespace: node-exporter
   syncPolicy:
     automated:
       prune: true

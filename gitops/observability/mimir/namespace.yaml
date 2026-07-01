@@ -2,7 +2,9 @@
 # Placed in the mimir Application path (wave 1) so PSA enforcement is set before any
 # observability pods are scheduled. PSA profile: restricted — all LGTMP pods are
 # non-root-capable (mimir/loki/tempo/pyroscope: UID 10001, grafana: UID 472, alloy: UID 473).
-# node-exporter carries a per-workload carve-out (hostPID/hostNetwork disabled to comply).
+# node-exporter is NOT here: it needs /proc + /sys hostPath (forbidden under both
+# restricted AND baseline, regardless of hostPID/hostNetwork), so it lives in its own
+# PSA-privileged namespace — gitops/node-exporter/namespace.yaml (ADR-0017).
 apiVersion: v1
 kind: Namespace
 metadata:

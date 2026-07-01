@@ -1,0 +1,13 @@
+# NetworkPolicy Kustomize overlay for the node-exporter namespace (ADR-0016 §4 fan-out).
+# Pulls the two shared baseline templates (default-deny-all + allow-dns-and-apiserver)
+# and adds the metrics-ingress allow (Alloy scrapes 9100). Wired into
+# gitops/platform/networkpolicy-appset.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: node-exporter
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - allow-node-exporter-metrics-ingress.yaml

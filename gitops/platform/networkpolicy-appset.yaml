@@ -71,6 +71,9 @@ spec:
           - appName: harbor-networkpolicy
             gitPath: gitops/harbor/networkpolicy
             destNamespace: harbor
+          - appName: node-exporter-networkpolicy
+            gitPath: gitops/node-exporter/networkpolicy
+            destNamespace: node-exporter
   template:
     metadata:
       name: "{{appName}}"
