@@ -498,9 +498,11 @@ artifactory-down: ## Remove Artifactory OSS and its Envoy route (reclaims ~1-2 G
 .PHONY: harbor-up
 harbor-up: ## Deploy Harbor CNCF OCI registry via ArgoCD manual sync (Garage S3 backend; ADR-0024)
 	$(call argocd-sync,harbor)
+	$(call argocd-sync,harbor-extras)
 
 .PHONY: harbor-down
-harbor-down: ## Remove Harbor OCI registry (reclaims resources; harbor-extras stays to keep namespace PSA floor)
+harbor-down: ## Remove Harbor OCI registry and namespace floor (reclaims resources)
+	$(call argocd-delete,harbor-extras)
 	$(call argocd-delete,harbor)
 
 .PHONY: istio-up

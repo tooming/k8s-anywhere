@@ -1468,7 +1468,7 @@ You review and merge plan PRs, same as implementation PRs.
   entry. `make ci` must pass. `docs/done/` entry required.
   (auto/harbor-networkpolicy)
 
-- [ ] 🟢 **`make harbor-up` / `harbor-down` targets** (CHARTER **Core Values**
+- [x] 🟢 **`make harbor-up` / `harbor-down` targets** (CHARTER **Core Values**
   §"Everything as code", RFC #297 / ADR-0024 — architect decision 2026-06-30;
   **Makefile change pre-approved by ADR-0024 per WAYS-OF-WORKING.md §2**;
   **prerequisite: `auto/harbor-application` merges first**). Add `make harbor-up`
