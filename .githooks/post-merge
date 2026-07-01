@@ -16,6 +16,13 @@ else
   B=; G=; Y=; Z=
 fi
 
+# Fast, purely-local guard: skip the network-heavy rebase entirely when there
+# are no open PR branches to rebase (fresh clone, or all PRs merged). Reads only
+# the remote-tracking refs the pull just refreshed — no `git fetch`/`gh` call.
+if ! bash "$ROOT/scripts/has-open-pr-branches.sh"; then
+  exit 0
+fi
+
 echo ""
 echo "${B}[post-merge] main updated — rebasing open PR branches…${Z}"
 
