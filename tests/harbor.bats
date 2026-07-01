@@ -206,6 +206,26 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "harbor networkpolicy kustomization references the ClusterIP egress bridge" {
+  run grep -q 'allow-harbor-clusterip-egress.yaml' "$REPO/gitops/harbor/networkpolicy/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor allow-harbor-clusterip-egress.yaml exists" {
+  [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-clusterip-egress.yaml" ]
+}
+
+@test "harbor ClusterIP bridge is a CiliumNetworkPolicy permitting the Service CIDR" {
+  # Without this, Cilium socket-LB evaluates the destination Service ClusterIP
+  # against default-deny egress and drops it — harbor-core crashloops on a Valkey
+  # i/o timeout. Every other lab namespace carries the equivalent bridge.
+  F="$REPO/gitops/harbor/networkpolicy/allow-harbor-clusterip-egress.yaml"
+  run grep -q 'kind: CiliumNetworkPolicy' "$F"
+  [ "$status" -eq 0 ]
+  run grep -q '10.43.0.0/16' "$F"
+  [ "$status" -eq 0 ]
+}
+
 @test "harbor allow-harbor-ingress.yaml exists" {
   [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-ingress.yaml" ]
 }
