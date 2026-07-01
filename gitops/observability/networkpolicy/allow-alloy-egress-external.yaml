@@ -89,6 +89,15 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: velero
+    # node-exporter host metrics (:9100) — moved to its own PSA-privileged namespace
+    # (ADR-0017; it needs /proc + /sys hostPath, forbidden under restricted AND baseline).
+    - ports:
+        - port: 9100
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: node-exporter
     # kubelet + cAdvisor on cluster nodes (:10250). Alloy uses the node-role
     # Kubernetes discovery which resolves to per-node IP addresses outside
     # the pod CIDR, so an ipBlock CIDR covers the entire address space.

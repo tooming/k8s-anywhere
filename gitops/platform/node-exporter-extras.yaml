@@ -1,0 +1,29 @@
+# node-exporter-extras — pre-creates the node-exporter namespace with PSA privileged
+# labels (ADR-0017; hostPath /proc + /sys is forbidden under baseline AND restricted)
+# at sync-wave 0, so the carve-out floor is in place before the
+# node-exporter DaemonSet Application (wave 2) admits any pod. Always-on and
+# auto-synced (the labelled namespace is cheap — no pods of its own). Mirrors the
+# harbor-extras namespace pre-creation pattern.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: node-exporter-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/node-exporter
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: node-exporter
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
