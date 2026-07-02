@@ -32,3 +32,4 @@ rationale travels with the code.
   - [ADR-0022](adr-0022-trivy-operator-supply-chain.md) — Trivy Operator for continuous vulnerability + SBOM scanning
   - [ADR-0023](adr-0023-kargo-promotion-pipeline.md) — Kargo for GitOps promotion pipelines (multi-stage, Warehouse-gated)
   - [ADR-0024](adr-0024-harbor-not-artifactory.md) — Harbor as the on-demand artifact registry (supersedes ADR-0011)
+  - [ADR-0025](adr-0025-free-oss-tiers-only.md) — Every dependency runs on a free/OSS tier (verify the needed feature is in it, not just the edition)
