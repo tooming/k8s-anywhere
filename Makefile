@@ -287,6 +287,13 @@ gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the re
 gitlab-push: ## Push main to the local GitLab repo
 	@git remote remove gitlab 2>/dev/null || true; \
 		git remote add gitlab "$(GITLAB_REMOTE_URL)"; \
+		if [ "$$(git rev-parse --abbrev-ref HEAD)" != "main" ]; then \
+			git fetch github main -q 2>/dev/null \
+				&& git merge-base --is-ancestor main github/main 2>/dev/null \
+				&& git fetch github main:main -q 2>/dev/null \
+				&& echo "gitlab-push: fast-forwarded stale local main to github/main" \
+				|| true; \
+		fi; \
 		pat="$$(cat $(REPO_DIR)/gitlab/.gitlab-token 2>/dev/null)"; \
 		printf 'waiting for GitLab to accept the PAT for git push'; \
 		for i in $$(seq 1 30); do \
