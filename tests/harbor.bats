@@ -320,3 +320,50 @@ setup() {
   run grep -A5 '\.PHONY: harbor-down' "$REPO/Makefile"
   [[ "$output" == *"argocd-delete,harbor)"* ]]
 }
+
+# --- Observability — metrics + scrape + dashboard (auto/harbor-observability-dashboard) ---
+@test "harbor Application has metrics.enabled: true (exposes harbor-metrics Service)" {
+  run grep -q 'enabled: true' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor networkpolicy kustomization references allow-harbor-metrics-ingress.yaml" {
+  run grep -q 'allow-harbor-metrics-ingress.yaml' "$REPO/gitops/harbor/networkpolicy/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-harbor-metrics-ingress.yaml exists" {
+  [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-metrics-ingress.yaml" ]
+}
+
+@test "allow-harbor-metrics-ingress.yaml targets port 9090 from observability namespace" {
+  F="$REPO/gitops/harbor/networkpolicy/allow-harbor-metrics-ingress.yaml"
+  run grep -q 'port: 9090' "$F"
+  [ "$status" -eq 0 ]
+  run grep -q 'kubernetes.io/metadata.name: observability' "$F"
+  [ "$status" -eq 0 ]
+}
+
+@test "observability-alloy.yaml contains harbor scrape block" {
+  run grep -q 'prometheus.scrape "harbor"' "$REPO/gitops/platform/observability-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor scrape target uses harbor-metrics.harbor.svc.cluster.local:9090" {
+  run grep -q 'harbor-metrics.harbor.svc.cluster.local:9090' "$REPO/gitops/platform/observability-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-harbor.json dashboard exists" {
+  [ -f "$REPO/grafana/dashboards/lab-harbor.json" ]
+}
+
+@test "lab-harbor.json references harbor_artifact_total (real metric, ADR-0004)" {
+  run grep -q 'harbor_artifact_total' "$REPO/grafana/dashboards/lab-harbor.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-harbor.json contains no fabricated or placeholder data (ADR-0004)" {
+  run grep -qi 'placeholder\|TODO\|FIXME\|fake\|dummy\|fabricat' "$REPO/grafana/dashboards/lab-harbor.json"
+  [ "$status" -ne 0 ]
+}

@@ -127,6 +127,8 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+        metrics:
+          enabled: true
   destination:
     server: https://kubernetes.default.svc
     namespace: harbor

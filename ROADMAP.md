@@ -1491,7 +1491,7 @@ You review and merge plan PRs, same as implementation PRs.
   namespace manifest). Pure docs. `make ci` must pass. `docs/done/` entry
   required. (auto/harbor-pss-adr0017-row)
 
-- [ ] 🟢 **Lab — Harbor OCI registry dashboard + observability metrics** (CHARTER
+- [x] 🟢 **Lab — Harbor OCI registry dashboard + observability metrics** (CHARTER
   **Core Values** §"Real observability only"; ADR-0024 §observability; follows
   the on-demand dashboard precedent from `lab-inkless.json`;
   **prerequisite: `auto/harbor-application` merged ✓**). Harbor exposes

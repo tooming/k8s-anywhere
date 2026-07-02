@@ -301,7 +301,7 @@ make up
 | — | tidb-demo *(on-demand)* | Demo app reading TiDB creds from Vault via ExternalSecret; manual-sync only — use `make tidb-demo-up` |
 | — | artifactory *(on-demand)* | JFrog Artifactory OSS artifact + Docker registry (chart `jfrog/artifactory-oss` from `charts.jfrog.io`); manual-sync only — use `make artifactory-up` |
 | — | artifactory-extras *(on-demand)* | Envoy HTTPRoute for `artifactory.127.0.0.1.nip.io`; paired with the artifactory Application — use `make artifactory-up` |
-| — | harbor *(on-demand, ADR-0024)* | Harbor CNCF OCI registry (chart `goharbor/harbor` v1.16.0 from `https://helm.goharbor.io`); minimal profile (Trivy/Notary disabled; Garage S3 backend; platform Valkey for cache; bundled Postgres); PSA `restricted`; manual-sync only — use `make harbor-up` (to be wired in next item) |
+| — | harbor *(on-demand, ADR-0024)* | Harbor CNCF OCI registry (chart `goharbor/harbor` v1.16.0 from `https://helm.goharbor.io`); minimal profile (Trivy/Notary disabled; Garage S3 backend; platform Valkey for cache; bundled Postgres); PSA `restricted`; manual-sync only — use `make harbor-up`. Prometheus metrics enabled (`metrics.enabled: true`; `harbor-metrics` Service on port 9090); scraped by Alloy → Mimir → `grafana/dashboards/lab-harbor.json` (on-demand dashboard, shows "No data" when Harbor is not running per ADR-0004) |
 | — | harbor-extras *(auto-synced, wave 0)* | Pre-creates `harbor` namespace with PSA `restricted` labels + Envoy HTTPRoute `harbor.127.0.0.1.nip.io`; always-on so the PSA floor is present before `make harbor-up` admits pods |
 | — | cilium *(bootstrap — helm direct, before ArgoCD)* | Cilium CNI replacing k3s-bundled Flannel; eBPF kube-proxy replacement (chart `cilium/cilium` v1.16.6 from `https://helm.cilium.io`, namespace `kube-system`; `kubeProxyReplacement: true`, Hubble disabled for budget). Run `make cilium-up` immediately after `make cluster-up` — pod networking requires Cilium before ArgoCD or any workload can start (ADR-0014) |
 | — | istio-base *(on-demand, step 1)* | Istio CRDs + cluster-scoped RBAC (chart `istio/base` from `istio-release.storage.googleapis.com/charts`); manual-sync only — use `make istio-up` |
@@ -344,6 +344,8 @@ make up
 | Envoy → rabbitmq.127.0.0.1.nip.io | HTTPRoute (management UI) | `gitops/data/rabbitmq/route.yaml` |
 | Envoy → harbor.127.0.0.1.nip.io *(on-demand, ADR-0024)* | HTTPRoute | `gitops/harbor/route.yaml` |
 | Harbor → Garage S3 `harbor-registry` bucket *(on-demand)* | S3 API `:3900` (ADR-0002) | `gitops/platform/harbor.yaml` values + `gitops/secrets/harbor-s3-externalsecret.yaml` |
+| Alloy → Harbor metrics *(on-demand)* | scrape `harbor-metrics.harbor.svc:9090/metrics` → Mimir | `gitops/platform/observability-alloy.yaml` |
+| Grafana dashboard — Lab — Harbor (OCI Registry) *(on-demand)* | `harbor_artifact_total` by project + HTTP request rate/latency + KSM/cAdvisor pod health; panels show "No data" when Harbor is not synced (ADR-0004) | `grafana/dashboards/lab-harbor.json` |
 | Envoy → artifactory.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/artifactory/route.yaml` |
 | Envoy → kiali.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/kiali/route.yaml` |
 | istiod → Kiali *(on-demand)* | mesh config (xDS endpoint) | `gitops/platform/kiali.yaml` values |
