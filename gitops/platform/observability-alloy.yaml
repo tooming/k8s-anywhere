@@ -364,6 +364,21 @@ spec:
                 scrape_interval = "30s"
               }
 
+              // ---- Harbor (OCI registry) metrics -> Mimir ----
+              // Harbor exposes Prometheus metrics via its built-in exporter when
+              // metrics.enabled=true (harbor.yaml). The harbor-metrics Service exposes
+              // port 9090 (chart v1.16.x default). This target is idle unless Harbor is
+              // manually synced (on-demand, ADR-0024). NetworkPolicy allow (port 9090,
+              // ingress from observability) is in
+              // gitops/harbor/networkpolicy/allow-harbor-metrics-ingress.yaml.
+              prometheus.scrape "harbor" {
+                targets = [
+                  {"__address__" = "harbor-metrics.harbor.svc.cluster.local:9090", "job" = "harbor"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
               // ---- Alloy self-metrics -> Mimir ----
               // Alloy exposes its own Prometheus metrics at :12345/metrics (the default
               // listenAddr). Feeds the "Lab — Grafana Alloy (Collector)" dashboard with

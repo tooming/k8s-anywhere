@@ -16,3 +16,4 @@ resources:
   - allow-harbor-valkey-egress.yaml
   - allow-harbor-intra-namespace.yaml
   - allow-harbor-clusterip-egress.yaml
+  - allow-harbor-metrics-ingress.yaml
