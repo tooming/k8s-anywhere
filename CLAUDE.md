@@ -21,16 +21,6 @@ sync-hook + bats coverage in `tests/drift-detectors.bats` (see `readme-check`,
 If a class genuinely **cannot** be guarded mechanically, say so explicitly in the PR and
 explain why — don't silently ship a symptom-only patch.
 
-## The lab must be free to run
-Every tool the lab depends on must run on a **free / open-source tier** — no paid
-licenses, no trial-gated features, no "contact sales" tiers. Before proposing OR
-adopting any software, **verify the specific capability you need exists in the free/OSS
-edition** — an OSS edition existing is not enough; the *feature* must be in it (e.g.
-Artifactory **OSS ≠ Pro** — replication and several repo types are Pro-walled; Harbor's
-single free edition has no such wall — see ADR-0011/ADR-0024). If the capability is only
-in a paid tier, that tool is disqualified; pick a fully-free alternative. This binds
-every role, including the autonomous routines.
-
 ## Architecture decisions are binding
 Before proposing OR implementing any technical/tooling choice, consult
 `docs/decisions/` (the ADRs). They are binding, not advisory.
