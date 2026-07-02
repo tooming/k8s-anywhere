@@ -104,3 +104,26 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   budget=$(( ndash * 60 + 120 ))
   [ "$wait" -ge "$budget" ]
 }
+
+# --- gitlab-push must not mirror a stale local main ---------------------------
+# A long-lived checkout whose local main lags github/main used to push the stale
+# main to the GitLab mirror (or die non-fast-forward once GitLab was ahead) and
+# fail `make up` at gitlab-configure. gitlab-push now best-effort fast-forwards
+# local main from github first — ancestor-gated (never rewrites local-only
+# commits) and ||-true so an offline DR bootstrap still proceeds.
+@test "gitlab-push fast-forwards local main from github before mirroring" {
+  run grep -n 'merge-base --is-ancestor main github/main' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}
+
+@test "gitlab-push main fast-forward is best-effort (offline DR bootstrap survives)" {
+  block=$(awk '/^gitlab-push:/,/^$/' "$REPO/Makefile")
+  [[ "$block" == *"merge-base --is-ancestor"* ]]
+  [[ "$block" == *"|| true"* ]]
+}
+
+@test "gitlab-push skips the fast-forward when main is the checked-out branch" {
+  block=$(awk '/^gitlab-push:/,/^$/' "$REPO/Makefile")
+  [[ "$block" == *'rev-parse --abbrev-ref HEAD'* ]]
+  [[ "$block" == *'!= "main"'* ]]
+}
