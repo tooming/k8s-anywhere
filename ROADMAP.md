@@ -1541,7 +1541,7 @@ You review and merge plan PRs, same as implementation PRs.
   namespace manifest). Pure docs. `make ci` must pass. `docs/done/` entry
   required. (auto/harbor-pss-adr0017-row)
 
-- [ ] 🟢 **Lab — Harbor OCI registry dashboard + observability metrics** (CHARTER
+- [x] 🟢 **Lab — Harbor OCI registry dashboard + observability metrics** (CHARTER
   **Core Values** §"Real observability only"; ADR-0024 §observability; follows
   the on-demand dashboard precedent from `lab-inkless.json`;
   **prerequisite: `auto/harbor-application` merged ✓**). Harbor exposes
@@ -1574,7 +1574,7 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with Harbor observability note. `docs/done/`
   entry required. `make ci` must pass. (auto/harbor-observability-dashboard)
 
-- [ ] 🟢 **Lab — Kargo promotion-pipeline dashboard + observability metrics**
+- [x] 🟢 **Lab — Kargo promotion-pipeline dashboard + observability metrics**
   (CHARTER **Core Values** §"Real observability only"; ADR-0023; follows the
   on-demand dashboard precedent from `lab-inkless.json`). Kargo api, controller,
   and webhooks-server expose controller-runtime Prometheus metrics (default port

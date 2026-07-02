@@ -1,0 +1,21 @@
+# Allow the Alloy collector (observability ns) to scrape Kargo controller-runtime
+# Prometheus metrics on TCP 8080. Applies to all kargo pods (podSelector: {})
+# which covers kargo-api, kargo-controller, and kargo-webhooks-server.
+# Feeds grafana/dashboards/lab-kargo.json (ADR-0023, ADR-0004).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kargo-metrics-ingress
+  namespace: kargo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
