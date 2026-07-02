@@ -3,7 +3,8 @@
 # Envoy Gateway → kargo-api on TCP 80 (Kargo UI access);
 # kube-apiserver → webhooks-server on TCP 9443 (Kargo CRD admission webhooks);
 # kargo controller → argocd-server on TCP 80 (argocd-update promotion step);
-# kargo controller → Artifactory on TCP 443 (image digest discovery for Warehouse).
+# kargo controller → image registry on TCP 443 (image digest discovery for Warehouse);
+# observability (Alloy) → kargo pods on TCP 8080 (Prometheus metrics scrape).
 # The allow-dns-and-apiserver baseline covers Kargo's k8s API calls (Warehouse/Stage
 # reconciliation, Freight creation, leader election).
 # Wired into gitops/platform/kargo-networkpolicy.yaml (ON-DEMAND, wave 4).
@@ -19,3 +20,4 @@ resources:
   - allow-kargo-webhook-from-apiserver.yaml
   - allow-kargo-egress-argocd.yaml
   - allow-kargo-egress-registry.yaml
+  - allow-kargo-metrics-ingress.yaml

@@ -1524,7 +1524,7 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with Harbor observability note. `docs/done/`
   entry required. `make ci` must pass. (auto/harbor-observability-dashboard)
 
-- [ ] 🟢 **Lab — Kargo promotion-pipeline dashboard + observability metrics**
+- [x] 🟢 **Lab — Kargo promotion-pipeline dashboard + observability metrics**
   (CHARTER **Core Values** §"Real observability only"; ADR-0023; follows the
   on-demand dashboard precedent from `lab-inkless.json`). Kargo api, controller,
   and webhooks-server expose controller-runtime Prometheus metrics (default port
