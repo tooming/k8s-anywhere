@@ -22,11 +22,16 @@ fi
 REMOTE=${1:-origin}
 git fetch "$REMOTE" main -q 2>/dev/null || true
 
+# Git feeds the refs being pushed on stdin as
+# "<local ref> <local oid> <remote ref> <remote oid>" lines. Capture them once:
+# every guard below keys off what is ACTUALLY being pushed — never off the
+# checked-out branch, which can be unrelated (e.g. `make gitlab-push` pushes
+# main while a feature branch is checked out).
+PUSH_REFS="$(cat)"
+
 # Refuse to push to a branch whose PR is already MERGED (stray-commit-on-a-dead-
-# branch guard). Git feeds the refs being pushed on stdin as
-# "<local ref> <local oid> <remote ref> <remote oid>" lines; check each
-# non-deletion head ref. Enforced only where gh is available (degrades to a no-op
-# otherwise — see scripts/check-merged-pr-push.sh).
+# branch guard). Check each non-deletion head ref. Enforced only where gh is
+# available (degrades to a no-op otherwise — see scripts/check-merged-pr-push.sh).
 merged_pr_block=0
 while read -r _localref localoid remoteref _remoteoid; do
   [[ -z "${remoteref:-}" ]] && continue
@@ -35,7 +40,7 @@ while read -r _localref localoid remoteref _remoteoid; do
   if ! bash "$ROOT/scripts/check-merged-pr-push.sh" "$br"; then
     merged_pr_block=1
   fi
-done
+done <<< "$PUSH_REFS"
 if [[ "$merged_pr_block" -eq 1 ]]; then
   echo ""
   echo "${R}${B}[pre-push] Push targets a MERGED PR branch — blocked.${Z}"
@@ -44,19 +49,29 @@ if [[ "$merged_pr_block" -eq 1 ]]; then
   exit 1
 fi
 
-CURRENT=$(git rev-parse --abbrev-ref HEAD)
-if [[ "$CURRENT" != "main" ]]; then
-  MERGE_BASE=$(git merge-base HEAD "$REMOTE/main" 2>/dev/null || true)
+# Behind-main guard: block pushing a feature branch whose history is missing
+# commits from <remote>/main. Judged per PUSHED ref (stdin), not the checked-out
+# branch — pushing main itself is exempt.
+behind_block=0
+while read -r _localref localoid remoteref _remoteoid; do
+  [[ -z "${remoteref:-}" ]] && continue
+  case "$remoteref" in refs/heads/*) br="${remoteref#refs/heads/}" ;; *) continue ;; esac
+  [[ "$br" == "main" ]] && continue              # pushing main itself — exempt
+  [[ "$localoid" =~ ^0+$ ]] && continue          # branch deletion — allow
+  MERGE_BASE=$(git merge-base "$localoid" "$REMOTE/main" 2>/dev/null || true)
   MAIN_HEAD=$(git rev-parse "$REMOTE/main" 2>/dev/null || true)
   if [[ -n "$MERGE_BASE" && -n "$MAIN_HEAD" && "$MERGE_BASE" != "$MAIN_HEAD" ]]; then
     BEHIND=$(git log --oneline "${MERGE_BASE}..${REMOTE}/main" | wc -l | tr -d ' ')
     echo ""
-    echo "${R}${B}[pre-push] Branch is ${BEHIND} commit(s) behind main — push blocked.${Z}"
+    echo "${R}${B}[pre-push] Branch ${br} is ${BEHIND} commit(s) behind main — push blocked.${Z}"
     echo "Rebase first:  git fetch $REMOTE && git rebase $REMOTE/main"
     echo "Or rebase all: make rebase-prs PUSH=1"
     echo "To skip (emergencies only): git push --no-verify"
-    exit 1
+    behind_block=1
   fi
+done <<< "$PUSH_REFS"
+if [[ "$behind_block" -eq 1 ]]; then
+  exit 1
 fi
 
 echo "${B}[pre-push] Running clusterless CI gates (make ci)…${Z}"
