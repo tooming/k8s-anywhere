@@ -1,11 +1,10 @@
-# Standard-tier LimitRange for the argo-rollouts namespace (RFC #294 standard profile).
-# Container defaults so any pod without explicit requests/limits inherits a sane
-# floor + ceiling on the 16 GB host. Values are the RFC #294 "standard" tier.
+# Standard-tier LimitRange — RFC #294 "standard" profile.
+# namespace is stamped by the Kustomize overlay (kustomization.yaml namespace: field).
+# Do not add metadata.namespace here; all 17 standard-tier overlays share this file.
 apiVersion: v1
 kind: LimitRange
 metadata:
   name: standard-limits
-  namespace: argo-rollouts
 spec:
   limits:
     - type: Container

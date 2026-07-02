@@ -7,4 +7,4 @@ kind: Kustomization
 namespace: lab-demo
 
 resources:
-  - limitrange.yaml
+  - ../../base/limitrange-standard.yaml
