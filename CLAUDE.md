@@ -69,6 +69,19 @@ This wires `.githooks/pre-push` so that `make ci` runs before every push. The se
 lives in `.git/config` and is not committed, so it must be re-applied after any fresh
 clone or worktree creation.
 
+## Bias to action — don't ask needless questions
+The user delegates **outcomes, not steps**. Do **not** stop to ask permission or
+confirmation for anything that is obviously useful and inside the goal you were given
+(opening an issue/PR, applying a fix, running a verification, cleaning up). Just do it
+and report what was done. No "want me to…?" / "should I…?" mid-flow — that offloads a
+decision the user already made and reads as stalling.
+
+Surface a choice **only** when it is a genuine fork the user alone can resolve — an
+irreversible or outward-facing action with real trade-offs, or ambiguous requirements
+that change *what* gets built — and even then prefer picking the sensible default and
+saying so over interrupting. Never end a turn on a question when there's an obvious next
+action to take instead. This binds every role, including the autonomous routines.
+
 ## Always open a PR
 After pushing changes to the feature branch, **always open a pull request** for them
 (unless the user says otherwise). Don't wait to be asked.

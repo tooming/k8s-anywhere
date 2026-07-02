@@ -7,4 +7,4 @@ kind: Kustomization
 namespace: capstone
 
 resources:
-  - limitrange.yaml
+  - ../../base/limitrange-standard.yaml

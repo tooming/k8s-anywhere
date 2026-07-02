@@ -7,4 +7,4 @@ kind: Kustomization
 namespace: lab-gateway
 
 resources:
-  - limitrange.yaml
+  - ../../base/limitrange-standard.yaml
