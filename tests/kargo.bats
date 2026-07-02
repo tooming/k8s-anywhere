@@ -268,3 +268,44 @@ setup() {
   run grep -q '^\s*- networkpolicy' "$REPO/gitops/apps/capstone/kustomization.yaml"
   [ "$status" -eq 1 ]
 }
+
+# --- Observability: Alloy scrape + Grafana dashboard (auto/kargo-observability-dashboard) ---
+@test "observability-alloy.yaml has kargo scrape block" {
+  run grep -q 'prometheus.scrape "kargo"' "$REPO/gitops/platform/observability-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "kargo scrape target points to kargo-api on port 8080" {
+  run grep -q 'kargo-api.kargo.svc.cluster.local:8080' "$REPO/gitops/platform/observability-alloy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "kargo NetworkPolicy overlay includes allow-kargo-metrics-ingress.yaml" {
+  run grep -q 'allow-kargo-metrics-ingress.yaml' "$REPO/gitops/kargo/networkpolicy/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-kargo-metrics-ingress.yaml exists" {
+  [ -f "$REPO/gitops/kargo/networkpolicy/allow-kargo-metrics-ingress.yaml" ]
+}
+
+@test "allow-kargo-metrics-ingress.yaml targets TCP 8080 from observability namespace" {
+  run grep -q 'port: 8080' "$REPO/gitops/kargo/networkpolicy/allow-kargo-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'kubernetes.io/metadata.name: observability' "$REPO/gitops/kargo/networkpolicy/allow-kargo-metrics-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-kargo.json dashboard exists" {
+  [ -f "$REPO/grafana/dashboards/lab-kargo.json" ]
+}
+
+@test "lab-kargo.json dashboard references controller_runtime_reconcile_total" {
+  run grep -q 'controller_runtime_reconcile_total' "$REPO/grafana/dashboards/lab-kargo.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-kargo.json has no fabricated/placeholder data (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-kargo.json"
+  [ "$status" -eq 1 ]
+}
