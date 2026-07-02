@@ -7,10 +7,26 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 TOKEN_FILE="$ROOT/gitlab/.gitlab-token"
+GITLAB_URL="${GITLAB_URL:-http://localhost:8929}"
 
+# The minted PAT expires after 30 days (gitlab-bootstrap.rb), so a cached token
+# can be dead while the file looks fine. Verify it against the API before reuse;
+# only a definitive 401/403 discards the cache — if GitLab is unreachable we
+# keep the old behavior (print the cache) so offline callers aren't broken.
 if [ -s "$TOKEN_FILE" ]; then
-  cat "$TOKEN_FILE"
-  exit 0
+  tok="$(cat "$TOKEN_FILE")"
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
+    --header "PRIVATE-TOKEN: $tok" "$GITLAB_URL/api/v4/user" || true)"
+  case "$code" in
+    401|403)
+      echo "gitlab-pat: cached token rejected (HTTP $code) — re-minting" >&2
+      rm -f "$TOKEN_FILE"
+      ;;
+    *)
+      printf '%s\n' "$tok"
+      exit 0
+      ;;
+  esac
 fi
 
 PW="$(grep -E '^GITLAB_ROOT_PASSWORD=' "$ROOT/gitlab/.env" | cut -d= -f2-)"
