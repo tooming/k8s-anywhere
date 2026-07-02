@@ -7,4 +7,4 @@ kind: Kustomization
 namespace: trivy-system
 
 resources:
-  - limitrange.yaml
+  - ../../base/limitrange-standard.yaml
