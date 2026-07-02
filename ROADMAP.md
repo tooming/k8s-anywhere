@@ -888,7 +888,7 @@ You review and merge plan PRs, same as implementation PRs.
   present and `enforce: restricted` absent (safety check). `make ci` must pass. `docs/done/`
   entry required. (auto/pss-envoy-gateway-system)
 
-- [ ] 🟢 **zz-dns-clusterip-bridge — bring out-of-band CNPs under GitOps** (CHARTER
+- [x] 🟢 **zz-dns-clusterip-bridge — bring out-of-band CNPs under GitOps** (CHARTER
   **Core Values** §"Everything as code; GitOps deploys it" + ADR-0004 §"never fabricate
   or hold safety-relevant state out-of-band"; issue #315 — 2026-07-01; **no
   prerequisites — executor may pick up immediately**). The

@@ -89,3 +89,47 @@ setup() {
   run grep -qE 'port: "?443"?' "$POLICIES/allow-dns-and-apiserver.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- ClusterIP bridge shared template ----------------------------------------
+@test "zz-dns-clusterip-bridge.yaml exists under gitops/network/policies/" {
+  [ -f "$POLICIES/zz-dns-clusterip-bridge.yaml" ]
+}
+
+@test "zz-dns-clusterip-bridge is a CiliumNetworkPolicy with no endpointSelector restriction" {
+  run grep -q 'kind: CiliumNetworkPolicy' "$POLICIES/zz-dns-clusterip-bridge.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'endpointSelector: {}' "$POLICIES/zz-dns-clusterip-bridge.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "zz-dns-clusterip-bridge allows egress to the Service ClusterIP CIDR without port restriction" {
+  run grep -q '10.43.0.0/16' "$POLICIES/zz-dns-clusterip-bridge.yaml"
+  [ "$status" -eq 0 ]
+  # No toPorts block — full CIDR unrestricted (per-service pod-selector rules still gate backends)
+  run grep -q 'toPorts' "$POLICIES/zz-dns-clusterip-bridge.yaml"
+  [ "$status" -eq 1 ]
+}
+
+@test "zz-dns-clusterip-bridge has metadata.name zz-dns-clusterip-bridge (matches live out-of-band name)" {
+  run grep -q 'name: zz-dns-clusterip-bridge' "$POLICIES/zz-dns-clusterip-bridge.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- CI drift guard: every default-deny overlay must include the bridge -------
+@test "every networkpolicy overlay with default-deny.yaml also references zz-dns-clusterip-bridge (drift guard, closes #315)" {
+  # Prevent new namespaces from inheriting the same gap that caused issue #315:
+  # a default-deny namespace without the ClusterIP bridge silently breaks ClusterIP
+  # egress for all pods in that namespace when Cilium socket-LB evaluates the
+  # service IP before translating it to a backend pod IP.
+  local fail=0
+  local kfile
+  while IFS= read -r kfile; do
+    if grep -q 'default-deny.yaml' "$kfile"; then
+      if ! grep -q 'zz-dns-clusterip-bridge' "$kfile"; then
+        echo "MISSING zz-dns-clusterip-bridge in: $kfile" >&2
+        fail=1
+      fi
+    fi
+  done < <(find "$REPO/gitops" -name "kustomization.yaml" -path "*/networkpolicy/*" | sort)
+  [ "$fail" -eq 0 ]
+}

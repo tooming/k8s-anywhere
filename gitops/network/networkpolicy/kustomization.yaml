@@ -13,3 +13,4 @@ namespace: lab-gateway
 resources:
   - ../policies/default-deny.yaml
   - ../policies/allow-dns-and-apiserver.yaml
+  - ../policies/zz-dns-clusterip-bridge.yaml
