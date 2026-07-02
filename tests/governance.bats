@@ -44,36 +44,32 @@ setup() {
 }
 
 # --- Seed namespace leaf overlays --------------------------------------------
-@test "argocd governance leaf dir has kustomization.yaml and limitrange.yaml" {
+@test "argocd governance leaf dir has kustomization.yaml" {
   [ -f "$GOV/argocd/kustomization.yaml" ]
-  [ -f "$GOV/argocd/limitrange.yaml" ]
 }
 
-@test "capstone governance leaf dir has kustomization.yaml and limitrange.yaml" {
+@test "capstone governance leaf dir has kustomization.yaml" {
   [ -f "$GOV/capstone/kustomization.yaml" ]
-  [ -f "$GOV/capstone/limitrange.yaml" ]
 }
 
-@test "each seed kustomization lists limitrange.yaml as a resource" {
-  run grep -q 'limitrange.yaml' "$GOV/argocd/kustomization.yaml"
+@test "each seed kustomization references the shared base limitrange" {
+  run grep -q 'base/limitrange-standard.yaml' "$GOV/argocd/kustomization.yaml"
   [ "$status" -eq 0 ]
-  run grep -q 'limitrange.yaml' "$GOV/capstone/kustomization.yaml"
+  run grep -q 'base/limitrange-standard.yaml' "$GOV/capstone/kustomization.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "each seed LimitRange is a Container-type standard-tier limit" {
-  for ns in argocd capstone; do
-    run grep -q '^kind: LimitRange' "$GOV/$ns/limitrange.yaml"
-    [ "$status" -eq 0 ]
-    run grep -q 'type: Container' "$GOV/$ns/limitrange.yaml"
-    [ "$status" -eq 0 ]
-    run grep -qE 'cpu: "?500m"?' "$GOV/$ns/limitrange.yaml"
-    [ "$status" -eq 0 ]
-    run grep -qE 'memory: "?512Mi"?' "$GOV/$ns/limitrange.yaml"
-    [ "$status" -eq 0 ]
-    run grep -qE 'cpu: "?50m"?' "$GOV/$ns/limitrange.yaml"
-    [ "$status" -eq 0 ]
-  done
+@test "shared base LimitRange is a Container-type standard-tier limit" {
+  run grep -q '^kind: LimitRange' "$GOV/base/limitrange-standard.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'type: Container' "$GOV/base/limitrange-standard.yaml"
+  [ "$status" -eq 0 ]
+  run grep -qE 'cpu: "?500m"?' "$GOV/base/limitrange-standard.yaml"
+  [ "$status" -eq 0 ]
+  run grep -qE 'memory: "?512Mi"?' "$GOV/base/limitrange-standard.yaml"
+  [ "$status" -eq 0 ]
+  run grep -qE 'cpu: "?50m"?' "$GOV/base/limitrange-standard.yaml"
+  [ "$status" -eq 0 ]
 }
 
 # --- RFC #294 LimitRange fan-out (all always-on namespaces) -------------------
@@ -87,25 +83,22 @@ trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway k
 @test "every standard-tier namespace has a governance leaf overlay" {
   for ns in $STANDARD_NS; do
     [ -f "$GOV/$ns/kustomization.yaml" ] || { echo "missing kustomization for $ns"; return 1; }
-    [ -f "$GOV/$ns/limitrange.yaml" ]    || { echo "missing limitrange for $ns"; return 1; }
   done
 }
 
-@test "every standard-tier limitrange is a Container-type standard profile" {
-  for ns in $STANDARD_NS; do
-    run grep -q 'type: Container' "$GOV/$ns/limitrange.yaml"
-    [ "$status" -eq 0 ] || { echo "$ns: no type: Container"; return 1; }
-    run grep -qE 'cpu: "?50m"?' "$GOV/$ns/limitrange.yaml"
-    [ "$status" -eq 0 ] || { echo "$ns: no defaultRequest cpu 50m"; return 1; }
-    run grep -qE 'memory: "?512Mi"?' "$GOV/$ns/limitrange.yaml"
-    [ "$status" -eq 0 ] || { echo "$ns: no default memory 512Mi"; return 1; }
-  done
+@test "shared base limitrange-standard.yaml is a Container-type standard profile" {
+  run grep -q 'type: Container' "$GOV/base/limitrange-standard.yaml"
+  [ "$status" -eq 0 ]
+  run grep -qE 'cpu: "?50m"?' "$GOV/base/limitrange-standard.yaml"
+  [ "$status" -eq 0 ]
+  run grep -qE 'memory: "?512Mi"?' "$GOV/base/limitrange-standard.yaml"
+  [ "$status" -eq 0 ]
 }
 
-@test "each standard-tier kustomization lists limitrange.yaml as a resource" {
+@test "each standard-tier kustomization references the shared base limitrange" {
   for ns in $STANDARD_NS; do
-    run grep -q 'limitrange.yaml' "$GOV/$ns/kustomization.yaml"
-    [ "$status" -eq 0 ] || { echo "$ns: kustomization missing limitrange.yaml"; return 1; }
+    run grep -q 'base/limitrange-standard.yaml' "$GOV/$ns/kustomization.yaml"
+    [ "$status" -eq 0 ] || { echo "$ns: kustomization missing base/limitrange-standard.yaml"; return 1; }
   done
 }
 

@@ -1,11 +1,15 @@
-# Standard-tier LimitRange for the velero namespace (RFC #294 standard profile).
+# Standard-tier LimitRange — shared base for every governance overlay (RFC #294).
 # Container defaults so any pod without explicit requests/limits inherits a sane
 # floor + ceiling on the 16 GB host. Values are the RFC #294 "standard" tier.
+#
+# Namespace-agnostic on purpose: each gitops/governance/<ns>/kustomization.yaml pulls
+# this file and sets its own `namespace:`, which kustomize's namespace transformer
+# stamps onto this LimitRange. Consolidates the 17 previously-identical per-namespace
+# limitrange.yaml files into one source of truth.
 apiVersion: v1
 kind: LimitRange
 metadata:
   name: standard-limits
-  namespace: velero
 spec:
   limits:
     - type: Container
