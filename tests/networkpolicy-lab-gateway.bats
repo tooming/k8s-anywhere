@@ -29,10 +29,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "lab-gateway kustomization has only two resources (baseline templates, no extra rules)" {
+@test "lab-gateway kustomization has only three resources (baseline templates + ClusterIP bridge, no extra rules)" {
   run grep -c '^\s*-' "$GATEWAY_NP/kustomization.yaml"
   [ "$status" -eq 0 ]
-  [ "$output" -eq 2 ]
+  [ "$output" -eq 3 ]
 }
 
 @test "lab-gateway-networkpolicy ArgoCD Application file exists" {

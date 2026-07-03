@@ -207,7 +207,10 @@ setup() {
 }
 
 @test "harbor networkpolicy kustomization references the ClusterIP egress bridge" {
-  run grep -q 'allow-harbor-clusterip-egress.yaml' "$REPO/gitops/harbor/networkpolicy/kustomization.yaml"
+  # The bridge is the shared baseline template (gitops/network/policies/), not the
+  # per-namespace allow-harbor-clusterip-egress.yaml copy — referencing both would
+  # duplicate metadata.name zz-dns-clusterip-bridge and break the Kustomize build.
+  run grep -q 'network/policies/zz-dns-clusterip-bridge.yaml' "$REPO/gitops/harbor/networkpolicy/kustomization.yaml"
   [ "$status" -eq 0 ]
 }
 
