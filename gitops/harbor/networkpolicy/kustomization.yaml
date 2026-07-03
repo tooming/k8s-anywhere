@@ -15,5 +15,5 @@ resources:
   - allow-harbor-garage-egress.yaml
   - allow-harbor-valkey-egress.yaml
   - allow-harbor-intra-namespace.yaml
-  - allow-harbor-clusterip-egress.yaml
+  - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-harbor-metrics-ingress.yaml

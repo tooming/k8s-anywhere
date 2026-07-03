@@ -14,6 +14,7 @@ namespace: argo-rollouts
 resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
+  - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-argo-rollouts-metrics-from-observability.yaml
   - allow-argo-rollouts-dashboard-from-gateway.yaml
   - allow-argo-rollouts-egress-mimir.yaml

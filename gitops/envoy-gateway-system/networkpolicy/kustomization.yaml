@@ -18,6 +18,7 @@ namespace: envoy-gateway-system
 resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
+  - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-envoy-controller-metrics-ingress.yaml
   - allow-envoy-proxy-metrics-ingress.yaml
   - allow-envoy-proxy-listener-ingress.yaml

@@ -12,5 +12,6 @@ namespace: vault
 resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
+  - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-vault-from-eso.yaml
   - allow-vault-from-gateway.yaml

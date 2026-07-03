@@ -11,6 +11,7 @@ namespace: inkless
 resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
+  - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-inkless-intra-namespace.yaml
   - allow-inkless-garage-egress.yaml
   - allow-inkless-metrics-ingress.yaml

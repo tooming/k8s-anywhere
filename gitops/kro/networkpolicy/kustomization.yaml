@@ -12,4 +12,5 @@ namespace: kro
 resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
+  - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-kro-ack-egress.yaml
