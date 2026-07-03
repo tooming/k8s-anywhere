@@ -65,12 +65,12 @@ spec:
           - appName: lab-gateway-governance
             gitPath: gitops/governance/lab-gateway
             destNamespace: lab-gateway
-          # NOTE: the legacy on-demand registry namespace is intentionally omitted —
-          # ADR-0024 supersedes ADR-0011 and selects Harbor (RFC #297, manifests
-          # pending). A harbor governance overlay is added once its namespace lands.
           - appName: kiali-governance
             gitPath: gitops/governance/kiali
             destNamespace: kiali
+          - appName: harbor-governance
+            gitPath: gitops/governance/harbor
+            destNamespace: harbor
           # heavy tier (RFC #294 mapping table)
           - appName: observability-governance
             gitPath: gitops/governance/observability
