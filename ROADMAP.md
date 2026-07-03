@@ -1648,6 +1648,107 @@ You review and merge plan PRs, same as implementation PRs.
   this lands and the footprint gate is on record.
   (auto/harbor-artifactory-decommission)
 
+- [ ] 🟢 **Harbor governance LimitRange** (CHARTER **Core Values** §"Fits the
+  16 GB reality" + §"Everything as code; GitOps deploys it"; RFC #294 /
+  RFC #297 — follow-up; **no prerequisites — executor may pick up
+  immediately**). The `gitops/platform/governance-appset.yaml` already
+  carries an explicit TODO comment: "A harbor governance overlay is added
+  once its namespace lands." The harbor namespace landed in
+  `auto/harbor-application` (checked off above). Close that gap now:
+  add `gitops/governance/harbor/kustomization.yaml` (listing
+  `resources: [limitrange.yaml]`) and
+  `gitops/governance/harbor/limitrange.yaml` using the **standard** tier
+  profile from RFC #294 (`type: Container`; `default.cpu: "500m"`,
+  `default.memory: "512Mi"`; `defaultRequest.cpu: "50m"`,
+  `defaultRequest.memory: "64Mi"`; `max.cpu: "2000m"`,
+  `max.memory: "4Gi"`) — same values as every other standard-tier
+  namespace (argocd, capstone, kyverno, etc.). Add the
+  `harbor-governance` entry to the list-generator in
+  `gitops/platform/governance-appset.yaml`:
+  `appName: harbor-governance`, `gitPath: gitops/governance/harbor`,
+  `destNamespace: harbor` (insert after the `kiali-governance` entry,
+  before the `# heavy tier` comment, consistent with the existing
+  ordering). Extend `tests/governance.bats` with two assertions:
+  `gitops/governance/harbor/limitrange.yaml` exists; the `harbor`
+  entry appears in `gitops/platform/governance-appset.yaml`.
+  Update `docs/dependency-tree.md` with a one-line note that the
+  `harbor` namespace now has a LimitRange. `make ci` must pass.
+  `docs/done/` entry required. (auto/harbor-governance-limitrange)
+
+- [ ] 🟢 **O5 dashboard-coverage bats — always-on service apps** (CHARTER
+  **Objective O5**, due **2026-09-30**; O5 says "measured by a drift
+  check wired into make ci" but the current CI only checks HTTPRoute ↔
+  panel sync via `lab-ui-check.sh` — it does NOT verify that each
+  always-on service app has a `lab-<name>.json` file. This item adds
+  the O5 measurement mechanism as bats assertions; no Makefile change
+  needed — bats already runs in `scripts/test.sh` which is in
+  `make ci`). Add to `tests/observability.bats` (or a new
+  `tests/dashboard-coverage.bats`) one `@test` block per always-on
+  service application verifying its `grafana/dashboards/lab-<name>.json`
+  exists and contains at least one reference to `"uid": "mimir"` (a
+  real Mimir datasource panel, not a stub — ADR-0004). Cover these
+  apps (18 total): `argo-rollouts` → `lab-argo-rollouts.json`;
+  `capstone` → `lab-capstone.json`; `data-demo` → `lab-data-demo.json`;
+  `demo` → `lab-demo.json`; `envoy-gateway` → `lab-envoy.json`;
+  `external-secrets` → `lab-external-secrets.json`; `garage` →
+  `lab-garage.json`; `kro` + `moto` + `ack-s3` → `lab-cloud-control-plane.json`;
+  `kyverno` → `lab-kyverno.json`; `observability-alloy` → `lab-alloy.json`;
+  `observability-grafana` → `lab-grafana.json`; `observability-ksm` →
+  `lab-ksm.json`; `observability-loki` → `lab-logs.json`;
+  `observability-mimir` → `lab-mimir.json`;
+  `observability-node-exporter` → `lab-node-exporter.json`;
+  `observability-pyroscope` → `lab-profiles.json`;
+  `observability-tempo` → `lab-traces.json`; `rabbitmq` →
+  `lab-rabbitmq.json`; `s3manager` → `lab-s3manager.json`;
+  `trivy-operator` → `lab-trivy.json`; `valkey` → `lab-valkey.json`;
+  `vault` → `lab-vault.json`; `velero` → `lab-velero.json`. Each test
+  only checks file existence + mimir uid presence — no panel-count
+  assertions (those are in the per-dashboard tests already). Note: the
+  multi-app shared dashboard (`lab-cloud-control-plane.json`) is tested
+  once, citing all three apps it covers. **Executor note:** if this
+  pushes `tests/observability.bats` past reasonable size, split into a
+  new `tests/dashboard-coverage.bats`; the existing per-dashboard bats
+  tests stay where they are. `make ci` must pass. `docs/done/` entry
+  required. (auto/o5-dashboard-coverage-bats)
+
+- [ ] 🟢 **NetworkPolicy bats fan-out — Tier-1 wave overlays** (CHARTER
+  **Objective O2**, due **2026-09-30**; O2 gap — four Tier-1 next-wave
+  namespaces have NetworkPolicy overlays but lack dedicated
+  `tests/networkpolicy-<ns>.bats` files; their NP assertions are
+  currently embedded in the component bats files
+  (`tests/kyverno.bats`, `tests/argo-rollouts.bats`,
+  `tests/velero.bats`, `tests/trivy-operator.bats`); O2's
+  measurement criterion says "tests/networkpolicy.bats +
+  per-scope files cover every namespace in gitops/" — the
+  per-scope files should exist for every namespace with an overlay,
+  mirroring the established pattern from all other namespace bats.
+  Wait for PR #324 (`auto/gitops-clusterip-bridge`) to merge first —
+  it adds the path variables `KYVERNO_NP`, `ARGO_ROLLOUTS_NP`,
+  `VELERO_NP`, `TRIVY_NP` to `tests/lib/networkpolicy-paths.bash`
+  that these new bats files will `load lib/networkpolicy-paths` to
+  use). Create four new files: `tests/networkpolicy-kyverno.bats`,
+  `tests/networkpolicy-argo-rollouts.bats`,
+  `tests/networkpolicy-velero.bats`,
+  `tests/networkpolicy-trivy-system.bats` — each structured as a
+  per-scope bats file (mirrors `tests/networkpolicy-kro.bats` as the
+  template; `load lib/networkpolicy-paths`; section header; assertions
+  for: overlay `kustomization.yaml` exists; references
+  `default-deny.yaml`; references `allow-dns-and-apiserver.yaml`;
+  references the `zz-dns-clusterip-bridge` template (post-PR-#324 the
+  shared template is the baseline); references each namespace's
+  specific allow files by name). For each file's specific allow
+  assertions, use the actual files present in the overlay at executor
+  pickup (e.g. for kyverno: `allow-kyverno-webhook-from-apiserver.yaml`
+  TCP 9443 from apiserver ipBlock, `allow-kyverno-metrics-from-observability.yaml`
+  TCP 8000; for argo-rollouts: the dashboard-from-gateway, metrics,
+  mimir-egress, plugin-egress allows; for velero: garage-egress,
+  metrics-ingress, kopia-egress allows; for trivy-system:
+  ghcr-egress, metrics-ingress allows). These tests are additive
+  — they do NOT remove the existing NP checks from the component
+  bats files; they exist for O2 measurement completeness.
+  `make ci` must pass. `docs/done/` entry required.
+  (auto/networkpolicy-tier1-bats)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
