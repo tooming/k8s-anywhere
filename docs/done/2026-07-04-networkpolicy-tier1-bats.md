@@ -40,4 +40,4 @@ bats files; they exist for O2 measurement completeness.
 
 ## PR
 
-#TODO — filled in after PR creation
+#329 — https://github.com/tooming/k8s-lab/pull/329
