@@ -1711,7 +1711,7 @@ You review and merge plan PRs, same as implementation PRs.
   tests stay where they are. `make ci` must pass. `docs/done/` entry
   required. (auto/o5-dashboard-coverage-bats)
 
-- [ ] 🟢 **NetworkPolicy bats fan-out — Tier-1 wave overlays** (CHARTER
+- [x] 🟢 **NetworkPolicy bats fan-out — Tier-1 wave overlays** (CHARTER
   **Objective O2**, due **2026-09-30**; O2 gap — four Tier-1 next-wave
   namespaces have NetworkPolicy overlays but lack dedicated
   `tests/networkpolicy-<ns>.bats` files; their NP assertions are
