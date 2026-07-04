@@ -1648,7 +1648,7 @@ You review and merge plan PRs, same as implementation PRs.
   this lands and the footprint gate is on record.
   (auto/harbor-artifactory-decommission)
 
-- [ ] 🟢 **Harbor governance LimitRange** (CHARTER **Core Values** §"Fits the
+- [x] 🟢 **Harbor governance LimitRange** (CHARTER **Core Values** §"Fits the
   16 GB reality" + §"Everything as code; GitOps deploys it"; RFC #294 /
   RFC #297 — follow-up; **no prerequisites — executor may pick up
   immediately**). The `gitops/platform/governance-appset.yaml` already

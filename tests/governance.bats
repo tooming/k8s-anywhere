@@ -73,12 +73,12 @@ setup() {
 }
 
 # --- RFC #294 LimitRange fan-out (all always-on namespaces) -------------------
-# The full standard-tier list from the RFC #294 mapping table. `artifactory` is
-# intentionally absent: ADR-0024 supersedes ADR-0011 and selects Harbor over the
-# legacy registry, so its governance overlay is deferred until the Harbor
-# namespace lands (see governance-appset.yaml note + the docs/done entry).
+# The full standard-tier list from the RFC #294 mapping table. `harbor` is
+# included (RFC #297 / ADR-0024): its namespace landed in auto/harbor-application
+# and the governance overlay was added in auto/harbor-governance-limitrange.
+# `artifactory` is intentionally absent: ADR-0024 supersedes ADR-0011.
 STANDARD_NS="argocd capstone kyverno external-secrets velero argo-rollouts \
-trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway kiali"
+trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway kiali harbor"
 
 @test "every standard-tier namespace has a governance leaf overlay" {
   for ns in $STANDARD_NS; do
@@ -127,4 +127,21 @@ trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway k
   run grep -qiw 'artifactory' "$APPSET"
   [ "$status" -ne 0 ]
   [ ! -d "$GOV/artifactory" ]
+}
+
+# --- Harbor governance (RFC #297 / ADR-0024) ----------------------------------
+@test "harbor governance kustomization.yaml exists" {
+  [ -f "$GOV/harbor/kustomization.yaml" ]
+}
+
+@test "harbor governance kustomization references the shared base limitrange" {
+  run grep -q 'base/limitrange-standard.yaml' "$GOV/harbor/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "governance-appset has harbor-governance entry" {
+  run grep -q 'destNamespace: harbor' "$APPSET"
+  [ "$status" -eq 0 ]
+  run grep -q 'appName: harbor-governance' "$APPSET"
+  [ "$status" -eq 0 ]
 }
