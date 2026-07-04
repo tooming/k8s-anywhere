@@ -1675,7 +1675,7 @@ You review and merge plan PRs, same as implementation PRs.
   `harbor` namespace now has a LimitRange. `make ci` must pass.
   `docs/done/` entry required. (auto/harbor-governance-limitrange)
 
-- [ ] 🟢 **O5 dashboard-coverage bats — always-on service apps** (CHARTER
+- [x] 🟢 **O5 dashboard-coverage bats — always-on service apps** (CHARTER
   **Objective O5**, due **2026-09-30**; O5 says "measured by a drift
   check wired into make ci" but the current CI only checks HTTPRoute ↔
   panel sync via `lab-ui-check.sh` — it does NOT verify that each
