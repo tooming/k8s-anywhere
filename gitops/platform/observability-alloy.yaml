@@ -409,6 +409,21 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
+
+              // ---- Longhorn (on-demand block storage) metrics -> Mimir ----
+              // Longhorn manager exposes Prometheus metrics at :9500/metrics via the
+              // longhorn-manager DaemonSet Service. Feeds the "Lab — Longhorn (Block Storage)"
+              // dashboard with real volume state, robustness, and capacity series (ADR-0013, ADR-0004).
+              // The NetworkPolicy allow (TCP 9500 ingress from observability) is in
+              // gitops/longhorn/networkpolicy/allow-longhorn-metrics-ingress.yaml.
+              // This target is idle unless longhorn is manually synced via make longhorn-up.
+              prometheus.scrape "longhorn" {
+                targets = [
+                  {"__address__" = "longhorn-manager.longhorn-system.svc.cluster.local:9500", "job" = "longhorn"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
