@@ -1786,7 +1786,7 @@ You review and merge plan PRs, same as implementation PRs.
   `auto/kargo-observability-dashboard`). `docs/done/` entry required. `make ci`
   must pass. (auto/tidb-dashboard)
 
-- [ ] 🟢 **Lab — Longhorn on-demand Alloy scrape + dashboard** (CHARTER **Core
+- [x] 🟢 **Lab — Longhorn on-demand Alloy scrape + dashboard** (CHARTER **Core
   Values** §"Real observability only"; O5 gap-fill for on-demand components —
   follows the `lab-kargo.json` / `lab-inkless.json` precedent; **no
   prerequisites — executor may pick up immediately**). The Longhorn namespace
