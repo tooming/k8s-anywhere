@@ -18,7 +18,7 @@ setup() {
 
 # --- namespace PSA restricted labels -----------------------------------------
 
-@test "kargo namespace.yaml exists" {
+@test "kargo namespace.yaml exists (PSS labels)" {
   [ -f "$NS" ]
 }
 
@@ -54,7 +54,7 @@ setup() {
 
 # --- kargo-extras Application -------------------------------------------------
 
-@test "kargo-extras Application exists" {
+@test "kargo-extras Application exists (PSA floor)" {
   [ -f "$EXTRAS" ]
 }
 
