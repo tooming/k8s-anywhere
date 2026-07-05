@@ -1749,6 +1749,76 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required.
   (auto/networkpolicy-tier1-bats)
 
+- [ ] 🟢 **Lab — TiDB on-demand Alloy scrape + dashboard** (CHARTER **Core
+  Values** §"Real observability only"; O5 gap-fill for on-demand components —
+  follows the `lab-kargo.json` / `lab-inkless.json` precedent; **no
+  prerequisites — executor may pick up immediately**). The TiDB namespace
+  NetworkPolicy already permits ingress TCP 10080 from `observability`
+  (`gitops/tidb/networkpolicy/allow-tidb-from-observability.yaml`) but the
+  corresponding Alloy scrape job and dashboard were never added; the NP comment
+  references a scrape job that does not yet exist. Add
+  `prometheus.scrape "tidb"` block to
+  `gitops/platform/observability-alloy.yaml` (static target
+  `tidb.tidb.svc.cluster.local:10080`; `scrape_interval = "30s"`; add an
+  inline comment explaining this target is idle unless `make tidb-up` is active
+  — mirror the `kargo` scrape block comment). New
+  `grafana/dashboards/lab-tidb.json` ("Lab — TiDB (Distributed Database)")
+  modelled on `lab-kargo.json` stat-row: TiDB server pod running (KSM
+  `kube_deployment_status_replicas_available{namespace="tidb"}`); TiDB operator
+  pod running (`kube_deployment_status_replicas_available{namespace="tidb-admin"}`);
+  ArgoCD sync state (`argocd_app_info{name="tidb-cluster"}`); TiDB query
+  execution rate timeseries (`rate(tidb_executor_statement_total[5m])` by
+  `type`); TiDB connection count (`tidb_server_connections`); TiDB server memory
+  (cAdvisor `container_memory_working_set_bytes{namespace="tidb",container=~"tidb.*"}`).
+  **Executor note:** the exact deployment name and TiDB metric names depend on
+  the chart version pinned in `gitops/platform/tidb-cluster.yaml` — verify with
+  `grep -r "tidb_executor\|tidb_server_connections" gitops/` or the TiDB docs
+  before writing the dashboard; if a metric is not available, substitute the
+  nearest equivalent (keep ADR-0004: no fabricated fallbacks). All panels real
+  Mimir data with `X-Scope-OrgID: lab` (panels show "No data" naturally when
+  TiDB is not running — it is on-demand). No new NP changes needed (TCP 10080
+  allow is pre-wired). No new HTTPRoute row needed (`tidb-demo` row already in
+  Lab UIs panel). Extend `tests/observability.bats` with four assertions:
+  scrape block `"tidb"` present in `observability-alloy.yaml`; `lab-tidb.json`
+  exists; dashboard references `tidb` namespace in at least one KSM query; no
+  fabricated/placeholder data. Update `docs/dependency-tree.md` with TiDB
+  observability note (parallel to the Kargo observability note added in
+  `auto/kargo-observability-dashboard`). `docs/done/` entry required. `make ci`
+  must pass. (auto/tidb-dashboard)
+
+- [ ] 🟢 **Lab — Longhorn on-demand Alloy scrape + dashboard** (CHARTER **Core
+  Values** §"Real observability only"; O5 gap-fill for on-demand components —
+  follows the `lab-kargo.json` / `lab-inkless.json` precedent; **no
+  prerequisites — executor may pick up immediately**). The Longhorn namespace
+  NetworkPolicy already permits ingress TCP 9500 from `observability`
+  (`gitops/longhorn/networkpolicy/allow-longhorn-metrics-ingress.yaml`) but no
+  Alloy scrape job or Grafana dashboard has been added yet. Add
+  `prometheus.scrape "longhorn"` block to
+  `gitops/platform/observability-alloy.yaml` (static target
+  `longhorn-manager.longhorn-system.svc.cluster.local:9500`;
+  `scrape_interval = "30s"`; add an inline comment explaining this target is
+  idle unless `make longhorn-up` is active — mirror the `kargo` scrape block
+  comment). New `grafana/dashboards/lab-longhorn.json` ("Lab — Longhorn (Block
+  Storage)") modelled on `lab-kargo.json` stat-row: longhorn-manager DaemonSet
+  ready (KSM
+  `kube_daemonset_status_number_ready{namespace="longhorn-system",daemonset=~"longhorn-manager.*"}`);
+  ArgoCD sync state (`argocd_app_info{name="longhorn-extras"}`); attached volume
+  count (`count(longhorn_volume_state{state="attached"})` or
+  `longhorn_volume_state` aggregated — executor must verify exact label values
+  at pickup against Longhorn docs); volume robustness healthy count
+  (`count(longhorn_volume_robustness{robustness="Healthy"})`); total volume
+  capacity (`sum(longhorn_volume_capacity_bytes)`) gauge. All panels real Mimir
+  data with `X-Scope-OrgID: lab` (panels show "No data" naturally when Longhorn
+  is not running — it is on-demand per ADR-0004). No new NP changes needed (TCP
+  9500 allow is pre-wired). No new HTTPRoute row needed (Longhorn UI row at
+  `longhorn.127.0.0.1.nip.io:8000` is in the Lab UIs panel; `make
+  lab-ui-check` unaffected). Extend `tests/longhorn.bats` with four assertions:
+  scrape block `"longhorn"` present in `observability-alloy.yaml`;
+  `lab-longhorn.json` exists; dashboard references `longhorn-system` namespace
+  in at least one KSM query; no fabricated/placeholder data. Update
+  `docs/dependency-tree.md` with Longhorn observability note. `docs/done/`
+  entry required. `make ci` must pass. (auto/longhorn-dashboard)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
