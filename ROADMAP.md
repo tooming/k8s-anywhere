@@ -1819,6 +1819,77 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with Longhorn observability note. `docs/done/`
   entry required. `make ci` must pass. (auto/longhorn-dashboard)
 
+- [ ] 🟢 **O2 measurement — per-scope PSS bats for 5 Tier-1 wave namespaces**
+  (CHARTER **Objective O2**, due **2026-09-30**; O2 PSS coverage gap — five
+  namespaces (`argo-rollouts`, `velero`, `harbor`, `trivy-system`,
+  `node-exporter`) each have a `namespace.yaml` with all four PSA labels in
+  place, but their component bats files (`tests/argo-rollouts.bats`,
+  `tests/velero.bats`, `tests/harbor.bats`, `tests/trivy-operator.bats`,
+  `tests/node-exporter.bats`) only assert two of the four labels. O2's
+  measurement criterion requires `tests/securitycontext.bats` + per-scope
+  files to cover every namespace. Per `scripts/securitycontext-tests-check.sh`,
+  new per-scope tests must go in their own `tests/securitycontext-<scope>.bats`
+  file, not the frozen monolith. **No prerequisites — executor may pick up
+  immediately.** Create five new files following the
+  `tests/securitycontext-kargo.bats` / `tests/securitycontext-longhorn.bats`
+  pattern (namespace PSA labels: all 4 + safety checks + extras Application
+  exists):
+  `tests/securitycontext-argo-rollouts.bats` — PSA `restricted` (enforce:
+  restricted, enforce-version: latest, warn: restricted, audit: restricted) +
+  safety checks (NOT baseline, NOT privileged) + extras Application
+  `gitops/platform/argo-rollouts-extras.yaml` exists;
+  `tests/securitycontext-velero.bats` — PSA `restricted` (all 4 labels) +
+  safety checks (NOT baseline, NOT privileged) + extras Application
+  `gitops/platform/velero-extras.yaml` exists;
+  `tests/securitycontext-harbor.bats` — PSA `restricted` (all 4 labels) +
+  safety checks (NOT baseline, NOT privileged) + extras Application
+  `gitops/platform/harbor-extras.yaml` exists (harbor is on-demand but the
+  namespace PSA floor is always-on via the extras Application; test the
+  namespace manifest as committed);
+  `tests/securitycontext-trivy-system.bats` — PSA `baseline` (enforce:
+  baseline, enforce-version: latest, warn: baseline, audit: baseline) +
+  safety checks (NOT restricted, NOT privileged) + extras Application
+  `gitops/platform/trivy-extras.yaml` exists;
+  `tests/securitycontext-node-exporter.bats` — PSA `privileged` (enforce:
+  privileged, enforce-version: latest, warn: privileged, audit: privileged)
+  + safety checks (NOT restricted, NOT baseline) + extras Application
+  `gitops/platform/node-exporter-extras.yaml` exists.
+  All 5 new files are additive — the partial checks in the component bats
+  files remain untouched. `make ci` must pass. `docs/done/` entry required.
+  (auto/securitycontext-tier1-bats)
+
+- [ ] 🟢 **O2 measurement — per-scope NP bats for 3 late-addition namespaces**
+  (CHARTER **Objective O2**, due **2026-09-30**; O2 NP coverage gap — three
+  namespaces (`harbor`, `kargo`, `node-exporter`) have NetworkPolicy overlays
+  in `gitops/*/networkpolicy/` and are wired into the appset or a dedicated NP
+  Application, but lack dedicated `tests/networkpolicy-<ns>.bats` files; the NP
+  drift guard only blocks per-namespace tests creeping back into the shared
+  baseline monolith — it does not require every overlay to have a per-scope
+  file. O2 says "per-scope files cover every namespace in gitops/". **No
+  prerequisites — executor may pick up immediately; pick up after
+  `auto/securitycontext-tier1-bats` if both are available.** Create three new
+  files following `tests/networkpolicy-kro.bats` as the template (`load
+  lib/networkpolicy-paths`; section header; assertions for: overlay
+  `kustomization.yaml` exists; references `default-deny.yaml`; references
+  `allow-dns-and-apiserver.yaml`; references `zz-dns-clusterip-bridge`; each
+  namespace's specific allow files by name). Also add three path vars to
+  `tests/lib/networkpolicy-paths.bash`:
+  `HARBOR_NP="$REPO/gitops/harbor/networkpolicy"`,
+  `KARGO_NP="$REPO/gitops/kargo/networkpolicy"`,
+  `NODE_EXPORTER_NP="$REPO/gitops/node-exporter/networkpolicy"`.
+  Per-namespace specific allows to assert (verify exact files at executor
+  pickup):
+  `harbor` — `allow-harbor-ingress.yaml`, `allow-harbor-garage-egress.yaml`,
+  `allow-harbor-valkey-egress.yaml`, `allow-harbor-intra-namespace.yaml`,
+  `allow-harbor-metrics-ingress.yaml` (all 5 files in overlay);
+  `kargo` — `allow-kargo-api-from-gateway.yaml`,
+  `allow-kargo-webhook-from-apiserver.yaml`, `allow-kargo-egress-argocd.yaml`,
+  `allow-kargo-egress-registry.yaml`, `allow-kargo-metrics-ingress.yaml`;
+  `node-exporter` — `allow-node-exporter-metrics-ingress.yaml`.
+  These tests are additive — they do NOT remove the existing NP checks from the
+  component bats files. `make ci` must pass. `docs/done/` entry required.
+  (auto/networkpolicy-tier1-bats-wave2)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
