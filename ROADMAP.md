@@ -1858,7 +1858,7 @@ You review and merge plan PRs, same as implementation PRs.
   files remain untouched. `make ci` must pass. `docs/done/` entry required.
   (auto/securitycontext-tier1-bats)
 
-- [ ] 🟢 **O2 measurement — per-scope NP bats for 3 late-addition namespaces**
+- [x] 🟢 **O2 measurement — per-scope NP bats for 3 late-addition namespaces**
   (CHARTER **Objective O2**, due **2026-09-30**; O2 NP coverage gap — three
   namespaces (`harbor`, `kargo`, `node-exporter`) have NetworkPolicy overlays
   in `gitops/*/networkpolicy/` and are wired into the appset or a dedicated NP
