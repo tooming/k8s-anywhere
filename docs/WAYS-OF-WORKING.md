@@ -81,8 +81,8 @@ Every agent action falls in a tier. An agent that hits work above its registered
 | Tier | Who acts | Examples (non-exhaustive) |
 |---|---|---|
 | 🟢 **Green** | Agent, unsupervised → PR + normal review | Docs, comments, tests; non-auto-synced manifests; dashboards from real metrics; README / `dependency-tree.md` sync; ROADMAP grooming |
-| 🟡 **Yellow** | Architect authors a binding RFC → planner grooms it → executor implements (no human-approval step) | New platform component; anything growing the always-on footprint; new deps / Helm sources; CI, gate, or `Makefile` changes; security-adjacent (auth, RBAC, network exposure); ADR-authoring; `infra/` bootstrap changes |
-| 🔴 **Red** | Humans only — agent must refuse & escalate | Secrets; any live-cluster / prod change; **merging** PRs; repo settings / branch protection / CODEOWNERS; force-push, deletion, history rewrite; disabling another agent; editing CHARTER.md (goals) or this governance doc |
+| 🟡 **Yellow** | Architect authors a binding RFC → planner grooms it → executor implements (no human-approval step) | New platform component; anything growing the always-on footprint; new deps / Helm sources; CI, gate, or `Makefile` changes; security-adjacent (auth, RBAC, network exposure); ADR-authoring; editing CHARTER.md (goals); `infra/` bootstrap changes |
+| 🔴 **Red** | Humans only — agent must refuse & escalate | Secrets; any live-cluster / prod change; **merging** PRs; repo settings / branch protection / CODEOWNERS; force-push, deletion, history rewrite; disabling another agent; editing this governance doc |
 
 Full definitions:
 
@@ -94,17 +94,18 @@ executor's and planner's day-to-day lane.
 **🟡 Yellow — architect-decided, no human-approval step.** A new platform component;
 anything that grows the always-on footprint; new third-party dependencies or Helm chart
 sources; changes to CI, the quality gates, or `Makefile` targets; security-adjacent
-changes (auth, RBAC, network exposure); authoring new ADRs; `infra/` bootstrap changes.
-The architect routine makes the binding decision and files it as an `rfc`-labeled GitHub
-issue (and, where the decision requires it, an accompanying `arch/*` PR that lands the ADR
-and any `infra/` change). The planner grooms the RFC into 🟢 executor items on its next
-run without waiting for a human to approve the RFC — the architect's decision *is* the
-approval. The human gate remains the merge button on every resulting PR.
+changes (auth, RBAC, network exposure); authoring new ADRs; editing CHARTER.md (goals);
+`infra/` bootstrap changes. The architect routine makes the binding decision and files it
+as an `rfc`-labeled GitHub issue (and, where the decision requires it, an accompanying
+`arch/*` PR that lands the ADR, the CHARTER.md update, and any `infra/` change). The
+planner grooms the RFC into 🟢 executor items on its next run without waiting for a human
+to approve the RFC — the architect's decision *is* the approval. The human gate remains
+the merge button on every resulting PR.
 
 **🔴 Red — humans only; an agent must refuse and escalate.** Secrets/credentials of any
 kind; any live-cluster or prod mutation; **merging** PRs; repo settings, branch protection,
-or CODEOWNERS; force-push, branch/data deletion, history rewrite; editing CHARTER.md
-(goals) or this governance doc; disabling or altering another agent.
+or CODEOWNERS; force-push, branch/data deletion, history rewrite; editing this governance
+doc; disabling or altering another agent.
 
 **Always, regardless of tier:** never weaken or skip a gate, never self-merge, never push to
 `main`, never access credentials.
