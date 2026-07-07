@@ -23,4 +23,4 @@ the assertion passes for every existing namespace.yaml before committing.
 
 ## PR
 
-<!-- filled in after PR creation -->
+https://github.com/tooming/k8s-lab/pull/344
