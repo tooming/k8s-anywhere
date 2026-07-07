@@ -53,7 +53,7 @@ states the meta-choices the ADRs encode, so the *why* sits above the *what*.
   ArgoCD `Application`s. No `helm install`, no `kubectl apply` to live state.
   (ADR-0001)
 - **On-demand over always-on for heavy components.** The 12 GB VM holds a ~7 GB
-  always-on core; heavy components (TiDB, Artifactory, Istio, Longhorn, Inkless) come
+  always-on core; heavy components (TiDB, Harbor, Istio, Longhorn, Inkless) come
   up by `make <name>-up`. Never two full stacks at once. (ADR-0003)
 - **Recreate-from-code over pretend-HA.** A single host has SPOFs; we don't pretend
   otherwise. Recovery is via `make up` rebuilds + Velero restores, not multi-replica HA
@@ -124,7 +124,7 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   canary delivery via Envoy traffic-splitting); **Velero** (cluster + PVC backup to
   Garage); **Trivy Operator** (continuous vulnerability + SBOM scanning).
 - **Heavy / on-demand** (planned): a distributed database (TiDB), an artifact registry
-  (Artifactory or Nexus), a service mesh + UI (Istio ambient + Kiali), and distributed
+  (Harbor), a service mesh + UI (Istio ambient + Kiali), and distributed
   storage (Longhorn) — each brought up *one at a time* within the 12 GB budget.
 - **Capstone — the full inner loop**: GitLab CI builds *and signs* an image (cosign) →
   Kyverno verifies the signature on admit → ArgoCD deploys it → Argo Rollouts canaries it
