@@ -1749,7 +1749,7 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required.
   (auto/networkpolicy-tier1-bats)
 
-- [ ] 🟢 **Lab — TiDB on-demand Alloy scrape + dashboard** (CHARTER **Core
+- [x] 🟢 **Lab — TiDB on-demand Alloy scrape + dashboard** (CHARTER **Core
   Values** §"Real observability only"; O5 gap-fill for on-demand components —
   follows the `lab-kargo.json` / `lab-inkless.json` precedent; **no
   prerequisites — executor may pick up immediately**). The TiDB namespace
@@ -1819,7 +1819,7 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with Longhorn observability note. `docs/done/`
   entry required. `make ci` must pass. (auto/longhorn-dashboard)
 
-- [ ] 🟢 **O2 measurement — per-scope PSS bats for 5 Tier-1 wave namespaces**
+- [x] 🟢 **O2 measurement — per-scope PSS bats for 5 Tier-1 wave namespaces**
   (CHARTER **Objective O2**, due **2026-09-30**; O2 PSS coverage gap — five
   namespaces (`argo-rollouts`, `velero`, `harbor`, `trivy-system`,
   `node-exporter`) each have a `namespace.yaml` with all four PSA labels in
