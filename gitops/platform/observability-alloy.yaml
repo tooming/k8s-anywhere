@@ -424,6 +424,22 @@ spec:
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }
+
+              // ---- TiDB (distributed SQL database) metrics -> Mimir ----
+              // The TiDB Operator creates a <cluster>-tidb Service in namespace tidb that
+              // exposes the TiDB status/metrics endpoint at :10080/metrics (tidb_executor_*,
+              // tidb_server_connections, etc.). For the lab TidbCluster named "lab", the
+              // Service is lab-tidb.tidb.svc.cluster.local. The NetworkPolicy allow
+              // (TCP 10080 ingress from observability) is pre-wired in
+              // gitops/tidb/networkpolicy/allow-tidb-from-observability.yaml.
+              // This target is idle unless make tidb-up is active (on-demand component).
+              prometheus.scrape "tidb" {
+                targets = [
+                  {"__address__" = "lab-tidb.tidb.svc.cluster.local:10080", "job" = "tidb"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
   destination:
     server: https://kubernetes.default.svc
     namespace: observability
