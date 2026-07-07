@@ -19,4 +19,4 @@ per ADR-0024, noting the cutover is in progress.
 
 ## PR
 
-#TBD
+#342 — https://github.com/tooming/k8s-lab/pull/342
