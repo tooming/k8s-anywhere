@@ -7,4 +7,4 @@ kind: Kustomization
 namespace: kyverno
 
 resources:
-  - ../../base/limitrange-standard.yaml
+  - ../base/limitrange-standard.yaml
