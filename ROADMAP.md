@@ -1749,7 +1749,7 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required.
   (auto/networkpolicy-tier1-bats)
 
-- [ ] 🟢 **Lab — TiDB on-demand Alloy scrape + dashboard** (CHARTER **Core
+- [x] 🟢 **Lab — TiDB on-demand Alloy scrape + dashboard** (CHARTER **Core
   Values** §"Real observability only"; O5 gap-fill for on-demand components —
   follows the `lab-kargo.json` / `lab-inkless.json` precedent; **no
   prerequisites — executor may pick up immediately**). The TiDB namespace
