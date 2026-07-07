@@ -152,12 +152,12 @@ You review and merge plan PRs, same as implementation PRs.
 > `tidb`/`tidb-admin`) trails the Tier 1 wave so the executor always has 🟢
 > work; the cloud-control-plane dashboard (O5) is promoted from cross-cutting.
 >
-> **O2 clock note.** O2 is dated **2026-09-30** — ~3.5 months out. After the
-> two O2 tail items below merge, the remaining always-on gaps are: PSS for
-> `argocd` (🟡 — touches `infra/modules/argocd/values.yaml`, needs architect
-> RFC; see *Cross-cutting*); NP for `envoy-gateway-system` (🟡 — Envoy
-> data-plane egress fan-out matches every backend Service, needs architect
-> RFC). Both are surfaced as 🟡 entries in *Cross-cutting*.
+> **O2 clock note.** O2 is dated **2026-09-30** — ~3 months out. The
+> previously-blocking `argocd` PSS (Phases 1 + 2, both ✓) and
+> `envoy-gateway-system` NP gaps are now closed (items `[x]` above). After
+> the per-scope measurement PRs (#335 PSS bats, #336 NP bats) merge, the
+> only remaining O2 work is the two coverage-loop recurrence guards at the
+> end of this section — both are immediately buildable by the executor.
 >
 > **WIP / size discipline reminder.** Per WAYS-OF-WORKING.md §3, target ≤ 400
 > changed lines per PR. Items below that risk crossing the cap carry a
@@ -1749,7 +1749,7 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required.
   (auto/networkpolicy-tier1-bats)
 
-- [ ] 🟢 **Lab — TiDB on-demand Alloy scrape + dashboard** (CHARTER **Core
+- [x] 🟢 **Lab — TiDB on-demand Alloy scrape + dashboard** (CHARTER **Core
   Values** §"Real observability only"; O5 gap-fill for on-demand components —
   follows the `lab-kargo.json` / `lab-inkless.json` precedent; **no
   prerequisites — executor may pick up immediately**). The TiDB namespace
@@ -1819,7 +1819,7 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` with Longhorn observability note. `docs/done/`
   entry required. `make ci` must pass. (auto/longhorn-dashboard)
 
-- [ ] 🟢 **O2 measurement — per-scope PSS bats for 5 Tier-1 wave namespaces**
+- [x] 🟢 **O2 measurement — per-scope PSS bats for 5 Tier-1 wave namespaces**
   (CHARTER **Objective O2**, due **2026-09-30**; O2 PSS coverage gap — five
   namespaces (`argo-rollouts`, `velero`, `harbor`, `trivy-system`,
   `node-exporter`) each have a `namespace.yaml` with all four PSA labels in
@@ -1858,7 +1858,7 @@ You review and merge plan PRs, same as implementation PRs.
   files remain untouched. `make ci` must pass. `docs/done/` entry required.
   (auto/securitycontext-tier1-bats)
 
-- [ ] 🟢 **O2 measurement — per-scope NP bats for 3 late-addition namespaces**
+- [x] 🟢 **O2 measurement — per-scope NP bats for 3 late-addition namespaces**
   (CHARTER **Objective O2**, due **2026-09-30**; O2 NP coverage gap — three
   namespaces (`harbor`, `kargo`, `node-exporter`) have NetworkPolicy overlays
   in `gitops/*/networkpolicy/` and are wired into the appset or a dedicated NP
@@ -1889,6 +1889,72 @@ You review and merge plan PRs, same as implementation PRs.
   These tests are additive — they do NOT remove the existing NP checks from the
   component bats files. `make ci` must pass. `docs/done/` entry required.
   (auto/networkpolicy-tier1-bats-wave2)
+
+- [ ] 🟢 **`docs/00-architecture.md` — Harbor registry update** (CHARTER
+  **Core Values** §"Docs & dashboards don't drift"; docs-only; **no
+  prerequisites — executor may pick up immediately**). The architecture doc
+  was last fully rewritten in `auto/architecture-doc-rewrite` (prior to
+  ADR-0024). ADR-0024 (Harbor over Artifactory, architect decision
+  2026-06-30) replaced ADR-0011, but the architecture doc still cites
+  Artifactory with an ADR-0011 reference and does not mention Harbor. Three
+  targeted edits (all three within `docs/00-architecture.md`):
+  (a) In the "Heavy / on-demand" table update the **Artifactory OSS** row to
+  read **Harbor** as the primary registry, citing ADR-0024; add a parenthetical
+  noting `gitops/platform/artifactory.yaml` remains pending the decommission
+  item (`auto/harbor-artifactory-decommission`) and the capstone re-wire
+  (`auto/harbor-capstone-rewire`).
+  (b) In the capstone pipeline section update "push to Artifactory" text to
+  reflect that the target registry is Harbor (`make harbor-up`;
+  `harbor.127.0.0.1.nip.io`) per ADR-0024, noting the cutover is in progress.
+  (c) Correct any remaining ADR-0011 mentions to ADR-0024. All edits must
+  reflect actual repo state — no fabricated claims (ADR-0004). `make ci`
+  must pass. `docs/done/` entry required.
+  (auto/architecture-doc-harbor-update)
+
+- [ ] 🟢 **O2 NP per-scope coverage loop bats** (CHARTER **Objective O2**,
+  due **2026-09-30**; O2 recurrence guard — prevents a future namespace from
+  gaining an NP overlay without a corresponding per-scope bats file; mirrors
+  the `zz-dns-clusterip-bridge` presence loop added in
+  `auto/gitops-clusterip-bridge`. **No prerequisites — executor may pick up
+  immediately.** Add a new `@test` to `tests/networkpolicy.bats` (NOT the
+  frozen monolith — `tests/networkpolicy.bats` is the shared NP file and
+  accepts new tests): title `"every NP overlay dir has a per-scope
+  networkpolicy-<ns>.bats file"`; the body iterates all
+  `gitops/*/networkpolicy/kustomization.yaml` and
+  `gitops/apps/*/networkpolicy/kustomization.yaml` paths; for each path
+  derives the namespace name from the parent directory name (e.g.
+  `gitops/harbor/networkpolicy/kustomization.yaml` → namespace `harbor`,
+  expected bats `tests/networkpolicy-harbor.bats`; for `apps/` paths the
+  namespace comes from the grandparent directory — e.g.
+  `gitops/apps/capstone/networkpolicy/` → `capstone`); asserts
+  `tests/networkpolicy-<ns>.bats` exists; fails with a clear message naming
+  the missing file. This bats loop is the O2 NP completeness gate: it fails
+  `make ci` if a future NP-fan-out PR skips the per-scope bats. Verify at
+  executor pickup that the assertion passes for every existing overlay before
+  committing (all per-scope files are present after #336 merges). `make ci`
+  must pass. `docs/done/` entry required. (auto/o2-np-coverage-loop)
+
+- [ ] 🟢 **O2 PSS per-scope coverage loop bats** (CHARTER **Objective O2**,
+  due **2026-09-30**; O2 PSS recurrence guard — prevents a future namespace
+  from gaining PSA enforce labels without coverage in either
+  `tests/securitycontext.bats` (the frozen monolith) or a
+  `tests/securitycontext-<scope>.bats` per-scope file. **No prerequisites —
+  executor may pick up immediately (pick up after `auto/o2-np-coverage-loop`
+  if both are available).** Add a new `@test` to `tests/drift-detectors.bats`
+  (NOT the frozen monolith): title `"every PSA-labelled namespace has
+  securitycontext test coverage"`; the body iterates all `namespace.yaml`
+  files under `gitops/` that contain `pod-security.kubernetes.io/enforce:`
+  using `grep -rl`; for each file derives the namespace name from the
+  directory path; asserts that EITHER `grep -q "<ns>" tests/securitycontext.bats`
+  finds a `@test` referencing that namespace OR a
+  `tests/securitycontext-<ns>.bats` file exists (check file existence with
+  `-f`); fails with a clear message naming the uncovered namespace. Handle
+  the `apps/` sub-path (`apps/capstone/namespace.yaml` → namespace `capstone`)
+  and the `data/rabbitmq/namespace.yaml` sub-path (namespace `data` — covered
+  by `securitycontext-data.bats`) correctly. Verify at executor pickup that
+  the assertion passes for every existing namespace.yaml before committing.
+  `make ci` must pass. `docs/done/` entry required.
+  (auto/o2-pss-coverage-loop)
 
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
