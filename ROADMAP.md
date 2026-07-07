@@ -1934,7 +1934,7 @@ You review and merge plan PRs, same as implementation PRs.
   committing (all per-scope files are present after #336 merges). `make ci`
   must pass. `docs/done/` entry required. (auto/o2-np-coverage-loop)
 
-- [ ] 🟢 **O2 PSS per-scope coverage loop bats** (CHARTER **Objective O2**,
+- [x] 🟢 **O2 PSS per-scope coverage loop bats** (CHARTER **Objective O2**,
   due **2026-09-30**; O2 PSS recurrence guard — prevents a future namespace
   from gaining PSA enforce labels without coverage in either
   `tests/securitycontext.bats` (the frozen monolith) or a
