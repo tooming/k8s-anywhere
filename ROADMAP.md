@@ -1911,7 +1911,7 @@ You review and merge plan PRs, same as implementation PRs.
   must pass. `docs/done/` entry required.
   (auto/architecture-doc-harbor-update)
 
-- [ ] 🟢 **O2 NP per-scope coverage loop bats** (CHARTER **Objective O2**,
+- [x] 🟢 **O2 NP per-scope coverage loop bats** (CHARTER **Objective O2**,
   due **2026-09-30**; O2 recurrence guard — prevents a future namespace from
   gaining an NP overlay without a corresponding per-scope bats file; mirrors
   the `zz-dns-clusterip-bridge` presence loop added in

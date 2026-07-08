@@ -133,3 +133,22 @@ setup() {
   done < <(find "$REPO/gitops" -name "kustomization.yaml" -path "*/networkpolicy/*" | sort)
   [ "$fail" -eq 0 ]
 }
+
+# --- O2 NP completeness gate: every overlay has a per-scope bats file ----------
+@test "every NP overlay dir has a per-scope networkpolicy-<ns>.bats file (O2 recurrence guard)" {
+  # Prevent a future namespace from gaining a default-deny NP overlay without a
+  # corresponding per-scope bats file. The namespace is read from the kustomization's
+  # 'namespace:' field (authoritative K8s name) and the expected file is
+  # tests/networkpolicy-<namespace>.bats. Closes ROADMAP auto/o2-np-coverage-loop.
+  local fail=0
+  local kfile ns
+  while IFS= read -r kfile; do
+    ns="$(grep "^namespace:" "$kfile" | awk '{print $2}')"
+    [ -n "$ns" ] || continue
+    if [ ! -f "$BATS_TEST_DIRNAME/networkpolicy-${ns}.bats" ]; then
+      printf 'MISSING tests/networkpolicy-%s.bats for overlay: %s\n' "$ns" "$kfile" >&2
+      fail=1
+    fi
+  done < <(find "$REPO/gitops" -name "kustomization.yaml" -path "*/networkpolicy/*" | sort)
+  [ "$fail" -eq 0 ]
+}
