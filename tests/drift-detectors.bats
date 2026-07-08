@@ -277,3 +277,35 @@ setup() {
   # grep exits 1 when no files match — that is the passing condition
   [ "$status" -eq 1 ]
 }
+
+# --- O2 PSS completeness gate -------------------------------------------------
+# Prevent a future namespace.yaml from acquiring PSA enforce labels without
+# securitycontext test coverage. Coverage is satisfied by EITHER an exact-match
+# tests/securitycontext-<ns>.bats per-scope file OR any tests/securitycontext*.bats
+# file (including the frozen monolith and combined-scope files like
+# securitycontext-moto-ack-labgateway.bats) that references the namespace name.
+# Namespace names are read from metadata.name in each namespace.yaml so paths like
+# gitops/data/rabbitmq/namespace.yaml → "data" and
+# gitops/longhorn/namespace.yaml → "longhorn-system" resolve correctly.
+# Closes ROADMAP auto/o2-pss-coverage-loop.
+@test "every PSA-labelled namespace has securitycontext test coverage (O2 recurrence guard)" {
+  local fail=0
+  local ns_file ns
+  while IFS= read -r ns_file; do
+    grep -q 'pod-security.kubernetes.io/enforce:' "$ns_file" || continue
+    ns="$(grep -m1 '^  name:' "$ns_file" | awk '{print $2}')"
+    [ -n "$ns" ] || continue
+    # Exact-match per-scope file wins immediately
+    if [ -f "$BATS_TEST_DIRNAME/securitycontext-${ns}.bats" ]; then
+      continue
+    fi
+    # Broader check: any securitycontext-*.bats (incl. monolith + combined-scope) covers ns
+    if grep -ql "$ns" "$BATS_TEST_DIRNAME"/securitycontext*.bats 2>/dev/null; then
+      continue
+    fi
+    printf 'MISSING securitycontext coverage for namespace "%s" (file: %s)\n' \
+      "$ns" "$ns_file" >&2
+    fail=1
+  done < <(find "$REPO/gitops" -name "namespace.yaml" | sort)
+  [ "$fail" -eq 0 ]
+}
