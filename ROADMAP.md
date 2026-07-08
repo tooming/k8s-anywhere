@@ -1605,6 +1605,30 @@ You review and merge plan PRs, same as implementation PRs.
   Update `docs/dependency-tree.md` with Kargo observability note. `docs/done/`
   entry required. `make ci` must pass. (auto/kargo-observability-dashboard)
 
+- [ ] 🟢 **Harbor day-0 credential seam — admin + CI registry secrets** (RFC #297
+  / ADR-0024 — architect decision 2026-06-30; **no prerequisites — executor may
+  pick up immediately**; **unblocks `auto/harbor-capstone-rewire`**). The Harbor
+  ArgoCD Application (`gitops/platform/harbor.yaml`) currently uses the
+  hard-coded default password `Harbor12345` with no `existingSecretAdminPassword`
+  reference, and `vault-bootstrap.sh` seeds no Harbor credential path (only
+  `secret/artifactory/registry` exists). This item adds the missing day-0 seam,
+  parallel to the velero-key + inkless-key pattern already in
+  `garage-bootstrap.sh`: (1) extend `scripts/vault-bootstrap.sh` to seed
+  `secret/harbor/admin` (`admin-user=admin`, `admin-password=<rand-hex-16>`) and
+  `secret/harbor/registry` (`username=admin`, `password=<rand-hex-16>`) — both
+  idempotent (`kv get ... || kv put ...`), exact parallel to the existing
+  `secret/artifactory/registry` block at line 79; (2) add
+  `gitops/secrets/harbor-admin-externalsecret.yaml` (namespace `harbor`, target
+  Secret `harbor-admin-creds`, keys `HARBOR_ADMIN_PASSWORD` + `HARBOR_ADMIN_USER`
+  from `secret/harbor/admin`); (3) patch `gitops/platform/harbor.yaml` to set
+  `existingSecretAdminPassword: harbor-admin-creds` and
+  `existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD`; (4) add
+  `tests/harbor-bootstrap.bats` (clusterless structural: `vault-bootstrap.sh`
+  seeds both paths, `harbor-admin-externalsecret.yaml` exists, `harbor.yaml`
+  references `existingSecretAdminPassword`); (5) note `secret/harbor/registry`
+  in the `docs/dependency-tree.md` Day-0 bootstrap section. `docs/done/` entry
+  required. `make ci` must pass. (auto/harbor-bootstrap-credentials)
+
 - [ ] 🟢 **Capstone pipeline re-wire — Artifactory → Harbor registry host**
   (CHARTER **Objective O4** + capstone RFC #62, RFC #297 / ADR-0024 — architect
   decision 2026-06-30; **CI / security-adjacent changes pre-approved by ADR-0024
@@ -1890,7 +1914,7 @@ You review and merge plan PRs, same as implementation PRs.
   component bats files. `make ci` must pass. `docs/done/` entry required.
   (auto/networkpolicy-tier1-bats-wave2)
 
-- [ ] 🟢 **`docs/00-architecture.md` — Harbor registry update** (CHARTER
+- [x] 🟢 **`docs/00-architecture.md` — Harbor registry update** (CHARTER
   **Core Values** §"Docs & dashboards don't drift"; docs-only; **no
   prerequisites — executor may pick up immediately**). The architecture doc
   was last fully rewritten in `auto/architecture-doc-rewrite` (prior to
@@ -1911,7 +1935,7 @@ You review and merge plan PRs, same as implementation PRs.
   must pass. `docs/done/` entry required.
   (auto/architecture-doc-harbor-update)
 
-- [ ] 🟢 **O2 NP per-scope coverage loop bats** (CHARTER **Objective O2**,
+- [x] 🟢 **O2 NP per-scope coverage loop bats** (CHARTER **Objective O2**,
   due **2026-09-30**; O2 recurrence guard — prevents a future namespace from
   gaining an NP overlay without a corresponding per-scope bats file; mirrors
   the `zz-dns-clusterip-bridge` presence loop added in
@@ -1934,7 +1958,7 @@ You review and merge plan PRs, same as implementation PRs.
   committing (all per-scope files are present after #336 merges). `make ci`
   must pass. `docs/done/` entry required. (auto/o2-np-coverage-loop)
 
-- [ ] 🟢 **O2 PSS per-scope coverage loop bats** (CHARTER **Objective O2**,
+- [x] 🟢 **O2 PSS per-scope coverage loop bats** (CHARTER **Objective O2**,
   due **2026-09-30**; O2 PSS recurrence guard — prevents a future namespace
   from gaining PSA enforce labels without coverage in either
   `tests/securitycontext.bats` (the frozen monolith) or a

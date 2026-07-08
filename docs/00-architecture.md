@@ -48,7 +48,7 @@ grouping appears in the README stack table.
 ┌────────────────────────────────────────────────────────────────────────────┐
 │  On-demand (manual make <name>-up / <name>-down)                          │
 │  TiDB Operator · TiDB cluster · TiDB demo app                             │
-│  Artifactory OSS (artifact + Docker registry)                             │
+│  Harbor (OCI artifact + Docker registry; ADR-0024)                        │
 │  Istio ambient mesh (istio-base · istio-cni · istiod · ztunnel) · Kiali  │
 │  Longhorn (distributed block storage)                                      │
 │  Aiven Inkless (diskless Kafka)                                            │
@@ -71,7 +71,7 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **GitLab** | Git source of truth. Hosts the `gitops/` manifests and runs the CI pipeline (build → cosign sign → push to Artifactory). |
+| **GitLab** | Git source of truth. Hosts the `gitops/` manifests and runs the CI pipeline (build → cosign sign → push to Harbor per ADR-0024; the CI re-wire from Artifactory is in progress via `auto/harbor-capstone-rewire`). |
 | **ArgoCD** | GitOps engine. Watches GitLab and makes the cluster match it (app-of-apps pattern). All workloads below arrive via ArgoCD, never by `helm install` or `kubectl apply`. |
 
 ### Ingress
@@ -153,7 +153,7 @@ Rows are grouped by layer, matching the README stack table.
 | Tool | Role in the platform |
 |------|----------------------|
 | **TiDB Operator / TiDB cluster** | Distributed, MySQL-compatible database (PD + TiKV + TiDB tiers). On-demand because the operator + cluster consume ~3 GB. `make tidb-operator-up` / `make tidb-up`. |
-| **Artifactory OSS** | Artifact and Docker registry. CI pushes signed images here; ArgoCD pulls from here for the capstone app. `make artifactory-up`. (ADR-0011) |
+| **Harbor** | OCI artifact and Docker registry (CNCF graduated; Go runtime, no JVM). Registry storage backed by Garage S3. `make harbor-up` / `make harbor-down`. (ADR-0024; supersedes ADR-0011) `gitops/platform/artifactory.yaml` remains until the capstone CI re-wire (`auto/harbor-capstone-rewire`) and Artifactory decommission (`auto/harbor-artifactory-decommission`) complete. |
 | **Istio ambient mesh** | Zero-sidecar service mesh (istio-base · istio-cni · istiod · ztunnel). `make istio-up`. (ADR-0012) |
 | **Kiali** | Service-mesh topology and traffic UI. `make kiali-up`. |
 | **Longhorn** | Distributed block storage with UI. `make longhorn-up`. (ADR-0013) |
@@ -175,7 +175,7 @@ The capstone ties every layer together:
 
 ```
 GitLab CI                                     
-  └─ build hello:SHA ─► cosign sign ─► push to Artifactory
+  └─ build hello:SHA ─► cosign sign ─► push to Harbor (ADR-0024; CI re-wire in progress)
                                                 │
                                          ArgoCD syncs
                                                 │
@@ -191,7 +191,7 @@ GitLab CI
                             Vault ExternalSecret (DB/registry creds)
 ```
 
-On every GitLab CI push a signed `hello:SHA` image lands in Artifactory. ArgoCD updates the capstone `Rollout`; Kyverno's `verifyImages` policy audits signature presence (currently `Audit` mode — enforcement flip is a separate ROADMAP item). Once admitted, Argo Rollouts canaries traffic using Envoy's weighted-backend split, gating on a Mimir success-rate AnalysisTemplate. All activity is observable in Grafana.
+On every GitLab CI push a signed `hello:SHA` image lands in Harbor (`harbor.127.0.0.1.nip.io`, `make harbor-up`; per ADR-0024 — the CI re-wire from Artifactory is in progress via `auto/harbor-capstone-rewire`). ArgoCD updates the capstone `Rollout`; Kyverno's `verifyImages` policy audits signature presence (currently `Audit` mode — enforcement flip is a separate ROADMAP item). Once admitted, Argo Rollouts canaries traffic using Envoy's weighted-backend split, gating on a Mimir success-rate AnalysisTemplate. All activity is observable in Grafana.
 
 ## Suggested learning path
 
@@ -208,4 +208,4 @@ On every GitLab CI push a signed `hello:SHA` image lands in Artifactory. ArgoCD 
 
 ## Why on-demand for heavy components
 
-A 12 GB Colima VM holds the always-on stack at ~7 GB. Heavy components (TiDB, Artifactory, Istio, Longhorn, Inkless, Kargo) each add 1–4 GB. Running two full stacks at once would exhaust the VM. So heavy components are on-demand — `make <name>-up` / `make <name>-down` — and never registered in `gitops/bootstrap/root-app.yaml`'s auto-synced set. (ADR-0003, ADR-0005)
+A 12 GB Colima VM holds the always-on stack at ~7 GB. Heavy components (TiDB, Harbor, Istio, Longhorn, Inkless, Kargo) each add 1–4 GB. Running two full stacks at once would exhaust the VM. So heavy components are on-demand — `make <name>-up` / `make <name>-down` — and never registered in `gitops/bootstrap/root-app.yaml`'s auto-synced set. (ADR-0003, ADR-0005)
