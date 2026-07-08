@@ -23,4 +23,4 @@ paths, `harbor-admin-externalsecret.yaml` exists, `harbor.yaml` references
 
 ## PR
 
-#348
+#347
