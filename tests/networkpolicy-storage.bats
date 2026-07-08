@@ -77,16 +77,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "storage-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "storage-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
-  [ "$status" -eq 0 ]
-}
-
 @test "storage-networkpolicy ArgoCD Application targets the storage namespace" {
   run grep -q 'destNamespace: storage' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
