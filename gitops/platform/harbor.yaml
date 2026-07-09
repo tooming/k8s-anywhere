@@ -40,6 +40,11 @@ spec:
           tls:
             enabled: false
         externalURL: http://harbor.127.0.0.1.nip.io:8000
+        # Admin credential from Vault (never inline — ADR-0024 day-0 seam).
+        # Scripts/vault-bootstrap.sh seeds secret/harbor/admin; ESO renders
+        # harbor-admin-creds (HARBOR_ADMIN_PASSWORD + HARBOR_ADMIN_USER).
+        existingSecretAdminPassword: harbor-admin-creds
+        existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
         trivy:
           enabled: false
         notary:

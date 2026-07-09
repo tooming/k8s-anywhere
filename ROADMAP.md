@@ -1605,7 +1605,7 @@ You review and merge plan PRs, same as implementation PRs.
   Update `docs/dependency-tree.md` with Kargo observability note. `docs/done/`
   entry required. `make ci` must pass. (auto/kargo-observability-dashboard)
 
-- [ ] 🟢 **Harbor day-0 credential seam — admin + CI registry secrets** (RFC #297
+- [x] 🟢 **Harbor day-0 credential seam — admin + CI registry secrets** (RFC #297
   / ADR-0024 — architect decision 2026-06-30; **no prerequisites — executor may
   pick up immediately**; **unblocks `auto/harbor-capstone-rewire`**). The Harbor
   ArgoCD Application (`gitops/platform/harbor.yaml`) currently uses the
