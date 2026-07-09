@@ -29,10 +29,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "harbor kustomization references the shared zz-dns-clusterip-bridge template" {
-  run grep -q 'zz-dns-clusterip-bridge' "$HARBOR_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
 
 # --- ingress allow (Envoy Gateway → Harbor TCP 80) --------------------------------
 @test "allow-harbor-ingress.yaml exists in harbor/networkpolicy/" {

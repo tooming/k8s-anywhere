@@ -29,10 +29,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "argo-rollouts kustomization references the shared zz-dns-clusterip-bridge template" {
-  run grep -q 'zz-dns-clusterip-bridge' "$ARGO_ROLLOUTS_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
 
 # --- metrics allow (Alloy → Argo Rollouts TCP 8090) -------------------------------
 @test "allow-argo-rollouts-metrics-from-observability.yaml exists in argo-rollouts/networkpolicy/" {

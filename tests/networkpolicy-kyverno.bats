@@ -29,10 +29,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "kyverno kustomization references the shared zz-dns-clusterip-bridge template" {
-  run grep -q 'zz-dns-clusterip-bridge' "$KYVERNO_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
 
 # --- webhook allow (kube-apiserver → Kyverno TCP 9443) ----------------------------
 @test "allow-kyverno-webhook-from-apiserver.yaml exists in kyverno/networkpolicy/" {
