@@ -43,16 +43,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "ack-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "ack-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
-  [ "$status" -eq 0 ]
-}
-
 @test "ack-networkpolicy ArgoCD Application targets the ack-system namespace" {
   run grep -q 'destNamespace: ack-system' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]

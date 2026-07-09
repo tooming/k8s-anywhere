@@ -74,16 +74,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "vault-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "vault-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
-  [ "$status" -eq 0 ]
-}
-
 @test "vault-networkpolicy ArgoCD Application targets the vault namespace" {
   run grep -q 'destNamespace: vault' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]

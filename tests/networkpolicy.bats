@@ -152,3 +152,14 @@ setup() {
   done < <(find "$REPO/gitops" -name "kustomization.yaml" -path "*/networkpolicy/*" | sort)
   [ "$fail" -eq 0 ]
 }
+
+# --- NetworkPolicy ApplicationSet (global) ------------------------------------
+@test "networkpolicy-appset.yaml has automated sync enabled" {
+  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "networkpolicy-appset.yaml uses LoadRestrictionsNone build option" {
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
+  [ "$status" -eq 0 ]
+}
