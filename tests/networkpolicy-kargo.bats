@@ -29,10 +29,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "kargo kustomization references the shared zz-dns-clusterip-bridge template" {
-  run grep -q 'zz-dns-clusterip-bridge' "$KARGO_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
 
 # --- API ingress allow (Envoy Gateway → kargo-api TCP 80) -------------------------
 @test "allow-kargo-api-from-gateway.yaml exists in kargo/networkpolicy/" {

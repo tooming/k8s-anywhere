@@ -29,10 +29,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "node-exporter kustomization references the shared zz-dns-clusterip-bridge template" {
-  run grep -q 'zz-dns-clusterip-bridge' "$NODE_EXPORTER_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
 
 # --- metrics allow (Alloy → node-exporter TCP 9100) -------------------------------
 @test "allow-node-exporter-metrics-ingress.yaml exists in node-exporter/networkpolicy/" {

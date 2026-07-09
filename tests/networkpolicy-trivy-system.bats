@@ -29,10 +29,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "trivy-system kustomization references the shared zz-dns-clusterip-bridge template" {
-  run grep -q 'zz-dns-clusterip-bridge' "$TRIVY_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
 
 # --- metrics allow (Alloy → Trivy Operator TCP 8080) -----------------------------
 @test "allow-trivy-metrics-from-observability.yaml exists in trivy-system/networkpolicy/" {

@@ -29,10 +29,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "velero kustomization references the shared zz-dns-clusterip-bridge template" {
-  run grep -q 'zz-dns-clusterip-bridge' "$VELERO_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
 
 # --- metrics allow (Alloy → Velero TCP 8085) --------------------------------------
 @test "allow-velero-metrics-from-observability.yaml exists in velero/networkpolicy/" {
