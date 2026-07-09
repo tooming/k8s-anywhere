@@ -32,6 +32,13 @@ jobs:
             https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
           tar -xzf /tmp/kc.tar.gz -C /tmp kubeconform
           sudo install /tmp/kubeconform /usr/local/bin/kubeconform
+      - name: Cache kubeconform schemas
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/kubeconform-schemas
+          key: kubeconform-schemas-v0.6.7-k8s1.30.0-${{ hashFiles('gitops/**/*.yaml') }}
+          restore-keys: |
+            kubeconform-schemas-v0.6.7-k8s1.30.0-
       - run: bash scripts/validate-manifests.sh
 
   terraform:
