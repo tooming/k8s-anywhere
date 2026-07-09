@@ -1980,7 +1980,7 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required.
   (auto/o2-pss-coverage-loop)
 
-- [ ] 🟢 **PSA `restricted` labels — `capstone-pipeline` namespace** (CHARTER
+- [x] 🟢 **PSA `restricted` labels — `capstone-pipeline` namespace** (CHARTER
   **Objective O2**, due **2026-09-30**; O2 hardening gap — the `capstone-pipeline`
   namespace (created by Kargo's Project CRD per ADR-0023) has no `namespace.yaml`
   in `gitops/kargo-project/` carrying PSA `restricted` labels; the O2 PSS coverage
