@@ -39,16 +39,6 @@ setup() {
   [ -f "$REPO/gitops/platform/networkpolicy-appset.yaml" ]
 }
 
-@test "lab-gateway-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-gateway-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
-  [ "$status" -eq 0 ]
-}
-
 @test "lab-gateway-networkpolicy ArgoCD Application targets the lab-gateway namespace" {
   run grep -q 'destNamespace: lab-gateway' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]

@@ -1980,6 +1980,52 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required.
   (auto/o2-pss-coverage-loop)
 
+- [ ] 🟢 **PSA `restricted` labels — `capstone-pipeline` namespace** (CHARTER
+  **Objective O2**, due **2026-09-30**; O2 hardening gap — the `capstone-pipeline`
+  namespace (created by Kargo's Project CRD per ADR-0023) has no `namespace.yaml`
+  in `gitops/kargo-project/` carrying PSA `restricted` labels; the O2 PSS coverage
+  loop added in `auto/o2-pss-coverage-loop` only flags namespaces whose
+  `namespace.yaml` already exists, so this gap is silent but real; no workloads
+  currently run in `capstone-pipeline` but the floor is defense-in-depth.
+  **No prerequisites — executor may pick up immediately.**) Add
+  `gitops/kargo-project/namespace.yaml` with four PSA `restricted` labels
+  (`pod-security.kubernetes.io/enforce: restricted`,
+  `pod-security.kubernetes.io/enforce-version: latest`,
+  `pod-security.kubernetes.io/warn: restricted`,
+  `pod-security.kubernetes.io/audit: restricted`; `metadata.name: capstone-pipeline`)
+  — mirrors the `gitops/apps/capstone/namespace.yaml` pattern. The kargo-project
+  ArgoCD Application sources the `gitops/kargo-project/` path in directory mode
+  (see `gitops/platform/kargo-project.yaml`); ArgoCD applies the new
+  `namespace.yaml` via SSA against the namespace the Kargo Project CRD already
+  created. Add a `capstone-pipeline → restricted` row to ADR-0017's
+  per-namespace profile table noting no workloads run there (defense-in-depth
+  floor; Kargo itself runs in the `kargo` namespace). Extend `tests/kargo.bats`
+  with two assertions: `gitops/kargo-project/namespace.yaml` exists; it carries
+  all four PSA `restricted` labels. `make ci` must pass. `docs/done/` entry
+  required. (auto/capstone-pipeline-psa)
+
+- [ ] 🟢 **Remove legacy capstone `Deployment` — Rollout is now the sole workload
+  owner** (CHARTER **Core Values** §"Production-shaped designs"; promised follow-up
+  from `auto/capstone-rollout` (2026-06-13) per `docs/done/2026-06-13-capstone-rollout.md`:
+  "A follow-up planner item will delete the Deployment once the Rollout is verified
+  end-to-end"; **maintainer-confirmation prerequisite: pick up ONLY after the
+  maintainer confirms the Argo Rollouts canary pipeline has been exercised end-to-end
+  on the live cluster — at least one successful Kargo promotion seen — the done-promise
+  gate; skip to the next item if not verifiable this run**). Three deliverables:
+  (1) delete `gitops/apps/capstone/deployment.yaml` and remove `deployment.yaml`
+  from the `resources:` list in `gitops/apps/capstone/kustomization.yaml` (the
+  Rollout in `rollout.yaml` is the sole workload owner after this change; image-ref
+  and imagePullSecret are already on `rollout.yaml`); (2) update
+  `tests/capstone.bats` — replace the `"capstone Deployment exists"` assertion
+  with a `"capstone Deployment yaml is absent"` assertion (asserting
+  `gitops/apps/capstone/deployment.yaml` does NOT exist) and add a
+  `"capstone kustomization does not reference deployment.yaml"` assertion checking
+  `kustomization.yaml` does not list `deployment.yaml` — both act as
+  recurrence guards per CLAUDE.md's bug-fix-prevents-recurrence rule; (3) update
+  `docs/dependency-tree.md` capstone sub-graph to remove the Deployment node and
+  note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
+  required. (auto/capstone-deployment-removal)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in

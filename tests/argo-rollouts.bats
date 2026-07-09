@@ -20,8 +20,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "argo-rollouts Application pins a specific 2.40.x chart version" {
-  run grep -qE 'targetRevision: 2\.40\.' "$REPO/gitops/platform/argo-rollouts.yaml"
+@test "argo-rollouts Application pins a specific 2.41.x chart version" {
+  run grep -qE 'targetRevision: 2\.41\.' "$REPO/gitops/platform/argo-rollouts.yaml"
   [ "$status" -eq 0 ]
 }
 
