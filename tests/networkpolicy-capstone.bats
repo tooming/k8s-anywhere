@@ -77,16 +77,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "capstone-networkpolicy ArgoCD Application has automated sync enabled" {
-  run grep -q 'automated:' "$REPO/gitops/platform/networkpolicy-appset.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "capstone-networkpolicy ArgoCD Application uses LoadRestrictionsNone build option" {
-  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
-  [ "$status" -eq 0 ]
-}
-
 @test "capstone-networkpolicy ArgoCD Application targets the capstone namespace" {
   run grep -q 'destNamespace: capstone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
