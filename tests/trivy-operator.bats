@@ -18,8 +18,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "trivy-operator Application pins chart version 0.30.0" {
-  run grep -q 'targetRevision: 0.30.0' "$REPO/gitops/platform/trivy-operator.yaml"
+@test "trivy-operator Application pins chart version 0.34.0" {
+  run grep -q 'targetRevision: 0.34.0' "$REPO/gitops/platform/trivy-operator.yaml"
   [ "$status" -eq 0 ]
 }
 

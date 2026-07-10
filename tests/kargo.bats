@@ -119,6 +119,21 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "capstone-pipeline namespace.yaml exists (ADR-0017 defense-in-depth)" {
+  [ -f "$REPO/gitops/kargo-project/namespace.yaml" ]
+}
+
+@test "capstone-pipeline namespace carries all four PSA restricted labels" {
+  run grep -q 'pod-security.kubernetes.io/enforce: restricted' "$REPO/gitops/kargo-project/namespace.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$REPO/gitops/kargo-project/namespace.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'pod-security.kubernetes.io/warn: restricted' "$REPO/gitops/kargo-project/namespace.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'pod-security.kubernetes.io/audit: restricted' "$REPO/gitops/kargo-project/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
 # --- HTTPRoute ---------------------------------------------------------------
 @test "kargo HTTPRoute exists" {
   [ -f "$REPO/gitops/kargo/route.yaml" ]
