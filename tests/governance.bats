@@ -122,6 +122,24 @@ trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway k
   done
 }
 
+@test "envoy-gateway-system governance leaf dir has kustomization.yaml" {
+  [ -f "$GOV/envoy-gateway-system/kustomization.yaml" ]
+}
+
+@test "envoy-gateway-system kustomization references the shared base limitrange" {
+  run grep -q 'base/limitrange-standard.yaml' "$GOV/envoy-gateway-system/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "node-exporter governance leaf dir has kustomization.yaml" {
+  [ -f "$GOV/node-exporter/kustomization.yaml" ]
+}
+
+@test "node-exporter kustomization references the shared base limitrange" {
+  run grep -q 'base/limitrange-standard.yaml' "$GOV/node-exporter/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "governance-appset does NOT bless the ADR-0024-rejected registry namespace" {
   # ADR-0024 supersedes ADR-0011 — no governance overlay for the legacy registry.
   run grep -qiw 'artifactory' "$APPSET"

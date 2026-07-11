@@ -71,6 +71,12 @@ spec:
           - appName: harbor-governance
             gitPath: gitops/governance/harbor
             destNamespace: harbor
+          - appName: envoy-gateway-system-governance
+            gitPath: gitops/governance/envoy-gateway-system
+            destNamespace: envoy-gateway-system
+          - appName: node-exporter-governance
+            gitPath: gitops/governance/node-exporter
+            destNamespace: node-exporter
           # heavy tier (RFC #294 mapping table)
           - appName: observability-governance
             gitPath: gitops/governance/observability
