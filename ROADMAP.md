@@ -2026,6 +2026,77 @@ You review and merge plan PRs, same as implementation PRs.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
+- [ ] 🟢 **O5 bats gap — `lab-argocd.json` + `lab-gitsync.json` in
+  `tests/dashboard-coverage.bats`** (CHARTER **Core Values** §"Docs &
+  dashboards don't drift" + **Objective O5**, due **2026-09-30**; O5 drift
+  gap — both dashboards exist in `grafana/dashboards/` with real Mimir
+  datasource panels (`"uid": "mimir"`) but are absent from the O5 coverage
+  sweep in `tests/dashboard-coverage.bats`. `lab-argocd.json` (32 panels)
+  covers ArgoCD operational metrics already scraped by Alloy (four scrape
+  targets in `observability-alloy.yaml`: application-controller-metrics:8082,
+  server-metrics:8083, repo-server-metrics:8084,
+  applicationset-controller-metrics:8080). `lab-gitsync.json` (4 panels,
+  "Lab — Git Sync") monitors Grafana native Git Sync health and proves
+  ADR-0006 works in the lab. **No prerequisites — executor may pick up
+  immediately.** Add two section blocks to `tests/dashboard-coverage.bats`
+  following the existing 2-assertion-per-section pattern (see `# argo-rollouts`
+  section for the exact style): block headed `# argocd` with
+  `@test "lab-argocd.json exists (argocd coverage)"` asserting
+  `[ -f "$DASHBOARDS/lab-argocd.json" ]` and
+  `@test "lab-argocd.json has real Mimir datasource panel (ADR-0004)"`
+  asserting `run grep -q '"uid": "mimir"' "$DASHBOARDS/lab-argocd.json"`;
+  block headed `# gitsync` with the same two assertions for `lab-gitsync.json`.
+  Verify both JSON files exist and contain `"uid": "mimir"` before committing.
+  `make ci` must pass. `docs/done/` entry required.
+  (auto/o5-argocd-gitsync-coverage-bats)
+
+- [ ] 🟢 **Governance gap — add `envoy-gateway-system` and `node-exporter`
+  to the platform governance ApplicationSet** (CHARTER **Core Values** §"Resource
+  limits everywhere"; RFC #294 execution gap — both namespaces are always-on,
+  carry PSA labels, and have full NP overlays, but neither appears in
+  `gitops/platform/governance-appset.yaml` and no explicit exclusion for them
+  exists in RFC #294's rationale; no LimitRange is applied to either namespace
+  today. **No prerequisites — executor may pick up immediately.**) Three
+  deliverables: (1) add two entries in the `# standard tier` block of
+  `gitops/platform/governance-appset.yaml` matching the existing format
+  (`appName: envoy-gateway-system-governance`, `gitPath:
+  gitops/governance/envoy-gateway-system`, `destNamespace:
+  envoy-gateway-system`) and the same for `node-exporter`; (2) create
+  `gitops/governance/envoy-gateway-system/kustomization.yaml` and
+  `gitops/governance/node-exporter/kustomization.yaml`, each containing
+  `namespace: <ns>` + `resources: - ../base/limitrange-standard.yaml` (same
+  pattern as `gitops/governance/argocd/kustomization.yaml`); (3) extend
+  `tests/governance.bats` with two assertions per new namespace:
+  `envoy-gateway-system governance leaf dir has kustomization.yaml` (asserting
+  `[ -f "$GOV/envoy-gateway-system/kustomization.yaml" ]`) and
+  `envoy-gateway-system kustomization references the shared base limitrange`
+  (asserting `run grep -q 'base/limitrange-standard.yaml'`), and the same two
+  for `node-exporter`. `make ci` must pass. `docs/done/` entry required.
+  (auto/governance-envoy-node-exporter)
+
+- [ ] 🟢 **NetworkPolicy overlay — `capstone-pipeline` namespace** (**blocked
+  on PR #354 `auto/capstone-pipeline-psa` merging first** — the
+  `capstone-pipeline` `namespace.yaml` must exist before this NP overlay is
+  applied; skip to the next item until #354 merges; CHARTER **Objective O2**,
+  due **2026-09-30**; ADR-0016 defense-in-depth gap — the `capstone-pipeline`
+  namespace created by Kargo's Project CRD (ADR-0023) currently has no
+  default-deny NetworkPolicy overlay; Kargo promotion-step pods run in this
+  namespace during pipeline executions). Add
+  `gitops/kargo-project/networkpolicy/kustomization.yaml` referencing the
+  shared baseline templates (`default-deny.yaml` + `allow-dns-and-apiserver.yaml`
+  + `zz-dns-clusterip-bridge.yaml`) plus the allow rules needed by promotion
+  jobs (verify at executor pickup against actual Kargo promotion-pod egress
+  requirements — at minimum: DNS, apiserver, and egress to the `kargo`
+  namespace for the Kargo controller callback). Add a new Application
+  `gitops/platform/kargo-project-networkpolicy.yaml` (non-auto-synced, wave
+  4, `LoadRestrictionsNone`; pairs with `kargo-project.yaml`). Add
+  `tests/networkpolicy-capstone-pipeline.bats` covering the three shared
+  baseline template references (mirrors the pattern of any existing per-scope
+  bats file). The O2 NP coverage loop in `tests/networkpolicy.bats` will
+  guard this namespace automatically once the overlay exists. `make ci` must
+  pass. `docs/done/` entry required.
+  (auto/capstone-pipeline-networkpolicy)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
@@ -2080,6 +2151,19 @@ You review and merge plan PRs, same as implementation PRs.
   the Convert path (bump chart + `disable_mlock = true` + flip labels
   baseline → restricted + ADR-0017 row update). Until then, the
   executor skips this item.
+
+- [ ] 🟡 **Cilium Grafana dashboard** (CHARTER **Objective O5**, due
+  **2026-09-30**; O5 coverage gap — `cilium` is the always-on CNI Application
+  (ADR-0014), but `grafana/dashboards/lab-cilium.json` does not exist and
+  Cilium is absent from `tests/dashboard-coverage.bats`; Cilium exposes
+  Prometheus metrics at port 9962 (`cilium-agent`) by default, but enabling
+  the full Hubble observability pipeline adds ~250–400 MB RAM overhead
+  against the 12 GB lab budget (rule #4). **Architect RFC required** to
+  decide: (a) enable Hubble with a memory-capped configuration and add an
+  Alloy scrape job for `cilium-agent:9962` + a `lab-cilium.json` dashboard,
+  or (b) explicitly document that Cilium metrics are out-of-scope for O5
+  coverage and mark this item `wontfix`. Until an RFC decides, executor
+  skips this item.
 
 - ~~🟡 **O4 completion — cosign signing in GitLab CI + verifyImages Enforce flip**~~
   (RFC #214) **Groomed ↗** into three 🟢 items in *Now / next* above
