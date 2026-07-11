@@ -73,6 +73,23 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- observability-tests-check -----------------------------------------------
+@test "observability-tests-check: passes when the monolith matches its snapshot" {
+  run env OBSV_TESTS_ROOT="$FIX/observability-tests-check/in-sync" bash "$REPO/scripts/observability-tests-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "observability-tests-check: fails when a new @test is appended to the frozen monolith" {
+  run env OBSV_TESTS_ROOT="$FIX/observability-tests-check/drift" bash "$REPO/scripts/observability-tests-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FROZEN"* ]]
+}
+
+@test "observability-tests-check: passes on the real repo tests/observability.bats" {
+  run bash "$REPO/scripts/observability-tests-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 # --- networkpolicy-tests-check -----------------------------------------------
 @test "networkpolicy-tests-check: passes when the monolith is baseline-only" {
   run env NETPOL_TESTS_ROOT="$FIX/networkpolicy-tests-check/in-sync" bash "$REPO/scripts/networkpolicy-tests-check.sh"

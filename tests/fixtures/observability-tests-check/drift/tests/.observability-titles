@@ -1,0 +1,2 @@
+@test "alloy scrape block exists"
+@test "kube-state-metrics Application exists"

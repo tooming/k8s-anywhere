@@ -51,6 +51,10 @@ securitycontext-tests-check: ## Check tests/securitycontext.bats stays frozen (n
 networkpolicy-tests-check: ## Check tests/networkpolicy.bats stays baseline-only (per-namespace tests go in networkpolicy-<scope>.bats)
 	@bash scripts/networkpolicy-tests-check.sh
 
+.PHONY: observability-tests-check
+observability-tests-check: ## Check tests/observability.bats stays frozen (new dashboard tests go in observability-<scope>.bats)
+	@bash scripts/observability-tests-check.sh
+
 .PHONY: yq-raw-check
 yq-raw-check: ## Check bats tests read yq scalars via yqs() (no bare yq calls — variant-quoting guard)
 	@bash scripts/yq-raw-check.sh
@@ -63,6 +67,11 @@ git-fixture-isolation-check: ## Check git-fixture bats tests unset GIT_* (so mak
 securitycontext-tests-mark: ## Refresh tests/.securitycontext-titles — run ONLY after an intentional rename/edit of a monolith test
 	@grep -oE '^@test "[^"]*"' tests/securitycontext.bats | sort > tests/.securitycontext-titles
 	@echo "  ok  tests/.securitycontext-titles refreshed ($$(wc -l < tests/.securitycontext-titles | tr -d ' ') titles)"
+
+.PHONY: observability-tests-mark
+observability-tests-mark: ## Refresh tests/.observability-titles — run ONLY after an intentional rename/edit of a monolith test
+	@grep -oE '^@test "[^"]*"' tests/observability.bats | sort > tests/.observability-titles
+	@echo "  ok  tests/.observability-titles refreshed ($$(wc -l < tests/.observability-titles | tr -d ' ') titles)"
 
 .PHONY: routines-check
 routines-check: ## Check routines/*.prompt.md match the last apply (catches edits not synced to claude.ai triggers)
@@ -128,6 +137,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/roadmap-check.sh
 	@bash scripts/securitycontext-tests-check.sh
 	@bash scripts/networkpolicy-tests-check.sh
+	@bash scripts/observability-tests-check.sh
 	@bash scripts/yq-raw-check.sh
 	@bash scripts/git-fixture-isolation-check.sh
 	@bash scripts/routines-check.sh
