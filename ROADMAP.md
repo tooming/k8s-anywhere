@@ -2026,7 +2026,7 @@ You review and merge plan PRs, same as implementation PRs.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
-- [ ] 🟢 **O5 bats gap — `lab-argocd.json` + `lab-gitsync.json` in
+- [x] 🟢 **O5 bats gap — `lab-argocd.json` + `lab-gitsync.json` in
   `tests/dashboard-coverage.bats`** (CHARTER **Core Values** §"Docs &
   dashboards don't drift" + **Objective O5**, due **2026-09-30**; O5 drift
   gap — both dashboards exist in `grafana/dashboards/` with real Mimir

@@ -319,3 +319,29 @@ setup() {
   run grep -q '"uid": "mimir"' "$DASHBOARDS/lab-velero.json"
   [ "$status" -eq 0 ]
 }
+
+# ---------------------------------------------------------------------------
+# argocd
+# ---------------------------------------------------------------------------
+
+@test "lab-argocd.json exists (argocd coverage)" {
+  [ -f "$DASHBOARDS/lab-argocd.json" ]
+}
+
+@test "lab-argocd.json has real Mimir datasource panel (ADR-0004)" {
+  run grep -q '"uid": "mimir"' "$DASHBOARDS/lab-argocd.json"
+  [ "$status" -eq 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# gitsync
+# ---------------------------------------------------------------------------
+
+@test "lab-gitsync.json exists (gitsync coverage)" {
+  [ -f "$DASHBOARDS/lab-gitsync.json" ]
+}
+
+@test "lab-gitsync.json has real Mimir datasource panel (ADR-0004)" {
+  run grep -q '"uid": "mimir"' "$DASHBOARDS/lab-gitsync.json"
+  [ "$status" -eq 0 ]
+}
