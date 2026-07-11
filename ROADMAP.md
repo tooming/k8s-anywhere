@@ -2050,7 +2050,7 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required.
   (auto/o5-argocd-gitsync-coverage-bats)
 
-- [ ] 🟢 **Governance gap — add `envoy-gateway-system` and `node-exporter`
+- [x] 🟢 **Governance gap — add `envoy-gateway-system` and `node-exporter`
   to the platform governance ApplicationSet** (CHARTER **Core Values** §"Resource
   limits everywhere"; RFC #294 execution gap — both namespaces are always-on,
   carry PSA labels, and have full NP overlays, but neither appears in
