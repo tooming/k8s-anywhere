@@ -66,6 +66,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/observability-tests-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking observability.bats freeze"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/yq-raw-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking bats yq usage"
