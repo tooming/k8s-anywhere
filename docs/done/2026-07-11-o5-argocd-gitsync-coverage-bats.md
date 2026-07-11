@@ -22,4 +22,4 @@ Verify both JSON files exist and contain `"uid": "mimir"` before committing.
 
 ## PR
 
-#TBD — see the PR opened for branch `auto/o5-argocd-gitsync-coverage-bats`.
+#361 — https://github.com/tooming/k8s-lab/pull/361
