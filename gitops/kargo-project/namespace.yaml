@@ -1,0 +1,14 @@
+# Explicit capstone-pipeline namespace manifest with Pod Security Admission labels (ADR-0017).
+# The namespace is created and managed by the Kargo Project CRD (project.yaml).
+# Making it explicit here lets ArgoCD apply PSA labels via Server-Side Apply so the
+# in-cluster admission controller enforces PSS restricted — defense-in-depth even though
+# no workloads currently run in capstone-pipeline (Kargo itself runs in the kargo namespace).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: capstone-pipeline
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
