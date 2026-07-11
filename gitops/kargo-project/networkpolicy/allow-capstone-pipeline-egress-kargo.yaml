@@ -1,0 +1,18 @@
+# Egress: promotion-step pods → Kargo controller/api in the kargo namespace.
+# Kargo runs promotion jobs in capstone-pipeline; they report status back to the
+# Kargo controller and API over the cluster network. No port restriction — the
+# Kargo controller listens on ephemeral controller-runtime ports and the exact
+# port set may vary by chart version. Mirrors the allow-kargo-egress-argocd pattern.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-capstone-pipeline-egress-kargo
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kargo
