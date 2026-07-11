@@ -25,4 +25,4 @@ pass. `docs/done/` entry required.
 
 ## PR
 
-#TODO — filled in after PR is opened.
+https://github.com/tooming/k8s-lab/pull/363
