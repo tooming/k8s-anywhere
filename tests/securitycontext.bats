@@ -14,6 +14,8 @@ setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   DEPLOY="$REPO/gitops/apps/capstone/deployment.yaml"
   NS="$REPO/gitops/apps/capstone/namespace.yaml"
+  ESO="$REPO/gitops/platform/external-secrets.yaml"
+  load lib/yq
 }
 
 # --- namespace PSA labels ----------------------------------------------------
@@ -195,16 +197,24 @@ setup() {
 }
 
 @test "external-secrets chart valuesObject sets runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$REPO/gitops/platform/external-secrets.yaml"
-  [ "$status" -eq 0 ]
+  # The chart has no global.podSecurityContext key — main/webhook/certController
+  # each need their OWN pod-level podSecurityContext.runAsNonRoot, or
+  # require-pod-security-restricted (ADR-0017) rejects the pod at admission
+  # (regression: #340, a rollout restart during vault-bootstrap got blocked
+  # because the values were nested under the wrong, silently-ignored key).
+  for path in '.podSecurityContext.runAsNonRoot' '.webhook.podSecurityContext.runAsNonRoot' '.certController.podSecurityContext.runAsNonRoot'; do
+    [ "$(yqs ".spec.source.helm.valuesObject${path}" "$ESO")" = "true" ]
+  done
 }
 
 @test "external-secrets chart valuesObject sets readOnlyRootFilesystem: true" {
-  run grep -q 'readOnlyRootFilesystem: true' "$REPO/gitops/platform/external-secrets.yaml"
-  [ "$status" -eq 0 ]
+  for path in '.securityContext.readOnlyRootFilesystem' '.webhook.securityContext.readOnlyRootFilesystem' '.certController.securityContext.readOnlyRootFilesystem'; do
+    [ "$(yqs ".spec.source.helm.valuesObject${path}" "$ESO")" = "true" ]
+  done
 }
 
 @test "external-secrets chart valuesObject drops ALL capabilities" {
-  run grep -q '"ALL"' "$REPO/gitops/platform/external-secrets.yaml"
-  [ "$status" -eq 0 ]
+  for path in '.securityContext.capabilities.drop[0]' '.webhook.securityContext.capabilities.drop[0]' '.certController.securityContext.capabilities.drop[0]'; do
+    [ "$(yqs ".spec.source.helm.valuesObject${path}" "$ESO")" = "ALL" ]
+  done
 }
