@@ -3,7 +3,9 @@ name: ci
 # Fast, clusterless quality gates — the bottom of the test pyramid. The real
 # end-to-end checks (make dr-verify / dr-test) need a live 16 GB lab and run on a
 # Mac, not here. This catches lint, schema, IaC, and pure-logic regressions on
-# every push/PR in seconds. Mirrors `make ci`.
+# every push/PR. Mirrors `make ci` in full — the local pre-push hook only runs the
+# fast lint gate (seconds), so this workflow is what actually enforces the rest
+# (bats/kustomize/terraform/drift) before a PR merges. See .githooks/pre-push.
 
 on:
   push:
@@ -73,6 +75,10 @@ jobs:
       - run: bash scripts/test.sh
 
   drift:
+    # Every drift/structural check `make ci` runs, so this job is the full backstop
+    # now that the local pre-push hook only runs the fast lint gate (see
+    # .githooks/pre-push) — nothing here can be "only caught if someone runs make ci
+    # by hand".
     runs-on: ubuntu-latest
     steps:
       # Full history + main: routines-author-check derives the merge-base and the
@@ -83,7 +89,22 @@ jobs:
           fetch-depth: 0
       - name: Fetch main for drift comparison
         run: git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main || true
+      - name: Install yq + helm (chart-pin / CRD-size checks need them)
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       - run: bash scripts/readme-check.sh
       - run: bash scripts/lab-ui-check.sh
+      - run: bash scripts/roadmap-check.sh
+      - run: bash scripts/securitycontext-tests-check.sh
+      - run: bash scripts/networkpolicy-tests-check.sh
+      - run: bash scripts/observability-tests-check.sh
+      - run: bash scripts/yq-raw-check.sh
+      - run: bash scripts/git-fixture-isolation-check.sh
       - run: bash scripts/routines-check.sh
       - run: bash scripts/routines-author-check.sh
+      - run: bash scripts/helm-chart-pin-check.sh
+      - run: bash scripts/argocd-crd-ssa-check.sh
+      - run: bash scripts/rollouts-plugin-list-check.sh
+      - run: bash scripts/mimir-readonly-root-check.sh

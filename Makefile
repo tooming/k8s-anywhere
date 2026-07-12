@@ -151,7 +151,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 install-hooks: ## Wire up .githooks/ as the local git hooks directory (run once per clone)
 	@git config core.hooksPath .githooks
 	@chmod +x .githooks/pre-push .githooks/post-merge
-	@echo "  ok  pre-push hook installed (make ci runs before every push)"
+	@echo "  ok  pre-push hook installed (lint runs before every push; full make ci runs in GitHub Actions)"
 
 .PHONY: preflight
 preflight: ## Check required CLI tools are installed
