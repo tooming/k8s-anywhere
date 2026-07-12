@@ -2074,7 +2074,7 @@ You review and merge plan PRs, same as implementation PRs.
   for `node-exporter`. `make ci` must pass. `docs/done/` entry required.
   (auto/governance-envoy-node-exporter)
 
-- [ ] 🟢 **NetworkPolicy overlay — `capstone-pipeline` namespace** (**blocked
+- [x] 🟢 **NetworkPolicy overlay — `capstone-pipeline` namespace** (**blocked
   on PR #354 `auto/capstone-pipeline-psa` merging first** — the
   `capstone-pipeline` `namespace.yaml` must exist before this NP overlay is
   applied; skip to the next item until #354 merges; CHARTER **Objective O2**,

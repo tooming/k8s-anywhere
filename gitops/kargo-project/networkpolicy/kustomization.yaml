@@ -1,0 +1,18 @@
+# NetworkPolicy Kustomize overlay for the capstone-pipeline namespace (ADR-0016 §4 fan-out).
+# The capstone-pipeline namespace is created by Kargo's Project CRD (ADR-0023) and hosts
+# Kargo promotion-step pods that run argocd-update steps (see gitops/kargo-project/project.yaml).
+# Pulls the three shared baseline templates and adds per-workload egress allows for:
+# kargo promotion pods → kargo controller/api in kargo namespace (promotion callback);
+# kargo promotion pods → argocd-server on TCP 80 (argocd-update step).
+# Wired into gitops/platform/kargo-project-networkpolicy.yaml (ON-DEMAND, wave 4).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: capstone-pipeline
+
+resources:
+  - ../../network/policies/default-deny.yaml
+  - ../../network/policies/allow-dns-and-apiserver.yaml
+  - ../../network/policies/zz-dns-clusterip-bridge.yaml
+  - allow-capstone-pipeline-egress-kargo.yaml
+  - allow-capstone-pipeline-egress-argocd.yaml

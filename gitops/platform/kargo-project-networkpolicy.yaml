@@ -1,0 +1,29 @@
+# kargo-project-networkpolicy — default-deny + allowlist NetworkPolicies for the
+# capstone-pipeline namespace (ADR-0016 §4 fan-out, ADR-0023).
+# Applies the shared baseline templates (default-deny-all, allow-dns-and-apiserver,
+# zz-dns-clusterip-bridge) plus per-workload egress allows for promotion-step pods:
+# → kargo namespace (Kargo controller/api callback during promotion);
+# → argocd namespace TCP 80 (argocd-update step calls ArgoCD Server API).
+# ON-DEMAND: pairs with the kargo-project Application. No auto-sync block.
+# Wave 4: same tier as all other *-networkpolicy Applications.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-project-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/kargo-project/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: capstone-pipeline
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
