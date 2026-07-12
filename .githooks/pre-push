@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# Pre-push hook: run the full clusterless CI gate before every push.
-# Blocks the push if any gate fails — same checks GitHub Actions runs.
+# Pre-push hook: run the fast local lint gate (shellcheck + yamllint, seconds)
+# before every push. The full clusterless CI gate (bats/kustomize/terraform/
+# drift checks — everything `make ci` runs) lives in GitHub Actions
+# (.github/workflows/ci.yml `drift`/`unit`/`manifests`/`terraform`/`kustomize`
+# jobs) and runs on the pushed branch/PR instead — it's the full backstop now,
+# not just a mirror of this hook. Run `make ci` locally any time you want the
+# full suite before pushing.
 #
 # Install once per clone:  make install-hooks
 # Skip in emergencies:     git push --no-verify
@@ -74,15 +79,16 @@ if [[ "$behind_block" -eq 1 ]]; then
   exit 1
 fi
 
-echo "${B}[pre-push] Running clusterless CI gates (make ci)…${Z}"
+echo "${B}[pre-push] Running fast lint gate (shellcheck + yamllint)…${Z}"
 
-if make -C "$ROOT" ci; then
-  echo "${G}[pre-push] All gates passed — push proceeding.${Z}"
+if make -C "$ROOT" lint; then
+  echo "${G}[pre-push] Lint passed — push proceeding. Full make ci (bats/kustomize/terraform/drift) runs in GitHub Actions.${Z}"
   exit 0
 else
   echo ""
-  echo "${R}${B}[pre-push] CI gate FAILED — push blocked.${Z}"
+  echo "${R}${B}[pre-push] Lint FAILED — push blocked.${Z}"
   echo "Fix the errors above, then push again."
+  echo "Run the full local suite any time with: make ci"
   echo "To skip (emergencies only): git push --no-verify"
   exit 1
 fi

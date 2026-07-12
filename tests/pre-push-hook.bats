@@ -14,9 +14,10 @@ setup() {
   HOOK="$REPO/.githooks/pre-push"
   WORK="$(mktemp -d)"
 
-  # make stub so the allow-path CI gate is a fast no-op
+  # make stub so the allow-path lint gate is a fast no-op; logs its args so tests
+  # can assert which target the hook actually invokes (see the lint-not-ci test).
   mkdir -p "$WORK/bin"
-  printf '#!/usr/bin/env bash\nexit 0\n' > "$WORK/bin/make"
+  printf '#!/usr/bin/env bash\necho "make $*" >> "%s/make-calls.log"\nexit 0\n' "$WORK" > "$WORK/bin/make"
   chmod +x "$WORK/bin/make"
   export PATH="$WORK/bin:$PATH"
   export GH_BIN="$WORK/no-such-gh"   # merged-PR check degrades to allow
@@ -70,4 +71,13 @@ Z=0000000000000000000000000000000000000000
 @test "hook does not consult the checked-out branch for the behind-main check" {
   run grep -n 'rev-parse --abbrev-ref HEAD' "$HOOK"
   [ "$status" -ne 0 ]
+}
+
+@test "pre-push hook runs the fast lint gate locally, not the full make ci (GitHub Actions covers the rest)" {
+  git checkout -q feature
+  run bash -c "echo 'refs/heads/main $(sha main) refs/heads/main $Z' | bash '$HOOK' origin"
+  [ "$status" -eq 0 ]
+  run cat "$WORK/make-calls.log"
+  [[ "$output" == *" lint"* ]]
+  [[ "$output" != *" ci"* ]]
 }

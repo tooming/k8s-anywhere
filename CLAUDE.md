@@ -55,9 +55,17 @@ At the start of every session (including worktrees), run:
 make install-hooks
 ```
 
-This wires `.githooks/pre-push` so that `make ci` runs before every push. The setting
-lives in `.git/config` and is not committed, so it must be re-applied after any fresh
-clone or worktree creation.
+This wires `.githooks/pre-push` so a fast lint gate (shellcheck + yamllint, seconds)
+runs before every push. The setting lives in `.git/config` and is not committed, so
+it must be re-applied after any fresh clone or worktree creation.
+
+The full clusterless CI gate — everything `make ci` runs (bats, kustomize, terraform,
+drift checks) — does **not** run locally on every push anymore; it runs in GitHub
+Actions (`.github/workflows/ci.yml`, the `drift`/`unit`/`manifests`/`terraform`/
+`kustomize` jobs) on the pushed branch/PR, and that workflow is the actual full
+backstop now (kept in parity with `make ci` — if you add a check to one, add it to
+the other). Run `make ci` locally any time you want the full suite before pushing;
+it's just no longer forced on every push.
 
 ## Bias to action — don't ask needless questions
 The user delegates **outcomes, not steps**. Do **not** stop to ask permission or
