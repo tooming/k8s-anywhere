@@ -27,6 +27,9 @@ spec:
         # derives and sets it at bootstrap. This app is manual-sync (no automated
         # block below) precisely so it never re-renders without it. If you DO sync
         # this app by hand, re-run `make cilium-up` afterward to restore the endpoint.
+        prometheus:
+          enabled: true          # RFC #358 — O5 CNI metrics; feeds lab-cilium.json dashboard
+          port: 9962             # Cilium default; Alloy pod-discovery scrapes at this port
         hubble:
           enabled: false         # Hubble deferred: ~250-400 MB; not in 12 GB budget
         operator:

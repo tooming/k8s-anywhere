@@ -2097,7 +2097,7 @@ You review and merge plan PRs, same as implementation PRs.
   pass. `docs/done/` entry required.
   (auto/capstone-pipeline-networkpolicy)
 
-- [ ] 🟢 **Cilium agent Prometheus metrics + O5 CNI dashboard** (CHARTER **Objective O5**,
+- [x] 🟢 **Cilium agent Prometheus metrics + O5 CNI dashboard** (CHARTER **Objective O5**,
   RFC #358 — architect decision 2026-07-11). Enable `prometheus.enabled: true` and
   `prometheus.port: 9962` in `gitops/platform/cilium.yaml` `valuesObject` (Hubble stays
   disabled; `hubble.enabled: false` unchanged — 250-400 MB cost excluded from the 12 GB

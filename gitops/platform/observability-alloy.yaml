@@ -425,6 +425,42 @@ spec:
                 scrape_interval = "30s"
               }
 
+              // ---- Cilium agent (CNI, kube-system) metrics -> Mimir ----
+              // Cilium DaemonSet uses hostNetwork: true; pod IP equals the node IP.
+              // Pod discovery filtered by k8s-app=cilium in kube-system; address
+              // relabelled to <pod_ip>:9962 (prometheus.port in cilium.yaml valuesObject).
+              // Feeds the "Lab — Cilium (CNI)" dashboard (ADR-0014, ADR-0004, RFC #358).
+              // NP allow: TCP 9962 ipBlock 0.0.0.0/0 in allow-alloy-egress-external.yaml.
+              discovery.relabel "cilium_agent" {
+                targets = discovery.kubernetes.pods.targets
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace"]
+                  regex         = "kube-system"
+                  action        = "keep"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_k8s_app"]
+                  regex         = "cilium"
+                  action        = "keep"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_ip"]
+                  regex         = "(.*)"
+                  target_label  = "__address__"
+                  replacement   = "$1:9962"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  target_label  = "node"
+                }
+              }
+              prometheus.scrape "cilium_agent" {
+                targets         = discovery.relabel.cilium_agent.output
+                job_name        = "cilium-agent"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
               // ---- TiDB (distributed SQL database) metrics -> Mimir ----
               // The TiDB Operator creates a <cluster>-tidb Service in namespace tidb that
               // exposes the TiDB status/metrics endpoint at :10080/metrics (tidb_executor_*,
