@@ -321,6 +321,19 @@ setup() {
 }
 
 # ---------------------------------------------------------------------------
+# cilium (CNI)
+# ---------------------------------------------------------------------------
+
+@test "lab-cilium.json exists (cilium coverage)" {
+  [ -f "$DASHBOARDS/lab-cilium.json" ]
+}
+
+@test "lab-cilium.json has real Mimir datasource panel (ADR-0004)" {
+  run grep -q '"uid": "mimir"' "$DASHBOARDS/lab-cilium.json"
+  [ "$status" -eq 0 ]
+}
+
+# ---------------------------------------------------------------------------
 # argocd
 # ---------------------------------------------------------------------------
 

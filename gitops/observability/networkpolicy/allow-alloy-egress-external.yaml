@@ -107,3 +107,11 @@ spec:
       to:
         - ipBlock:
             cidr: 0.0.0.0/0
+    # Cilium agent Prometheus metrics (:9962) — hostNetwork: true means the
+    # pod IP is the node IP; ipBlock covers all node IPs (RFC #358, ADR-0014).
+    - ports:
+        - port: 9962
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
