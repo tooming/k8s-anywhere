@@ -2282,7 +2282,7 @@ You review and merge plan PRs, same as implementation PRs.
   `make tfstate-oracle-up` target, matching the existing `tfstate-up` shape.
   (auto/oracle-tfstate)
 
-- [ ] 🟢 **`tests/oracle-cluster.bats`** (RFC #377 item 4 — depends on items 1–2).
+- [x] 🟢 **`tests/oracle-cluster.bats`** (RFC #377 item 4 — depends on items 1–2).
   Module shape assertions (required variables present, no hardcoded
   credentials/secrets anywhere in `infra/modules/oracle-k3s-cluster` or
   `infra/live/oracle/`), output names match the `k3d-cluster` contract exactly,
