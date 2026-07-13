@@ -2231,6 +2231,32 @@ You review and merge plan PRs, same as implementation PRs.
   **Groomed ↗** into a 🟢 item in *Now / next* above
   (`auto/namespace-resource-profiles`), planner run 2026-06-30.
 
+- [ ] 🟡 **First cloud backend — pick a provider + implement `infra/live/<backend>/`**
+  (CHARTER Strategy — cloud-agnostic infrastructure target; ADR-0026, which defines
+  the backend contract in
+  [`infra/live/README.md`](infra/live/README.md): a `cluster/` Terragrunt unit
+  producing `cluster_name` / `kube_context` / `api_endpoint` outputs, with
+  `argocd/` and `gitlab/` reused unchanged from `local/`). **Needs an architect
+  RFC before the executor builds it** — this picks a specific cloud provider and,
+  per [ADR-0007](docs/decisions/adr-0007-off-cluster-garage-tfstate-backend.md)'s
+  reasoning, a Terraform-state approach for that backend, both binding technical
+  choices. The RFC must address: (1) which provider — weigh against
+  [ADR-0025](docs/decisions/adr-0025-free-oss-tiers-only.md) (the *module code*
+  must not require a paid SaaS to function; provisioning cost is the operator's
+  own, but a free-tier-viable default path — e.g. a provider with a genuine
+  always-free tier, or a bring-your-own-VM kubeadm module — is strongly
+  preferred so the backend is actually exercisable in CI/by another learner
+  without a bill); (2) how that backend authenticates in a clusterless CI
+  environment for `terraform validate`/`plan` (`make ci` has no cloud
+  credentials — the new unit's `terraform validate` must pass without them,
+  matching how `argocd`/`gitlab` already mock `dependency.cluster.outputs` for
+  clusterless `plan`); (3) its Terraform-state backend (reuse a per-backend
+  off-cluster Garage per ADR-0007's pattern, or that cloud's native state
+  backend — architect's call, ADR it either way). **Executor note:** once the
+  RFC lands, expect this to split into multiple PRs per
+  `infra/live/README.md`'s three-unit structure — the `cluster/` module +ADR
+  first, `argocd`/`gitlab` unit wiring second, docs/README updates third.
+
 _New 🟡 items proposed by the architect live in
 [`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until
 the planner absorbs them here. Do **not** append new 🟡 items directly to this
