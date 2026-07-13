@@ -12,17 +12,28 @@
 
 1. **Agents are contributors, not admins.** Every agent change lands as a PR and clears the
    *same* bar as a human change. No special merge path.
-2. **Humans own merge; agents own design and implementation.** The architect makes
-   binding technical decisions (RFCs, ADRs); the planner sequences them; the executor
-   implements. The human's only gate is the merge button on the resulting PRs. Agents
-   *propose* what ships; humans decide *whether* to ship it by merging or closing.
-   **The merge button is the maintainer's ONLY touchpoint.** The maintainer does not work
-   issues. An agent must never assign the maintainer an action item it can perform itself
-   with the tools it has (creating/applying labels, re-tagging, commenting, closing its
-   own issues, opening follow-up issues) — "maintainer: please do X" in an issue is a
-   routine bug unless X is genuinely 🔴 Red (secrets, repo settings, branch protection,
-   a CHARTER/governance decision). If a tool call fails, fall back to `gh` before
-   escalating; escalate only what §2 actually reserves for humans.
+2. **Agents own design, implementation, and — for Green/Yellow-tier work — their own
+   merge.** *(Adopted 2026-07-13; supersedes the prior "merge button is the
+   maintainer's only touchpoint" rule below.)* The architect makes binding technical
+   decisions (RFCs, ADRs); the planner sequences them; the executor implements. Once a
+   PR's required CI checks are green, its `[self-review]` comment is posted, and all
+   conversations are resolved, the authoring routine merges its own PR — **unless** the
+   change is 🔴 Red-tier (§2) or touches governance itself (this file, `CHARTER.md`, or
+   any `docs/decisions/*.md`), in which case a human must click merge, same as before.
+   Agents still *propose* everything that ships; for governance-touching or Red-tier
+   work, humans still decide *whether* it ships. The maintainer does not work issues. An
+   agent must never assign the maintainer an action item it can perform itself with the
+   tools it has (creating/applying labels, re-tagging, commenting, closing its own
+   issues, opening follow-up issues, merging its own non-governance PR) —
+   "maintainer: please do X" in an issue is a routine bug unless X is genuinely 🔴 Red
+   (secrets, repo settings, branch protection, a CHARTER/governance decision). If a tool
+   call fails, fall back to `gh` before escalating; escalate only what §2 actually
+   reserves for humans.
+   > **⚙ Not yet live end-to-end.** Branch protection on `main` still requires a
+   > CODEOWNERS review before GitHub's merge API will accept any merge (§4) — that
+   > setting has to change before an agent's merge call can actually succeed. Until the
+   > maintainer relaxes it, this rule is *adopted policy*, not yet *observed behavior*;
+   > per ADR-0004, don't report an agent PR as self-merged until it demonstrably was.
 3. **The repo is the only rulebook agents obey.** Remote agents see only what's in git, so
    [CHARTER.md](../CHARTER.md), the [ROADMAP.md](../ROADMAP.md) rules, the ADRs in
    [decisions/](decisions/), and this doc are the *complete* set of rules. A governance
@@ -80,35 +91,43 @@ Every agent action falls in a tier. An agent that hits work above its registered
 
 | Tier | Who acts | Examples (non-exhaustive) |
 |---|---|---|
-| 🟢 **Green** | Agent, unsupervised → PR + normal review | Docs, comments, tests; non-auto-synced manifests; dashboards from real metrics; README / `dependency-tree.md` sync; ROADMAP grooming |
-| 🟡 **Yellow** | Architect authors a binding RFC → planner grooms it → executor implements (no human-approval step) | New platform component; anything growing the always-on footprint; new deps / Helm sources; CI, gate, or `Makefile` changes; security-adjacent (auth, RBAC, network exposure); ADR-authoring; editing CHARTER.md (goals); `infra/` bootstrap changes |
-| 🔴 **Red** | Humans only — agent must refuse & escalate | Secrets; any live-cluster / prod change; **merging** PRs; repo settings / branch protection / CODEOWNERS; force-push, deletion, history rewrite; disabling another agent; editing this governance doc |
+| 🟢 **Green** | Agent, unsupervised → PR + normal review, **self-merge once CI is green** | Docs, comments, tests; non-auto-synced manifests; dashboards from real metrics; README / `dependency-tree.md` sync; ROADMAP grooming |
+| 🟡 **Yellow** | Architect authors a binding RFC → planner grooms it → executor implements → **self-merge once CI is green** (no human-approval step) — except governance/ADR-authoring PRs themselves, which stay human-merged | New platform component; anything growing the always-on footprint; new deps / Helm sources; CI, gate, or `Makefile` changes; security-adjacent (auth, RBAC, network exposure); ADR-authoring; editing CHARTER.md (goals); `infra/` bootstrap changes |
+| 🔴 **Red** | Humans only — agent must refuse & escalate | Secrets; any live-cluster / prod change; repo settings / branch protection / CODEOWNERS; force-push, deletion, history rewrite; disabling another agent; editing this governance doc; **merging any PR that touches a Red-tier path or a governance file** (`WAYS-OF-WORKING.md`, `CHARTER.md`, `docs/decisions/*.md`) |
 
 Full definitions:
 
-**🟢 Green — autonomous (PR + normal review).** Docs, comments, tests; clusterless
-manifests that are *not* auto-synced (per the 12 GB budget rule); Grafana dashboards built
-from real metrics; `docs/dependency-tree.md` and README sync; ROADMAP grooming. This is the
-executor's and planner's day-to-day lane.
+**🟢 Green — autonomous (PR + normal review, self-merge).** Docs, comments, tests;
+clusterless manifests that are *not* auto-synced (per the 12 GB budget rule); Grafana
+dashboards built from real metrics; `docs/dependency-tree.md` and README sync; ROADMAP
+grooming. This is the executor's and planner's day-to-day lane. Once required CI is
+green, `[self-review]` is posted, and conversations are resolved, the routine merges its
+own PR (§0.2) — no human-approval step, and no human merge-click either.
 
-**🟡 Yellow — architect-decided, no human-approval step.** A new platform component;
-anything that grows the always-on footprint; new third-party dependencies or Helm chart
-sources; changes to CI, the quality gates, or `Makefile` targets; security-adjacent
-changes (auth, RBAC, network exposure); authoring new ADRs; editing CHARTER.md (goals);
-`infra/` bootstrap changes. The architect routine makes the binding decision and files it
-as an `rfc`-labeled GitHub issue (and, where the decision requires it, an accompanying
-`arch/*` PR that lands the ADR, the CHARTER.md update, and any `infra/` change). The
-planner grooms the RFC into 🟢 executor items on its next run without waiting for a human
-to approve the RFC — the architect's decision *is* the approval. The human gate remains
-the merge button on every resulting PR.
+**🟡 Yellow — architect-decided, no human-approval step, self-merge except governance.**
+A new platform component; anything that grows the always-on footprint; new third-party
+dependencies or Helm chart sources; changes to CI, the quality gates, or `Makefile`
+targets; security-adjacent changes (auth, RBAC, network exposure); authoring new ADRs;
+editing CHARTER.md (goals); `infra/` bootstrap changes. The architect routine makes the
+binding decision and files it as an `rfc`-labeled GitHub issue (and, where the decision
+requires it, an accompanying `arch/*` PR that lands the ADR, the CHARTER.md update, and
+any `infra/` change). The planner grooms the RFC into 🟢 executor items on its next run
+without waiting for a human to approve the RFC — the architect's decision *is* the
+approval. Non-governance Yellow PRs self-merge like Green once CI is green. **PRs that
+themselves edit `WAYS-OF-WORKING.md`, `CHARTER.md`, or a `docs/decisions/*.md` ADR are
+the one Yellow exception: they still require a human to click merge** — an agent must
+never be the sole approver of its own expanded authority.
 
 **🔴 Red — humans only; an agent must refuse and escalate.** Secrets/credentials of any
-kind; any live-cluster or prod mutation; **merging** PRs; repo settings, branch protection,
-or CODEOWNERS; force-push, branch/data deletion, history rewrite; editing this governance
-doc; disabling or altering another agent.
+kind; any live-cluster or prod mutation; repo settings, branch protection, or CODEOWNERS;
+force-push, branch/data deletion, history rewrite; editing this governance doc; disabling
+or altering another agent; and **merging** any PR that touches one of those paths, or
+that edits `CHARTER.md` / an ADR (see the Yellow exception above).
 
-**Always, regardless of tier:** never weaken or skip a gate, never self-merge, never push to
-`main`, never access credentials.
+**Always, regardless of tier:** never weaken or skip a gate; never merge with a red CI
+check or an unresolved conversation; never push to `main` directly; never access
+credentials; never merge a PR that touches a Red-tier path or a governance file, no
+matter how green its CI is.
 
 ## 3. Agent PR contract (definition of done)
 
@@ -122,8 +141,15 @@ doc; disabling or altering another agent.
   that it's an agent run plus which routine produced it.
 - **Green before review:** `make ci` passes; ADRs honored; heavy components stay
   non-auto-synced; docs/dashboards in sync.
+- **Self-merge (Green/Yellow, non-governance only):** once every required status check
+  is green, the `[self-review]` comment is posted, and all conversations are resolved,
+  the authoring routine merges its own PR (squash, matching `main`'s linear-history
+  rule) and updates the ROADMAP checkbox / closes the issue it addressed. It must
+  **not** merge if any required check is red, a conversation is unresolved, or the PR
+  touches a 🔴 Red-tier path or a governance file (`WAYS-OF-WORKING.md`, `CHARTER.md`,
+  `docs/decisions/*.md`) — those wait for a human, full stop (§0.2, §2).
 
-## 4. Review & merge gate (identical for humans and agents)
+## 4. Review & merge gate
 
 _GitHub repo settings (configured 2026-06-13):_
 
@@ -140,24 +166,38 @@ _GitHub repo settings (configured 2026-06-13):_
 
 _⚙ still to wire:_
 
-- **`CODEOWNERS`** — file exists but all domain owners are `@tbd` (see §7 ownership
-  map). As the team grows, replace `@tbd` entries with real owners; until then the
-  CODEOWNERS requirement is satisfied by the maintainer (@tooming) for all paths.
-  An agent PR is **never** approved by an agent.
+- **`CODEOWNERS` review requirement blocks self-merge today.** As configured
+  2026-06-13, branch protection requires a CODEOWNERS approval before *any* merge —
+  currently satisfied only by the maintainer (@tooming), since all domain owners are
+  still `@tbd` (see §7). §0.2/§3's self-merge policy cannot actually succeed via the
+  GitHub API until the maintainer either (a) drops the CODEOWNERS-review requirement
+  for paths a routine is allowed to self-merge, or (b) adds the routine's committer
+  identity as an approving path. **This is a repo-settings change and stays 🔴
+  Red — an agent must never attempt it itself.** Until it's done, treat self-merge as
+  adopted policy the maintainer still gates in practice, and keep merging Green/Yellow
+  PRs by hand.
+- **`CODEOWNERS` owners** — file exists but all domain owners are `@tbd` (see §7
+  ownership map). As the team grows, replace `@tbd` entries with real owners. An agent
+  PR is **never** approved by an agent — self-merge is not self-*approval*; the CI
+  gate + self-review + tier check together stand in for approval, they don't forge one.
 
 _Process:_
 
-- **Who reviews an agent PR:** the human CODEOWNER for the touched paths. It's a normal PR —
-  reviewed for correctness, scope, **gate integrity** (did the agent quietly weaken a test
-  or loosen a check?), and security. CI-green is necessary, not sufficient; don't
-  rubber-stamp.
+- **Who reviews an agent PR:** any human, at their discretion — self-merge means review
+  is no longer a precondition, but PRs stay open to comment/revert like any other
+  change. Reviewed for correctness, scope, **gate integrity** (did the agent quietly
+  weaken a test or loosen a check?), and security; CI-green is necessary, not
+  sufficient for a *human* reviewer's trust, even though it is sufficient to trigger
+  self-merge.
 - **WIP limit:** cap concurrent open agent PRs (suggested ≤ 3 `auto/*` + ≤ 1 each of
   `plan/*`, `arch/*`, `upgrade/*`, `sync/*`, `digest/*`). At the cap, agents wait instead
   of piling on. (The executor already skips items with an open `auto/*` PR; the cap
   generalizes that to protect reviewer attention.) Every PR-producing routine posts a
-  first-pass `[self-review]` comment (+ `self-reviewed` label) on its own PR before its
-  run ends — it does NOT replace human review, and a self-review never counts as the
-  human approval the gate requires.
+  first-pass `[self-review]` comment (+ `self-reviewed` label) on its own PR before
+  merging — combined with green required CI, this **is** the self-merge trigger for
+  Green/Yellow non-governance PRs (§0.2, §3); it never substitutes for human review on
+  Red-tier or governance-file PRs, which still require an explicit human approval and
+  merge click.
 - **Staleness SLA:** an agent PR with no review in N working days is flagged or auto-closed,
   not left to rot. Closing is cheap — the item simply returns to the backlog.
 

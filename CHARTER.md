@@ -10,14 +10,19 @@ order, most-stable at the top.
 
 ## Vision
 
-The most complete production-shaped cloud-native lab a learner can run on a single
-laptop — **the lab that is the syllabus**.
+The most complete production-shaped cloud-native platform a learner can run
+**anywhere** — free on a single laptop, or on any conformant Kubernetes cloud
+backend — **the lab that is the syllabus, not tied to one vendor**.
 
 ## Mission
 
-A localhost GitOps platform that wires the full cloud-native stack together on a single
-16 GB Mac, so the pieces are learned as one coherent system — built as code end to end,
+A **cloud-agnostic GitOps platform** that wires the full cloud-native stack together
+as portable infrastructure-as-code: the identical `gitops/` state deploys to a free
+localhost cluster (the default, zero-external-dependency path — one 16 GB Mac) or to
+any CNCF-conformant Kubernetes cloud backend, so the pieces are learned as one
+coherent system that isn't tied to one host or one vendor — built as code end to end,
 rebuildable with one command, with recovery that is *exercised*, not assumed.
+(ADR-0026)
 
 ## Core Values (invariants every change must keep true)
 
@@ -33,8 +38,13 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
   unsigned image is rejected at admission.
 - **Clusterless gates stay green.** `make ci` (lint + validate + test + drift checks) is
   the floor and runs on every push.
-- **Fits the 16 GB reality.** The always-on stack lives in the 12 GB VM (~7 GB used);
-  heavy components are on-demand, never auto-synced, and never two full stacks at once.
+- **Cloud-agnostic by construction.** No component above the Terraform bootstrap seam
+  encodes a backend-specific assumption; the same `gitops/` Applications deploy
+  unchanged to localhost or to a cloud backend. (ADR-0026)
+- **Fits the 16 GB reality — on the localhost backend.** The always-on stack lives in
+  the 12 GB VM (~7 GB used); heavy components are on-demand, never auto-synced, and
+  never two full stacks at once. This is the default, zero-cost path everyone starts
+  with; it is not a ceiling on what a cloud backend can run.
 - **Real observability only.** Dashboards and outputs reflect auto-discovered state —
   never fabricated, placeholder, or mocked data. (ADR-0004)
 - **Decoupled / no needless SPOF**, and **Garage (not MinIO)** for S3. (ADR-0002, ADR-0003)
@@ -43,12 +53,18 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
 
 ## Strategy (the bold choices — *how* we deliver the mission)
 
-The 18 ADRs in [docs/decisions/](docs/decisions/) are the binding receipts. This section
+The 26 ADRs in [docs/decisions/](docs/decisions/) are the binding receipts. This section
 states the meta-choices the ADRs encode, so the *why* sits above the *what*.
 
-- **Localhost over cloud.** All infrastructure lives on one 16 GB Mac. No rented
-  instances, no cloud accounts, no external billing. Forces designs to honest scale and
-  keeps the rebuild path cheap.
+- **Cloud-agnostic over single-target.** The Terraform/Terragrunt bootstrap seam is a
+  swappable backend module; localhost (k3d/Colima) is the default, free,
+  zero-external-dependency backend everyone starts with, and any CNCF-conformant cloud
+  Kubernetes service is a first-class, opt-in alternate — reached by swapping the
+  backend module, never by forking the GitOps layer. Choosing a cloud backend is the
+  operator's own infrastructure cost; it is not required by the default path, and
+  every *software* dependency still must clear ADR-0025's free/OSS-tier bar
+  regardless of backend. (ADR-0026, supersedes the prior "localhost over cloud"
+  framing)
 - **GitOps over imperative.** Terraform/Terragrunt bootstraps only; workloads land as
   ArgoCD `Application`s. No `helm install`, no `kubectl apply` to live state.
   (ADR-0001)
@@ -76,9 +92,11 @@ Gateway API; the **observability pipeline** (metrics, logs, traces, profiles);
 **DR / blue-green** on a single host; **admission-time policy** (Kyverno: validation,
 mutation, image verification); **progressive delivery** (canary releases gated by real
 SLO metrics, not timers); **stateful backup & restore** (Velero against Garage —
-restore is exercised, not assumed); and **supply-chain security** end-to-end (cosign
-signing in CI, Kyverno verifyImages on admit, continuous Trivy scanning + SBOMs). The
-sequenced path lives in [docs/00-architecture.md](docs/00-architecture.md).
+restore is exercised, not assumed); **supply-chain security** end-to-end (cosign
+signing in CI, Kyverno verifyImages on admit, continuous Trivy scanning + SBOMs); and
+**cloud-agnostic infrastructure design** — why the GitOps layer never encodes a
+backend, so the same platform runs free on a laptop or on a cloud Kubernetes service
+without a fork. The sequenced path lives in [docs/00-architecture.md](docs/00-architecture.md).
 
 ## Objectives (measurable, time-bound)
 
@@ -130,6 +148,9 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   Kyverno verifies the signature on admit → ArgoCD deploys it → Argo Rollouts canaries it
   on real Mimir SLOs → Envoy routes it → Grafana shows its metrics & logs → Vault holds
   its secrets → Velero backs up its state.
+- **Cloud backend** (planned): a second Terragrunt backend module targeting a managed
+  cloud Kubernetes service, selected via a single variable at apply time — `gitops/`
+  requires no fork to run there. Localhost stays the default. (ADR-0026)
 
 ## How this drives the ROADMAP
 
