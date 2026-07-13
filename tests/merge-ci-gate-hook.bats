@@ -57,22 +57,24 @@ EOF
   chmod +x "$STUBDIR/gh"
 }
 
-# A PATH containing only symlinks to the real coreutils this script needs (grep, jq),
-# resolved via `command -v` *before* PATH is restricted — guaranteed to exclude `gh`
-# regardless of whether the underlying environment (e.g. a GitHub-hosted runner) has
-# a real gh installed somewhere. Plain `PATH="/usr/bin:/bin"` is NOT sufficient for
-# this — GitHub Actions runners ship gh at exactly that kind of standard location.
+# Builds a directory containing only symlinks to the real coreutils this script needs
+# (bash itself, cat, grep, head, jq), resolved via `command -v` while PATH is still
+# normal — guaranteed to exclude `gh` regardless of whether the underlying environment
+# (e.g. a GitHub-hosted runner) has a real gh installed somewhere. Plain
+# `PATH="/usr/bin:/bin"` is NOT sufficient — GitHub Actions runners ship gh at exactly
+# that kind of standard location. Sets $MINPATH; does NOT mutate PATH itself — the
+# caller must scope PATH="$MINPATH" to a single command (see the test below), never
+# assign it as a bare statement. A bare `PATH="$MINPATH"` here previously broke CI: it
+# leaked into bats' own post-test cleanup running in the same subshell (which needs
+# `rm`, excluded from this minimal set), corrupting bats' overall exit code with zero
+# visible per-test failure — see docs/done/2026-07-13-merge-ci-gate-hook.md.
 minimal_path_without_gh() {
   MINPATH="$BATS_TEST_TMPDIR/minpath"
   mkdir -p "$MINPATH"
-  # bash itself is required too — `run bash "$REPO/..."` resolves `bash` via PATH
-  # like any other command, so a PATH without it would fail with "bash: not found"
-  # rather than actually exercising the script's own gh-detection logic.
   for bin in bash cat grep head jq; do
     tool="$(command -v "$bin")"
     ln -sf "$tool" "$MINPATH/$bin"
   done
-  PATH="$MINPATH"
 }
 
 @test "merge-ci-gate: empty JSON payload exits 0" {
@@ -87,7 +89,7 @@ minimal_path_without_gh() {
 
 @test "merge-ci-gate: gh not on PATH exits 0 (never false-positive on missing tooling)" {
   minimal_path_without_gh
-  run bash "$REPO/scripts/merge-ci-gate-hook.sh" <<<"$(mk_payload "gh pr merge 123 --squash")"
+  PATH="$MINPATH" run bash "$REPO/scripts/merge-ci-gate-hook.sh" <<<"$(mk_payload "gh pr merge 123 --squash")"
   [ "$status" -eq 0 ]
 }
 
