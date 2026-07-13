@@ -30,12 +30,20 @@ command -v gh >/dev/null 2>&1 || exit 0
 pr_num="$(printf '%s' "$cmd" | grep -oE 'gh pr merge[^&|;]*' | grep -oE '[0-9]+' | head -1 || true)"
 [ -n "$pr_num" ] || exit 0
 
-checks_output="$(gh pr checks "$pr_num" 2>&1)"
-checks_status=$?
+checks_output="$(gh pr checks "$pr_num" 2>&1 || true)"
+[ -n "$checks_output" ] || exit 0
 
-if [ "$checks_status" -ne 0 ]; then
+# `gh pr checks` exits non-zero both when a real check is failing AND when it can't
+# determine status at all (no GH_TOKEN, no such PR, network error, wrong repo context)
+# — those are common and must never be treated as "red CI" (false positive). So this
+# doesn't trust the exit code: it looks for the literal word "fail" as its own token,
+# which only appears in a real check's STATE column (`name\tfail\t...`), never in gh's
+# own error text ("authentication required", "no pull requests found", etc). Narrowly
+# scoped to definite failures, not "pending" — pending is a different, less clear-cut
+# state this hook deliberately doesn't flag.
+if grep -qiE '(^|[[:space:]])fail([[:space:]]|$)' <<<"$checks_output"; then
   {
-    echo "'gh pr merge $pr_num' just ran against a PR whose checks are not all passing:"
+    echo "'gh pr merge $pr_num' just ran against a PR with at least one failing check:"
     echo "$checks_output"
     echo
     echo "WAYS-OF-WORKING.md §2: never merge with a red CI check, no matter how green"

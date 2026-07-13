@@ -39,6 +39,42 @@ EOF
   chmod +x "$STUBDIR/gh"
 }
 
+stub_gh_auth_error() {
+  # Simulates a real (but unauthenticated) gh — the exact CI runner scenario that
+  # broke the original exit-code-based version of this hook: GitHub-hosted runners
+  # ship a real `gh` on PATH, so "no gh available" can't be tested by just clearing
+  # PATH — it must be tested by making gh fail for a *non-CI-related* reason and
+  # confirming the hook still doesn't flag it (see merge-ci-gate-no-gh-in-minimal-path
+  # test for the true "gh absent" case).
+  cat >"$STUBDIR/gh" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = "pr" ] && [ "$2" = "checks" ]; then
+  echo "To use GitHub CLI in a GitHub Actions workflow, set the GH_TOKEN environment variable." >&2
+  exit 4
+fi
+exit 1
+EOF
+  chmod +x "$STUBDIR/gh"
+}
+
+# A PATH containing only symlinks to the real coreutils this script needs (grep, jq),
+# resolved via `command -v` *before* PATH is restricted — guaranteed to exclude `gh`
+# regardless of whether the underlying environment (e.g. a GitHub-hosted runner) has
+# a real gh installed somewhere. Plain `PATH="/usr/bin:/bin"` is NOT sufficient for
+# this — GitHub Actions runners ship gh at exactly that kind of standard location.
+minimal_path_without_gh() {
+  MINPATH="$BATS_TEST_TMPDIR/minpath"
+  mkdir -p "$MINPATH"
+  # bash itself is required too — `run bash "$REPO/..."` resolves `bash` via PATH
+  # like any other command, so a PATH without it would fail with "bash: not found"
+  # rather than actually exercising the script's own gh-detection logic.
+  for bin in bash cat grep head jq; do
+    tool="$(command -v "$bin")"
+    ln -sf "$tool" "$MINPATH/$bin"
+  done
+  PATH="$MINPATH"
+}
+
 @test "merge-ci-gate: empty JSON payload exits 0" {
   run bash "$REPO/scripts/merge-ci-gate-hook.sh" <<<"{}"
   [ "$status" -eq 0 ]
@@ -50,7 +86,17 @@ EOF
 }
 
 @test "merge-ci-gate: gh not on PATH exits 0 (never false-positive on missing tooling)" {
-  PATH="/usr/bin:/bin" # no stub gh
+  minimal_path_without_gh
+  run bash "$REPO/scripts/merge-ci-gate-hook.sh" <<<"$(mk_payload "gh pr merge 123 --squash")"
+  [ "$status" -eq 0 ]
+}
+
+@test "merge-ci-gate: gh present but erroring for a non-CI reason (e.g. no GH_TOKEN) exits 0" {
+  # The exact bug this test guards against: an earlier version of this hook trusted
+  # gh's exit code alone, so a real-but-unauthenticated gh (present on every
+  # GitHub-hosted runner) made every merge-CI-gate test fail in CI, since gh pr
+  # checks exits non-zero on auth failure just as it does on a real failing check.
+  stub_gh_auth_error
   run bash "$REPO/scripts/merge-ci-gate-hook.sh" <<<"$(mk_payload "gh pr merge 123 --squash")"
   [ "$status" -eq 0 ]
 }
