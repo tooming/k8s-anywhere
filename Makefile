@@ -224,6 +224,19 @@ tfstate-up: ## Start + bootstrap the off-cluster Garage holding Terraform state 
 tfstate-down: ## Stop the off-cluster Terraform-state Garage (keeps its volume/state)
 	cd infra/tfstate && docker compose stop
 
+.PHONY: tfstate-oracle-up
+tfstate-oracle-up: ## Bootstrap the oracle backend's off-cluster Garage on a separate Always Free AMD Micro instance (ADR-0027; must precede any terragrunt apply under infra/live/oracle/)
+	bash scripts/tfstate-oracle-bootstrap.sh
+
+.PHONY: tfstate-oracle-down
+tfstate-oracle-down: ## Terminate the oracle backend's tfstate instance (real OCI teardown, not just a stop — re-run tfstate-oracle-up to recreate)
+	@INSTANCE_ID=$$(oci compute instance list --compartment-id "$$OCI_COMPARTMENT_ID" --display-name tfstate-oracle --lifecycle-state RUNNING --query 'data[0].id' --raw-output 2>/dev/null); \
+	if [ -n "$$INSTANCE_ID" ] && [ "$$INSTANCE_ID" != "null" ]; then \
+		oci compute instance terminate --instance-id "$$INSTANCE_ID" --preserve-boot-volume false --force; \
+	else \
+		echo "no running tfstate-oracle instance found"; \
+	fi
+
 ##@ Cluster (k3d via Terraform/Terragrunt)
 
 .PHONY: cluster-up
