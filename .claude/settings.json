@@ -113,6 +113,17 @@
             "statusMessage": "Checking Mimir write paths are writable"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/merge-ci-gate-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking merged PR's CI status"
+          }
+        ]
       }
     ],
     "Stop": [
