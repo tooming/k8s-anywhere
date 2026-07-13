@@ -1,9 +1,22 @@
 # k8s-lab
 
-A localhost **GitOps platform** that wires a full cloud-native stack together on a
-single 16 GB Mac — so you can see how the pieces actually fit, not learn them in
-isolation. Terraform/Terragrunt bootstraps a local Kubernetes cluster, GitLab holds
-the manifests, and **ArgoCD continuously syncs everything else in**.
+> **Rename proposed:** `k8s-anywhere` — reflects the cloud-agnostic goal below. The
+> GitHub repo itself hasn't been renamed yet (that's a repo-settings action for the
+> maintainer to do deliberately); this README will switch names once it is.
+
+A **cloud-agnostic GitOps platform** that wires a full cloud-native stack together as
+portable infrastructure-as-code — so you can see how the pieces actually fit, not learn
+them in isolation. The identical `gitops/` state deploys to a free **localhost** cluster
+(the default: one 16 GB Mac, zero external dependencies) or to any CNCF-conformant
+**cloud** Kubernetes backend, chosen by swapping the Terraform/Terragrunt bootstrap
+module — never by forking the GitOps layer. See
+[ADR-0026](docs/decisions/adr-0026-cloud-agnostic-infrastructure.md). GitLab holds the
+manifests, and **ArgoCD continuously syncs everything else in**, identically regardless
+of where the cluster runs.
+
+The sections below (Quick start, Endpoints, DR) describe the **localhost backend**,
+which is built today and remains the default. A cloud backend module is planned (see
+[CHARTER.md](CHARTER.md) → Target end-state) but not yet built.
 
 Built as code end to end: **one command (`make up`) rebuilds the whole lab from
 scratch**, with self-verifying **disaster-recovery** and **zero-downtime blue/green**
@@ -157,3 +170,7 @@ budget; `make gitlab-down` frees ~3 GB).
 `main` lives in the local **GitLab** (the GitOps source ArgoCD reads from) and is
 mirrored to **GitHub** ([github.com/tooming/k8s-lab](https://github.com/tooming/k8s-lab)).
 Push to GitLab for the running lab to pick up changes; GitHub is the public copy.
+
+A rename to **`k8s-anywhere`** is proposed (see the note at the top of this file) to
+match the cloud-agnostic goal — pending the maintainer renaming the GitHub repo (and
+updating the GitLab mirror + local git remotes to match) via repo settings.
