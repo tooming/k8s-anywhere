@@ -29,11 +29,13 @@
    (secrets, repo settings, branch protection, a CHARTER/governance decision). If a tool
    call fails, fall back to `gh` before escalating; escalate only what §2 actually
    reserves for humans.
-   > **⚙ Not yet live end-to-end.** Branch protection on `main` still requires a
-   > CODEOWNERS review before GitHub's merge API will accept any merge (§4) — that
-   > setting has to change before an agent's merge call can actually succeed. Until the
-   > maintainer relaxes it, this rule is *adopted policy*, not yet *observed behavior*;
-   > per ADR-0004, don't report an agent PR as self-merged until it demonstrably was.
+   > **⚙ Live as of 2026-07-13.** Branch protection on `main` has been removed (§4), so
+   > the merge API will now accept a self-merge call. Read §4 before relying on this:
+   > protection wasn't narrowed to just the CODEOWNERS requirement, it was removed
+   > entirely — required status checks no longer *block* a merge either, so the CI-green
+   > condition in this rule is enforced by the routine's own discipline, not by GitHub.
+   > Per ADR-0004, don't report a PR as self-merged until it demonstrably was, and don't
+   > report CI as "gating" the merge when, at the platform level, it no longer does.
 3. **The repo is the only rulebook agents obey.** Remote agents see only what's in git, so
    [CHARTER.md](../CHARTER.md), the [ROADMAP.md](../ROADMAP.md) rules, the ADRs in
    [decisions/](decisions/), and this doc are the *complete* set of rules. A governance
@@ -151,35 +153,42 @@ matter how green its CI is.
 
 ## 4. Review & merge gate
 
-_GitHub repo settings (configured 2026-06-13):_
+_GitHub repo settings (as of 2026-07-13):_
 
-- **Branch protection on `main`** — active. Rules enforced (no bypass, admins included):
-  - PR required before merging; no direct pushes to `main`.
-  - Approvals not required (solo maintainer — merge is the approval gate).
-  - CODEOWNERS review required (routes PRs to domain owners by path).
-  - Required status checks (all must pass): `lint`, `manifests`, `terraform`,
-    `kustomize`, `unit`, `drift` (from the `ci` workflow) and `up-to-date`
-    (from `pr-up-to-date`).
-  - Branches must be up to date with `main` before merging.
-  - Linear history enforced (no merge commits on `main`).
-  - All conversations must be resolved before merging.
+- **Branch protection on `main` — removed** (maintainer action, 2026-07-13, to unblock
+  §0.2's self-merge policy). This was the *repo-settings* half of enabling self-merge
+  that §0.2/§3 flagged as an agent-can't-do-this-itself follow-up; it's now done, but
+  it removed more than the one blocking rule:
+  - No PR required — **direct pushes to `main` are now technically possible.**
+  - **No required status checks** — `lint`/`manifests`/`terraform`/`kustomize`/`unit`/
+    `drift`/`up-to-date` still run (the `.github/workflows/ci.yml` jobs are unchanged),
+    but GitHub no longer *blocks* a merge (or a direct push) on their result. A red CI
+    run is now advisory, not a gate, at the platform level.
+  - No CODEOWNERS review required, no linear-history enforcement, no
+    conversations-must-resolve requirement.
 
-_⚙ still to wire:_
+  **What this means in practice: the self-merge contract in §0.2/§3/§4 (CI green,
+  `[self-review]` posted, conversations resolved, never Red-tier/governance) is now the
+  *only* thing standing between a broken change and `main` — GitHub will no longer catch
+  a violation of it.** Every routine and every human working this repo must treat those
+  rules as load-bearing, not advisory, precisely because nothing else enforces them
+  anymore. This doc still says "never merge with a red CI check," "never push to `main`
+  directly," and "never merge a PR that touches a Red-tier path or governance file" (§2)
+  — those are no longer *technically* prevented, only *behaviorally* required. If a
+  routine misbehaves, the backstop is the kill-switch (§5: disable the routine) and
+  reverting the bad commit, not a rejected API call.
 
-- **`CODEOWNERS` review requirement blocks self-merge today.** As configured
-  2026-06-13, branch protection requires a CODEOWNERS approval before *any* merge —
-  currently satisfied only by the maintainer (@tooming), since all domain owners are
-  still `@tbd` (see §7). §0.2/§3's self-merge policy cannot actually succeed via the
-  GitHub API until the maintainer either (a) drops the CODEOWNERS-review requirement
-  for paths a routine is allowed to self-merge, or (b) adds the routine's committer
-  identity as an approving path. **This is a repo-settings change and stays 🔴
-  Red — an agent must never attempt it itself.** Until it's done, treat self-merge as
-  adopted policy the maintainer still gates in practice, and keep merging Green/Yellow
-  PRs by hand.
+  **Recommended hardening (not yet done, maintainer's call):** re-enable required status
+  checks + "PR required, no direct pushes" + linear history, and drop *only* the
+  CODEOWNERS-approval requirement. That was the minimal change §0.2 actually needed —
+  self-merge stops needing a human approver while CI stays a hard gate. Full removal was
+  a broader, higher-risk trade than the minimal fix.
+
 - **`CODEOWNERS` owners** — file exists but all domain owners are `@tbd` (see §7
-  ownership map). As the team grows, replace `@tbd` entries with real owners. An agent
-  PR is **never** approved by an agent — self-merge is not self-*approval*; the CI
-  gate + self-review + tier check together stand in for approval, they don't forge one.
+  ownership map). As the team grows, replace `@tbd` entries with real owners. Even with
+  the CODEOWNERS *requirement* gone from branch protection, an agent PR is still **never**
+  approved by an agent — self-merge is not self-*approval*; the CI-green + self-review +
+  tier check together stand in for approval, they don't forge one.
 
 _Process:_
 
