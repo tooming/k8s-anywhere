@@ -2290,12 +2290,14 @@ You review and merge plan PRs, same as implementation PRs.
   (mechanical drift guard — mirrors the repo's existing drift-detector pattern).
   (auto/oracle-cluster-bats)
 
-- [ ] 🟢 **`infra/live/README.md` + `docs/dependency-tree.md` — document the
-  `oracle/` backend** (RFC #377 item 5 — depends on items 1–2 existing). Add an
-  `oracle/` row to `infra/live/README.md`'s "Status" section (currently says
-  "`local/` is the only backend implemented today"); note in
-  `docs/dependency-tree.md` if user-facing. Docs-only, no code change.
-  (auto/oracle-backend-docs)
+- [x] 🟢 **`infra/live/README.md` + `docs/dependency-tree.md` — document the
+  `oracle/` backend** (RFC #377 item 5 — depends on items 1–2 existing). Added an
+  `oracle/` row to `infra/live/README.md`'s "Status" section, explicitly marked
+  "unverified against a real account" (per ADR-0004 — reviewed code isn't the
+  same as exercised code). Skipped `docs/dependency-tree.md`: that doc reflects
+  the *actual running* localhost lab's integration/bootstrap graph — the `oracle`
+  backend has never been deployed, so adding it there would misrepresent
+  never-run code as live system state.
 
 _New 🟡 items proposed by the architect live in
 [`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until

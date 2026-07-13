@@ -1,11 +1,11 @@
 # infra/live/ — backend modules (ADR-0026)
 
 Each top-level directory here is a **backend**: a concrete place the lab's cluster can
-run. `local/` (k3d, on the operator's own machine) is the only backend today and stays
-the free, zero-external-dependency default every `make up` path assumes. Per
-[ADR-0026](../../docs/decisions/adr-0026-cloud-agnostic-infrastructure.md), additional
-backends (a managed cloud Kubernetes service, a self-managed cluster, etc.) are meant to
-sit alongside it as opt-in siblings — `infra/live/<backend>/` — never as a fork of
+run. `local/` (k3d, on the operator's own machine) is the free, zero-external-dependency
+**default** every `make up` path assumes. `oracle/` (Oracle Cloud Always Free + k3s,
+ADR-0027) is the first opt-in cloud backend. Per
+[ADR-0026](../../docs/decisions/adr-0026-cloud-agnostic-infrastructure.md), backends
+sit alongside each other as siblings — `infra/live/<backend>/` — never as a fork of
 `local/` or of anything in `gitops/`.
 
 ## The contract a backend must satisfy
@@ -62,8 +62,12 @@ requirement — `local/` remains the path with zero external cost or account.
 
 ## Status
 
-`local/` is the only backend implemented today. Choosing and building the first cloud
-backend is a 🟡 Yellow-tier decision (new infra dependency — see
-[WAYS-OF-WORKING.md §2](../../docs/WAYS-OF-WORKING.md)) that needs its own RFC/ADR before
-implementation, since it picks a specific provider and (per ADR-0007's reasoning) a
-specific Terraform-state approach — see ROADMAP.md for the tracked follow-up item.
+| Backend | Status | Notes |
+|---|---|---|
+| `local/` | Built, default | k3d on the operator's own machine — zero external cost or account. |
+| `oracle/` | Built, **unverified against a real account** | [ADR-0027](../../docs/decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md) / [RFC #377](https://github.com/tooming/k8s-anywhere/issues/377). Oracle Cloud Always Free (Ampere A1) running k3s. Every file was written and locally validated as far as this environment's tooling allowed (`terraform fmt`/`validate` via a real Terraform binary against the actual registry for the module itself; every `tests/oracle-cluster.bats` assertion hand-verified against the real files) — but no OCI account or credentials exist in this environment, so `terraform apply` and the OCI-CLI-driven `scripts/tfstate-oracle-bootstrap.sh` have never actually run. Treat as reviewed-but-unexercised until someone with real OCI access runs it end-to-end. |
+
+Choosing and building a *further* cloud backend (a second provider) is a 🟡 Yellow-tier
+decision (new infra dependency — see
+[WAYS-OF-WORKING.md §2](../../docs/WAYS-OF-WORKING.md)) that needs its own RFC/ADR,
+following the same pattern RFC #377 used for `oracle/`.
