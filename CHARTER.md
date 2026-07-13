@@ -148,9 +148,13 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   Kyverno verifies the signature on admit → ArgoCD deploys it → Argo Rollouts canaries it
   on real Mimir SLOs → Envoy routes it → Grafana shows its metrics & logs → Vault holds
   its secrets → Velero backs up its state.
-- **Cloud backend** (planned): a second Terragrunt backend module targeting a managed
-  cloud Kubernetes service, selected via a single variable at apply time — `gitops/`
-  requires no fork to run there. Localhost stays the default. (ADR-0026)
+- **Cloud backend** (built, unverified against a real account): a second Terragrunt
+  backend module (`infra/live/oracle/`) targeting Oracle Cloud's Always Free tier
+  running self-managed k3s — `gitops/` requires no fork to run there. Localhost stays
+  the default. Every file was written and locally validated as far as this
+  environment's tooling allowed; no OCI account exists in this environment, so it has
+  never actually run end-to-end — see [`infra/live/README.md`](infra/live/README.md)'s
+  Status table. (ADR-0026, ADR-0027)
 
 ## How this drives the ROADMAP
 
