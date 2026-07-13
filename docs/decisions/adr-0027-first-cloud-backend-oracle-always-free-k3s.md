@@ -47,10 +47,22 @@ module must produce the same three outputs as `k3d-cluster`:
 **Terraform state.** Per [ADR-0007](adr-0007-off-cluster-garage-tfstate-backend.md)'s
 reasoning (a cloud backend may use its own state approach rather than inheriting the
 localhost backend's off-cluster Garage), the `oracle` backend's Terragrunt units use a
-**second off-cluster Garage-compatible state store, on the same free Oracle VM** —
-consistent with "no rented instances beyond what's already Always Free," rather than
-introducing OCI Object Storage (a second free-tier service with its own separate quota
-to track) purely for state.
+**second off-cluster Garage instance — on a *separate* Always Free AMD Micro instance
+(1/8 OCPU, 1 GB — a distinct Always Free allocation from the Ampere A1 shape the k3s
+cluster uses), bootstrapped imperatively via the OCI CLI, never by Terraform.** This is
+not optional structure for its own sake: it's the exact same causal-ordering constraint
+ADR-0007 already solved for the localhost backend — the state backend must exist
+*before* `terragrunt apply` runs, so it cannot live on the VM that apply is what
+*creates*. An earlier draft of this ADR said the state store would live "on the same
+free Oracle VM" as the k3s cluster; that's circular (the VM doesn't exist until the
+Terraform this state store backs has already run) and has been corrected here. Using a
+second Always Free instance (not OCI Object Storage) keeps this consistent with "no
+rented infrastructure beyond what's already Always Free" while avoiding a second
+free-tier service with its own quota to separately track. Secrets (the Garage RPC
+secret and admin token) are generated at bootstrap time and never committed — unlike
+the localhost backend's `infra/tfstate/garage.toml`, which safely hardcodes throwaway
+secrets because it only ever binds to `127.0.0.1`, this instance has a public IP and
+must not ship with static, publicly-known credentials.
 
 **What this ADR does NOT do.** It does not implement the module — that is 🟢 executor
 work, tracked in ROADMAP.md, split per `infra/live/README.md`'s three-unit structure.
