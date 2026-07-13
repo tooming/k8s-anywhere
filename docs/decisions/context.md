@@ -1,15 +1,21 @@
 # Lab context & live decisions
 
-A localhost learning lab to see how a cloud-native platform fits together:
+A cloud-agnostic learning lab to see how a cloud-native platform fits together:
 **Envoy · k3s · ArgoCD · TiDB · Vault · GitLab · Terraform/Terragrunt · Mimir · Loki**
-(plus Garage, External Secrets, moto, Grafana, Alloy, kube-state-metrics).
+(plus Garage, External Secrets, moto, Grafana, Alloy, kube-state-metrics). This
+document describes the **localhost backend** (`local/`) specifically — the default,
+free path every `make up` assumes; see [ADR-0026](adr-0026-cloud-agnostic-infrastructure.md)
+and [`infra/live/README.md`](../../infra/live/README.md) for the pluggable-backend
+picture and the `oracle/` cloud backend.
 
 ## Shape
 GitOps platform. Terraform/Terragrunt bootstraps a **k3d** (k3s-in-Docker) cluster;
 **GitLab** (standalone omnibus container) is the git source of truth; **ArgoCD**
-syncs every in-cluster workload from GitLab via an app-of-apps.
+syncs every in-cluster workload from GitLab via an app-of-apps. This shape is
+backend-agnostic above the Terraform bootstrap seam (ADR-0026) — only the cluster
+creation step differs per backend.
 
-## Hard constraint
+## Hard constraint (localhost backend)
 **16 GB M4 Mac.** All components can't run at once. Approach: an always-on light
 **core**, with heavy areas brought up one at a time. Runtime is **Colima** (~12 GB VM),
 not Docker Desktop.
