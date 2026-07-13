@@ -1,8 +1,6 @@
-# k8s-lab
+# k8s-anywhere
 
-> **Rename proposed:** `k8s-anywhere` — reflects the cloud-agnostic goal below. The
-> GitHub repo itself hasn't been renamed yet (that's a repo-settings action for the
-> maintainer to do deliberately); this README will switch names once it is.
+*(renamed from `k8s-lab` 2026-07-13 to match the cloud-agnostic goal below)*
 
 A **cloud-agnostic GitOps platform** that wires a full cloud-native stack together as
 portable infrastructure-as-code — so you can see how the pieces actually fit, not learn
@@ -168,9 +166,6 @@ budget; `make gitlab-down` frees ~3 GB).
 ## Repo
 
 `main` lives in the local **GitLab** (the GitOps source ArgoCD reads from) and is
-mirrored to **GitHub** ([github.com/tooming/k8s-lab](https://github.com/tooming/k8s-lab)).
+mirrored to **GitHub**
+([github.com/tooming/k8s-anywhere](https://github.com/tooming/k8s-anywhere)).
 Push to GitLab for the running lab to pick up changes; GitHub is the public copy.
-
-A rename to **`k8s-anywhere`** is proposed (see the note at the top of this file) to
-match the cloud-agnostic goal — pending the maintainer renaming the GitHub repo (and
-updating the GitLab mirror + local git remotes to match) via repo settings.
