@@ -2264,12 +2264,22 @@ You review and merge plan PRs, same as implementation PRs.
   Terraform-state backend (item 3) needs different backend-block config than
   `local/`'s. (auto/oracle-live-units)
 
-- [ ] 🟢 **Second off-cluster Garage state store for the `oracle` backend**
-  (RFC #377 item 3 — mirrors `infra/tfstate/`'s pattern per
-  [ADR-0007](docs/decisions/adr-0007-off-cluster-garage-tfstate-backend.md)'s
-  reasoning, provisioned on the same free Oracle VM rather than a second OCI
-  service). `infra/tfstate-oracle/` (or equivalent) + `scripts/tfstate-oracle-bootstrap.sh`
-  + a `make tfstate-oracle-up` target, matching the existing `tfstate-up` shape.
+- [ ] 🟢 **Second off-cluster Garage state store for the `oracle` backend, on a
+  separate Always Free AMD Micro instance** (RFC #377 item 3 — corrected in
+  ADR-0027 2026-07-13: the state backend cannot live on the same VM the
+  `oracle-k3s-cluster` module creates, since that Terraform apply needs the
+  state backend to already exist — same causal-ordering constraint
+  [ADR-0007](docs/decisions/adr-0007-off-cluster-garage-tfstate-backend.md)
+  already solved for `local/`. Uses the *separate* Always Free AMD Micro
+  allocation, 1/8 OCPU / 1 GB — distinct quota from the Ampere A1 shape the
+  k3s cluster uses). `infra/tfstate-oracle/` (garage.toml template, no
+  hardcoded secrets — unlike `infra/tfstate/garage.toml`'s throwaway
+  localhost-only secrets, this instance has a public IP) + a bootstrap
+  script using the OCI CLI (not Terraform — matching ADR-0007's precedent
+  that the state backend is imperative, never managed by the Terraform it
+  backs) to launch the Micro instance via cloud-init, generating the Garage
+  RPC secret + admin token at launch time and never committing them + a
+  `make tfstate-oracle-up` target, matching the existing `tfstate-up` shape.
   (auto/oracle-tfstate)
 
 - [ ] 🟢 **`tests/oracle-cluster.bats`** (RFC #377 item 4 — depends on items 1–2).
