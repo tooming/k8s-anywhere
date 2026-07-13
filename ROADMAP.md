@@ -2264,7 +2264,7 @@ You review and merge plan PRs, same as implementation PRs.
   Terraform-state backend (item 3) needs different backend-block config than
   `local/`'s. (auto/oracle-live-units)
 
-- [ ] 🟢 **Second off-cluster Garage state store for the `oracle` backend, on a
+- [x] 🟢 **Second off-cluster Garage state store for the `oracle` backend, on a
   separate Always Free AMD Micro instance** (RFC #377 item 3 — corrected in
   ADR-0027 2026-07-13: the state backend cannot live on the same VM the
   `oracle-k3s-cluster` module creates, since that Terraform apply needs the
