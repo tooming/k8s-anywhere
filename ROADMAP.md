@@ -2240,7 +2240,7 @@ You review and merge plan PRs, same as implementation PRs.
   Acceptance criteria. Items 2–5 depend on item 1 merging first (module must exist
   before it can be wired in / tested).
 
-- [ ] 🟢 **`infra/modules/oracle-k3s-cluster` Terraform module** (RFC #377 item 1 —
+- [x] 🟢 **`infra/modules/oracle-k3s-cluster` Terraform module** (RFC #377 item 1 —
   ADR-0027 is the binding spec). OCI Terraform provider setup; an Ampere A1
   compute instance resource sized to the Always Free shape (2 OCPU / 12 GB per
   ADR-0027 — use `required` variables for compartment/tenancy/availability-domain,

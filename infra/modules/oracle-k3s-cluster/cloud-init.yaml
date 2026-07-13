@@ -1,0 +1,8 @@
+#cloud-config
+# Installs k3s (matching the localhost backend's k3d-wrapped k3s engine — ADR-0027)
+# and blocks until the kubeconfig exists, so the Terraform provisioner that scp's it
+# off the instance never races cloud-init.
+runcmd:
+  - curl -sfL https://get.k3s.io | sh -
+  - sh -c 'until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done'
+  - chmod 644 /etc/rancher/k3s/k3s.yaml
