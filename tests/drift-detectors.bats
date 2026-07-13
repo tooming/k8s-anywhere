@@ -295,6 +295,38 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
+# --- idle-issue-guard-check ---------------------------------------------------
+# ROADMAP rule #9: an "idle / no work" claim must document that the full
+# fallback chain was walked (make ci for doc-drift + a CHARTER-vs-ROADMAP gap
+# scan) before telling the maintainer nothing is actionable. Guards against
+# a session hitting one blocked backlog item and stopping there.
+@test "idle-issue-guard-check: passes on an unrelated issue title/body" {
+  run env IDLEGUARD_TITLE="fix flaky test" IDLEGUARD_BODY="unrelated body" \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "idle-issue-guard-check: FAILS on an idle claim with no fallback-chain evidence" {
+  run env IDLEGUARD_TITLE="executor idle — needs work" IDLEGUARD_BODY="nothing to build this run" \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"make ci"* ]]
+  [[ "$output" == *"CHARTER"* ]]
+}
+
+@test "idle-issue-guard-check: FAILS when only make ci evidence is present" {
+  run env IDLEGUARD_TITLE="executor idle — needs work" IDLEGUARD_BODY="ran make ci, all green" \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 1 ]
+}
+
+@test "idle-issue-guard-check: passes when both fallback-chain checks are documented" {
+  run env IDLEGUARD_TITLE="executor idle — needs work" \
+      IDLEGUARD_BODY="ran make ci locally, all green. Cross-checked CHARTER.md Objectives against ROADMAP.md's checked items, no ungroomed gap found." \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 # --- O2 PSS completeness gate -------------------------------------------------
 # Prevent a future namespace.yaml from acquiring PSA enforce labels without
 # securitycontext test coverage. Coverage is satisfied by EITHER an exact-match

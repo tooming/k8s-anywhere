@@ -63,15 +63,34 @@ no access to anyone's local notes — so every rule it must follow lives here, i
    item** instead of committing something that fails `make ci`. If you genuinely
    can't make any gate-passing progress this run, do **not** open a half-baked PR —
    **prompt the maintainer** (rule #9's channel) instead, then stop.
-9. **Never invent new backlog items — and never go silent.** You only implement items
-   already listed below; the weekly planner refills the backlog (see next section). But
-   when there's no actionable item — the *Now / next* lane is empty, or everything left is
-   🟡/🔴 blocked on a human — do **not** just stop. **Prompt the maintainer** so the
-   idle/blocked state is visible: open a single GitHub issue titled `executor idle — needs
-   work` (or, if one is already open, add a comment to it — search first, never spam a new
-   one each run) that @-mentions the maintainer and lists what's blocked and which
-   decision/RFC/ADR is owed to unblock it. One issue, refreshed each idle run. That is the
-   only acceptable "no PR" outcome — fabricated make-work is still forbidden.
+9. **Never invent new backlog items — and never go silent. And never declare idle on the
+   strength of one blocked item.** You only implement items already listed below; the
+   weekly planner refills the backlog (see next section). But before reporting "no
+   actionable item," walk the **full fallback chain** — every step below is clusterless
+   and always available, so skipping straight to "idle" after the first blocked item is
+   the bug this rule exists to prevent (it recurred — see issue #390):
+   - **Doc-drift check:** run `make ci` and confirm it's green. A stale README, Lab UIs
+     panel, or dashboard is real, gate-passing work — it is not "no work."
+   - **Planner check:** diff CHARTER.md's Objectives (O1–O6) against ROADMAP.md's
+     checked items. An Objective with no covering item, or past its date with no item in
+     flight, is a gap the planner should have filed — file it (a plan issue/PR), don't
+     just note it.
+   - **Architect check:** any unchecked 🟡 item without an RFC yet, that a session could
+     resolve by authoring one (superseding an ADR is architect-tier, self-authorizing per
+     [WAYS-OF-WORKING.md §2](docs/WAYS-OF-WORKING.md)) — write the RFC instead of leaving
+     it blocked.
+   - **Triager check:** any open issue missing labels or grooming.
+
+   Only once *all four* come back clean — `make ci` green, no CHARTER gap, no
+   RFC-writable 🟡 item, nothing to triage — may you report idle. Then, and only then:
+   open a single GitHub issue titled `executor idle — needs work` (or, if one is already
+   open, add a comment to it — search first, never spam a new one each run) that
+   @-mentions the maintainer, and whose body **documents the make ci result and the
+   CHARTER-vs-ROADMAP diff** (not just the blocked items) alongside what's blocked and
+   which decision/RFC/ADR is owed to unblock it. (`scripts/idle-issue-guard-hook.sh`,
+   wired as a `PostToolUse` hook, nudges if an idle-titled issue/comment is missing
+   either piece of evidence.) One issue, refreshed each idle run. That is the only
+   acceptable "no PR" outcome — fabricated make-work is still forbidden.
 10. **Stay in your autonomy tier** (see [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md)).
     You operate at **🟢 Green only** — docs, tests, non-auto-synced manifests, dashboards
     from real metrics. If the next item actually needs **🟡 Yellow** work (a new

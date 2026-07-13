@@ -124,6 +124,17 @@
             "statusMessage": "Checking merged PR's CI status"
           }
         ]
+      },
+      {
+        "matcher": "mcp__github__issue_write|mcp__github__add_issue_comment",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/idle-issue-guard-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking idle-claim evidence"
+          }
+        ]
       }
     ],
     "Stop": [
