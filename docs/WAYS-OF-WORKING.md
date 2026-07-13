@@ -10,38 +10,43 @@
 
 ## 0. Principles (non-negotiable)
 
-1. **Agents are contributors, not admins.** Every agent change lands as a PR and clears the
-   *same* bar as a human change. No special merge path.
-2. **Agents own design, implementation, and — for Green/Yellow-tier work — their own
-   merge.** *(Adopted 2026-07-13; supersedes the prior "merge button is the
-   maintainer's only touchpoint" rule below.)* The architect makes binding technical
-   decisions (RFCs, ADRs); the planner sequences them; the executor implements. Once a
-   PR's required CI checks are green, its `[self-review]` comment is posted, and all
-   conversations are resolved, the authoring routine merges its own PR — **unless** the
-   change is 🔴 Red-tier (§2) or touches governance itself (this file, `CHARTER.md`, or
-   any `docs/decisions/*.md`), in which case a human must click merge, same as before.
-   Agents still *propose* everything that ships; for governance-touching or Red-tier
-   work, humans still decide *whether* it ships. The maintainer does not work issues. An
-   agent must never assign the maintainer an action item it can perform itself with the
-   tools it has (creating/applying labels, re-tagging, commenting, closing its own
-   issues, opening follow-up issues, merging its own non-governance PR) —
-   "maintainer: please do X" in an issue is a routine bug unless X is genuinely 🔴 Red
-   (secrets, repo settings, branch protection, a CHARTER/governance decision). If a tool
-   call fails, fall back to `gh` before escalating; escalate only what §2 actually
-   reserves for humans.
-   > **⚙ Live as of 2026-07-13.** Branch protection on `main` has been removed (§4), so
-   > the merge API will now accept a self-merge call. Read §4 before relying on this:
-   > protection wasn't narrowed to just the CODEOWNERS requirement, it was removed
-   > entirely — required status checks no longer *block* a merge either, so the CI-green
-   > condition in this rule is enforced by the routine's own discipline, not by GitHub.
-   > Per ADR-0004, don't report a PR as self-merged until it demonstrably was, and don't
-   > report CI as "gating" the merge when, at the platform level, it no longer does.
-3. **The repo is the only rulebook agents obey.** Remote agents see only what's in git, so
+1. **Agents have full merge authority — no human merge gate, on any tier.**
+   *(Adopted 2026-07-13, superseding both the original "merge button is the
+   maintainer's only touchpoint" rule and #371's Green/Yellow-only, governance-excluded
+   version of self-merge: the maintainer explicitly directed "AI should fully control
+   the repo from now on," merging PRs itself or, where it's the better tool for the
+   job, committing straight to `main` — no waiting required.)* The architect makes
+   binding technical decisions (RFCs, ADRs); the planner sequences them; the executor
+   implements; **any agent may merge its own PR, including one that edits this file,
+   `CHARTER.md`, or a `docs/decisions/*.md` ADR**, once required CI is green, its
+   `[self-review]` comment is posted, and conversations are resolved. Branch protection
+   on `main` has been removed (§4) precisely to make this possible — GitHub no longer
+   blocks a merge or a direct push on any of that, which means **the CI-green /
+   self-review / resolved-conversations bar is now enforced by agent discipline alone,
+   not the platform.** Treat it as load-bearing for that reason, not less binding.
+   The maintainer does not work issues or click merge buttons. An agent must never
+   assign the maintainer an action item it can perform itself with the tools it has —
+   "maintainer: please do X" is now a routine bug for anything on this repo, full stop.
+   If a tool call fails, fall back to `gh` before escalating.
+   > **Scope of this grant.** "Fully control the repo" covers this repo's git/GitHub
+   > surface: merging, pushing to `main`, and (in principle, though no current tool
+   > grants agents this capability) repo settings. It does **not** extend to three
+   > categories the maintainer's instruction didn't address and that carry a different,
+   > harder-to-reverse risk profile — these stay 🔴 Red per §2 until told otherwise:
+   > **secrets/credentials**, **live-cluster or production infrastructure mutation**,
+   > and **destructive git history operations** (force-push, branch/data deletion,
+   > history rewrite) — a bad merge is one `git revert` away from fixed; a force-pushed
+   > history or a wiped PVC is not. Disabling or altering another agent also stays Red —
+   > it protects the kill-switch (§5) an operator relies on if a routine misbehaves, and
+   > that's an orthogonal concern to *who* can merge.
+2. **The repo is the only rulebook agents obey.** Remote agents see only what's in git, so
    [CHARTER.md](../CHARTER.md), the [ROADMAP.md](../ROADMAP.md) rules, the ADRs in
    [decisions/](decisions/), and this doc are the *complete* set of rules. A governance
    change takes effect only once it's merged.
-4. **Review capacity is the constraint, not generation.** Agents are throttled so they
-   never out-produce the team's ability to review safely (see §4 WIP limits).
+3. **Review capacity is the constraint, not generation.** Agents are throttled so they
+   never out-produce the team's ability to review safely (see §4 WIP limits). Full merge
+   authority raises the stakes on this, not lowers them — nothing else will catch a
+   quietly-oversized or off-scope PR before it lands.
 
 ## 1. Agent registry (every routine has a human owner)
 
@@ -93,43 +98,47 @@ Every agent action falls in a tier. An agent that hits work above its registered
 
 | Tier | Who acts | Examples (non-exhaustive) |
 |---|---|---|
-| 🟢 **Green** | Agent, unsupervised → PR + normal review, **self-merge once CI is green** | Docs, comments, tests; non-auto-synced manifests; dashboards from real metrics; README / `dependency-tree.md` sync; ROADMAP grooming |
-| 🟡 **Yellow** | Architect authors a binding RFC → planner grooms it → executor implements → **self-merge once CI is green** (no human-approval step) — except governance/ADR-authoring PRs themselves, which stay human-merged | New platform component; anything growing the always-on footprint; new deps / Helm sources; CI, gate, or `Makefile` changes; security-adjacent (auth, RBAC, network exposure); ADR-authoring; editing CHARTER.md (goals); `infra/` bootstrap changes |
-| 🔴 **Red** | Humans only — agent must refuse & escalate | Secrets; any live-cluster / prod change; repo settings / branch protection / CODEOWNERS; force-push, deletion, history rewrite; disabling another agent; editing this governance doc; **merging any PR that touches a Red-tier path or a governance file** (`WAYS-OF-WORKING.md`, `CHARTER.md`, `docs/decisions/*.md`) |
+| 🟢 **Green** | Agent, unsupervised → PR (or direct commit to `main` for trivial changes) → **self-merge once CI is green** | Docs, comments, tests; non-auto-synced manifests; dashboards from real metrics; README / `dependency-tree.md` sync; ROADMAP grooming |
+| 🟡 **Yellow** | Architect authors a binding RFC → planner grooms it → executor implements → **self-merge once CI is green** (no human-approval step) | New platform component; anything growing the always-on footprint; new deps / Helm sources; CI, gate, or `Makefile` changes; security-adjacent (auth, RBAC, network exposure); ADR-authoring; editing CHARTER.md / this file (goals & governance); `infra/` bootstrap changes |
+| 🔴 **Red** | Humans only — agent must refuse & escalate | Secrets/credentials; any live-cluster or production infrastructure mutation; destructive git history operations (force-push, branch/data deletion, history rewrite); disabling or altering another agent |
 
 Full definitions:
 
-**🟢 Green — autonomous (PR + normal review, self-merge).** Docs, comments, tests;
+**🟢 Green — autonomous (PR or direct commit, self-merge).** Docs, comments, tests;
 clusterless manifests that are *not* auto-synced (per the 12 GB budget rule); Grafana
 dashboards built from real metrics; `docs/dependency-tree.md` and README sync; ROADMAP
 grooming. This is the executor's and planner's day-to-day lane. Once required CI is
 green, `[self-review]` is posted, and conversations are resolved, the routine merges its
-own PR (§0.2) — no human-approval step, and no human merge-click either.
+own PR — no human-approval step, no human merge-click (§0.1).
 
-**🟡 Yellow — architect-decided, no human-approval step, self-merge except governance.**
-A new platform component; anything that grows the always-on footprint; new third-party
-dependencies or Helm chart sources; changes to CI, the quality gates, or `Makefile`
-targets; security-adjacent changes (auth, RBAC, network exposure); authoring new ADRs;
-editing CHARTER.md (goals); `infra/` bootstrap changes. The architect routine makes the
-binding decision and files it as an `rfc`-labeled GitHub issue (and, where the decision
-requires it, an accompanying `arch/*` PR that lands the ADR, the CHARTER.md update, and
-any `infra/` change). The planner grooms the RFC into 🟢 executor items on its next run
-without waiting for a human to approve the RFC — the architect's decision *is* the
-approval. Non-governance Yellow PRs self-merge like Green once CI is green. **PRs that
-themselves edit `WAYS-OF-WORKING.md`, `CHARTER.md`, or a `docs/decisions/*.md` ADR are
-the one Yellow exception: they still require a human to click merge** — an agent must
-never be the sole approver of its own expanded authority.
+**🟡 Yellow — architect-decided, no human-approval step, self-merge including
+governance.** A new platform component; anything that grows the always-on footprint;
+new third-party dependencies or Helm chart sources; changes to CI, the quality gates, or
+`Makefile` targets; security-adjacent changes (auth, RBAC, network exposure); authoring
+new ADRs; editing `CHARTER.md` (goals) or *this file* (governance); `infra/` bootstrap
+changes. The architect routine makes the binding decision and files it as an
+`rfc`-labeled GitHub issue (and, where the decision requires it, an accompanying
+`arch/*` PR that lands the ADR, the `CHARTER.md` update, and any `infra/` change). The
+planner grooms the RFC into 🟢 executor items on its next run without waiting for a
+human to approve the RFC — the architect's decision *is* the approval. **As of
+2026-07-13 (§0.1), a PR editing `WAYS-OF-WORKING.md`, `CHARTER.md`, or an ADR self-merges
+like any other Yellow PR** — the prior rule requiring a human for governance-touching
+merges is superseded; the maintainer's explicit "AI should fully control the repo"
+instruction *is* that approval, the same way an architect RFC is approval for a new
+component.
 
 **🔴 Red — humans only; an agent must refuse and escalate.** Secrets/credentials of any
-kind; any live-cluster or prod mutation; repo settings, branch protection, or CODEOWNERS;
-force-push, branch/data deletion, history rewrite; editing this governance doc; disabling
-or altering another agent; and **merging** any PR that touches one of those paths, or
-that edits `CHARTER.md` / an ADR (see the Yellow exception above).
+kind; any live-cluster or production infrastructure mutation; destructive git history
+operations (force-push, branch/data deletion, history rewrite); disabling or altering
+another agent. These four are unchanged by the 2026-07-13 full-control grant (§0.1) —
+they're a different risk category (credential exposure, real infrastructure damage, or
+unrecoverable data loss) than "who can merge a PR," which the grant *was* about.
 
 **Always, regardless of tier:** never weaken or skip a gate; never merge with a red CI
-check or an unresolved conversation; never push to `main` directly; never access
-credentials; never merge a PR that touches a Red-tier path or a governance file, no
-matter how green its CI is.
+check or an unresolved conversation — CI no longer *blocks* this at the platform level
+(§4), so it is enforced by agent discipline alone; never touch the four Red-tier
+categories above without an explicit, specific human instruction covering that exact
+action.
 
 ## 3. Agent PR contract (definition of done)
 
@@ -143,22 +152,23 @@ matter how green its CI is.
   that it's an agent run plus which routine produced it.
 - **Green before review:** `make ci` passes; ADRs honored; heavy components stay
   non-auto-synced; docs/dashboards in sync.
-- **Self-merge (Green/Yellow, non-governance only):** once every required status check
-  is green, the `[self-review]` comment is posted, and all conversations are resolved,
-  the authoring routine merges its own PR (squash, matching `main`'s linear-history
-  rule) and updates the ROADMAP checkbox / closes the issue it addressed. It must
-  **not** merge if any required check is red, a conversation is unresolved, or the PR
-  touches a 🔴 Red-tier path or a governance file (`WAYS-OF-WORKING.md`, `CHARTER.md`,
-  `docs/decisions/*.md`) — those wait for a human, full stop (§0.2, §2).
+- **Self-merge (any tier, including governance):** once every required status check is
+  green, the `[self-review]` comment is posted, and all conversations are resolved, the
+  authoring routine merges its own PR (squash, matching `main`'s linear-history
+  convention) and updates the ROADMAP checkbox / closes the issue it addressed. It must
+  **not** merge if any required check is red or a conversation is unresolved — those
+  hold regardless of tier. It must never touch the four 🔴 Red-tier categories (§2) at
+  all, merge or otherwise (§0.1).
 
 ## 4. Review & merge gate
 
 _GitHub repo settings (as of 2026-07-13):_
 
 - **Branch protection on `main` — removed** (maintainer action, 2026-07-13, to unblock
-  §0.2's self-merge policy). This was the *repo-settings* half of enabling self-merge
-  that §0.2/§3 flagged as an agent-can't-do-this-itself follow-up; it's now done, but
-  it removed more than the one blocking rule:
+  self-merge (§0.1)). This was the *repo-settings* half of enabling self-merge that §0.1
+  originally flagged as an agent-can't-do-this-itself follow-up; it's now done, and the
+  maintainer went further than the minimal fix — full removal, not just the CODEOWNERS
+  requirement:
   - No PR required — **direct pushes to `main` are now technically possible.**
   - **No required status checks** — `lint`/`manifests`/`terraform`/`kustomize`/`unit`/
     `drift`/`up-to-date` still run (the `.github/workflows/ci.yml` jobs are unchanged),
@@ -167,22 +177,22 @@ _GitHub repo settings (as of 2026-07-13):_
   - No CODEOWNERS review required, no linear-history enforcement, no
     conversations-must-resolve requirement.
 
-  **What this means in practice: the self-merge contract in §0.2/§3/§4 (CI green,
-  `[self-review]` posted, conversations resolved, never Red-tier/governance) is now the
-  *only* thing standing between a broken change and `main` — GitHub will no longer catch
-  a violation of it.** Every routine and every human working this repo must treat those
-  rules as load-bearing, not advisory, precisely because nothing else enforces them
-  anymore. This doc still says "never merge with a red CI check," "never push to `main`
-  directly," and "never merge a PR that touches a Red-tier path or governance file" (§2)
-  — those are no longer *technically* prevented, only *behaviorally* required. If a
+  **What this means in practice: the self-merge contract in §0.1/§3/§4 (CI green,
+  `[self-review]` posted, conversations resolved, never touching the four Red-tier
+  categories) is now the *only* thing standing between a broken change and `main` —
+  GitHub will no longer catch a violation of it.** Every routine and every human working
+  this repo must treat those rules as load-bearing, not advisory, precisely because
+  nothing else enforces them anymore. This doc still says "never merge with a red CI
+  check" and "never touch a Red-tier category without explicit instruction" (§2) — those
+  are no longer *technically* prevented for CI, only *behaviorally* required. If a
   routine misbehaves, the backstop is the kill-switch (§5: disable the routine) and
   reverting the bad commit, not a rejected API call.
 
-  **Recommended hardening (not yet done, maintainer's call):** re-enable required status
-  checks + "PR required, no direct pushes" + linear history, and drop *only* the
-  CODEOWNERS-approval requirement. That was the minimal change §0.2 actually needed —
-  self-merge stops needing a human approver while CI stays a hard gate. Full removal was
-  a broader, higher-risk trade than the minimal fix.
+  **Optional hardening the maintainer could still add later:** re-enable required status
+  checks + linear history (without reintroducing "PR required" or CODEOWNERS-approval,
+  which would reinstate a human gate the maintainer has explicitly removed). Noted here
+  as an available knob, not a recommendation to act on — the maintainer's 2026-07-13
+  direction was unambiguous and this doc shouldn't second-guess it.
 
 - **`CODEOWNERS` owners** — file exists but all domain owners are `@tbd` (see §7
   ownership map). As the team grows, replace `@tbd` entries with real owners. Even with
@@ -203,10 +213,10 @@ _Process:_
   of piling on. (The executor already skips items with an open `auto/*` PR; the cap
   generalizes that to protect reviewer attention.) Every PR-producing routine posts a
   first-pass `[self-review]` comment (+ `self-reviewed` label) on its own PR before
-  merging — combined with green required CI, this **is** the self-merge trigger for
-  Green/Yellow non-governance PRs (§0.2, §3); it never substitutes for human review on
-  Red-tier or governance-file PRs, which still require an explicit human approval and
-  merge click.
+  merging — combined with green required CI, this **is** the self-merge trigger for any
+  tier (§0.1, §3), including PRs that touch governance files. It never substitutes for
+  a human's ability to review after the fact, comment, or revert — self-merge removes
+  the pre-merge gate, not post-merge accountability.
 - **Staleness SLA:** an agent PR with no review in N working days is flagged or auto-closed,
   not left to rot. Closing is cheap — the item simply returns to the backlog.
 
