@@ -68,5 +68,7 @@ must not ship with static, publicly-known credentials.
 work, tracked in ROADMAP.md, split per `infra/live/README.md`'s three-unit structure.
 It does not change anything about the localhost backend, which remains the default.
 
-**Status.** Adopted 2026-07-13, per RFC (see the linked GitHub issue). First
-cloud-backend implementation of [ADR-0026](adr-0026-cloud-agnostic-infrastructure.md).
+**Status.** Superseded by [ADR-0028](adr-0028-oracle-cloud-backend-rejected.md). Adopted
+2026-07-13, built and merged the same day (module, tfstate bootstrap, live units, bats,
+docs), then reverted 2026-07-13 per maintainer decision — Oracle Cloud is rejected as a
+backend. See ADR-0028 for what's known about why and what's still open.

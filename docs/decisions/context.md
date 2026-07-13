@@ -6,7 +6,7 @@ A cloud-agnostic learning lab to see how a cloud-native platform fits together:
 document describes the **localhost backend** (`local/`) specifically — the default,
 free path every `make up` assumes; see [ADR-0026](adr-0026-cloud-agnostic-infrastructure.md)
 and [`infra/live/README.md`](../../infra/live/README.md) for the pluggable-backend
-picture and the `oracle/` cloud backend.
+picture.
 
 ## Shape
 GitOps platform. Terraform/Terragrunt bootstraps a **k3d** (k3s-in-Docker) cluster;

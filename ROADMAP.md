@@ -2234,73 +2234,15 @@ You review and merge plan PRs, same as implementation PRs.
   **Groomed ↗** into a 🟢 item in *Now / next* above
   (`auto/namespace-resource-profiles`), planner run 2026-06-30.
 
-- ~~🟡 **First cloud backend — pick a provider + implement `infra/live/<backend>/`**~~
-  (RFC #377 — see [ADR-0027](docs/decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md):
-  Oracle Cloud Always Free (Ampere A1 ARM) + self-managed k3s, chosen over AKS/GKE
-  Autopilot because it's the only option where both control plane and compute are
-  free indefinitely, not on a trial/credit mechanism — see the ADR for the full
-  comparison.) **Groomed ↗** into the five 🟢 items below, per RFC #377's
-  Acceptance criteria. Items 2–5 depend on item 1 merging first (module must exist
-  before it can be wired in / tested).
-
-- [x] 🟢 **`infra/modules/oracle-k3s-cluster` Terraform module** (RFC #377 item 1 —
-  ADR-0027 is the binding spec). OCI Terraform provider setup; an Ampere A1
-  compute instance resource sized to the Always Free shape (2 OCPU / 12 GB per
-  ADR-0027 — use `required` variables for compartment/tenancy/availability-domain,
-  no live-account defaults, so `terraform validate`/`fmt` pass in clusterless
-  `make ci` without real OCI credentials); cloud-init installing k3s
-  (`curl -sfL https://get.k3s.io | sh -`); a `local-exec` provisioner that `scp`s
-  `/etc/rancher/k3s/k3s.yaml` off the instance and merges it into `~/.kube/config`
-  under a distinct context name (must not collide with `k3d-k8s-lab` — see
-  ADR-0027 §"Contract compliance"). Outputs: `cluster_name`, `kube_context`,
-  `api_endpoint`, matching `infra/live/README.md`'s contract exactly (same names
-  as `k3d-cluster`'s outputs). `make ci` (terraform fmt/validate) must pass.
-  (auto/oracle-k3s-cluster-module)
-
-- [x] 🟢 **`infra/live/oracle/{cluster,argocd,gitlab}/terragrunt.hcl`** (RFC #377
-  item 2 — depends on the module above merging first). New `oracle/` backend
-  directory mirroring `local/`'s three-unit structure: `cluster/` points
-  `source` at `infra/modules/oracle-k3s-cluster`; `argocd/` and `gitlab/` are
-  copied from `local/`'s units **unchanged** (per the contract, only the
-  `cluster` unit differs per backend) — same `dependency "cluster"` block, same
-  generated provider blocks. New `root.hcl` for the `oracle/` backend if its
-  Terraform-state backend (item 3) needs different backend-block config than
-  `local/`'s. (auto/oracle-live-units)
-
-- [x] 🟢 **Second off-cluster Garage state store for the `oracle` backend, on a
-  separate Always Free AMD Micro instance** (RFC #377 item 3 — corrected in
-  ADR-0027 2026-07-13: the state backend cannot live on the same VM the
-  `oracle-k3s-cluster` module creates, since that Terraform apply needs the
-  state backend to already exist — same causal-ordering constraint
-  [ADR-0007](docs/decisions/adr-0007-off-cluster-garage-tfstate-backend.md)
-  already solved for `local/`. Uses the *separate* Always Free AMD Micro
-  allocation, 1/8 OCPU / 1 GB — distinct quota from the Ampere A1 shape the
-  k3s cluster uses). `infra/tfstate-oracle/` (garage.toml template, no
-  hardcoded secrets — unlike `infra/tfstate/garage.toml`'s throwaway
-  localhost-only secrets, this instance has a public IP) + a bootstrap
-  script using the OCI CLI (not Terraform — matching ADR-0007's precedent
-  that the state backend is imperative, never managed by the Terraform it
-  backs) to launch the Micro instance via cloud-init, generating the Garage
-  RPC secret + admin token at launch time and never committing them + a
-  `make tfstate-oracle-up` target, matching the existing `tfstate-up` shape.
-  (auto/oracle-tfstate)
-
-- [x] 🟢 **`tests/oracle-cluster.bats`** (RFC #377 item 4 — depends on items 1–2).
-  Module shape assertions (required variables present, no hardcoded
-  credentials/secrets anywhere in `infra/modules/oracle-k3s-cluster` or
-  `infra/live/oracle/`), output names match the `k3d-cluster` contract exactly,
-  `argocd`/`gitlab` units under `oracle/` are byte-identical to `local/`'s
-  (mechanical drift guard — mirrors the repo's existing drift-detector pattern).
-  (auto/oracle-cluster-bats)
-
-- [x] 🟢 **`infra/live/README.md` + `docs/dependency-tree.md` — document the
-  `oracle/` backend** (RFC #377 item 5 — depends on items 1–2 existing). Added an
-  `oracle/` row to `infra/live/README.md`'s "Status" section, explicitly marked
-  "unverified against a real account" (per ADR-0004 — reviewed code isn't the
-  same as exercised code). Skipped `docs/dependency-tree.md`: that doc reflects
-  the *actual running* localhost lab's integration/bootstrap graph — the `oracle`
-  backend has never been deployed, so adding it there would misrepresent
-  never-run code as live system state.
+- ~~🟡 **First cloud backend — Oracle Cloud Always Free + k3s**~~ (RFC #377 —
+  built and merged 2026-07-13: module, tfstate bootstrap, live units, bats, docs.
+  **Reverted 2026-07-13 per maintainer decision** — see
+  [ADR-0028](docs/decisions/adr-0028-oracle-cloud-backend-rejected.md), which
+  supersedes ADR-0027. `local/` is again the only implemented backend. Picking a
+  cloud backend remains open 🟡 work — a future attempt needs its own RFC and
+  should confirm with the maintainer up front whether any provider is
+  specifically excluded, given this one was built end-to-end before the
+  rejection surfaced.
 
 _New 🟡 items proposed by the architect live in
 [`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until
