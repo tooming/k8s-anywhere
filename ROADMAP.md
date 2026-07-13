@@ -2254,7 +2254,7 @@ You review and merge plan PRs, same as implementation PRs.
   as `k3d-cluster`'s outputs). `make ci` (terraform fmt/validate) must pass.
   (auto/oracle-k3s-cluster-module)
 
-- [ ] 🟢 **`infra/live/oracle/{cluster,argocd,gitlab}/terragrunt.hcl`** (RFC #377
+- [x] 🟢 **`infra/live/oracle/{cluster,argocd,gitlab}/terragrunt.hcl`** (RFC #377
   item 2 — depends on the module above merging first). New `oracle/` backend
   directory mirroring `local/`'s three-unit structure: `cluster/` points
   `source` at `infra/modules/oracle-k3s-cluster`; `argocd/` and `gitlab/` are
