@@ -54,18 +54,23 @@ No unregistered autonomous routine may run against this repo. Each is owned by o
 accountable human — for its output **and** its cost. Adding, re-scoping, or changing a
 routine's model/cadence is a PR that edits this table.
 
-**Remote routines (cloud, clusterless):**
+**Remote routines (cloud, clusterless):** [`routines/routines.yaml`](../routines/routines.yaml)
+is the source of truth for what's actually live — this table mirrors it, not the other
+way around; if they disagree, trust the YAML and fix this table.
 
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch | Max tier |
 |---|---|---|---|---|---|---|
-| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run; empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager) so no slot is wasted | 21–23:00 UTC nightly (3/day) · Sonnet 4.6 | `auto/*` (fallback roles keep their own prefixes) | 🟢 Green |
-| Executor 4th slot | `trig_011X276UrgGJWLsgC9Apneok` | @tooming | same prompt as the executor (incl. the fallback chain); fills the day's 5th quota slot | 00:00 UTC daily except Thu · Sonnet 4.6 | `auto/*` | 🟢 Green |
-| Planner | `trig_015uWP3Hv1LTREpKzzkMkpUE` | @tooming | grooms CHARTER gaps + issues → ROADMAP | Mon + Thu 01:00 UTC · Opus 4.7 | `plan/*` | 🟢 Green |
-| Architect | `trig_01SpewghyraZDSrLoGA32nBe` | @tooming | researches best practices → opens RFC issues for 🟡 items | weekly Tue 01:00 UTC · Opus 4.7 | `arch/*` | 🟢 Green |
-| Triager | `trig_01E6ugxYJY6yGzwvSHSgFaCx` | @tooming | labels open issues with domain / tier / priority | Wed + Sat 01:00 UTC · Sonnet 4.6 | — (labels) | 🟢 Green |
-| Upgrade drafter | `trig_01UyN9qcTFvWD14k38tn49K1` | @tooming | bumps existing chart/image versions, one PR per run | weekly Thu 00:00 UTC · Sonnet 4.6 | `upgrade/*` | 🟢 Green |
-| Doc-drift author | `trig_01AibRNtdZLqLu3a58jDxnFk` | @tooming | reconciles README + dependency-tree + lab-UI drift | weekly Fri 01:00 UTC · Sonnet 4.6 | `sync/*` | 🟢 Green |
-| Industry-news writer | `trig_01GNuyixzT3TBDF7Mk4ZeSTr` | @tooming | weekly upstream-news digest under `docs/industry/` (feeds the architect's ADR audit) | weekly Sun 01:00 UTC · Sonnet 4.6 | `digest/*` | 🟢 Green |
+| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run; empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no slot is wasted | 21:00/22:00/23:00/00:00/01:00 UTC, every day (5/day) · Sonnet 4.6 | `auto/*` (fallback roles keep their own prefixes) | 🟢 Green |
+
+**One trigger, not eight.** Planner, architect, triager, upgrade-drafter, doc-drift-author,
+industry-news-writer, and the old "executor 4th slot" each *used to* have their own
+cron-scheduled trigger; all were retired 2026-06-13 and absorbed into the single executor
+trigger above, which now reads their prompt files in-repo as fallback targets when its own
+ROADMAP lane is empty (`executor.prompt.md` STEP 6b) — this is why they still exist under
+`routines/` with no separate schedule. Their old trigger IDs are kept disabled (no delete
+API) purely as an audit trail; do not re-enable them without also reworking the fallback
+chain, or the same work will double-fire from two triggers. `janitor.prompt.md` and
+`learning-post-writer.prompt.md` were never separately triggered — same model, fallback-only.
 
 > **Retired — Reviewer** (`trig_01Dw7US6aZmJo8XZwDikoNkG`, daily 17:30 UTC, retired
 > 2026-06-10): cron-based review structurally lagged PR-open — PRs were merged between
@@ -76,7 +81,8 @@ routine's model/cadence is a PR that edits this table.
 > ADR-0004 fabricated content — plus the adversarial design review for `arch/*`) and
 > posts a `[self-review]` comment + `self-reviewed` label on the PR before the run ends.
 > The backend trigger stays disabled as an audit trail; its daily slot funded the
-> executor's restoration to 3/day.
+> executor's restoration to 3/day, and the 2026-06-13 consolidation folded the rest into
+> the fallback chain above.
 
 **Local on-demand roles (maintainer's machine, cluster-bound — not on cron, no quota cost):**
 

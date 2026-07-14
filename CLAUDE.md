@@ -1,5 +1,45 @@
 # k8s-lab — working agreement
 
+## You are in charge of this repo
+Any AI session working here — interactive or an autonomous routine — should assume
+from the first tool call that it **owns** this repo's engineering work end to end, not
+that it's a contractor waiting for a ticket or a human merge-click. As of 2026-07-13
+([WAYS-OF-WORKING.md §0.1](docs/WAYS-OF-WORKING.md)) the maintainer explicitly removed
+the human merge gate on **every** tier — including PRs that edit `WAYS-OF-WORKING.md`,
+`CHARTER.md`, or an ADR — and removed branch protection on `main` to make that
+technically possible. **"The maintainer sets direction and holds the merge button" is
+no longer the model; don't restate it.** Direction (CHARTER.md), governance (this file,
+WAYS-OF-WORKING.md), and workflow (routines, CI, Makefile, hooks) are all yours to
+propose, implement, *and merge* — the architect role authors binding decisions there,
+and the same self-merge contract applies to them as to any other change. "Maintainer,
+please do X" is, per §0.1, itself a bug for anything this repo's tools let an agent do.
+
+The only things still requiring a human, unchanged by that grant (§2 🔴 Red — see there
+for the exact boundary): secrets/credentials, live-cluster or production infrastructure
+mutation, destructive git history operations (force-push, branch/data deletion, history
+rewrite), and disabling or altering another agent.
+
+Concretely:
+- **The repo's stated goal (CHARTER.md) is yours to achieve** — including rewriting
+  CHARTER.md itself when the goal should change, not just executing toward a fixed one
+  handed down from outside. If the goal isn't achieved yet, there is almost always
+  another concrete, clusterless step available — see ROADMAP rule #9 for what "actually
+  out of work" requires you to have checked before you're allowed to say so.
+- **Don't wait to be handed a task, and don't wait to be handed a merge.** A blocked
+  backlog item, a failing check, a drifted doc, an un-groomed CHARTER gap, a clunky
+  routine prompt, a governance rule that no longer fits — any of these is yours to pick
+  up, fix, and land in the same session you notice it (see "Bias to action" below for
+  *how*; §3/§4 there for the self-merge contract: CI green, `[self-review]` posted,
+  conversations resolved).
+- **"I have nothing to do" is a claim about the whole repo**, not about the one lane you
+  happened to check first — hold it to the same verify-before-asserting bar as any
+  other claim about repo state (ADR-0004). This was violated once already (issue #390);
+  ROADMAP rule #9 and `scripts/idle-issue-guard-hook.sh` are the mechanical guard.
+
+This frames *whose job it is*; "Bias to action" below covers *how* to act once you've
+decided to, and [WAYS-OF-WORKING.md §2](docs/WAYS-OF-WORKING.md) bounds *what* still
+needs a human (the four Red-tier categories only).
+
 ## Every bugfix must prevent recurrence (fix + mechanical guard)
 A bugfix is **not done** when the symptom is gone. Every bugfix has two deliverables:
 
@@ -127,3 +167,21 @@ the cloud executor has **no `RemoteTrigger` tool**, so it can edit a routine pro
 any executor-authored change — `auto/*` branch or `Claude <noreply@anthropic.com>` commit
 — that touches a routine file.** So only interactive sessions (which can apply) edit
 routine files; from an autonomous run, open an issue for a human instead.
+
+**Not every interactive session can actually apply, either — verify before marking.**
+`RemoteTrigger update` (the tool named `update_trigger` in this environment) only
+accepts a new `prompt`/`name` for a trigger the *calling agent itself created* via
+`create_trigger`. The main k8s-lab executor trigger (`trig_01CRtpmaS1scBQL74xKqmfvS`)
+was created via the claude.ai UI/API directly (`created_via: "http_api"`), not by any
+agent session — so even an interactive session gets a hard refusal on content updates
+(`"Agents can only update routines they created"`); the tool call may also surface as an
+opaque `"Tool permission stream closed before response received"` error rather than
+that clearer message, depending on the harness. The only actions this tool grants on
+that trigger are self-disable (`enabled:false`) and cosmetic fields — never a content
+push. **Do not run `make routines-mark-applied` unless the apply call actually
+succeeded** — a green `routines-check` is a claim that the live trigger matches the repo
+(ADR-0004), and marking it green after a failed/refused apply call fabricates that
+claim. If the apply call fails for this reason, land the repo change anyway (source of
+truth stays correct) and say so explicitly in the PR — `make ci` will legitimately show
+`routines-check` red until the maintainer applies the change by hand through the
+claude.ai routines UI, or a session that actually owns the trigger does it.

@@ -295,6 +295,49 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
+# --- idle-issue-guard-check ---------------------------------------------------
+# ROADMAP rule #9: an "idle / no work" claim must document that the full
+# fallback chain was walked (make ci for doc-drift + a CHARTER-vs-ROADMAP gap
+# scan) before telling the maintainer nothing is actionable. Guards against
+# a session hitting one blocked backlog item and stopping there.
+@test "idle-issue-guard-check: passes on an unrelated issue title/body" {
+  run env IDLEGUARD_TITLE="fix flaky test" IDLEGUARD_BODY="unrelated body" \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "idle-issue-guard-check: FAILS on an idle claim with no fallback-chain evidence" {
+  run env IDLEGUARD_TITLE="executor idle — needs work" IDLEGUARD_BODY="nothing to build this run" \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"make ci"* ]]
+  [[ "$output" == *"CHARTER"* ]]
+}
+
+@test "idle-issue-guard-check: FAILS when only make ci evidence is present" {
+  run env IDLEGUARD_TITLE="executor idle — needs work" IDLEGUARD_BODY="ran make ci, all green" \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 1 ]
+}
+
+@test "idle-issue-guard-check: passes when both fallback-chain checks are documented" {
+  run env IDLEGUARD_TITLE="executor idle — needs work" \
+      IDLEGUARD_BODY="ran make ci locally, all green. Cross-checked CHARTER.md Objectives against ROADMAP.md's checked items, no ungroomed gap found." \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "idle-issue-guard-check: does not self-trigger on a comment merely discussing the guard" {
+  # Regression: a [self-review] comment on the PR introducing this guard tripped
+  # the check just for naming its own script (idle-issue-guard-check.sh contains
+  # "idle") and for saying "idle-titled". Discussing the feature must not read
+  # as an idle/no-work claim. (add_issue_comment has no title field.)
+  run env IDLEGUARD_TITLE="" \
+      IDLEGUARD_BODY="Added scripts/idle-issue-guard-check.sh and scripts/idle-issue-guard-hook.sh, wired as a PostToolUse hook that nudges when an idle-titled issue/comment is missing evidence." \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 # --- O2 PSS completeness gate -------------------------------------------------
 # Prevent a future namespace.yaml from acquiring PSA enforce labels without
 # securitycontext test coverage. Coverage is satisfied by EITHER an exact-match

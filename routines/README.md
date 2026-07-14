@@ -6,26 +6,36 @@ state; the files here are the *desired* state.
 
 ### Remote scheduled routines (cloud, clusterless)
 
-These fire on cron from claude.ai; they only see what's in git, never the live cluster.
+**Only one trigger is actually live.** [`routines.yaml`](routines.yaml) is the source of
+truth — this section mirrors it, not the other way around. The executor fires on cron
+from claude.ai (5×/day, every day) and only sees what's in git, never the live cluster.
+Every other prompt file below was a separately-scheduled trigger until **2026-06-13**,
+when all of them were retired and absorbed into the executor's own fallback chain
+(`executor.prompt.md` STEP 6b: an empty ROADMAP lane makes the executor read and execute
+the next blocked role's prompt file itself, in the same run). They stay in this
+directory as fallback targets and on-demand local invocations, not as scheduled triggers.
 
 | File | What |
 |------|------|
 | [`routines.yaml`](routines.yaml) | per-routine metadata: `trigger_id`, `cron`, `model`, env, tools, `prompt_file` |
-| [`executor.prompt.md`](executor.prompt.md) | the executor's prompt (nightly implementer, 21–23:00 + 00:00 UTC, `auto/*` PRs) |
-| [`planner.prompt.md`](planner.prompt.md) | the planner's prompt (Mon + Thu groomer, `plan/*` PRs) |
-| [`architect.prompt.md`](architect.prompt.md) | the architect's prompt (weekly Tue RFC opener, `arch/*` PRs) |
-| [`triager.prompt.md`](triager.prompt.md) | the triager's prompt (Wed + Sat issue labeller — labels only, never PRs) |
-| [`upgrade-drafter.prompt.md`](upgrade-drafter.prompt.md) | the upgrade drafter's prompt (weekly Thu version-bump PR, `upgrade/*`) |
-| [`doc-drift-author.prompt.md`](doc-drift-author.prompt.md) | the doc-drift author's prompt (weekly Fri README/dependency-tree/lab-UI reconciliation, `sync/*`) |
-| [`janitor.prompt.md`](janitor.prompt.md) | the janitor's prompt (executor STEP 6b fallback — one bounded, behavior-preserving codebase-health cleanup, `chore/*`; no separate trigger) |
-| [`industry-news-writer.prompt.md`](industry-news-writer.prompt.md) | the industry-news writer's prompt (weekly Sun digest in `docs/industry/`, `digest/*` — feeds the architect's ADR audit) |
+| [`executor.prompt.md`](executor.prompt.md) | **the only live trigger.** Nightly implementer (21:00/22:00/23:00/00:00/01:00 UTC, every day), `auto/*` PRs; falls back through the roles below when its own lane is empty |
+| [`planner.prompt.md`](planner.prompt.md) | the planner's prompt — groomer, `plan/*` PRs. Fallback-only since 2026-06-13 |
+| [`architect.prompt.md`](architect.prompt.md) | the architect's prompt — RFC opener, `arch/*` PRs. Fallback-only since 2026-06-13 |
+| [`triager.prompt.md`](triager.prompt.md) | the triager's prompt — issue labeller, labels only, never PRs. Fallback-only since 2026-06-13 |
+| [`upgrade-drafter.prompt.md`](upgrade-drafter.prompt.md) | the upgrade drafter's prompt — version-bump PR, `upgrade/*`. Fallback-only since 2026-06-13 |
+| [`doc-drift-author.prompt.md`](doc-drift-author.prompt.md) | the doc-drift author's prompt — README/dependency-tree/lab-UI reconciliation, `sync/*`. Fallback-only since 2026-06-13 |
+| [`janitor.prompt.md`](janitor.prompt.md) | the janitor's prompt — one bounded, behavior-preserving codebase-health cleanup, `chore/*`. Always fallback-only, never had its own trigger |
+| [`learning-post-writer.prompt.md`](learning-post-writer.prompt.md) | weekly reflection post in `docs/learnings/`, `learn/*`. Always fallback-only, never had its own trigger |
 
-> **Retired routines:** the **reviewer** (daily first-pass PR review) was retired
-> 2026-06-10 — cron-based review kept lagging PR-open, so the first-pass review now
-> happens *inside* each PR-producing run (the `[self-review]` step at the end of the
-> executor / planner / architect / upgrade-drafter prompts); its backend trigger is kept
-> disabled. The **learning-post writer** ([`learning-post-writer.prompt.md`](learning-post-writer.prompt.md))
-> lost its Sun quota slot to the industry-news writer and is not scheduled.
+> **Retired triggers** (kept disabled as an audit trail — no delete API): the
+> **reviewer** (daily first-pass PR review, retired 2026-06-10 — cron-based review kept
+> lagging PR-open, so first-pass review now happens *inside* each PR-producing run, the
+> `[self-review]` step); and **planner, architect, triager, upgrade-drafter,
+> doc-drift-author, industry-news-writer, and the old "executor 4th slot"** (all retired
+> 2026-06-13, absorbed into the executor's fallback chain above — the industry-news
+> writer's digest-gathering step folded into the architect prompt's own STEP 1). Do not
+> re-enable any of these without also reworking the fallback chain, or work will
+> double-fire from two triggers.
 
 ### Local on-demand roles (maintainer's machine, cluster-bound)
 
@@ -73,6 +83,18 @@ is the cloud identity `Claude <noreply@anthropic.com>`. The result: only interac
 Claude Code sessions — which *can* `RemoteTrigger update` + `make routines-mark-applied`
 in the same session — ever change routine files. If the executor needs a routine change,
 it opens an issue for a human instead (the same way it defers any other out-of-tier work).
+
+**Even an interactive session may not be able to apply.** The `update_trigger` tool only
+lets an agent push new `prompt`/`name` content to a trigger *it created itself* via
+`create_trigger`. `trig_01CRtpmaS1scBQL74xKqmfvS` (the executor) was created via the
+claude.ai UI/API directly (`created_via: "http_api"`), not by any agent — so a content
+update from *any* session gets refused (`"Agents can only update routines they
+created"`, sometimes surfacing as an opaque stream-closed error instead). The only thing
+this tool grants on that trigger is `enabled:false` (self-disable) and cosmetic edits —
+never a prompt push. When that happens: land the repo change anyway and say so plainly
+in the PR, but do **not** run `make routines-mark-applied` — that file is a claim the
+live trigger matches the repo (ADR-0004), and it would be false. `routines-check` stays
+red until the maintainer applies the change by hand through the claude.ai routines UI.
 
 ## Checking running state & drift
 
