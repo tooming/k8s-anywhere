@@ -21,6 +21,11 @@ setup() {
   [[ "$output" == *"bogus"* ]]
 }
 
+@test "readme-check: passes on the real repo README.md" {
+  run bash "$REPO/scripts/readme-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 # --- lab-ui-check ------------------------------------------------------------
 @test "lab-ui-check: passes when the panel matches the HTTPRoutes" {
   run env LABUICHECK_ROOT="$FIX/lab-ui-check/in-sync" bash "$REPO/scripts/lab-ui-check.sh"
@@ -31,6 +36,11 @@ setup() {
   run env LABUICHECK_ROOT="$FIX/lab-ui-check/drift" bash "$REPO/scripts/lab-ui-check.sh"
   [ "$status" -eq 1 ]
   [[ "$output" == *"MISSING from the Lab UIs panel"* ]]
+}
+
+@test "lab-ui-check: passes on the real repo's Lab UIs panel + gitops HTTPRoutes" {
+  run bash "$REPO/scripts/lab-ui-check.sh"
+  [ "$status" -eq 0 ]
 }
 
 @test "lab-ui-check: fails when a panel URL uses a non-front-door port" {
