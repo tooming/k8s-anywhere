@@ -103,10 +103,20 @@ PUBLIC_IP="$(oci compute instance list-vnics --instance-id "$INSTANCE_ID" --quer
 
 echo "[tfstate-oracle] waiting for cloud-init + Garage to come up on $PUBLIC_IP"
 ssh_opts=(-o StrictHostKeyChecking=no -o ConnectTimeout=5 -i "$OCI_SSH_PRIVATE_KEY_PATH")
+ready=0
 for _ in $(seq 1 60); do
-  ssh "${ssh_opts[@]}" "ubuntu@$PUBLIC_IP" 'docker exec tfstate-garage /garage status' >/dev/null 2>&1 && break
+  ssh "${ssh_opts[@]}" "ubuntu@$PUBLIC_IP" 'docker exec tfstate-garage /garage status' >/dev/null 2>&1 && { ready=1; break; }
   sleep 5
 done
+# The loop above is already bounded (300s), but silently falling through to the
+# layout/key/bucket steps below on failure just skips them without explanation (the
+# `if`/`!` conditions that follow are exempt from `set -e`, so a still-unreachable
+# instance doesn't abort here -- it looked like success until a much later, confusing
+# failure). Fail loudly and immediately instead.
+if [ "$ready" -ne 1 ]; then
+  echo "[tfstate-oracle] ERROR: $PUBLIC_IP did not become reachable with a running tfstate-garage container within 300s -- check the OCI console's instance serial console for boot/cloud-init failures" >&2
+  exit 1
+fi
 
 g() { ssh "${ssh_opts[@]}" "ubuntu@$PUBLIC_IP" "docker exec tfstate-garage /garage $*"; }
 

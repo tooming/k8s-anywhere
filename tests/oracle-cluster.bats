@@ -144,3 +144,19 @@ setup() {
   run grep -q 'kubectl config unset users.oracle-' "$MOD/main.tf"
   [ "$status" -eq 0 ]
 }
+
+@test "tfstate-oracle-bootstrap.sh's readiness wait fails loudly on timeout, not silently" {
+  # Regression: the SSH/Garage-readiness poll loop was already bounded (300s), but
+  # nothing checked afterward whether it actually succeeded -- on timeout, the script
+  # silently fell through into the layout/key/bucket steps, whose `if`/`!` guard
+  # conditions are exempt from `set -e`, so an unreachable instance didn't abort
+  # until a much later, confusing failure. Must fail immediately with a clear error.
+  run grep -q 'ready=1' "$REPO/scripts/tfstate-oracle-bootstrap.sh"
+  [ "$status" -eq 0 ]
+  run grep -q 'if \[ "\$ready" -ne 1 \]' "$REPO/scripts/tfstate-oracle-bootstrap.sh"
+  [ "$status" -eq 0 ]
+  run grep -q 'did not become reachable' "$REPO/scripts/tfstate-oracle-bootstrap.sh"
+  [ "$status" -eq 0 ]
+  run grep -A2 'if \[ "\$ready" -ne 1 \]' "$REPO/scripts/tfstate-oracle-bootstrap.sh"
+  [[ "$output" == *"exit 1"* ]]
+}
