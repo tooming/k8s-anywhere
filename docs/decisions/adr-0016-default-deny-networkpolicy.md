@@ -104,9 +104,9 @@ The detailed CNI-choice rationale lives in ADR-0014. Summary:
 
 **Namespaces in scope — fan-out complete (2026-07-14).** 27 namespaces carry the
 two-policy floor: `ack-system`, `argo-rollouts`, `argocd`, `artifactory`, `capstone`,
-`data`, `envoy-gateway-system`, `external-secrets`, `harbor`, `inkless`, `istio-system`,
-`kargo`, `kargo-project`, `kro`, `kyverno`, `lab-demo`, `lab-gateway`, `longhorn-system`,
-`moto`, `node-exporter`, `observability`, `storage`, `tidb`, `tidb-admin`,
+`capstone-pipeline`, `data`, `envoy-gateway-system`, `external-secrets`, `harbor`,
+`inkless`, `istio-system`, `kargo`, `kro`, `kyverno`, `lab-demo`, `lab-gateway`,
+`longhorn-system`, `moto`, `node-exporter`, `observability`, `storage`, `tidb`, `tidb-admin`,
 `trivy-system`, `vault`, `velero`. This list drifts as new components land — treat
 [docs/dependency-tree.md](../dependency-tree.md) as the live source of truth and this
 ADR as the *pattern*, not the enumeration.
