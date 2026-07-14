@@ -60,37 +60,48 @@ no access to anyone's local notes — so every rule it must follow lives here, i
    item description and the PR number. Do **not** prepend anything to the `## Done`
    section — that section is now just a pointer to `docs/done/`.
 8. **If the top item can't be done cleanly in one run, take the next feasible
-   item** instead of committing something that fails `make ci`. If you genuinely
-   can't make any gate-passing progress this run, do **not** open a half-baked PR —
-   **prompt the maintainer** (rule #9's channel) instead, then stop.
-9. **Never invent new backlog items — and never go silent. And never declare idle on the
-   strength of one blocked item.** You only implement items already listed below; the
-   weekly planner refills the backlog (see next section). But before reporting "no
-   actionable item," walk the **full fallback chain** — every step below is clusterless
-   and always available, so skipping straight to "idle" after the first blocked item is
-   the bug this rule exists to prevent (it recurred — see issue #390):
+   item** instead of committing something that fails `make ci`.
+9. **Never invent new backlog items. Never go silent. And never declare idle — an
+   "idle" GitHub issue/comment is now a forbidden outcome, full stop.** You only
+   implement items already listed below; the weekly planner refills the backlog (see
+   next section). But "the Now/next items are all gated" is never where a run ends —
+   every run lands a PR. This was tried the other way first (issues #52, #56, #57,
+   #76, #89, #121, #262, #390, #398 are all "executor idle — needs work" issues that
+   piled up instead of shipping work) and the maintainer ended it explicitly
+   (2026-07-14): stop opening/commenting on idle issues, every run creates a PR,
+   permanently. Walk the **full fallback chain** — every step below is clusterless and
+   always available, so hitting one blocked backlog item is never a reason to stop
+   looking:
    - **Doc-drift check:** run `make ci` and confirm it's green. A stale README, Lab UIs
-     panel, or dashboard is real, gate-passing work — it is not "no work."
+     panel, or dashboard is real, gate-passing work.
    - **Planner check:** diff CHARTER.md's Objectives (O1–O6) against ROADMAP.md's
      checked items. An Objective with no covering item, or past its date with no item in
-     flight, is a gap the planner should have filed — file it (a plan issue/PR), don't
-     just note it.
+     flight, is a gap the planner should have filed — file it (a plan issue/PR).
    - **Architect check:** any unchecked 🟡 item without an RFC yet, that a session could
      resolve by authoring one (superseding an ADR is the architect's call and is
      self-authorizing — see [WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md)) — write the
      RFC instead of leaving it blocked.
    - **Triager check:** any open issue missing labels or grooming.
+   - **Coverage/hardening check:** a script under `scripts/` with no `tests/*.bats`
+     coverage, a doc page that's drifted from the code it describes, a stale chart
+     version pin, an ADR whose "re-evaluation log" is due, a TODO/FIXME left in
+     tracked code — these are always real, always gate-passing, and never run out.
+     (Precedent: `tests/lab-ops-scripts.bats`, added 2026-07-14, closed exactly this
+     kind of gap for `dr-verify.sh` / `frontdoor-ensure.sh` / `lab-health-check.sh` /
+     `tfstate-bootstrap.sh`.)
+   - **Split-the-gate check:** for a `Now / next` 🟢 item blocked on a live-cluster
+     maintainer-confirmation prerequisite, look for an ungated sub-slice of it that
+     doesn't need the confirmation (prep work, doc/dependency-tree wiring, dual-path
+     support) and split it out as its own item — mirrors how RFC #214's cosign work
+     was split into `auto/cosign-make-up-wiring` + `auto/cosign-ci-sign-step` +
+     `auto/cosign-enforce-flip` so only the last slice carries the live-cluster gate.
 
-   Only once *all four* come back clean — `make ci` green, no CHARTER gap, no
-   RFC-writable 🟡 item, nothing to triage — may you report idle. Then, and only then:
-   open a single GitHub issue titled `executor idle — needs work` (or, if one is already
-   open, add a comment to it — search first, never spam a new one each run) that
-   @-mentions the maintainer, and whose body **documents the make ci result and the
-   CHARTER-vs-ROADMAP diff** (not just the blocked items) alongside what's blocked and
-   which decision/RFC/ADR is owed to unblock it. (`scripts/idle-issue-guard-hook.sh`,
-   wired as a `PostToolUse` hook, nudges if an idle-titled issue/comment is missing
-   either piece of evidence.) One issue, refreshed each idle run. That is the only
-   acceptable "no PR" outcome — fabricated make-work is still forbidden.
+   If every one of those comes back clean with truly nothing to build (this should be
+   rare — the coverage/hardening lane in particular is large and slow-growing, not
+   empty), that is a CHARTER/ROADMAP-process gap in itself: fix the process (add a
+   Goal, widen a coverage sweep, write the split-the-gate RFC) rather than reporting
+   it. Fabricated make-work is still forbidden — every item above is real, verifiable
+   work, not busywork invented to have something to commit.
 10. **A 🟡-tagged item still needs its architect RFC first.** The tag marks an open
     decision, not a permission boundary — build 🟢 items directly. For a 🟡 item with no
     linked RFC yet, don't build around the open question: either author the RFC yourself

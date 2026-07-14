@@ -296,10 +296,12 @@ setup() {
 }
 
 # --- idle-issue-guard-check ---------------------------------------------------
-# ROADMAP rule #9: an "idle / no work" claim must document that the full
-# fallback chain was walked (make ci for doc-drift + a CHARTER-vs-ROADMAP gap
-# scan) before telling the maintainer nothing is actionable. Guards against
-# a session hitting one blocked backlog item and stopping there.
+# ROADMAP rule #9 (revised 2026-07-14): "executor/session idle — no work" is a
+# forbidden outcome, full stop — every run ships a PR instead. This guard used
+# to require fallback-chain evidence before allowing an idle issue through;
+# idle issues piled up anyway (#52, #56, #57, #76, #89, #121, #262, #390, #398)
+# so the maintainer ended the pattern outright — the guard now blocks any idle
+# declaration unconditionally, evidence or not.
 @test "idle-issue-guard-check: passes on an unrelated issue title/body" {
   run env IDLEGUARD_TITLE="fix flaky test" IDLEGUARD_BODY="unrelated body" \
       bash "$REPO/scripts/idle-issue-guard-check.sh"
@@ -310,19 +312,25 @@ setup() {
   run env IDLEGUARD_TITLE="executor idle — needs work" IDLEGUARD_BODY="nothing to build this run" \
       bash "$REPO/scripts/idle-issue-guard-check.sh"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"make ci"* ]]
-  [[ "$output" == *"CHARTER"* ]]
+  [[ "$output" == *"forbidden"* ]]
 }
 
-@test "idle-issue-guard-check: FAILS when only make ci evidence is present" {
-  run env IDLEGUARD_TITLE="executor idle — needs work" IDLEGUARD_BODY="ran make ci, all green" \
-      bash "$REPO/scripts/idle-issue-guard-check.sh"
-  [ "$status" -eq 1 ]
-}
-
-@test "idle-issue-guard-check: passes when both fallback-chain checks are documented" {
+@test "idle-issue-guard-check: FAILS even when make ci + CHARTER evidence is present (idle is blocked unconditionally now)" {
   run env IDLEGUARD_TITLE="executor idle — needs work" \
       IDLEGUARD_BODY="ran make ci locally, all green. Cross-checked CHARTER.md Objectives against ROADMAP.md's checked items, no ungroomed gap found." \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"forbidden"* ]]
+}
+
+@test "idle-issue-guard-check: passes when closing an idle issue, even though the closing body discusses 'idle'" {
+  # Regression: closing issue #398 with a body explaining the new no-idle-issues
+  # policy ("idle issues ... are now forbidden ...") re-tripped the same guard
+  # it was satisfying, since "idle" appears as a standalone word outside any
+  # hyphenated compound. Closing is the resolution, not the violation.
+  run env IDLEGUARD_TITLE="executor idle — needs work" \
+      IDLEGUARD_BODY="closing this per your feedback: idle issues are now a forbidden outcome, not a gated-but-acceptable one." \
+      IDLEGUARD_STATE="closed" \
       bash "$REPO/scripts/idle-issue-guard-check.sh"
   [ "$status" -eq 0 ]
 }

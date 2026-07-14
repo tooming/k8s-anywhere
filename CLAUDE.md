@@ -28,19 +28,24 @@ what this file says, and those constraints are not repo-configurable.
 Concretely:
 - **The repo's stated goal (CHARTER.md) is yours to achieve** — including rewriting
   CHARTER.md itself when the goal should change, not just executing toward a fixed one
-  handed down from outside. If the goal isn't achieved yet, there is almost always
-  another concrete, clusterless step available — see ROADMAP rule #9 for what "actually
-  out of work" requires you to have checked before you're allowed to say so.
+  handed down from outside. There is always another concrete, clusterless step
+  available — see ROADMAP rule #9 for the fallback chain every run walks before
+  concluding a Now/next item is blocked.
 - **Don't wait to be handed a task, and don't wait to be handed a merge.** A blocked
   backlog item, a failing check, a drifted doc, an un-groomed CHARTER gap, a clunky
   routine prompt, a governance rule that no longer fits — any of these is yours to pick
   up, fix, and land in the same session you notice it (see "Bias to action" below for
   *how*; §3/§4 there for the self-merge contract: CI green, `[self-review]` posted,
   conversations resolved).
-- **"I have nothing to do" is a claim about the whole repo**, not about the one lane you
-  happened to check first — hold it to the same verify-before-asserting bar as any
-  other claim about repo state (ADR-0004). This was violated once already (issue #390);
-  ROADMAP rule #9 and `scripts/idle-issue-guard-hook.sh` are the mechanical guard.
+- **"Idle" is not an outcome — every run ships a PR.** Reporting "nothing to do" (or
+  opening/commenting on an "executor idle" issue) is forbidden outright, not merely
+  evidence-gated: idle issues (#52, #56, #57, #76, #89, #121, #262, #390, #398) piled up
+  under the old evidence-gated version of this rule instead of producing work, so the
+  maintainer ended the pattern (2026-07-14). ROADMAP rule #9's fallback chain — doc-drift,
+  CHARTER-vs-ROADMAP gap, unRFC'd 🟡 items, issue triage, and a coverage/hardening sweep
+  (untested scripts, drifted docs, stale chart pins, ADRs due for re-evaluation) — always
+  turns up real, clusterless, gate-passing work; `scripts/idle-issue-guard-check.sh` blocks
+  the idle declaration unconditionally as the mechanical guard.
 
 This frames *whose job it is*; "Bias to action" below covers *how* to act once you've
 decided to. [WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md) no longer reserves any
