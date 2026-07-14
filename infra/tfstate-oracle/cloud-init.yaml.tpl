@@ -12,6 +12,7 @@ write_files:
 runcmd:
   - curl -fsSL https://get.docker.com | sh -
   - systemctl enable --now docker
+  - usermod -aG docker ubuntu
   - >-
     docker run -d --name tfstate-garage --restart unless-stopped
     -v /etc/garage.toml:/etc/garage.toml:ro
