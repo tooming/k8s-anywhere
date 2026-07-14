@@ -41,7 +41,11 @@ jobs:
 
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "~> 1.5"
+          # Matches ci.yml's pin. Must be >= 1.6 -- root.hcl's s3 backend block uses
+          # use_path_style/endpoints/skip_requesting_account_id, args the s3 backend
+          # only gained in 1.6; "~> 1.5" (this workflow's first version) resolved to
+          # 1.5.x and failed "Unsupported argument" on all three at terraform init.
+          terraform_version: "1.9.8"
           terraform_wrapper: false
 
       - name: Install terragrunt
