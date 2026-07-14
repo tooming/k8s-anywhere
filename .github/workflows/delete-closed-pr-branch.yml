@@ -1,0 +1,43 @@
+name: delete-closed-pr-branch
+
+# The repo's "Automatically delete head branches" setting only fires on MERGE —
+# a PR closed without merging (e.g. #389, superseded/abandoned work) leaves its
+# branch behind forever. Those stale branches are the raw material for a bad
+# class of noise: auto-update-prs.yml rebases every branch matching the
+# auto|arch|chore|claude|copilot prefixes on every push to main, and each
+# rebase reruns full CI — so leftover stale branches multiply the blast radius
+# of any red-main incident into dozens of duplicate "ci failure" notifications
+# (2026-07-14 incident: routines-check red on main cascaded into failure runs
+# across ~20 stale branches on a single push). Deleting the branch the moment
+# its PR closes keeps the fleet limited to genuinely open work.
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  delete-branch:
+    # Skip already-merged PRs (delete_branch_on_merge already deleted it) and
+    # forks (no permission to delete a branch in someone else's repo).
+    if: >
+      github.event.pull_request.merged == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the closed PR's head branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -uo pipefail
+          if [ "$BRANCH" = "main" ]; then
+            echo "refusing to delete main"
+            exit 0
+          fi
+          gh api -X DELETE "repos/${GH_REPO}/git/refs/heads/${BRANCH}" \
+            && echo "deleted $BRANCH" \
+            || echo "  · $BRANCH already gone or delete failed — non-fatal"
