@@ -24,7 +24,17 @@ ENV_FILE="$STATE_DIR/.env"
 
 command -v oci >/dev/null 2>&1 || { echo "[tfstate-oracle] oci CLI not found — install and 'oci setup config' first" >&2; exit 1; }
 
-AD="$(oci iam availability-domain list --compartment-id "$OCI_TENANCY_ID" --query 'data[0].name' --raw-output)"
+# Always Free per-shape quota is granted to ONE specific AD per tenancy, not
+# uniformly across all three (confirmed against a real account: AD-1 and AD-2
+# had 0 vm-standard-e2-1-micro-count, AD-3 had 2) — picking data[0] from the
+# plain AD list can silently target a zero-quota AD and fail launch_instance
+# with an opaque 404 NotAuthorizedOrNotFound. Pick the AD the limits API says
+# actually has free-tier capacity for this shape instead.
+AD="$(oci limits value list --compartment-id "$OCI_TENANCY_ID" --service-name compute --name vm-standard-e2-1-micro-count --query 'data[?value > `0`] | [0]."availability-domain"' --raw-output)"
+if [ -z "$AD" ] || [ "$AD" = "null" ]; then
+  echo "[tfstate-oracle] no availability domain in this tenancy currently has free vm-standard-e2-1-micro-count capacity — Always Free quota may be exhausted (another instance already using it) or not yet provisioned on a brand-new account" >&2
+  exit 1
+fi
 
 # --- secrets: generate once, persist locally (never committed — see .gitignore) ---
 mkdir -p "$STATE_DIR"

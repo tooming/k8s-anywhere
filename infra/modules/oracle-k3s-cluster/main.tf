@@ -34,7 +34,10 @@ resource "oci_core_vcn" "cluster" {
   compartment_id = var.compartment_id
   cidr_block     = "10.20.0.0/16"
   display_name   = "${var.cluster_name}-vcn"
-  dns_label      = replace(var.cluster_name, "-", "")
+  # OCI caps dns_label at 15 chars — confirmed against a real account (the unclipped
+  # cluster_name "k8s-anywhere-oracle" produces "k8sanywhereoracle", 17 chars, and
+  # CreateVcn 400s on it; terraform validate can't catch this, it's a live API rule).
+  dns_label = substr(replace(var.cluster_name, "-", ""), 0, 15)
 }
 
 resource "oci_core_internet_gateway" "cluster" {
