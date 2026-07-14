@@ -938,6 +938,48 @@ You review and merge plan PRs, same as implementation PRs.
   harbor) in PR 2. The CI drift guard must land with PR 1. Closes #315.
   (auto/gitops-clusterip-bridge)
 
+- [ ] 🟢 **`tests/dr-bluegreen.bats` — structural test gate for zero-downtime blue/green DR
+  scripts** (CHARTER Goal "DR / blue-green on a single host"; `make ci` coverage gap —
+  `docs/00-architecture.md` step 10 and `docs/DR.md §Zero-downtime blue/green` document
+  the drill, and Makefile targets `dr-bluegreen`/`dr-bluegreen-down`/`dr-bluegreen-promote`
+  exist, but no bats gate validates the underlying scripts' structural integrity or prevents
+  the zero-downtime thresholds from being silently changed; the existing `bluegreen-probe.bats`
+  only unit-tests the probe math — it doesn't assert the scripts exist, are executable, or
+  reference the right GitOps resource. **No prerequisites — executor may pick up
+  immediately.**) New `tests/dr-bluegreen.bats` with clusterless structural assertions
+  (mirrors the `dr-restore.bats` pattern — no k3d, no kubectl, pure grep/bash):
+  `gitops/bluegreen/green-root.yaml` exists (the serving-tier ArgoCD root planted on green);
+  all six bluegreen scripts exist and are executable: `scripts/dr-bluegreen.sh`,
+  `scripts/bluegreen-up.sh`, `scripts/bluegreen-frontdoor.sh`, `scripts/bluegreen-down.sh`,
+  `scripts/bluegreen-probe.sh`, `scripts/dr-bluegreen-promote.sh`;
+  `scripts/dr-bluegreen.sh` defines `MIN_UPTIME=99.0` (the uptime PASS threshold — the
+  zero-downtime claim; changing this would silently weaken the drill verdict);
+  `scripts/dr-bluegreen.sh` defines `MAX_OUTAGE=2.0` (the maximum outage seconds PASS
+  threshold); `scripts/bluegreen-up.sh` references `gitops/bluegreen/green-root.yaml`
+  (ensures the green cluster sources the right serving-tier root app);
+  Makefile `dr-bluegreen` is `.PHONY` and calls `bash scripts/dr-bluegreen.sh`;
+  Makefile `dr-bluegreen-down` is `.PHONY`; Makefile `dr-bluegreen-promote` is `.PHONY`.
+  No Makefile changes, no script changes — tests only. `make ci` must pass. `docs/done/`
+  entry required. (auto/dr-bluegreen-bats)
+
+- [ ] 🟢 **ADR-0019 amendment — add `add-default-runasnonroot` to the Initial ClusterPolicy
+  set table** (CHARTER Core Values §"Decisions written down, rejected options off-limits";
+  docs-only drift — ADR-0019 §"Initial ClusterPolicy set" lists 4 policies but
+  `gitops/kyverno/policies/` now has 5: `add-default-runasnonroot.yaml` was added after the
+  Harbor migration (`auto/harbor-application`) closed an admission gap — `goharbor` charts
+  set container-level `runAsNonRoot` but not pod-level, which `require-pod-security-restricted`
+  checks at the pod level; this 5th mutate policy injects the missing pod-level field.
+  `tests/kyverno-add-default-runasnonroot.bats` correctly tests it, but the ADR table
+  remains stale (only lists the original 4). **No prerequisites — executor may pick up
+  immediately.**) Add a row to the ADR-0019 "Initial `ClusterPolicy` set" table:
+  `| add-default-runasnonroot | mutate | Inject pod-level runAsNonRoot: true when missing
+  — closes the admission gap exposed by the Harbor migration (ADR-0024): goharbor chart
+  sets container-level but not pod-level runAsNonRoot; require-pod-security-restricted
+  validates the pod level. See tests/kyverno-add-default-runasnonroot.bats. |`. Update the
+  "All four policies" sentence after the table to "All five policies" (there are now 5).
+  No code changes, no bats changes (the bats file already exists). `make ci` must pass.
+  `docs/done/` entry required. (auto/adr-0019-runasnonroot-row)
+
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
   maintainer confirms at least one CI run pushed a `.sig` tag to Artifactory** — check
