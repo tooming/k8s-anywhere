@@ -12,7 +12,7 @@ SNAP="$ROOT/.routines-applied"
   echo "# .routines-applied — sha256 of each routines/* file at last apply."
   echo "# Updated by: scripts/routines-mark-applied.sh (\`make routines-mark-applied\`)."
   echo "# Drift checker: scripts/routines-check.sh (\`make routines-check\`, in \`make ci\`)."
-  for f in "$ROOT"/routines/*.prompt.md "$ROOT"/routines.yaml; do
+  for f in "$ROOT"/routines/*.prompt.md "$ROOT"/routines/routines.yaml; do
     [ -e "$f" ] || continue
     rel="${f#"$ROOT"/}"
     sha="$(shasum -a 256 "$f" | awk '{print $1}')"

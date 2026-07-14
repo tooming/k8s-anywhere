@@ -29,7 +29,10 @@ routines:
   - name: k8s-lab autonomous dev
     trigger_id: trig_01CRtpmaS1scBQL74xKqmfvS
     cron: "0 21,22,23,0,1 * * *"   # 21:00/22:00/23:00/00:00/01:00 UTC — 5/day, all 7 days
-    model: claude-sonnet-4-6
+    model: claude-sonnet-5         # bumped 2026-07-14 from stale claude-sonnet-4-6 —
+                                    # the live trigger had no model pin at all (silently
+                                    # ran on the environment default); routines.yaml's
+                                    # claim was aspirational until this session set it for real
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
     prompt_file: executor.prompt.md

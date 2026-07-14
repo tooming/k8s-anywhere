@@ -28,7 +28,7 @@ fi
 
 sha_of(){ shasum -a 256 "$1" | awk '{print $1}'; }
 
-for f in "$ROOT"/routines/*.prompt.md "$ROOT"/routines.yaml; do
+for f in "$ROOT"/routines/*.prompt.md "$ROOT"/routines/routines.yaml; do
   [ -e "$f" ] || continue
   rel="${f#"$ROOT"/}"
   current="$(sha_of "$f")"

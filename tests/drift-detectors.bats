@@ -203,6 +203,15 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- routines-check ------------------------------------------------------------
+# Regression: the file has always lived at routines/routines.yaml, but the script
+# once globbed "$ROOT/routines.yaml" (no such file) so drift on it was silently
+# never detected. Assert it's actually tracked now.
+@test "routines-check: tracks routines/routines.yaml, not a nonexistent top-level path" {
+  run bash "$REPO/scripts/routines-check.sh"
+  [[ "$output" != *"routines.yaml is not in .routines-applied"* ]]
+}
+
 # --- helm-chart-pin-check ----------------------------------------------------
 # Resolved offline via a stub resolver (CHARTPIN_RESOLVER) so the suite never hits
 # the network; helm's real "not found" vs "cannot be reached" strings are verified

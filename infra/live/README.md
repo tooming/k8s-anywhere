@@ -67,7 +67,7 @@ requirement — `local/` remains the path with zero external cost or account.
 | `local/` | Built, default | k3d on the operator's own machine — zero external cost or account. |
 | `oracle/` | Built, **unverified against a real account** | [ADR-0027](../../docs/decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md) / [RFC #377](https://github.com/tooming/k8s-anywhere/issues/377). Oracle Cloud Always Free (Ampere A1) running k3s. Every file was written and locally validated as far as this environment's tooling allowed (`terraform fmt`/`validate` via a real Terraform binary against the actual registry for the module itself; every `tests/oracle-cluster.bats` assertion hand-verified against the real files) — but no OCI account or credentials exist in this environment, so `terraform apply` and the OCI-CLI-driven `scripts/tfstate-oracle-bootstrap.sh` have never actually run. Treat as reviewed-but-unexercised until someone with real OCI access runs it end-to-end. |
 
-Choosing and building a *further* cloud backend (a second provider) is a 🟡 Yellow-tier
-decision (new infra dependency — see
-[WAYS-OF-WORKING.md §2](../../docs/WAYS-OF-WORKING.md)) that needs its own RFC/ADR,
-following the same pattern RFC #377 used for `oracle/`.
+Choosing and building a *further* cloud backend (a second provider) is a new infra
+dependency, so it needs its own RFC/ADR first — the architect's decision, per
+[WAYS-OF-WORKING.md](../../docs/WAYS-OF-WORKING.md) — following the same pattern RFC #377
+used for `oracle/`.
