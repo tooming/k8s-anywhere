@@ -1,0 +1,9 @@
+# Content is irrelevant here — the script exits before parsing it (no writable mounts).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mimir-config
+  namespace: observability
+data:
+  mimir.yaml: |
+    multitenancy_enabled: true

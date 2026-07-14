@@ -59,7 +59,15 @@ mounts = sorted({vm['mountPath']
                  for c in spec.get('containers', [])
                  for vm in c.get('volumeMounts', [])
                  if vm['name'] in w})
-print('\n'.join(mounts))
+# Print nothing (not even a blank line) when there are zero writable mounts.
+# `print('\n'.join(mounts))` on an empty list still emits one newline, which
+# `mapfile -t WRITABLE` below reads back as a single empty-string element
+# (array length 1, not 0) -- that silently defeats BOTH the "${#WRITABLE[@]}
+# -eq 0" early-exit below AND under_writable(), whose `"$m"/*` glob becomes
+# the literal pattern `/*` when m="", matching every absolute path as
+# "writable". Only print when there's something real to print.
+if mounts:
+    print('\n'.join(mounts))
 PYEOF
 )
 if [ "${#WRITABLE[@]}" -eq 0 ]; then

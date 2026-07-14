@@ -1,0 +1,24 @@
+# Arbitrary-path fixture: both REQUIRED settings are fine, but compactor.data_dir (an
+# ordinary "/..." scalar, not one of the two hardcoded REQUIRED keys) points under the
+# read-only /etc/mimir mount instead of /data — exercises the step-2 generic path scan.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mimir-config
+  namespace: observability
+data:
+  mimir.yaml: |
+    multitenancy_enabled: true
+    activity_tracker:
+      filepath: /data/metrics-activity.log
+    ruler:
+      rule_path: /data/ruler
+    blocks_storage:
+      backend: s3
+      s3:
+        endpoint: garage.storage.svc.cluster.local:3900
+        bucket_name: mimir
+      tsdb:
+        dir: /data/tsdb
+    compactor:
+      data_dir: /etc/mimir/compactor
