@@ -1,0 +1,86 @@
+name: oracle-cluster-apply
+
+# Manual-only bridge to a real OCI Always Free tenancy (issue #406 / ADR-0027). Exists
+# because the claude.ai routine sandbox's egress proxy blocks registry.terraform.io and
+# *.oraclecloud.com outright (network-level, independent of credentials) — GitHub
+# Actions runners have normal egress, so this is the only automatable path to actually
+# apply the oracle/ backend without a human at a local terminal.
+#
+# Deliberately scoped down from what a human running terragrunt locally could do:
+#   - workflow_dispatch ONLY. Never runs on push/PR/schedule — nothing in this repo can
+#     trigger a real cloud mutation just by existing or being opened.
+#   - plan/apply only. No destroy action. Tearing down real infrastructure stays a
+#     local-session, human-at-the-keyboard operation (`make tfstate-oracle-down`,
+#     `terragrunt destroy`) until there's a deliberate reason to automate that too.
+#   - Requires OCI_* and TFSTATE_ORACLE_* repo secrets to exist; until they're set this
+#     workflow fails immediately at the "render credentials" step with no side effects.
+
+on:
+  workflow_dispatch:
+    inputs:
+      unit:
+        description: "Which infra/live/oracle/ unit to run against"
+        required: true
+        type: choice
+        options: [cluster, argocd, gitlab]
+      action:
+        description: "terragrunt action"
+        required: true
+        type: choice
+        options: [plan, apply]
+
+permissions:
+  contents: read
+
+jobs:
+  terragrunt:
+    runs-on: ubuntu-latest
+    environment: oracle-cloud
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.5"
+          terraform_wrapper: false
+
+      - name: Install terragrunt
+        run: |
+          curl -fsSL -o /usr/local/bin/terragrunt \
+            https://github.com/gruntwork-io/terragrunt/releases/download/v0.67.0/terragrunt_linux_amd64
+          chmod +x /usr/local/bin/terragrunt
+
+      - name: Render OCI + SSH credential files from secrets
+        run: |
+          umask 077
+          mkdir -p "$RUNNER_TEMP/oracle-creds"
+          printf '%s' "${{ secrets.OCI_PRIVATE_KEY }}" > "$RUNNER_TEMP/oracle-creds/oci_api_key.pem"
+          printf '%s' "${{ secrets.OCI_SSH_PUBLIC_KEY }}" > "$RUNNER_TEMP/oracle-creds/oracle-lab.pub"
+          printf '%s' "${{ secrets.OCI_SSH_PRIVATE_KEY }}" > "$RUNNER_TEMP/oracle-creds/oracle-lab"
+          chmod 600 "$RUNNER_TEMP"/oracle-creds/*
+
+      - name: terragrunt ${{ inputs.action }} (${{ inputs.unit }})
+        working-directory: infra/live/oracle/${{ inputs.unit }}
+        env:
+          OCI_TENANCY_ID: ${{ secrets.OCI_TENANCY_ID }}
+          OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
+          OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
+          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+          OCI_REGION: ${{ secrets.OCI_REGION }}
+          OCI_PRIVATE_KEY_PATH: ${{ runner.temp }}/oracle-creds/oci_api_key.pem
+          OCI_SSH_PUBLIC_KEY_PATH: ${{ runner.temp }}/oracle-creds/oracle-lab.pub
+          OCI_SSH_PRIVATE_KEY_PATH: ${{ runner.temp }}/oracle-creds/oracle-lab
+          TFSTATE_ORACLE_ENDPOINT: ${{ secrets.TFSTATE_ORACLE_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.GARAGE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.GARAGE_SECRET_ACCESS_KEY }}
+        run: |
+          terragrunt init
+          if [ "${{ inputs.action }}" = "apply" ]; then
+            terragrunt apply -auto-approve
+          else
+            terragrunt plan
+          fi
+
+      - name: Clean up rendered credential files
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/oracle-creds"
