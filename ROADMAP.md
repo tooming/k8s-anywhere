@@ -957,7 +957,7 @@ You review and merge plan PRs, same as implementation PRs.
   harbor) in PR 2. The CI drift guard must land with PR 1. Closes #315.
   (auto/gitops-clusterip-bridge)
 
-- [ ] 🟢 **`tests/dr-bluegreen.bats` — structural test gate for zero-downtime blue/green DR
+- [x] 🟢 **`tests/dr-bluegreen.bats` — structural test gate for zero-downtime blue/green DR
   scripts** (CHARTER Goal "DR / blue-green on a single host"; `make ci` coverage gap —
   `docs/00-architecture.md` step 10 and `docs/DR.md §Zero-downtime blue/green` document
   the drill, and Makefile targets `dr-bluegreen`/`dr-bluegreen-down`/`dr-bluegreen-promote`
