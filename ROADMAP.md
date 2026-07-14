@@ -981,7 +981,7 @@ You review and merge plan PRs, same as implementation PRs.
   No Makefile changes, no script changes — tests only. `make ci` must pass. `docs/done/`
   entry required. (auto/dr-bluegreen-bats)
 
-- [ ] 🟢 **ADR-0019 amendment — add `add-default-runasnonroot` to the Initial ClusterPolicy
+- [x] 🟢 **ADR-0019 amendment — add `add-default-runasnonroot` to the Initial ClusterPolicy
   set table** (CHARTER Core Values §"Decisions written down, rejected options off-limits";
   docs-only drift — ADR-0019 §"Initial ClusterPolicy set" lists 4 policies but
   `gitops/kyverno/policies/` now has 5: `add-default-runasnonroot.yaml` was added after the
