@@ -13,7 +13,8 @@
 #
 # Exit 0 = in sync; 1 = drift (instructions printed).
 set -uo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# ROOT defaults to the repo; tests point ROUTINESCHECK_ROOT at a fixture tree.
+ROOT="${ROUTINESCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 SNAP="$ROOT/.routines-applied"
 drift=0
 bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
