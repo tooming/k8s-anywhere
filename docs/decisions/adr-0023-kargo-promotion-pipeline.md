@@ -97,13 +97,24 @@ application namespace is unchanged.
 
 ### NetworkPolicy + PSS
 
-- Default-deny overlay at `gitops/kargo/networkpolicy/` (ADR-0016).
-  Allows: ingress TCP 80 from `envoy-gateway-system` (Kargo UI);
+- **`kargo` namespace** — default-deny overlay at `gitops/kargo/networkpolicy/`
+  (ADR-0016). Allows: ingress TCP 80 from `envoy-gateway-system` (Kargo UI);
   ingress TCP 9443 from kube-apiserver (admission webhooks);
   egress TCP 80 to `argocd` (argocd-update step);
   egress TCP 443 to `capstone` app registry (image digest discovery);
-  egress to kube-apiserver via baseline.
-- PSA label `restricted` — no carve-out needed (Kargo pods run uid 65532, non-root).
+  egress to kube-apiserver via baseline. PSA label `restricted` — no carve-out
+  needed (Kargo pods run uid 65532, non-root).
+- **`capstone-pipeline` namespace** — default-deny overlay at
+  `gitops/kargo-project/networkpolicy/` (ADR-0016), delivered by the standalone
+  `gitops/platform/kargo-project-networkpolicy.yaml` Application (ON-DEMAND, wave 4,
+  pairs with `kargo-project.yaml`). Allows: egress (no port restriction) to `kargo`
+  (promotion-step pods report status back to the Kargo controller/API); egress TCP
+  80 to `argocd` (the same `argocd-update` promotion step, called from the
+  promotion-job pod running in `capstone-pipeline` rather than `kargo`). PSA label
+  `restricted` on `gitops/kargo-project/namespace.yaml` — defense-in-depth even
+  though no workloads currently run in `capstone-pipeline` outside promotion jobs
+  (the namespace itself is created by the Kargo `Project` CRD; the explicit manifest
+  lets ArgoCD SSA-patch the PSA labels onto it).
 
 ---
 
@@ -146,11 +157,15 @@ HTTPRoute; admin-credentials ExternalSecret.
 | `gitops/platform/kargo-project.yaml` | Kargo Project/Warehouse/Stage Application (wave 6, ON-DEMAND) |
 | `gitops/kargo/namespace.yaml` | Namespace + PSA restricted labels |
 | `gitops/kargo/route.yaml` | HTTPRoute `kargo.127.0.0.1.nip.io` |
-| `gitops/kargo/networkpolicy/` | Default-deny + allow rules |
+| `gitops/kargo/networkpolicy/` | Default-deny + allow rules (`kargo` namespace) |
 | `gitops/kargo-project/project.yaml` | Kargo Project, Warehouse, Stage resources |
+| `gitops/kargo-project/namespace.yaml` | `capstone-pipeline` namespace + PSA restricted labels |
+| `gitops/platform/kargo-project-networkpolicy.yaml` | NetworkPolicy Application for `capstone-pipeline` (wave 4, ON-DEMAND, pairs with `kargo-project.yaml`) |
+| `gitops/kargo-project/networkpolicy/` | Default-deny + allow rules (`capstone-pipeline` namespace) |
 | `gitops/apps/capstone/kustomization.yaml` | Enables kustomize mode (Kargo image override) |
 | `gitops/secrets/kargo-admin-externalsecret.yaml` | ESO ExternalSecret for admin credentials |
 | `tests/kargo.bats` | Clusterless structural tests |
+| `tests/networkpolicy-capstone-pipeline.bats` | `capstone-pipeline` namespace NetworkPolicy overlay tests |
 
 ---
 

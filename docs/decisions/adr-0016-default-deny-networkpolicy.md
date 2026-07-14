@@ -1,8 +1,11 @@
 # ADR-0016 — Default-deny NetworkPolicy per namespace (Cilium-enforced)
 
-**Status.** Adopted. Decision taken in RFC #82. Pilot namespace: `data`; full
-fan-out to remaining namespaces follows per-namespace via the planner's groomed
-items.
+**Status.** Adopted. Decision taken in RFC #82. Pilot namespace: `data`. **Fan-out is
+complete** as of 2026-07-14 — every always-on namespace (plus the on-demand ones that
+have landed) carries the two-policy floor; see §"Scope & exceptions" below for the
+current enumeration and [docs/dependency-tree.md](../dependency-tree.md) (row 4, plus
+the per-component prose) for the continuously-maintained live list, which is more
+current than any static table in this ADR could stay.
 
 ---
 
@@ -58,14 +61,14 @@ Two parameter-free template files under `gitops/network/policies/`:
 Each namespace's Kustomize overlay sets `namespace:` in a patch so a single
 `kustomization.yaml` plus a 3-line patch is all a new namespace needs.
 
-### 4. Staged rollout — pilot then fan-out
+### 4. Staged rollout — pilot then fan-out (complete)
 
 | Phase | Scope | Rationale |
 |-------|-------|-----------|
 | **Pilot** (this ADR) | `data` namespace | RabbitMQ + Redis are self-contained, the existing "Lab — RabbitMQ" / "Lab — Redis" dashboards and `data-demo` load generator give immediate signal if a policy is wrong. |
-| **Fan-out** (planner-groomed items) | `argocd`, `vault`, `observability`, `storage`, `lab-gateway`, `tidb`, `tidb-admin`, `moto`, `ack-system`, `capstone` — one item per namespace | Sequential, one namespace per executor run so failures are isolated. |
-| **On-demand** | `artifactory`, `istio-system`, `longhorn-system` | Per-component allow policies land **with** the bring-up PR for that component — not retroactively. |
-| **Out of scope** | `kube-system` | Contains kube-dns, metrics-server, and the kubelet's SA issuer; flows are complex and a policy mistake here takes the cluster down. Addressed in a follow-up RFC. |
+| **Fan-out** (planner-groomed items, one namespace per executor run) | Every remaining always-on namespace, delivered two ways: (a) the `networkpolicy` `ApplicationSet` (`gitops/platform/networkpolicy-appset.yaml`, list-generator, wave 3, generated Applications at wave 4) — the majority of namespaces; (b) a handful of standalone `<ns>-networkpolicy` Applications for namespaces whose overlay predates the appset or that carry component-specific wiring (`kyverno`, `trivy-system`, `argo-rollouts`, `envoy-gateway-system`, `velero`, `kargo`, `kargo-project`) | Sequential, one namespace per executor run so failures are isolated; the appset consolidated most of the standalone Applications this pattern originally produced into one list, per RFC #82's spirit without one YAML file per namespace in `gitops/platform/`. |
+| **On-demand namespaces** | `artifactory`, `harbor`, `istio-system`, `longhorn-system`, `inkless` | **Auto-synced ahead of the on-demand bring-up**, not "with" it as originally planned — the namespace's default-deny floor (via the appset) is in place *before* `make <name>-up` ever admits a pod, so there's no policy race on first bring-up. Same `automated: {prune, selfHeal}` policy as every other appset entry. |
+| **Out of scope** | `kube-system` | Contains kube-dns, metrics-server, and the kubelet's SA issuer; flows are complex and a policy mistake here takes the cluster down. Unchanged since this ADR was adopted. |
 
 ---
 
@@ -99,18 +102,21 @@ The detailed CNI-choice rationale lives in ADR-0014. Summary:
 
 ## Scope & exceptions
 
-**Namespaces in scope (fan-out order after pilot):**
-`data`, `argocd`, `vault`, `observability`, `storage`, `lab-gateway`, `tidb`,
-`tidb-admin`, `moto`, `ack-system`, `capstone`.
+**Namespaces in scope — fan-out complete (2026-07-14).** 27 namespaces carry the
+two-policy floor: `ack-system`, `argo-rollouts`, `argocd`, `artifactory`, `capstone`,
+`capstone-pipeline`, `data`, `envoy-gateway-system`, `external-secrets`, `harbor`,
+`inkless`, `istio-system`, `kargo`, `kro`, `kyverno`, `lab-demo`, `lab-gateway`,
+`longhorn-system`, `moto`, `node-exporter`, `observability`, `storage`, `tidb`, `tidb-admin`,
+`trivy-system`, `vault`, `velero`. This list drifts as new components land — treat
+[docs/dependency-tree.md](../dependency-tree.md) as the live source of truth and this
+ADR as the *pattern*, not the enumeration.
 
 **Carve-outs / special handling:**
 
 | Namespace | Treatment | Reason |
 |-----------|-----------|--------|
 | `kube-system` | out of scope | DNS, metrics-server, API issuer — a mistake here brings the cluster down. Separate RFC. |
-| `istio-system` (on-demand) | policy lands with bring-up PR | ztunnel/istiod flows are component-specific |
-| `longhorn-system` (on-demand) | policy lands with bring-up PR | longhorn-manager ↔ longhorn-csi flows are component-specific |
-| `artifactory` (on-demand) | policy lands with bring-up PR | Artifactory ↔ Garage S3 flows are component-specific |
+| `istio-system`, `longhorn-system`, `artifactory`, `harbor`, `inkless` (all on-demand) | policy auto-synced ahead of the component's own on-demand bring-up | The default-deny floor is in place before `make <name>-up` admits any pod — no policy race on first bring-up. Originally planned as "lands with the bring-up PR"; the appset pattern made pre-provisioning both possible and simpler. |
 
 **Istio ambient, once up:** `NetworkPolicy` (CNI layer) and Istio
 `AuthorizationPolicy` (L7/identity layer) are complementary per CNCF guidance
@@ -120,17 +126,26 @@ The detailed CNI-choice rationale lives in ADR-0014. Summary:
 
 ## Files this work touches
 
+**Pattern (unchanged since the pilot):**
+
 | Path | Role |
 |------|------|
 | `docs/decisions/adr-0016-default-deny-networkpolicy.md` | This ADR |
 | `gitops/network/policies/default-deny.yaml` | Reusable deny-all template |
 | `gitops/network/policies/allow-dns-and-apiserver.yaml` | Reusable DNS+API allow template |
-| `gitops/data/networkpolicy/kustomization.yaml` | Pilot overlay for `data` namespace |
+| `gitops/data/networkpolicy/kustomization.yaml` | Pilot overlay for `data` namespace (the model every later namespace's overlay copies) |
 | `gitops/data/networkpolicy/allow-rabbitmq-ingress.yaml` | Allow ingress to RabbitMQ (5672, 15692) |
 | `gitops/data/networkpolicy/allow-valkey-ingress.yaml` | Allow ingress to Valkey (6379, 9121) |
 | `gitops/data/networkpolicy/allow-data-demo-egress.yaml` | Allow data-demo → RabbitMQ + Redis |
-| `tests/networkpolicy.bats` | Clusterless YAML structural tests |
-| `docs/dependency-tree.md` | Note on `data` namespace policy posture |
+| `tests/networkpolicy.bats` | Baseline clusterless YAML structural tests (per-namespace overlays get their own `tests/networkpolicy-<ns>.bats`) |
+| `docs/dependency-tree.md` | The continuously-maintained enumeration of every namespace's NetworkPolicy posture — treat as current, this ADR as the pattern |
+
+**Delivery mechanism added post-pilot (fan-out):**
+
+| Path | Role |
+|------|------|
+| `gitops/platform/networkpolicy-appset.yaml` | `ApplicationSet` (list-generator) that plants the per-namespace overlay Application for most fanned-out namespaces — the primary delivery mechanism today, not a standalone Application per namespace |
+| `gitops/platform/{kyverno,trivy-system,argo-rollouts,envoy-gateway-system,velero,kargo,kargo-project}-networkpolicy.yaml` | Standalone `<ns>-networkpolicy` Applications for namespaces whose overlay predates the appset or carries component-specific wiring |
 
 ---
 
