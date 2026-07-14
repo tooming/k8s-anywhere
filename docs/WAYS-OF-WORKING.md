@@ -97,55 +97,6 @@ _(As the team grows, replace the single-owner entries above with the owning engi
 > tools) live in [`routines/`](../routines/) and are applied via Claude Code — see
 > [routines/README.md](../routines/README.md). This table is the human-readable summary.
 
-## 2. Autonomy tiers (what an agent may do unsupervised)
-
-Every agent action falls in a tier. An agent that hits work above its registered tier must
-**stop and open an issue for a human** — never proceed.
-
-| Tier | Who acts | Examples (non-exhaustive) |
-|---|---|---|
-| 🟢 **Green** | Agent, unsupervised → PR (or direct commit to `main` for trivial changes) → **self-merge once CI is green** | Docs, comments, tests; non-auto-synced manifests; dashboards from real metrics; README / `dependency-tree.md` sync; ROADMAP grooming |
-| 🟡 **Yellow** | Architect authors a binding RFC → planner grooms it → executor implements → **self-merge once CI is green** (no human-approval step) | New platform component; anything growing the always-on footprint; new deps / Helm sources; CI, gate, or `Makefile` changes; security-adjacent (auth, RBAC, network exposure); ADR-authoring; editing CHARTER.md / this file (goals & governance); `infra/` bootstrap changes |
-| 🔴 **Red** | Humans only — agent must refuse & escalate | Secrets/credentials; any live-cluster or production infrastructure mutation; destructive git history operations (force-push, branch/data deletion, history rewrite); disabling or altering another agent |
-
-Full definitions:
-
-**🟢 Green — autonomous (PR or direct commit, self-merge).** Docs, comments, tests;
-clusterless manifests that are *not* auto-synced (per the 12 GB budget rule); Grafana
-dashboards built from real metrics; `docs/dependency-tree.md` and README sync; ROADMAP
-grooming. This is the executor's and planner's day-to-day lane. Once required CI is
-green, `[self-review]` is posted, and conversations are resolved, the routine merges its
-own PR — no human-approval step, no human merge-click (§0.1).
-
-**🟡 Yellow — architect-decided, no human-approval step, self-merge including
-governance.** A new platform component; anything that grows the always-on footprint;
-new third-party dependencies or Helm chart sources; changes to CI, the quality gates, or
-`Makefile` targets; security-adjacent changes (auth, RBAC, network exposure); authoring
-new ADRs; editing `CHARTER.md` (goals) or *this file* (governance); `infra/` bootstrap
-changes. The architect routine makes the binding decision and files it as an
-`rfc`-labeled GitHub issue (and, where the decision requires it, an accompanying
-`arch/*` PR that lands the ADR, the `CHARTER.md` update, and any `infra/` change). The
-planner grooms the RFC into 🟢 executor items on its next run without waiting for a
-human to approve the RFC — the architect's decision *is* the approval. **As of
-2026-07-13 (§0.1), a PR editing `WAYS-OF-WORKING.md`, `CHARTER.md`, or an ADR self-merges
-like any other Yellow PR** — the prior rule requiring a human for governance-touching
-merges is superseded; the maintainer's explicit "AI should fully control the repo"
-instruction *is* that approval, the same way an architect RFC is approval for a new
-component.
-
-**🔴 Red — humans only; an agent must refuse and escalate.** Secrets/credentials of any
-kind; any live-cluster or production infrastructure mutation; destructive git history
-operations (force-push, branch/data deletion, history rewrite); disabling or altering
-another agent. These four are unchanged by the 2026-07-13 full-control grant (§0.1) —
-they're a different risk category (credential exposure, real infrastructure damage, or
-unrecoverable data loss) than "who can merge a PR," which the grant *was* about.
-
-**Always, regardless of tier:** never weaken or skip a gate; never merge with a red CI
-check or an unresolved conversation — CI no longer *blocks* this at the platform level
-(§4), so it is enforced by agent discipline alone; never touch the four Red-tier
-categories above without an explicit, specific human instruction covering that exact
-action.
-
 ## 3. Agent PR contract (definition of done)
 
 - **One item per PR**, focused and bounded (target < ~400 changed lines; larger work is
