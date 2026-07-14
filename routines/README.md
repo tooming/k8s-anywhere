@@ -99,7 +99,8 @@ anyway and say so plainly in the PR, but do **not** run `make routines-mark-appl
 that file is a claim the live trigger matches the repo (ADR-0004), and it would be
 false. `routines-check` stays red until either a later session's apply succeeds or the
 maintainer applies the change by hand through the claude.ai routines UI — and a red
-`routines-check` is never grounds to merge anyway (WAYS-OF-WORKING.md §2 is absolute).
+`routines-check` is never grounds to merge anyway (WAYS-OF-WORKING.md §4's "never merge
+red CI" is absolute).
 
 ## Checking running state & drift
 

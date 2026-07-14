@@ -182,33 +182,30 @@ _Process:_
 
 - **Free quota: 5 routine runs per rolling 24h.** Beyond that, runs use usage credits *only
   if* the "additional runs" toggle is on (otherwise they're skipped — a hard free cap).
-  Current allocation runs at the cap every day — all slots filled, none wasted (reviewer
-  retired 2026-06-10; a second executor trigger adds a 4th run on non-Thursday days,
-  since one cron expression can't encode "4/day except Thu"):
-  - **Mon:** executor (4) + planner (1) = 5
-  - **Tue:** executor (4) + architect (1) = 5
-  - **Wed:** executor (4) + triager (1) = 5
-  - **Thu:** executor (3) + planner (1) + upgrade-drafter (1) = 5
-  - **Fri:** executor (4) + doc-drift-author (1) = 5
-  - **Sat:** executor (4) + triager (1) = 5
-  - **Sun:** executor (4) + industry-news-writer (1) = 5
-
-  No headroom — adding any new routine or raising any cadence requires cutting an
-  executor slot or enabling the paid "additional runs" toggle. (The local verifier and
-  operator are invoked by hand on the maintainer's machine; they have no cron and no
-  quota cost.)
-- **Night-time window + rolling-24h credit safety.** All runs fire in a fixed nightly
-  window at **five fixed clock-times every day — 21:00, 22:00, 23:00, 00:00, 01:00 UTC**
-  (~23:00–04:00 in the maintainer's Europe/Tallinn TZ, night in both EET and EEST so no
-  DST flip drifts a slot into the working day). The times are *fixed* deliberately: the
-  free cap is per **rolling** 24h, not per calendar day, so because the set of fire-times
-  is identical every day (only which routine fills each slot changes), every rolling 24h
-  window holds exactly 5 runs and the schedule can never spill into paid "additional runs"
-  credits. Clustering at night *without* fixing the times would let two nights' runs land
-  in one 24h window (6+ runs) and burn credits. Slots: 21/22/23:00 = executor base;
-  00:00 = executor slot-filler (or upgrade-drafter on Thu); 01:00 = routine-of-the-day.
-- Spend scales with **cadence × model × routine count**; the registry records all three, and
-  the routine's owner is accountable for it.
+  [`routines/routines.yaml`](../routines/routines.yaml) is the **single source of truth**
+  for the exact cron and slot count — don't restate the schedule here. (A day-by-day slot
+  table — "Mon: executor(4)+planner(1)", etc. — lived in this section until 2026-07-14 and
+  silently drifted for a month after the 2026-06-13 single-trigger consolidation described
+  in §1, describing eight retired per-day-of-week triggers that no longer exist. Duplicating
+  the schedule in prose is exactly what let it drift undetected; this section now only
+  describes the *policy*, not the literal times.) One trigger, one cron, every slot runs
+  the same executor prompt, which escalates through the in-repo fallback chain (§1,
+  `executor.prompt.md` STEP 6b) whenever its own ROADMAP lane is empty — so all 5 daily
+  slots stay productive without a second trigger or a per-day rotation to keep in sync by
+  hand. No headroom — adding any new routine trigger or raising cadence requires enabling
+  the paid "additional runs" toggle. (The local verifier and operator are invoked by hand
+  on the maintainer's machine; they have no cron and no quota cost.)
+- **Night-time window + rolling-24h credit safety.** All 5 daily runs fire at fixed
+  clock-times (see `routines.yaml`'s `cron` for the exact values), inside a fixed nightly
+  window (~23:00–04:00 in the maintainer's Europe/Tallinn TZ, night in both EET and EEST
+  so no DST flip drifts a slot into the working day). The times are *fixed* deliberately:
+  the free cap is per **rolling** 24h, not per calendar day, so because the set of
+  fire-times is identical every day, every rolling 24h window holds exactly 5 runs and the
+  schedule can never spill into paid "additional runs" credits. Clustering at night
+  *without* fixing the times would let two nights' runs land in one 24h window (6+ runs)
+  and burn credits.
+- Spend scales with **cadence × model × routine count**; the registry (§1) and
+  `routines.yaml` record all three, and the routine's owner is accountable for it.
 - **Scale-out rule:** add agents or raise cadence only when there is review capacity to
   absorb the extra output. Generation is cheap; safe review is not.
 - **Emergency stop:** disable a routine immediately from the routines page (toggle off) or
