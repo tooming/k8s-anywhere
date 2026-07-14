@@ -167,3 +167,21 @@ the cloud executor has **no `RemoteTrigger` tool**, so it can edit a routine pro
 any executor-authored change — `auto/*` branch or `Claude <noreply@anthropic.com>` commit
 — that touches a routine file.** So only interactive sessions (which can apply) edit
 routine files; from an autonomous run, open an issue for a human instead.
+
+**Not every interactive session can actually apply, either — verify before marking.**
+`RemoteTrigger update` (the tool named `update_trigger` in this environment) only
+accepts a new `prompt`/`name` for a trigger the *calling agent itself created* via
+`create_trigger`. The main k8s-lab executor trigger (`trig_01CRtpmaS1scBQL74xKqmfvS`)
+was created via the claude.ai UI/API directly (`created_via: "http_api"`), not by any
+agent session — so even an interactive session gets a hard refusal on content updates
+(`"Agents can only update routines they created"`); the tool call may also surface as an
+opaque `"Tool permission stream closed before response received"` error rather than
+that clearer message, depending on the harness. The only actions this tool grants on
+that trigger are self-disable (`enabled:false`) and cosmetic fields — never a content
+push. **Do not run `make routines-mark-applied` unless the apply call actually
+succeeded** — a green `routines-check` is a claim that the live trigger matches the repo
+(ADR-0004), and marking it green after a failed/refused apply call fabricates that
+claim. If the apply call fails for this reason, land the repo change anyway (source of
+truth stays correct) and say so explicitly in the PR — `make ci` will legitimately show
+`routines-check` red until the maintainer applies the change by hand through the
+claude.ai routines UI, or a session that actually owns the trigger does it.
