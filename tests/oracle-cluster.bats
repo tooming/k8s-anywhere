@@ -103,3 +103,44 @@ setup() {
   run grep -qE 'get_env\("TFSTATE_ORACLE_ENDPOINT", ' "$LIVE/root.hcl"
   [ "$status" -ne 0 ]
 }
+
+# --- bounded retries: an unbounded `until` here hangs `terraform apply` forever --
+
+@test "oracle-k3s-cluster main.tf's SSH-wait loop is bounded, not an infinite until" {
+  # Regression: the SSH-reachability wait used to be a bare `until ...; do sleep 5;
+  # done` with no upper bound -- if the instance never came up (OCI out-of-capacity,
+  # a cloud-init failure, wrong SSH key), terraform apply would hang forever with no
+  # diagnostic. Must count iterations and exit non-zero past a budget.
+  run grep -q 'i=$((i + 1))' "$MOD/main.tf"
+  [ "$status" -eq 0 ]
+  run grep -q 'if \[ "$i" -ge 60 \]' "$MOD/main.tf"
+  [ "$status" -eq 0 ]
+  run grep -q 'exit 1' "$MOD/main.tf"
+  [ "$status" -eq 0 ]
+}
+
+@test "oracle-k3s-cluster main.tf's SSH-wait timeout message is diagnosable" {
+  run grep -q 'did not become SSH-reachable' "$MOD/main.tf"
+  [ "$status" -eq 0 ]
+}
+
+@test "oracle-k3s-cluster cloud-init.yaml's k3s-install wait is bounded, not an infinite until" {
+  # Same class of regression as the SSH-wait loop above, on the instance side:
+  # `until [ -f .../k3s.yaml ]; do sleep 2; done` with no bound would hang cloud-init's
+  # runcmd forever if the k3s install silently failed.
+  run grep -q 'i=$((i + 1))' "$MOD/cloud-init.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q '\[ "$i" -ge 150 \]' "$MOD/cloud-init.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'exit 1' "$MOD/cloud-init.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "oracle-k3s-cluster destroy-time cleanup also unsets the kubeconfig users entry" {
+  # Regression: the create-time sed renames cluster, context, AND user to the same
+  # "oracle-<name>" string (k3s.yaml's default kubeconfig uses "default" for all
+  # three) -- destroy only cleaned up the context + cluster, leaving a stale user
+  # credential entry in ~/.kube/config on every destroy.
+  run grep -q 'kubectl config unset users.oracle-' "$MOD/main.tf"
+  [ "$status" -eq 0 ]
+}

@@ -4,5 +4,10 @@
 # off the instance never races cloud-init.
 runcmd:
   - curl -sfL https://get.k3s.io | sh -
-  - sh -c 'until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done'
+  # Bounded retry (150 * 2s = 300s): an unbounded `until` would leave cloud-init's
+  # runcmd hanging forever if the k3s install silently failed, which would in turn
+  # keep the Terraform provisioner's own SSH-wait loop polling a file that will
+  # never appear. Exit non-zero on timeout so cloud-init's own status (readable via
+  # `cloud-init status` / the OCI console) reflects the real failure.
+  - sh -c 'i=0; until [ -f /etc/rancher/k3s/k3s.yaml ] || [ "$i" -ge 150 ]; do sleep 2; i=$((i + 1)); done; [ -f /etc/rancher/k3s/k3s.yaml ] || { echo "k3s.yaml not present after 300s -- k3s install likely failed" >&2; exit 1; }'
   - chmod 644 /etc/rancher/k3s/k3s.yaml

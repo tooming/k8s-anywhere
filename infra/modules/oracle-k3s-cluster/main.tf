@@ -144,7 +144,19 @@ resource "null_resource" "kubeconfig" {
     command = <<-EOT
       set -e
       ssh_opts="-o StrictHostKeyChecking=no -o ConnectTimeout=5 -i ${var.ssh_private_key_path}"
-      until ssh $ssh_opts ubuntu@${oci_core_instance.cluster.public_ip} 'test -f /etc/rancher/k3s/k3s.yaml'; do sleep 5; done
+      # Bounded retry (60 * 5s = 300s): an unbounded `until` here would hang
+      # `terraform apply` forever if the instance never comes up (OCI out-of-capacity,
+      # a cloud-init failure, wrong SSH key) -- fail loudly with a diagnosable error
+      # instead of hanging silently.
+      i=0
+      until ssh $ssh_opts ubuntu@${oci_core_instance.cluster.public_ip} 'test -f /etc/rancher/k3s/k3s.yaml'; do
+        i=$((i + 1))
+        if [ "$i" -ge 60 ]; then
+          echo "ERROR: instance ${oci_core_instance.cluster.public_ip} did not become SSH-reachable with a ready /etc/rancher/k3s/k3s.yaml within 300s -- check the OCI console's instance serial console for boot/cloud-init failures" >&2
+          exit 1
+        fi
+        sleep 5
+      done
       scp $ssh_opts ubuntu@${oci_core_instance.cluster.public_ip}:/etc/rancher/k3s/k3s.yaml /tmp/${var.cluster_name}-k3s.yaml
       sed -i "s#127.0.0.1#${oci_core_instance.cluster.public_ip}#" /tmp/${var.cluster_name}-k3s.yaml
       sed -i "s#: default#: oracle-${var.cluster_name}#g" /tmp/${var.cluster_name}-k3s.yaml
@@ -157,7 +169,11 @@ resource "null_resource" "kubeconfig" {
   }
 
   provisioner "local-exec" {
-    when    = destroy
-    command = "kubectl config delete-context oracle-${self.triggers.cluster_name} 2>/dev/null || true; kubectl config delete-cluster oracle-${self.triggers.cluster_name} 2>/dev/null || true"
+    when = destroy
+    # Also unset the users entry -- the create-time sed renames cluster, context,
+    # AND user to the same "oracle-<name>" string (k3s.yaml's default kubeconfig
+    # uses "default" for all three), so leaving it out here left a stale credential
+    # entry behind on every destroy.
+    command = "kubectl config delete-context oracle-${self.triggers.cluster_name} 2>/dev/null || true; kubectl config delete-cluster oracle-${self.triggers.cluster_name} 2>/dev/null || true; kubectl config unset users.oracle-${self.triggers.cluster_name} 2>/dev/null || true"
   }
 }
