@@ -160,3 +160,18 @@ setup() {
   run grep -A2 'if \[ "\$ready" -ne 1 \]' "$REPO/scripts/tfstate-oracle-bootstrap.sh"
   [[ "$output" == *"exit 1"* ]]
 }
+
+@test "infra/tfstate-oracle/cloud-init.yaml.tpl's garage-ready wait is bounded, not an infinite until" {
+  # Same class of regression as the two fixed in PR #405 (main.tf's SSH wait,
+  # oracle-k3s-cluster/cloud-init.yaml's k3s-install wait): this runcmd's
+  # `until docker exec ... /garage status; do sleep 2; done` had no bound -- an
+  # unstartable Garage container (bad image pull, config parse error) would hang
+  # this instance's cloud-init runcmd forever.
+  TPL="$REPO/infra/tfstate-oracle/cloud-init.yaml.tpl"
+  run grep -q 'i=$((i + 1))' "$TPL"
+  [ "$status" -eq 0 ]
+  run grep -q '\[ "$i" -ge 150 \]' "$TPL"
+  [ "$status" -eq 0 ]
+  run grep -q 'exit 1' "$TPL"
+  [ "$status" -eq 0 ]
+}

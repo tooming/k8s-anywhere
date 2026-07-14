@@ -25,8 +25,21 @@ instance serial console — matching the pattern used in PR #405's
 `main.tf`/`cloud-init.yaml` fixes. New `tests/oracle-cluster.bats` assertion (17
 total, up from 16).
 
-`shellcheck -S warning` clean. `make ci` passes (same 7 pre-existing environment-only
-failures as prior PRs this session).
+## A third instance of the same bug (same PR)
+
+A closer look at `infra/tfstate-oracle/cloud-init.yaml.tpl` (the template this
+bootstrap script renders as instance user-data) found a third occurrence: its
+`runcmd` had `until docker exec tfstate-garage /garage status; do sleep 2; done` with
+**no bound at all** — an unstartable Garage container (bad image pull, a config parse
+error in the rendered `garage.toml`) would hang that instance's cloud-init `runcmd`
+forever. Bounded it to 300s with the same clear-error-on-timeout pattern. 18th bats
+assertion added.
+
+`shellcheck -S warning` clean, `yamllint -c .yamllint.yml` clean (the one warning —
+"missing starting space in comment" on `#cloud-config` — is an expected false
+positive: that string is cloud-init's own magic marker and must not have a space
+after `#`, same as the other cloud-init file touched in PR #405). `make ci` passes
+(same 7 pre-existing environment-only failures as prior PRs this session).
 
 ## PR
 

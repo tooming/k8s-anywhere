@@ -18,4 +18,4 @@ runcmd:
     -v garage_data:/var/lib/garage
     -p 3900:3900 -p 3901:3901 -p 3903:3903
     dxflrs/garage:v2.3.0
-  - sh -c 'until docker exec tfstate-garage /garage status >/dev/null 2>&1; do sleep 2; done'
+  - sh -c 'i=0; until docker exec tfstate-garage /garage status >/dev/null 2>&1 || [ "$i" -ge 150 ]; do sleep 2; i=$((i + 1)); done; docker exec tfstate-garage /garage status >/dev/null 2>&1 || { echo "tfstate-garage did not report status after 300s -- container/config likely broken" >&2; exit 1; }'
