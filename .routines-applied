@@ -1,13 +1,13 @@
 # .routines-applied — sha256 of each routines/* file at last apply.
 # Updated by: scripts/routines-mark-applied.sh (`make routines-mark-applied`).
 # Drift checker: scripts/routines-check.sh (`make routines-check`, in `make ci`).
-routines/architect.prompt.md sha256=8b642e7fbd0aa244797dbdbf69a72ab913f638b6a751b824652b63ad23ab9bfa
-routines/doc-drift-author.prompt.md sha256=de9a451df73fa1e7f6bcb27d2ee53ef0651b887221d906d76acb2a3a78ee3668
-routines/executor.prompt.md sha256=37b0c385fc66ebae9387338df55bb4e3dd794511ac3a26f576d4bb462db509d3
-routines/janitor.prompt.md sha256=922c57db2d127f60b905baffb0fb9a4bc633cbe7ab3b6a15b0af5bb46d1c1e3c
-routines/learning-post-writer.prompt.md sha256=6e751afac8edbe9fa23b5b6bb9d80e2a8c46ca6da5ec336927b2a09f0bb90d6d
+routines/architect.prompt.md sha256=4dc60e716db43f10c8c2e7d3df84be512dfcdeaaf170486cd46691d007daf209
+routines/doc-drift-author.prompt.md sha256=a7f88bb169906ff417d9712078e76bdb90505e094c283a9311a57150e2dee39c
+routines/executor.prompt.md sha256=7696ff9be7b9da4b3bd82620c853116db2da0dcb96116534a2d35ff1828d37c6
+routines/janitor.prompt.md sha256=ab1186a008f06cb33a9b47dd8a9304e36e84fdc2b288449d7b181cafd0da4b44
+routines/learning-post-writer.prompt.md sha256=189393baeec83d65a8a7c4ba4bdcb0c048cf6d6dd72c6d9ceaff09fd701f6701
 routines/operator.prompt.md sha256=254729e703697deada05cabbfcc030c3d8b8494ee4c4ae3e51f31641f384f042
-routines/planner.prompt.md sha256=0ee3080c4ab137f8d85e8fcd514367949c1a971ece0cb9a77344a56fdeb7c25b
+routines/planner.prompt.md sha256=e9edf288130afded5aa93681dc1577bfe883bd1e7d1342d48ed69a753a7024f4
 routines/triager.prompt.md sha256=4dc47541a44c65a11462dd6f796e7703d78018ff66eb079b824aed53d2aadf44
-routines/upgrade-drafter.prompt.md sha256=2c39d46f000009f2bcdf327e349086ee6dd5153ba5380efc19e2ba74da9911d6
+routines/upgrade-drafter.prompt.md sha256=928398ee2eaa630791a760b8dc8e3e61ede8d7be97a2d8b8642a932329fb44ad
 routines/verifier.prompt.md sha256=64d0ea04cf6d48f2f730fbacac1b45da730048da2f60592000a1a2e56f084b4c

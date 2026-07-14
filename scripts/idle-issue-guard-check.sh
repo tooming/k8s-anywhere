@@ -26,7 +26,12 @@ $BODY"
 # Real idle declarations use "idle" as a standalone word ("executor idle —
 # needs work", "session is idle") — never as a hyphenated compound — so this
 # scrub only removes the false-positive shape.
-SCRUBBED="$(printf '%s' "$TEXT" | sed -E 's/\bidle-[A-Za-z.-]+//gI')"
+# Portability: `\b` (word boundary) is a GNU sed extension that BSD/macOS
+# sed's POSIX ERE mode doesn't support — it silently fails to match at all
+# there, making this a no-op on macOS while working fine on CI's Ubuntu
+# runners. `(^|[^A-Za-z0-9_-])` + back-reference is the portable equivalent
+# (also drops the GNU-only `I` flag; real "idle-" compounds are lowercase).
+SCRUBBED="$(printf '%s' "$TEXT" | sed -E 's/(^|[^A-Za-z0-9_-])idle-[A-Za-z.-]+/\1/g')"
 
 # Not an idle/no-work declaration -> nothing to check.
 printf '%s' "$SCRUBBED" | grep -qiE '\bidle\b|\bno work\b|nothing to do|no actionable' || exit 0

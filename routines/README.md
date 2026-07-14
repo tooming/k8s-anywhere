@@ -84,17 +84,21 @@ Claude Code sessions — which *can* `RemoteTrigger update` + `make routines-mar
 in the same session — ever change routine files. If the executor needs a routine change,
 it opens an issue for a human instead (the same way it defers any other out-of-tier work).
 
-**Even an interactive session may not be able to apply.** The `update_trigger` tool only
-lets an agent push new `prompt`/`name` content to a trigger *it created itself* via
-`create_trigger`. `trig_01CRtpmaS1scBQL74xKqmfvS` (the executor) was created via the
-claude.ai UI/API directly (`created_via: "http_api"`), not by any agent — so a content
-update from *any* session gets refused (`"Agents can only update routines they
-created"`, sometimes surfacing as an opaque stream-closed error instead). The only thing
-this tool grants on that trigger is `enabled:false` (self-disable) and cosmetic edits —
-never a prompt push. When that happens: land the repo change anyway and say so plainly
-in the PR, but do **not** run `make routines-mark-applied` — that file is a claim the
-live trigger matches the repo (ADR-0004), and it would be false. `routines-check` stays
-red until the maintainer applies the change by hand through the claude.ai routines UI.
+**An interactive session's apply call can fail — verify, don't assume.** The
+`update_trigger` tool is documented to only let an agent push new `prompt`/`name`
+content to a trigger *it created itself* via `create_trigger`, and
+`trig_01CRtpmaS1scBQL74xKqmfvS` (the executor) was created via the claude.ai UI/API
+directly (`created_via: "http_api"`), not by any agent. Two sessions (PR #374, PR
+#391/#396) got refused on this basis (`"Agents can only update routines they created"`,
+sometimes an opaque stream-closed error instead) and concluded updates were permanently
+impossible — but a later session (2026-07-14) called the *same* `update_trigger` against
+the *same* trigger id and it succeeded. So treat a refusal as possibly transient: retry
+in a fresh session before assuming it's permanent. If it does fail: land the repo change
+anyway and say so plainly in the PR, but do **not** run `make routines-mark-applied` —
+that file is a claim the live trigger matches the repo (ADR-0004), and it would be
+false. `routines-check` stays red until either a later session's apply succeeds or the
+maintainer applies the change by hand through the claude.ai routines UI — and a red
+`routines-check` is never grounds to merge anyway (WAYS-OF-WORKING.md §2 is absolute).
 
 ## Checking running state & drift
 

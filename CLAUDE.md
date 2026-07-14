@@ -168,20 +168,24 @@ any executor-authored change — `auto/*` branch or `Claude <noreply@anthropic.c
 — that touches a routine file.** So only interactive sessions (which can apply) edit
 routine files; from an autonomous run, open an issue for a human instead.
 
-**Not every interactive session can actually apply, either — verify before marking.**
-`RemoteTrigger update` (the tool named `update_trigger` in this environment) only
-accepts a new `prompt`/`name` for a trigger the *calling agent itself created* via
-`create_trigger`. The main k8s-lab executor trigger (`trig_01CRtpmaS1scBQL74xKqmfvS`)
-was created via the claude.ai UI/API directly (`created_via: "http_api"`), not by any
-agent session — so even an interactive session gets a hard refusal on content updates
-(`"Agents can only update routines they created"`); the tool call may also surface as an
-opaque `"Tool permission stream closed before response received"` error rather than
-that clearer message, depending on the harness. The only actions this tool grants on
-that trigger are self-disable (`enabled:false`) and cosmetic fields — never a content
-push. **Do not run `make routines-mark-applied` unless the apply call actually
-succeeded** — a green `routines-check` is a claim that the live trigger matches the repo
-(ADR-0004), and marking it green after a failed/refused apply call fabricates that
-claim. If the apply call fails for this reason, land the repo change anyway (source of
-truth stays correct) and say so explicitly in the PR — `make ci` will legitimately show
-`routines-check` red until the maintainer applies the change by hand through the
-claude.ai routines UI, or a session that actually owns the trigger does it.
+**Verify the apply call actually succeeded before marking — don't assume either way.**
+Two prior sessions (PR #374, PR #391/#396) got a hard refusal calling
+`RemoteTrigger update` (`update_trigger`) against the main k8s-lab executor trigger
+(`trig_01CRtpmaS1scBQL74xKqmfvS`, `created_via: "http_api"`, not created by any agent
+session) — `"Agents can only update routines they created"`, sometimes surfacing as an
+opaque `"Tool permission stream closed before response received"` instead. Both
+sessions concluded from this that content updates to that trigger are permanently
+impossible for any session, landed the repo change with `routines-check` red, and one
+was merged that way on explicit maintainer confirmation (2026-07-14) — which then left
+main's CI red and flooded every open PR with inherited-failure notifications on each
+subsequent `auto-update-prs` rebase until a later interactive session (same day) called
+the identical `update_trigger` with the identical trigger id and it **succeeded** (HTTP
+200, content updated). So the refusal is not a permanent property of this trigger —
+retry it rather than assuming it will fail again. **Do not run
+`make routines-mark-applied` unless the apply call actually succeeded** — a green
+`routines-check` is a claim that the live trigger matches the repo (ADR-0004), and
+marking it green after a failed/refused apply call fabricates that claim. If the apply
+call genuinely fails, land the repo change anyway (source of truth stays correct) and
+say so explicitly in the PR — and do NOT treat a red `routines-check` as mergeable on
+that basis alone; WAYS-OF-WORKING.md §2's "never merge red CI" is absolute regardless of
+how well-documented the reasoning looks in the moment.
