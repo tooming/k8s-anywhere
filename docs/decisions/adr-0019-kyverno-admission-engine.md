@@ -68,8 +68,9 @@ so the engine is up first):
 | `disallow-latest-tag` | `validate` | Reject any container `image:` ending in `:latest` or with no tag. |
 | `add-default-seccomp` | `mutate` | Inject `seccompProfile.type=RuntimeDefault` when missing (defence-in-depth alongside the validation rule). |
 | `verify-image-signatures` | `verifyImages` | Required for **Objective O4**. Admit only images cosign-signed by the lab's CI key (public key stored in a ConfigMap `cosign-public-key` in `kyverno` namespace, seeded by `scripts/cosign-bootstrap.sh`). Scope: registries in `artifactory.127.0.0.1.nip.io/**` to start; expand once O4 is end-to-end green. |
+| `add-default-runasnonroot` | `mutate` | Inject pod-level `runAsNonRoot: true` when missing — closes the admission gap exposed by the Harbor migration (ADR-0024): the `goharbor` chart sets container-level but not pod-level `runAsNonRoot`, and `require-pod-security-restricted` validates the pod level. See `tests/kyverno-add-default-runasnonroot.bats`. |
 
-All four policies in `enforce` mode (audit-only would defeat the purpose of an
+All five policies in `enforce` mode (audit-only would defeat the purpose of an
 admission engine). Each policy file ≤ 50 lines.
 
 ### Observability
@@ -153,7 +154,7 @@ The PSA label is set on the `Namespace` manifest the Kyverno Application creates
 | `docs/decisions/adr-0019-kyverno-admission-engine.md` | This ADR |
 | `gitops/platform/kyverno.yaml` | Auto-synced ArgoCD `Application` for the engine |
 | `gitops/platform/kyverno-policies.yaml` | Auto-synced ArgoCD `Application` for the policy set (sync-wave 5) |
-| `gitops/kyverno/policies/*.yaml` | The four initial ClusterPolicies |
+| `gitops/kyverno/policies/*.yaml` | The five ClusterPolicies (four initial + `add-default-runasnonroot`) |
 | `gitops/kyverno/networkpolicy/kustomization.yaml` | Default-deny overlay |
 | `gitops/platform/observability-alloy.yaml` | New `kyverno` scrape job |
 | `grafana/dashboards/lab-kyverno.json` | Real-metric dashboard (Objective O5) |
