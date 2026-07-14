@@ -17,8 +17,19 @@ BODY="${IDLEGUARD_BODY:-${2:-}}"
 TEXT="$TITLE
 $BODY"
 
+# Strip any "idle-<word>" compound (idle-titled, idle-flavored,
+# idle-issue-guard-check.sh, ...) before pattern-matching — a PR or comment
+# that merely *discusses* this feature (as any future change to this very
+# script will) must not self-trigger just for naming it or its own script
+# files. Caught empirically: the [self-review] comment on the PR that
+# introduced this guard tripped over its own filenames and "idle-titled".
+# Real idle declarations use "idle" as a standalone word ("executor idle —
+# needs work", "session is idle") — never as a hyphenated compound — so this
+# scrub only removes the false-positive shape.
+SCRUBBED="$(printf '%s' "$TEXT" | sed -E 's/\bidle-[A-Za-z.-]+//gI')"
+
 # Not an idle/no-work declaration -> nothing to check.
-printf '%s' "$TEXT" | grep -qiE 'idle|no work|nothing to do|no actionable' || exit 0
+printf '%s' "$SCRUBBED" | grep -qiE '\bidle\b|\bno work\b|nothing to do|no actionable' || exit 0
 
 missing=""
 printf '%s' "$BODY" | grep -qi 'make ci' \

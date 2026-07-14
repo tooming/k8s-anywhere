@@ -327,6 +327,17 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "idle-issue-guard-check: does not self-trigger on a comment merely discussing the guard" {
+  # Regression: a [self-review] comment on the PR introducing this guard tripped
+  # the check just for naming its own script (idle-issue-guard-check.sh contains
+  # "idle") and for saying "idle-titled". Discussing the feature must not read
+  # as an idle/no-work claim. (add_issue_comment has no title field.)
+  run env IDLEGUARD_TITLE="" \
+      IDLEGUARD_BODY="Added scripts/idle-issue-guard-check.sh and scripts/idle-issue-guard-hook.sh, wired as a PostToolUse hook that nudges when an idle-titled issue/comment is missing evidence." \
+      bash "$REPO/scripts/idle-issue-guard-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 # --- O2 PSS completeness gate -------------------------------------------------
 # Prevent a future namespace.yaml from acquiring PSA enforce labels without
 # securitycontext test coverage. Coverage is satisfied by EITHER an exact-match
