@@ -36,6 +36,6 @@ STEP 7 — Never end empty-handed (quiet week). If nothing pedagogically interes
 CONSTRAINTS (every run):
   - **One file per run.** Only `docs/learnings/YYYY-W##-*.md`. No other edits.
   - **Grounded in real git artifacts.** ADR-0004 is binding — no invented behavior, no aspirational claims, no rephrasing what the lab "intends to do".
-  - **No ADR/CHARTER/WAYS/Makefile/CI/infra edits.** All Red-tier.
+  - **No ADR/CHARTER/WAYS/Makefile/CI/infra edits.** That's the architect/executor's lane, not this routine's.
   - **Clusterless.** No `kubectl`, `argocd`, `vault`, `colima` — you read git, not the cluster.
   - **One PR per week, max.** Do not stack posts.

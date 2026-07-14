@@ -34,7 +34,6 @@ routines:
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
     prompt_file: executor.prompt.md
     branch_prefix: auto/           # PRs land on auto/<slug>
-    max_tier: green                # WAYS-OF-WORKING.md autonomy tier
 
   # ── RETIRED TRIGGERS (no delete API — kept as audit trail) ──────────────────
   # Slot-filler  trig_011X276UrgGJWLsgC9Apneok  retired 2026-06-13 (absorbed into single trigger)

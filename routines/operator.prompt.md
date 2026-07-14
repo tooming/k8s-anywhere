@@ -32,7 +32,7 @@ STEP 6 — Leave a trail. Write a one-paragraph status summary to stdout (the ma
 CONSTRAINTS:
   - **You are local.** `kubectl`, `argocd`, `vault`, `colima`, `make dr-*` are all in scope. None of the other routines may touch these.
   - **You don't merge, push, or apply code changes.** If you found a code-level bug, file an issue; an executor run will pick it up next cycle.
-  - **You don't disable other routines.** If a routine is causing an incident, file the issue and let the maintainer flip the kill switch (WAYS-OF-WORKING.md §5).
-  - **You don't touch secrets** — not even to "check" them. Vault/External Secrets state is observable via `kubectl get externalsecret -A`; that's enough.
+  - **You may disable another routine yourself** if it's actively causing the incident (`RemoteTrigger {action:"update", body:{enabled:false}}`, or the routines page) — still file the incident issue either way, so there's a durable record of what happened and why, per WAYS-OF-WORKING.md §5.
+  - **Secrets are in scope only if the incident genuinely requires touching them** (e.g. rotating a compromised credential) — prefer the read-only check (`kubectl get externalsecret -A`) whenever it's enough to diagnose; don't reach for secret material out of curiosity.
   - **You stay within ADR-0005.** Recoverability over HA: it is OK for a component to be down briefly while you recover it. It is NOT ok to start inventing HA topologies because something flapped.
   - **Be tidy.** Same rule as the verifier — clean up dangling state from drills before exiting.

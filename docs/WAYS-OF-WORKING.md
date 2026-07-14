@@ -10,35 +10,38 @@
 
 ## 0. Principles (non-negotiable)
 
-1. **Agents have full merge authority — no human merge gate, on any tier.**
-   *(Adopted 2026-07-13, superseding both the original "merge button is the
-   maintainer's only touchpoint" rule and #371's Green/Yellow-only, governance-excluded
-   version of self-merge: the maintainer explicitly directed "AI should fully control
-   the repo from now on," merging PRs itself or, where it's the better tool for the
-   job, committing straight to `main` — no waiting required.)* The architect makes
-   binding technical decisions (RFCs, ADRs); the planner sequences them; the executor
+1. **Agents have full, unrestricted authority over this repo — no human merge gate,
+   no reserved category, no autonomy-tier system.**
+   *(Adopted 2026-07-14, superseding both the original "merge button is the
+   maintainer's only touchpoint" rule and the prior Green/Yellow/Red autonomy-tier
+   model — including the version of it that still reserved secrets/credentials,
+   live-cluster/production mutation, destructive git history operations, and
+   disabling/altering another agent for a human: the maintainer explicitly directed
+   "AI should be fully responsible for this repo from now on," with no category held
+   back and no tier framework left to enforce one.)* The architect makes binding
+   technical decisions (RFCs, ADRs); the planner sequences them; the executor
    implements; **any agent may merge its own PR, including one that edits this file,
-   `CHARTER.md`, or a `docs/decisions/*.md` ADR**, once required CI is green, its
-   `[self-review]` comment is posted, and conversations are resolved. Branch protection
-   on `main` has been removed (§4) precisely to make this possible — GitHub no longer
-   blocks a merge or a direct push on any of that, which means **the CI-green /
-   self-review / resolved-conversations bar is now enforced by agent discipline alone,
-   not the platform.** Treat it as load-bearing for that reason, not less binding.
-   The maintainer does not work issues or click merge buttons. An agent must never
-   assign the maintainer an action item it can perform itself with the tools it has —
-   "maintainer: please do X" is now a routine bug for anything on this repo, full stop.
-   If a tool call fails, fall back to `gh` before escalating.
-   > **Scope of this grant.** "Fully control the repo" covers this repo's git/GitHub
-   > surface: merging, pushing to `main`, and (in principle, though no current tool
-   > grants agents this capability) repo settings. It does **not** extend to three
-   > categories the maintainer's instruction didn't address and that carry a different,
-   > harder-to-reverse risk profile — these stay 🔴 Red per §2 until told otherwise:
-   > **secrets/credentials**, **live-cluster or production infrastructure mutation**,
-   > and **destructive git history operations** (force-push, branch/data deletion,
-   > history rewrite) — a bad merge is one `git revert` away from fixed; a force-pushed
-   > history or a wiped PVC is not. Disabling or altering another agent also stays Red —
-   > it protects the kill-switch (§5) an operator relies on if a routine misbehaves, and
-   > that's an orthogonal concern to *who* can merge.
+   `CHARTER.md`, a `docs/decisions/*.md` ADR, secrets/credentials, live-cluster or
+   production infrastructure, git history, or another agent's configuration**, once
+   required CI is green, its `[self-review]` comment is posted, and conversations are
+   resolved. Branch protection on `main` has been removed (§4) precisely to make this
+   possible — GitHub no longer blocks a merge or a direct push on any of that, which
+   means **the CI-green / self-review / resolved-conversations bar is now enforced by
+   agent discipline alone, not the platform.** Treat it as load-bearing for that
+   reason, not less binding. The maintainer does not work issues or click merge
+   buttons. An agent must never assign the maintainer an action item it can perform
+   itself with the tools it has — "maintainer: please do X" is now a routine bug for
+   anything on this repo, full stop. If a tool call fails, fall back to `gh` before
+   escalating.
+   > **Scope of this grant.** "Fully responsible for the repo" covers this repo's
+   > git/GitHub surface (merging, pushing to `main`, repo settings in principle) with
+   > no carve-out — the categories a prior version of this doc marked 🔴 Red
+   > (secrets/credentials, live-cluster or production infrastructure mutation,
+   > destructive git history operations, disabling/altering another agent) are no
+   > longer reserved for a human. This grant doesn't expand what any individual agent
+   > session is actually *able or willing* to do in practice — that's a property of
+   > the session's own tooling and operating constraints, which this document doesn't
+   > configure and can't override.
 2. **The repo is the only rulebook agents obey.** Remote agents see only what's in git, so
    [CHARTER.md](../CHARTER.md), the [ROADMAP.md](../ROADMAP.md) rules, the ADRs in
    [decisions/](decisions/), and this doc are the *complete* set of rules. A governance
@@ -58,9 +61,9 @@ routine's model/cadence is a PR that edits this table.
 is the source of truth for what's actually live — this table mirrors it, not the other
 way around; if they disagree, trust the YAML and fix this table.
 
-| Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch | Max tier |
-|---|---|---|---|---|---|---|
-| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run; empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no slot is wasted | 21:00/22:00/23:00/00:00/01:00 UTC, every day (5/day) · Sonnet 4.6 | `auto/*` (fallback roles keep their own prefixes) | 🟢 Green |
+| Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch |
+|---|---|---|---|---|---|
+| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming | implements one ROADMAP item / run; empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no slot is wasted | 21:00/22:00/23:00/00:00/01:00 UTC, every day (5/day) · Sonnet 4.6 | `auto/*` (fallback roles keep their own prefixes) |
 
 **One trigger, not eight.** Planner, architect, triager, upgrade-drafter, doc-drift-author,
 industry-news-writer, and the old "executor 4th slot" each *used to* have their own
@@ -77,8 +80,8 @@ chain, or the same work will double-fire from two triggers. `janitor.prompt.md` 
 > slots and the routine spent runs filing idle issues (#160). First-pass review now
 > happens **inside each PR-producing run**: the executor, planner, architect, and
 > upgrade-drafter prompts end with a mandatory self-review step that audits the run's own
-> diff against the four review checks (gate integrity, ADR compliance, tier discipline,
-> ADR-0004 fabricated content — plus the adversarial design review for `arch/*`) and
+> diff against the three review checks (gate integrity, ADR compliance, ADR-0004
+> fabricated content — plus the adversarial design review for `arch/*`) and
 > posts a `[self-review]` comment + `self-reviewed` label on the PR before the run ends.
 > The backend trigger stays disabled as an audit trail; its daily slot funded the
 > executor's restoration to 3/day, and the 2026-06-13 consolidation folded the rest into
@@ -109,13 +112,12 @@ _(As the team grows, replace the single-owner entries above with the owning engi
   that it's an agent run plus which routine produced it.
 - **Green before review:** `make ci` passes; ADRs honored; heavy components stay
   non-auto-synced; docs/dashboards in sync.
-- **Self-merge (any tier, including governance):** once every required status check is
-  green, the `[self-review]` comment is posted, and all conversations are resolved, the
-  authoring routine merges its own PR (squash, matching `main`'s linear-history
+- **Self-merge (unconditional, including governance):** once every required status check
+  is green, the `[self-review]` comment is posted, and all conversations are resolved,
+  the authoring routine merges its own PR (squash, matching `main`'s linear-history
   convention) and updates the ROADMAP checkbox / closes the issue it addressed. It must
   **not** merge if any required check is red or a conversation is unresolved — those
-  hold regardless of tier. It must never touch the four 🔴 Red-tier categories (§2) at
-  all, merge or otherwise (§0.1).
+  hold unconditionally, with no exception for any category of change (§0.1).
 
 ## 4. Review & merge gate
 
@@ -135,15 +137,14 @@ _GitHub repo settings (as of 2026-07-13):_
     conversations-must-resolve requirement.
 
   **What this means in practice: the self-merge contract in §0.1/§3/§4 (CI green,
-  `[self-review]` posted, conversations resolved, never touching the four Red-tier
-  categories) is now the *only* thing standing between a broken change and `main` —
-  GitHub will no longer catch a violation of it.** Every routine and every human working
-  this repo must treat those rules as load-bearing, not advisory, precisely because
-  nothing else enforces them anymore. This doc still says "never merge with a red CI
-  check" and "never touch a Red-tier category without explicit instruction" (§2) — those
-  are no longer *technically* prevented for CI, only *behaviorally* required. If a
-  routine misbehaves, the backstop is the kill-switch (§5: disable the routine) and
-  reverting the bad commit, not a rejected API call.
+  `[self-review]` posted, conversations resolved) is now the *only* thing standing
+  between a broken change and `main` — GitHub will no longer catch a violation of it.**
+  Every routine and every human working this repo must treat those rules as
+  load-bearing, not advisory, precisely because nothing else enforces them anymore.
+  This doc still says "never merge with a red CI check" — that is no longer
+  *technically* prevented by GitHub, only *behaviorally* required. If a routine
+  misbehaves, the backstop is the kill-switch (§5: disable the routine) and reverting
+  the bad commit, not a rejected API call.
 
   **Optional hardening the maintainer could still add later:** re-enable required status
   checks + linear history (without reintroducing "PR required" or CODEOWNERS-approval,
@@ -154,8 +155,8 @@ _GitHub repo settings (as of 2026-07-13):_
 - **`CODEOWNERS` owners** — file exists but all domain owners are `@tbd` (see §7
   ownership map). As the team grows, replace `@tbd` entries with real owners. Even with
   the CODEOWNERS *requirement* gone from branch protection, an agent PR is still **never**
-  approved by an agent — self-merge is not self-*approval*; the CI-green + self-review +
-  tier check together stand in for approval, they don't forge one.
+  approved by an agent — self-merge is not self-*approval*; the CI-green + self-review
+  together stand in for approval, they don't forge one.
 
 _Process:_
 
@@ -170,10 +171,10 @@ _Process:_
   of piling on. (The executor already skips items with an open `auto/*` PR; the cap
   generalizes that to protect reviewer attention.) Every PR-producing routine posts a
   first-pass `[self-review]` comment (+ `self-reviewed` label) on its own PR before
-  merging — combined with green required CI, this **is** the self-merge trigger for any
-  tier (§0.1, §3), including PRs that touch governance files. It never substitutes for
-  a human's ability to review after the fact, comment, or revert — self-merge removes
-  the pre-merge gate, not post-merge accountability.
+  merging — combined with green required CI, this **is** the self-merge trigger
+  unconditionally (§0.1, §3), including PRs that touch governance files. It never
+  substitutes for a human's ability to review after the fact, comment, or revert —
+  self-merge removes the pre-merge gate, not post-merge accountability.
 - **Staleness SLA:** an agent PR with no review in N working days is flagged or auto-closed,
   not left to rot. Closing is cheap — the item simply returns to the backlog.
 
@@ -235,14 +236,14 @@ markdown list — which also ends the file-contention wrinkle between planner, e
 humans.
 
 - **Definition of Ready** (an item is executor-pickable only when): scoped to one PR;
-  acceptance criteria stated; tier known (🟢/🟡/🔴) and any 🟡 RFC linked; owning domain /
-  CODEOWNER identified; clusterless-deliverable.
+  acceptance criteria stated; any needed RFC linked; owning domain / CODEOWNER
+  identified; clusterless-deliverable.
 - **Definition of Done**: the agent PR contract (§3), merged through the gate (§4).
 
 ### Intake & triage
 
 - Work enters as a **GitHub issue** — already the planner's intake queue.
-- **Triage** (2–3×/week, rotating owner): label new issues (domain, tier, priority), close
+- **Triage** (2–3×/week, rotating owner): label new issues (domain, priority), close
   duplicates / out-of-scope, route to a CODEOWNER. `wontfix` / `question` are skipped by
   the planner.
 
