@@ -32,11 +32,10 @@ hasn't actually demonstrated portability. Maintainer decision, 2026-07-13.
 | [ADR-0025](adr-0025-free-oss-tiers-only.md) | **Unchanged and still binds the *software***: every dependency the lab installs must stay free/OSS regardless of backend. It does **not** extend to infrastructure rental — choosing a cloud backend is the operator's own cost decision, outside the lab's control, and never a requirement of the default path. |
 
 **How this binds.** Future `infra/` work must not hardcode localhost/Colima/k3d
-assumptions outside of the localhost backend module. A new cloud backend module is
-itself 🟡 Yellow-tier work (`infra/` bootstrap change — see
-[WAYS-OF-WORKING.md §2](../WAYS-OF-WORKING.md#2-autonomy-tiers-what-an-agent-may-do-unsupervised))
-and, if it introduces a new binding technical choice (a specific cloud provider's
-Terraform module, its state backend, its ingress/LB equivalent to the front door),
+assumptions outside of the localhost backend module. A new cloud backend module is an
+`infra/` bootstrap change, and, if it introduces a new binding technical choice (a
+specific cloud provider's Terraform module, its state backend, its ingress/LB
+equivalent to the front door),
 that choice gets its own ADR rather than silently expanding this one.
 
 **Status.** Adopted 2026-07-13. Supersedes the CHARTER.md Strategy statement

@@ -76,9 +76,9 @@ no access to anyone's local notes — so every rule it must follow lives here, i
      flight, is a gap the planner should have filed — file it (a plan issue/PR), don't
      just note it.
    - **Architect check:** any unchecked 🟡 item without an RFC yet, that a session could
-     resolve by authoring one (superseding an ADR is architect-tier, self-authorizing per
-     [WAYS-OF-WORKING.md §2](docs/WAYS-OF-WORKING.md)) — write the RFC instead of leaving
-     it blocked.
+     resolve by authoring one (superseding an ADR is the architect's call and is
+     self-authorizing — see [WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md)) — write the
+     RFC instead of leaving it blocked.
    - **Triager check:** any open issue missing labels or grooming.
 
    Only once *all four* come back clean — `make ci` green, no CHARTER gap, no
@@ -91,12 +91,11 @@ no access to anyone's local notes — so every rule it must follow lives here, i
    wired as a `PostToolUse` hook, nudges if an idle-titled issue/comment is missing
    either piece of evidence.) One issue, refreshed each idle run. That is the only
    acceptable "no PR" outcome — fabricated make-work is still forbidden.
-10. **Stay in your autonomy tier** (see [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md)).
-    You operate at **🟢 Green only** — docs, tests, non-auto-synced manifests, dashboards
-    from real metrics. If the next item actually needs **🟡 Yellow** work (a new
-    dependency, a CI/gate/Makefile change, anything security-adjacent) or **🔴 Red** work
-    (secrets, any cluster/repo-settings change), do NOT do it: open a GitHub issue stating
-    what a human must decide, and move to the next feasible Green item.
+10. **A 🟡-tagged item still needs its architect RFC first.** The tag marks an open
+    decision, not a permission boundary — build 🟢 items directly. For a 🟡 item with no
+    linked RFC yet, don't build around the open question: either author the RFC yourself
+    (rule #9's architect-check escalation covers this) or open a GitHub issue naming the
+    decision needed, then move to the next feasible 🟢 item.
 
 ---
 
@@ -139,13 +138,15 @@ You review and merge plan PRs, same as implementation PRs.
 
 ## Backlog
 
-> **Autonomy tiers** (per [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md) §2) are
-> tagged inline on every item: **🟢 Green** the executor may build now; **🟡 Yellow**
-> needs an architect RFC *first* — the executor still must not build it unprompted, but
-> the architect's RFC is binding (no human-approval step) and the planner grooms it into
-> 🟢 items on its next run; **🔴 Red** humans only. *Now / next* holds only 🟢 items.
+> **Readiness tags** are tagged inline on every item: **🟢 Green** — ready, the executor
+> may build it now; **🟡 Yellow** — blocked on an architect decision, not on any
+> permission boundary: it needs an RFC *first* (the architect's RFC is binding, no
+> human-approval step), and the planner grooms it into a 🟢 item once decided. *Now /
+> next* holds only 🟢 items. There's no third, human-only tag — per
+> [WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md) §0.1, no category of repo work is
+> reserved for a human.
 >
-> **Conflict-free editing (binding rule).** Add/edit the discrete 🟡/🟢/🔴 **items**
+> **Conflict-free editing (binding rule).** Add/edit the discrete 🟡/🟢 **items**
 > inline here as normal. But record any per-run **narrative commentary** (grooming
 > summaries, "what was filed/unblocked this run", `**Planner note (…)**` blocks) as a
 > new file under [`docs/backlog/`](docs/backlog/) (`YYYY-MM-DD-<slug>.md`) — **never

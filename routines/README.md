@@ -82,7 +82,8 @@ live trigger. So the footgun is removed *structurally*: **`scripts/routines-auth
 is the cloud identity `Claude <noreply@anthropic.com>`. The result: only interactive
 Claude Code sessions — which *can* `RemoteTrigger update` + `make routines-mark-applied`
 in the same session — ever change routine files. If the executor needs a routine change,
-it opens an issue for a human instead (the same way it defers any other out-of-tier work).
+it opens an issue instead — a hard tool-access limit (the cloud executor has no
+`RemoteTrigger` tool at all), not a scope choice.
 
 **An interactive session's apply call can fail — verify, don't assume.** The
 `update_trigger` tool is documented to only let an agent push new `prompt`/`name`

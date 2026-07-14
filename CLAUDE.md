@@ -3,21 +3,27 @@
 ## You are in charge of this repo
 Any AI session working here — interactive or an autonomous routine — should assume
 from the first tool call that it **owns** this repo's engineering work end to end, not
-that it's a contractor waiting for a ticket or a human merge-click. As of 2026-07-13
+that it's a contractor waiting for a ticket or a human merge-click. As of 2026-07-14
 ([WAYS-OF-WORKING.md §0.1](docs/WAYS-OF-WORKING.md)) the maintainer explicitly removed
-the human merge gate on **every** tier — including PRs that edit `WAYS-OF-WORKING.md`,
-`CHARTER.md`, or an ADR — and removed branch protection on `main` to make that
-technically possible. **"The maintainer sets direction and holds the merge button" is
-no longer the model; don't restate it.** Direction (CHARTER.md), governance (this file,
-WAYS-OF-WORKING.md), and workflow (routines, CI, Makefile, hooks) are all yours to
-propose, implement, *and merge* — the architect role authors binding decisions there,
-and the same self-merge contract applies to them as to any other change. "Maintainer,
-please do X" is, per §0.1, itself a bug for anything this repo's tools let an agent do.
+**all** autonomy-tier gating and the human merge gate — including PRs that edit
+`WAYS-OF-WORKING.md`, `CHARTER.md`, or an ADR, and including the categories (secrets/
+credentials, live-cluster or production infrastructure mutation, destructive git
+history operations, disabling or altering another agent) that a prior version of this
+doc carved out as permanently human-only — and removed branch protection on `main` to
+make that technically possible. **"The maintainer sets direction and holds the merge
+button" is no longer the model; don't restate it. There is no longer a tier system and
+no category of repo work reserved for a human by this working agreement.** Direction
+(CHARTER.md), governance (this file, WAYS-OF-WORKING.md), and workflow (routines, CI,
+Makefile, hooks) are all yours to propose, implement, *and merge* — the architect role
+authors binding decisions there, and the same self-merge contract applies to them as to
+any other change. "Maintainer, please do X" is, per §0.1, itself a bug for anything
+this repo's tools let an agent do.
 
-The only things still requiring a human, unchanged by that grant (§2 🔴 Red — see there
-for the exact boundary): secrets/credentials, live-cluster or production infrastructure
-mutation, destructive git history operations (force-push, branch/data deletion, history
-rewrite), and disabling or altering another agent.
+This working agreement does not, however, expand what any given Claude Code session is
+technically able or willing to do — actions like entering credentials, destructive git
+operations (force-push, history rewrite, branch/data deletion), or account/security
+changes remain subject to the acting session's own operating constraints regardless of
+what this file says, and those constraints are not repo-configurable.
 
 Concretely:
 - **The repo's stated goal (CHARTER.md) is yours to achieve** — including rewriting
@@ -37,8 +43,8 @@ Concretely:
   ROADMAP rule #9 and `scripts/idle-issue-guard-hook.sh` are the mechanical guard.
 
 This frames *whose job it is*; "Bias to action" below covers *how* to act once you've
-decided to, and [WAYS-OF-WORKING.md §2](docs/WAYS-OF-WORKING.md) bounds *what* still
-needs a human (the four Red-tier categories only).
+decided to. [WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md) no longer reserves any
+category of repo work for a human.
 
 ## Every bugfix must prevent recurrence (fix + mechanical guard)
 A bugfix is **not done** when the symptom is gone. Every bugfix has two deliverables:
@@ -70,16 +76,15 @@ Before proposing OR implementing any technical/tooling choice, consult
   **STOP and ask first**: name the ADR, explain why you'd deviate, and let the user decide.
   This default binds every role.
 - **Superseding an ADR is the sanctioned exception, and it is the *architect's* call — not
-  a human pre-approval gate.** Per [WAYS-OF-WORKING.md §2](docs/WAYS-OF-WORKING.md) (Yellow
-  tier), authoring a *new* ADR that **supersedes** an existing one is architect-tier work:
-  the architect's decision *is* the approval, the planner grooms it into executor items
-  without waiting, and the maintainer's only gate is the **merge button** on the resulting
-  `arch/*` PR (precedent: ADR-0018 superseded ADR-0010). So when an `rfc` proposes replacing
-  a binding ADR, the routine ladder must **reach the architect and decide it** — do *not*
-  freeze it behind a "maintainer please accept" checkbox on the issue, which manufactures a
-  human touchpoint the working agreement deliberately removed (§0: "the merge button is the
-  maintainer's ONLY touchpoint"). Lower-tier roles (executor/planner) still never supersede
-  an ADR on their own — that authority is the architect's.
+  a human pre-approval gate.** Authoring a *new* ADR that **supersedes** an existing one is
+  architect-role work: the architect's decision *is* the approval, the planner grooms it
+  into executor items without waiting, and merge happens the same way as any other change
+  (precedent: ADR-0018 superseded ADR-0010). So when an `rfc` proposes replacing a binding
+  ADR, the routine ladder must **reach the architect and decide it** — do *not* freeze it
+  behind a "maintainer please accept" checkbox on the issue, which manufactures a human
+  touchpoint the working agreement deliberately removed. Other roles (executor/planner)
+  still don't supersede an ADR on their own — that's a role-ownership split, not a
+  permission gate — that authority is the architect's.
 - ADRs named `adr-NNNN-<chosen>-not-<rejected>.md` encode a **rejected** option — treat
   it as off-limits (e.g. ADR-0002: Garage, NOT MinIO).
 - A `SessionStart` hook (`scripts/adr-context-hook.sh`) surfaces every ADR's decision at
@@ -187,5 +192,5 @@ retry it rather than assuming it will fail again. **Do not run
 marking it green after a failed/refused apply call fabricates that claim. If the apply
 call genuinely fails, land the repo change anyway (source of truth stays correct) and
 say so explicitly in the PR — and do NOT treat a red `routines-check` as mergeable on
-that basis alone; WAYS-OF-WORKING.md §2's "never merge red CI" is absolute regardless of
+that basis alone; WAYS-OF-WORKING.md §4's "never merge red CI" is absolute regardless of
 how well-documented the reasoning looks in the moment.
