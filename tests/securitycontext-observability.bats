@@ -5,7 +5,8 @@
 #
 # node-exporter carve-out: hostPID and hostNetwork are explicitly set to false so the
 # DaemonSet complies with the restricted namespace label. readOnlyRootFilesystem carve-outs
-# for Grafana, Alloy, and Pyroscope are noted in the PR and tracked as follow-up items.
+# for Grafana and Pyroscope are noted in the PR and tracked as follow-up items (Alloy's
+# was tightened to true — see the alloy-storage emptyDir tests below).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -168,6 +169,18 @@ setup() {
 
 @test "alloy Application drops ALL capabilities" {
   run grep -q '\- ALL' "$ALLOY"
+  [ "$status" -eq 0 ]
+}
+
+@test "alloy Application sets readOnlyRootFilesystem: true" {
+  run grep -q 'readOnlyRootFilesystem: true' "$ALLOY"
+  [ "$status" -eq 0 ]
+}
+
+@test "alloy Application backs /tmp/alloy (storage.path) with an emptyDir, not root fs" {
+  run grep -q 'mountPath: /tmp/alloy' "$ALLOY"
+  [ "$status" -eq 0 ]
+  run grep -q 'name: alloy-storage' "$ALLOY"
   [ "$status" -eq 0 ]
 }
 
