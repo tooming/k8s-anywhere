@@ -6,10 +6,9 @@
 environment_id: env_014NJKuQoEb7PAi3PXaFW2B9   # Anthropic cloud (Default)
 source: https://github.com/tooming/k8s-anywhere  # repo cloned into each run (renamed from k8s-lab 2026-07-13)
 
-# Quota math (WAYS-OF-WORKING.md §5 — 5 runs / rolling 24h free):
-#   NO ACTIVE TRIGGER RIGHT NOW — see "AWAITING REPLACEMENT" below. Once
-#   recreated: one trigger, cron "0 21,22,23,0,1 * * *" — fires at 21:00, 22:00,
-#   23:00, 00:00, 01:00 UTC every day. Exactly 5 runs/day, 7 days/week.
+# Quota math (WAYS-OF-WORKING.md §5 — 5 runs / rolling 24h free; ALL slots filled):
+#   One trigger, cron "0 21,22,23,0,1 * * *" — fires at 21:00, 22:00, 23:00, 00:00,
+#   01:00 UTC every day. Exactly 5 runs/day, 7 days/week. One prompt, one model.
 #
 # NIGHT-TIME SCHEDULE + CREDIT SAFETY (rolling-24h-proof):
 #   All runs fire in a fixed nightly window (Europe/Tallinn: ~23:00–04:00 local).
@@ -22,24 +21,40 @@ source: https://github.com/tooming/k8s-anywhere  # repo cloned into each run (re
 #   Specialist prompt files are kept in-repo as fallback targets and for on-demand
 #   local invocations (see local_roles below). They are no longer separate triggers.
 #
-# AWAITING REPLACEMENT (2026-07-15, see #423): trig_01CRtpmaS1scBQL74xKqmfvS was
-# disabled and retired below. It was created via the raw claude.ai HTTP API back
-# in May, before the Routines UI's repo-selector flow existed, and never had
-# GitHub API/repo access attached to the session — git clone/push worked fine,
-# but every `gh` call (gh pr list/create, gh issue create, ...) was denied with
-# "GitHub access to this repository is not enabled for this session. Use
-# add_repo to request access", and no add_repo tool was reachable from inside
-# that session to self-remediate. Since the executor contract is entirely
-# gh-dependent (STEP 2, STEP 6, STEP 7, every fallback role), no run could ever
-# deliver a PR or issue. The replacement must be created through the Routines
-# UI's own repo-selector (confirmed to grant working repo/API access to ad-hoc
-# dispatched sessions), not via RemoteTrigger create — recreating through the
-# API would reproduce the same gap. Once the new trigger is created and verified
-# (a manual run that gets past `gh pr list`), add it below with the same cron/
-# model/allowed_tools/prompt_file as the retired entry.
+# REPLACEMENT TRIGGER (2026-07-15, see #423): trig_01CRtpmaS1scBQL74xKqmfvS (the
+# original, created via the raw claude.ai HTTP API back in May) never had GitHub
+# API/repo access attached — git clone/push worked, but every `gh` call was denied
+# with "GitHub access to this repository is not enabled for this session. Use
+# add_repo to request access", with no add_repo tool reachable from inside that
+# session to self-remediate. Since the executor contract is entirely gh-dependent
+# (STEP 2, STEP 6, STEP 7, every fallback role), no run could ever deliver a PR or
+# issue. A same-day attempt to recreate it via RemoteTrigger create
+# (trig_015neX4v6RifyiVgyC8TCwNc, retired below) produced a trigger with the
+# identical JSON shape (no repo-binding field of any kind) — its own run's outcome
+# was never actually confirmed (no session-transcript access, no GitHub activity
+# either way to check), so it was retired on suspicion/redundancy once the proper
+# fix existed, NOT on confirmed failure. trig_01XxtSdkPdRNjBfAidUXTwos below was
+# created through the Routines UI's own repo-selector flow instead
+# (tooming/k8s-anywhere explicitly attached as a Repository, visible in the
+# routine's own settings page). NOT YET VERIFIED — 0 runs completed at the time
+# this was wired in. Confirm the next scheduled or manual run actually gets past
+# `gh pr list` before treating this as settled; if it hits the same denial,
+# retire it too and escalate #423 further.
 
 routines:
-  # (no active routines — see AWAITING REPLACEMENT above)
+  # THE EXECUTOR — one trigger, five nightly slots, one prompt.
+  # Implements ROADMAP items or falls back through the role chain (STEP 6b).
+  # Every run ends with a self-reviewed PR, a fallback deliverable, or — only when
+  # the entire chain is empty — a refreshed maintainer-prompt issue.
+  - name: k8s-anywhere autonomous dev
+    trigger_id: trig_01XxtSdkPdRNjBfAidUXTwos
+    cron: "0 21,22,23,0,1 * * *"   # 21:00/22:00/23:00/00:00/01:00 UTC — 5/day, all 7 days
+    model: claude-sonnet-5
+    enabled: true
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    prompt_file: executor.prompt.md
+    branch_prefix: auto/           # PRs land on auto/<slug>
+    repository: tooming/k8s-anywhere   # attached via the Routines UI's repo-selector (see note above)
 
   # ── RETIRED TRIGGERS (no delete API — kept as audit trail) ──────────────────
   # Slot-filler  trig_011X276UrgGJWLsgC9Apneok  retired 2026-06-13 (absorbed into single trigger)
@@ -53,6 +68,7 @@ routines:
   # Wed/Sat/Sun  trig_012iaXwG6Pf8XeKCCEshY351  retired 2026-06-13 (superseded)
   # Roundup      trig_01RJfm9AC8YJqFqc4KKQWxJb  retired (orphan)
   # Executor     trig_01CRtpmaS1scBQL74xKqmfvS  retired 2026-07-15 (no gh/API access — see #423)
+  # Executor (API test)  trig_015neX4v6RifyiVgyC8TCwNc  retired 2026-07-15 (recreated via RemoteTrigger create to test whether that path grants gh/API access; outcome unverified — no session-transcript access and no GitHub activity to check either way — retired as redundant once trig_01XxtSdkPdRNjBfAidUXTwos was created properly through the UI, see #423)
 
 # Local-only roles (NOT remote routines — they need Colima and the live cluster).
 # Invoked on demand by the maintainer; not registered with the backend, no cron,
