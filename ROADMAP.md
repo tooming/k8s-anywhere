@@ -233,19 +233,25 @@ You review and merge plan PRs, same as implementation PRs.
   `readOnlyRootFilesystem: true` assertion. `make ci` passes. `docs/done/` entry
   required. (auto/observability-readonlyrootfs-grafana)
 
-- [ ] 🟢 **`observability` readOnlyRootFilesystem tighten — Pyroscope** (CHARTER
+- [x] 🟢 **`observability` readOnlyRootFilesystem tighten — Pyroscope** (CHARTER
   **Objective O2** hardening, ADR-0017 §"Per-workload field carve-outs"; split from the
-  combined item filed 2026-07-14). Pyroscope's comment says it "writes profile data to
-  PVC-backed storage and temp WAL" — enumerate the exact temp-WAL path(s) by fetching
-  the pinned chart source (chart `pyroscope` v2.0.3 — check `grafana/pyroscope` repo for
-  the `helm/pyroscope` chart tree at a matching tag, or `grafana/helm-charts`/
-  `grafana-community/helm-charts` if it also migrated — see the network-access note
-  below) and cross-check against the `pyroscope.yaml` `valuesObject`'s existing
-  `persistence.enabled: true, size: 4Gi` mount. For any temp/WAL path not already on the
-  PVC or an `emptyDir`, add one via the chart's equivalent of `extraEmptyDirMounts`,
-  then flip `readOnlyRootFilesystem: false` → `true`, remove the stale comment, and
-  extend `tests/securitycontext-observability.bats`. `make ci` must pass. `docs/done/`
-  entry required. (auto/observability-readonlyrootfs-pyroscope)
+  combined item filed 2026-07-14). Verified against the pinned chart source
+  (`grafana/pyroscope` repo — the chart lives in the app's own repo, not
+  `grafana/helm-charts` — tag `pyroscope-2.0.3`,
+  `operations/pyroscope/helm/pyroscope/templates/deployments-statefulsets.yaml`): with
+  this config (v1 storage disabled, v2 enabled — the chart default — single "all"
+  component), the container mounts the same `data` PVC (our existing
+  `persistence.enabled: true, size: 4Gi`) twice — at `/data` (no subPath) and at
+  `/data-metastore` (subPath `.metastore`, the chart default, since `$isMetastore` is
+  true for the `all` component under v2) — confirmed via the image's Dockerfile
+  (`cmd/pyroscope/Dockerfile`, no `WORKDIR` override so `./data-metastore/...` CLI args
+  resolve to `/data-metastore/...`) that both are the only local write paths; actual
+  profile blocks go to the S3 backend (Garage) per `structuredConfig.storage.backend:
+  s3`. No new mount was needed — flipped `readOnlyRootFilesystem: false` → `true`
+  directly and replaced the stale comment with the verified rationale. Extended
+  `tests/securitycontext-observability.bats` with a `readOnlyRootFilesystem: true`
+  assertion. `make ci` passes. `docs/done/` entry required.
+  (auto/observability-readonlyrootfs-pyroscope)
 
   > **Network-access note (found 2026-07-15, resolving the 2026-07-14 filing's
   > "proxy-restricted" blocker):** `https://grafana.github.io/helm-charts` (the Helm

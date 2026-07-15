@@ -33,8 +33,16 @@ spec:
         pyroscope:
           replicaCount: 1
           # Pod Security Standards restricted (ADR-0017). Pyroscope image runs as UID 10001.
-          # readOnlyRootFilesystem carve-out: Pyroscope writes profile data to PVC-backed
-          # storage and temp WAL; tightening to true is a follow-up item.
+          # readOnlyRootFilesystem verified true: checked the pinned chart source
+          # (grafana/pyroscope repo, tag pyroscope-2.0.3,
+          # operations/pyroscope/helm/pyroscope/templates/deployments-statefulsets.yaml).
+          # With this config (v1 disabled, v2 enabled — the chart default — and the
+          # single "all" component, i.e. singleBinary mode with metastore folded in),
+          # the container mounts the same "data" PVC (persistence below) twice: at
+          # /data (no subPath) and at /data-metastore (subPath ".metastore", the
+          # chart default) — the metastore raft/db files the process writes always
+          # land under one of those two paths, and the S3 backend (Garage, below)
+          # holds the actual profile blocks. No other write path exists.
           podSecurityContext:
             runAsNonRoot: true
             runAsUser: 10001
@@ -45,7 +53,7 @@ spec:
           containerSecurityContext:
             allowPrivilegeEscalation: false
             privileged: false
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
