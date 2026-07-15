@@ -26,17 +26,28 @@ spec:
             runAsGroup: 473
             seccompProfile:
               type: RuntimeDefault
+          volumes:
+            # The alloy chart (1.8.2) does NOT create a volume for --storage.path
+            # (verified against chart source: templates/controllers/_pod.yaml /
+            # templates/containers/_agent.yaml carry no "storage" volume or mount —
+            # only config/varlog/dockercontainers/extra). Without this, /tmp/alloy
+            # lands on the container's root filesystem, so it must be backed
+            # explicitly before readOnlyRootFilesystem can be true.
+            extra:
+              - name: alloy-storage
+                emptyDir: {}
         alloy:
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
-            # readOnlyRootFilesystem carve-out: Alloy writes its WAL to /tmp/alloy
-            # (chart-created emptyDir); tightening to true is a follow-up item once
-            # the storagePath volume is verified writable under restricted policy.
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
+          mounts:
+            extra:
+              - name: alloy-storage
+                mountPath: /tmp/alloy
           resources:
             requests:
               cpu: 50m
