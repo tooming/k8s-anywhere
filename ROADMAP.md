@@ -215,26 +215,22 @@ You review and merge plan PRs, same as implementation PRs.
   `readOnlyRootFilesystem: true` and the new mount. `make ci` must pass. `docs/done/`
   entry required. (auto/observability-readonlyrootfs-alloy)
 
-- [ ] 🟢 **`observability` readOnlyRootFilesystem tighten — Grafana** (CHARTER
+- [x] 🟢 **`observability` readOnlyRootFilesystem tighten — Grafana** (CHARTER
   **Objective O2** hardening, ADR-0017 §"Per-workload field carve-outs"; split from the
-  combined item filed 2026-07-14). Grafana's comment says it "writes plugin state and
-  session data beyond the PVC-backed `/var/lib/grafana`" — enumerate the actual path(s)
-  by fetching the pinned chart source (`grafana-community/helm-charts` repo — the chart
-  migrated off `grafana/helm-charts`, see the network-access note below — tag
-  `grafana-10.5.15`, `charts/grafana/templates/_pod.tpl`) and the `grafana/grafana`
-  image's docker entrypoint (`grafana/grafana` repo, tag `v13.0.1`,
-  `packaging/docker/run.sh`) for any write paths beyond `GF_PATHS_DATA`
-  (`/var/lib/grafana`, already our PVC) — in particular confirm whether `GF_PATHS_LOGS`
-  (`/var/log/grafana` by default) is ever written given `log.mode: console` is the
-  chart default (console-only logging normally means no log-file writes, but confirm
-  before relying on it) and whether `GF_PATHS_PLUGINS` (`/var/lib/grafana/plugins`,
-  already inside the PVC mount) needs anything extra. Note: `/var/lib/grafana-search`
-  (the `unified_storage.index_path`) is already chart-mounted as an unconditional
-  `emptyDir` — no action needed there. For any path not already covered, add an
-  `emptyDir` via `extraEmptyDirMounts` at that exact path, then flip
-  `readOnlyRootFilesystem: false` → `true`, remove the stale "follow-up item" comment,
-  and extend `tests/securitycontext-observability.bats` with a
-  `readOnlyRootFilesystem: true` assertion. `make ci` must pass. `docs/done/` entry
+  combined item filed 2026-07-14). Verified against the pinned chart source
+  (`grafana-community/helm-charts` repo — the chart migrated off `grafana/helm-charts`
+  — tag `grafana-10.5.15`, `charts/grafana/templates/_pod.tpl`) and the
+  `grafana/grafana` image source (tag `v13.0.1`, `pkg/infra/log/log.go` +
+  `packaging/docker/run.sh`): `GF_PATHS_DATA` (`/var/lib/grafana`, including the
+  plugins subdir) is our existing PVC; `/var/lib/grafana-search`
+  (`unified_storage.index_path`) is an unconditional chart-managed `emptyDir`
+  regardless of values; `GF_PATHS_LOGS` (`/var/log/grafana`) is only `MkdirAll`'d by
+  Grafana under `log.mode: file` — our config's `log.mode: console` (the chart
+  default) never reaches that code path, so the directory is never created or
+  written. No new mount was needed — flipped `readOnlyRootFilesystem: false` → `true`
+  directly, replaced the stale "follow-up item" comment with the verified rationale,
+  and extended `tests/securitycontext-observability.bats` with a
+  `readOnlyRootFilesystem: true` assertion. `make ci` passes. `docs/done/` entry
   required. (auto/observability-readonlyrootfs-grafana)
 
 - [ ] 🟢 **`observability` readOnlyRootFilesystem tighten — Pyroscope** (CHARTER

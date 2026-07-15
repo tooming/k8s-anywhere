@@ -4,9 +4,9 @@
 # workloads carry the required PSS restricted securityContext fields.
 #
 # node-exporter carve-out: hostPID and hostNetwork are explicitly set to false so the
-# DaemonSet complies with the restricted namespace label. readOnlyRootFilesystem carve-outs
-# for Grafana and Pyroscope are noted in the PR and tracked as follow-up items (Alloy's
-# was tightened to true — see the alloy-storage emptyDir tests below).
+# DaemonSet complies with the restricted namespace label. readOnlyRootFilesystem carve-out
+# for Pyroscope is noted in the PR and tracked as a follow-up item (Alloy and Grafana
+# were both tightened to true — see the alloy-storage emptyDir tests below).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -203,6 +203,11 @@ setup() {
 
 @test "grafana Application drops ALL capabilities" {
   run grep -q '\- ALL' "$GRAFANA"
+  [ "$status" -eq 0 ]
+}
+
+@test "grafana Application sets readOnlyRootFilesystem: true" {
+  run grep -q 'readOnlyRootFilesystem: true' "$GRAFANA"
   [ "$status" -eq 0 ]
 }
 

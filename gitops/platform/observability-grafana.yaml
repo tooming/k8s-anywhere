@@ -33,8 +33,14 @@ spec:
         initChownData:
           enabled: false
         # Pod Security Standards restricted (ADR-0017). Grafana image runs as UID 472.
-        # readOnlyRootFilesystem carve-out: Grafana writes plugin state and session data
-        # beyond the PVC-backed /var/lib/grafana; tightening is a follow-up item.
+        # readOnlyRootFilesystem verified true: GF_PATHS_DATA (/var/lib/grafana,
+        # including the plugins subdir) is the PVC above; the unified-storage search
+        # index (/var/lib/grafana-search) is an unconditional chart-managed emptyDir
+        # (chart templates/_pod.tpl); GF_PATHS_LOGS (/var/log/grafana) is only
+        # MkdirAll'd by Grafana under log.mode "file" (pkg/infra/log/log.go) — our
+        # log.mode is "console" only, so it's never written. No other write path
+        # exists under this config (checked against grafana chart grafana-10.5.15
+        # and grafana/grafana image v13.0.1's docker entrypoint).
         podSecurityContext:
           runAsNonRoot: true
           runAsUser: 472
@@ -45,7 +51,7 @@ spec:
         containerSecurityContext:
           allowPrivilegeEscalation: false
           privileged: false
-          readOnlyRootFilesystem: false
+          readOnlyRootFilesystem: true
           capabilities:
             drop:
               - ALL
