@@ -26,7 +26,7 @@ routines:
   # Implements ROADMAP items or falls back through the role chain (STEP 6b).
   # Every run ends with a self-reviewed PR, a fallback deliverable, or — only when
   # the entire chain is empty — a refreshed maintainer-prompt issue.
-  - name: k8s-lab autonomous dev
+  - name: k8s-anywhere autonomous dev
     trigger_id: trig_01CRtpmaS1scBQL74xKqmfvS
     cron: "0 21,22,23,0,1 * * *"   # 21:00/22:00/23:00/00:00/01:00 UTC — 5/day, all 7 days
     model: claude-sonnet-5         # bumped 2026-07-14 from stale claude-sonnet-4-6 —
