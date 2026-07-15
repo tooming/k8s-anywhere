@@ -153,23 +153,27 @@ setup() {
 
 # --- routines-author-check ---------------------------------------------------
 # The executor (auto/* branch, cloud "Claude <noreply@anthropic.com>" commits) has
-# no RemoteTrigger tool, so it can't apply a routine change to the live trigger.
-# This guard fails when an executor-authored change edits a routine file. Branch
-# and changed-file list are injected via env so the logic is testable without a
-# live git history.
+# no RemoteTrigger tool, so it can't apply a routines.yaml change to the live
+# trigger. This guard fails when an executor-authored change edits routines.yaml.
+# Branch and changed-file list are injected via env so the logic is testable
+# without a live git history.
+#
+# Since the 2026-07-15 pointer architecture, routines/*.prompt.md files are read
+# live every run and never baked into a trigger — editing one carries zero
+# live-drift risk, so this guard no longer protects them at all (any session,
+# including the executor, may edit them freely). Only routines.yaml still drives
+# live trigger state via the API, so it remains the one protected file.
 
-@test "routines-author-check: FAILS when an auto/* change edits a routine prompt" {
+@test "routines-author-check: passes when an auto/* change edits a routine prompt (no longer baked into any trigger)" {
   run env ROUTINES_AUTHOR_BRANCH="auto/foo" \
           ROUTINES_AUTHOR_FILES=$'routines/executor.prompt.md\ngitops/x.yaml' \
           bash "$REPO/scripts/routines-author-check.sh"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"executor-authored change"* ]]
-  [[ "$output" == *"routines/executor.prompt.md"* ]]
+  [ "$status" -eq 0 ]
 }
 
 @test "routines-author-check: FAILS when an auto/* change edits routines.yaml" {
   run env ROUTINES_AUTHOR_BRANCH="auto/bar" \
-          ROUTINES_AUTHOR_FILES=$'routines.yaml' \
+          ROUTINES_AUTHOR_FILES=$'routines/routines.yaml' \
           bash "$REPO/scripts/routines-author-check.sh"
   [ "$status" -eq 1 ]
   [[ "$output" == *"routines.yaml"* ]]
@@ -182,17 +186,17 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "routines-author-check: passes when an INTERACTIVE branch edits a routine prompt (it can apply)" {
+@test "routines-author-check: passes when an INTERACTIVE branch edits routines.yaml (it can apply)" {
   run env ROUTINES_AUTHOR_BRANCH="chore/edit-routines" \
-          ROUTINES_AUTHOR_FILES=$'routines/executor.prompt.md' \
+          ROUTINES_AUTHOR_FILES=$'routines/routines.yaml' \
           bash "$REPO/scripts/routines-author-check.sh"
   [ "$status" -eq 0 ]
 }
 
-@test "routines-author-check: FAILS on a cloud-authored routine edit even off the auto/* prefix" {
+@test "routines-author-check: FAILS on a cloud-authored routines.yaml edit even off the auto/* prefix" {
   run env ROUTINES_AUTHOR_BRANCH="chore/sneaky" \
           ROUTINES_AUTHOR_IS_CLOUD=1 \
-          ROUTINES_AUTHOR_FILES=$'routines/planner.prompt.md' \
+          ROUTINES_AUTHOR_FILES=$'routines/routines.yaml' \
           bash "$REPO/scripts/routines-author-check.sh"
   [ "$status" -eq 1 ]
   [[ "$output" == *"cloud identity"* ]]
