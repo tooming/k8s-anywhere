@@ -4,9 +4,9 @@
 # workloads carry the required PSS restricted securityContext fields.
 #
 # node-exporter carve-out: hostPID and hostNetwork are explicitly set to false so the
-# DaemonSet complies with the restricted namespace label. readOnlyRootFilesystem carve-out
-# for Pyroscope is noted in the PR and tracked as a follow-up item (Alloy and Grafana
-# were both tightened to true — see the alloy-storage emptyDir tests below).
+# DaemonSet complies with the restricted namespace label. Alloy, Grafana, and Pyroscope
+# all had their readOnlyRootFilesystem carve-out verified and tightened to true — see
+# the alloy-storage emptyDir tests below for Alloy's added mount.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -230,6 +230,11 @@ setup() {
 
 @test "pyroscope Application drops ALL capabilities" {
   run grep -q '\- ALL' "$PYROSCOPE"
+  [ "$status" -eq 0 ]
+}
+
+@test "pyroscope Application sets readOnlyRootFilesystem: true" {
+  run grep -q 'readOnlyRootFilesystem: true' "$PYROSCOPE"
   [ "$status" -eq 0 ]
 }
 
