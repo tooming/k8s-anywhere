@@ -5,7 +5,8 @@
 # routines/README.md "Changing a routine"). Without that prior apply step
 # this is just lying to the drift checker.
 set -uo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# ROOT defaults to the repo; tests point ROUTINESMARKAPPLIED_ROOT at a fixture tree.
+ROOT="${ROUTINESMARKAPPLIED_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 SNAP="$ROOT/.routines-applied"
 
 {
