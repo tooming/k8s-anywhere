@@ -3,7 +3,7 @@
 # Drift checker: scripts/routines-check.sh (`make routines-check`, in `make ci`).
 routines/architect.prompt.md sha256=69c5df5378830f956b7c72978963c2a5fec66c427154aebcb627aca40335f80d
 routines/doc-drift-author.prompt.md sha256=3b57d52f2028884f7064c32113f0c6fec68c0dcbd2f54835dbbe2870d1288044
-routines/executor.prompt.md sha256=211aa58e25f78668407910eaf44a9b307584cd37182403be48fa04cf2c434e3f
+routines/executor.prompt.md sha256=d2000556037b2bba2cf9b75e3fd2abc98c0138c9612b4145dddaebfa8d5e169e
 routines/janitor.prompt.md sha256=c2857fe86ead07c1a396b60a83cf18e503c1e4535a133b2fe102c2512104c595
 routines/learning-post-writer.prompt.md sha256=ce27d8787e139002de9c7e9e54e916b86898db3067208c7f0aeae12117e8b224
 routines/operator.prompt.md sha256=8d0481bd1b8bd34c139eaf36f11bcc4c4ea528fc817e2f5525e4062239518be6

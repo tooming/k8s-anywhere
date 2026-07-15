@@ -9,7 +9,7 @@ setup() {
   # Only one trigger is actually live (the rest were retired 2026-06-13 and
   # absorbed into the executor's fallback chain — see WAYS-OF-WORKING.md §1),
   # so the registry table has one row, not a separate row per former routine.
-  run grep -F '| Executor | `trig_01CRtpmaS1scBQL74xKqmfvS` | @tooming |' "$WAYS"
+  run grep -F '| Executor | `trig_01XxtSdkPdRNjBfAidUXTwos` | @tooming |' "$WAYS"
   [ "$status" -eq 0 ]
 }
 
