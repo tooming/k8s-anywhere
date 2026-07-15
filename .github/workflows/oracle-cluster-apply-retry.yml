@@ -1,0 +1,84 @@
+name: oracle-cluster-apply-retry
+
+# Scheduled, narrow companion to oracle-cluster-apply.yml (workflow_dispatch only).
+# Oracle's Ampere A1 Always Free host capacity in eu-frankfurt-1 has been exhausted on
+# every attempt so far (issue #406) -- the tenancy is capped at its home region only
+# (region-subscription attempts to add a second region 409 with TenantCapacityExceeded,
+# an Always Free account-tier limit, not something fixable via API). So the only lever
+# left is time: retry the launch periodically until Oracle's capacity frees up.
+#
+# Deliberately narrower than oracle-cluster-apply.yml: hardcoded to the cluster/ unit
+# and `apply` only -- no destroy, no argocd/gitlab, no input surface at all, so there's
+# nothing a scheduled trigger could be tricked or misconfigured into doing beyond this
+# one already-approved action. Once the instance exists, subsequent applies are
+# no-ops (terraform idempotency) -- safe to leave running indefinitely, no
+# success-detection/self-disable logic needed.
+#
+# Treats "Out of host capacity" as an expected, non-alerting outcome (logged as a
+# ::notice:: and exits 0) so this doesn't send an hourly failure-email for a known,
+# waiting-on-Oracle state -- any OTHER failure reason still fails the job loudly.
+
+on:
+  schedule:
+    - cron: "17 * * * *" # hourly, offset off the top-of-hour GH Actions crunch
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    environment: oracle-cloud
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8" # keep in sync with oracle-cluster-apply.yml / ci.yml
+          terraform_wrapper: false
+
+      - name: Install terragrunt
+        run: |
+          curl -fsSL -o /usr/local/bin/terragrunt \
+            https://github.com/gruntwork-io/terragrunt/releases/download/v0.67.0/terragrunt_linux_amd64
+          chmod +x /usr/local/bin/terragrunt
+
+      - name: Render OCI + SSH credential files from secrets
+        run: |
+          umask 077
+          mkdir -p "$RUNNER_TEMP/oracle-creds"
+          printf '%s' "${{ secrets.OCI_PRIVATE_KEY }}" > "$RUNNER_TEMP/oracle-creds/oci_api_key.pem"
+          printf '%s' "${{ secrets.OCI_SSH_PUBLIC_KEY }}" > "$RUNNER_TEMP/oracle-creds/oracle-lab.pub"
+          printf '%s' "${{ secrets.OCI_SSH_PRIVATE_KEY }}" > "$RUNNER_TEMP/oracle-creds/oracle-lab"
+          chmod 600 "$RUNNER_TEMP"/oracle-creds/*
+
+      - name: terragrunt apply (cluster) -- capacity-tolerant
+        working-directory: infra/live/oracle/cluster
+        env:
+          OCI_TENANCY_ID: ${{ secrets.OCI_TENANCY_ID }}
+          OCI_COMPARTMENT_ID: ${{ secrets.OCI_COMPARTMENT_ID }}
+          OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
+          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+          OCI_REGION: ${{ secrets.OCI_REGION }}
+          OCI_PRIVATE_KEY_PATH: ${{ runner.temp }}/oracle-creds/oci_api_key.pem
+          OCI_SSH_PUBLIC_KEY_PATH: ${{ runner.temp }}/oracle-creds/oracle-lab.pub
+          OCI_SSH_PRIVATE_KEY_PATH: ${{ runner.temp }}/oracle-creds/oracle-lab
+          TFSTATE_ORACLE_ENDPOINT: ${{ secrets.TFSTATE_ORACLE_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.GARAGE_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.GARAGE_SECRET_ACCESS_KEY }}
+        run: |
+          set -o pipefail
+          terragrunt init
+          if terragrunt apply -auto-approve 2>&1 | tee /tmp/apply.log; then
+            echo "::notice::cluster instance launched -- capacity freed up"
+          elif grep -q "Out of host capacity" /tmp/apply.log; then
+            echo "::notice::still out of host capacity, will retry next scheduled run"
+          else
+            echo "::error::terragrunt apply failed for a reason other than capacity"
+            exit 1
+          fi
+
+      - name: Clean up rendered credential files
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/oracle-creds"
