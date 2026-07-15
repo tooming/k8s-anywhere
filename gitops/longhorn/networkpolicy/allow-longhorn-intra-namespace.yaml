@@ -1,5 +1,8 @@
 # Allow all pods within the longhorn-system namespace to communicate with each other
-# (ADR-0016). The Longhorn cluster has dense intra-namespace flows:
+# (ADR-0016). This is a documented carve-out from ADR-0016's general "no catch-all
+# 'allow same namespace'" rule — see ADR-0016 §"Scope & exceptions" → Carve-outs
+# table (the argocd/harbor/inkless/istio-system/longhorn-system/tidb row) for the
+# binding rationale and flip condition. The Longhorn cluster has dense intra-namespace flows:
 #   longhorn-manager (DaemonSet) ↔ longhorn-engine ↔ longhorn-csi-plugin;
 #   CSI driver gRPC socket → replica-manager / engine-manager sidecars;
 #   replica-process ↔ engine-process across the Longhorn control plane.
