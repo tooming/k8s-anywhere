@@ -51,6 +51,7 @@ graph TD
   subgraph AOA["In-cluster workloads — ArgoCD-managed"]
     subgraph SEC["Secrets"]
       vault["Vault (KV v2)"]:::sec
+      vaultunsealer["vault-unsealer<br/>auto re-unseal watchdog<br/>(lab-only: key in k8s Secret)"]:::sec
       eso["External Secrets Operator<br/>ClusterSecretStore 'vault'"]:::sec
     end
     subgraph STORE["Storage"]
@@ -134,6 +135,7 @@ graph TD
   end
 
   %% --- secret chain (ExternalSecret <- Vault path) ---
+  vaultunsealer -.->|"poll status; unseal if sealed"| vault
   vault -->|"k8s auth, role eso"| eso
   eso -->|"garage-secrets ← garage/server"| garage
   eso -->|"garage-s3 ← garage/s3"| mimir
@@ -385,6 +387,17 @@ make up
 - **Front door** (`:8000`, nginx docker container) is off-cluster and **not**
   GitOps-managed — the stable entry that survives blue/green; it's the front-LB
   SPOF in [ADR-0005](decisions/adr-0005-spof-recreate-over-ha.md).
+- **vault-unsealer** (`gitops/vault/unsealer.yaml`, deployed via the auto-synced
+  `vault-extras` Application) is a small always-running watchdog Deployment in the
+  `vault` namespace — separate from the one-time `vault-bootstrap.sh` init/unseal/seed
+  step shown in the day-0 bootstrap chain above. It polls `vault status` and runs
+  `vault operator unseal` whenever Vault reports sealed, so Vault comes back
+  auto-unsealed after every pod restart or node reboot without a human re-running the
+  bootstrap script — the ADR-0005 "recreate from code" recoverability story for Vault
+  specifically. **Lab-only trade-off** (per the script's own header comment): the
+  unseal key lives in the `vault-keys` Kubernetes Secret, so this drops seal
+  protection to "whoever can read that Secret" — a production deployment would use a
+  KMS auto-unseal (e.g. `seal "awskms"`) instead.
 - **Cilium** (`gitops/platform/cilium.yaml`) is the cluster's **CNI and kube-proxy replacement** (ADR-0014). Non-auto-synced because Cilium must be installed **before** ArgoCD on fresh clusters — `make cilium-up` runs `helm upgrade --install` directly (day-0 bootstrap seam) immediately after `make cluster-up`, before `make argocd`. Flannel is disabled (`disable_default_cni = true` in `infra/live/local/cluster/terragrunt.hcl`). Chart `cilium/cilium` v1.16.6 from `https://helm.cilium.io`, namespace `kube-system`; `kubeProxyReplacement: true`; Hubble disabled (~320 MB net addition; replaces Flannel ~80 MB). Once ArgoCD is running it adopts the Helm release. Use `make cilium-down` only during full cluster teardown. Cilium agent Prometheus metrics are enabled (`prometheus.enabled: true`, port 9962); Alloy pod-discovery scrapes the DaemonSet via `discovery.relabel "cilium_agent"` (hostNetwork → node IP); dashboard: `grafana/dashboards/lab-cilium.json` ("Lab — Cilium (CNI)") with real Mimir-datasource panels (RFC #358, O5).
 - **GitLab** is also off-cluster (docker), the git source ArgoCD reads from.
 - **Tempo** receives traces from the `hello` demo app (HotROD) via OTLP HTTP `:4318`. HotROD runs in `lab-demo` namespace and exports to `tempo.observability.svc.cluster.local:4318` via the standard `OTEL_EXPORTER_OTLP_ENDPOINT` env var. The "Lab — Traces" dashboard shows live span data.
