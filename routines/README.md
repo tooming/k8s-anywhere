@@ -17,7 +17,7 @@ directory as fallback targets and on-demand local invocations, not as scheduled 
 
 | File | What |
 |------|------|
-| [`routines.yaml`](routines.yaml) | per-routine metadata: `trigger_id`, `cron`, `model`, env, tools, `prompt_file` |
+| [`routines.yaml`](routines.yaml) | per-routine metadata: `trigger_id`, `cron`, `model`, env, tools, `prompt_file`, `live_prompt` (the short pointer actually pushed to the live trigger — see "Pointer architecture" below) |
 | [`executor.prompt.md`](executor.prompt.md) | **the only live trigger.** Nightly implementer (21:00/22:00/23:00/00:00/01:00 UTC, every day), `auto/*` PRs; falls back through the roles below when its own lane is empty |
 | [`planner.prompt.md`](planner.prompt.md) | the planner's prompt — groomer, `plan/*` PRs. Fallback-only since 2026-06-13 |
 | [`architect.prompt.md`](architect.prompt.md) | the architect's prompt — RFC opener, `arch/*` PRs. Fallback-only since 2026-06-13 |
@@ -48,13 +48,35 @@ invokes them by hand in a Claude Code session. Listed in `routines.yaml` under
 | [`verifier.prompt.md`](verifier.prompt.md) | bring up the lab on an `auto/*` PR's branch and confirm acceptance criteria pass end-to-end |
 | [`operator.prompt.md`](operator.prompt.md) | on-call pulse check; run DR drills; file `incident` issues when something needs a human |
 
+## Pointer architecture (2026-07-15)
+
+A live trigger's actual content is `routines.yaml`'s `live_prompt` — a short,
+effectively-static instruction telling the run to read `prompt_file` (e.g.
+`executor.prompt.md`) from the already-checked-out repo and follow it in full.
+The real operating contract lives **only** in `prompt_file` and is read fresh
+every run; it is **never baked into the trigger**. This means:
+
+- **Editing a `*.prompt.md` file needs no apply step at all.** It's a normal PR,
+  reviewed like any other diff, live the moment it merges to `main` — the next
+  run reads whatever is on `main` at fetch time.
+- **Editing `routines.yaml`'s structural fields** (`cron`, `model`, `enabled`,
+  `allowed_tools`, `live_prompt`, `environment_id`) is the only thing that still
+  needs the apply dance below, because those fields are pushed to the live API.
+
 ## Changing a routine
 
-1. Edit `routines.yaml` (cadence/model/etc.) and/or the relevant `*.prompt.md`.
-2. Open a PR — a prompt or cadence change reviews like any other diff.
-3. After merge, **apply**: ask Claude Code *"apply the routines"*. It reads these
-   files and syncs the backend — `RemoteTrigger create` when `trigger_id` is empty
+**A `*.prompt.md` file** (the actual instructions the executor or a fallback
+role follows): just edit it and open a PR. Nothing else to do — no apply step,
+because it's never baked into any trigger.
+
+**`routines.yaml`** (cadence/model/enabled/tools/`live_prompt`/environment):
+
+1. Edit the file.
+2. Open a PR — reviews like any other diff.
+3. After merge, **apply**: ask Claude Code *"apply the routines"*. It reads the
+   file and syncs the backend — `RemoteTrigger create` when `trigger_id` is empty
    (then writes the new id back here), else `RemoteTrigger update`.
+4. Run `make routines-mark-applied` to refresh `.routines-applied` (see below).
 
 ## Why "apply" is run by Claude Code, not a CI script
 
@@ -64,32 +86,41 @@ managed OAuth — there is **no exposed token to `curl`** from CI. So Claude Cod
 token becomes available, wrap it as `make routines-apply` / `make routines-check` and
 add the latter to the `ci` gate.
 
-## Why the autonomous executor may not edit these files
+## Why the autonomous executor may not edit routines.yaml (but may edit *.prompt.md files)
 
 The cloud executor runs with `allowed_tools = [Bash, Read, Write, Edit, Glob, Grep]` —
-**no `RemoteTrigger`**. So it physically *cannot* apply a routine change to the live
-trigger. If it edits a `*.prompt.md` and runs `make routines-mark-applied`,
-`routines-check` stays green (the snapshot matches the file) while the **live trigger
-silently drifts** from the repo. That is exactly how the merged JANITOR rung (#251) and
-the `docs/done/` STEP 6 went missing from the live executor trigger until #263 repaired
-them by hand.
+**no `RemoteTrigger`**. So it physically *cannot* apply a `routines.yaml` change to the
+live trigger. If it edited `routines.yaml` (cron/model/enabled/`live_prompt`/etc.) and ran
+`make routines-mark-applied`, `routines-check` would stay green (the snapshot matches the
+file) while the **live trigger silently drifts** from the repo — that is exactly how the
+old baked-prompt version of this footgun bit us before the 2026-07-15 pointer-architecture
+change (the merged JANITOR rung #251 and the `docs/done/` STEP 6 went missing from the
+live executor trigger until #263 repaired them by hand).
 
-`routines-check` can't catch this — CI has no claude.ai token to compare against the
-live trigger. So the footgun is removed *structurally*: **`scripts/routines-author-check.sh`**
-(`make routines-author-check`, wired into `make ci` and the GitHub Actions `drift` job)
-**fails any executor-authored change that touches a routine file.** "Executor-authored"
-= the branch matches `routines.yaml`'s `branch_prefix` (`auto/`) *or* the commit author
-is the cloud identity `Claude <noreply@anthropic.com>`. The result: only interactive
-Claude Code sessions — which *can* `RemoteTrigger update` + `make routines-mark-applied`
-in the same session — ever change routine files. If the executor needs a routine change,
+Since that change, `*.prompt.md` files are no longer baked into any trigger at all — they're
+read live from the checked-out repo every run — so editing one carries **zero** live-drift
+risk. `routines.yaml` is the only file whose content is ever pushed to the live API, so it's
+the only one still protected.
+
+`routines-check` can't catch `routines.yaml` drift by itself — CI has no claude.ai token to
+compare against the live trigger. So the footgun is removed *structurally*:
+**`scripts/routines-author-check.sh`** (`make routines-author-check`, wired into `make ci`
+and the GitHub Actions `drift` job) **fails any executor-authored change that touches
+`routines.yaml`.** "Executor-authored" = the branch matches `routines.yaml`'s
+`branch_prefix` (`auto/`) *or* the commit author is the cloud identity
+`Claude <noreply@anthropic.com>`. The result: only interactive Claude Code sessions —
+which *can* `RemoteTrigger update` + `make routines-mark-applied` in the same session —
+ever change `routines.yaml`. If the executor needs a cadence/model/`live_prompt` change,
 it opens an issue instead — a hard tool-access limit (the cloud executor has no
-`RemoteTrigger` tool at all), not a scope choice.
+`RemoteTrigger` tool at all), not a scope choice. It may, however, freely edit its own or
+any fallback role's `*.prompt.md` directly, the same as any other repo file.
 
 **An interactive session's apply call can fail — verify, don't assume.** The
 `update_trigger` tool is documented to only let an agent push new `prompt`/`name`
-content to a trigger *it created itself* via `create_trigger`, and
-`trig_01CRtpmaS1scBQL74xKqmfvS` (the executor) was created via the claude.ai UI/API
-directly (`created_via: "http_api"`), not by any agent. Two sessions (PR #374, PR
+content to a trigger *it created itself* via `create_trigger`. The original executor
+trigger (`trig_01CRtpmaS1scBQL74xKqmfvS`, since retired for an unrelated reason — see
+#423 — and superseded by `trig_01XxtSdkPdRNjBfAidUXTwos`) was created via the claude.ai
+UI/API directly (`created_via: "http_api"`), not by any agent. Two sessions (PR #374, PR
 #391/#396) got refused on this basis (`"Agents can only update routines they created"`,
 sometimes an opaque stream-closed error instead) and concluded updates were permanently
 impossible — but a later session (2026-07-14) called the *same* `update_trigger` against

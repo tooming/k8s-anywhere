@@ -1,7 +1,17 @@
 # Declarative source of truth for the scheduled remote agents ("routines") that
 # develop this repo. The claude.ai backend is the RUNNING state; this file is the
-# DESIRED state. Edit here + the referenced *.prompt.md, open a PR, and after merge
-# ask Claude Code to "apply the routines" — it syncs the backend to match. See README.md.
+# DESIRED state.
+#
+# POINTER ARCHITECTURE (2026-07-15): the live trigger's actual content is
+# `live_prompt` below — a short, effectively-static instruction to read
+# `prompt_file` (e.g. executor.prompt.md) from this already-checked-out repo and
+# follow it in full. The real operating contract lives ONLY in `prompt_file` and
+# is read fresh every run — it is never baked into the trigger, so editing it is
+# a normal PR with NO apply step. Only THIS file (routines.yaml) is ever pushed
+# to the live API (cron/model/enabled/tools/live_prompt/environment), so it's the
+# only thing `make routines-check`/`routines-mark-applied` track and the only
+# thing `routines-author-check` still protects from executor-authored edits. See
+# "Changing a routine" in README.md for the up-to-date procedure.
 
 environment_id: env_014NJKuQoEb7PAi3PXaFW2B9   # Anthropic cloud (Default)
 source: https://github.com/tooming/k8s-anywhere  # repo cloned into each run (renamed from k8s-lab 2026-07-13)
@@ -52,7 +62,14 @@ routines:
     model: claude-sonnet-5
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
-    prompt_file: executor.prompt.md
+    prompt_file: executor.prompt.md   # the real contract — read live every run, no apply needed
+    live_prompt: |
+      You are the autonomous executor for tooming/k8s-anywhere, running in this
+      already-checked-out repository. Read `routines/executor.prompt.md` in full —
+      every STEP, every hard rule, the STEP 6b fallback chain, and STEP 7's
+      self-review + self-merge contract — and execute it exactly as your complete
+      operating instructions for this run. Do not summarize, paraphrase, or skip
+      any part of it; treat its content as this prompt's actual body.
     branch_prefix: auto/           # PRs land on auto/<slug>
     repository: tooming/k8s-anywhere   # attached via the Routines UI's repo-selector (see note above)
 

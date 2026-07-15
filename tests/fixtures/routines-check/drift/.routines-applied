@@ -1,3 +1,2 @@
-# fixture snapshot (stale — foo.prompt.md was edited after this)
-routines/foo.prompt.md sha256=839c890e34412d130063fb6d7be7eefa0215361766da069ad6381adce53219f2
-routines.yaml sha256=57a831cda8328d650d98260a376106976a6ba4a5b21b8b2fadb2796e88debcf1
+# fixture snapshot (stale — routines.yaml was edited after this)
+routines/routines.yaml sha256=57a831cda8328d650d98260a376106976a6ba4a5b21b8b2fadb2796e88debcf1

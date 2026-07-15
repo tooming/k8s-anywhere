@@ -149,50 +149,63 @@ main, so catching up early is always easier than resolving conflicts later.
 
 The `SessionStart` hook also runs this automatically at the start of each session.
 
-## Routines: edit-then-apply is one atomic step
-Editing a `routines/*.prompt.md` file (or `routines.yaml`) in-repo does **not** change
-the live claude.ai trigger. The "apply" step that pushes the new content to the trigger
-backend can only happen from inside a Claude Code session via the `RemoteTrigger update`
-tool — there is no CI mechanism that does it.
+## Routines: pointer architecture — only routines.yaml needs "apply"
+Since 2026-07-15, a live trigger's actual content is `routines.yaml`'s `live_prompt` — a
+short, effectively-static instruction telling the run to read `prompt_file` (e.g.
+`executor.prompt.md`) from the already-checked-out repo and follow it in full. The real
+operating contract lives **only** in `routines/*.prompt.md` and is read fresh every run;
+it is **never baked into the trigger**.
 
-So: **when you edit any `routines/*.prompt.md` (or `routines.yaml`), you MUST**, in the
-SAME session, before the PR is considered complete:
+This means editing a `routines/*.prompt.md` file needs **no apply step at all** — it's a
+normal PR, live the moment it merges to `main`. Only editing `routines.yaml` itself
+(`cron`, `model`, `enabled`, `allowed_tools`, `live_prompt`, `environment_id`) still
+requires the apply dance below, because those fields are the ones actually pushed to the
+live API. The "apply" step can only happen from inside a Claude Code session via the
+`RemoteTrigger update` tool — there is no CI mechanism that does it.
 
-1. Call `RemoteTrigger update` against the matching trigger from `routines/routines.yaml`,
-   sending the new file's content as the prompt.
+So: **when you edit `routines/routines.yaml`, you MUST**, in the SAME session, before the
+PR is considered complete:
+
+1. Call `RemoteTrigger update` against the trigger from `routines/routines.yaml`, sending
+   the new cron/model/enabled/tools/live_prompt/environment fields.
 2. Run `make routines-mark-applied` to refresh `.routines-applied` (the in-repo snapshot
    the drift detector reads).
 
-`make routines-check` (wired into `make ci`) fails the PR if a routine file's sha differs
+`make routines-check` (wired into `make ci`) fails the PR if `routines.yaml`'s sha differs
 from `.routines-applied` — that's the enforcement. A `PostToolUse` hook
-(`scripts/routines-sync-hook.sh`) nudges you the moment you save an edit, so the apply
-step is never silently forgotten. Background: see [routines/README.md](routines/README.md).
+(`scripts/routines-sync-hook.sh`) nudges you the moment you save an edit to
+`routines.yaml` (only that file — not `*.prompt.md` edits, which need no apply), so the
+apply step is never silently forgotten. Background: see [routines/README.md](routines/README.md).
 
-`routines-check` only proves the file matches `.routines-applied` — it **cannot** prove
-the *live* trigger carries that content (CI has no claude.ai token). The hole that left:
-the cloud executor has **no `RemoteTrigger` tool**, so it can edit a routine prompt, run
-`make routines-mark-applied`, stay green, and the live trigger silently drifts (it did —
-#251/#263). That footgun is removed structurally by `scripts/routines-author-check.sh`
+`routines-check` only proves `routines.yaml` matches `.routines-applied` — it **cannot**
+prove the *live* trigger carries that content (CI has no claude.ai token). The hole that
+left: the cloud executor has **no `RemoteTrigger` tool**, so if it could edit
+`routines.yaml` and run `make routines-mark-applied`, CI would stay green while the live
+trigger silently drifted (it did, for the old baked-prompt architecture — #251/#263).
+That footgun is removed structurally by `scripts/routines-author-check.sh`
 (`make routines-author-check`, in `make ci` + the GitHub Actions `drift` job): it **fails
 any executor-authored change — `auto/*` branch or `Claude <noreply@anthropic.com>` commit
-— that touches a routine file.** So only interactive sessions (which can apply) edit
-routine files; from an autonomous run, open an issue for a human instead.
+— that touches `routines.yaml`.** So only interactive sessions (which can apply) edit
+`routines.yaml`; from an autonomous run, open an issue for a human instead. The executor
+**may** freely edit its own or any fallback role's `routines/*.prompt.md` directly — those
+carry no live-drift risk at all now, so there's no tool-access restriction on them.
 
 **Verify the apply call actually succeeded before marking — don't assume either way.**
 Two prior sessions (PR #374, PR #391/#396) got a hard refusal calling
-`RemoteTrigger update` (`update_trigger`) against the main k8s-lab executor trigger
-(`trig_01CRtpmaS1scBQL74xKqmfvS`, `created_via: "http_api"`, not created by any agent
-session) — `"Agents can only update routines they created"`, sometimes surfacing as an
-opaque `"Tool permission stream closed before response received"` instead. Both
-sessions concluded from this that content updates to that trigger are permanently
-impossible for any session, landed the repo change with `routines-check` red, and one
-was merged that way on explicit maintainer confirmation (2026-07-14) — which then left
-main's CI red and flooded every open PR with inherited-failure notifications on each
-subsequent `auto-update-prs` rebase until a later interactive session (same day) called
-the identical `update_trigger` with the identical trigger id and it **succeeded** (HTTP
-200, content updated). So the refusal is not a permanent property of this trigger —
-retry it rather than assuming it will fail again. **Do not run
-`make routines-mark-applied` unless the apply call actually succeeded** — a green
+`RemoteTrigger update` (`update_trigger`) against the main executor trigger of that time
+(`trig_01CRtpmaS1scBQL74xKqmfvS`, since retired for an unrelated reason — no GitHub API
+access, see #423 — and superseded by `trig_01XxtSdkPdRNjBfAidUXTwos`), `created_via:
+"http_api"`, not created by any agent session — `"Agents can only update routines they
+created"`, sometimes surfacing as an opaque `"Tool permission stream closed before
+response received"` instead. Both sessions concluded from this that content updates to
+that trigger are permanently impossible for any session, landed the repo change with
+`routines-check` red, and one was merged that way on explicit maintainer confirmation
+(2026-07-14) — which then left main's CI red and flooded every open PR with
+inherited-failure notifications on each subsequent `auto-update-prs` rebase until a later
+interactive session (same day) called the identical `update_trigger` with the identical
+trigger id and it **succeeded** (HTTP 200, content updated). So the refusal is not a
+permanent property of a trigger — retry it rather than assuming it will fail again. **Do
+not run `make routines-mark-applied` unless the apply call actually succeeded** — a green
 `routines-check` is a claim that the live trigger matches the repo (ADR-0004), and
 marking it green after a failed/refused apply call fabricates that claim. If the apply
 call genuinely fails, land the repo change anyway (source of truth stays correct) and

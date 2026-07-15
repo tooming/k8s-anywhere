@@ -35,16 +35,16 @@ setup() {
   [[ "$output" == *".routines-applied does not exist"* ]]
 }
 
-@test "routines-check: FAILS when a routine file exists but has no snapshot entry" {
+@test "routines-check: FAILS when routines.yaml exists but has no snapshot entry" {
   run env ROUTINESCHECK_ROOT="$FIX/new-file" bash "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"bar.prompt.md is not in .routines-applied"* ]]
+  [[ "$output" == *"routines/routines.yaml is not in .routines-applied"* ]]
 }
 
-@test "routines-check: FAILS when the snapshot references a routine file no longer on disk" {
+@test "routines-check: FAILS when the snapshot references routines.yaml no longer on disk" {
   run env ROUTINESCHECK_ROOT="$FIX/deleted-file" bash "$SCRIPT"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"gone.prompt.md is in .routines-applied but no longer on disk"* ]]
+  [[ "$output" == *"routines/routines.yaml is in .routines-applied but no longer on disk"* ]]
 }
 
 @test "routines-check: passes (short-circuits) when there is no routines/ directory" {
