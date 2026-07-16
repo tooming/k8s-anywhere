@@ -69,44 +69,39 @@ no access to anyone's local notes — so every rule it must follow lives here, i
    #76, #89, #121, #262, #390, #398 are all "executor idle — needs work" issues that
    piled up instead of shipping work) and the maintainer ended it explicitly
    (2026-07-14): stop opening/commenting on idle issues, every run creates a PR,
-   permanently. Walk the **full fallback chain** — every step below is clusterless and
-   always available, so hitting one blocked backlog item is never a reason to stop
-   looking:
-   - **Doc-drift check:** run `make ci` and confirm it's green. A stale README, Lab UIs
-     panel, or dashboard is real, gate-passing work.
-   - **Planner check:** diff CHARTER.md's Objectives (O1–O6) against ROADMAP.md's
-     checked items. An Objective with no covering item, or past its date with no item in
-     flight, is a gap the planner should have filed — file it (a plan issue/PR).
-   - **Architect check:** any unchecked 🟡 item without an RFC yet, that a session could
-     resolve by authoring one (superseding an ADR is the architect's call and is
-     self-authorizing — see [WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md)) — write the
-     RFC instead of leaving it blocked.
-   - **Triager check:** any open issue missing labels or grooming.
-   - **Coverage/hardening check:** a script under `scripts/` with no `tests/*.bats`
-     coverage, a doc page that's drifted from the code it describes, a stale chart
-     version pin, an ADR whose "re-evaluation log" is due, a TODO/FIXME left in
-     tracked code — these are always real, always gate-passing, and never run out.
-     (Precedent: `tests/lab-ops-scripts.bats`, added 2026-07-14, closed exactly this
-     kind of gap for `dr-verify.sh` / `frontdoor-ensure.sh` / `lab-health-check.sh` /
-     `tfstate-bootstrap.sh`.)
-   - **Split-the-gate check:** for a `Now / next` 🟢 item blocked on a live-cluster
-     maintainer-confirmation prerequisite, look for an ungated sub-slice of it that
-     doesn't need the confirmation (prep work, doc/dependency-tree wiring, dual-path
-     support) and split it out as its own item — mirrors how RFC #214's cosign work
-     was split into `auto/cosign-make-up-wiring` + `auto/cosign-ci-sign-step` +
-     `auto/cosign-enforce-flip` so only the last slice carries the live-cluster gate.
+   permanently.
 
-   If every one of those comes back clean with truly nothing to build (this should be
-   rare — the coverage/hardening lane in particular is large and slow-growing, not
-   empty), that is a CHARTER/ROADMAP-process gap in itself: fix the process (add a
-   Goal, widen a coverage sweep, write the split-the-gate RFC) rather than reporting
-   it. Fabricated make-work is still forbidden — every item above is real, verifiable
-   work, not busywork invented to have something to commit.
+   **When `Now / next` is gated, use judgment — weighted toward CHARTER progress, not
+   a fixed checklist.** A run on 2026-07-16 found every `Now / next` item gated and
+   shipped six real PRs — but all six were test coverage or new drift gates, *zero*
+   CHARTER-objective progress, because a prior version of this rule prescribed a rigid
+   ordered sequence of named "checks" and coverage/hardening (an inexhaustible, easy
+   lane) sat late enough in that sequence to feel like a legitimate stop before ever
+   seriously attempting to unblock what the backlog is actually blocked on. Don't
+   repeat that: the default move on a gated `Now / next` is to try to **split the
+   gate** — carve out whatever part of the topmost gated item does *not* mutate
+   live-synced cluster state (CI/build-time config, additive secrets, doc prep,
+   manifest scaffolding not yet wired into an auto-synced `Application`) from the part
+   that does (an auto-synced Application's image ref, an admission-policy enforcement
+   flip — anything ArgoCD would reconcile onto the running cluster on next sync, which
+   stays gated). Build and land the safe slice as its own item in this run; mirrors
+   RFC #214's cosign split (`auto/cosign-make-up-wiring` + `auto/cosign-ci-sign-step`
+   + `auto/cosign-enforce-flip`, only the last slice gated). This is
+   executor-sanctioned, same-run work, not planner-only.
+   Doc drift, an uncovered `Objective`, an un-RFC'd 🟡 item, an ungroomed issue, a
+   script with no bats coverage — all of that is still real, still worth doing, and
+   still not an excuse to go idle. But treat it as what it is: filler for when there's
+   truly nothing left to push on the actual blockers, not the first place to look. If
+   a run genuinely can't find any live-state-safe slice of the gated item worth
+   building, say so in the PR body or a `docs/backlog/` note — with the actual
+   reasoning, not just "it's all one atomic action" — and only then fall back to the
+   rest. Fabricated make-work is still forbidden either way — every item above is
+   real, verifiable work, not busywork invented to have something to commit.
 10. **A 🟡-tagged item still needs its architect RFC first.** The tag marks an open
     decision, not a permission boundary — build 🟢 items directly. For a 🟡 item with no
     linked RFC yet, don't build around the open question: either author the RFC yourself
-    (rule #9's architect-check escalation covers this) or open a GitHub issue naming the
-    decision needed, then move to the next feasible 🟢 item.
+    (rule #9 covers writing it, same-run, executor-sanctioned) or open a GitHub issue
+    naming the decision needed, then move to the next feasible 🟢 item.
 
 ---
 
@@ -1772,6 +1767,22 @@ You review and merge plan PRs, same as implementation PRs.
   in the `docs/dependency-tree.md` Day-0 bootstrap section. `docs/done/` entry
   required. `make ci` must pass. (auto/harbor-bootstrap-credentials)
 
+- [x] 🟢 **Harbor registry ExternalSecret — capstone imagePullSecret prep**
+  (CHARTER **Objective O4** + capstone RFC #62, RFC #297 / ADR-0024; split-the-gate
+  slice of `auto/harbor-capstone-rewire`, ROADMAP.md rule #9 — landed ahead of the
+  live-cluster footprint confirmation because it is purely additive and mutates no
+  live-synced state). Added `gitops/secrets/harbor-registry-externalsecret.yaml`
+  rendering the already-seeded `secret/harbor/registry` Vault path (from
+  `auto/harbor-bootstrap-credentials`) into a `kubernetes.io/dockerconfigjson`
+  Secret named `harbor-registry` in the `capstone` namespace, mirroring the
+  existing registry-credential ExternalSecret's shape. **Not** referenced by any
+  `imagePullSecrets` yet — capstone keeps pulling via its current registry Secret
+  until the still-gated cutover item below flips it; this Secret existing early
+  only shrinks that later PR. New bats coverage in `tests/harbor-bootstrap.bats`
+  (7 cases, including one asserting it is *not* yet wired into any
+  `imagePullSecrets`). `docs/dependency-tree.md` updated. `make ci` passes.
+  `docs/done/` entry required. (auto/harbor-registry-secret-prep)
+
 - [ ] 🟢 **Capstone pipeline re-wire — Artifactory → Harbor registry host**
   (CHARTER **Objective O4** + capstone RFC #62, RFC #297 / ADR-0024 — architect
   decision 2026-06-30; **CI / security-adjacent changes pre-approved by ADR-0024
@@ -1779,11 +1790,16 @@ You review and merge plan PRs, same as implementation PRs.
   ONLY after the maintainer confirms on #297 that the minimal Harbor profile was
   measured on the live cluster and fits the 12 GB budget on-demand — the
   ADR-0024 go/no-go gate; skip to the next item if it cannot be verified this
-  run**). Cut the capstone image flow over from `artifactory.127.0.0.1.nip.io`
-  to `harbor.127.0.0.1.nip.io`: `.gitlab-ci.yml` (registry host + login),
-  `gitops/secrets/artifactory-registry-externalsecret.yaml` → a `harbor-registry`
-  ExternalSecret (Vault path), `gitops/kargo-project/project.yaml`,
-  `gitops/apps/capstone/rollout.yaml` + `deployment.yaml` (image refs),
+  run**). The registry-credential Secret itself is already prepped
+  (`auto/harbor-registry-secret-prep`, above) — this item is now scoped to the
+  actual live-state-mutating cutover only: `.gitlab-ci.yml` (registry host +
+  login — note the GitLab CI/CD variables it reads must be repointed at Harbor
+  creds by the maintainer outside this repo, since they're not GitOps-managed),
+  `gitops/kargo-project/project.yaml` (Warehouse `repoURL` — this is what
+  triggers Kargo's `argocd-update` promotion step against the live capstone
+  Application, so it stays gated alongside the image refs below, not split out),
+  `gitops/apps/capstone/rollout.yaml` + `deployment.yaml` (image refs +
+  `imagePullSecrets: harbor-registry`, now that the Secret exists),
   `gitops/kyverno/policies/verify-image-signatures.yaml` (verifyImages scope
   `artifactory.127.0.0.1.nip.io/**` → `harbor.127.0.0.1.nip.io/**` — independent
   of the separate Audit→Enforce flip item, coordinate if both are open),
@@ -1791,7 +1807,7 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` references. Update the relevant bats (capstone /
   kargo / kyverno) for the new host. `make ci` must pass. `docs/done/` entry
   required. **Executor note:** if this crosses ~400 lines, split the
-  CI/secret/registry-credential cutover from the GitOps app/image-ref cutover.
+  CI/registry-credential cutover from the GitOps app/image-ref cutover.
   (auto/harbor-capstone-rewire)
 
 - [ ] 🟢 **Decommission Artifactory manifests** (RFC #297 / ADR-0024 — architect

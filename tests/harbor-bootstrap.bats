@@ -93,3 +93,45 @@ setup() {
   run grep -q 'Harbor12345' "$REPO/gitops/platform/harbor.yaml"
   [ "$status" -ne 0 ]
 }
+
+# --- harbor-registry-externalsecret.yaml (capstone imagePullSecret prep) -----
+# Split-the-gate slice of auto/harbor-capstone-rewire (ROADMAP.md rule #9):
+# additive-only, not yet referenced by any Deployment/Rollout imagePullSecrets,
+# so it changes no running workload's behavior — the still-gated cutover item
+# is what actually points capstone at it.
+
+@test "harbor-registry ExternalSecret manifest exists" {
+  [ -f "$REPO/gitops/secrets/harbor-registry-externalsecret.yaml" ]
+}
+
+@test "harbor-registry ExternalSecret is in the capstone namespace" {
+  run grep -q 'namespace: capstone' "$REPO/gitops/secrets/harbor-registry-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor-registry ExternalSecret renders a dockerconfigjson Secret named harbor-registry" {
+  run grep -q 'name: harbor-registry' "$REPO/gitops/secrets/harbor-registry-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'type: kubernetes.io/dockerconfigjson' "$REPO/gitops/secrets/harbor-registry-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor-registry ExternalSecret targets harbor.127.0.0.1.nip.io in the dockerconfigjson auths" {
+  run grep -q 'harbor.127.0.0.1.nip.io' "$REPO/gitops/secrets/harbor-registry-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor-registry ExternalSecret reads from Vault path harbor/registry" {
+  run grep -q 'key: harbor/registry' "$REPO/gitops/secrets/harbor-registry-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor-registry ExternalSecret uses the vault ClusterSecretStore" {
+  run grep -q 'name: vault' "$REPO/gitops/secrets/harbor-registry-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "harbor-registry ExternalSecret is not yet referenced as an imagePullSecret anywhere (prep-only, still-gated cutover owns that wiring)" {
+  run grep -rl 'name: harbor-registry' "$REPO/gitops/apps/capstone/"
+  [ "$status" -ne 0 ]
+}
