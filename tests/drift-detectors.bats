@@ -66,6 +66,29 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- markdown-links-check -----------------------------------------------------
+@test "markdown-links-check: passes when every internal link resolves" {
+  run env MDLINKS_ROOT="$FIX/markdown-links-check/in-sync" bash "$REPO/scripts/markdown-links-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "markdown-links-check: fails on a broken relative link" {
+  run env MDLINKS_ROOT="$FIX/markdown-links-check/drift" bash "$REPO/scripts/markdown-links-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"docs/moved.md"* ]]
+}
+
+@test "markdown-links-check: ignores external and anchor-only links" {
+  run env MDLINKS_ROOT="$FIX/markdown-links-check/in-sync" bash "$REPO/scripts/markdown-links-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"example.com"* ]]
+}
+
+@test "markdown-links-check: passes on the real repo's tracked markdown" {
+  run bash "$REPO/scripts/markdown-links-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 # --- securitycontext-tests-check ---------------------------------------------
 @test "securitycontext-tests-check: passes when the monolith matches its snapshot" {
   run env SECCTX_TESTS_ROOT="$FIX/securitycontext-tests-check/in-sync" bash "$REPO/scripts/securitycontext-tests-check.sh"

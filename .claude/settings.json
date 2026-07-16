@@ -54,6 +54,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/markdown-links-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking markdown internal links"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/securitycontext-tests-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking securitycontext.bats freeze"
