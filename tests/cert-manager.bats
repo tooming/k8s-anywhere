@@ -158,14 +158,15 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "cert-manager-root-ca Application is not yet referenced by any HTTPRoute or Certificate outside gitops/cert-manager/ (additive-only per ADR-0028 scope)" {
+@test "k8s-lab-ca is referenced only by gitops/cert-manager/ and its one deliberate consumer, the wildcard Certificate (ADR-0028 follow-up)" {
   run grep -rl 'k8s-lab-ca\|k8s-lab-root-ca' "$REPO/gitops" --include="*.yaml"
-  # Every hit must live under gitops/cert-manager/ itself.
   [ "$status" -eq 0 ]
   while IFS= read -r f; do
     case "$f" in
       "$REPO/gitops/cert-manager/"*) ;;
-      *) echo "unexpected reference outside gitops/cert-manager/: $f"; return 1 ;;
+      "$REPO/gitops/network/certificates/wildcard-certificate.yaml") ;;
+      "$REPO/gitops/platform/lab-gateway-certificate.yaml") ;;
+      *) echo "unexpected reference outside gitops/cert-manager/ and the wildcard Certificate: $f"; return 1 ;;
     esac
   done <<< "$output"
 }
@@ -217,5 +218,60 @@ setup() {
 # --- ADR-0017 amendment --------------------------------------------------------
 @test "ADR-0017 has a cert-manager: restricted row" {
   run grep -q '`cert-manager` | `restricted`' "$REPO/docs/decisions/adr-0017-pod-security-standards-restricted.md"
+  [ "$status" -eq 0 ]
+}
+
+# --- Gateway HTTPS listener + wildcard Certificate (ADR-0028 follow-up) -------
+@test "shared Gateway keeps the original http listener on port 80" {
+  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "http") | .port' "$REPO/gitops/network/gateway.yaml")" = "80" ]
+}
+
+@test "shared Gateway has an additive https listener on port 443" {
+  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "https") | .port' "$REPO/gitops/network/gateway.yaml")" = "443" ]
+  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "https") | .protocol' "$REPO/gitops/network/gateway.yaml")" = "HTTPS" ]
+}
+
+@test "https listener terminates TLS using the wildcard Certificate's Secret" {
+  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "https") | .tls.mode' "$REPO/gitops/network/gateway.yaml")" = "Terminate" ]
+  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "https") | .tls.certificateRefs[0].name' "$REPO/gitops/network/gateway.yaml")" = "wildcard-127-0-0-1-nip-io-tls" ]
+}
+
+@test "https listener allows routes from all namespaces, same as http" {
+  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "https") | .allowedRoutes.namespaces.from' "$REPO/gitops/network/gateway.yaml")" = "All" ]
+}
+
+@test "wildcard Certificate manifest exists in lab-gateway namespace" {
+  [ -f "$REPO/gitops/network/certificates/wildcard-certificate.yaml" ]
+  [ "$(yqs '.metadata.namespace' "$REPO/gitops/network/certificates/wildcard-certificate.yaml")" = "lab-gateway" ]
+}
+
+@test "wildcard Certificate covers *.127.0.0.1.nip.io and produces the Secret the Gateway references" {
+  [ "$(yqs '.spec.secretName' "$REPO/gitops/network/certificates/wildcard-certificate.yaml")" = "wildcard-127-0-0-1-nip-io-tls" ]
+  run grep -q '"\*.127.0.0.1.nip.io"' "$REPO/gitops/network/certificates/wildcard-certificate.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "wildcard Certificate is issued by k8s-lab-ca, not the selfsigned-bootstrap issuer" {
+  [ "$(yqs '.spec.issuerRef.name' "$REPO/gitops/network/certificates/wildcard-certificate.yaml")" = "k8s-lab-ca" ]
+  [ "$(yqs '.spec.issuerRef.kind' "$REPO/gitops/network/certificates/wildcard-certificate.yaml")" = "ClusterIssuer" ]
+}
+
+@test "lab-gateway-certificate Application exists and runs after cert-manager-root-ca (sync-wave 6)" {
+  APP="$REPO/gitops/platform/lab-gateway-certificate.yaml"
+  [ -f "$APP" ]
+  run grep -q 'argocd.argoproj.io/sync-wave: "6"' "$APP"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-gateway-certificate Application sources gitops/network/certificates into lab-gateway" {
+  APP="$REPO/gitops/platform/lab-gateway-certificate.yaml"
+  run grep -q 'path: gitops/network/certificates' "$APP"
+  [ "$status" -eq 0 ]
+  run grep -q 'namespace: lab-gateway' "$APP"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-gateway-certificate Application is auto-synced (always-on)" {
+  run grep -q 'automated:' "$REPO/gitops/platform/lab-gateway-certificate.yaml"
   [ "$status" -eq 0 ]
 }

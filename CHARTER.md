@@ -164,11 +164,12 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   (`500 Out of host capacity` across all ADs), not a bug in this repo — see
   [`infra/live/README.md`](infra/live/README.md)'s Status table for what's confirmed
   end-to-end versus still pending. (ADR-0026, ADR-0027)
-- **TLS certificate lifecycle** (planned): every north-south route today is plain
-  HTTP — no ADR had evaluated TLS automation before ADR-0028. cert-manager, self-signed
-  root CA (works identically on localhost and the Oracle backend, unlike public ACME),
-  new HTTPS listener on the existing shared Gateway alongside the current HTTP one
-  (additive, never a breaking cutover). (ADR-0028)
+- **TLS certificate lifecycle**: cert-manager issues and auto-renews certs from a
+  self-signed root CA (works identically on localhost and the Oracle backend, unlike
+  public ACME). Every north-south route is reachable over both HTTP and the shared
+  Gateway's HTTPS listener — a wildcard `*.127.0.0.1.nip.io` Certificate backs it, and
+  the DR front door proxies `:8443` through to it — additive alongside the original
+  HTTP-only path, never a breaking cutover. (ADR-0028)
 
 ## How this drives the ROADMAP
 

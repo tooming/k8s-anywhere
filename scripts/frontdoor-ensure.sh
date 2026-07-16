@@ -25,4 +25,4 @@ fi
 LB="k3d-$CLUSTER-serverlb"; NET="k3d-$CLUSTER"
 docker inspect "$LB" >/dev/null 2>&1 || { echo "[frontdoor] $LB not found — is cluster '$CLUSTER' running?" >&2; exit 1; }
 bash "$ROOT_DIR/scripts/bluegreen-frontdoor.sh" up "$NET" "$LB"
-echo "[frontdoor] canonical entry http://localhost:8000 -> cluster '$CLUSTER'"
+echo "[frontdoor] canonical entry http://localhost:8000 (and https://localhost:8443) -> cluster '$CLUSTER'"

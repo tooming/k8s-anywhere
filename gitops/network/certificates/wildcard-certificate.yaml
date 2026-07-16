@@ -1,0 +1,26 @@
+# ADR-0028 follow-up: the leaf Certificate the Gateway's HTTPS listener
+# (gateway.yaml) terminates TLS with. Issued by the k8s-lab-ca ClusterIssuer
+# (gitops/cert-manager/root-ca/ca-issuer.yaml, sync-wave 5) — never the
+# selfsigned-bootstrap issuer directly. Lives in lab-gateway (same namespace as
+# the Gateway) so the listener's certificateRefs needs no ReferenceGrant.
+# Covers every *.127.0.0.1.nip.io host the lab's HTTPRoutes use today (e.g.
+# argocd.127.0.0.1.nip.io) plus any added later — one wildcard cert, no
+# per-route Certificate needed. Default duration/renewBefore (cert-manager's
+# 90d/~30d) — unlike the 10-year root CA, this leaf is meant to auto-renew.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-127-0-0-1-nip-io
+  namespace: lab-gateway
+spec:
+  secretName: wildcard-127-0-0-1-nip-io-tls
+  dnsNames:
+    - "*.127.0.0.1.nip.io"
+    - "127.0.0.1.nip.io"
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: k8s-lab-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
