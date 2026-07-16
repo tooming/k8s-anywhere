@@ -105,6 +105,16 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "allow-kargo-egress-registry keeps the existing legacy-registry namespaceSelector (additive, not a replacement)" {
+  run grep -q 'kubernetes.io/metadata.name: artifactory' "$KARGO_NP/allow-kargo-egress-registry.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-kargo-egress-registry now also allows egress to the harbor namespace (auto/harbor-capstone-rewire prep)" {
+  run grep -q 'kubernetes.io/metadata.name: harbor' "$KARGO_NP/allow-kargo-egress-registry.yaml"
+  [ "$status" -eq 0 ]
+}
+
 # --- metrics allow (Alloy → kargo pods TCP 8080) ----------------------------------
 @test "allow-kargo-metrics-ingress.yaml exists in kargo/networkpolicy/" {
   [ -f "$KARGO_NP/allow-kargo-metrics-ingress.yaml" ]

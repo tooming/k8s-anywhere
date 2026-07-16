@@ -358,6 +358,7 @@ make up
 | Envoy → longhorn.127.0.0.1.nip.io *(on-demand)* | HTTPRoute | `gitops/longhorn/route.yaml` |
 | ESO → artifactory-registry *(capstone)* | `← vault:artifactory/registry` (username + password) | `gitops/secrets/artifactory-registry-externalsecret.yaml` |
 | ESO → harbor-registry *(capstone, prep-only)* | `← vault:harbor/registry` (username + password); renders a `harbor.127.0.0.1.nip.io` dockerconfigjson Secret but is **not yet referenced** by any `imagePullSecrets` — split-the-gate slice of the still-gated `auto/harbor-capstone-rewire` cutover (RFC #297 / ADR-0024), landed ahead of the live-cluster footprint confirmation since it changes no running workload's behavior | `gitops/secrets/harbor-registry-externalsecret.yaml` |
+| Kargo → harbor *(prep-only, egress allowed but unused)* | NetworkPolicy egress TCP 443/80 to the `harbor` namespace, widened alongside the existing legacy-registry rule (not a replacement) — another split-the-gate slice of `auto/harbor-capstone-rewire`; the Warehouse still polls the legacy registry until that item's live cutover | `gitops/kargo/networkpolicy/allow-kargo-egress-registry.yaml` |
 | GitLab CI → Artifactory *(capstone step 1)* | docker push `hello:SHA` via `.gitlab-ci.yml` | `.gitlab-ci.yml` |
 | Artifactory → capstone app *(capstone step 2)* | image pull `docker-local/hello:latest` via `imagePullSecret` | `gitops/apps/capstone/deployment.yaml` |
 | Envoy → capstone.127.0.0.1.nip.io *(capstone step 3)* | HTTPRoute | `gitops/apps/capstone/route.yaml` |
