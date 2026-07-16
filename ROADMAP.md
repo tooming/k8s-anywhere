@@ -1865,6 +1865,19 @@ You review and merge plan PRs, same as implementation PRs.
   `imagePullSecrets`). `docs/dependency-tree.md` updated. `make ci` passes.
   `docs/done/` entry required. (auto/harbor-registry-secret-prep)
 
+- [x] 🟢 **Kargo egress NetworkPolicy Harbor prep** (split-the-gate slice of the
+  still-gated cutover item below, per ROADMAP rule #9 — purely additive, mutates
+  no live-synced *behavior*: widens `gitops/kargo/networkpolicy/allow-kargo-egress-registry.yaml`
+  to also permit egress to the `harbor` namespace on TCP 443/80, alongside the
+  existing legacy-registry rule it does not remove. `harbor` already exists live
+  — `harbor-extras` pre-creates it at sync-wave 0 — so the selector resolves
+  correctly today; nothing in gitops points Kargo's Warehouse at Harbor yet, so
+  this rule has zero effect on current traffic, same "widen ahead of the flip"
+  reasoning as `cert-manager-root-ca`, wave 5). Extended
+  `tests/networkpolicy-kargo.bats` with two cases: the legacy selector is kept
+  (not replaced), and the new harbor selector is present. `make ci` must pass.
+  `docs/done/` entry required. (auto/harbor-kargo-egress-prep)
+
 - [ ] 🟢 **Capstone pipeline re-wire — Artifactory → Harbor registry host**
   (CHARTER **Objective O4** + capstone RFC #62, RFC #297 / ADR-0024 — architect
   decision 2026-06-30; **CI / security-adjacent changes pre-approved by ADR-0024
@@ -1872,9 +1885,10 @@ You review and merge plan PRs, same as implementation PRs.
   ONLY after the maintainer confirms on #297 that the minimal Harbor profile was
   measured on the live cluster and fits the 12 GB budget on-demand — the
   ADR-0024 go/no-go gate; skip to the next item if it cannot be verified this
-  run**). The registry-credential Secret itself is already prepped
-  (`auto/harbor-registry-secret-prep`, above) — this item is now scoped to the
-  actual live-state-mutating cutover only: `.gitlab-ci.yml` (registry host +
+  run**). The registry-credential Secret (`auto/harbor-registry-secret-prep`)
+  and the Kargo egress NetworkPolicy widen (`auto/harbor-kargo-egress-prep`) are
+  already prepped, both above — this item is now scoped to the actual
+  live-state-mutating cutover only: `.gitlab-ci.yml` (registry host +
   login — note the GitLab CI/CD variables it reads must be repointed at Harbor
   creds by the maintainer outside this repo, since they're not GitOps-managed),
   `gitops/kargo-project/project.yaml` (Warehouse `repoURL` — this is what
@@ -1884,13 +1898,13 @@ You review and merge plan PRs, same as implementation PRs.
   `imagePullSecrets: harbor-registry`, now that the Secret exists),
   `gitops/kyverno/policies/verify-image-signatures.yaml` (verifyImages scope
   `artifactory.127.0.0.1.nip.io/**` → `harbor.127.0.0.1.nip.io/**` — independent
-  of the separate Audit→Enforce flip item, coordinate if both are open),
-  `gitops/kargo/networkpolicy/allow-kargo-egress-registry.yaml`, and the README /
-  `docs/dependency-tree.md` references. Update the relevant bats (capstone /
-  kargo / kyverno) for the new host. `make ci` must pass. `docs/done/` entry
-  required. **Executor note:** if this crosses ~400 lines, split the
-  CI/registry-credential cutover from the GitOps app/image-ref cutover.
-  (auto/harbor-capstone-rewire)
+  of the separate Audit→Enforce flip item, coordinate if both are open), and the
+  README / `docs/dependency-tree.md` references (and, once this lands, removing
+  the now-unused legacy-registry `namespaceSelector` from the NetworkPolicy the
+  prep item above widened). Update the relevant bats (capstone / kargo / kyverno)
+  for the new host. `make ci` must pass. `docs/done/` entry required.
+  **Executor note:** if this crosses ~400 lines, split the CI/registry-credential
+  cutover from the GitOps app/image-ref cutover. (auto/harbor-capstone-rewire)
 
 - [ ] 🟢 **Decommission Artifactory manifests** (RFC #297 / ADR-0024 — architect
   decision 2026-06-30; **maintainer-confirmation prerequisite: pick up ONLY
