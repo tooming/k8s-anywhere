@@ -383,15 +383,15 @@ argocd-password: ## Print the ArgoCD initial admin password
 
 .PHONY: creds
 creds: ## Print all lab UI logins (reads live secrets; needs the cluster/GitLab up)
-	@a=$$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "ArgoCD   admin / $${a:-<cluster down>}    http://argocd.127.0.0.1.nip.io:8080"
-	@g=$$(kubectl -n observability get secret grafana-admin -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d); echo "Grafana  admin / $${g:-<cluster down>}    http://localhost:8080"
+	@a=$$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "ArgoCD   admin / $${a:-<cluster down>}    http://argocd.127.0.0.1.nip.io:8000"
+	@g=$$(kubectl -n observability get secret grafana-admin -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d); echo "Grafana  admin / $${g:-<cluster down>}    http://localhost:8000"
 	@r=$$(grep -E '^GITLAB_ROOT_PASSWORD=' gitlab/.env 2>/dev/null | cut -d= -f2-); echo "GitLab   root  / $${r:-<gitlab/.env missing>}    http://localhost:8929"
-	@t=$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); echo "Vault    token / $${t:-<cluster down>}    http://vault.127.0.0.1.nip.io:8080"
-	@ru=$$(kubectl -n data get secret rabbitmq-creds -o jsonpath='{.data.username}' 2>/dev/null | base64 -d); rp=$$(kubectl -n data get secret rabbitmq-creds -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "RabbitMQ $${ru:-<cluster down>} / $${rp:-<cluster down>}    http://rabbitmq.127.0.0.1.nip.io:8080"
+	@t=$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); echo "Vault    token / $${t:-<cluster down>}    http://vault.127.0.0.1.nip.io:8000"
+	@ru=$$(kubectl -n data get secret rabbitmq-creds -o jsonpath='{.data.username}' 2>/dev/null | base64 -d); rp=$$(kubectl -n data get secret rabbitmq-creds -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "RabbitMQ $${ru:-<cluster down>} / $${rp:-<cluster down>}    http://rabbitmq.127.0.0.1.nip.io:8000"
 	@dp=$$(kubectl -n data get secret valkey-creds -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "Valkey   (requirepass) / $${dp:-<cluster down>}    valkey://valkey.data.svc:6379"
 
 .PHONY: argocd-ui
-argocd-ui: ## Port-forward ArgoCD UI -> http://localhost:8081 (or use http://argocd.127.0.0.1.nip.io:8080)
+argocd-ui: ## Port-forward ArgoCD UI -> http://localhost:8081 (or use http://argocd.127.0.0.1.nip.io:8000)
 	kubectl -n argocd port-forward svc/argocd-server 8081:80
 
 ##@ Status / RAM guard

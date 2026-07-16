@@ -14,8 +14,10 @@ VNS=vault
 KCTX="${KCTX:-}"
 kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
 
-# Grafana front-door (Envoy). Override for port-forward / a different route.
-GRAFANA_URL="${GRAFANA_URL:-http://localhost:8080}"
+# Grafana front-door (the stable :8000 proxy, not a per-cluster Envoy port —
+# scripts/bluegreen-frontdoor.sh, docs/DR.md). Override for port-forward / a
+# different route.
+GRAFANA_URL="${GRAFANA_URL:-http://localhost:8000}"
 NS="${GRAFANA_API_NS:-default}"           # Grafana apiserver namespace (single-org OSS)
 REPO_NAME="${REPO_NAME:-lab-dashboards}"
 GIT_URL="${GIT_URL:-https://host.k3d.internal:8930/lab/k8s-lab.git}"   # TLS proxy (Pure Git needs https)

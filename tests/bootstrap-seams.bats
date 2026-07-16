@@ -56,6 +56,13 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   [ "$output" -ge 1 ]
 }
 
+@test "grafana-gitsync-bootstrap.sh defaults GRAFANA_URL to the stable front door :8000, not a per-cluster Envoy port" {
+  run grep -oE 'GRAFANA_URL="\$\{GRAFANA_URL:-[^}]+\}"' "$REPO/scripts/grafana-gitsync-bootstrap.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *":8080"* ]]
+  [[ "$output" == *":8000"* ]]
+}
+
 # --- DR.md documents both new steps ------------------------------------------
 @test "DR.md documents gitlab-tls-bootstrap in the bootstrap order table" {
   run grep -c 'gitlab-tls-bootstrap' "$REPO/docs/DR.md"
