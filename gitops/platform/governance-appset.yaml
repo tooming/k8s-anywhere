@@ -77,6 +77,12 @@ spec:
           - appName: node-exporter-governance
             gitPath: gitops/governance/node-exporter
             destNamespace: node-exporter
+          - appName: cert-manager-governance
+            gitPath: gitops/governance/cert-manager
+            destNamespace: cert-manager
+          - appName: keda-governance
+            gitPath: gitops/governance/keda
+            destNamespace: keda
           # heavy tier (RFC #294 mapping table)
           - appName: observability-governance
             gitPath: gitops/governance/observability

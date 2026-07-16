@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Governance LimitRange fan-out — `cert-manager` + `keda`** (CHARTER
+- [x] 🟢 **Governance LimitRange fan-out — `cert-manager` + `keda`** (CHARTER
   **Core Values** §"Fits the 16 GB reality" + §"Everything as code; GitOps
   deploys it"; RFC #294 / RFC #293 follow-up — **no prerequisites, executor may
   pick up immediately**). `gitops/platform/governance-appset.yaml`'s
