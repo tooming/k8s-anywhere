@@ -81,3 +81,44 @@ setup() {
   run grep -q 'kubernetes.io/metadata.name: external-secrets' "$OBS_NP/allow-alloy-egress-external.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- allow-eso-webhook-from-apiserver: admission webhook ingress (found via a
+# from-scratch `make up` — every namespace's ExternalSecret/ClusterSecretStore
+# create/update times out through this webhook once default-deny lands without it) --
+
+@test "allow-eso-webhook-from-apiserver.yaml exists in external-secrets/networkpolicy/" {
+  [ -f "$ESO_NP/allow-eso-webhook-from-apiserver.yaml" ]
+}
+
+@test "external-secrets kustomization references allow-eso-webhook-from-apiserver.yaml" {
+  run grep -q 'allow-eso-webhook-from-apiserver.yaml' "$ESO_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# fromEntities remote-node, not ipBlock 10.43.0.1/32: k3s embeds the apiserver in
+# the server node's own process, so its outbound webhook call carries Cilium's
+# remote-node identity + the node's real pod-network IP as source — the apiserver
+# Service ClusterIP is never the actual source address on an outbound connection,
+# so an ipBlock rule against it silently never matches. Verified live with
+# `cilium monitor --type drop` on a from-scratch cluster (the plain-NetworkPolicy
+# ipBlock version tried first here reproduced the exact same timeout). The same
+# fix was then applied to kyverno/cert-manager/keda/kargo's equivalent files,
+# which shared the identical (previously untested) bug.
+@test "allow-eso-webhook-from-apiserver is a CiliumNetworkPolicy using fromEntities remote-node" {
+  run grep -q 'kind: CiliumNetworkPolicy' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'remote-node' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-eso-webhook-from-apiserver does not regress to the broken ipBlock 10.43.0.1 pattern" {
+  run grep -q -- '- ipBlock:' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
+  [ "$status" -ne 0 ]
+}
+
+@test "allow-eso-webhook-from-apiserver targets the webhook pod on port 10250" {
+  run grep -q 'app.kubernetes.io/name: external-secrets-webhook' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'port: "10250"' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
+  [ "$status" -eq 0 ]
+}
