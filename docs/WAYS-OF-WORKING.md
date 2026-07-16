@@ -209,11 +209,14 @@ _Process:_
   `routines.yaml` cron edit needed to actually do that could not be applied to the live
   trigger this session (`update_trigger` refused: "Agents can only update routines they
   created") and is tracked separately until a session that can apply it lands the change.
-- **A run is no longer bounded to one item's worth of spend.** Since 2026-07-16
+- **A run is no longer bounded to one item's worth of spend — the maintainer's explicit
+  goal is that a run works until its credit runs out.** Since 2026-07-16
   (`executor.prompt.md` STEP 8), a single run loops through as many ROADMAP items as it
-  can — implement, PR, self-review, merge, repeat — until the backlog + fallback chain
-  are exhausted or the run itself is cut off, instead of stopping after one item. This
-  does not change the **number** of runs (still 5/day, the free-quota unit), but it can
+  can — implement, PR, self-review, merge, repeat — with **no voluntary stopping
+  point**: not an empty backlog, not an exhausted fallback chain, not even a cycle whose
+  honest outcome was the idle issue. The *only* thing that ends a run is the run itself
+  being cut off by its own resource limits. This does not change the **number** of runs
+  (still 5/day, the free-quota unit), but it can
   substantially change **spend per run** and, more importantly, **PR volume per run** —
   potentially many self-merged PRs landing back-to-back with no run-boundary between
   them. This is in direct tension with §0.3's "review capacity is the constraint, not
