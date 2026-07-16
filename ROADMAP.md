@@ -2275,7 +2275,7 @@ You review and merge plan PRs, same as implementation PRs.
 - [x] 🟢 **`docs/00-architecture.md` — add learning-path step 12 for cloud-agnostic infrastructure design** (CHARTER **Goals** gap, self-caught: the "cloud-agnostic infrastructure design" learning outcome added to CHARTER.md's Goals alongside ADR-0026 was never reflected in the learning-path narrative, including in the very PR that added steps 10–11 above — docs-only). Adds step 12 explaining that `argocd`/`gitlab` Terragrunt units depend only on `cluster`'s `kube_context`/`cluster_name`/`api_endpoint` outputs, which is why steps 1–11 run identically on `local/` (k3d) or `oracle/` (Oracle Cloud Always Free + k3s), citing `infra/live/README.md`, ADR-0026, and ADR-0027. No code changes. `docs/done/` entry required.
   (auto/architecture-doc-cloud-agnostic-step)
 
-- [ ] 🟢 **Hook-scripts negative-path coverage — `argocd-crd-ssa-sync-hook.sh` +
+- [x] 🟢 **Hook-scripts negative-path coverage — `argocd-crd-ssa-sync-hook.sh` +
   `helm-chart-pin-sync-hook.sh`** (CLAUDE.md's "every bugfix/gap prevents recurrence"
   ethos + ROADMAP rule #9's coverage/hardening sweep; follow-up flagged by
   `docs/done/2026-07-16-hook-scripts-bats-coverage.md`, which closed bats coverage for
