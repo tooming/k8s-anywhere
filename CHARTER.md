@@ -152,13 +152,16 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   Kyverno verifies the signature on admit → ArgoCD deploys it → Argo Rollouts canaries it
   on real Mimir SLOs → Envoy routes it → Grafana shows its metrics & logs → Vault holds
   its secrets → Velero backs up its state.
-- **Cloud backend** (built, unverified against a real account): a second Terragrunt
-  backend module (`infra/live/oracle/`) targeting Oracle Cloud's Always Free tier
-  running self-managed k3s — `gitops/` requires no fork to run there. Localhost stays
-  the default. Every file was written and locally validated as far as this
-  environment's tooling allowed; no OCI account exists in this environment, so it has
-  never actually run end-to-end — see [`infra/live/README.md`](infra/live/README.md)'s
-  Status table. (ADR-0026, ADR-0027)
+- **Cloud backend** (built, partially verified against a real account): a second
+  Terragrunt backend module (`infra/live/oracle/`) targeting Oracle Cloud's Always Free
+  tier running self-managed k3s — `gitops/` requires no fork to run there. Localhost
+  stays the default. The tfstate bootstrap, `terragrunt init` against the real S3 API,
+  and the `cluster/` unit's VCN/subnet/security-list/internet-gateway layer all apply
+  cleanly against a real OCI tenancy (2026-07-15); the k3s compute instance launch
+  itself is still blocked by a transient Oracle Always Free capacity constraint
+  (`500 Out of host capacity` across all ADs), not a bug in this repo — see
+  [`infra/live/README.md`](infra/live/README.md)'s Status table for what's confirmed
+  end-to-end versus still pending. (ADR-0026, ADR-0027)
 
 ## How this drives the ROADMAP
 

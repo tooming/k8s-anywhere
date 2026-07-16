@@ -13,8 +13,10 @@ manifests, and **ArgoCD continuously syncs everything else in**, identically reg
 of where the cluster runs.
 
 The sections below (Quick start, Endpoints, DR) describe the **localhost backend**,
-which is built today and remains the default. A cloud backend module is planned (see
-[CHARTER.md](CHARTER.md) → Target end-state) but not yet built.
+which is built today and remains the default. A second backend module targeting
+Oracle Cloud's Always Free tier is also built and partially verified against a real
+account — see [`infra/live/README.md`](infra/live/README.md) → Status for exactly
+what has and hasn't run end-to-end yet.
 
 Built as code end to end: **one command (`make up`) rebuilds the whole lab from
 scratch**, with self-verifying **disaster-recovery** and **zero-downtime blue/green**
