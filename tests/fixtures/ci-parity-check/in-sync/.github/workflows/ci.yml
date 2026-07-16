@@ -1,0 +1,5 @@
+jobs:
+  drift:
+    steps:
+      - run: bash scripts/foo-check.sh
+      - run: bash scripts/bar-check.sh

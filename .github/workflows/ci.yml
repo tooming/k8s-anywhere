@@ -109,3 +109,4 @@ jobs:
       - run: bash scripts/argocd-crd-ssa-check.sh
       - run: bash scripts/rollouts-plugin-list-check.sh
       - run: bash scripts/mimir-readonly-root-check.sh
+      - run: bash scripts/ci-parity-check.sh
