@@ -6,10 +6,20 @@ name: ci
 # every push/PR. Mirrors `make ci` in full — the local pre-push hook only runs the
 # fast lint gate (seconds), so this workflow is what actually enforces the rest
 # (bats/kustomize/terraform/drift) before a PR merges. See .githooks/pre-push.
+#
+# `push` is scoped to main only (not every branch): every non-main branch here
+# gets a PR opened immediately (CLAUDE.md "Always open a PR"), and `pull_request`
+# below already fires on opened/synchronize/reopened — including rebase pushes to
+# an open PR's head. A `push: branches: ["**"]` on top of that ran this entire
+# 7-job workflow TWICE, back-to-back, for every single commit on an open PR
+# branch (once per event), for no coverage gain — confirmed 2026-07-17 on PR
+# #453, where four failed check entries were actually one root cause hitting two
+# jobs, doubled by this trigger overlap. `push: [main]` keeps the only case
+# `pull_request` doesn't cover: a direct push straight to main.
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
 
 permissions:
