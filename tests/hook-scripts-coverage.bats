@@ -63,6 +63,18 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [ "$status" -eq 0 ]
 }
 
+@test "argocd-crd-ssa-sync-hook: an oversized-CRD Application without ServerSideApply exits 2 (drift)" {
+  # The hook exits 0 for any file_path under tests/fixtures/ (that guard exists so
+  # editing the deliberately-broken fixtures doesn't self-nag) — so the drift fixture
+  # is copied outside that tree before invoking the hook, otherwise this test would
+  # pass even if the drift-detection logic were broken.
+  cp "$REPO/tests/fixtures/argocd-crd-ssa/drift/big-app.yaml" "$BATS_TEST_TMPDIR/big-app.yaml"
+  run env CRDSSA_RENDERER="$REPO/tests/fixtures/argocd-crd-ssa/renderer-stub.sh" \
+      bash "$REPO/scripts/argocd-crd-ssa-sync-hook.sh" <<<"$(mk_payload "$BATS_TEST_TMPDIR/big-app.yaml")"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"bigcrd-app"* ]]
+}
+
 # --- helm-chart-pin-sync-hook.sh ----------------------------------------------
 
 @test "helm-chart-pin-sync-hook: empty payload exits 0" {
@@ -78,6 +90,13 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
 @test "helm-chart-pin-sync-hook: a real chart-pinned Application exits 0 (valid pin, or network-tolerant skip)" {
   run bash "$REPO/scripts/helm-chart-pin-sync-hook.sh" <<<"$(mk_payload "$REPO/gitops/platform/kyverno.yaml")"
   [ "$status" -eq 0 ]
+}
+
+@test "helm-chart-pin-sync-hook: a chart pin missing from a reachable repo exits 2 (drift)" {
+  run env CHARTPIN_RESOLVER="$REPO/tests/fixtures/helm-chart-pin/resolver-stub.sh" \
+      bash "$REPO/scripts/helm-chart-pin-sync-hook.sh" <<<"$(mk_payload "$REPO/tests/fixtures/helm-chart-pin/drift/gitops/apps.yaml")"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"bad-pin"* ]]
 }
 
 # --- lab-ui-sync-hook.sh -------------------------------------------------------
