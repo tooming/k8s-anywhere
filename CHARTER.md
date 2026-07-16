@@ -1,7 +1,7 @@
 # CHARTER — k8s-lab North Star
 
 The durable statement of **what k8s-lab is becoming**. Slow-changing. The backlog in
-[ROADMAP.md](ROADMAP.md) is *derived* from this: the weekly planner computes
+[ROADMAP.md](ROADMAP.md) is *derived* from this: the planner role computes
 `(this charter) − (actual repo state) → concrete items`. Change **this** file when the
 *goals* change; change ROADMAP.md when the *next steps* change.
 
@@ -181,8 +181,11 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 
 ## How this drives the ROADMAP
 
-The weekly **planner** routine reads this charter + the actual repo and proposes concrete
-ROADMAP items for the gaps (a target not yet built, a Core Value not upheld, a Goal not
-yet covered, an Objective not on track for its date). The every-5h **executor** routine
-implements one item per run. To steer the lab, change the goals here — the roadmap, and
-then the work, follow.
+The **executor** routine (several times a day — see `routines/routines.yaml` for the
+current cadence) reads this charter + the actual repo and implements ROADMAP
+items back-to-back for as long as each run continues (one PR per item, but a run is no
+longer capped at one item — see `executor.prompt.md` STEP 8). When its own lane is
+empty it falls back through the **planner** role, which reads this charter against the
+actual repo and proposes concrete ROADMAP items for the gaps (a target not yet built, a
+Core Value not upheld, a Goal not yet covered, an Objective not on track for its date).
+To steer the lab, change the goals here — the roadmap, and then the work, follow.

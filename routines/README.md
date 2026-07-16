@@ -8,7 +8,10 @@ state; the files here are the *desired* state.
 
 **Only one trigger is actually live.** [`routines.yaml`](routines.yaml) is the source of
 truth — this section mirrors it, not the other way around. The executor fires on cron
-from claude.ai (5×/day, every day) and only sees what's in git, never the live cluster.
+from claude.ai (5×/day, every day — see `routines.yaml` for the exact times) and only
+sees what's in git, never the live cluster. Each run now loops through as many ROADMAP
+items as it can (`executor.prompt.md` STEP 8) instead of stopping after one, so "a run"
+and "one item" are no longer the same thing.
 Every other prompt file below was a separately-scheduled trigger until **2026-06-13**,
 when all of them were retired and absorbed into the executor's own fallback chain
 (`executor.prompt.md` STEP 6b: an empty ROADMAP lane makes the executor read and execute
@@ -18,7 +21,7 @@ directory as fallback targets and on-demand local invocations, not as scheduled 
 | File | What |
 |------|------|
 | [`routines.yaml`](routines.yaml) | per-routine metadata: `trigger_id`, `cron`, `model`, env, tools, `prompt_file`, `live_prompt` (the short pointer actually pushed to the live trigger — see "Pointer architecture" below) |
-| [`executor.prompt.md`](executor.prompt.md) | **the only live trigger.** Nightly implementer (21:00/22:00/23:00/00:00/01:00 UTC, every day), `auto/*` PRs; falls back through the roles below when its own lane is empty |
+| [`executor.prompt.md`](executor.prompt.md) | **the only live trigger.** Implementer (see `routines.yaml` for cadence), `auto/*` PRs, one PR per item but many items per run (STEP 8 loop); falls back through the roles below when its own lane is empty |
 | [`planner.prompt.md`](planner.prompt.md) | the planner's prompt — groomer, `plan/*` PRs. Fallback-only since 2026-06-13 |
 | [`architect.prompt.md`](architect.prompt.md) | the architect's prompt — RFC opener, `arch/*` PRs. Fallback-only since 2026-06-13 |
 | [`triager.prompt.md`](triager.prompt.md) | the triager's prompt — issue labeller, labels only, never PRs. Fallback-only since 2026-06-13 |

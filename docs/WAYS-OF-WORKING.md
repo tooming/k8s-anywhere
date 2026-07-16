@@ -63,7 +63,7 @@ way around; if they disagree, trust the YAML and fix this table.
 
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch |
 |---|---|---|---|---|---|
-| Executor | `trig_01XxtSdkPdRNjBfAidUXTwos` | @tooming | implements one ROADMAP item / run; empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no slot is wasted | 21:00/22:00/23:00/00:00/01:00 UTC, every day (5/day) · Sonnet 5 | `auto/*` (fallback roles keep their own prefixes) |
+| Executor | `trig_01XxtSdkPdRNjBfAidUXTwos` | @tooming | implements ROADMAP items back-to-back for as long as the run continues (one PR per item, STEP 8 loop — no longer one-and-done); empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no cycle is wasted | 21:00/22:00/23:00/00:00/01:00 UTC, every day (5/day) · Sonnet 5 | `auto/*` (fallback roles keep their own prefixes) |
 
 **One trigger, not eight.** Planner, architect, triager, upgrade-drafter, doc-drift-author,
 industry-news-writer, and the old "executor 4th slot" each *used to* have their own
@@ -203,11 +203,34 @@ _Process:_
   fire-times is identical every day, every rolling 24h window holds exactly 5 runs and the
   schedule can never spill into paid "additional runs" credits. Clustering at night
   *without* fixing the times would let two nights' runs land in one 24h window (6+ runs)
-  and burn credits.
-- Spend scales with **cadence × model × routine count**; the registry (§1) and
-  `routines.yaml` record all three, and the routine's owner is accountable for it.
-- **Scale-out rule:** add agents or raise cadence only when there is review capacity to
-  absorb the extra output. Generation is cheap; safe review is not.
+  and burn credits. **Pending change:** the maintainer asked (2026-07-16) to spread these
+  across the day instead of clustering at night — the same rolling-24h invariant holds
+  either way (it only needs fixed clock-times, not a particular time-of-day) — but the
+  `routines.yaml` cron edit needed to actually do that could not be applied to the live
+  trigger this session (`update_trigger` refused: "Agents can only update routines they
+  created") and is tracked separately until a session that can apply it lands the change.
+- **A run is no longer bounded to one item's worth of spend.** Since 2026-07-16
+  (`executor.prompt.md` STEP 8), a single run loops through as many ROADMAP items as it
+  can — implement, PR, self-review, merge, repeat — until the backlog + fallback chain
+  are exhausted or the run itself is cut off, instead of stopping after one item. This
+  does not change the **number** of runs (still 5/day, the free-quota unit), but it can
+  substantially change **spend per run** and, more importantly, **PR volume per run** —
+  potentially many self-merged PRs landing back-to-back with no run-boundary between
+  them. This is in direct tension with §0.3's "review capacity is the constraint, not
+  generation": more PRs per run means more merged changes for the maintainer to spot-check
+  after the fact, faster. The mitigations already in place (§0.1's CI-green +
+  `[self-review]` + resolved-conversations bar; WIP caps in §4; each cycle still capped at
+  one item / ~400 lines) are unchanged and still apply per cycle — but this is a real
+  cost/risk increase from the maintainer's explicit choice, not a side effect to ignore.
+  If output ever outpaces what's reasonable to spot-check, the fix is the kill-switch
+  below (pause the routine) or re-adding a per-run cycle cap in `executor.prompt.md`
+  STEP 8, not silently tolerating it.
+- Spend scales with **cadence × model × routine count × cycles-per-run**; the registry
+  (§1) and `routines.yaml` record the first three, and the routine's owner is accountable
+  for all four now that the fourth is effectively unbounded.
+- **Scale-out rule:** add agents, raise cadence, or let a run cycle through more items
+  only when there is review capacity to absorb the extra output. Generation is cheap;
+  safe review is not.
 - **Emergency stop:** disable a routine immediately from the routines page (toggle off) or
   via `RemoteTrigger {action:"update", body:{enabled:false}}`. Pausing the worst-behaving
   routine always beats merging under pressure.
