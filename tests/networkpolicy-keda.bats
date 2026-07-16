@@ -1,0 +1,110 @@
+#!/usr/bin/env bats
+# Clusterless structural tests for the keda namespace NetworkPolicy overlay
+# (ADR-0016 §4 fan-out, ADR-0029). Per-scope file — NOT part of the shared
+# tests/networkpolicy.bats baseline — so parallel fan-out PRs never collide at
+# a shared EOF (the #247 vs #248 conflict). Shared overlay paths come from
+# tests/lib/networkpolicy-paths.bash. Guard: scripts/networkpolicy-tests-check.sh.
+
+setup() {
+  load lib/networkpolicy-paths
+}
+
+# --- keda namespace overlay (ADR-0016 §4 fan-out, ADR-0029) ------------------
+@test "keda networkpolicy kustomization.yaml exists" {
+  [ -f "$KEDA_NP/kustomization.yaml" ]
+}
+
+@test "keda kustomization sets namespace: keda" {
+  run grep -q 'namespace: keda' "$KEDA_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "keda kustomization references the shared default-deny template" {
+  run grep -q 'network/policies/default-deny.yaml' "$KEDA_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "keda kustomization references the shared allow-dns-and-apiserver template" {
+  run grep -q 'network/policies/allow-dns-and-apiserver.yaml' "$KEDA_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- webhook allow (kube-apiserver -> keda TCP 9443) --------------------------
+@test "allow-keda-webhook-from-apiserver.yaml exists in keda/networkpolicy/" {
+  [ -f "$KEDA_NP/allow-keda-webhook-from-apiserver.yaml" ]
+}
+
+@test "keda kustomization references the webhook allow file" {
+  run grep -q 'allow-keda-webhook-from-apiserver.yaml' "$KEDA_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-keda-webhook-from-apiserver allows ingress on port 9443" {
+  run grep -q 'port: 9443' "$KEDA_NP/allow-keda-webhook-from-apiserver.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-keda-webhook-from-apiserver uses ipBlock for the kube-apiserver source" {
+  run grep -q 'ipBlock:' "$KEDA_NP/allow-keda-webhook-from-apiserver.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-keda-webhook-from-apiserver uses Ingress policyType" {
+  run grep -q 'Ingress' "$KEDA_NP/allow-keda-webhook-from-apiserver.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- metrics allow (Alloy -> keda TCP 8080) -----------------------------------
+@test "allow-keda-metrics-from-observability.yaml exists in keda/networkpolicy/" {
+  [ -f "$KEDA_NP/allow-keda-metrics-from-observability.yaml" ]
+}
+
+@test "keda kustomization references the metrics allow file" {
+  run grep -q 'allow-keda-metrics-from-observability.yaml' "$KEDA_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-keda-metrics-from-observability allows ingress on port 8080" {
+  run grep -q 'port: 8080' "$KEDA_NP/allow-keda-metrics-from-observability.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-keda-metrics-from-observability restricts source to observability namespace" {
+  run grep -q 'kubernetes.io/metadata.name: observability' "$KEDA_NP/allow-keda-metrics-from-observability.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-keda-metrics-from-observability restricts source to alloy pods" {
+  run grep -q 'app.kubernetes.io/name: alloy' "$KEDA_NP/allow-keda-metrics-from-observability.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- keda-networkpolicy Application (wave 4) ----------------------------------
+@test "keda-networkpolicy Application file exists" {
+  [ -f "$REPO/gitops/platform/keda-networkpolicy.yaml" ]
+}
+
+@test "keda-networkpolicy Application targets keda namespace" {
+  run grep -q 'namespace: keda' "$REPO/gitops/platform/keda-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "keda-networkpolicy Application sources from gitops/keda/networkpolicy" {
+  run grep -q 'gitops/keda/networkpolicy' "$REPO/gitops/platform/keda-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "keda-networkpolicy Application has automated sync" {
+  run grep -q 'automated:' "$REPO/gitops/platform/keda-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "keda-networkpolicy Application has LoadRestrictionsNone buildOption" {
+  run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/keda-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "keda-networkpolicy Application is at sync-wave 4" {
+  run grep -q 'sync-wave: "4"' "$REPO/gitops/platform/keda-networkpolicy.yaml"
+  [ "$status" -eq 0 ]
+}

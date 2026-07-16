@@ -1,0 +1,25 @@
+# Allow the kube-apiserver to reach the KEDA admission webhook on TCP 9443
+# (ADR-0016). KEDA registers a ValidatingWebhookConfiguration for ScaledObject/
+# ScaledJob/TriggerAuthentication CRs; the API server calls back on TCP 9443
+# (the chart's webhooks.port default — confirmed in the pinned chart's
+# values.yaml) for every admission request against them.
+# Without this allow, the default-deny-all floor blocks webhook callbacks and
+# every ScaledObject/ScaledJob create/update fails.
+# The kube-apiserver IP (10.43.0.1/32) is the k3s cluster service IP — same
+# ipBlock pattern used by allow-dns-and-apiserver.yaml (ADR-0016 shared baseline).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-keda-webhook-from-apiserver
+  namespace: keda
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 9443
+          protocol: TCP
+      from:
+        - ipBlock:
+            cidr: 10.43.0.1/32

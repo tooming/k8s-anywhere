@@ -323,6 +323,20 @@ spec:
                 scrape_interval = "30s"
               }
 
+              // ---- KEDA (event-driven autoscaling, ADR-0029) -> Mimir ----
+              // Scrapes the operator Service (keda-operator.keda.svc:8080) — where
+              // keda_scaler_active / keda_scaled_object_paused / keda_scaler_metrics_value
+              // are actually emitted (ScaledObject reconciliation happens in the
+              // operator, not metricServer or webhooks). Same "just the interesting
+              // one" scope as the cert_manager job above.
+              prometheus.scrape "keda" {
+                targets = [
+                  {"__address__" = "keda-operator.keda.svc.cluster.local:8080", "job" = "keda"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
               // ---- Inkless (diskless Kafka) exporter metrics -> Mimir ----
               // kafka-exporter co-located container in the Inkless StatefulSet exposes Prometheus
               // metrics on :9308; this target is idle unless inkless is manually synced.

@@ -95,7 +95,9 @@ SLO metrics, not timers); **stateful backup & restore** (Velero against Garage �
 restore is exercised, not assumed); **supply-chain security** end-to-end (cosign
 signing in CI, Kyverno verifyImages on admit, continuous Trivy scanning + SBOMs);
 **automated TLS certificate lifecycle** (cert-manager issuing and rotating certs from
-a self-signed root CA at the Gateway edge — not a one-off hand-issued Secret); and
+a self-signed root CA at the Gateway edge — not a one-off hand-issued Secret);
+**event-driven autoscaling** (KEDA scaling a workload on a real signal — a RabbitMQ
+queue's depth, a Prometheus expression — not a timer or a hand-set replica count); and
 **cloud-agnostic infrastructure design** — why the GitOps layer never encodes a
 backend, so the same platform runs free on a laptop or on a cloud Kubernetes service
 without a fork. The sequenced path lives in [docs/00-architecture.md](docs/00-architecture.md).
@@ -170,6 +172,12 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   Gateway's HTTPS listener — a wildcard `*.127.0.0.1.nip.io` Certificate backs it, and
   the DR front door proxies `:8443` through to it — additive alongside the original
   HTTP-only path, never a breaking cutover. (ADR-0028)
+- **Event-driven autoscaling** (built): KEDA scales workloads on a real signal — a
+  RabbitMQ queue's depth, a Prometheus expression — augmenting the stock HPA rather
+  than replacing it. Engine is auto-synced, `restricted` PSA with zero carve-out (same
+  as cert-manager). A follow-up wires its admission webhook's TLS to cert-manager's
+  `k8s-lab-ca` (a second real consumer beyond the Gateway) and adds a `ScaledObject`
+  demo scaling on the `data` namespace's RabbitMQ queue depth. (ADR-0029)
 
 ## How this drives the ROADMAP
 
