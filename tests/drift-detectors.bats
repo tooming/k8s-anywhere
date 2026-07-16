@@ -115,6 +115,20 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- ci.yml push trigger is scoped to main, not every branch -----------------
+# Regression guard for 2026-07-17 (PR #453/#456): `push: branches: ["**"]`
+# alongside `pull_request:` ran the entire 7-job workflow twice per commit on
+# every open PR branch (once per event) for zero coverage gain, since every
+# branch here gets a PR immediately and `pull_request` already covers
+# opened/synchronize/reopened. `push` must stay scoped to `main` only (the one
+# case `pull_request` doesn't cover: a direct push straight to main).
+@test "ci.yml push trigger is scoped to main only (no duplicate PR-branch runs)" {
+  run awk '/^on:/{f=1;next} f && /^permissions:/{exit} f' "$REPO/.github/workflows/ci.yml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"branches: [main]"* ]]
+  [[ "$output" != *'branches: ["**"]'* ]]
+}
+
 # --- securitycontext-tests-check ---------------------------------------------
 @test "securitycontext-tests-check: passes when the monolith matches its snapshot" {
   run env SECCTX_TESTS_ROOT="$FIX/securitycontext-tests-check/in-sync" bash "$REPO/scripts/securitycontext-tests-check.sh"
