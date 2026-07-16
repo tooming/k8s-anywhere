@@ -174,10 +174,14 @@ setup() {
   [ -f "$REPO/gitops/kargo/networkpolicy/allow-kargo-webhook-from-apiserver.yaml" ]
 }
 
-@test "kargo webhook policy allows TCP 9443 from kube-apiserver IP" {
-  run grep -q 'port: 9443' "$REPO/gitops/kargo/networkpolicy/allow-kargo-webhook-from-apiserver.yaml"
+@test "kargo webhook policy allows TCP 9443 from the apiserver's remote-node identity" {
+  run grep -q 'port: "9443"' "$REPO/gitops/kargo/networkpolicy/allow-kargo-webhook-from-apiserver.yaml"
   [ "$status" -eq 0 ]
-  run grep -q '10.43.0.1/32' "$REPO/gitops/kargo/networkpolicy/allow-kargo-webhook-from-apiserver.yaml"
+  # fromEntities remote-node, not ipBlock: k3s embeds the apiserver in the server
+  # node's own process, so its outbound webhook call carries Cilium's remote-node
+  # identity + the node's real pod-network IP as source, never the apiserver's
+  # Service ClusterIP (verified live with `cilium monitor --type drop`).
+  run grep -q 'remote-node' "$REPO/gitops/kargo/networkpolicy/allow-kargo-webhook-from-apiserver.yaml"
   [ "$status" -eq 0 ]
 }
 

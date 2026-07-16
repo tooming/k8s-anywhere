@@ -22,6 +22,17 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: allow-dns-and-apiserver
+  annotations:
+    # Must land strictly before default-deny.yaml (wave 0) in every namespace that
+    # includes both: neither ArgoCD's own sync-wave-4 NetworkPolicy Applications nor
+    # kubectl apply order guarantee CiliumNetworkPolicy (this) lands before/with a
+    # plain NetworkPolicy (default-deny-all) in the same sync — observed applying
+    # default-deny-all first cuts the namespace's own pods off from the apiserver
+    # and DNS before this policy exists, and if that namespace is argocd itself the
+    # controller can never finish the sync that would have added this rule (found on
+    # a from-scratch `make up`: argocd-networkpolicy landed default-deny-all only,
+    # then argocd-application-controller lost apiserver access mid-sync — #440-follow-up).
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   endpointSelector: {}
   egress:

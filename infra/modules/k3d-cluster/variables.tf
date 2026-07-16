@@ -29,8 +29,8 @@ variable "http_port" {
 
 variable "https_port" {
   type        = number
-  default     = 8443
-  description = "Host port mapped to the k3d loadbalancer :443 (ingress via Envoy)"
+  default     = 8446
+  description = "Host port mapped to the k3d loadbalancer :443 (ingress via Envoy). NOT 8443 — the DR frontdoor's HTTPS TCP passthrough (scripts/bluegreen-frontdoor.sh) owns that port as the stable, blue/green-independent entry point."
 }
 
 variable "disable_traefik" {
