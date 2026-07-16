@@ -59,10 +59,10 @@ source: https://github.com/tooming/k8s-anywhere  # repo cloned into each run (re
 # fix existed, NOT on confirmed failure. trig_01XxtSdkPdRNjBfAidUXTwos below was
 # created through the Routines UI's own repo-selector flow instead
 # (tooming/k8s-anywhere explicitly attached as a Repository, visible in the
-# routine's own settings page). NOT YET VERIFIED — 0 runs completed at the time
-# this was wired in. Confirm the next scheduled or manual run actually gets past
-# `gh pr list` before treating this as settled; if it hits the same denial,
-# retire it too and escalate #423 further.
+# routine's own settings page). VERIFIED 2026-07-16/17: it has since fired
+# repeatedly and produced a stream of real PRs (#441-#455 and counting) via
+# `gh`, so the repo-selector attachment does grant working GitHub access —
+# the #423 concern is resolved for this trigger.
 
 routines:
   # THE EXECUTOR — one trigger, five slots spread across the day, one prompt.
