@@ -2275,6 +2275,34 @@ You review and merge plan PRs, same as implementation PRs.
 - [x] 🟢 **`docs/00-architecture.md` — add learning-path step 12 for cloud-agnostic infrastructure design** (CHARTER **Goals** gap, self-caught: the "cloud-agnostic infrastructure design" learning outcome added to CHARTER.md's Goals alongside ADR-0026 was never reflected in the learning-path narrative, including in the very PR that added steps 10–11 above — docs-only). Adds step 12 explaining that `argocd`/`gitlab` Terragrunt units depend only on `cluster`'s `kube_context`/`cluster_name`/`api_endpoint` outputs, which is why steps 1–11 run identically on `local/` (k3d) or `oracle/` (Oracle Cloud Always Free + k3s), citing `infra/live/README.md`, ADR-0026, and ADR-0027. No code changes. `docs/done/` entry required.
   (auto/architecture-doc-cloud-agnostic-step)
 
+- [ ] 🟢 **Hook-scripts negative-path coverage — `argocd-crd-ssa-sync-hook.sh` +
+  `helm-chart-pin-sync-hook.sh`** (CLAUDE.md's "every bugfix/gap prevents recurrence"
+  ethos + ROADMAP rule #9's coverage/hardening sweep; follow-up flagged by
+  `docs/done/2026-07-16-hook-scripts-bats-coverage.md`, which closed bats coverage for
+  13 previously-untested hook scripts but left these two with only filter + real-repo
+  happy-path coverage, noting their underlying checks are "network-tolerant with no
+  hook-level file-scoped override for injecting a broken fixture." That note is
+  incomplete: both underlying `*-check.sh` scripts already have offline test seams used
+  by `tests/drift-detectors.bats` — `helm-chart-pin-check.sh` supports
+  `CHARTPINCHECK_ROOT` + a `CHARTPIN_RESOLVER` stub (fixtures already exist at
+  `tests/fixtures/helm-chart-pin/{drift,in-sync}/`); `argocd-crd-ssa-check.sh` supports
+  `CRDSSA_CHECK_ROOT` + a `CRDSSA_RENDERER` stub (fixtures already exist at
+  `tests/fixtures/argocd-crd-ssa/{drift,in-sync}/`). Since each hook simply
+  `bash`-invokes its check script in the same shell (no `env -i`), exported
+  `CHARTPIN_RESOLVER`/`CRDSSA_RENDERER` env vars propagate straight through — no new
+  fixtures need to be built, just two more `@test` cases in
+  `tests/hook-scripts-coverage.bats`: (1) for `argocd-crd-ssa-sync-hook.sh`, run with
+  `CRDSSA_RENDERER="$REPO/tests/fixtures/argocd-crd-ssa/renderer-stub.sh"` and a payload
+  pointing at `tests/fixtures/argocd-crd-ssa/drift/big-app.yaml` (oversized CRD, no
+  `ServerSideApply=true`) — assert exit 2 and that stderr names the offending
+  Application; (2) for `helm-chart-pin-sync-hook.sh`, run with
+  `CHARTPIN_RESOLVER="$REPO/tests/fixtures/helm-chart-pin/resolver-stub.sh"` and a
+  payload pointing at `tests/fixtures/helm-chart-pin/drift/gitops/apps.yaml` (a
+  `*-missing` pinned version) — assert exit 2 and that stderr names the bad pin. No
+  script changes — tests only. `make ci` must pass. `docs/done/` entry required.
+  **No prerequisites — executor may pick up immediately.**
+  (auto/hook-scripts-negative-path-coverage)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
