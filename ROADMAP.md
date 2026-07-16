@@ -1,9 +1,13 @@
 # ROADMAP
 
 The backlog for **k8s-lab**, derived from [CHARTER.md](CHARTER.md) (the north-star this
-is projected from) and worked by two decoupled routines: a weekly **planner** that
-proposes items here (plan-only PRs) and an every-6h **executor** that implements one item
-per run. CHARTER = the goals; this file = the next steps.
+is projected from) and worked by one scheduled routine: the **executor**, which fires
+several times a day (see `routines/routines.yaml` for the current cadence) and
+implements ROADMAP items back-to-back for as long as each run continues (STEP 8's loop
+— no longer one item per run). The **planner** that proposes items here (plan-only PRs)
+has no cron of its own anymore — the executor invokes it as a fallback role (STEP 6b)
+whenever its own lane runs dry, which can happen more than once in a single run. CHARTER
+= the goals; this file = the next steps.
 
 The always-on stack is already built (Envoy, Vault, External Secrets, Garage,
 the full LGTMP observability stack, moto/ACK/KRO, the RabbitMQ + Valkey data layer,
@@ -14,13 +18,18 @@ the end-to-end capstone, and cross-cutting hardening.
 
 ## How the executor uses this file
 
-The **executor** routine (every 6h) reads this file each run. It has **only this repo** —
-no access to anyone's local notes — so every rule it must follow lives here, in
-`docs/decisions/` (the ADRs), or in [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md)
-(agent governance & review). The rules below are binding.
+The **executor** routine (several times a day — see `routines/routines.yaml` for the
+current cadence) reads this file at the start of every cycle. It has **only this repo** — no access to anyone's local notes — so every rule it
+must follow lives here, in `docs/decisions/` (the ADRs), or in
+[docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md) (agent governance & review). The
+rules below are binding.
 
-1. **One item per run.** Take the single topmost unchecked `[ ]` item under
-   *Backlog* (prefer the *Now / next* list). Keep the change to one reviewable PR.
+1. **One item per PR — but a run keeps going.** Take the single topmost unchecked `[ ]`
+   item under *Backlog* (prefer the *Now / next* list). Keep the change to one
+   reviewable PR. That PR merging completes one *cycle*, not the whole *run* — per
+   `executor.prompt.md` STEP 8, loop back and do the next item, back-to-back, until the
+   backlog and every fallback role are genuinely exhausted or the run itself is cut off.
+   A run is no longer capped at one item; only each PR is.
 2. **You are remote and clusterless.** There is **no** Kubernetes cluster, no
    Colima, no live GitLab reachable from where you run. Never run `make up`,
    `make dr-*`, `kubectl`, `argocd`, `vault`, or anything needing a cluster.
@@ -50,21 +59,25 @@ no access to anyone's local notes — so every rule it must follow lives here, i
    the Grafana "Lab UIs" panel (there's a drift check) and update the README /
    `docs/dependency-tree.md` so `make readme-check` and `make lab-ui-check` stay
    green.
-6. **Every scheduled run's work lands as a PR — never push to `main`, never self-merge.**
-   One branch per run (`auto/<short-slug>`). Title it clearly; the body should say what +
-   why and note it's an autonomous run. CI runs on the PR; the user reviews and merges. A
-   run never commits straight to a branch without opening a PR, and never silently does
-   nothing (see rule #9).
+6. **Every item lands as a PR, self-reviewed and self-merged by the same run** (per
+   WAYS-OF-WORKING.md §0.1/§3/§4 — this superseded the old human-merge model on
+   2026-07-14; this rule was stale until 2026-07-16 and still said otherwise). One
+   branch per item (`auto/<short-slug>`). Title it clearly; the body should say what +
+   why and note it's an autonomous run. `make ci` runs on the PR; the executor
+   self-reviews it (the `[self-review]` comment), then merges it — CI-green +
+   self-review is the gate, not a human click. Never commit straight to a branch
+   without opening a PR, and never silently do nothing (see rule #9).
 7. **Check it off in the same PR.** Mark the item `[x]` in the backlog, then create
    `docs/done/YYYY-MM-DD-<slug>.md` (today's date + your branch slug) with the full
    item description and the PR number. Do **not** prepend anything to the `## Done`
    section — that section is now just a pointer to `docs/done/`.
-8. **If the top item can't be done cleanly in one run, take the next feasible
+8. **If the top item can't be done cleanly, take the next feasible
    item** instead of committing something that fails `make ci`.
 9. **Never invent new backlog items. Never go silent. And never declare idle — an
    "idle" GitHub issue/comment is now a forbidden outcome, full stop.** You only
-   implement items already listed below; the weekly planner refills the backlog (see
-   next section). But "the Now/next items are all gated" is never where a run ends —
+   implement items already listed below; the planner (an executor fallback role, no
+   cron of its own — see next section) refills the backlog. But "the Now/next items
+   are all gated" is never where a run ends —
    every run lands a PR. This was tried the other way first (issues #52, #56, #57,
    #76, #89, #121, #262, #390, #398 are all "executor idle — needs work" issues that
    piled up instead of shipping work) and the maintainer ended it explicitly
@@ -108,7 +121,9 @@ no access to anyone's local notes — so every rule it must follow lives here, i
 ## Where new items come from — the planner
 
 The executor never invents work — it only implements items already listed below. New
-items come from a separate **weekly planner** routine (also runnable on-demand) that:
+items come from the **planner** role — no cron of its own, invoked as an executor
+fallback (STEP 6b) whenever the "Now / next" lane runs dry, which can happen more than
+once in a single run now that a run cycles through many items (STEP 8) — that:
 
 - reads [CHARTER.md](CHARTER.md) (the north-star) + the repo state + this file + open PRs
   + **open GitHub issues** (the intake queue), then produces items two ways:
