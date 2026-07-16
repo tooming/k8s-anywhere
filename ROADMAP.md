@@ -1076,6 +1076,54 @@ You review and merge plan PRs, same as implementation PRs.
   No code changes, no bats changes (the bats file already exists). `make ci` must pass.
   `docs/done/` entry required. (auto/adr-0019-runasnonroot-row)
 
+- [ ] 🟢 **cert-manager engine + self-signed root CA bootstrap** (CHARTER new Goal
+  "automated TLS certificate lifecycle" — ADR-0028 for the binding chart values, PSA
+  profile, and root-CA issuer chain. **No prerequisites — executor may pick up
+  immediately; purely additive, does not touch the existing HTTP-only traffic path.**)
+  Add `gitops/platform/cert-manager.yaml` (auto-synced ArgoCD `Application`, chart
+  `cert-manager` from `https://charts.jetstack.io`, namespace `cert-manager`; pin a
+  specific 1.20.x patch at executor pickup — confirm the tag exists via
+  `git ls-remote --tags https://github.com/cert-manager/cert-manager.git` since
+  `charts.jetstack.io`'s index is proxy-blocked in this environment). `valuesObject`
+  per ADR-0028 §"Chart + version": `crds.enabled: true`; §"Footprint controls" memory
+  caps (controller 128Mi, webhook 64Mi, cainjector 64Mi). Add
+  `gitops/cert-manager/namespace.yaml` with all four PSA labels at `restricted`
+  (ADR-0028 confirms the chart's default securityContext is fully
+  `restricted`-compatible — no carve-out needed, verify this against the actual pinned
+  chart's `values.yaml` at executor pickup per ADR-0028's verification method). Default-deny
+  NetworkPolicy overlay at `gitops/cert-manager/networkpolicy/kustomization.yaml`
+  referencing the shared baseline templates + ingress TCP 10250 from the
+  kube-apiserver (webhook callback — cert-manager's webhook `securePort` default,
+  confirmed against the pinned chart's `values.yaml`; mirror the existing apiserver
+  `ipBlock` pattern) + ingress TCP 9402 from `observability` (metrics scrape, all
+  three components expose on this port). New auto-synced
+  `Application` `gitops/platform/cert-manager-networkpolicy.yaml` (sync-wave 4,
+  `LoadRestrictionsNone`). Root CA bootstrap at `gitops/cert-manager/root-ca/`: a
+  `selfSigned`-type `ClusterIssuer` (bootstrap-only), a `Certificate` requesting
+  `isCA: true` from it, and a `ca`-type `ClusterIssuer` referencing the resulting
+  Secret — exact shape per ADR-0028 §"Certificate strategy". New `cert-manager` scrape
+  job in `gitops/platform/observability-alloy.yaml` targeting
+  `cert-manager.cert-manager.svc.cluster.local:9402`. New
+  `grafana/dashboards/lab-cert-manager.json` ("Lab — cert-manager (TLS Lifecycle)")
+  modelled on `lab-kyverno.json` stat-row: pod running per component
+  (controller/webhook/cainjector from KSM), ArgoCD sync state, certificate count by
+  `Ready` condition (real `certmanager_certificate_ready_status`), certificate expiry
+  timestamps (`certmanager_certificate_expiration_timestamp_seconds`). No HTTPRoute —
+  cert-manager has no web UI; document in the PR body. Update
+  `docs/dependency-tree.md` with a CERT-MANAGER subgraph + Alloy scrape edge. New
+  `tests/cert-manager.bats`: Application shape, chart source + version pin,
+  `crds.enabled: true`, namespace PSA labels, NetworkPolicy overlay structure,
+  the two-`ClusterIssuer` root-CA chain shape, scrape job target, dashboard file +
+  required panels. Add a `cert-manager: restricted` row to ADR-0017's per-namespace
+  profile table in the same PR (small, directly caused by this item — unlike other
+  items' separate "ADR-0017 amendment" follow-ups, this one ships with zero carve-out
+  so there's nothing to amend later). **Executor note:** if the PR crosses ~400 lines
+  per WAYS-OF-WORKING.md §3, split the chart Application + namespace + NetworkPolicy
+  from the root-CA bootstrap + dashboard + Alloy scrape. The Gateway HTTPS listener +
+  wildcard Certificate + frontdoor `:8443` port mapping is a separate follow-up item
+  (ADR-0028 §"Scope & exceptions" — deliberately not bundled here).
+  (auto/cert-manager-engine)
+
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
   maintainer confirms at least one CI run pushed a `.sig` tag to Artifactory** — check

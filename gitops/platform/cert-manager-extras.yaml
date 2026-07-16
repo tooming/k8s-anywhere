@@ -1,0 +1,27 @@
+# cert-manager-extras — applies the cert-manager namespace.yaml (PSA restricted
+# labels, ADR-0017/ADR-0028) before the cert-manager Helm Application (sync-wave 1)
+# schedules pods. Running at wave 0 ensures the namespace's enforce/warn/audit
+# labels are in place before ArgoCD deploys the Helm release.
+# ALWAYS-ON: automated sync alongside cert-manager.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-extras
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/cert-manager
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

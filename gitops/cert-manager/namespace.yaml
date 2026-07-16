@@ -1,0 +1,15 @@
+# PSA restricted (ADR-0017/ADR-0028): the chart's controller, webhook, and
+# cainjector all default to runAsNonRoot + seccompProfile RuntimeDefault at the
+# pod level and allowPrivilegeEscalation=false + capabilities.drop=[ALL] +
+# readOnlyRootFilesystem=true at the container level — the full restricted
+# profile, with no override needed. Verified against the pinned chart's
+# values.yaml (see ADR-0028 §"PSA profile" for how this was confirmed offline).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
