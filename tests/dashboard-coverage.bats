@@ -358,3 +358,16 @@ setup() {
   run grep -q '"uid": "mimir"' "$DASHBOARDS/lab-gitsync.json"
   [ "$status" -eq 0 ]
 }
+
+# ---------------------------------------------------------------------------
+# cert-manager
+# ---------------------------------------------------------------------------
+
+@test "lab-cert-manager.json exists (cert-manager coverage)" {
+  [ -f "$DASHBOARDS/lab-cert-manager.json" ]
+}
+
+@test "lab-cert-manager.json has real Mimir datasource panel (ADR-0004)" {
+  run grep -q '"uid": "mimir"' "$DASHBOARDS/lab-cert-manager.json"
+  [ "$status" -eq 0 ]
+}
