@@ -29,4 +29,4 @@ must pass. `docs/done/` entry required. (auto/governance-cert-manager-keda)
 
 ## PR
 
-Autonomous scheduled executor run — see `auto/governance-cert-manager-keda`.
+[#451](https://github.com/tooming/k8s-anywhere/pull/451)
