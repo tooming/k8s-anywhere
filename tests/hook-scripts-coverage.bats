@@ -201,6 +201,23 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [ "$status" -eq 0 ]
 }
 
+# --- markdown-links-sync-hook.sh --------------------------------------------------
+
+@test "markdown-links-sync-hook: empty payload exits 0" {
+  run bash "$REPO/scripts/markdown-links-sync-hook.sh" <<<"{}"
+  [ "$status" -eq 0 ]
+}
+
+@test "markdown-links-sync-hook: unrelated (non-.md) file exits 0 (filtered out)" {
+  run bash "$REPO/scripts/markdown-links-sync-hook.sh" <<<"$(mk_payload "$REPO/Makefile")"
+  [ "$status" -eq 0 ]
+}
+
+@test "markdown-links-sync-hook: a real .md file (links currently resolve) exits 0" {
+  run bash "$REPO/scripts/markdown-links-sync-hook.sh" <<<"$(mk_payload "$REPO/CHARTER.md")"
+  [ "$status" -eq 0 ]
+}
+
 # --- rollouts-plugin-list-sync-hook.sh -------------------------------------------
 
 @test "rollouts-plugin-list-sync-hook: empty payload exits 0" {

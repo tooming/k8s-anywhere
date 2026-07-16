@@ -97,6 +97,7 @@ jobs:
       - run: bash scripts/readme-check.sh
       - run: bash scripts/lab-ui-check.sh
       - run: bash scripts/roadmap-check.sh
+      - run: bash scripts/markdown-links-check.sh
       - run: bash scripts/securitycontext-tests-check.sh
       - run: bash scripts/networkpolicy-tests-check.sh
       - run: bash scripts/observability-tests-check.sh

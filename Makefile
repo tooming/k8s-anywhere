@@ -43,6 +43,10 @@ lab-ui-check: ## Check the Grafana "Lab UIs" panel matches the HTTPRoutes in git
 roadmap-check: ## Check ROADMAP.md has no inline planner notes (per-run narrative belongs in docs/backlog/)
 	@bash scripts/roadmap-check.sh
 
+.PHONY: markdown-links-check
+markdown-links-check: ## Check every relative [text](path) link in tracked *.md files resolves
+	@bash scripts/markdown-links-check.sh
+
 .PHONY: securitycontext-tests-check
 securitycontext-tests-check: ## Check tests/securitycontext.bats stays frozen (new PSS tests go in securitycontext-<scope>.bats)
 	@bash scripts/securitycontext-tests-check.sh
@@ -135,6 +139,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/readme-check.sh
 	@bash scripts/lab-ui-check.sh
 	@bash scripts/roadmap-check.sh
+	@bash scripts/markdown-links-check.sh
 	@bash scripts/securitycontext-tests-check.sh
 	@bash scripts/networkpolicy-tests-check.sh
 	@bash scripts/observability-tests-check.sh
