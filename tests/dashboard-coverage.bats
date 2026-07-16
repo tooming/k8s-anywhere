@@ -371,3 +371,16 @@ setup() {
   run grep -q '"uid": "mimir"' "$DASHBOARDS/lab-cert-manager.json"
   [ "$status" -eq 0 ]
 }
+
+# ---------------------------------------------------------------------------
+# keda
+# ---------------------------------------------------------------------------
+
+@test "lab-keda.json exists (keda coverage)" {
+  [ -f "$DASHBOARDS/lab-keda.json" ]
+}
+
+@test "lab-keda.json has real Mimir datasource panel (ADR-0004)" {
+  run grep -q '"uid": "mimir"' "$DASHBOARDS/lab-keda.json"
+  [ "$status" -eq 0 ]
+}

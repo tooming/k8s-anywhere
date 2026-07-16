@@ -1156,6 +1156,52 @@ You review and merge plan PRs, same as implementation PRs.
   certificate lifecycle" target entry from "(planned)" to built. `make ci` must
   pass. `docs/done/` entry required. (auto/cert-manager-gateway-https)
 
+- [x] 🟢 **KEDA event-driven autoscaling engine** (CHARTER new Goal "event-driven
+  autoscaling" — ADR-0029 for the binding chart values, PSA profile, and footprint
+  controls. **No prerequisites — executor may pick up immediately; purely additive,
+  no existing workload is touched.**) Found during a coverage/hardening fallback pass
+  (ROADMAP rule #9) after every gated `Now / next` item and every doc-drift/coverage
+  gap turned up empty — re-read CHARTER's Vision/Goals for a genuinely uncovered CNCF
+  pattern rather than defaulting to smaller filler, same discipline that found
+  cert-manager. Added `gitops/platform/keda.yaml` (auto-synced ArgoCD `Application`,
+  chart `keda` v2.18.0 from `https://kedacore.github.io/charts`, namespace `keda`;
+  version confirmed via the chart source repo's `release/v2.18` branch since the
+  chart index itself is proxy-blocked in this environment, same class of limitation as
+  `charts.jetstack.io`). `valuesObject` per ADR-0029 §"Footprint controls": tightened
+  memory limits (operator/metricServer 128Mi, webhooks 64Mi) below the chart's
+  generous 1000Mi-per-component default. Added `gitops/keda/namespace.yaml` with all
+  four PSA labels at `restricted` (verified zero carve-out needed against the pinned
+  chart's `values.yaml`, second component after cert-manager to land at `restricted`
+  out of the box). Default-deny NetworkPolicy overlay at
+  `gitops/keda/networkpolicy/kustomization.yaml` referencing the shared baseline
+  templates + ingress TCP 9443 from kube-apiserver (admission webhook callback,
+  confirmed against the pinned chart's `values.yaml`) + ingress TCP 8080 from
+  `observability` (metrics scrape). New auto-synced `Application`
+  `gitops/platform/keda-networkpolicy.yaml` (sync-wave 4, `LoadRestrictionsNone`). New
+  `keda` scrape job in `gitops/platform/observability-alloy.yaml` targeting the
+  operator Service (`keda-operator.keda.svc.cluster.local:8080` — where
+  `keda_scaler_active`/`keda_scaled_object_paused`/`keda_scaler_metrics_value` are
+  actually emitted, verified against the pinned tag's Go source, not guessed from
+  docs). New `grafana/dashboards/lab-keda.json` ("Lab — KEDA (Event-Driven
+  Autoscaling)") modelled on `lab-cert-manager.json`'s stat-row: pod running per
+  component (KSM), ArgoCD sync state, active-scaler count, ScaledObject error rate —
+  panels show "No data" naturally until the follow-up `ScaledObject` demo exists
+  (ADR-0004). No HTTPRoute — KEDA has no web UI; document in the PR body. Updated
+  `docs/dependency-tree.md` with a KEDA subgraph + Alloy scrape edge and
+  `tests/dashboard-coverage.bats` with the O5 sweep entry in the same PR (closing the
+  gap #442 fixed for cert-manager immediately, not as a follow-up this time). New
+  `tests/keda.bats`: Application shape, chart source + version pin, `crds.install:
+  true`, namespace PSA labels, NetworkPolicy overlay structure, scrape job target,
+  dashboard file + required panels, and an additive-only proof (no `ScaledObject`/
+  `ScaledJob` references any workload yet). Added a `keda: restricted` row to
+  ADR-0017's per-namespace profile table in the same PR (zero carve-out, nothing to
+  amend later — same reasoning as the cert-manager row). **Two explicit follow-up
+  items, not bundled here** (ADR-0029 §"Scope & exceptions"): wiring the admission
+  webhook's TLS to cert-manager's `k8s-lab-ca` ClusterIssuer (the chart supports this
+  natively via `certificates.certManager`), and a real `ScaledObject` demo scaling a
+  workload on the `data` namespace's RabbitMQ queue depth. `make ci` must pass.
+  `docs/done/` entry required. (auto/keda-engine)
+
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
   maintainer confirms at least one CI run pushed a `.sig` tag to Artifactory** — check

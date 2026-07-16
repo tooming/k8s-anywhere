@@ -1,0 +1,184 @@
+# ADR-0029 — KEDA for event-driven autoscaling
+
+**Status.** Adopted. Architect decision, self-authorizing per
+[WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2 (no binding ADR contradicted — this
+is new ground, not a supersession). Always-on component. New CHARTER Goal ("event-driven
+autoscaling") — no existing Objective covers it; ROADMAP items below carry the buildable
+scope.
+
+---
+
+## Context
+
+Every workload in the lab today scales exactly one way: not at all, or by hand. There is
+no Horizontal Pod Autoscaler, no queue-depth-driven scaling, nothing that demonstrates
+the "scale on a real signal, not a timer" pattern a production-shaped platform is
+expected to teach — even though the lab already runs the two ingredients that make that
+pattern *real* rather than synthetic: RabbitMQ (ADR-0009, a message broker with an actual
+queue an autoscaler can watch) and Prometheus-compatible metrics via Mimir (any
+Mimir-backed metric is a valid KEDA scaler trigger). This is a genuine gap against the
+CHARTER Vision ("the most complete production-shaped cloud-native platform") and sits
+naturally alongside the existing "progressive delivery" Goal (Argo Rollouts, ADR-0020,
+already teaches *how* a new version rolls out under real SLOs) — autoscaling teaches the
+adjacent, equally fundamental question of *how many* replicas run at all.
+
+**Why not the stock HorizontalPodAutoscaler:** the stock HPA only scales on CPU/memory
+(or hand-wired custom-metrics-API adapters) — it cannot watch a RabbitMQ queue depth or
+an arbitrary Mimir/PromQL expression out of the box. **KEDA** (Kubernetes Event-Driven
+Autoscaling, CNCF graduated 2023-09) is the de-facto standard that closes that gap: it
+ships 60+ built-in scalers (RabbitMQ, Prometheus, Kafka, cron, and more) and drives the
+*same* underlying HPA object, so it augments rather than replaces core Kubernetes
+autoscaling — no rejected-technology conflict with anything already adopted.
+
+---
+
+## Decision
+
+Adopt **KEDA** as the lab's always-on event-driven autoscaling controller, using the
+**official Helm chart**.
+
+### Chart + version
+
+- **Chart:** `keda` v2.18.0 (chart version tracks app version 1:1, same convention as
+  cert-manager — confirmed via the upstream `kedacore/charts` repo's `release/v2.18`
+  branch, `Chart.yaml`: `version: 2.18.0`, `appVersion: 2.18.0`).
+- **Source:** `https://kedacore.github.io/charts` (the project's published Helm repo;
+  index is proxy-blocked in an executor's sandbox — same class of limitation as
+  `charts.jetstack.io`/`kyverno.github.io` — but the chart's own git repo, published via
+  per-release branches rather than tags for recent versions, is reachable via
+  `git clone --branch release/v2.18 --sparse`, the same workaround this ROADMAP already
+  documents for other proxy-blocked chart indexes).
+- **Namespace:** `keda`.
+- **CRDs via the chart itself** (`crds.install: true` — the chart's own default,
+  confirmed in `values.yaml`), keeping day-2 CRD management inside the GitOps loop per
+  [ADR-0001](adr-0001-gitops-over-terraform-helm.md).
+
+### PSA profile — `restricted`, no carve-out needed
+
+Verified directly against the pinned chart's `values.yaml`: all three components
+(operator, metrics server, admission webhooks) default to pod-level
+`runAsNonRoot: true` and container-level `capabilities.drop: [ALL]` +
+`allowPrivilegeEscalation: false` + `readOnlyRootFilesystem: true` +
+`seccompProfile.type: RuntimeDefault` — the full `restricted` PSS profile, no chart
+override needed. Second always-on component after cert-manager (ADR-0028) to land at
+`restricted` with zero carve-out.
+
+### Footprint controls (12 GB budget)
+
+Chart default per component: `limits: {cpu: 1, memory: 1000Mi}`,
+`requests: {cpu: 100m, memory: 100Mi}` — the limits are a generous ceiling unsuited to
+this lab's per-component budget norm (matches neither cert-manager's nor Kyverno's
+trimmed-limits convention). Override to:
+
+```yaml
+resources:
+  operator:      { limits: { memory: 128Mi }, requests: { memory: 100Mi, cpu: 100m } }
+  metricServer:  { limits: { memory: 128Mi }, requests: { memory: 100Mi, cpu: 100m } }
+  webhooks:      { limits: { memory: 64Mi },  requests: { memory: 50Mi,  cpu: 50m  } }
+```
+
+Total cap: ~320 MiB combined limits — comparable to cert-manager's ~256 MiB, well within
+budget alongside the rest of the always-on stack.
+
+### Admission webhook port
+
+Chart default admission webhook port is **9443** (confirmed in `values.yaml`:
+`webhooks.port: ""` with the field comment "Default is 9443") — the NetworkPolicy allow
+rule for kube-apiserver ingress uses this port, following the same `ipBlock` pattern as
+every other webhook-bearing component in this lab.
+
+### Observability
+
+All three components expose real Prometheus metrics on `:8080/metrics` (confirmed via
+`prometheus.operator.port` / `prometheus.metricsServer.port` in `values.yaml`, both
+default `8080`; each runs in its own pod so there is no port conflict). Verified the
+actual metric names against the pinned tag's Go source
+(`pkg/metricscollector/prommetrics.go`, `DefaultPromMetricsNamespace = "keda"`) rather
+than guessing from the docs:
+
+- `keda_scaler_active` — whether a given scaler is currently active (1) or not (0).
+- `keda_scaled_object_paused` — whether a `ScaledObject` is paused.
+- `keda_scaler_metrics_value` — the current value each scaler reports, per trigger.
+- `keda_scaler_detail_errors_total` / `keda_scaled_object_errors_total` — error counters.
+- `keda_build_info` — version/build metadata gauge.
+
+Add an Alloy `prometheus.scrape "keda"` job. Dashboard `grafana/dashboards/lab-keda.json`:
+operator/metricServer/webhooks pod status (KSM), ArgoCD sync state, scaler active count
+(`keda_scaler_active`), ScaledObject error rate (`keda_scaled_object_errors_total`) — all
+real Mimir data (ADR-0004); panels show "No data" naturally until a `ScaledObject`
+actually exists (the follow-up item below).
+
+### NetworkPolicy + PSS
+
+- Default-deny overlay at `gitops/keda/networkpolicy/` (ADR-0016 fan-out): baseline +
+  ingress TCP 9443 from kube-apiserver (admission webhook callback) + ingress TCP 8080
+  from `observability` (metrics scrape — all three components expose on this port).
+- PSA labels `restricted` on the `Namespace` (see above — no carve-out needed).
+
+---
+
+## Scope & exceptions
+
+**In scope (this ADR, split across ROADMAP items per rule #9's ≤400-line guidance):**
+
+- The KEDA engine itself (auto-synced `Application`, namespace, NetworkPolicy overlay,
+  Alloy scrape, dashboard) using the chart's own `certificates.autoGenerated: true`
+  default for webhook TLS (self-signed, chart-managed) — fully additive, no existing
+  workload is touched, buildable and clusterless-verifiable in one item.
+
+**Out of scope (this ADR, explicit follow-ups):**
+
+- **Wiring the admission webhook's TLS to cert-manager** instead of the chart's
+  built-in self-signed cert generation. The chart supports this natively
+  (`certificates.certManager.enabled: true` with `issuer.generate: false` +
+  `issuer.name: k8s-lab-ca` + `issuer.kind: ClusterIssuer` — confirmed in
+  `values.yaml`'s `certificates.certManager` block), which would give cert-manager
+  (ADR-0028) a second real consumer beyond the Gateway's HTTPS listener. Deferred
+  because it depends on the `k8s-lab-ca` `ClusterIssuer` (cert-manager-root-ca, wave 5)
+  and is a genuinely separate concern from standing the engine up — same "engine now,
+  integration later" split this ROADMAP already used for cert-manager itself.
+- **A real `ScaledObject` demo** — e.g. scaling `data-demo` (or a dedicated demo
+  workload) on the `data` namespace's RabbitMQ queue depth via KEDA's `rabbitmq`
+  scaler. This is the actual pedagogical payoff (event-driven autoscaling *demonstrated*,
+  not just installed) but requires its own RabbitMQ-credential wiring
+  (`TriggerAuthentication` reading the existing `rabbitmq-creds` ExternalSecret) and
+  NetworkPolicy egress from `keda` to `data`'s RabbitMQ management API — a distinct,
+  separately-sized item.
+- **Scaling any *existing* always-on component.** This ADR does not retrofit
+  autoscaling onto Kyverno, Trivy Operator, or any other current workload — every
+  always-on component stays single-replica per ADR-0005's recreate-over-HA trade-off
+  until a specific case is made otherwise.
+
+---
+
+## Files this work will touch
+
+| Path | Role |
+|------|------|
+| `docs/decisions/adr-0029-keda-event-driven-autoscaling.md` | This ADR |
+| `gitops/platform/keda.yaml` | Auto-synced ArgoCD `Application` for the engine |
+| `gitops/platform/keda-extras.yaml` | Namespace pre-creation (PSA `restricted`, wave 0) |
+| `gitops/keda/namespace.yaml` | PSA `restricted` labels |
+| `gitops/keda/networkpolicy/` | Default-deny overlay |
+| `gitops/platform/keda-networkpolicy.yaml` | NetworkPolicy overlay Application (wave 4) |
+| `gitops/platform/observability-alloy.yaml` | New `keda` scrape job |
+| `grafana/dashboards/lab-keda.json` | Real-metric dashboard (Objective O5 pattern) |
+| `tests/keda.bats` | Clusterless tests: Application shape, chart pin, PSA labels, NetworkPolicy, scrape job, dashboard |
+| `docs/decisions/adr-0028-cert-manager-tls-lifecycle.md` / new manifests | cert-manager webhook TLS wiring (follow-up item) |
+| `gitops/keda/scaledobjects/` (new) | `ScaledObject` + `TriggerAuthentication` demo (follow-up item) |
+
+---
+
+## Relationship to existing ADRs
+
+| ADR | Relationship |
+|-----|-------------|
+| [ADR-0001](adr-0001-gitops-over-terraform-helm.md) | Engine lands as an ArgoCD `Application`; CRDs installed via the chart, not `kubectl apply`. |
+| [ADR-0003](adr-0003-decoupled-no-spof.md) / [ADR-0005](adr-0005-spof-recreate-over-ha.md) | Single-replica controller, modest memory caps — lab trade-off, not a production default. |
+| [ADR-0004](adr-0004-no-fabricated-content.md) | Dashboard sources real `keda_scaler_*`/`keda_scaled_object_*` counters only; scaler-activity panels show "No data" until a `ScaledObject` exists. |
+| [ADR-0009](adr-0009-rabbitmq-message-broker.md) | The follow-up `ScaledObject` demo scales on this RabbitMQ's real queue depth. |
+| [ADR-0016](adr-0016-default-deny-networkpolicy.md) | `keda` namespace gets its own default-deny overlay during fan-out. |
+| [ADR-0017](adr-0017-pod-security-standards-restricted.md) | Second always-on component (after cert-manager) to land at `restricted` with zero carve-out — add a `keda: restricted` row. |
+| [ADR-0020](adr-0020-argo-rollouts-progressive-delivery.md) | Sibling "how many replicas" concern alongside Rollouts' "which version" concern — both drive real-metric-gated behavior, neither on a timer. |
+| [ADR-0025](adr-0025-free-oss-tiers-only.md) | Apache 2.0, CNCF graduated, no paid tier required. |
+| [ADR-0028](adr-0028-cert-manager-tls-lifecycle.md) | The follow-up webhook-TLS item gives cert-manager's `k8s-lab-ca` issuer a second real consumer. |

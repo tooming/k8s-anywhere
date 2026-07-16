@@ -1,0 +1,63 @@
+# KEDA event-driven autoscaling controller (ADR-0029, new CHARTER Goal
+# "event-driven autoscaling"). Helm chart keda from
+# https://kedacore.github.io/charts — chart version tracks app version 1:1 for
+# this project (same convention as cert-manager, ADR-0028).
+# Single replica per component (ADR-0005 lab trade-off). Memory limits per
+# ADR-0029 §"Footprint controls": operator 128Mi, metricServer 128Mi,
+# webhooks 64Mi — ~320 MiB combined cap.
+# CRDs installed via the chart itself (crds.install: true, the chart's own
+# default), not a separate imperative kubectl apply step (ADR-0001).
+# ALWAYS-ON: automated sync; keda-extras (wave 0) pre-creates the namespace
+# with PSA restricted labels before the Helm release schedules pods.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keda
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://kedacore.github.io/charts
+    chart: keda
+    targetRevision: 2.18.0
+    helm:
+      releaseName: keda
+      valuesObject:
+        crds:
+          install: true
+        resources:
+          operator:
+            limits:
+              memory: 128Mi
+            requests:
+              memory: 100Mi
+              cpu: 100m
+          metricServer:
+            limits:
+              memory: 128Mi
+            requests:
+              memory: 100Mi
+              cpu: 100m
+          webhooks:
+            limits:
+              memory: 64Mi
+            requests:
+              memory: 50Mi
+              cpu: 50m
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: keda
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # KEDA's crd-scaledjobs.yaml is ~634 KB — over the 262144-byte kubectl
+      # client-side-apply annotation cap. Without server-side apply, repo-server
+      # can't apply it ("metadata.annotations: Too long"), matching the exact
+      # failure class ADR-0019 hit for Kyverno's CRDs and ADR-0028 hit for
+      # cert-manager's.
+      - ServerSideApply=true
