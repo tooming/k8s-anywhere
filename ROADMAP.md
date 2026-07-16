@@ -24,12 +24,15 @@ must follow lives here, in `docs/decisions/` (the ADRs), or in
 [docs/WAYS-OF-WORKING.md](docs/WAYS-OF-WORKING.md) (agent governance & review). The
 rules below are binding.
 
-1. **One item per PR — but a run keeps going.** Take the single topmost unchecked `[ ]`
-   item under *Backlog* (prefer the *Now / next* list). Keep the change to one
-   reviewable PR. That PR merging completes one *cycle*, not the whole *run* — per
-   `executor.prompt.md` STEP 8, loop back and do the next item, back-to-back, until the
-   backlog and every fallback role are genuinely exhausted or the run itself is cut off.
-   A run is no longer capped at one item; only each PR is.
+1. **One item per PR — but a run keeps going until it's cut off.** Take the single
+   topmost unchecked `[ ]` item under *Backlog* (prefer the *Now / next* list). Keep the
+   change to one reviewable PR. That PR merging completes one *cycle*, not the whole
+   *run* — per `executor.prompt.md` STEP 8, loop back and do the next item, back-to-back.
+   The only thing that ends a run is the run itself being cut off by its own resource
+   limits ("credit runs out") — not an empty lane, not a fallback role's deliverable, not
+   even a cycle whose honest outcome was the idle issue. A run is no longer capped at one
+   item; only each PR is, and there is no voluntary stopping point short of running out
+   of resources.
 2. **You are remote and clusterless.** There is **no** Kubernetes cluster, no
    Colima, no live GitLab reachable from where you run. Never run `make up`,
    `make dr-*`, `kubectl`, `argocd`, `vault`, or anything needing a cluster.
