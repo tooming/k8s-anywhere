@@ -137,24 +137,31 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 - **Always-on core** (built): k3d + ArgoCD + GitLab + Envoy Gateway + Vault + External
   Secrets + Garage + the full LGTMP observability stack + moto/ACK/KRO + a demo app
   (~28 ArgoCD Applications).
-- **Always-on next wave** (planned, ~500 MB total within budget): **Kyverno** (admission
+- **Always-on next wave** (built, ~500 MB total within budget): **Kyverno** (admission
   policy — validation, mutation, image verification); **Argo Rollouts** (SLO-driven
   canary delivery via Envoy traffic-splitting); **Velero** (cluster + PVC backup to
-  Garage); **Trivy Operator** (continuous vulnerability + SBOM scanning).
-- **Heavy / on-demand** (planned): a distributed database (TiDB), an artifact registry
-  (Harbor), a service mesh + UI (Istio ambient + Kiali), and distributed
-  storage (Longhorn) — each brought up *one at a time* within the 12 GB budget.
+  Garage); **Trivy Operator** (continuous vulnerability + SBOM scanning). All four are
+  auto-synced ArgoCD `Application`s with their own ADR, real-metric Grafana dashboard,
+  and bats coverage (Objective O1, met ahead of its 2026-12-31 date).
+- **Heavy / on-demand** (built, on-demand): a distributed database (TiDB), an artifact
+  registry (Harbor), a service mesh + UI (Istio ambient + Kiali), and distributed
+  storage (Longhorn) — each is a manual-sync ArgoCD `Application` with a `make
+  <name>-up` / `<name>-down` target, brought up *one at a time* within the 12 GB
+  budget. None run always-on; each is code-complete but not continuously deployed.
 - **Capstone — the full inner loop**: GitLab CI builds *and signs* an image (cosign) →
   Kyverno verifies the signature on admit → ArgoCD deploys it → Argo Rollouts canaries it
   on real Mimir SLOs → Envoy routes it → Grafana shows its metrics & logs → Vault holds
   its secrets → Velero backs up its state.
-- **Cloud backend** (built, unverified against a real account): a second Terragrunt
-  backend module (`infra/live/oracle/`) targeting Oracle Cloud's Always Free tier
-  running self-managed k3s — `gitops/` requires no fork to run there. Localhost stays
-  the default. Every file was written and locally validated as far as this
-  environment's tooling allowed; no OCI account exists in this environment, so it has
-  never actually run end-to-end — see [`infra/live/README.md`](infra/live/README.md)'s
-  Status table. (ADR-0026, ADR-0027)
+- **Cloud backend** (built, partially verified against a real account): a second
+  Terragrunt backend module (`infra/live/oracle/`) targeting Oracle Cloud's Always Free
+  tier running self-managed k3s — `gitops/` requires no fork to run there. Localhost
+  stays the default. The tfstate bootstrap, `terragrunt init` against the real S3 API,
+  and the `cluster/` unit's VCN/subnet/security-list/internet-gateway layer all apply
+  cleanly against a real OCI tenancy (2026-07-15); the k3s compute instance launch
+  itself is still blocked by a transient Oracle Always Free capacity constraint
+  (`500 Out of host capacity` across all ADs), not a bug in this repo — see
+  [`infra/live/README.md`](infra/live/README.md)'s Status table for what's confirmed
+  end-to-end versus still pending. (ADR-0026, ADR-0027)
 
 ## How this drives the ROADMAP
 
