@@ -89,6 +89,32 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- ci-parity-check -----------------------------------------------------------
+@test "ci-parity-check: passes when make ci and ci.yml run the same scripts" {
+  run env CIPARITY_ROOT="$FIX/ci-parity-check/in-sync" bash "$REPO/scripts/ci-parity-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "ci-parity-check: fails when a script is only wired into make ci" {
+  run env CIPARITY_ROOT="$FIX/ci-parity-check/drift" bash "$REPO/scripts/ci-parity-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bar-check.sh"* ]]
+  [[ "$output" == *"never run in GitHub Actions"* ]]
+}
+
+@test "ci-parity-check: only scans the ci: target's recipe, not unrelated targets" {
+  # The in-sync fixture's Makefile has an 'other:' target invoking
+  # scripts/unrelated.sh — must never appear in either side's script set.
+  run env CIPARITY_ROOT="$FIX/ci-parity-check/in-sync" bash "$REPO/scripts/ci-parity-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"unrelated.sh"* ]]
+}
+
+@test "ci-parity-check: passes on the real repo's Makefile and ci.yml" {
+  run bash "$REPO/scripts/ci-parity-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 # --- securitycontext-tests-check ---------------------------------------------
 @test "securitycontext-tests-check: passes when the monolith matches its snapshot" {
   run env SECCTX_TESTS_ROOT="$FIX/securitycontext-tests-check/in-sync" bash "$REPO/scripts/securitycontext-tests-check.sh"

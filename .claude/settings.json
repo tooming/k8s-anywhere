@@ -60,6 +60,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/ci-parity-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking make ci / GitHub Actions parity"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/securitycontext-tests-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking securitycontext.bats freeze"

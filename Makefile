@@ -47,6 +47,10 @@ roadmap-check: ## Check ROADMAP.md has no inline planner notes (per-run narrativ
 markdown-links-check: ## Check every relative [text](path) link in tracked *.md files resolves
 	@bash scripts/markdown-links-check.sh
 
+.PHONY: ci-parity-check
+ci-parity-check: ## Check make ci and .github/workflows/ci.yml run the identical set of gate scripts
+	@bash scripts/ci-parity-check.sh
+
 .PHONY: securitycontext-tests-check
 securitycontext-tests-check: ## Check tests/securitycontext.bats stays frozen (new PSS tests go in securitycontext-<scope>.bats)
 	@bash scripts/securitycontext-tests-check.sh
@@ -151,6 +155,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/argocd-crd-ssa-check.sh
 	@bash scripts/rollouts-plugin-list-check.sh
 	@bash scripts/mimir-readonly-root-check.sh
+	@bash scripts/ci-parity-check.sh
 
 .PHONY: install-hooks
 install-hooks: ## Wire up .githooks/ as the local git hooks directory (run once per clone)

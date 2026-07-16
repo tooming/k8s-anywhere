@@ -218,6 +218,28 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [ "$status" -eq 0 ]
 }
 
+# --- ci-parity-sync-hook.sh -------------------------------------------------------
+
+@test "ci-parity-sync-hook: empty payload exits 0" {
+  run bash "$REPO/scripts/ci-parity-sync-hook.sh" <<<"{}"
+  [ "$status" -eq 0 ]
+}
+
+@test "ci-parity-sync-hook: unrelated file exits 0 (filtered out)" {
+  run bash "$REPO/scripts/ci-parity-sync-hook.sh" <<<"$(mk_payload "$REPO/CHARTER.md")"
+  [ "$status" -eq 0 ]
+}
+
+@test "ci-parity-sync-hook: Makefile (currently in parity) exits 0" {
+  run bash "$REPO/scripts/ci-parity-sync-hook.sh" <<<"$(mk_payload "$REPO/Makefile")"
+  [ "$status" -eq 0 ]
+}
+
+@test "ci-parity-sync-hook: ci.yml (currently in parity) exits 0" {
+  run bash "$REPO/scripts/ci-parity-sync-hook.sh" <<<"$(mk_payload "$REPO/.github/workflows/ci.yml")"
+  [ "$status" -eq 0 ]
+}
+
 # --- rollouts-plugin-list-sync-hook.sh -------------------------------------------
 
 @test "rollouts-plugin-list-sync-hook: empty payload exits 0" {
