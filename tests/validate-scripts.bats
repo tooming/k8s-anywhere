@@ -37,7 +37,11 @@ setup() {
 }
 
 @test "validate-kustomize.sh skips (exit 0) locally when kustomize is not installed" {
-  run env PATH="$STRIPPED_PATH" bash "$VALKUSTOMIZE"
+  # -u CI: CI runners (including the one running this suite) set CI=true in
+  # the ambient environment, which `env FOO=bar` alone does not clear — without
+  # -u CI this test would inherit CI=true and silently exercise the wrong
+  # (CI-required) branch instead of the local-skip one it claims to cover.
+  run env -u CI PATH="$STRIPPED_PATH" bash "$VALKUSTOMIZE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"skipping"* ]]
 }
@@ -68,7 +72,7 @@ setup() {
 }
 
 @test "validate-manifests.sh skips (exit 0) locally when kubeconform is not installed" {
-  run env PATH="$STRIPPED_PATH" bash "$VALMANIFESTS"
+  run env -u CI PATH="$STRIPPED_PATH" bash "$VALMANIFESTS"
   [ "$status" -eq 0 ]
   [[ "$output" == *"skipping"* ]]
 }
@@ -106,7 +110,7 @@ setup() {
 }
 
 @test "validate-terraform.sh skips (exit 0) locally when terraform is not installed" {
-  run env PATH="$STRIPPED_PATH" bash "$VALTERRAFORM"
+  run env -u CI PATH="$STRIPPED_PATH" bash "$VALTERRAFORM"
   [ "$status" -eq 0 ]
   [[ "$output" == *"skipping"* ]]
 }
