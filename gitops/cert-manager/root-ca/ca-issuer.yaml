@@ -1,0 +1,13 @@
+# Step 3 of the root-CA bootstrap chain (ADR-0028). A ca-type ClusterIssuer
+# backed by the root CA Secret root-ca-certificate.yaml produced. This is the
+# issuer every real leaf Certificate (the follow-up Gateway HTTPS listener
+# item's wildcard *.127.0.0.1.nip.io Certificate, and any future per-route
+# Certificate) references via issuerRef — never the selfsigned-bootstrap
+# issuer directly.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: k8s-lab-ca
+spec:
+  ca:
+    secretName: k8s-lab-root-ca-secret

@@ -1,0 +1,14 @@
+# Step 1 of the root-CA bootstrap chain (ADR-0028 §"Certificate strategy").
+# A selfSigned ClusterIssuer issues exactly one Certificate: the root CA itself
+# (see root-ca-certificate.yaml). It is never referenced by any real HTTPRoute's
+# TLS Certificate — only the ca-type ClusterIssuer built from its output
+# (ca-issuer.yaml) is. This two-step pattern is cert-manager's own documented
+# way to bootstrap an in-cluster CA without any external dependency, which is
+# what makes it work identically on localhost and the Oracle cloud backend
+# (neither is internet-reachable in a way real ACME could use).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-bootstrap
+spec:
+  selfSigned: {}

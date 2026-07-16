@@ -309,6 +309,20 @@ spec:
                 scrape_interval = "30s"
               }
 
+              // ---- cert-manager (TLS certificate lifecycle) metrics -> Mimir ----
+              // Scrapes the controller Service on :9402/metrics (chart default for
+              // all three components — controller, webhook, cainjector — but the
+              // controller is the one that emits certmanager_certificate_* series,
+              // which is what the "Lab — cert-manager" dashboard reads; ADR-0004,
+              // ADR-0028).
+              prometheus.scrape "cert_manager" {
+                targets = [
+                  {"__address__" = "cert-manager.cert-manager.svc.cluster.local:9402", "job" = "cert-manager"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
               // ---- Inkless (diskless Kafka) exporter metrics -> Mimir ----
               // kafka-exporter co-located container in the Inkless StatefulSet exposes Prometheus
               // metrics on :9308; this target is idle unless inkless is manually synced.

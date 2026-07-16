@@ -1,0 +1,54 @@
+# cert-manager TLS certificate lifecycle manager (ADR-0028, new CHARTER Goal
+# "automated TLS certificate lifecycle"). Helm chart cert-manager from
+# https://charts.jetstack.io — chart version tracks app version 1:1 for this
+# project (unlike most charts in this repo).
+# Single replica per component (ADR-0005 lab trade-off; production uses 2-3 for
+# the webhook/controller). Memory limits per ADR-0028 §"Footprint controls":
+# controller 128Mi, webhook 64Mi, cainjector 64Mi — ~256 MiB combined cap.
+# CRDs installed via the chart itself (crds.enabled: true), not a separate
+# imperative kubectl apply step (ADR-0001).
+# ALWAYS-ON: automated sync; cert-manager-extras (wave 0) pre-creates the
+# namespace with PSA restricted labels before the Helm release schedules pods.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: 1.20.3
+    helm:
+      releaseName: cert-manager
+      valuesObject:
+        crds:
+          enabled: true
+        resources:
+          limits:
+            memory: 128Mi
+        webhook:
+          resources:
+            limits:
+              memory: 64Mi
+        cainjector:
+          resources:
+            limits:
+              memory: 64Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # cert-manager's clusterissuers/issuers CRDs are ~325 KB each (challenges
+      # ~271 KB) — over the 262144-byte kubectl client-side-apply annotation cap.
+      # Without server-side apply, repo-server can't apply them ("metadata.annotations:
+      # Too long"), matching the exact failure class ADR-0019 hit for Kyverno's CRDs.
+      - ServerSideApply=true

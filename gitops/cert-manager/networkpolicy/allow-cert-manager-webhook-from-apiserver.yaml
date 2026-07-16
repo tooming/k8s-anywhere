@@ -1,0 +1,25 @@
+# Allow the kube-apiserver to reach the cert-manager webhook on TCP 10250
+# (ADR-0016). cert-manager registers MutatingWebhookConfiguration and
+# ValidatingWebhookConfiguration resources for its own CRDs (Certificate,
+# Issuer, ...); the API server calls back on TCP 10250 (the chart's
+# webhook.securePort default) for every admission request against them.
+# Without this allow, the default-deny-all floor blocks webhook callbacks and
+# every Certificate/Issuer/ClusterIssuer create/update fails.
+# The kube-apiserver IP (10.43.0.1/32) is the k3s cluster service IP — same
+# ipBlock pattern used by allow-dns-and-apiserver.yaml (ADR-0016 shared baseline).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-cert-manager-webhook-from-apiserver
+  namespace: cert-manager
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 10250
+          protocol: TCP
+      from:
+        - ipBlock:
+            cidr: 10.43.0.1/32

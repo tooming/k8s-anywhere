@@ -93,7 +93,9 @@ Gateway API; the **observability pipeline** (metrics, logs, traces, profiles);
 mutation, image verification); **progressive delivery** (canary releases gated by real
 SLO metrics, not timers); **stateful backup & restore** (Velero against Garage —
 restore is exercised, not assumed); **supply-chain security** end-to-end (cosign
-signing in CI, Kyverno verifyImages on admit, continuous Trivy scanning + SBOMs); and
+signing in CI, Kyverno verifyImages on admit, continuous Trivy scanning + SBOMs);
+**automated TLS certificate lifecycle** (cert-manager issuing and rotating certs from
+a self-signed root CA at the Gateway edge — not a one-off hand-issued Secret); and
 **cloud-agnostic infrastructure design** — why the GitOps layer never encodes a
 backend, so the same platform runs free on a laptop or on a cloud Kubernetes service
 without a fork. The sequenced path lives in [docs/00-architecture.md](docs/00-architecture.md).
@@ -162,6 +164,11 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   (`500 Out of host capacity` across all ADs), not a bug in this repo — see
   [`infra/live/README.md`](infra/live/README.md)'s Status table for what's confirmed
   end-to-end versus still pending. (ADR-0026, ADR-0027)
+- **TLS certificate lifecycle** (planned): every north-south route today is plain
+  HTTP — no ADR had evaluated TLS automation before ADR-0028. cert-manager, self-signed
+  root CA (works identically on localhost and the Oracle backend, unlike public ACME),
+  new HTTPS listener on the existing shared Gateway alongside the current HTTP one
+  (additive, never a breaking cutover). (ADR-0028)
 
 ## How this drives the ROADMAP
 

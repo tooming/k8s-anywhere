@@ -1,0 +1,30 @@
+# cert-manager-root-ca — the self-signed root CA bootstrap chain (ADR-0028
+# §"Certificate strategy"): a selfSigned ClusterIssuer, the root CA Certificate
+# it issues, and a ca-type ClusterIssuer built from that root — the issuer
+# every real leaf Certificate in the lab will reference.
+# Sync-wave 5 (after cert-manager itself at wave 1 has installed its CRDs and
+# the controller is running to actually reconcile these resources — mirrors
+# how kyverno-policies (wave 5) waits for the kyverno engine, wave 1).
+# ALWAYS-ON: automated sync. Purely additive — issuing this chain does not
+# touch the existing HTTP-only traffic path; no HTTPRoute references it yet
+# (that's the separate, follow-up Gateway HTTPS listener item).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-root-ca
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/cert-manager/root-ca
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

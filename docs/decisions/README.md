@@ -35,3 +35,4 @@ rationale travels with the code.
   - [ADR-0025](adr-0025-free-oss-tiers-only.md) — Every dependency runs on a free/OSS tier (verify the needed feature is in it, not just the edition)
   - [ADR-0026](adr-0026-cloud-agnostic-infrastructure.md) — Cloud-agnostic infrastructure target: pluggable Terraform backends, localhost stays the free default
   - [ADR-0027](adr-0027-first-cloud-backend-oracle-always-free-k3s.md) — First cloud backend: Oracle Cloud Always Free (Ampere A1) + self-managed k3s
+  - [ADR-0028](adr-0028-cert-manager-tls-lifecycle.md) — cert-manager for automated TLS certificate lifecycle (self-signed root CA, not public ACME)

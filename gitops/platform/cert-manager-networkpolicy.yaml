@@ -1,0 +1,34 @@
+# cert-manager-networkpolicy — default-deny + allowlist NetworkPolicies for the
+# cert-manager namespace (ADR-0016 §4 fan-out; TLS certificate lifecycle manager).
+# Applies the shared baseline templates (default-deny-all, allow-dns-and-apiserver)
+# plus per-workload allow rules: kube-apiserver webhook callback on TCP 10250 and
+# Alloy metrics scrape from observability on TCP 9402.
+# ALWAYS-ON: automated sync alongside the cert-manager Application (same namespace).
+# The kustomization references templates from ../../network/policies/ — the
+# kustomize.buildOptions flag lifts the out-of-tree load restriction for this overlay.
+# Wave 4: after cert-manager (wave 1) and cert-manager-extras (wave 0) have created
+# the namespace.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-networkpolicy
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/cert-manager/networkpolicy
+    kustomize:
+      buildOptions: "--load-restrictor LoadRestrictionsNone"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

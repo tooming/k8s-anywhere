@@ -1,0 +1,25 @@
+# Step 2 of the root-CA bootstrap chain (ADR-0028). Requests the selfSigned
+# bootstrap issuer to produce a CA certificate (isCA: true) and stores it in
+# the k8s-lab-root-ca Secret. The ca-type ClusterIssuer (ca-issuer.yaml)
+# references that Secret and is what every real HTTPRoute Certificate uses.
+# 10-year duration: this is a lab root CA a learner may import into their
+# browser/OS trust store once, not something meant to rotate on a schedule —
+# unlike the leaf certificates it signs, which do renew automatically.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: k8s-lab-root-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: k8s-lab-root-ca
+  secretName: k8s-lab-root-ca-secret
+  duration: 87600h # 10 years
+  renewBefore: 720h # 30 days
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-bootstrap
+    kind: ClusterIssuer
+    group: cert-manager.io
