@@ -76,9 +76,13 @@ setup() {
 # The full standard-tier list from the RFC #294 mapping table. `harbor` is
 # included (RFC #297 / ADR-0024): its namespace landed in auto/harbor-application
 # and the governance overlay was added in auto/harbor-governance-limitrange.
+# `cert-manager` (ADR-0028) and `keda` (ADR-0029) were added in
+# auto/governance-cert-manager-keda — both landed after RFC #294's original
+# fan-out and were missing a governance leaf until this item.
 # `artifactory` is intentionally absent: ADR-0024 supersedes ADR-0011.
 STANDARD_NS="argocd capstone kyverno external-secrets velero argo-rollouts \
-trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway kiali harbor"
+trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway kiali harbor \
+cert-manager keda"
 
 @test "every standard-tier namespace has a governance leaf overlay" {
   for ns in $STANDARD_NS; do
@@ -161,5 +165,39 @@ trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway k
   run grep -q 'destNamespace: harbor' "$APPSET"
   [ "$status" -eq 0 ]
   run grep -q 'appName: harbor-governance' "$APPSET"
+  [ "$status" -eq 0 ]
+}
+
+# --- cert-manager governance (ADR-0028 / RFC #294 follow-up) ------------------
+@test "cert-manager governance kustomization.yaml exists" {
+  [ -f "$GOV/cert-manager/kustomization.yaml" ]
+}
+
+@test "cert-manager governance kustomization references the shared base limitrange" {
+  run grep -q 'base/limitrange-standard.yaml' "$GOV/cert-manager/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "governance-appset has cert-manager-governance entry" {
+  run grep -q 'destNamespace: cert-manager' "$APPSET"
+  [ "$status" -eq 0 ]
+  run grep -q 'appName: cert-manager-governance' "$APPSET"
+  [ "$status" -eq 0 ]
+}
+
+# --- keda governance (ADR-0029 / RFC #294 follow-up) --------------------------
+@test "keda governance kustomization.yaml exists" {
+  [ -f "$GOV/keda/kustomization.yaml" ]
+}
+
+@test "keda governance kustomization references the shared base limitrange" {
+  run grep -q 'base/limitrange-standard.yaml' "$GOV/keda/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "governance-appset has keda-governance entry" {
+  run grep -q 'destNamespace: keda' "$APPSET"
+  [ "$status" -eq 0 ]
+  run grep -q 'appName: keda-governance' "$APPSET"
   [ "$status" -eq 0 ]
 }
