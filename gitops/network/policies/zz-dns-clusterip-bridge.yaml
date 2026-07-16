@@ -22,6 +22,11 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: zz-dns-clusterip-bridge
+  annotations:
+    # Same reasoning as allow-dns-and-apiserver.yaml's sync-wave: must land before
+    # default-deny.yaml (wave 0), not after, or Service ClusterIP egress (including
+    # DNS's own Service frontend) breaks in the window before this policy exists.
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   endpointSelector: {}
   egress:

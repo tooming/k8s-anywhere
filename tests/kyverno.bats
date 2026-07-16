@@ -86,12 +86,16 @@ setup() {
 
 # --- Webhook allow rule (apiserver -> admission webhook :9443) ----------------
 @test "webhook allow file opens TCP 9443" {
-  run grep -q 'port: 9443' "$REPO/gitops/kyverno/networkpolicy/allow-kyverno-webhook-from-apiserver.yaml"
+  run grep -q 'port: "9443"' "$REPO/gitops/kyverno/networkpolicy/allow-kyverno-webhook-from-apiserver.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "webhook allow file scopes ingress to the apiserver ipBlock" {
-  run grep -q 'ipBlock:' "$REPO/gitops/kyverno/networkpolicy/allow-kyverno-webhook-from-apiserver.yaml"
+# fromEntities remote-node, not ipBlock: k3s embeds the apiserver in the server
+# node's own process, so its outbound webhook call carries Cilium's remote-node
+# identity + the node's real pod-network IP as source, never the apiserver's
+# Service ClusterIP (verified live with `cilium monitor --type drop`).
+@test "webhook allow file scopes ingress to the apiserver via fromEntities remote-node" {
+  run grep -q 'remote-node' "$REPO/gitops/kyverno/networkpolicy/allow-kyverno-webhook-from-apiserver.yaml"
   [ "$status" -eq 0 ]
 }
 
