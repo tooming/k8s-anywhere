@@ -101,7 +101,7 @@ setup() {
 }
 
 @test "cert-manager allow-webhook-from-apiserver rule permits TCP 10250" {
-  run grep -q 'port: 10250' "$REPO/gitops/cert-manager/networkpolicy/allow-cert-manager-webhook-from-apiserver.yaml"
+  run grep -q 'port: "10250"' "$REPO/gitops/cert-manager/networkpolicy/allow-cert-manager-webhook-from-apiserver.yaml"
   [ "$status" -eq 0 ]
 }
 

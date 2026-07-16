@@ -115,3 +115,19 @@ setup() {
   run grep -q '8443' "$REPO/scripts/frontdoor-ensure.sh"
   [ "$status" -eq 0 ]
 }
+
+# --- local cluster's direct https_port must never collide with the frontdoor's
+# canonical :8443 passthrough — both are host-port `docker run` bindings on the
+# same machine, so a `make up` with them equal fails with "port is already
+# allocated" the moment frontdoor-ensure.sh runs (found the hard way: #440's
+# https_port=8443 "matched" the frontdoor default instead of avoiding it). -----
+
+@test "local cluster's https_port terragrunt override is not the frontdoor's default HTTPS_PORT" {
+  run grep -E 'https_port[[:space:]]*=[[:space:]]*8443' "$REPO/infra/live/local/cluster/terragrunt.hcl"
+  [ "$status" -ne 0 ]
+}
+
+@test "k3d-cluster module's https_port default is not the frontdoor's default HTTPS_PORT" {
+  run bash -c "awk '/variable \"https_port\"/,/^}/' '$REPO/infra/modules/k3d-cluster/variables.tf' | grep -E 'default[[:space:]]*=[[:space:]]*8443'"
+  [ "$status" -ne 0 ]
+}
