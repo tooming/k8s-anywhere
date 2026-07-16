@@ -131,6 +131,19 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "lab-health-check.sh default UI_PROBES uses the stable front door :8000, not a per-cluster Envoy port" {
+  # :8080/:8082 are blue/green's own direct ports — they disappear when that
+  # cluster is torn down after a blue/green cutover (docs/DR.md), so a
+  # hardcoded per-cluster port here would make `make health` silently probe a
+  # since-removed backend post-cutover. Only the stable :8000 front door
+  # (scripts/bluegreen-frontdoor.sh) survives a cutover.
+  run grep -oE 'UI_PROBES="\$\{LAB_UI_PROBES:-[^}]+\}"' "$HEALTHCHECK"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *":8080"* ]]
+  [[ "$output" != *":8082"* ]]
+  [[ "$output" == *":8000"* ]]
+}
+
 @test "lab-health-check.sh exits 2 when the cluster is unreachable, distinct from 1 (unhealthy)" {
   run grep -q "cluster unreachable" "$HEALTHCHECK"
   [ "$status" -eq 0 ]
@@ -206,4 +219,25 @@ setup() {
     run grep -q "\.PHONY: $t\$" "$MAKEFILE"
     [ "$status" -eq 0 ]
   done
+}
+
+# --- creds/argocd-ui print the stable front door, not a per-cluster Envoy port ----
+# `make up`'s own completion banner already advertises :8000 as the canonical entry
+# point (docs/DR.md, scripts/bluegreen-frontdoor.sh); `creds`/`argocd-ui` printing
+# :8080 instead was a real inconsistency a fresh-bootstrap user would hit immediately,
+# and a real breakage post-blue/green-cutover once :8080 stops existing.
+@test "Makefile creds target prints the front door :8000 for ArgoCD/Grafana/Vault/RabbitMQ, not :8080" {
+  run grep -A6 '^creds:' "$MAKEFILE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"argocd.127.0.0.1.nip.io:8000"* ]]
+  [[ "$output" == *"http://localhost:8000\""* ]]
+  [[ "$output" == *"vault.127.0.0.1.nip.io:8000"* ]]
+  [[ "$output" == *"rabbitmq.127.0.0.1.nip.io:8000"* ]]
+  [[ "$output" != *":8080"* ]]
+}
+
+@test "Makefile argocd-ui target's comment offers the front door :8000, not :8080" {
+  run grep '^argocd-ui:' "$MAKEFILE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"argocd.127.0.0.1.nip.io:8000"* ]]
 }

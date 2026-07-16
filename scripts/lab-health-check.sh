@@ -32,9 +32,13 @@ ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo artifactory istio-syst
 # entry, which stays until its manifests are decommissioned, is left untouched.
 ONDEMAND_NS="$ONDEMAND_NS harbor"
 # Front-door UIs to probe (HTTP, from the host) — readiness of the pods behind Envoy
-# isn't enough: if the Envoy data plane is down, every :8080 UI is unreachable while the
-# pods still look fine. "url|name", space-separated. Set LAB_UI_PROBES= to skip.
-UI_PROBES="${LAB_UI_PROBES:-http://localhost:8080/api/health|grafana(:8080) http://argocd.127.0.0.1.nip.io:8080/healthz|argocd(:8080)}"
+# isn't enough: if the Envoy data plane is down, every :8000 UI is unreachable while the
+# pods still look fine. Probes the stable front door (:8000), not a per-cluster Envoy
+# port (:8080 blue / :8082 green) — those go away entirely once the cluster they belong
+# to is torn down after a blue/green cutover (docs/DR.md), so hardcoding one here would
+# make `make health` silently probe the wrong (or a since-removed) backend post-cutover.
+# "url|name", space-separated. Set LAB_UI_PROBES= to skip.
+UI_PROBES="${LAB_UI_PROBES:-http://localhost:8000/api/health|grafana(:8000) http://argocd.127.0.0.1.nip.io:8000/healthz|argocd(:8000)}"
 
 if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; Y=; B=; Z=; fi
 ok()   { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
@@ -84,7 +88,7 @@ scan() {
     A_WL+="$kind $ns/$name  ready=$r"$'\n'
   done <<<"$wl"
 
-  # --- front door: the Envoy :8080 UIs must actually answer over HTTP -----------
+  # --- front door: the :8000 UIs must actually answer over HTTP -----------------
   F=""
   local p url name code
   for p in $UI_PROBES; do
