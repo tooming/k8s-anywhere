@@ -1076,7 +1076,7 @@ You review and merge plan PRs, same as implementation PRs.
   No code changes, no bats changes (the bats file already exists). `make ci` must pass.
   `docs/done/` entry required. (auto/adr-0019-runasnonroot-row)
 
-- [ ] 🟢 **cert-manager engine + self-signed root CA bootstrap** (CHARTER new Goal
+- [x] 🟢 **cert-manager engine + self-signed root CA bootstrap** (CHARTER new Goal
   "automated TLS certificate lifecycle" — ADR-0028 for the binding chart values, PSA
   profile, and root-CA issuer chain. **No prerequisites — executor may pick up
   immediately; purely additive, does not touch the existing HTTP-only traffic path.**)
@@ -1123,6 +1123,40 @@ You review and merge plan PRs, same as implementation PRs.
   wildcard Certificate + frontdoor `:8443` port mapping is a separate follow-up item
   (ADR-0028 §"Scope & exceptions" — deliberately not bundled here).
   (auto/cert-manager-engine)
+
+- [x] 🟢 **Gateway HTTPS listener + wildcard Certificate + frontdoor `:8443` port
+  mapping** (follow-up to the cert-manager engine item above, scoped in ADR-0028
+  §"Scope & exceptions" — depends on `k8s-lab-ca` ClusterIssuer, sync-wave 5,
+  already shipped). Added an `https`/443 listener to the shared `Gateway`
+  (`gitops/network/gateway.yaml`) alongside (never replacing) the existing `http`/80
+  one — HTTPRoutes with no `sectionName` (all of them today) attach to both, so every
+  existing HTTP URL keeps working unchanged and HTTPS becomes available, not
+  mandatory. New wildcard `Certificate` for `*.127.0.0.1.nip.io` +
+  `127.0.0.1.nip.io` at `gitops/network/certificates/wildcard-certificate.yaml`,
+  issued by `k8s-lab-ca`, in the `lab-gateway` namespace (same namespace as the
+  Gateway, so its Secret needs no `ReferenceGrant`). New auto-synced `Application`
+  `gitops/platform/lab-gateway-certificate.yaml` at sync-wave 6 (one after
+  `cert-manager-root-ca`, wave 5, whose `ClusterIssuer` this Certificate
+  references) — until that Secret exists the HTTPS listener simply stays
+  not-Programmed and self-heals once it lands, same eventual-consistency pattern
+  the root-CA chain itself already relies on. Extended
+  `scripts/bluegreen-frontdoor.sh`'s `gen_conf`/`apply_conf` with an nginx `stream {}`
+  TCP-passthrough block: host `:8443` (new `FRONTDOOR_HTTPS_PORT`, default `8443` —
+  matches the k3d `https_port` Terraform variable's existing host-port convention) →
+  the active cluster's serverlb container port `443` directly (TLS terminates inside
+  Envoy at the Gateway, not at the frontdoor — passthrough, not a second
+  termination), so the DR front door's HTTPS entry point survives a blue/green
+  cutover exactly like its existing `:8000` HTTP one. `up` now also publishes
+  `-p $HTTPS_PORT:$HTTPS_PORT` and recreates a leftover container that predates
+  this change (detected via `docker port … 8443/tcp`) so the new mapping actually
+  takes effect. New `tests/frontdoor-https.bats` covering the generated nginx conf's
+  `stream`/`listen 8443`/`proxy_pass $1:443` shape and the port-republish/recreate
+  logic; extended `tests/cert-manager.bats` with the wildcard Certificate + new
+  Application's shape. `tests/networkpolicy-lab-gateway.bats` is unaffected
+  (`lab-gateway` holds no pods — Certificates are API objects, not network
+  endpoints). Updated `docs/dependency-tree.md` and flipped CHARTER's "TLS
+  certificate lifecycle" target entry from "(planned)" to built. `make ci` must
+  pass. `docs/done/` entry required. (auto/cert-manager-gateway-https)
 
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the

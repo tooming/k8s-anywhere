@@ -1,0 +1,28 @@
+# lab-gateway-certificate — the wildcard *.127.0.0.1.nip.io Certificate the
+# Gateway's HTTPS listener terminates TLS with (ADR-0028 follow-up). Sync-wave
+# 6, one after cert-manager-root-ca (wave 5) — the k8s-lab-ca ClusterIssuer it
+# references must exist first. The Gateway itself (lab-gateway Application,
+# wave 1) references this Certificate's Secret by name; until this wave lands
+# the Secret, the HTTPS listener simply stays not-Programmed and self-heals
+# once it appears — the existing HTTP listener is unaffected either way.
+# ALWAYS-ON: automated sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lab-gateway-certificate
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/network/certificates
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lab-gateway
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -22,3 +22,21 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    # ADR-0028 follow-up: additive HTTPS listener alongside HTTP — existing
+    # HTTP routes/URLs keep working unchanged, HTTPS becomes available, not
+    # mandatory. HTTPRoutes with no sectionName attach to both listeners
+    # automatically, so argocd-route.yaml (and every future route) is reachable
+    # over HTTPS with no per-route change. certificateRefs points at the Secret
+    # the wildcard Certificate (gitops/network/certificates/) produces, in this
+    # same namespace — no ReferenceGrant needed.
+    - name: https
+      protocol: HTTPS
+      port: 443
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: wildcard-127-0-0-1-nip-io-tls
+      allowedRoutes:
+        namespaces:
+          from: All
