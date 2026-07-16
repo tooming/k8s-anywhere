@@ -3,28 +3,21 @@
 # ValidatingWebhookConfiguration resources; the API server calls back on TCP
 # 9443 for every pod admission request. Without this allow, the default-deny-all
 # floor blocks webhook callbacks and every pod creation in the cluster fails.
-#
-# This is a CiliumNetworkPolicy with `fromEntities: remote-node`, NOT a plain
-# NetworkPolicy `ipBlock: 10.43.0.1/32` (the shape this file used before).
-# Verified live with `cilium monitor --type drop` on a from-scratch cluster: k3s
-# embeds the apiserver in the server node's own process, so its outbound
-# webhook call arrives with Cilium's `remote-node` identity and the *node's*
-# pod-network IP as source — the apiserver Service ClusterIP (10.43.0.1) is
-# never the real source address on an outbound connection, so the old ipBlock
-# rule silently never matched (found while fixing the identical bug for
-# external-secrets' webhook — gitops/external-secrets/networkpolicy/
-# allow-eso-webhook-from-apiserver.yaml — on a from-scratch `make up`).
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
+# The kube-apiserver IP (10.43.0.1/32) is the k3s cluster service IP — same
+# ipBlock pattern used by allow-dns-and-apiserver.yaml (ADR-0016 shared baseline).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: allow-kyverno-webhook-from-apiserver
   namespace: kyverno
 spec:
-  endpointSelector: {}
+  podSelector: {}
+  policyTypes:
+    - Ingress
   ingress:
-    - fromEntities:
-        - remote-node
-      toPorts:
-        - ports:
-            - port: "9443"
-              protocol: TCP
+    - ports:
+        - port: 9443
+          protocol: TCP
+      from:
+        - ipBlock:
+            cidr: 10.43.0.1/32

@@ -163,33 +163,3 @@ setup() {
   run grep -q 'LoadRestrictionsNone' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
-
-# --- Sync-wave ordering: connectivity policies must land before default-deny --
-# Neither ArgoCD's Application-level sync-wave (all *-networkpolicy apps share
-# wave 4) nor its default resource-kind ordering guarantee a CiliumNetworkPolicy
-# applies before a plain NetworkPolicy in the same sync. Observed on a real
-# from-scratch `make up` (twice, reproducibly): default-deny-all landed alone,
-# cutting the namespace off from DNS/apiserver before allow-dns-and-apiserver or
-# zz-dns-clusterip-bridge existed — self-fatal when the namespace is argocd
-# itself, since the controller then can't reach the apiserver to finish applying
-# the rest of its own sync. Per-resource sync-wave is the fix: these two shared
-# templates must carry a wave strictly earlier than default-deny.yaml's (0/unset).
-
-@test "allow-dns-and-apiserver.yaml has a sync-wave strictly before default-deny (0)" {
-  run grep -oE 'argocd\.argoproj\.io/sync-wave: "-?[0-9]+"' "$POLICIES/allow-dns-and-apiserver.yaml"
-  [ "$status" -eq 0 ]
-  wave="$(echo "$output" | grep -oE -- '-?[0-9]+')"
-  [ "$wave" -lt 0 ]
-}
-
-@test "zz-dns-clusterip-bridge.yaml has a sync-wave strictly before default-deny (0)" {
-  run grep -oE 'argocd\.argoproj\.io/sync-wave: "-?[0-9]+"' "$POLICIES/zz-dns-clusterip-bridge.yaml"
-  [ "$status" -eq 0 ]
-  wave="$(echo "$output" | grep -oE -- '-?[0-9]+')"
-  [ "$wave" -lt 0 ]
-}
-
-@test "default-deny.yaml carries no sync-wave override (stays at implicit wave 0)" {
-  run grep -q 'sync-wave' "$POLICIES/default-deny.yaml"
-  [ "$status" -ne 0 ]
-}

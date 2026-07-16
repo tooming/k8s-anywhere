@@ -99,7 +99,7 @@ setup() {
 }
 
 @test "keda allow-webhook-from-apiserver rule permits TCP 9443" {
-  run grep -q 'port: "9443"' "$REPO/gitops/keda/networkpolicy/allow-keda-webhook-from-apiserver.yaml"
+  run grep -q 'port: 9443' "$REPO/gitops/keda/networkpolicy/allow-keda-webhook-from-apiserver.yaml"
   [ "$status" -eq 0 ]
 }
 

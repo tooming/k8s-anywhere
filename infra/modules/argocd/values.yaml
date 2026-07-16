@@ -28,13 +28,6 @@ configs:
   params:
     # Serve plain HTTP. We port-forward for now and terminate TLS at Envoy later.
     server.insecure: true
-    # Unset, this defaults to the host's visible CPU count (6 on this VM), not the
-    # repo-server container's 1-core limit — during the cold-start sync storm (~90
-    # Applications at once) that oversubscription CFS-throttles the container so
-    # hard its own healthz handler misses the liveness probe's 5s timeout, and it
-    # crashloops indefinitely (never converging). Bound concurrent manifest
-    # generation to what the CPU limit can actually serve.
-    reposerver.parallelism.limit: "2"
   cm:
     # All kustomizations in this repo use cross-directory resource references
     # (e.g. ../../network/policies/default-deny.yaml). Set globally so ArgoCD
@@ -94,6 +87,12 @@ repoServer:
   readinessProbe:
     timeoutSeconds: 5
     initialDelaySeconds: 20
+  volumes:
+    - name: tmp
+      emptyDir: {}
+  volumeMounts:
+    - name: tmp
+      mountPath: /tmp
 
 server:
   metrics:
@@ -102,6 +101,12 @@ server:
     requests:
       cpu: 50m
       memory: 128Mi
+  volumes:
+    - name: tmp
+      emptyDir: {}
+  volumeMounts:
+    - name: tmp
+      mountPath: /tmp
 
 redis:
   resources:

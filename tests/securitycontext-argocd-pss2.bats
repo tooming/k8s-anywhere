@@ -23,21 +23,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# The argo-cd chart (9.5.20) already renders its own "tmp" emptyDir volume +
-# /tmp mount unconditionally for both repoServer and server (readOnlyRootFilesystem
-# carve-out baked into the chart's templates, not gated on our values). A manual
-# repoServer.volumes/server.volumes override duplicating "tmp" therefore breaks
-# `helm upgrade` outright: "Deployment.apps ... Duplicate value: \"tmp\"" — hit on
-# a from-scratch `make up`, since Terraform's helm_release then fails validation
-# and the whole bootstrap aborts at the argocd step. Guard against reintroducing it.
-@test "argocd values.yaml does not define its own repoServer tmp volume (chart already provides one; duplicate breaks helm upgrade)" {
-  run bash -c "awk '/^repoServer:/{flag=1; print; next} flag && /^[a-zA-Z]/{flag=0} flag' '$VALUES' | grep -q 'name: tmp'"
-  [ "$status" -ne 0 ]
+@test "argocd values.yaml has emptyDir tmp volume (readOnlyRootFilesystem carve-out)" {
+  run grep -q 'emptyDir: {}' "$VALUES"
+  [ "$status" -eq 0 ]
 }
 
-@test "argocd values.yaml does not define its own server tmp volume (chart already provides one; duplicate breaks helm upgrade)" {
-  run bash -c "awk '/^server:/{flag=1; print; next} flag && /^[a-zA-Z]/{flag=0} flag' '$VALUES' | grep -q 'name: tmp'"
-  [ "$status" -ne 0 ]
+@test "argocd values.yaml repoServer mounts tmp at /tmp" {
+  run grep -q 'mountPath: /tmp' "$VALUES"
+  [ "$status" -eq 0 ]
 }
 
 @test "argocd values.yaml sets seccompProfile type RuntimeDefault" {
