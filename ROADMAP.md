@@ -210,6 +210,29 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **`vault` PSA `baseline` → `restricted` flip** (CHARTER **Objective
+  O2** hardening, RFC #478 — architect decision 2026-07-17, converting audit
+  #477; supersedes the 2026-06-11 audit #157 "keep" — see ADR-0017
+  §"Re-evaluation log" for both entries). The flip condition #157 was waiting
+  on is now met: a real, pinnable `hashicorp/vault-helm` chart release
+  (`v0.34.0`, 2026-07-02) ships a Vault server (`v2.0.3`) that no longer holds
+  `cap_ipc_lock` at build time (verified against `hashicorp/vault` release
+  `v2.0.2`'s changelog, 2026-06-05). Bump `gitops/platform/vault.yaml` chart
+  `0.32.0` → `0.34.0`; add `disable_mlock = true` to the standalone config;
+  flip `gitops/vault/namespace.yaml`'s four PSA labels `baseline` →
+  `restricted`; add the standard ADR-0017 §Layer 1 `securityContext` (verify
+  exact chart value keys against the pinned `0.34.0` `values.yaml` — don't
+  guess, ADR-0004) with an `emptyDir` carve-out for any non-PVC write path;
+  bump `gitops/vault/unsealer.yaml`'s image `hashicorp/vault:1.21.2` →
+  `hashicorp/vault:2.0.3`; update the ADR-0017 `vault` row to `restricted`.
+  Extend `tests/securitycontext.bats` (or a dedicated vault test file) with
+  the four PSA labels + the five Layer-1 securityContext fields. `make ci`
+  must pass — note in the PR body that whether Vault actually starts cleanly
+  under `restricted` + `disable_mlock` is not verifiable in this remote
+  clusterless environment (same caveat every other chart bump here already
+  carries). `docs/done/` entry required. Closes #478.
+  (auto/vault-psa-restricted)
+
 - [x] 🟢 **Governance LimitRange fan-out — `cert-manager` + `keda`** (CHARTER
   **Core Values** §"Fits the 16 GB reality" + §"Everything as code; GitOps
   deploys it"; RFC #294 / RFC #293 follow-up — **no prerequisites, executor may
@@ -2612,32 +2635,9 @@ You review and merge plan PRs, same as implementation PRs.
   (RFC #206) **Groomed ↗** into a 🟢 item in *Now / next* above
   (`auto/envoy-gateway-system-networkpolicy`), planner run 2026-06-15.
 
-- [ ] 🟡 **`vault` PSA `baseline` → `restricted` flip** (RFC #478 —
-  architect decision 2026-07-17, converting audit #477; supersedes the
-  2026-06-11 audit #157 "keep" — see ADR-0017 §"Re-evaluation log" for
-  both entries). The flip condition #157 was waiting on is now met: a
-  real, pinnable `hashicorp/vault-helm` chart release (`v0.34.0`,
-  2026-07-02) ships a Vault server (`v2.0.3`) that no longer holds
-  `cap_ipc_lock` at build time (verified against `hashicorp/vault`
-  release `v2.0.2`'s changelog, 2026-06-05). RFC #478 has the concrete
-  executor spec: bump `gitops/platform/vault.yaml` chart `0.32.0` →
-  `0.34.0`; add `disable_mlock = true` to the standalone config; flip
-  `gitops/vault/namespace.yaml`'s four PSA labels `baseline` →
-  `restricted`; add the standard ADR-0017 §Layer 1 `securityContext`
-  (verify exact chart value keys against the pinned `0.34.0`
-  `values.yaml` — don't guess, ADR-0004) with an `emptyDir` carve-out
-  for any non-PVC write path; bump `gitops/vault/unsealer.yaml`'s
-  image `hashicorp/vault:1.21.2` → `hashicorp/vault:2.0.3`; update the
-  ADR-0017 `vault` row to `restricted`. Extend `tests/securitycontext.bats`
-  (or a dedicated vault test file) with the four PSA labels + the five
-  Layer-1 securityContext fields. `make ci` must pass — note in the PR
-  body that whether Vault actually starts cleanly under `restricted` +
-  `disable_mlock` is not verifiable in this remote clusterless
-  environment (same caveat every other chart bump here already
-  carries). `docs/done/` entry required. PR body should add
-  `Closes #478`. **Planner note:** groom straight into *Now / next* as
-  🟢 — the architect's RFC #478 is the approval, no further decision
-  needed.
+- ~~🟡 **`vault` PSA `baseline` → `restricted` flip**~~ (RFC #478)
+  **Groomed ↗** into a 🟢 item in *Now / next* above
+  (`auto/vault-psa-restricted`), planner run 2026-07-17.
 
 - ~~🟡 **Cilium Grafana dashboard**~~ (RFC #358) **Groomed ↗** into a 🟢 item
   in *Now / next* above (`auto/cilium-agent-metrics`), planner run 2026-07-12.
