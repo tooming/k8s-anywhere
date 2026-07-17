@@ -195,20 +195,21 @@ _Process:_
   hand. No headroom — adding any new routine trigger or raising cadence requires enabling
   the paid "additional runs" toggle. (The local verifier and operator are invoked by hand
   on the maintainer's machine; they have no cron and no quota cost.)
-- **Night-time window + rolling-24h credit safety.** All 5 daily runs fire at fixed
-  clock-times (see `routines.yaml`'s `cron` for the exact values), inside a fixed nightly
-  window (~23:00–04:00 in the maintainer's Europe/Tallinn TZ, night in both EET and EEST
-  so no DST flip drifts a slot into the working day). The times are *fixed* deliberately:
-  the free cap is per **rolling** 24h, not per calendar day, so because the set of
-  fire-times is identical every day, every rolling 24h window holds exactly 5 runs and the
-  schedule can never spill into paid "additional runs" credits. Clustering at night
-  *without* fixing the times would let two nights' runs land in one 24h window (6+ runs)
-  and burn credits. **Pending change:** the maintainer asked (2026-07-16) to spread these
-  across the day instead of clustering at night — the same rolling-24h invariant holds
-  either way (it only needs fixed clock-times, not a particular time-of-day) — but the
-  `routines.yaml` cron edit needed to actually do that could not be applied to the live
-  trigger this session (`update_trigger` refused: "Agents can only update routines they
-  created") and is tracked separately until a session that can apply it lands the change.
+- **Spread-across-the-day schedule + rolling-24h credit safety.** All 5 daily runs fire at
+  fixed clock-times (see `routines.yaml`'s `cron` for the exact values — currently
+  `0 0,5,10,14,19 * * *` UTC, evenly spaced across the full day rather than clustered in
+  one nightly window). The times are *fixed* deliberately: the free cap is per **rolling**
+  24h, not per calendar day, so because the set of fire-times is identical every day, every
+  rolling 24h window holds exactly 5 runs and the schedule can never spill into paid
+  "additional runs" credits — that invariant only needs fixed clock-times, not a particular
+  time-of-day, which is why spreading them across the day is safe. This was originally an
+  all-night 21/22/23/0/1 UTC clustering; the maintainer asked (2026-07-16) to spread it
+  across the day instead, and the `routines.yaml` cron edit landed and was applied to the
+  live trigger the same day (PR #453) — `.routines-applied` records the applied hash and
+  `tests/routine-schedule-spread.bats` mechanically guards against the schedule
+  re-clustering. Trade-off accepted deliberately: PRs can now land and self-merge during
+  the maintainer's daytime, not only overnight — consistent with WAYS-OF-WORKING.md §0.1's
+  full-autonomy model, but worth knowing about.
 - **A run is no longer bounded to one item's worth of spend — the maintainer's explicit
   goal is that a run works until its credit runs out.** Since 2026-07-16
   (`executor.prompt.md` STEP 8), a single run loops through as many ROADMAP items as it
