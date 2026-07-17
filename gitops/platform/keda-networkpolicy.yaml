@@ -6,14 +6,16 @@
 # ALWAYS-ON: automated sync alongside the keda Application (same namespace).
 # The kustomization references templates from ../../network/policies/ — the
 # kustomize.buildOptions flag lifts the out-of-tree load restriction for this overlay.
-# Wave 4: after keda (wave 1) and keda-extras (wave 0) have created the namespace.
+# Wave 6 (moved from wave 4, ADR-0029 §"Scope & exceptions" webhook-TLS follow-up):
+# after keda and keda-extras (both now wave 6, alongside lab-gateway-certificate)
+# have created the namespace and issued the webhook cert via cert-manager.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: keda-networkpolicy
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-wave: "6"
 spec:
   project: default
   source:

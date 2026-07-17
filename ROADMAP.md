@@ -1247,7 +1247,7 @@ You review and merge plan PRs, same as implementation PRs.
   workload on the `data` namespace's RabbitMQ queue depth. `make ci` must pass.
   `docs/done/` entry required. (auto/keda-engine)
 
-- [ ] 🟢 **KEDA admission webhook TLS — wire to cert-manager's `k8s-lab-ca`** (CHARTER
+- [x] 🟢 **KEDA admission webhook TLS — wire to cert-manager's `k8s-lab-ca`** (CHARTER
   new Goal "event-driven autoscaling" follow-up; ADR-0029 §"Scope & exceptions" — the
   ADR itself is the binding spec for this follow-up, no new RFC needed. **Prerequisite
   already met:** `cert-manager-root-ca` (sync-wave 5, `gitops/platform/cert-manager-root-ca.yaml`)

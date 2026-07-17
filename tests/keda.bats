@@ -38,6 +38,22 @@ setup() {
   [ "$(yqs '.spec.source.helm.valuesObject.crds.install' "$REPO/gitops/platform/keda.yaml")" = "true" ]
 }
 
+@test "keda Application runs at sync-wave 6 (after cert-manager-root-ca issues k8s-lab-ca)" {
+  run grep -q 'argocd.argoproj.io/sync-wave: "6"' "$REPO/gitops/platform/keda.yaml"
+  [ "$status" -eq 0 ]
+}
+
+# --- Admission webhook TLS via cert-manager (ADR-0029 §"Scope & exceptions" follow-up) --
+@test "keda Application enables cert-manager for webhook TLS" {
+  [ "$(yqs '.spec.source.helm.valuesObject.certificates.certManager.enabled' "$REPO/gitops/platform/keda.yaml")" = "true" ]
+}
+
+@test "keda Application references the k8s-lab-ca ClusterIssuer (not the chart's generated one)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.certificates.certManager.issuer.generate' "$REPO/gitops/platform/keda.yaml")" = "false" ]
+  [ "$(yqs '.spec.source.helm.valuesObject.certificates.certManager.issuer.name' "$REPO/gitops/platform/keda.yaml")" = "k8s-lab-ca" ]
+  [ "$(yqs '.spec.source.helm.valuesObject.certificates.certManager.issuer.kind' "$REPO/gitops/platform/keda.yaml")" = "ClusterIssuer" ]
+}
+
 @test "keda Application sets memory limits per ADR-0029 footprint controls" {
   run grep -q 'memory: 128Mi' "$REPO/gitops/platform/keda.yaml"
   [ "$status" -eq 0 ]
@@ -56,8 +72,8 @@ setup() {
   [ -f "$REPO/gitops/platform/keda-extras.yaml" ]
 }
 
-@test "keda-extras runs at sync-wave 0" {
-  run grep -q 'argocd.argoproj.io/sync-wave: "0"' "$REPO/gitops/platform/keda-extras.yaml"
+@test "keda-extras runs at sync-wave 6 (moved alongside keda, ADR-0029 webhook-TLS follow-up)" {
+  run grep -q 'argocd.argoproj.io/sync-wave: "6"' "$REPO/gitops/platform/keda-extras.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -119,8 +135,8 @@ setup() {
   [ -f "$REPO/gitops/platform/keda-networkpolicy.yaml" ]
 }
 
-@test "keda-networkpolicy Application runs at sync-wave 4" {
-  run grep -q 'argocd.argoproj.io/sync-wave: "4"' "$REPO/gitops/platform/keda-networkpolicy.yaml"
+@test "keda-networkpolicy Application runs at sync-wave 6 (moved alongside keda, ADR-0029 webhook-TLS follow-up)" {
+  run grep -q 'argocd.argoproj.io/sync-wave: "6"' "$REPO/gitops/platform/keda-networkpolicy.yaml"
   [ "$status" -eq 0 ]
 }
 

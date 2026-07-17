@@ -1,7 +1,11 @@
 # keda-extras — applies the keda namespace.yaml (PSA restricted labels,
-# ADR-0017/ADR-0029) before the keda Helm Application (sync-wave 1) schedules
-# pods. Running at wave 0 ensures the namespace's enforce/warn/audit labels
-# are in place before ArgoCD deploys the Helm release.
+# ADR-0017/ADR-0029) before the keda Helm Application schedules pods. Wave 6
+# (moved from wave 0, ADR-0029 §"Scope & exceptions" webhook-TLS follow-up):
+# the keda Application itself now also runs at wave 6 (its admission webhook
+# cert is issued by cert-manager's k8s-lab-ca, which only exists after
+# cert-manager-root-ca reconciles at wave 5) — keda-extras stays paired with
+# it so the namespace's enforce/warn/audit labels are still in place before
+# the Helm release deploys.
 # ALWAYS-ON: automated sync alongside keda.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -9,7 +13,7 @@ metadata:
   name: keda-extras
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "6"
 spec:
   project: default
   source:
