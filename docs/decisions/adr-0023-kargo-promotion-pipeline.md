@@ -139,8 +139,10 @@ HTTPRoute; admin-credentials ExternalSecret.
 
 - Git-commit subscriptions (the lab's capstone CI uses `:latest`; add once tagged
   images are in use).
-- Kargo RBAC (`ProjectRole`) — single-user lab; follow-up ADR/PR.
-- Kargo notifications (Slack/webhook on promotion failure) — follow-up.
+- Kargo RBAC (`ProjectRole`) — single-user lab; kept out of scope, see
+  [§Re-evaluation log](#re-evaluation-log) (audit #461, 2026-07-17).
+- Kargo notifications (Slack/webhook on promotion failure) — kept out of scope, see
+  [§Re-evaluation log](#re-evaluation-log) (audit #461, 2026-07-17).
 - Promotion steps beyond `argocd-update` (git-clone → kustomize-set-image →
   git-commit → git-push) — deferred until the capstone pipeline uses versioned tags.
 
@@ -166,6 +168,47 @@ HTTPRoute; admin-credentials ExternalSecret.
 | `gitops/secrets/kargo-admin-externalsecret.yaml` | ESO ExternalSecret for admin credentials |
 | `tests/kargo.bats` | Clusterless structural tests |
 | `tests/networkpolicy-capstone-pipeline.bats` | `capstone-pipeline` namespace NetworkPolicy overlay tests |
+
+---
+
+## Re-evaluation log
+
+Audits of this ADR's own out-of-scope follow-ups (the architect routine's STEP 2)
+record their outcome here when the decision is **kept**. An audit terminates in a
+documented decision — not only when something changes — so a scope call that survives
+review leaves a dated trail and an explicit *flip condition* instead of an open-ended
+"follow-up" pointer that nothing ever resolves.
+
+### 2026-07-17 — Kargo RBAC + promotion-failure notifications kept out of scope (audit [#461](https://github.com/tooming/k8s-anywhere/issues/461))
+
+**Trigger.** A gap-analysis sweep found that the two items this ADR's
+§"Scope & exceptions" lists as *"follow-up"* — `ProjectRole` RBAC and Slack/webhook
+promotion-failure notifications — had never been captured in `ROADMAP.md`, `docs/done/`,
+or a follow-up ADR, and (unlike ADR-0029's KEDA follow-ups) carried no concrete
+implementation spec, so neither could be groomed straight to a 🟢 executor item.
+
+**Decision: keep both out of scope.** Neither traces to a CHARTER Goal or Objective.
+`ProjectRole` RBAC would exist for demonstration only — the lab has exactly one Kargo
+identity (`gitops/secrets/kargo-admin-externalsecret.yaml`), so there is no second
+principal to scope a Role against. Slack/webhook notifications would need a credential
+or workspace outside GitOps control, breaking the default localhost path's
+zero-external-dependency reproducibility (CHARTER Mission, ADR-0025) — and are
+redundant with what already exists: the `kargo` Alloy scrape job
+(`gitops/platform/observability-alloy.yaml`) feeds
+`controller_runtime_reconcile_total{job="kargo",result=…}` into Mimir, and
+`grafana/dashboards/lab-kargo.json` already plots it by result, so promotion failures
+are already visible through the lab's own real-observability idiom (ADR-0004) without a
+bolt-on external notifier.
+
+**Flip conditions:**
+- RBAC: revisit if the lab ever provisions a second Kargo identity (e.g. a CI service
+  account promoting on an automated gate) or CHARTER adds a multi-tenant/authorization
+  learning goal.
+- Notifications: revisit if the lab adds a self-hosted, free/OSS in-cluster alerting
+  sink (e.g. Prometheus Alertmanager reading the existing
+  `controller_runtime_reconcile_total{job="kargo",result="error"}` series) — that is
+  Alertmanager-shaped work, not a Slack/webhook integration, and would need its own gap
+  writeup if/when Alertmanager becomes a lab component.
 
 ---
 
