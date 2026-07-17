@@ -210,6 +210,38 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **`kyverno` PSA `baseline` → `restricted` flip** (CHARTER **Objective
+  O2** hardening, RFC #483 — architect decision 2026-07-17, converting audit
+  #482). Kyverno's own official docs (`kyverno.io/docs/installation/platform-notes/`)
+  state the chart's default securityContext "conforms to the upstream Pod
+  Security Standards' restricted profile" (the only documented incompatibility
+  is OpenShift SCCs, irrelevant to this plain-k3d/k3s lab); independently
+  verified against the actual pinned `kyverno-chart-3.3.4` tag that all four
+  controllers (admission/background/cleanup/reports) already default to the
+  full restricted container securityContext with no hostPath/host-namespace
+  usage. No chart bump needed. **Executor must independently re-verify the
+  pinned chart's rendered manifests before flipping — not just trust the
+  RFC's citation — and flag rather than force the flip if a gap surfaces**
+  (higher blast radius than the vault flip: Kyverno is the cluster-wide
+  admission controller — a bad flip risks breaking admission for every
+  namespace). Flip `gitops/kyverno/namespace.yaml`'s four PSA labels
+  `baseline` → `restricted` only after that verification passes clean; if a
+  gap is found, add the minimal `valuesObject` override needed to close it,
+  or leave `kyverno` at `baseline` with the gap documented in the PR (per
+  RFC #483's acceptance criteria — don't force the flip over an unresolved
+  finding). Update the `kyverno` row in both ADR-0017's §Per-namespace
+  profile table and ADR-0019's equivalent note/table to `restricted`; append
+  a dated entry to ADR-0017's §Re-evaluation log. Extend
+  `tests/securitycontext-kyverno.bats` (or similar) with the four PSA labels
+  (and any `valuesObject` securityContext fields added). `make ci` must pass
+  — PR body must document HOW the executor verified the chart (source fetch,
+  not assumption) and note the ADR-0004 caveat that this remote clusterless
+  session cannot confirm the admission webhook stays healthy under
+  `restricted` on a live cluster; call out the rollback path (revert PSA
+  labels, ArgoCD self-heals) prominently given the higher stakes.
+  `docs/done/` entry required. Closes #483.
+  (auto/kyverno-psa-restricted)
+
 - [x] 🟢 **`vault` PSA `baseline` → `restricted` flip** (CHARTER **Objective
   O2** hardening, RFC #478 — architect decision 2026-07-17, converting audit
   #477; supersedes the 2026-06-11 audit #157 "keep" — see ADR-0017
@@ -2678,22 +2710,9 @@ You review and merge plan PRs, same as implementation PRs.
   with two per-pod allows (TCP 20001 ingress from `envoy-gateway-system`, TCP 9009
   egress to `observability`).
 
-- [ ] 🟡 **`kyverno` PSA `baseline` → `restricted` flip** (RFC #483 —
-  architect decision 2026-07-17, converting audit #482). Kyverno's own official
-  docs (`kyverno.io/docs/installation/platform-notes/`) state the chart's
-  default securityContext "conforms to the upstream Pod Security Standards'
-  restricted profile" (the only documented incompatibility is OpenShift SCCs,
-  irrelevant to this plain-k3d/k3s lab); independently verified against the
-  actual pinned `kyverno-chart-3.3.4` tag that all four controllers
-  (admission/background/cleanup/reports) already default to the full
-  restricted container securityContext with no hostPath/host-namespace usage.
-  No chart bump needed. RFC #483 requires the executor to independently
-  re-verify the pinned chart's rendered manifests before flipping — not just
-  trust the RFC's citation — and to flag rather than force the flip if a gap
-  surfaces (higher blast radius than the vault flip: Kyverno is the
-  cluster-wide admission controller). **Planner note:** groom straight into
-  *Now / next* as 🟢 — the architect's RFC #483 is the approval, no further
-  decision needed.
+- ~~🟡 **`kyverno` PSA `baseline` → `restricted` flip**~~ (RFC #483)
+  **Groomed ↗** into a 🟢 item in *Now / next* above
+  (`auto/kyverno-psa-restricted`), planner run 2026-07-17.
 
 - ~~🟡 **Platform Governance layer — `gitops/governance/` structure**~~ (RFC #293)
   **Groomed ↗** into a 🟢 item in *Now / next* above
