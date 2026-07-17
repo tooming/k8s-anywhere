@@ -67,7 +67,7 @@ setup() {
   [ "$(yqs '.spec.syncPolicy.syncOptions | contains(["ServerSideApply=true"])' "$REPO/gitops/platform/keda.yaml")" = "true" ]
 }
 
-# --- keda-extras (namespace pre-creation, wave 0) ------------------------------
+# --- keda-extras (namespace pre-creation, wave 6) ------------------------------
 @test "keda-extras Application exists" {
   [ -f "$REPO/gitops/platform/keda-extras.yaml" ]
 }
@@ -99,7 +99,7 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- NetworkPolicy overlay (ADR-0016 fan-out, wave 4) --------------------------
+# --- NetworkPolicy overlay (ADR-0016 fan-out, wave 6) --------------------------
 @test "keda networkpolicy kustomization exists" {
   [ -f "$REPO/gitops/keda/networkpolicy/kustomization.yaml" ]
 }

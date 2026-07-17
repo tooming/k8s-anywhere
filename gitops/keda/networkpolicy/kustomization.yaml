@@ -4,7 +4,8 @@
 # Alloy metrics scrape from the observability namespace (TCP 8080).
 # The allow-dns-and-apiserver baseline covers KEDA's k8s API calls (ScaledObject/
 # ScaledJob reconcile, leader election, HPA management, admission review fan-out).
-# Wired into gitops/platform/keda-networkpolicy.yaml (auto-synced, wave 4).
+# Wired into gitops/platform/keda-networkpolicy.yaml (auto-synced, wave 6 —
+# moved from wave 4, ADR-0029 §"Scope & exceptions" webhook-TLS follow-up).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
