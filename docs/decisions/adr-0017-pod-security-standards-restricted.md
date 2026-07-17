@@ -114,7 +114,7 @@ so the executor never silently applies the wrong label.
 | `tidb` / `tidb-admin` | `baseline` | TiDB operator pods need additional capabilities; `baseline` is HashiCorp/PingCAP's documented recommendation. |
 | `moto` / `ack-system` | `restricted` | Stateless HTTP mock; non-root-capable. |
 | `lab-gateway` | `restricted` | Envoy Gateway; runs as non-root. |
-| `vault` | `baseline` | Vault needs `IPC_LOCK` to `mlock` its memory and prevent secret swap-to-disk. `restricted` forbids it; `baseline` is HashiCorp's recommended profile. Re-evaluated 2026-06-11 (audit #157) — **kept**; see [§Re-evaluation log](#re-evaluation-log). |
+| `vault` | `baseline` | Vault needs `IPC_LOCK` to `mlock` its memory and prevent secret swap-to-disk. `restricted` forbids it; `baseline` is HashiCorp's recommended profile. Re-evaluated 2026-06-11 (audit #157) — **kept**; re-audited 2026-07-17 (audit #477) — **flip condition now met, actioned as RFC #478**; still `baseline` until that RFC's executor PR lands. See [§Re-evaluation log](#re-evaluation-log). |
 | `kyverno` | `baseline` | Kyverno admission controller mounts webhook TLS material via `fsGroup`; PSS `restricted` forbids it. Per ADR-0019 §"Per-namespace profile update". Re-evaluate when the upstream chart documents `restricted` compatibility. |
 | `velero` | `restricted` | Controller runs non-root (UID 65534); node-agent DaemonSet uses a per-workload annotation to mount `/var/lib/kubelet/pods` for Kopia FS-backup (matches the node-exporter hostPath carve-out pattern in §"Per-workload field carve-outs"). Per ADR-0021 §"PSA profile" (implementation adopted `restricted`, overriding the initial `baseline` estimate). |
 | `argo-rollouts` | `restricted` | Controller and dashboard both run as non-root (UID 65532), no host volumes, no privileged containers. Per ADR-0020 §"NetworkPolicy + PSS". |
@@ -209,6 +209,29 @@ PR is then: bump the Vault chart/image + set `disable_mlock = true`; flip
 standard §Layer 1 `securityContext` (with `emptyDir` for any non-PVC write path);
 update the `vault` row above. Until then the 🟢 PSS-labels carve-out fan-out keeps
 `vault` at `baseline` so we never ship a carve-out we are about to remove.
+
+### 2026-07-17 — `vault` carve-out re-audited, converted to RFC (audit [#477](https://github.com/tooming/k8s-anywhere/issues/477))
+
+**Trigger.** Unlike the 2026-06-11 audit's trigger (a synthetic weekly digest
+entry with no pinnable artifact), this trigger was verified directly against two
+real upstream release pages: `hashicorp/vault` release
+[`v2.0.2`](https://github.com/hashicorp/vault/releases/tag/v2.0.2) (2026-06-05)
+— changelog states verbatim *"containers: Remove `cap_ipc_lock` capability on
+`vault` at build time... Vault in containers will no longer be able to call
+`mlock()`"* and recommends `disable_mlock = true` — and `hashicorp/vault-helm`
+release `v0.34.0` (2026-07-02), a real currently-latest-stable chart whose
+default server image ships that Vault version (`v0.33.0`, 2026-06-08, already
+defaulted to `2.0.2`).
+
+**Decision: Convert.** The 2026-06-11 flip condition above is now met by a real,
+pinnable chart release, not a digest claim. Actioned as
+[RFC #478](https://github.com/tooming/k8s-anywhere/issues/478), which carries the
+concrete executor spec (chart bump `0.32.0 → 0.34.0`, `disable_mlock = true`,
+PSA labels `baseline → restricted`, standard §Layer 1 `securityContext`, unsealer
+image bump). The `vault` row above stays `baseline` until that RFC's executor PR
+actually lands the change — this log entry records the decision, not the change
+itself (ADR-0004: never assert a posture the running/committed manifests don't
+yet have).
 
 ---
 

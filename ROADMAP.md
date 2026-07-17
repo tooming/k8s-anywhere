@@ -2612,17 +2612,32 @@ You review and merge plan PRs, same as implementation PRs.
   (RFC #206) **Groomed ↗** into a 🟢 item in *Now / next* above
   (`auto/envoy-gateway-system-networkpolicy`), planner run 2026-06-15.
 
-- [ ] 🟡 **ADR-0017 audit — vault PSA-restricted after Vault v2.0.2
-  upgrade** (issue #157 — resolved as **keep** on 2026-06-11; see
-  ADR-0017 §"Re-evaluation log"). The audit determined: keep
-  `vault: baseline` until a real, pinnable chart/image that no longer
-  holds `cap_ipc_lock` is available. The flip condition is documented
-  in the ADR. **No RFC or 🟢 executor item is needed now.** This
-  ROADMAP entry is a reminder: when the Vault Helm chart ships an image
-  that drops `cap_ipc_lock`, open a new `adr-audit` issue to trigger
-  the Convert path (bump chart + `disable_mlock = true` + flip labels
-  baseline → restricted + ADR-0017 row update). Until then, the
-  executor skips this item.
+- [ ] 🟡 **`vault` PSA `baseline` → `restricted` flip** (RFC #478 —
+  architect decision 2026-07-17, converting audit #477; supersedes the
+  2026-06-11 audit #157 "keep" — see ADR-0017 §"Re-evaluation log" for
+  both entries). The flip condition #157 was waiting on is now met: a
+  real, pinnable `hashicorp/vault-helm` chart release (`v0.34.0`,
+  2026-07-02) ships a Vault server (`v2.0.3`) that no longer holds
+  `cap_ipc_lock` at build time (verified against `hashicorp/vault`
+  release `v2.0.2`'s changelog, 2026-06-05). RFC #478 has the concrete
+  executor spec: bump `gitops/platform/vault.yaml` chart `0.32.0` →
+  `0.34.0`; add `disable_mlock = true` to the standalone config; flip
+  `gitops/vault/namespace.yaml`'s four PSA labels `baseline` →
+  `restricted`; add the standard ADR-0017 §Layer 1 `securityContext`
+  (verify exact chart value keys against the pinned `0.34.0`
+  `values.yaml` — don't guess, ADR-0004) with an `emptyDir` carve-out
+  for any non-PVC write path; bump `gitops/vault/unsealer.yaml`'s
+  image `hashicorp/vault:1.21.2` → `hashicorp/vault:2.0.3`; update the
+  ADR-0017 `vault` row to `restricted`. Extend `tests/securitycontext.bats`
+  (or a dedicated vault test file) with the four PSA labels + the five
+  Layer-1 securityContext fields. `make ci` must pass — note in the PR
+  body that whether Vault actually starts cleanly under `restricted` +
+  `disable_mlock` is not verifiable in this remote clusterless
+  environment (same caveat every other chart bump here already
+  carries). `docs/done/` entry required. PR body should add
+  `Closes #478`. **Planner note:** groom straight into *Now / next* as
+  🟢 — the architect's RFC #478 is the approval, no further decision
+  needed.
 
 - ~~🟡 **Cilium Grafana dashboard**~~ (RFC #358) **Groomed ↗** into a 🟢 item
   in *Now / next* above (`auto/cilium-agent-metrics`), planner run 2026-07-12.
