@@ -1270,7 +1270,7 @@ You review and merge plan PRs, same as implementation PRs.
   `certificates.certManager` block with the documented issuer fields. `make ci` must
   pass. `docs/done/` entry required. (auto/keda-webhook-cert-manager-tls)
 
-- [ ] 🟢 **KEDA `ScaledObject` demo — scale `rabbitmq-load` on RabbitMQ queue depth**
+- [x] 🟢 **KEDA `ScaledObject` demo — scale `rabbitmq-load` on RabbitMQ queue depth**
   (CHARTER new Goal "event-driven autoscaling" — the actual pedagogical payoff (scaling
   *demonstrated*, not just installed); ADR-0029 §"Scope & exceptions" — the ADR is the
   binding spec, no new RFC needed. **No prerequisites — independent of the webhook-TLS

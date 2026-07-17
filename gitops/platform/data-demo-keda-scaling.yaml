@@ -1,0 +1,32 @@
+# data-demo-keda-scaling — the rabbitmq-load-scaler ScaledObject + TriggerAuthentication
+# (ADR-0029 §"Scope & exceptions" ScaledObject-demo follow-up). SEPARATE Application
+# from data-demo (wave 4, gitops/platform/data-demo.yaml) on purpose: these two CRs are
+# of kind ScaledObject/TriggerAuthentication, whose CRDs are only installed once the
+# keda Helm Application (wave 6, moved there by the webhook-TLS follow-up — see
+# gitops/platform/keda.yaml for that ClusterIssuer reference) actually syncs. Applying a
+# CR before its CRD exists is a hard ArgoCD sync error, not a soft "not found" — so wave
+# 7 (after keda's wave 6) avoids the exact class of sync-wave deadlock ADR-0029 already
+# found and fixed for keda's own placement. data-demo's own workloads (rabbitmq-load,
+# valkey-load, their ExternalSecret) are untouched and stay at wave 4 — they don't
+# depend on any KEDA CRD.
+# ALWAYS-ON: automated sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: data-demo-keda-scaling
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+spec:
+  project: default
+  source:
+    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/data/demo/keda-scaling
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: data
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -196,15 +196,13 @@ setup() {
 }
 
 # --- Additive-only: no ScaledObject wired to any existing workload yet --------
-@test "no ScaledObject or ScaledJob CR exists yet outside gitops/keda/ (engine-only, ADR-0029 scope)" {
+@test "the only ScaledObject/ScaledJob CRs are the rabbitmq-load-scaler demo (ADR-0029 ScaledObject-demo follow-up)" {
   run grep -rl 'kind: ScaledObject\|kind: ScaledJob' "$REPO/gitops"
-  # Either nothing found (status 1, grep convention) or every hit lives under gitops/keda/.
-  if [ "$status" -eq 0 ]; then
-    while IFS= read -r f; do
-      case "$f" in
-        "$REPO/gitops/keda/"*) ;;
-        *) echo "unexpected ScaledObject/ScaledJob outside gitops/keda/: $f"; return 1 ;;
-      esac
-    done <<< "$output"
-  fi
+  [ "$status" -eq 0 ]
+  while IFS= read -r f; do
+    case "$f" in
+      "$REPO/gitops/data/demo/keda-scaling/scaledobject.yaml") ;;
+      *) echo "unexpected ScaledObject/ScaledJob outside the rabbitmq-load-scaler demo: $f"; return 1 ;;
+    esac
+  done <<< "$output"
 }

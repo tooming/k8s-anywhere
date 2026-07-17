@@ -17,3 +17,4 @@ resources:
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-keda-webhook-from-apiserver.yaml
   - allow-keda-metrics-from-observability.yaml
+  - allow-keda-egress-rabbitmq.yaml
