@@ -3,11 +3,21 @@
 # Making it explicit here lets ArgoCD apply PSA labels via Server-Side Apply so the
 # in-cluster admission controller enforces PSS restricted — defense-in-depth even though
 # no workloads currently run in capstone-pipeline (Kargo itself runs in the kargo namespace).
+#
+# kargo.akuity.io/project: "true" is REQUIRED, not cosmetic: Kargo's Project
+# controller only adopts a pre-existing namespace (one it didn't create itself)
+# when this label is present. Without it, ArgoCD's CreateNamespace=true syncOption
+# (or this manifest) creates a plain namespace first, and Kargo's Project
+# reconciler then refuses to initialize — "namespace already exists and is not
+# labeled as a Project namespace" — which blocks every Stage/Warehouse in it too
+# (verified live: this is exactly what happened before this label was added).
+# See https://docs.kargo.io/user-guide/how-to-guides/working-with-projects#namespace-adoption.
 apiVersion: v1
 kind: Namespace
 metadata:
   name: capstone-pipeline
   labels:
+    kargo.akuity.io/project: "true"
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: latest
     pod-security.kubernetes.io/warn: restricted

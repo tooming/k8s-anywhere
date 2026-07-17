@@ -13,17 +13,29 @@
 # genuinely runs non-root. This mutate closes that gap structurally, so no chart
 # has to be forked and no namespace has to be carved down to `baseline`.
 #
-# akuity/kargo 1.2.0 is the second reference case, and a stricter variant: the
+# akuity/kargo 1.2.3 is the second reference case, and a stricter variant: the
 # chart exposes NO pod-level securityContext knob at all (only a per-component
 # `<component>.securityContext` value that templates onto the CONTAINER, never
 # the pod) — so unlike Harbor there is no pod-level runAsUser to key off either.
-# The precondition below therefore also matches when only a CONTAINER declares
-# runAsUser > 0, which is exactly Kargo's shape once its chart values set
-# api/controller/webhooksServer/etc. securityContext.runAsUser.
+# The precondition below therefore also matches when the FIRST container
+# declares runAsUser > 0, which is exactly Kargo's shape once its chart values
+# set api/controller/webhooksServer/etc. securityContext.runAsUser.
+#
+# containers[0], not a `[?...]` JMESPath filter over all containers: verified
+# live against the running cluster that Kyverno's `{{ }}` precondition
+# evaluator does not fire a filter-projection expression
+# (`containers[?securityContext.runAsUser > \`0\`] | length(@)`) the way
+# standard JMESPath does — it silently evaluates as no-match instead of
+# erroring, so the whole rule just never fired. A plain index lookup does
+# work. This is a narrower heuristic (only the first container's UID counts),
+# but that only ever makes the mutate LESS likely to fire — a false negative
+# here means require-pod-security-restricted still rejects the pod exactly as
+# it did before this policy existed, never a false positive that admits
+# something it shouldn't.
 #
 # Safety — this only ever ASSERTS a truth, never forces a root workload non-root:
-#   1. preconditions gate on runAsUser > 0 declared at the pod level OR on any
-#      one container — either way, a non-root UID the pod actually runs as.
+#   1. preconditions gate on runAsUser > 0 declared at the pod level OR on the
+#      first container — either way, a non-root UID the pod actually runs as.
 #      Root pods (runAsUser:0 or unset everywhere) never match, so they are
 #      untouched.
 #   2. the exclude block mirrors require-pod-security-restricted: baseline /
@@ -41,10 +53,10 @@ metadata:
     policies.kyverno.io/category: Pod Security
     policies.kyverno.io/description: >-
       Injects pod-level runAsNonRoot=true when a pod declares a non-zero runAsUser
-      — at the pod level OR on any container — but omits runAsNonRoot (ADR-0019
-      defence-in-depth). Unblocks charts like goharbor/harbor (pod-level UID, no
-      pod-level runAsNonRoot) and akuity/kargo (container-level UID only, no
-      pod-level securityContext knob at all), which require-pod-security-restricted
+      — at the pod level OR on its first container — but omits runAsNonRoot
+      (ADR-0019 defence-in-depth). Unblocks charts like goharbor/harbor (pod-level
+      UID, no pod-level runAsNonRoot) and akuity/kargo (container-level UID only,
+      no pod-level securityContext knob at all), which require-pod-security-restricted
       (ADR-0017) checks at the pod level.
 spec:
   rules:
@@ -72,10 +84,8 @@ spec:
       - key: "{{ request.object.spec.securityContext.runAsUser || `0` }}"
         operator: GreaterThan
         value: 0
-      # ...or on at least one container (charts with no pod-level knob, e.g. Kargo).
-      # JMESPath filter comparisons against a missing field evaluate to null and
-      # are dropped, so containers that omit runAsUser never contribute a match.
-      - key: "{{ request.object.spec.containers[?securityContext.runAsUser > `0`] | length(@) || `0` }}"
+      # ...or on the first container (charts with no pod-level knob, e.g. Kargo).
+      - key: "{{ request.object.spec.containers[0].securityContext.runAsUser || `0` }}"
         operator: GreaterThan
         value: 0
     mutate:

@@ -145,6 +145,16 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "capstone-pipeline namespace carries the kargo.akuity.io/project adoption label" {
+  # Without this label, Kargo's Project controller refuses to adopt a
+  # namespace some other agent (ArgoCD's CreateNamespace=true, or this very
+  # manifest) created first — verified live: every Stage/Warehouse in the
+  # namespace gets rejected at admission with "namespace already exists and
+  # is not labeled as a Project namespace" until this label is present.
+  run grep -q 'kargo.akuity.io/project: "true"' "$REPO/gitops/kargo-project/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
 # --- HTTPRoute ---------------------------------------------------------------
 @test "kargo HTTPRoute exists" {
   [ -f "$REPO/gitops/kargo/route.yaml" ]
