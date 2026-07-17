@@ -14,9 +14,14 @@ setup() {
   [ -f "$REPO/gitops/platform/kargo.yaml" ]
 }
 
-@test "kargo Application sources the chart from charts.kargo.io" {
-  run grep -q 'repoURL: https://charts.kargo.io' "$REPO/gitops/platform/kargo.yaml"
+@test "kargo Application sources the chart from the OCI registry (charts.kargo.io is dead)" {
+  # https://charts.kargo.io was retired upstream (NXDOMAIN) — the chart now
+  # lives at oci://ghcr.io/akuity/kargo-charts/kargo (repoURL omits the oci://
+  # scheme per ArgoCD's OCI Helm convention).
+  run grep -q 'repoURL: ghcr.io/akuity/kargo-charts' "$REPO/gitops/platform/kargo.yaml"
   [ "$status" -eq 0 ]
+  run grep -q 'repoURL: https://charts.kargo.io' "$REPO/gitops/platform/kargo.yaml"
+  [ "$status" -eq 1 ]
 }
 
 @test "kargo Application pins a specific chart version" {
@@ -49,9 +54,15 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "kargo Application enables admin account" {
-  run grep -q 'enabled: true' "$REPO/gitops/platform/kargo.yaml"
+@test "kargo Application wires admin creds via api.secret.name (chart has no secretKeyRef field)" {
+  # The kargo chart has no adminAccount.passwordHashSecretKeyRef-style field —
+  # api.secret.name is the only supported way to point at a pre-existing
+  # Secret (ADMIN_ACCOUNT_PASSWORD_HASH / ADMIN_ACCOUNT_TOKEN_SIGNING_KEY keys).
+  run grep -A1 '          secret:' "$REPO/gitops/platform/kargo.yaml"
   [ "$status" -eq 0 ]
+  [[ "$output" == *"name: kargo-admin-credentials"* ]]
+  run grep -q 'passwordHashSecretKeyRef' "$REPO/gitops/platform/kargo.yaml"
+  [ "$status" -eq 1 ]
 }
 
 @test "kargo Application references the kargo-admin-credentials Secret" {

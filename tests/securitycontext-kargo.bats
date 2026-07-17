@@ -1,9 +1,14 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for PSS *restricted* profile applied to the
 # kargo namespace (ADR-0017 §Per-namespace profile, ROADMAP auto/adr-0017-kargo-row).
-# Kargo api/controller/webhooks-server all run as UID 65532 (non-root) — fully
-# restricted-compatible. These tests confirm the namespace labels are in place
-# and the kargo-extras Application is auto-synced (PSA floor before make kargo-up).
+# The kargo chart has NO pod-level securityContext knob of its own (verified
+# live — see gitops/platform/kargo.yaml's comment and
+# gitops/kyverno/policies/add-default-runasnonroot.yaml); gitops/platform/kargo.yaml
+# sets global.securityContext (UID 1000, non-root) at the container level, and
+# the add-default-runasnonroot mutate policy backfills the pod-level
+# runAsNonRoot the chart can't set itself. These tests confirm the namespace
+# labels are in place and the kargo-extras Application is auto-synced (PSA
+# floor before make kargo-up).
 #
 # Lives in its OWN file (not tests/securitycontext.bats) on purpose: per-namespace
 # PSS blocks appended to the shared monolith cause recurring merge conflicts.

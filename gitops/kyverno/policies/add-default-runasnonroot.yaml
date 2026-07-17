@@ -1,7 +1,7 @@
 # Mutate: inject pod-level runAsNonRoot=true when a pod ALREADY declares a
-# non-zero pod-level runAsUser but forgot to state runAsNonRoot. Defence-in-depth
-# alongside require-pod-security-restricted (ADR-0017) and add-default-seccomp
-# (ADR-0019) — same mutate-default pattern.
+# non-zero runAsUser (at pod OR container level) but forgot to state
+# runAsNonRoot. Defence-in-depth alongside require-pod-security-restricted
+# (ADR-0017) and add-default-seccomp (ADR-0019) — same mutate-default pattern.
 #
 # Why this exists: some upstream charts set a non-root UID plus a compliant
 # CONTAINER securityContext (runAsNonRoot=true, drop ALL, seccomp) yet never set
@@ -13,9 +13,19 @@
 # genuinely runs non-root. This mutate closes that gap structurally, so no chart
 # has to be forked and no namespace has to be carved down to `baseline`.
 #
+# akuity/kargo 1.2.0 is the second reference case, and a stricter variant: the
+# chart exposes NO pod-level securityContext knob at all (only a per-component
+# `<component>.securityContext` value that templates onto the CONTAINER, never
+# the pod) — so unlike Harbor there is no pod-level runAsUser to key off either.
+# The precondition below therefore also matches when only a CONTAINER declares
+# runAsUser > 0, which is exactly Kargo's shape once its chart values set
+# api/controller/webhooksServer/etc. securityContext.runAsUser.
+#
 # Safety — this only ever ASSERTS a truth, never forces a root workload non-root:
-#   1. preconditions gate on pod-level runAsUser > 0 → a declared non-root UID.
-#      Root pods (runAsUser:0 or unset) never match, so they are untouched.
+#   1. preconditions gate on runAsUser > 0 declared at the pod level OR on any
+#      one container — either way, a non-root UID the pod actually runs as.
+#      Root pods (runAsUser:0 or unset everywhere) never match, so they are
+#      untouched.
 #   2. the exclude block mirrors require-pod-security-restricted: baseline /
 #      privileged carve-out namespaces (vault, istio-system, tidb, …) are skipped,
 #      so their deliberately root-running init/JVM containers are never forced
@@ -30,10 +40,12 @@ metadata:
     policies.kyverno.io/severity: low
     policies.kyverno.io/category: Pod Security
     policies.kyverno.io/description: >-
-      Injects pod-level runAsNonRoot=true when a pod declares a non-zero pod-level
-      runAsUser but omits runAsNonRoot (ADR-0019 defence-in-depth). Unblocks charts
-      like goharbor/harbor that run non-root but never state pod-level runAsNonRoot,
-      which require-pod-security-restricted (ADR-0017) checks at the pod level.
+      Injects pod-level runAsNonRoot=true when a pod declares a non-zero runAsUser
+      — at the pod level OR on any container — but omits runAsNonRoot (ADR-0019
+      defence-in-depth). Unblocks charts like goharbor/harbor (pod-level UID, no
+      pod-level runAsNonRoot) and akuity/kargo (container-level UID only, no
+      pod-level securityContext knob at all), which require-pod-security-restricted
+      (ADR-0017) checks at the pod level.
 spec:
   rules:
   - name: add-runasnonroot-when-nonroot-uid
@@ -54,10 +66,16 @@ spec:
               operator: In
               values: [baseline, privileged]
     preconditions:
-      all:
-      # Only when a non-root UID is already declared at the pod level. `|| ` + backtick
-      # 0 backtick defaults the value to 0 when securityContext/runAsUser is absent.
+      any:
+      # A non-root UID declared at the pod level. `|| ` + backtick 0 backtick
+      # defaults the value to 0 when securityContext/runAsUser is absent.
       - key: "{{ request.object.spec.securityContext.runAsUser || `0` }}"
+        operator: GreaterThan
+        value: 0
+      # ...or on at least one container (charts with no pod-level knob, e.g. Kargo).
+      # JMESPath filter comparisons against a missing field evaluate to null and
+      # are dropped, so containers that omit runAsUser never contribute a match.
+      - key: "{{ request.object.spec.containers[?securityContext.runAsUser > `0`] | length(@) || `0` }}"
         operator: GreaterThan
         value: 0
     mutate:

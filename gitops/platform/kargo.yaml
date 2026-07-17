@@ -1,11 +1,18 @@
 # Kargo promotion-orchestration engine (ADR-0023).
-# Helm chart kargo from https://charts.kargo.io.
+# Helm chart kargo from the OCI registry ghcr.io/akuity/kargo-charts (the old
+# https://charts.kargo.io HTTPS index was retired upstream and is now NXDOMAIN).
 # Single replica per component (ADR-0005 lab trade-off; production runs HA).
 # Plain HTTP inside the cluster (api.tls.selfSignedCert.generate: false); TLS
 # terminated at Envoy Gateway (ADR-0008). Admin credentials from Vault via ESO
-# (ExternalSecret kargo-admin-credentials, Vault path secret/kargo/admin).
+# (ExternalSecret kargo-admin-credentials, Vault path secret/kargo/admin),
+# wired in wholesale via api.secret.name — the chart has no secretKeyRef-style
+# field for individual admin-account values.
 # kargo-extras (wave 0) pre-creates the kargo namespace with PSA restricted labels
-# (ADR-0017) before the Helm release schedules pods.
+# (ADR-0017) before the Helm release schedules pods. The chart has NO pod-level
+# securityContext knob anywhere (only per-component `<x>.securityContext`, which
+# templates onto the CONTAINER) — global.securityContext sets that container-level
+# floor for every component in one place; add-default-runasnonroot backfills the
+# pod-level runAsNonRoot this chart can never set itself (see that policy's comment).
 # ON-DEMAND: no auto-sync block → ArgoCD discovers this Application but will NOT
 # auto-deploy it. Bring up with: make kargo-up
 # Tear down with:               make kargo-down
@@ -21,12 +28,21 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://charts.kargo.io
+    repoURL: ghcr.io/akuity/kargo-charts
     chart: kargo
     targetRevision: 1.2.3
     helm:
       releaseName: kargo
       valuesObject:
+        global:
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
         api:
           replicas: 1
           resources:
@@ -37,11 +53,8 @@ spec:
           tls:
             selfSignedCert:
               generate: false
-          adminAccount:
-            enabled: true
-            passwordHashSecretKeyRef:
-              name: kargo-admin-credentials
-              key: password-hash
+          secret:
+            name: kargo-admin-credentials
         controller:
           replicas: 1
           resources:
