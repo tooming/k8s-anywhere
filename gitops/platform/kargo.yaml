@@ -23,7 +23,7 @@ spec:
   source:
     repoURL: https://charts.kargo.io
     chart: kargo
-    targetRevision: 1.2.0
+    targetRevision: 1.2.3
     helm:
       releaseName: kargo
       valuesObject:
