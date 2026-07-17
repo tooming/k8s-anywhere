@@ -70,6 +70,7 @@ v secrets list 2>/dev/null | grep -q '^secret/' || { echo "[vault] enabling kv-v
 #   secret/inkless/s3      -> inkless-broker-creds (on-demand; Garage S3 key) [garage-bootstrap]
 #   secret/harbor/admin   -> harbor-admin-creds (Harbor admin user + password)        [here]
 #   secret/harbor/registry -> CI registry creds for harbor (username + password)       [here]
+#   secret/kargo/admin    -> kargo-admin-credentials (Kargo admin password hash + JWT signing key) [here]
 v kv get secret/garage/server >/dev/null 2>&1 || { echo "[vault] writing secret/garage/server"; v kv put secret/garage/server rpc-secret="$(openssl rand -hex 32)" admin-token="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/aws/moto >/dev/null 2>&1 || { echo "[vault] writing secret/aws/moto (dummy creds; moto ignores them)"; v kv put secret/aws/moto access-key-id=test secret-access-key=test >/dev/null; }
 v kv get secret/grafana/admin >/dev/null 2>&1 || { echo "[vault] writing secret/grafana/admin"; v kv put secret/grafana/admin admin-user=admin admin-password="$(openssl rand -hex 16)" >/dev/null; }
@@ -83,6 +84,7 @@ v kv get secret/capstone/app >/dev/null 2>&1 || { echo "[vault] writing secret/c
 v kv get secret/inkless/postgres >/dev/null 2>&1 || { echo "[vault] writing secret/inkless/postgres"; v kv put secret/inkless/postgres password="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/harbor/admin >/dev/null 2>&1 || { echo "[vault] writing secret/harbor/admin"; v kv put secret/harbor/admin admin-user=admin admin-password="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/harbor/registry >/dev/null 2>&1 || { echo "[vault] writing secret/harbor/registry"; v kv put secret/harbor/registry username=admin password="$(openssl rand -hex 16)" >/dev/null; }
+v kv get secret/kargo/admin >/dev/null 2>&1 || { echo "[vault] writing secret/kargo/admin"; v kv put secret/kargo/admin password-hash="$(htpasswd -bnBC 14 "" "$(openssl rand -hex 16)" | tr -d ':\n')" token-signing-key="$(openssl rand -base64 29 | tr -d '=+/' | cut -c1-32)" >/dev/null; }
 if [ -s "$ROOT_DIR/gitlab/.gitlab-token" ]; then v kv put secret/gitlab/bootstrap token="$(cat "$ROOT_DIR/gitlab/.gitlab-token")" >/dev/null; fi
 
 # Kubernetes auth + read policy + ESO role

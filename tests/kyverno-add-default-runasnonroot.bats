@@ -50,11 +50,22 @@ setup() {
 }
 
 @test "add-default-runasnonroot only fires for a declared non-root UID (precondition guards root workloads)" {
-  # preconditions gate on pod-level runAsUser > 0 so root pods (runAsUser:0 or
-  # unset) are never forced non-root.
-  [ "$(yqs '.spec.rules[0].preconditions.all[0].operator' "$P")" = "GreaterThan" ]
-  [ "$(yqs '.spec.rules[0].preconditions.all[0].value' "$P")" = "0" ]
+  # preconditions gate on runAsUser > 0 declared at the pod level OR on any
+  # container, so root pods (runAsUser:0 or unset everywhere) are never forced
+  # non-root.
+  [ "$(yqs '.spec.rules[0].preconditions.any[0].operator' "$P")" = "GreaterThan" ]
+  [ "$(yqs '.spec.rules[0].preconditions.any[0].value' "$P")" = "0" ]
+  [ "$(yqs '.spec.rules[0].preconditions.any[1].operator' "$P")" = "GreaterThan" ]
+  [ "$(yqs '.spec.rules[0].preconditions.any[1].value' "$P")" = "0" ]
   run grep -q 'runAsUser' "$P"
+  [ "$status" -eq 0 ]
+}
+
+@test "add-default-runasnonroot also matches a container-level (not just pod-level) non-root UID" {
+  # akuity/kargo has no pod-level securityContext knob at all — only a
+  # per-component value that templates onto the CONTAINER. The precondition
+  # must also key off spec.containers[].securityContext.runAsUser for that case.
+  run grep -q 'spec.containers\[?securityContext.runAsUser' "$P"
   [ "$status" -eq 0 ]
 }
 
