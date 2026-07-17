@@ -115,7 +115,7 @@ so the executor never silently applies the wrong label.
 | `moto` / `ack-system` | `restricted` | Stateless HTTP mock; non-root-capable. |
 | `lab-gateway` | `restricted` | Envoy Gateway; runs as non-root. |
 | `vault` | `restricted` | Flipped from `baseline` 2026-07-17 (RFC #478): chart `v0.34.0`'s default Vault `v2.0.3` image no longer holds `cap_ipc_lock`; `disable_mlock = true` is set as the required counterpart. Full history: audit #157 (2026-06-11, kept) → audit #477 (2026-07-17, converted) → this flip. See [§Re-evaluation log](#re-evaluation-log). |
-| `kyverno` | `baseline` | Kyverno admission controller mounts webhook TLS material via `fsGroup`; PSS `restricted` forbids it. Per ADR-0019 §"Per-namespace profile update". Re-evaluate when the upstream chart documents `restricted` compatibility. |
+| `kyverno` | `baseline` | Kyverno admission controller mounts webhook TLS material via `fsGroup`; PSS `restricted` forbids it. Per ADR-0019 §"Per-namespace profile update". Re-evaluated 2026-07-17 (audit #482) — **flip condition now met, actioned as RFC #483**; still `baseline` until that RFC's executor PR confirms the pinned chart's rendered manifests independently and lands the change. See [§Re-evaluation log](#re-evaluation-log). |
 | `velero` | `restricted` | Controller runs non-root (UID 65534); node-agent DaemonSet uses a per-workload annotation to mount `/var/lib/kubelet/pods` for Kopia FS-backup (matches the node-exporter hostPath carve-out pattern in §"Per-workload field carve-outs"). Per ADR-0021 §"PSA profile" (implementation adopted `restricted`, overriding the initial `baseline` estimate). |
 | `argo-rollouts` | `restricted` | Controller and dashboard both run as non-root (UID 65532), no host volumes, no privileged containers. Per ADR-0020 §"NetworkPolicy + PSS". |
 | `trivy-system` | `baseline` | Trivy scan-job pods pull and unpack arbitrary OCI layer tarballs, exceeding `restricted`. Operator pod itself is restricted-compliant; chart applies one PSA profile to both. Per ADR-0022 §"PSA profile". Re-evaluate per chart upgrade. |
@@ -253,6 +253,35 @@ verification is the maintainer's to confirm on the live cluster. If Vault fails 
 start, the rollback is: revert this commit (chart pin, PSA labels, unsealer image
 all revert together) — ArgoCD self-heals within its sync interval, no data loss
 (the `dataStorage` PVC is untouched by any of these changes).
+
+### 2026-07-17 — `kyverno` carve-out re-audited, converted to RFC (audit [#482](https://github.com/tooming/k8s-anywhere/issues/482))
+
+**Trigger.** ADR-0019's original `baseline` justification — "controllers run as
+non-root but mount webhook TLS via `fsGroup`" — was checked against the actual
+pinned chart tag (`kyverno-chart-3.3.4`, not `main`). No hostPath volume and no
+webhook-TLS-as-filesystem-volume was found in any of the four controllers'
+Deployments (`admission-controller`, `background-controller`,
+`cleanup-controller`, `reports-controller`) — TLS is read via the K8s API by
+Secret name, not mounted. Kyverno's own official docs
+(`kyverno.io/docs/installation/platform-notes/`) state the chart's default
+securityContext "conforms to the upstream Pod Security Standards' restricted
+profile" (the only documented incompatibility is OpenShift Security Context
+Constraints, irrelevant to this plain-k3d/k3s lab). Independently confirmed
+against `kyverno-chart-3.3.4`'s real `values.yaml`: all four controllers already
+default to `runAsNonRoot: true`, `allowPrivilegeEscalation: false`,
+`capabilities.drop: [ALL]`, `readOnlyRootFilesystem: true`,
+`seccompProfile.type: RuntimeDefault` at the container level.
+
+**Decision: Convert.** Unambiguous (official upstream docs + independently
+verified pinned-tag chart source) and groundable now — no chart bump needed,
+since `3.3.4` is already what this repo runs. Actioned as
+[RFC #483](https://github.com/tooming/k8s-anywhere/issues/483). Given Kyverno's
+higher blast radius (cluster-wide admission controller, unlike vault's
+single-namespace secrets backend), the RFC requires the executor to
+independently re-verify the chart's rendered securityContext before flipping
+the namespace label — not simply trust this audit's citation — and to flag
+(not force) the flip if any gap surfaces. The `kyverno` row above stays
+`baseline` until that RFC's executor PR actually lands the change.
 
 ---
 
