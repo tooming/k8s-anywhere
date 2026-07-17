@@ -158,7 +158,7 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "k8s-lab-ca is referenced only by gitops/cert-manager/ and its one deliberate consumer, the wildcard Certificate (ADR-0028 follow-up)" {
+@test "k8s-lab-ca is referenced only by gitops/cert-manager/ and its deliberate consumers (wildcard Certificate, ADR-0028; KEDA webhook TLS, ADR-0029)" {
   run grep -rl 'k8s-lab-ca\|k8s-lab-root-ca' "$REPO/gitops" --include="*.yaml"
   [ "$status" -eq 0 ]
   while IFS= read -r f; do
@@ -166,7 +166,8 @@ setup() {
       "$REPO/gitops/cert-manager/"*) ;;
       "$REPO/gitops/network/certificates/wildcard-certificate.yaml") ;;
       "$REPO/gitops/platform/lab-gateway-certificate.yaml") ;;
-      *) echo "unexpected reference outside gitops/cert-manager/ and the wildcard Certificate: $f"; return 1 ;;
+      "$REPO/gitops/platform/keda.yaml") ;;
+      *) echo "unexpected reference outside gitops/cert-manager/ and the known consumers: $f"; return 1 ;;
     esac
   done <<< "$output"
 }

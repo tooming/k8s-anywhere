@@ -62,8 +62,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "keda-extras Application runs at sync-wave 0" {
-  run grep -q 'sync-wave: "0"' "$EXTRAS"
+@test "keda-extras Application runs at sync-wave 6 (moved alongside keda, ADR-0029 webhook-TLS follow-up)" {
+  run grep -q 'sync-wave: "6"' "$EXTRAS"
   [ "$status" -eq 0 ]
 }
 

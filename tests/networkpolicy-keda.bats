@@ -87,7 +87,7 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- keda-networkpolicy Application (wave 4) ----------------------------------
+# --- keda-networkpolicy Application (wave 6) ----------------------------------
 @test "keda-networkpolicy Application file exists" {
   [ -f "$REPO/gitops/platform/keda-networkpolicy.yaml" ]
 }
@@ -112,7 +112,7 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "keda-networkpolicy Application is at sync-wave 4" {
-  run grep -q 'sync-wave: "4"' "$REPO/gitops/platform/keda-networkpolicy.yaml"
+@test "keda-networkpolicy Application is at sync-wave 6 (moved alongside keda, ADR-0029 webhook-TLS follow-up)" {
+  run grep -q 'sync-wave: "6"' "$REPO/gitops/platform/keda-networkpolicy.yaml"
   [ "$status" -eq 0 ]
 }
