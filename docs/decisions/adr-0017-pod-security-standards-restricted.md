@@ -114,7 +114,7 @@ so the executor never silently applies the wrong label.
 | `tidb` / `tidb-admin` | `baseline` | TiDB operator pods need additional capabilities; `baseline` is HashiCorp/PingCAP's documented recommendation. |
 | `moto` / `ack-system` | `restricted` | Stateless HTTP mock; non-root-capable. |
 | `lab-gateway` | `restricted` | Envoy Gateway; runs as non-root. |
-| `vault` | `baseline` | Vault needs `IPC_LOCK` to `mlock` its memory and prevent secret swap-to-disk. `restricted` forbids it; `baseline` is HashiCorp's recommended profile. Re-evaluated 2026-06-11 (audit #157) — **kept**; re-audited 2026-07-17 (audit #477) — **flip condition now met, actioned as RFC #478**; still `baseline` until that RFC's executor PR lands. See [§Re-evaluation log](#re-evaluation-log). |
+| `vault` | `restricted` | Flipped from `baseline` 2026-07-17 (RFC #478): chart `v0.34.0`'s default Vault `v2.0.3` image no longer holds `cap_ipc_lock`; `disable_mlock = true` is set as the required counterpart. Full history: audit #157 (2026-06-11, kept) → audit #477 (2026-07-17, converted) → this flip. See [§Re-evaluation log](#re-evaluation-log). |
 | `kyverno` | `baseline` | Kyverno admission controller mounts webhook TLS material via `fsGroup`; PSS `restricted` forbids it. Per ADR-0019 §"Per-namespace profile update". Re-evaluate when the upstream chart documents `restricted` compatibility. |
 | `velero` | `restricted` | Controller runs non-root (UID 65534); node-agent DaemonSet uses a per-workload annotation to mount `/var/lib/kubelet/pods` for Kopia FS-backup (matches the node-exporter hostPath carve-out pattern in §"Per-workload field carve-outs"). Per ADR-0021 §"PSA profile" (implementation adopted `restricted`, overriding the initial `baseline` estimate). |
 | `argo-rollouts` | `restricted` | Controller and dashboard both run as non-root (UID 65532), no host volumes, no privileged containers. Per ADR-0020 §"NetworkPolicy + PSS". |
@@ -232,6 +232,27 @@ image bump). The `vault` row above stays `baseline` until that RFC's executor PR
 actually lands the change — this log entry records the decision, not the change
 itself (ADR-0004: never assert a posture the running/committed manifests don't
 yet have).
+
+### 2026-07-17 — `vault` carve-out flipped to `restricted` (RFC #478 executor PR)
+
+**Change landed.** `gitops/platform/vault.yaml`: chart `0.32.0 → 0.34.0`, `disable_mlock = true`
+added to the standalone config, `server.statefulSet.securityContext.pod`/`.container`
+set to the standard §Layer 1 block, an explicit `tmp` `emptyDir` added (mounted at
+`/tmp`, alongside the chart's own unconditional `home` `emptyDir` at `/home/vault`)
+for `readOnlyRootFilesystem: true`. `gitops/vault/namespace.yaml`: all four PSA
+labels flipped `baseline → restricted`. `gitops/vault/unsealer.yaml`: image bumped
+`hashicorp/vault:1.21.2 → hashicorp/vault:2.0.3`, and — since it also runs in this
+now-`restricted` namespace — given its own pod/container `securityContext` plus
+`home`/`tmp` `emptyDir` mounts (it had none before; the namespace was `baseline`
+so it passed without one). The `vault` row above now reads `restricted`.
+
+**Caveat (ADR-0004).** This environment is remote and clusterless — whether Vault
+actually starts cleanly under `restricted` + `disable_mlock` + `readOnlyRootFilesystem`
+is not verifiable here. `make ci` (structural/`kustomize`/bats) is green; runtime
+verification is the maintainer's to confirm on the live cluster. If Vault fails to
+start, the rollback is: revert this commit (chart pin, PSA labels, unsealer image
+all revert together) — ArgoCD self-heals within its sync interval, no data loss
+(the `dataStorage` PVC is untouched by any of these changes).
 
 ---
 

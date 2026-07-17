@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://helm.releases.hashicorp.com
     chart: vault
-    targetRevision: 0.32.0
+    targetRevision: 0.34.0
     helm:
       releaseName: vault
       valuesObject:
@@ -28,6 +28,7 @@ spec:
             enabled: true
             config: |
               ui = true
+              disable_mlock = true
               listener "tcp" {
                 address     = "[::]:8200"
                 tls_disable = 1
@@ -45,6 +46,31 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
+          # ADR-0017: chart v0.34.0 defaults to a Vault 2.0.3 image that no
+          # longer holds cap_ipc_lock (disable_mlock above is the required
+          # counterpart), so the PSS-restricted profile now applies. `home`
+          # (/home/vault) is already an unconditional chart-provided emptyDir;
+          # `/tmp` is not, so it's added explicitly for readOnlyRootFilesystem.
+          volumes:
+            - name: tmp
+              emptyDir: {}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          statefulSet:
+            securityContext:
+              pod:
+                runAsNonRoot: true
+                runAsGroup: 1000
+                runAsUser: 100
+                fsGroup: 1000
+                seccompProfile:
+                  type: RuntimeDefault
+              container:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+                readOnlyRootFilesystem: true
   destination:
     server: https://kubernetes.default.svc
     namespace: vault

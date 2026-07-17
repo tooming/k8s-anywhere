@@ -32,4 +32,3 @@
 @test "storage namespace.yaml enforces PSS baseline"
 @test "tidb namespace.yaml enforces PSS baseline"
 @test "tidb-admin namespace.yaml enforces PSS baseline"
-@test "vault namespace.yaml enforces PSS baseline"

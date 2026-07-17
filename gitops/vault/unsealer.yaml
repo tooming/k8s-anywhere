@@ -19,9 +19,16 @@ spec:
       labels:
         app: vault-unsealer
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: unsealer
-          image: hashicorp/vault:1.21.2
+          image: hashicorp/vault:2.0.3
           env:
             - name: VAULT_ADDR
               value: http://vault.vault.svc.cluster.local:8200
@@ -41,6 +48,16 @@ spec:
                 fi
                 sleep 10;
               done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: home
+              mountPath: /home/vault
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: 10m
@@ -48,3 +65,8 @@ spec:
             limits:
               cpu: 100m
               memory: 64Mi
+      volumes:
+        - name: home
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

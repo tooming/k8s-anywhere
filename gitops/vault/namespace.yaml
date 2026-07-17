@@ -1,12 +1,13 @@
-# PSA carve-out: vault uses mlock(2) which requires the IPC_LOCK capability;
-# the upstream HashiCorp chart runs as root for that reason. The restricted profile
-# would block it. ADR-0017 §Per-namespace profile records vault as baseline-only.
+# PSA restricted: Vault Helm chart v0.34.0+ defaults to a Vault 2.0.3 image that
+# no longer holds cap_ipc_lock at build time (disable_mlock = true is set in
+# gitops/platform/vault.yaml's server config as the required counterpart).
+# ADR-0017 §Per-namespace profile / §Re-evaluation log (RFC #478, 2026-07-17).
 apiVersion: v1
 kind: Namespace
 metadata:
   name: vault
   labels:
-    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: latest
-    pod-security.kubernetes.io/warn: baseline
-    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
