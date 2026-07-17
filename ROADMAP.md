@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **`kyverno` PSA `baseline` → `restricted` flip** (CHARTER **Objective
+- [x] 🟢 **`kyverno` PSA `baseline` → `restricted` flip** (CHARTER **Objective
   O2** hardening, RFC #483 — architect decision 2026-07-17, converting audit
   #482). Kyverno's own official docs (`kyverno.io/docs/installation/platform-notes/`)
   state the chart's default securityContext "conforms to the upstream Pod
