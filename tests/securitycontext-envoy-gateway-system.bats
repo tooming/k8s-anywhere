@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for the PSS *baseline* profile applied to the
 # envoy-gateway-system namespace (ADR-0017 §Per-namespace profile, RFC #230).
-# baseline (not restricted) because the gateway-helm v1.8.0 Envoy proxy data-plane
+# baseline (not restricted) because the gateway-helm chart's Envoy proxy data-plane
 # pods run as UID 0 — restricted would have PSA reject every new proxy pod and break
 # north-south traffic. See gitops/envoy-gateway-system/namespace.yaml for the flip
 # condition.
