@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: https://charts.pingcap.org
     chart: tidb-operator
-    targetRevision: 1.6.1
+    targetRevision: 1.6.5
     helm:
       releaseName: tidb-operator
       valuesObject:
