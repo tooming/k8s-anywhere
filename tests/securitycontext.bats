@@ -80,13 +80,6 @@ setup() {
 
 # --- baseline carve-out namespaces (ADR-0017 §Per-namespace profile) ----------
 
-@test "vault namespace.yaml enforces PSS baseline" {
-  NS="$REPO/gitops/vault/namespace.yaml"
-  [ -f "$NS" ]
-  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$NS"
-  [ "$status" -eq 0 ]
-}
-
 @test "storage namespace.yaml enforces PSS baseline" {
   NS="$REPO/gitops/storage/garage/namespace.yaml"
   [ -f "$NS" ]

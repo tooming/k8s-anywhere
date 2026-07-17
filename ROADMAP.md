@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **`vault` PSA `baseline` → `restricted` flip** (CHARTER **Objective
+- [x] 🟢 **`vault` PSA `baseline` → `restricted` flip** (CHARTER **Objective
   O2** hardening, RFC #478 — architect decision 2026-07-17, converting audit
   #477; supersedes the 2026-06-11 audit #157 "keep" — see ADR-0017
   §"Re-evaluation log" for both entries). The flip condition #157 was waiting
