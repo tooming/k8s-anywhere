@@ -68,7 +68,7 @@ so the engine is up first):
 | Policy | Type | What it does |
 |--------|------|--------------|
 | `require-pod-security-restricted` | `validate` | Backstop ADR-0017: reject pods missing `runAsNonRoot`, `allowPrivilegeEscalation=false`, `capabilities.drop=[ALL]`, `seccompProfile=RuntimeDefault`. Skips namespaces labelled `pod-security.kubernetes.io/enforce=baseline` or `=privileged` (matches the ADR-0017 carve-out table). |
-| `disallow-latest-tag` | `validate` | Reject any container `image:` ending in `:latest` or with no tag. |
+| `disallow-latest-tag` | `validate` | Reject any container `image:` ending in `:latest` or with no tag. **Carve-out (issue #498, 2026-07-18):** excludes the `capstone` namespace, whose manifests still hardcode a floating `:latest` placeholder pending Kargo wiring a real CI-pinned tag to capstone's image ref — without it, any Pod creation after the initial sync (crash/restart, Rollout scale event) is rejected and ArgoCD's `selfHeal` retries the same failing reconcile forever. Flip condition: remove the exclusion once `gitops/apps/capstone/{deployment,rollout}.yaml` reference a real, CI-pinned tag. |
 | `add-default-seccomp` | `mutate` | Inject `seccompProfile.type=RuntimeDefault` when missing (defence-in-depth alongside the validation rule). |
 | `verify-image-signatures` | `verifyImages` | Required for **Objective O4**. Admit only images cosign-signed by the lab's CI key (public key stored in a ConfigMap `cosign-public-key` in `kyverno` namespace, seeded by `scripts/cosign-bootstrap.sh`). Scope: registries in `artifactory.127.0.0.1.nip.io/**` to start; expand once O4 is end-to-end green. |
 | `add-default-runasnonroot` | `mutate` | Inject pod-level `runAsNonRoot: true` when missing — closes the admission gap exposed by the Harbor migration (ADR-0024): the `goharbor` chart sets container-level but not pod-level `runAsNonRoot`, and `require-pod-security-restricted` validates the pod level. See `tests/kyverno-add-default-runasnonroot.bats`. |
@@ -128,6 +128,10 @@ ArgoCD-deployed workload in the lab.
   are excluded by registry match. Once a fan-out PR adds Sigstore public-key
   verification for upstream signatures (e.g. distroless), the exclusion
   shrinks.
+- **`disallow-latest-tag` policy** excludes the `capstone` namespace (issue
+  #498, 2026-07-18) — its manifests still hardcode a floating `:latest`
+  placeholder pending Kargo wiring a real CI-pinned tag. Remove once
+  capstone's image refs are CI-pinned.
 
 **Out of scope (this RFC):**
 

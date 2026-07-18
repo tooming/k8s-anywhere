@@ -1367,7 +1367,7 @@ You review and merge plan PRs, same as implementation PRs.
   per WAYS-OF-WORKING.md §3, split the `ScaledObject`/`TriggerAuthentication` manifests
   from the NetworkPolicy egress/ingress changes. (auto/keda-scaledobject-demo)
 
-- [ ] 🟢 **`disallow-latest-tag` ClusterPolicy — exclude the `capstone` namespace**
+- [x] 🟢 **`disallow-latest-tag` ClusterPolicy — exclude the `capstone` namespace**
   (RFC/issue #498 — architect decision 2026-07-18, implementing in the same PR as the
   RFC issue, mirrors the inkless ADR-0017 audit pattern from issue #494 / PR #495.
   **No prerequisites — executor may pick up immediately.**)
