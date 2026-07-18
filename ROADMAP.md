@@ -210,6 +210,48 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump Cilium `1.16.6` → `1.17.18`** (CHARTER **Core Values** §"Everything
+  as code" + general hardening; RFC/issue #501 — architect decision 2026-07-18,
+  ADR audit resolved as **Convert**. **No prerequisites — executor may pick up
+  immediately.**)
+  [CVE-2026-49445](https://github.com/cilium/cilium/security/advisories/GHSA-3fcv-jvfp-m4q9)
+  (disclosed 2026-07-15): Cilium's Envoy proxy creates a world-accessible
+  `admin.sock` on cluster nodes when Envoy runs — a local attacker on the node
+  can reach Envoy's admin endpoints (expose TLS secrets, disrupt traffic, kill
+  the Envoy process). Affects all versions before 1.17.14, 1.18.0–1.18.7, and
+  1.19.0–1.19.1; fixed in 1.17.14, 1.18.8, 1.19.2. This lab pins Cilium at
+  `1.16.6` (`gitops/platform/cilium.yaml`, ADR-0014) — in the affected range.
+  Verified applicability against the actual deployed config (not just the
+  version number, per ADR-0004): the pinned chart's `values.yaml` at tag
+  `v1.16.6` defaults `envoy.enabled: ~` (null), and the chart's own comment
+  states this means Envoy's standalone DaemonSet "is enabled by default for
+  new installation" — i.e. Envoy (and its admin.sock) runs in this lab's
+  cluster today regardless of whether any L7 `CiliumNetworkPolicy` is
+  authored. `gitops/platform/cilium.yaml` does not override `envoy.enabled`,
+  so the default applies. (A second CVE found in the same sweep,
+  CVE-2026-56742 — Gateway API traffic mirroring — does NOT apply: it requires
+  Cilium's own Gateway API implementation, which this lab does not use;
+  ingress is Envoy Gateway per ADR-0008, a separate product. No action needed
+  for that one.)
+
+  Bump `gitops/platform/cilium.yaml`'s `targetRevision` from `1.16.6` to
+  `1.17.18` (the latest patch on the 1.17.x line — includes the CVE-2026-49445
+  fix at the smallest version delta from the current pin, deliberately not
+  jumping to 1.18.x/1.19.x). No `valuesObject` change is required — the fix is
+  internal to the bundled Envoy binary, not a values-schema change. ADR-0014
+  already states "chart `cilium/cilium` ≥ v1.16" so no ADR text change is
+  needed; 1.17.18 still satisfies that floor. Extend `tests/cilium.bats` (or
+  add a chart-pin assertion if none exists yet — check first) asserting the
+  new pinned version. PR body must document: the CVE, why it's applicable to
+  this lab's actual config (Envoy runs by default), why 1.17.18 was chosen
+  (smallest safe delta), and the ADR-0004 caveat that this remote clusterless
+  session cannot verify pod networking stays healthy post-bump on a live
+  cluster — call out the rollback path prominently (revert `targetRevision`,
+  ArgoCD self-heals; Cilium is a DaemonSet so a revert re-rolls the same way
+  the bump did) given Cilium is the CNI and the highest-blast-radius bump in
+  the stack. `make ci` must pass. `docs/done/` entry required. Closes #501.
+  (auto/cilium-cve-bump-1-17-18)
+
 - [x] 🟢 **`kyverno` PSA `baseline` → `restricted` flip** (CHARTER **Objective
   O2** hardening, RFC #483 — architect decision 2026-07-17, converting audit
   #482). Kyverno's own official docs (`kyverno.io/docs/installation/platform-notes/`)
