@@ -29,4 +29,4 @@ parenthetical from ADR-0006, no prerequisites, executor-pickable immediately.
 
 ## PR
 
-(filled in after `gh pr create` / `create_pull_request`)
+https://github.com/tooming/k8s-anywhere/pull/550
