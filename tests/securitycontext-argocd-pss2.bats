@@ -5,22 +5,40 @@
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  # yqs(): yq-variant-robust scalar read (strips quoting differences).
+  load lib/yq
   VALUES="$REPO/infra/modules/argocd/values.yaml"
 }
 
-@test "argocd values.yaml sets global runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$VALUES"
-  [ "$status" -eq 0 ]
+# Pod-level fields live under `global.securityContext` (the chart's real key,
+# templates/argocd-application-controller/deployment.yaml reads
+# `.Values.global.securityContext`), NOT `global.podSecurityContext` (silent
+# no-op in this chart's schema -- found auditing PR #493's bug class against
+# this file). Path-aware via yqs() so a regression back to the wrong key
+# fails these tests instead of silently passing a bare grep.
+
+@test "argocd values.yaml sets global.securityContext.runAsNonRoot: true" {
+  [ "$(yqs '.global.securityContext.runAsNonRoot' "$VALUES")" = "true" ]
 }
 
-@test "argocd values.yaml sets global readOnlyRootFilesystem: true" {
-  run grep -q 'readOnlyRootFilesystem: true' "$VALUES"
-  [ "$status" -eq 0 ]
+@test "argocd values.yaml sets global.securityContext.seccompProfile.type: RuntimeDefault" {
+  [ "$(yqs '.global.securityContext.seccompProfile.type' "$VALUES")" = "RuntimeDefault" ]
 }
 
-@test "argocd values.yaml drops ALL capabilities" {
-  run grep -q '\- ALL' "$VALUES"
-  [ "$status" -eq 0 ]
+@test "argocd values.yaml does NOT use the dead global.podSecurityContext key" {
+  [ "$(yqs '.global.podSecurityContext // "absent"' "$VALUES")" = "absent" ]
+}
+
+# Container-level PSS restricted fields (readOnlyRootFilesystem,
+# allowPrivilegeEscalation: false, capabilities.drop: [ALL]) are NOT set by
+# this file at all -- the chart's own `<component>.containerSecurityContext`
+# already defaults to exactly these values for every component (controller,
+# repoServer, applicationSet, server, and the bundled session-cache
+# sub-chart), verified against the pinned chart version (argo-cd-9.5.20).
+# `global.containerSecurityContext` is not a valid key in this chart's schema
+# (it's per-component, not global) -- guard against reintroducing it.
+@test "argocd values.yaml does NOT use the dead global.containerSecurityContext key" {
+  [ "$(yqs '.global.containerSecurityContext // "absent"' "$VALUES")" = "absent" ]
 }
 
 # The argo-cd chart (9.5.20) already renders its own "tmp" emptyDir volume +
@@ -38,9 +56,4 @@ setup() {
 @test "argocd values.yaml does not define its own server tmp volume (chart already provides one; duplicate breaks helm upgrade)" {
   run bash -c "awk '/^server:/{flag=1; print; next} flag && /^[a-zA-Z]/{flag=0} flag' '$VALUES' | grep -q 'name: tmp'"
   [ "$status" -ne 0 ]
-}
-
-@test "argocd values.yaml sets seccompProfile type RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$VALUES"
-  [ "$status" -eq 0 ]
 }
