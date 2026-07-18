@@ -36,15 +36,13 @@ Adopt **Kyverno** as the lab's always-on admission policy engine, using the
 - **Chart:** `kyverno/kyverno` v3.3.x (latest 3.x stable at executor pickup
   time; pin in the Application).
 - **Source:** `https://kyverno.github.io/kyverno/`
-- **Namespace:** `kyverno` (new namespace; PSA label `baseline` at initial
-  standup — Kyverno controllers run as non-root but the admission/cleanup
-  controllers mount webhook TLS material that today requires `fsGroup` outside
-  the `restricted` carve-out set; revisit when the chart documents `restricted`
-  compatibility. **Update 2026-07-17:** that condition is now met — audit #482
-  converted to [RFC #483](https://github.com/tooming/k8s-anywhere/issues/483);
-  see [ADR-0017 §Re-evaluation log](adr-0017-pod-security-standards-restricted.md#re-evaluation-log)
-  for the full trigger/decision record. Still `baseline` until that RFC's
-  executor PR lands.).
+- **Namespace:** `kyverno` (PSA label `baseline` at initial standup 2026-06-XX,
+  flipped to `restricted` 2026-07-17 per [RFC #483](https://github.com/tooming/k8s-anywhere/issues/483) —
+  the chart's four controllers already default to the full restricted container
+  securityContext; see [ADR-0017 §Re-evaluation log](adr-0017-pod-security-standards-restricted.md#re-evaluation-log)
+  for the full trigger/decision record, including the webhook self-protection
+  finding that resolved the pod-vs-container-level question this note
+  originally raised).
 
 ### Footprint controls (12 GB budget)
 
@@ -146,7 +144,7 @@ ADR-0017's per-namespace profile table gains one row:
 
 | Namespace | PSA profile | Reason |
 |-----------|-------------|--------|
-| `kyverno` | `baseline` | Controllers run as non-root but mount webhook TLS via `fsGroup`; chart does not yet document `restricted` compatibility. Re-evaluated 2026-07-17 (audit #482) — flip condition now met, actioned as [RFC #483](https://github.com/tooming/k8s-anywhere/issues/483); still `baseline` until that RFC's executor PR lands. |
+| `kyverno` | `restricted` | Flipped 2026-07-17 (RFC #483): chart `kyverno-chart-3.3.4`'s four controllers already default to the full restricted container securityContext. See [ADR-0017 §Re-evaluation log](adr-0017-pod-security-standards-restricted.md#re-evaluation-log) for the self-protection finding that resolved the pod-vs-container-level question this row previously raised. |
 
 The PSA label is set on the `Namespace` manifest the Kyverno Application creates.
 

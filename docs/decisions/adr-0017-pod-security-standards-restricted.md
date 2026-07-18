@@ -115,7 +115,7 @@ so the executor never silently applies the wrong label.
 | `moto` / `ack-system` | `restricted` | Stateless HTTP mock; non-root-capable. |
 | `lab-gateway` | `restricted` | Envoy Gateway; runs as non-root. |
 | `vault` | `restricted` | Flipped from `baseline` 2026-07-17 (RFC #478): chart `v0.34.0`'s default Vault `v2.0.3` image no longer holds `cap_ipc_lock`; `disable_mlock = true` is set as the required counterpart. Full history: audit #157 (2026-06-11, kept) → audit #477 (2026-07-17, converted) → this flip. See [§Re-evaluation log](#re-evaluation-log). |
-| `kyverno` | `baseline` | Kyverno admission controller mounts webhook TLS material via `fsGroup`; PSS `restricted` forbids it. Per ADR-0019 §"Per-namespace profile update". Re-evaluated 2026-07-17 (audit #482) — **flip condition now met, actioned as RFC #483**; still `baseline` until that RFC's executor PR confirms the pinned chart's rendered manifests independently and lands the change. See [§Re-evaluation log](#re-evaluation-log). |
+| `kyverno` | `restricted` | Flipped from `baseline` 2026-07-17 (RFC #483): chart `kyverno-chart-3.3.4`'s four controllers already default to the full restricted container securityContext, no override needed. Full history: audit #482 (2026-07-17, converted) → this flip. See [§Re-evaluation log](#re-evaluation-log). |
 | `velero` | `restricted` | Controller runs non-root (UID 65534); node-agent DaemonSet uses a per-workload annotation to mount `/var/lib/kubelet/pods` for Kopia FS-backup (matches the node-exporter hostPath carve-out pattern in §"Per-workload field carve-outs"). Per ADR-0021 §"PSA profile" (implementation adopted `restricted`, overriding the initial `baseline` estimate). |
 | `argo-rollouts` | `restricted` | Controller and dashboard both run as non-root (UID 65532), no host volumes, no privileged containers. Per ADR-0020 §"NetworkPolicy + PSS". |
 | `trivy-system` | `baseline` | Trivy scan-job pods pull and unpack arbitrary OCI layer tarballs, exceeding `restricted`. Operator pod itself is restricted-compliant; chart applies one PSA profile to both. Per ADR-0022 §"PSA profile". Re-evaluate per chart upgrade. |
@@ -282,6 +282,47 @@ independently re-verify the chart's rendered securityContext before flipping
 the namespace label — not simply trust this audit's citation — and to flag
 (not force) the flip if any gap surfaces. The `kyverno` row above stays
 `baseline` until that RFC's executor PR actually lands the change.
+
+### 2026-07-17 — `kyverno` carve-out flipped to `restricted` (RFC #483 executor PR)
+
+**Independent re-verification (per RFC #483's requirement).** Re-fetched the
+pinned `kyverno-chart-3.3.4` tag's `values.yaml` fresh (not reusing the
+architect cycle's read): all four controllers (`admissionController`,
+`backgroundController`, `cleanupController`, `reportsController`) confirmed to
+default `container.securityContext` to `runAsNonRoot: true`,
+`allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`,
+`readOnlyRootFilesystem: true`, `seccompProfile.type: RuntimeDefault`, and
+`hostNetwork: false`; the `sigstoreVolume` default is `emptyDir: {}` (a
+restricted-permitted volume type); no top-level `securityContext` override
+exists. No hostPath or other restricted-incompatible volume/host-namespace
+usage anywhere.
+
+**Gap found and resolved — self-protection, not a manifest change.** This
+repo's own `require-pod-security-restricted` ClusterPolicy backstop checks
+`runAsNonRoot`/`seccompProfile` at the **pod** level (a deliberate choice per
+that policy's own comment, stricter than plain K8s PSA which accepts either
+level) — and the chart's `podSecurityContext` is empty for all four
+controllers, container-level only. This looked like a real gap. Resolved by
+checking Kyverno's own webhook self-protection: `config.excludeKyvernoNamespace`
+defaults to `true` in the pinned chart, which excludes the `kyverno` namespace
+from Kyverno's own generated webhooks and `resourceFilters` — so
+`require-pod-security-restricted` (a Kyverno ClusterPolicy, enforced via
+Kyverno's own webhook) never actually evaluates against pods in the `kyverno`
+namespace itself, regardless of the pod-vs-container-level distinction. The
+**built-in Kubernetes PSA** (the namespace-label mechanism actually being
+flipped here) is a separate, independent admission path that accepts
+container-level settings for `restricted` — already satisfied. No
+`valuesObject` override was added (matches this repo's existing precedent for
+`keda`/`cert-manager`: no carve-out when the chart already complies).
+
+**Caveat (ADR-0004).** This environment is remote and clusterless — whether
+Kyverno's admission webhook stays healthy under `restricted` on a live cluster
+is not verifiable here; the self-protection exclusion is documented Kyverno
+behavior (`config.excludeKyvernoNamespace`, verified against the pinned chart's
+real `values.yaml`), not an assumption, but the maintainer should watch cluster
+admission health closely after this syncs given Kyverno's blast radius.
+Rollback: revert the namespace label commit — ArgoCD self-heals within its sync
+interval; no other component changed.
 
 ---
 

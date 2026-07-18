@@ -53,14 +53,36 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Namespace PSA labels (ADR-0017 carve-out: baseline) ---------------------
+# --- Namespace PSA labels (ADR-0017 / RFC #483: restricted, 2026-07-17) ------
 @test "kyverno namespace manifest exists" {
   [ -f "$REPO/gitops/kyverno/namespace.yaml" ]
 }
 
-@test "kyverno namespace enforces PSA baseline (ADR-0017 carve-out)" {
-  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$REPO/gitops/kyverno/namespace.yaml"
+@test "kyverno namespace enforces PSA restricted (RFC #483)" {
+  run grep -q 'pod-security.kubernetes.io/enforce: restricted' "$REPO/gitops/kyverno/namespace.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "kyverno namespace has enforce-version: latest" {
+  run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$REPO/gitops/kyverno/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "kyverno namespace has warn: restricted" {
+  run grep -q 'pod-security.kubernetes.io/warn: restricted' "$REPO/gitops/kyverno/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "kyverno namespace has audit: restricted" {
+  run grep -q 'pod-security.kubernetes.io/audit: restricted' "$REPO/gitops/kyverno/namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "kyverno namespace does NOT enforce baseline or privileged (safety check)" {
+  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$REPO/gitops/kyverno/namespace.yaml"
+  [ "$status" -ne 0 ]
+  run grep -q 'pod-security.kubernetes.io/enforce: privileged' "$REPO/gitops/kyverno/namespace.yaml"
+  [ "$status" -ne 0 ]
 }
 
 # --- NetworkPolicy overlay structure (ADR-0016 §4 fan-out) -------------------

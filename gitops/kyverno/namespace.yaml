@@ -1,13 +1,16 @@
-# PSA carve-out: Kyverno admission controller mounts webhook TLS material via
-# fsGroup which requires the baseline profile (restricted would block it).
-# ADR-0017 §Per-namespace profile records kyverno as baseline-only; re-evaluate
-# when the chart documents restricted compatibility (see ADR-0019).
+# PSA restricted: the pinned chart (kyverno-chart-3.3.4) already defaults every
+# controller's container securityContext to the full restricted profile
+# (runAsNonRoot, allowPrivilegeEscalation: false, capabilities.drop: [ALL],
+# readOnlyRootFilesystem: true, seccompProfile RuntimeDefault) with no hostPath
+# or other restricted-incompatible volume anywhere — verified against the real
+# pinned tag, not just chart docs. ADR-0017 §Per-namespace profile / ADR-0019
+# (RFC #483, 2026-07-17).
 apiVersion: v1
 kind: Namespace
 metadata:
   name: kyverno
   labels:
-    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/enforce-version: latest
-    pod-security.kubernetes.io/warn: baseline
-    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
