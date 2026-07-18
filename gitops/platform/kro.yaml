@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: ghcr.io/kro-run/kro
     chart: kro
-    targetRevision: 0.4.1
+    targetRevision: 0.9.2
     helm:
       releaseName: kro
       valuesObject:
@@ -34,7 +34,7 @@ spec:
             fsGroup: 65534
             seccompProfile:
               type: RuntimeDefault
-          containerSecurityContext:
+          securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:

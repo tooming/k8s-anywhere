@@ -1536,7 +1536,7 @@ You review and merge plan PRs, same as implementation PRs.
   explicitly). `docs/done/` entry required. Closes #528.
   (auto/longhorn-bump-1-11)
 
-- [ ] 🟢 **Bump KRO chart `0.4.1` → `0.9.x` — verify CRD/instance-scope compatibility
+- [x] 🟢 **Bump KRO chart `0.4.1` → `0.9.x` — verify CRD/instance-scope compatibility
   first** (CHARTER **Core Values** §"Everything as code" + general hardening; RFC #534
   — architect decision 2026-07-18). KRO's latest stable release is `v0.9.2` — five minor
   versions ahead of this lab's `0.4.1` chart pin (`gitops/platform/kro.yaml`). KRO is

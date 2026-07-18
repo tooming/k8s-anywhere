@@ -15,6 +15,51 @@ setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   NS="$REPO/gitops/kro/namespace.yaml"
   EXTRAS="$REPO/gitops/platform/kro-extras.yaml"
+  APP="$REPO/gitops/platform/kro.yaml"
+}
+
+# --- deployment securityContext (the chart's real key, not containerSecurityContext) ---
+# The kro Helm chart's container-level security fields live under
+# `deployment.securityContext` — NOT `deployment.containerSecurityContext` (a
+# non-existent, silently-dropped key; same dead-key bug class as PR #493's
+# Pyroscope fix). Found while diffing the chart's values.yaml for the
+# 0.4.1 -> 0.9.2 bump; the key was wrong at 0.4.1 too, so this securityContext
+# override never actually applied.
+
+@test "kro Application sets deployment.securityContext (not the dead containerSecurityContext key)" {
+  run grep -q '^          securityContext:' "$APP"
+  [ "$status" -eq 0 ]
+}
+
+@test "kro Application does not use the dead containerSecurityContext key" {
+  run grep -q 'containerSecurityContext' "$APP"
+  [ "$status" -eq 1 ]
+}
+
+@test "kro Application securityContext sets allowPrivilegeEscalation: false" {
+  run grep -A5 '^          securityContext:' "$APP"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"allowPrivilegeEscalation: false"* ]]
+}
+
+@test "kro Application securityContext sets readOnlyRootFilesystem: true" {
+  run grep -A5 '^          securityContext:' "$APP"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"readOnlyRootFilesystem: true"* ]]
+}
+
+@test "kro Application securityContext drops ALL capabilities" {
+  run grep -A6 '^          securityContext:' "$APP"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"drop:"* ]]
+  [[ "$output" == *"- ALL"* ]]
+}
+
+# --- chart pin ----------------------------------------------------------------
+
+@test "kro Application chart pin is 0.9.x (not the old 0.4.1)" {
+  run grep -q 'targetRevision: 0\.9\.' "$APP"
+  [ "$status" -eq 0 ]
 }
 
 # --- namespace PSA restricted labels -----------------------------------------
