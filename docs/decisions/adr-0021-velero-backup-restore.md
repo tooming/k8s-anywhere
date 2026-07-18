@@ -33,7 +33,7 @@ filesystem-snapshot uploader (the in-tree default since Velero 1.11).
 ### Chart + version
 
 - **Chart:** `vmware-tanzu/velero` v8.4.x (latest 8.x stable at executor
-  pickup time; pin in the Application). Velero application version v1.16.x.
+  pickup time; pin in the Application).
 - **Source:** `https://vmware-tanzu.github.io/helm-charts`
 - **Namespace:** `velero` (new namespace; PSA label `restricted`).
 
@@ -195,3 +195,24 @@ real-metric dashboard.
 | [ADR-0013](adr-0013-longhorn-block-storage.md) | When Longhorn is up, Velero's `EnableCSI` feature uses Longhorn snapshots; otherwise falls back to Kopia FS-snapshot. |
 | [ADR-0016](adr-0016-default-deny-networkpolicy.md) | `velero` namespace gets default-deny during fan-out. |
 | [ADR-0017](adr-0017-pod-security-standards-restricted.md) | Controller `restricted`; node-agent DaemonSet gets the same per-workload carve-out as node-exporter. |
+
+---
+
+## Re-evaluation log
+
+- **2026-07-18 (executor currency check).** Verified directly against
+  `vmware-tanzu/helm-charts`: every `8.x` chart release (`8.4.0` through the
+  current pin `8.7.2`) ships `appVersion: 1.15.2` — no `8.x` release ever
+  reached `v1.16.x`. This ADR's original "Velero application version v1.16.x"
+  line (above) was an inaccurate assumption at authoring time, now corrected.
+  The chart repo's own release history jumps straight from `8.7.2` to `11.x`
+  (latest `12.1.0`, `appVersion: 1.18.1`) — a major chart-line bump, consistent
+  with an upgrade-drafter cycle the same day deliberately staying on the pinned
+  `8.x` line rather than crossing it (see `gitops/platform/velero.yaml`'s own
+  comment). **Decision: Keep** the `8.x` pin — no CVE or Objective-O3-blocking
+  issue found in `1.15.2`; the chart's values-schema diff between `8.7.2` and
+  `1.16.x`-era releases was not fully audited this pass. **Flip condition:** a
+  disclosed CVE affecting Velero `<1.16` or Kopia's `1.15.x`-era uploader, or a
+  future architect RFC that audits the `11.x`/`12.x` chart's values-schema
+  compatibility with this Application's `valuesObject` and decides the major
+  bump is worth the migration effort.
