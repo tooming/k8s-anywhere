@@ -7,6 +7,7 @@
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  load lib/yq
 }
 
 # --- ArgoCD Application shape (ON-DEMAND, no auto-sync) ----------------------
@@ -29,6 +30,16 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "kargo Application pins chart version 1.6.4 (CVE-2026-24748 fix)" {
+  run grep -q 'targetRevision: 1.6.4' "$REPO/gitops/platform/kargo.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "kargo Application does not pin the pre-CVE-fix 1.2.3 version" {
+  run grep -q 'targetRevision: 1.2.3' "$REPO/gitops/platform/kargo.yaml"
+  [ "$status" -ne 0 ]
+}
+
 @test "kargo Application is ON-DEMAND (no automated sync block)" {
   run grep -q 'automated:' "$REPO/gitops/platform/kargo.yaml"
   [ "$status" -eq 1 ]
@@ -39,9 +50,21 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# api.tls.selfSignedCert is a plain boolean in the chart's real schema
+# (verified against charts/kargo/values.yaml at both the previous and new
+# pinned tags), NOT an object with a nested `generate` key. The old
+# `generate: false` shape was a silent no-op (Helm would template the
+# non-empty map as truthy, generating a cert-manager Certificate the lab's
+# ADR-0008 Envoy Gateway TLS termination never needed). Path-aware via
+# yqs() so a regression back to the dead shape fails this test.
 @test "kargo Application disables TLS self-signed cert (plain HTTP inside cluster)" {
-  run grep -q 'generate: false' "$REPO/gitops/platform/kargo.yaml"
-  [ "$status" -eq 0 ]
+  P="$REPO/gitops/platform/kargo.yaml"
+  [ "$(yqs '.spec.source.helm.valuesObject.api.tls.selfSignedCert' "$P")" = "false" ]
+}
+
+@test "kargo Application does not use the dead selfSignedCert.generate key" {
+  P="$REPO/gitops/platform/kargo.yaml"
+  [ "$(yqs '.spec.source.helm.valuesObject.api.tls.selfSignedCert.generate // "absent"' "$P")" = "absent" ]
 }
 
 @test "kargo Application sets controller memory limit" {
@@ -233,9 +256,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "Warehouse uses Digest tag-selection strategy" {
-  run grep -q 'tagSelectionStrategy: Digest' "$REPO/gitops/kargo-project/project.yaml"
+@test "Warehouse uses Digest image-selection strategy (imageSelectionStrategy, not tagSelectionStrategy)" {
+  run grep -q 'imageSelectionStrategy: Digest' "$REPO/gitops/kargo-project/project.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "Warehouse does NOT use the dead tagSelectionStrategy key" {
+  run grep -q 'tagSelectionStrategy:' "$REPO/gitops/kargo-project/project.yaml"
+  [ "$status" -ne 0 ]
 }
 
 @test "kargo-project declares dev and prod Stages" {
@@ -267,6 +295,37 @@ setup() {
   [ "$status" -eq 0 ]
   run grep -q 'namespace: argocd' "$REPO/gitops/kargo-project/project.yaml"
   [ "$status" -eq 0 ]
+}
+
+# --- argocd-update image override: kustomize.images, not bare sources.images -
+# The argocd-update step's config schema (verified against
+# internal/promotion/runner/builtin/schemas/argocd-update-config.json at both
+# the previous and new Kargo tags) has no bare `images` field directly under
+# `sources[]` -- image overrides must nest under `sources[].kustomize.images[]`
+# with a `repoURL` + `digest`/`tag` pair, and the digest must come from the
+# `imageFrom()` expression function, not a literal enum value. Path-aware via
+# yqs() (multi-document file -- select each Stage by name) so a regression
+# back to the dead shape fails these tests instead of a bare grep passing.
+@test "dev Stage argocd-update step nests the image override under kustomize.images" {
+  P="$REPO/gitops/kargo-project/project.yaml"
+  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "dev") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].repoURL' "$P")" = "artifactory.127.0.0.1.nip.io/docker-local/hello" ]
+  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "dev") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].digest' "$P")" = '${{ imageFrom("artifactory.127.0.0.1.nip.io/docker-local/hello").Digest }}' ]
+}
+
+@test "dev Stage argocd-update step does NOT use the dead bare sources.images key" {
+  P="$REPO/gitops/kargo-project/project.yaml"
+  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "dev") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].images // "absent"' "$P")" = "absent" ]
+}
+
+@test "prod Stage argocd-update step nests the image override under kustomize.images" {
+  P="$REPO/gitops/kargo-project/project.yaml"
+  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "prod") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].repoURL' "$P")" = "artifactory.127.0.0.1.nip.io/docker-local/hello" ]
+  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "prod") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].digest' "$P")" = '${{ imageFrom("artifactory.127.0.0.1.nip.io/docker-local/hello").Digest }}' ]
+}
+
+@test "prod Stage argocd-update step does NOT use the dead bare sources.images key" {
+  P="$REPO/gitops/kargo-project/project.yaml"
+  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "prod") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].images // "absent"' "$P")" = "absent" ]
 }
 
 # --- Admin credentials ExternalSecret ----------------------------------------
