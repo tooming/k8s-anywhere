@@ -31,4 +31,4 @@ only (not a blanket exclusion). `make ci` passes. Closes #498.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/500
