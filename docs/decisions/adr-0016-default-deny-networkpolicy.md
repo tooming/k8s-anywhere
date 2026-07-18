@@ -162,3 +162,56 @@ ADR as the *pattern*, not the enumeration.
 | [ADR-0012](adr-0012-istio-ambient-not-sidecar.md) | `NetworkPolicy` and Istio `AuthorizationPolicy` are complementary, not redundant. |
 | [ADR-0014](adr-0014-cilium-not-flannel-policy.md) | **Prerequisite.** Cilium must be active before any policy is functional. |
 | [ADR-0017](adr-0017-pod-security-standards-restricted.md) | Companion security ADR (host network controls vs pod security controls). |
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-18 — Argo CD repo-server RCE exposure kept (audit #526)
+
+**Trigger.** Security researchers disclosed (2026-07, ~18 months after
+reporting it to the maintainers) an unpatched, un-CVE'd flaw in Argo CD's
+`repo-server`: an unauthenticated internal gRPC service (`GenerateManifest`)
+that anyone able to reach the port can abuse for arbitrary command execution
+via Kustomize's Helm integration, leading to cluster takeover. No fix exists;
+the researchers' own stated mitigation is restricting network access to
+`repo-server` + Redis to Argo CD's own components — the upstream chart ships
+these NetworkPolicies but leaves them disabled by default.
+
+**Decision: keep the current posture — already mitigated.** Checked directly
+against this lab's actual `gitops/argocd/networkpolicy/` overlay rather than
+assuming: only `argocd-server` (TCP 8080) has a cross-namespace ingress allow
+(from Envoy Gateway proxy pods, plus an Alloy metrics-scrape allow);
+`repo-server` (:8081) and `argocd-cache`/Redis (:6379) have no ingress rule
+reachable from outside the `argocd` namespace — the only rule touching them,
+`allow-argocd-intra-namespace.yaml`'s bare `podSelector: {}`, is same-namespace
+-only. Cross-checked every other namespace's overlay for an egress rule that
+could reach those ports: the only two rules egressing to `argocd`
+(`gitops/kargo/networkpolicy/allow-kargo-egress-argocd.yaml`,
+`gitops/kargo-project/networkpolicy/allow-capstone-pipeline-egress-argocd.yaml`)
+are both scoped to TCP 80 (the API server) only. Kubernetes NetworkPolicy
+requires both source-egress and destination-ingress to allow a flow, so
+`repo-server`/Redis are unreachable from outside `argocd` in this cluster
+today — this lab already runs the researchers' own recommended mitigation, as
+a side effect of this ADR's 2026-07-14 default-deny fan-out rather than a
+deliberate response (the fan-out predates this disclosure).
+
+**Residual exposure.** Intra-namespace only: any pod already running inside
+`argocd` could still reach `repo-server` — the same accepted trust boundary
+`allow-argocd-intra-namespace.yaml`'s own carve-out already documents (every
+component there is part of one tightly-coupled control plane; see
+[§Scope & exceptions](#scope--exceptions)).
+
+**ADR-0004 caveat.** This is a static config review, not a live-cluster
+penetration test — this remote clusterless session cannot confirm Cilium is
+actually enforcing these policies as configured on a real cluster.
+
+**Flip condition.** Revisit if Argo CD ships an official patch/CVE with a
+different recommended mitigation, or if any future ROADMAP item adds a new
+pod to the `argocd` namespace or a new cross-namespace egress rule targeting
+ports 8081/6379.
