@@ -8,21 +8,31 @@ global:
   image:
     tag: latest
   # PSS restricted — Phase 2 (RFC #205, ADR-0017). ArgoCD components run as UID 1000 (non-root).
-  # These global fields apply to ArgoCD's own deployments (controller, repo-server, server,
-  # applicationset-controller); the bundled session-cache sub-chart retains its own settings.
-  podSecurityContext:
+  # Pod-level securityContext is set via `global.securityContext`, NOT
+  # `global.podSecurityContext` -- the argo-cd chart's templates (e.g.
+  # templates/argocd-application-controller/deployment.yaml) read
+  # `.Values.global.securityContext`; `podSecurityContext` does not exist in
+  # this chart's schema and was a silent no-op here previously (found during
+  # a broader audit of this same bug class, PR #493). Verified against the
+  # pinned chart version (argo-cd-9.5.20): every component (controller,
+  # server, repoServer, applicationSet, dex, and the bundled session-cache
+  # sub-chart) already defaults its own
+  # `<component>.containerSecurityContext` to `runAsNonRoot: true`,
+  # `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`,
+  # `seccompProfile.type: RuntimeDefault`, `capabilities.drop: [ALL]` --
+  # container-level PSS restricted compliance held regardless of this bug
+  # (checked controller/server/repoServer/applicationSet plus dex and the
+  # bundled session-cache sub-chart). The chart has no
+  # `global.containerSecurityContext` key either (it's per-component, not
+  # global) -- removed rather than expanded into per-component blocks that
+  # would just restate the chart's own already-correct defaults.
+  securityContext:
     runAsNonRoot: true
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
     seccompProfile:
       type: RuntimeDefault
-  containerSecurityContext:
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
-    capabilities:
-      drop:
-        - ALL
 
 configs:
   params:
