@@ -43,4 +43,4 @@ self-heals within its sync interval; no other component changed.
 
 ## PR
 
-(auto/kyverno-psa-restricted)
+https://github.com/tooming/k8s-anywhere/pull/486
