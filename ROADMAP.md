@@ -210,6 +210,30 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **ADR-0006 — remove stale "Follow-up: wire both bootstraps into `make up`/DR"
+  note** (CHARTER **Core Values** §"Docs & dashboards don't drift"; planner gap-analysis
+  finding, 2026-07-18 — **no prerequisites, executor may pick up immediately**). The
+  ADR-0006 `## Decision` §Status paragraph ends with "(Follow-up: wire both bootstraps
+  into `make up`/DR.)" — but both bootstraps are already wired: `Makefile`'s `up` target
+  calls `$(MAKE) gitlab-tls-bootstrap` (line 187) and `$(MAKE) grafana-gitsync-bootstrap`
+  (line 191), both between `vault-bootstrap` and `frontdoor`/root-app sync, and both
+  `.PHONY` targets (`gitlab-tls-bootstrap` line 371, `grafana-gitsync-bootstrap` line 375)
+  exist and run their respective scripts. Verified directly against the current
+  `Makefile` (not assumed, per ADR-0004) before filing this item. This is stale-doc
+  drift, not a missing feature: the ADR's own claim about its still-open follow-up no
+  longer matches the repo's actual state. Fix: delete the parenthetical
+  "(Follow-up: wire both bootstraps into `make up`/DR.)" sentence from ADR-0006's
+  `## Decision` §Status paragraph (`docs/decisions/adr-0006-grafana-native-git-sync.md`)
+  — the preceding sentences in that paragraph ("Implemented + verified live... The
+  Repository connection is bootstrapped imperatively... Community (gnetId) dashboards
+  are unaffected.") already stand on their own without it, so no replacement text is
+  needed. No `make ci` gate exercises ADR prose today; if the executor wants a mechanical
+  recurrence guard, a lightweight one is welcome (e.g. extend
+  `scripts/adr-guard-hook.sh` or add a small `tests/` assertion that no ADR under
+  `docs/decisions/` contains the literal string "Follow-up:" once its named target
+  Makefile line is confirmed present — optional, not required to land this fix). `make
+  ci` must pass. `docs/done/` entry required. (auto/adr-0006-stale-followup-note)
+
 - [x] 🟢 **Bump Cilium `1.16.6` → `1.17.18`** (CHARTER **Core Values** §"Everything
   as code" + general hardening; RFC/issue #501 — architect decision 2026-07-18,
   ADR audit resolved as **Convert**. **No prerequisites — executor may pick up
