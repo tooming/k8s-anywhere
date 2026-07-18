@@ -1564,6 +1564,36 @@ You review and merge plan PRs, same as implementation PRs.
   must revert in lockstep if one was needed). `docs/done/` entry required. Closes #534.
   (auto/kro-bump-0-9)
 
+- [ ] 🟢 **Migrate Grafana chart source off the deprecated `grafana.github.io/helm-charts`
+  repo** (RFC #544 — architect decision 2026-07-18. **No prerequisites — executor may
+  pick up immediately.**) `gitops/platform/observability-grafana.yaml`'s chart source
+  (`repoURL: https://grafana.github.io/helm-charts`, `targetRevision: 10.5.15`) is
+  deprecated: the chart's own `Chart.yaml` at that exact pinned tag carries
+  `deprecated: true`, and its README states migration to
+  `grafana-community/helm-charts` completed 2026-01-30. Migrate to
+  `repoURL: https://grafana-community.github.io/helm-charts`,
+  `targetRevision: 12.7.2` (verified current at the new source,
+  `appVersion: 13.1.0`, no deprecation flag). Do **not** bump the running Grafana
+  image itself in the same PR — `valuesObject.image.tag` stays pinned at `"13.0.1"`
+  per the file's own documented history (ADR-0006's Git Sync provider + a known
+  13.0.0 unified-storage migration bug for Git Sync users); the chart-source
+  migration only picks up newer Helm templates/schema, not a newer running binary.
+  Diff the old (chart 10.5.15) vs new (chart 12.7.2) chart's `values.yaml` /
+  `templates/_pod.tpl` for every key the `valuesObject` sets (`securityContext`,
+  `containerSecurityContext`, `initChownData`, `persistence`, `deploymentStrategy`,
+  `extraConfigmapMounts`, `extraEmptyDirMounts`, `extraInitContainers`, `grafana.ini`
+  — especially the `provisioning`/`unified_storage` feature-toggle keys ADR-0006
+  depends on — `datasources`, `dashboardProviders`, `dashboards.community`,
+  `extraObjects`) and confirm none were renamed/removed; document the verification
+  in the `docs/done/` entry per ADR-0004. Update in-file comments referencing
+  "grafana-10.5.15" as the verified chart tag to "grafana-12.7.2". Update any bats
+  assertion pinning the `grafana` chart's `targetRevision`/`repoURL`, and
+  `docs/dependency-tree.md` if it references either. `observability-alloy.yaml` and
+  `observability-pyroscope.yaml` also use the old repoURL but showed no deprecation
+  signal at their own dedicated source repos when checked — out of scope here.
+  `make ci` must pass. `docs/done/` entry required. Closes #544.
+  (auto/grafana-chart-source-migration)
+
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
   maintainer confirms at least one CI run pushed a `.sig` tag to Artifactory** — check
