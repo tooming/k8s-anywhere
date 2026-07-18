@@ -17,15 +17,21 @@ spec:
     helm:
       releaseName: alloy
       valuesObject:
-        controller:
-          type: deployment
-          replicas: 1
+        # Pod-level securityContext is set via `global.podSecurityContext`, NOT
+        # `controller.podSecurityContext` -- this chart's
+        # templates/controllers/_pod.yaml reads `.Values.global.podSecurityContext`
+        # for the pod spec; `controller.podSecurityContext` does not exist in
+        # its schema at all and was a silent no-op here previously.
+        global:
           podSecurityContext:
             runAsNonRoot: true
             runAsUser: 473
             runAsGroup: 473
             seccompProfile:
               type: RuntimeDefault
+        controller:
+          type: deployment
+          replicas: 1
           volumes:
             # The alloy chart does NOT create a volume for --storage.path (verified
             # against chart source: templates/controllers/_pod.yaml /

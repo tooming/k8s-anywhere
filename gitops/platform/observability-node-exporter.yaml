@@ -26,7 +26,15 @@ spec:
         # Disable hostPath volume for host root FS — PSS restricted prohibits hostPath.
         hostRootFsMount:
           enabled: false
-        podSecurityContext:
+        # Pod-level securityContext is set via the `securityContext` key, NOT
+        # `podSecurityContext` -- this chart's templates/daemonset.yaml reads
+        # `.Values.securityContext` for the pod spec; `podSecurityContext`
+        # does not exist in its schema and was a silent no-op here previously
+        # (found auditing PR #492's chart-values diff). The chart's own
+        # `securityContext` default covers runAsNonRoot/runAsUser/runAsGroup
+        # but NOT seccompProfile, so that field was likely unenforced until
+        # this fix.
+        securityContext:
           runAsNonRoot: true
           runAsUser: 65534
           runAsGroup: 65534
