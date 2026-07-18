@@ -1,7 +1,10 @@
 # argocd namespace — Phase 2 PSA labels (RFC #205, ADR-0017 §Per-namespace profile).
 # Adds enforce: restricted to the Phase 1 warn+audit labels now that infra/modules/argocd/values.yaml
-# carries the global.podSecurityContext + global.containerSecurityContext block that makes
-# ArgoCD components PSS restricted-compliant (UID 1000, readOnlyRootFilesystem, no caps).
+# carries the global.securityContext block (pod-level) plus each component's own
+# chart-default containerSecurityContext (verified per-component, no global key exists
+# for it) that make ArgoCD components PSS restricted-compliant (UID 1000,
+# readOnlyRootFilesystem, no caps) — see infra/modules/argocd/values.yaml's own
+# comment for the full verification (PR #493's audit).
 # The argocd namespace is created by Terraform bootstrap (infra/modules/argocd) — this
 # manifest patches only the PSA labels via ArgoCD SSA (argocd-extras Application).
 apiVersion: v1
