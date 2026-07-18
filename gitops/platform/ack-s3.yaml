@@ -20,7 +20,7 @@ spec:
   source:
     repoURL: public.ecr.aws/aws-controllers-k8s
     chart: s3-chart
-    targetRevision: 1.6.0
+    targetRevision: 1.8.1
     helm:
       releaseName: ack-s3
       valuesObject:
