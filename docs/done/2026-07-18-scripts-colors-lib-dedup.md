@@ -64,4 +64,4 @@ assertions changed beyond the 5 new guard tests.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/513
