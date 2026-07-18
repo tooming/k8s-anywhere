@@ -7,6 +7,14 @@
 # velero-extras (wave 0) pre-creates the namespace with PSA restricted labels before
 # the Helm release schedules pods (mirrors kyverno-extras + trivy-extras pattern).
 # ALWAYS-ON: automated sync; footprint: ~250-450 MiB (controller + node-agent DaemonSet).
+#
+# Bumped 8.4.0 -> 8.7.2 (upgrade-drafter, 2026-07-18): latest stable patch on the
+# 8.x chart line, deliberately not crossing the 9.x major bump. appVersion is
+# unchanged (1.15.2 at both chart versions) -- this is a chart-packaging-only
+# bump, no Velero application code change. Diffed the chart's values.yaml
+# between both tags: purely additive (new optional fields), no renamed or
+# removed keys -- every valuesObject key this repo sets was verified present
+# and unchanged at the new pin.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -19,7 +27,7 @@ spec:
   source:
     repoURL: https://vmware-tanzu.github.io/helm-charts
     chart: velero
-    targetRevision: 8.4.0
+    targetRevision: 8.7.2
     helm:
       releaseName: velero
       valuesObject:
