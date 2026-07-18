@@ -10,6 +10,8 @@
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  # yqs(): yq-variant-robust scalar read (strips quoting differences).
+  load lib/yq
   NS="$REPO/gitops/observability/mimir/namespace.yaml"
   MIMIR="$REPO/gitops/observability/mimir/deployment.yaml"
   LOKI="$REPO/gitops/observability/loki/deployment.yaml"
@@ -129,15 +131,25 @@ setup() {
 }
 
 # --- kube-state-metrics Application securityContext --------------------------
+# Pod-level fields live under `securityContext` (the chart's real key), NOT
+# `podSecurityContext` (silent no-op in this chart's schema — found auditing
+# PR #491). Path-aware via yqs() so a regression back to the wrong key fails
+# these tests instead of silently passing a bare grep.
 
-@test "kube-state-metrics Application sets runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$KSM"
-  [ "$status" -eq 0 ]
+@test "kube-state-metrics Application sets securityContext.enabled: true" {
+  [ "$(yqs '.spec.source.helm.valuesObject.securityContext.enabled' "$KSM")" = "true" ]
 }
 
-@test "kube-state-metrics Application sets seccompProfile.type: RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$KSM"
-  [ "$status" -eq 0 ]
+@test "kube-state-metrics Application sets securityContext.runAsNonRoot: true" {
+  [ "$(yqs '.spec.source.helm.valuesObject.securityContext.runAsNonRoot' "$KSM")" = "true" ]
+}
+
+@test "kube-state-metrics Application sets securityContext.seccompProfile.type: RuntimeDefault" {
+  [ "$(yqs '.spec.source.helm.valuesObject.securityContext.seccompProfile.type' "$KSM")" = "RuntimeDefault" ]
+}
+
+@test "kube-state-metrics Application does NOT use the dead podSecurityContext key" {
+  [ "$(yqs '.spec.source.helm.valuesObject.podSecurityContext // "absent"' "$KSM")" = "absent" ]
 }
 
 @test "kube-state-metrics Application sets allowPrivilegeEscalation: false" {
@@ -151,15 +163,21 @@ setup() {
 }
 
 # --- Alloy Application securityContext ---------------------------------------
+# Pod-level fields live under `global.podSecurityContext` (the chart's real
+# key), NOT `controller.podSecurityContext` (silent no-op in this chart's
+# schema). Path-aware via yqs() so a regression back to the wrong key fails
+# these tests instead of silently passing a bare grep.
 
-@test "alloy Application sets runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$ALLOY"
-  [ "$status" -eq 0 ]
+@test "alloy Application sets global.podSecurityContext.runAsNonRoot: true" {
+  [ "$(yqs '.spec.source.helm.valuesObject.global.podSecurityContext.runAsNonRoot' "$ALLOY")" = "true" ]
 }
 
-@test "alloy Application sets seccompProfile.type: RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$ALLOY"
-  [ "$status" -eq 0 ]
+@test "alloy Application sets global.podSecurityContext.seccompProfile.type: RuntimeDefault" {
+  [ "$(yqs '.spec.source.helm.valuesObject.global.podSecurityContext.seccompProfile.type' "$ALLOY")" = "RuntimeDefault" ]
+}
+
+@test "alloy Application does NOT use the dead controller.podSecurityContext key" {
+  [ "$(yqs '.spec.source.helm.valuesObject.controller.podSecurityContext // "absent"' "$ALLOY")" = "absent" ]
 }
 
 @test "alloy Application sets allowPrivilegeEscalation: false" {
@@ -185,15 +203,26 @@ setup() {
 }
 
 # --- Grafana Application securityContext -------------------------------------
+# Pod-level fields live under `securityContext` (the chart's real key), NOT
+# `podSecurityContext` (silent no-op in this chart's schema). Path-aware via
+# yqs() -- a bare grep for these field values would also match the unrelated
+# extraInitContainers (ca-bundle) block below, which sets its own inline
+# securityContext and would mask a regression here.
 
-@test "grafana Application sets runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$GRAFANA"
-  [ "$status" -eq 0 ]
+@test "grafana Application sets securityContext.runAsNonRoot: true" {
+  [ "$(yqs '.spec.source.helm.valuesObject.securityContext.runAsNonRoot' "$GRAFANA")" = "true" ]
 }
 
-@test "grafana Application sets seccompProfile.type: RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$GRAFANA"
-  [ "$status" -eq 0 ]
+@test "grafana Application sets securityContext.fsGroup: 472" {
+  [ "$(yqs '.spec.source.helm.valuesObject.securityContext.fsGroup' "$GRAFANA")" = "472" ]
+}
+
+@test "grafana Application sets securityContext.seccompProfile.type: RuntimeDefault" {
+  [ "$(yqs '.spec.source.helm.valuesObject.securityContext.seccompProfile.type' "$GRAFANA")" = "RuntimeDefault" ]
+}
+
+@test "grafana Application does NOT use the dead podSecurityContext key" {
+  [ "$(yqs '.spec.source.helm.valuesObject.podSecurityContext // "absent"' "$GRAFANA")" = "absent" ]
 }
 
 @test "grafana Application sets allowPrivilegeEscalation: false" {
@@ -239,15 +268,20 @@ setup() {
 }
 
 # --- node-exporter Application securityContext + carve-out -------------------
+# Pod-level fields live under `securityContext` (the chart's real key), NOT
+# `podSecurityContext` (silent no-op in this chart's schema). Path-aware via
+# yqs() so a regression back to the wrong key fails these tests.
 
-@test "node-exporter Application sets runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$NODE_EXPORTER"
-  [ "$status" -eq 0 ]
+@test "node-exporter Application sets securityContext.runAsNonRoot: true" {
+  [ "$(yqs '.spec.source.helm.valuesObject.securityContext.runAsNonRoot' "$NODE_EXPORTER")" = "true" ]
 }
 
-@test "node-exporter Application sets seccompProfile.type: RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$NODE_EXPORTER"
-  [ "$status" -eq 0 ]
+@test "node-exporter Application sets securityContext.seccompProfile.type: RuntimeDefault" {
+  [ "$(yqs '.spec.source.helm.valuesObject.securityContext.seccompProfile.type' "$NODE_EXPORTER")" = "RuntimeDefault" ]
+}
+
+@test "node-exporter Application does NOT use the dead podSecurityContext key" {
+  [ "$(yqs '.spec.source.helm.valuesObject.podSecurityContext // "absent"' "$NODE_EXPORTER")" = "absent" ]
 }
 
 @test "node-exporter Application sets allowPrivilegeEscalation: false" {

@@ -17,7 +17,16 @@ spec:
       releaseName: kube-state-metrics
       valuesObject:
         fullnameOverride: kube-state-metrics
-        podSecurityContext:
+        # Pod-level securityContext is set via the `securityContext` key, NOT
+        # `podSecurityContext` -- this chart's own values.yaml/templates read
+        # `.Values.securityContext` (with an `enabled` flag) for the pod spec;
+        # `podSecurityContext` does not exist in its schema at all and was a
+        # silent no-op here previously (found auditing PR #491's chart-values
+        # diff). `enabled: true` is the chart default already, set explicitly
+        # so this override doesn't silently stop applying if that default
+        # ever changes.
+        securityContext:
+          enabled: true
           runAsNonRoot: true
           runAsUser: 65534
           runAsGroup: 65534

@@ -28,7 +28,7 @@ spec:
           userKey: admin-user
           passwordKey: admin-password
         # Disable the chart's built-in init-chown-data container (runs as root + CHOWN,
-        # violates PSS restricted/ADR-0017). fsGroup: 472 in podSecurityContext is
+        # violates PSS restricted/ADR-0017). fsGroup: 472 in securityContext is
         # sufficient — Kubernetes chowns the PVC to gid 472 on mount.
         initChownData:
           enabled: false
@@ -41,7 +41,18 @@ spec:
         # log.mode is "console" only, so it's never written. No other write path
         # exists under this config (checked against grafana chart grafana-10.5.15
         # and grafana/grafana image v13.0.1's docker entrypoint).
-        podSecurityContext:
+        #
+        # Pod-level securityContext is set via the `securityContext` key, NOT
+        # `podSecurityContext` -- this chart's templates/_pod.tpl reads
+        # `.Values.securityContext` for the pod spec; `podSecurityContext`
+        # does not exist in its schema and was a silent no-op here previously.
+        # The runAsNonRoot/runAsUser/runAsGroup/fsGroup fields the comment
+        # above depends on were actually being supplied by the chart's own
+        # matching default the whole time (verified: chart default
+        # securityContext already sets exactly these four fields), so the
+        # fsGroup chown behavior described above held regardless -- but
+        # seccompProfile was not applied at the pod level under the old key.
+        securityContext:
           runAsNonRoot: true
           runAsUser: 472
           runAsGroup: 472
