@@ -252,7 +252,7 @@ You review and merge plan PRs, same as implementation PRs.
   the stack. `make ci` must pass. `docs/done/` entry required. Closes #501.
   (auto/cilium-cve-bump-1-17-18)
 
-- [ ] 🟢 **Bump Kargo `1.2.3` → `1.6.4`** (CHARTER **Core Values** §"Everything as
+- [x] 🟢 **Bump Kargo `1.2.3` → `1.6.4`** (CHARTER **Core Values** §"Everything as
   code" + general hardening; RFC/issue #508 — architect decision 2026-07-18,
   ADR audit resolved as **Convert**. **No prerequisites — executor may pick up
   immediately.**)

@@ -16,10 +16,17 @@ metadata:
   name: capstone-pipeline
 ---
 # Warehouse: polls Artifactory for new digests of the capstone image.
-# tagSelectionStrategy: Digest — tracks every new image digest pushed to
+# imageSelectionStrategy: Digest — tracks every new image digest pushed to
 # artifactory.127.0.0.1.nip.io/docker-local/hello, regardless of tag name.
 # This fires on every `docker push` from the GitLab CI pipeline (step 1 of
 # the capstone inner loop) even though the image is always tagged :latest.
+# NOTE (found during the auto/kargo-cve-bump-1-6-4 CRD-compatibility check):
+# the real Kargo API field is `imageSelectionStrategy`, not
+# `tagSelectionStrategy` -- verified against api/v1alpha1/warehouse_types.go
+# at both the previous (v1.2.3) and new (v1.6.4) pinned tags; the latter
+# field name has never existed in any Kargo version this lab has run.
+# `tagSelectionStrategy` was silently ignored (Kargo defaults an unset
+# strategy to SemVer), so the Warehouse was never actually tracking digests.
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Warehouse
 metadata:
@@ -29,7 +36,7 @@ spec:
   subscriptions:
     - image:
         repoURL: artifactory.127.0.0.1.nip.io/docker-local/hello
-        tagSelectionStrategy: Digest
+        imageSelectionStrategy: Digest
         discoveryLimit: 5
 ---
 # Stage: dev
@@ -38,6 +45,19 @@ spec:
 # Promotion step: argocd-update refreshes the capstone ArgoCD Application with
 # the new image digest written into the kustomize images override — ArgoCD then
 # syncs the manifest and Argo Rollouts begins the canary progression.
+# NOTE (found during the auto/kargo-cve-bump-1-6-4 CRD-compatibility check):
+# the argocd-update step's config schema (internal/promotion/runner/builtin/
+# schemas/argocd-update-config.json at the pinned tag) does not have a bare
+# `images` field under `sources[]` -- image overrides must nest under
+# `sources[].kustomize.images[]` with `repoURL`/`digest`(or `tag`)/`newName`
+# fields, and the digest must come from the `imageFrom()` expression function
+# (see docs/docs/.../30-promotion-steps/argocd-update.md), not a literal
+# `newValue: Digest` enum (which isn't a recognized field at all -- verified
+# this was true at both the previous v1.2.3 pin and the new v1.6.4 pin, so
+# this predates the version bump). `gitops/apps/capstone/kustomization.yaml`
+# already documents that kustomize mode is enabled specifically so ArgoCD
+# accepts a `spec.source.kustomize.images` override -- this fix is what
+# actually wires up to that.
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
 metadata:
@@ -60,9 +80,10 @@ spec:
                 namespace: argocd
                 sources:
                   - repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
-                    images:
-                      - image: artifactory.127.0.0.1.nip.io/docker-local/hello
-                        newValue: Digest
+                    kustomize:
+                      images:
+                        - repoURL: artifactory.127.0.0.1.nip.io/docker-local/hello
+                          digest: ${{ imageFrom("artifactory.127.0.0.1.nip.io/docker-local/hello").Digest }}
 ---
 # Stage: prod
 # Subscribes to Freight that has successfully transited the dev Stage
@@ -93,6 +114,7 @@ spec:
                 namespace: argocd
                 sources:
                   - repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
-                    images:
-                      - image: artifactory.127.0.0.1.nip.io/docker-local/hello
-                        newValue: Digest
+                    kustomize:
+                      images:
+                        - repoURL: artifactory.127.0.0.1.nip.io/docker-local/hello
+                          digest: ${{ imageFrom("artifactory.127.0.0.1.nip.io/docker-local/hello").Digest }}

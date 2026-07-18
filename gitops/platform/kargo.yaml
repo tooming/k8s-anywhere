@@ -18,6 +18,20 @@
 # Tear down with:               make kargo-down
 # Do NOT enable auto-sync here — footprint (~250-450 MiB) requires manual intent
 # (ADR-0005, 12 GB VM budget).
+#
+# Bumped 1.2.3 -> 1.6.4 (RFC #508, 2026-07-18): CVE-2026-24748 (GetConfig/
+# RefreshResource unauthenticated access, CVSS 6.9) affects all versions up to
+# and including v1.8.6; 1.6.4 is the latest 1.6.x patch, chosen to stay below
+# the 1.7.0 floor where two other, unrelated Kargo CVEs found in the same
+# sweep begin. CRD/values compatibility verified against the chart's real
+# values.yaml and the kargo.akuity.io/v1alpha1 Go API types at both the old
+# and new pinned tags (sparse git fetch of akuity/kargo — ghcr.io's OCI
+# registry doesn't expose an easy diff): found and fixed api.tls.selfSignedCert
+# below (was wrongly nested as selfSignedCert.generate: false; the chart's
+# real schema is a plain boolean at both tags) plus two unrelated, longer-
+# standing bugs in gitops/kargo-project/project.yaml (Warehouse
+# imageSelectionStrategy and the argocd-update kustomize.images nesting) that
+# predate this bump but were caught by the same compatibility check.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -30,7 +44,7 @@ spec:
   source:
     repoURL: ghcr.io/akuity/kargo-charts
     chart: kargo
-    targetRevision: 1.2.3
+    targetRevision: 1.6.4
     helm:
       releaseName: kargo
       valuesObject:
@@ -51,8 +65,7 @@ spec:
             requests:
               memory: 64Mi
           tls:
-            selfSignedCert:
-              generate: false
+            selfSignedCert: false
           secret:
             name: kargo-admin-credentials
         controller:
