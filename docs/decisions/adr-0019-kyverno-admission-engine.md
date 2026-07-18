@@ -148,7 +148,7 @@ ADR-0017's per-namespace profile table gains one row:
 
 | Namespace | PSA profile | Reason |
 |-----------|-------------|--------|
-| `kyverno` | `restricted` | Flipped 2026-07-17 (RFC #483): chart `kyverno-chart-3.3.4`'s four controllers already default to the full restricted container securityContext. See [ADR-0017 §Re-evaluation log](adr-0017-pod-security-standards-restricted.md#re-evaluation-log) for the self-protection finding that resolved the pod-vs-container-level question this row previously raised. |
+| `kyverno` | `restricted` | Flipped 2026-07-17 (RFC #483): chart `kyverno-chart-3.3.4`'s four controllers already default to the full restricted container securityContext. Bumped to `kyverno-chart-3.3.9` 2026-07-18 (upgrade-drafter) — re-verified, no regression. See [ADR-0017 §Re-evaluation log](adr-0017-pod-security-standards-restricted.md#re-evaluation-log) for the self-protection finding that resolved the pod-vs-container-level question this row previously raised, and its 2026-07-18 entry for the bump re-verification. |
 
 The PSA label is set on the `Namespace` manifest the Kyverno Application creates.
 

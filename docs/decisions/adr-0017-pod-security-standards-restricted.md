@@ -115,7 +115,7 @@ so the executor never silently applies the wrong label.
 | `moto` / `ack-system` | `restricted` | Stateless HTTP mock; non-root-capable. |
 | `lab-gateway` | `restricted` | Envoy Gateway; runs as non-root. |
 | `vault` | `restricted` | Flipped from `baseline` 2026-07-17 (RFC #478): chart `v0.34.0`'s default Vault `v2.0.3` image no longer holds `cap_ipc_lock`; `disable_mlock = true` is set as the required counterpart. Full history: audit #157 (2026-06-11, kept) → audit #477 (2026-07-17, converted) → this flip. See [§Re-evaluation log](#re-evaluation-log). |
-| `kyverno` | `restricted` | Flipped from `baseline` 2026-07-17 (RFC #483): chart `kyverno-chart-3.3.4`'s four controllers already default to the full restricted container securityContext, no override needed. Full history: audit #482 (2026-07-17, converted) → this flip. See [§Re-evaluation log](#re-evaluation-log). |
+| `kyverno` | `restricted` | Flipped from `baseline` 2026-07-17 (RFC #483): chart `kyverno-chart-3.3.4`'s four controllers already default to the full restricted container securityContext, no override needed. Bumped to `kyverno-chart-3.3.9` 2026-07-18 (upgrade-drafter) — re-verified the same defaults still hold at the new pin, no regression. Full history: audit #482 (2026-07-17, converted) → this flip. See [§Re-evaluation log](#re-evaluation-log). |
 | `velero` | `restricted` | Controller runs non-root (UID 65534); node-agent DaemonSet uses a per-workload annotation to mount `/var/lib/kubelet/pods` for Kopia FS-backup (matches the node-exporter hostPath carve-out pattern in §"Per-workload field carve-outs"). Per ADR-0021 §"PSA profile" (implementation adopted `restricted`, overriding the initial `baseline` estimate). |
 | `argo-rollouts` | `restricted` | Controller and dashboard both run as non-root (UID 65532), no host volumes, no privileged containers. Per ADR-0020 §"NetworkPolicy + PSS". |
 | `trivy-system` | `baseline` | Trivy scan-job pods pull and unpack arbitrary OCI layer tarballs, exceeding `restricted`. Operator pod itself is restricted-compliant; chart applies one PSA profile to both. Per ADR-0022 §"PSA profile". Re-evaluate per chart upgrade. |
@@ -323,6 +323,30 @@ real `values.yaml`), not an assumption, but the maintainer should watch cluster
 admission health closely after this syncs given Kyverno's blast radius.
 Rollback: revert the namespace label commit — ArgoCD self-heals within its sync
 interval; no other component changed.
+
+### 2026-07-18 — `kyverno` chart bump, restricted-compatibility re-verified (upgrade-drafter)
+
+**Trigger.** Routine upgrade-drafter sweep found `kyverno-chart-3.3.4` (the tag
+this repo's `restricted` flip above was verified against) had five newer patch
+releases available in the same `3.3.x` line, up to `kyverno-chart-3.3.9`
+(appVersion `v1.13.2` → `v1.13.6`), bundling several real upstream CVE fixes
+(`kyverno/kyverno` CVE-2025-46569, CVE-2025-30204, CVE-2025-22869, and a
+`golang-jwt/jwt/v4` CVE — confirmed via the actual commit range between the two
+chart tags, not assumed).
+
+**Decision: bump, re-verify.** Since the `restricted` PSA flip above depends on
+the exact pinned chart tag's rendered `securityContext` defaults, re-fetched
+`kyverno-chart-3.3.9`'s real `values.yaml` fresh before bumping (not reusing
+the 3.3.4-era read): all four controllers still default to `runAsNonRoot: true`,
+`allowPrivilegeEscalation: false`, `capabilities.drop: [ALL]`,
+`readOnlyRootFilesystem: true`, `seccompProfile.type: RuntimeDefault` — byte-
+identical to what RFC #483 verified at `3.3.4`. No regression; no
+`valuesObject` override needed. Bumped `gitops/platform/kyverno.yaml`'s
+`targetRevision` to `3.3.9`.
+
+**Caveat (ADR-0004).** Same as above — this remote clusterless session cannot
+verify the admission webhook stays healthy post-bump on a live cluster.
+Rollback: revert `targetRevision` — ArgoCD self-heals.
 
 ### 2026-07-18 — `inkless` carve-out kept, evidence updated (audit [#494](https://github.com/tooming/k8s-anywhere/issues/494))
 

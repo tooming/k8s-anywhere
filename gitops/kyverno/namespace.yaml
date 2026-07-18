@@ -1,10 +1,11 @@
-# PSA restricted: the pinned chart (kyverno-chart-3.3.4) already defaults every
-# controller's container securityContext to the full restricted profile
-# (runAsNonRoot, allowPrivilegeEscalation: false, capabilities.drop: [ALL],
-# readOnlyRootFilesystem: true, seccompProfile RuntimeDefault) with no hostPath
-# or other restricted-incompatible volume anywhere — verified against the real
-# pinned tag, not just chart docs. ADR-0017 §Per-namespace profile / ADR-0019
-# (RFC #483, 2026-07-17).
+# PSA restricted: the pinned chart (kyverno-chart-3.3.9, bumped from 3.3.4 on
+# 2026-07-18) already defaults every controller's container securityContext to
+# the full restricted profile (runAsNonRoot, allowPrivilegeEscalation: false,
+# capabilities.drop: [ALL], readOnlyRootFilesystem: true, seccompProfile
+# RuntimeDefault) with no hostPath or other restricted-incompatible volume
+# anywhere — verified against the real pinned tag, not just chart docs, at both
+# 3.3.4 (RFC #483, 2026-07-17) and 3.3.9 (upgrade-drafter, 2026-07-18).
+# ADR-0017 §Per-namespace profile / ADR-0019 / ADR-0017 §Re-evaluation log.
 apiVersion: v1
 kind: Namespace
 metadata:
