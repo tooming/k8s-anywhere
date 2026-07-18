@@ -32,6 +32,34 @@
 # standing bugs in gitops/kargo-project/project.yaml (Warehouse
 # imageSelectionStrategy and the argocd-update kustomize.images nesting) that
 # predate this bump but were caught by the same compatibility check.
+#
+# Bumped 1.6.4 -> 1.10.9 (2026-07-18, same day): a fresh audit of every
+# published github.com/akuity/kargo/security/advisories entry against the
+# 1.6.4 pin found FOUR advisories affecting it with no 1.6.x-branch fix
+# available (the 1.6.x line is EOL upstream): GHSA-xx8h-gw9m-m95p and
+# GHSA-f72x-6fm6-94rq (privilege escalation / missing authorization via
+# Generic Resource Creation API endpoints, fixed 1.9.10/1.10.9),
+# GHSA-wp4p-hr79-q4g8 / CVE-2026-61850 (privilege escalation via Project RBAC
+# management, fixed 1.8.14/1.9.9/1.10.8), and GHSA-g7gw-m874-7rmf / CVE-2026-42350
+# (open redirect in the UI OIDC login flow, fixed 1.10.2+). The two CVEs the
+# 1.6.4 bump deliberately stayed below (CVE-2026-27112/GHSA-7g9x, CVSS 9.4
+# critical, affects >=1.7.0 <=1.9.2; CVE-2026-27111/GHSA-5vvm, affects
+# 1.9.0-1.9.2) and the original CVE-2026-24748 remain correctly not-applicable
+# or already-fixed at any version >= 1.6.4 -- that prior reasoning still holds,
+# it was just stale relative to advisories published since (three of the four
+# newly-closed ones were disclosed after the 1.6.4 pin was chosen). 1.10.9 is
+# the highest stable release and closes every open advisory. CRD/values
+# compatibility re-verified the same way as the prior bump: global.securityContext,
+# api.{replicas,resources,tls.selfSignedCert,secret} and controller/webhooksServer
+# resources are all unchanged in path (only new, unrelated optional fields added
+# elsewhere in values.yaml); the Warehouse ImageSubscription type (RepoURL/
+# ImageSelectionStrategy/DiscoveryLimit, all json-tag-unchanged) moved from
+# warehouse_types.go to a new zz_subscription_types.go file, and the
+# argocd-update step's config schema moved from internal/promotion/runner/
+# builtin/schemas/ to pkg/promotion/runner/builtin/schemas/ (internal/ was
+# restructured into pkg/ across this version range) -- both are pure
+# code-reorganization moves, not schema changes: every field this repo sets
+# resolves identically at the new pin.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -44,7 +72,7 @@ spec:
   source:
     repoURL: ghcr.io/akuity/kargo-charts
     chart: kargo
-    targetRevision: 1.6.4
+    targetRevision: 1.10.9
     helm:
       releaseName: kargo
       valuesObject:

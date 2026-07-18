@@ -295,6 +295,46 @@ You review and merge plan PRs, same as implementation PRs.
   encounter). `make ci` must pass. `docs/done/` entry required. Closes #508.
   (auto/kargo-cve-bump-1-6-4)
 
+- [x] 🟢 **Bump Kargo `1.6.4` → `1.10.9`** (CHARTER **Core Values** §"Everything
+  as code" + general hardening; same-day follow-up to the `1.2.3`→`1.6.4`
+  bump above, executor-initiated — **no prerequisites, no RFC needed**: this
+  is a same-source patch/minor bump within upgrade-drafter's normal scope,
+  just requiring the same CRD-compatibility rigor as the prior Kargo bump
+  because of its pre-1.0-caliber API surface). A fresh audit of every
+  published `github.com/akuity/kargo/security/advisories` entry against the
+  `1.6.4` pin (chosen by the item above) found **four** advisories affecting
+  it with no `1.6.x`-branch fix available (that branch is EOL upstream):
+  [GHSA-xx8h-gw9m-m95p](https://github.com/akuity/kargo/security/advisories/GHSA-xx8h-gw9m-m95p)
+  and [GHSA-f72x-6fm6-94rq](https://github.com/akuity/kargo/security/advisories/GHSA-f72x-6fm6-94rq)
+  (privilege escalation / missing authorization via Generic Resource Creation
+  API endpoints, affected `>=v0.1.0 <v1.11.0`, fixed `1.9.10`/`1.10.9`);
+  [GHSA-wp4p-hr79-q4g8](https://github.com/akuity/kargo/security/advisories/GHSA-wp4p-hr79-q4g8)
+  / CVE-2026-61850 (privilege escalation via Project RBAC management,
+  affected `>=0.6.0`, fixed `1.8.14`/`1.9.9`/`1.10.8`); and
+  [GHSA-g7gw-m874-7rmf](https://github.com/akuity/kargo/security/advisories/GHSA-g7gw-m874-7rmf)
+  / CVE-2026-42350 (open redirect in the UI OIDC login flow, affected
+  `<=v1.10.1`, fixed `1.10.2`+). The two CVEs the `1.6.4` bump deliberately
+  stayed below (GHSA-7g9x critical, affects `>=1.7.0 <=1.9.2`; GHSA-5vvm,
+  affects `1.9.0-1.9.2`) and the original CVE-2026-24748 remain correctly
+  not-applicable/already-fixed at any version `>= 1.6.4` — that prior
+  reasoning still holds, it was just stale relative to advisories disclosed
+  since (three of the four newly-closed ones were published after the
+  `1.6.4` pin was chosen). `1.10.9` is the highest stable release (verified
+  against the real tag list, not inferred) and closes every open advisory.
+  CRD/values compatibility re-verified the same way as the prior bump:
+  `global.securityContext`, `api.{replicas,resources,tls.selfSignedCert,secret}`
+  and `controller`/`webhooksServer` `resources` are all unchanged in path
+  (only new, unrelated optional fields added elsewhere in `values.yaml`); the
+  `Warehouse` `ImageSubscription` type (`RepoURL`/`ImageSelectionStrategy`/
+  `DiscoveryLimit`, json tags unchanged) moved from `warehouse_types.go` to a
+  new `zz_subscription_types.go` file, and the `argocd-update` step's config
+  schema moved from `internal/promotion/runner/builtin/schemas/` to
+  `pkg/promotion/runner/builtin/schemas/` (`internal/` was restructured into
+  `pkg/` across this version range) — both are pure code-reorganization
+  moves verified field-for-field, not schema changes. `make ci` must pass.
+  `docs/done/` entry required.
+  (auto/kargo-cve-bump-1-10-9)
+
 - [x] 🟢 **`kyverno` PSA `baseline` → `restricted` flip** (CHARTER **Objective
   O2** hardening, RFC #483 — architect decision 2026-07-17, converting audit
   #482). Kyverno's own official docs (`kyverno.io/docs/installation/platform-notes/`)
