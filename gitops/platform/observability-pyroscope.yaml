@@ -17,7 +17,7 @@ spec:
   source:
     repoURL: https://grafana.github.io/helm-charts
     chart: pyroscope
-    targetRevision: 2.0.3
+    targetRevision: 2.1.1
     helm:
       releaseName: pyroscope
       valuesObject:
@@ -34,7 +34,7 @@ spec:
           replicaCount: 1
           # Pod Security Standards restricted (ADR-0017). Pyroscope image runs as UID 10001.
           # readOnlyRootFilesystem verified true: checked the pinned chart source
-          # (grafana/pyroscope repo, tag pyroscope-2.0.3,
+          # (grafana/pyroscope repo, tag pyroscope-2.1.1,
           # operations/pyroscope/helm/pyroscope/templates/deployments-statefulsets.yaml).
           # With this config (v1 disabled, v2 enabled — the chart default — and the
           # single "all" component, i.e. singleBinary mode with metastore folded in),
