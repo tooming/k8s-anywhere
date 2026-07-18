@@ -2,6 +2,13 @@
 # Objective O4 pre-requisite: every lab image must be pinned so cosign signatures
 # are verifiable. background: true generates PolicyReports for existing resources
 # (background scan does NOT evict running pods; only new admissions are blocked).
+#
+# capstone carve-out (issue #498): capstone/{deployment,rollout}.yaml still hardcode
+# a floating `:latest` placeholder pending Kargo wiring a real CI-pinned tag to
+# capstone's image ref. Without this exclusion, any Pod creation after the initial
+# from-scratch sync (crash/restart, node evict, Rollout scale event) is rejected and
+# ArgoCD's selfHeal keeps retrying the same failing reconcile. Remove this exclusion
+# once capstone's manifests reference a real, CI-pinned tag instead of `:latest`.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -20,6 +27,10 @@ spec:
       any:
       - resources:
           kinds: [Pod]
+    exclude:
+      any:
+      - resources:
+          namespaces: [capstone]
     validate:
       message: "Image tag is required and must not be ':latest'."
       foreach:

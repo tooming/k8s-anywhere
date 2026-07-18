@@ -216,6 +216,17 @@ setup() {
   [ -f "$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml" ]
 }
 
+# --- capstone carve-out (issue #498) ------------------------------------------
+@test "disallow-latest-tag excludes the capstone namespace" {
+  P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
+  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces[0]' "$P")" = "capstone" ]
+}
+
+@test "disallow-latest-tag exclude block is scoped to capstone only (not a blanket exclusion)" {
+  P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
+  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces | length' "$P")" = "1" ]
+}
+
 @test "add-default-seccomp ClusterPolicy file exists" {
   [ -f "$REPO/gitops/kyverno/policies/add-default-seccomp.yaml" ]
 }
