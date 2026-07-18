@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://grafana.github.io/helm-charts
     chart: alloy
-    targetRevision: 1.8.2
+    targetRevision: 1.10.1
     helm:
       releaseName: alloy
       valuesObject:
@@ -27,12 +27,13 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           volumes:
-            # The alloy chart (1.8.2) does NOT create a volume for --storage.path
-            # (verified against chart source: templates/controllers/_pod.yaml /
+            # The alloy chart does NOT create a volume for --storage.path (verified
+            # against chart source: templates/controllers/_pod.yaml /
             # templates/containers/_agent.yaml carry no "storage" volume or mount —
             # only config/varlog/dockercontainers/extra). Without this, /tmp/alloy
             # lands on the container's root filesystem, so it must be backed
-            # explicitly before readOnlyRootFilesystem can be true.
+            # explicitly before readOnlyRootFilesystem can be true. Re-verified
+            # unchanged at 1.10.1 (byte-identical volumes block in _pod.yaml vs 1.8.2).
             extra:
               - name: alloy-storage
                 emptyDir: {}
