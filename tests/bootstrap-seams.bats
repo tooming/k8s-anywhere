@@ -42,6 +42,17 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   [ "$vault_line" -lt "$tls_line" ]
 }
 
+# --- ADR-0006 prose does not re-drift once both bootstraps are wired ---------
+# ADR-0006 previously claimed "(Follow-up: wire both bootstraps into make up/DR.)"
+# after that follow-up was already done, going stale until caught by a planner
+# gap-analysis run. Both bootstraps are proven wired above (the two "make up
+# calls ..." tests); this asserts the ADR text doesn't claim otherwise again.
+@test "ADR-0006 does not carry a stale 'Follow-up' note about the bootstrap wiring" {
+  run grep -c 'Follow-up: wire both bootstraps into' "$REPO/docs/decisions/adr-0006-grafana-native-git-sync.md"
+  [ "$status" -eq 1 ]
+  [ "$output" -eq 0 ]
+}
+
 # --- gitlab-tls-bootstrap has Grafana restart logic --------------------------
 @test "gitlab-tls-bootstrap.sh rolls Grafana deployment when it is already running" {
   run grep -c 'rollout restart deployment/grafana' "$REPO/scripts/gitlab-tls-bootstrap.sh"

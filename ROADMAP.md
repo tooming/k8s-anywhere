@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **ADR-0006 — remove stale "Follow-up: wire both bootstraps into `make up`/DR"
+- [x] 🟢 **ADR-0006 — remove stale "Follow-up: wire both bootstraps into `make up`/DR"
   note** (CHARTER **Core Values** §"Docs & dashboards don't drift"; planner gap-analysis
   finding, 2026-07-18 — **no prerequisites, executor may pick up immediately**). The
   ADR-0006 `## Decision` §Status paragraph ends with "(Follow-up: wire both bootstraps
