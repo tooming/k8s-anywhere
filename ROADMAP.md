@@ -252,6 +252,49 @@ You review and merge plan PRs, same as implementation PRs.
   the stack. `make ci` must pass. `docs/done/` entry required. Closes #501.
   (auto/cilium-cve-bump-1-17-18)
 
+- [ ] 🟢 **Bump Kargo `1.2.3` → `1.6.4`** (CHARTER **Core Values** §"Everything as
+  code" + general hardening; RFC/issue #508 — architect decision 2026-07-18,
+  ADR audit resolved as **Convert**. **No prerequisites — executor may pick up
+  immediately.**)
+  [CVE-2026-24748](https://github.com/akuity/kargo/security/advisories/GHSA-w5wv-wvrp-v5m5)
+  (medium, CVSS 6.9): Kargo's `GetConfig()` and `RefreshResource()` API
+  endpoints have a broken authentication check — an unauthenticated caller can
+  access them by supplying a non-empty (even invalid) `Bearer` token,
+  exfiltrating sensitive configuration data including connected ArgoCD cluster
+  endpoints, and enabling denial-of-service against `RefreshResource`.
+  Affected: all versions up to and including v1.8.6. Fixed in three parallel
+  branch releases: `v1.6.3`, `v1.7.7`, `v1.8.7`. This lab pins Kargo at `1.2.3`
+  (`gitops/platform/kargo.yaml`) — well inside the affected range.
+  Two other Kargo CVEs found in the same sweep do NOT apply to our current pin
+  (both require code introduced at 1.7.0+ or 1.9.0+, above our current
+  version): [CVE-2026-27112](https://github.com/akuity/kargo/security/advisories/GHSA-7g9x-cp9g-92mr)
+  (critical, affects >=1.7.0 <1.7.8/<1.8.11/<1.9.3) and
+  [CVE-2026-27111](https://github.com/akuity/kargo/security/advisories/GHSA-5vvm-67pj-72g4)
+  (affects only 1.9.0–1.9.2). Bump to `1.6.4` (latest patch on the `1.6.x`
+  line — one better than the `1.6.3` minimum fix) deliberately to resolve
+  CVE-2026-24748 **without** entering the 1.7.0+ range the other two CVEs
+  cover — the smallest safe delta, same reasoning as the Cilium bump
+  (RFC #501) above.
+  **Important — this is a 4-minor-version jump, not a routine patch bump.**
+  `gitops/kargo-project/project.yaml`'s `Warehouse`/`Project` resources are
+  still on `kargo.akuity.io/v1alpha1` (pre-stable API, no cross-minor-version
+  compatibility guarantee). The executor picking this up MUST verify the
+  actual CRD schema for `Warehouse`/`Project`/any `PromotionTask` fields this
+  repo uses is unchanged (or update accordingly) at the `v1.6.4` tag before
+  landing this — fetch the real CRD definitions (sparse git clone of
+  `akuity/kargo` at that tag; `ghcr.io`'s OCI registry doesn't expose an easy
+  diff), do not assume a clean drop-in the way the Cilium/Kyverno bumps were
+  (those only crossed one minor version each with a stable, well-documented
+  values schema). Document what was checked in the PR body. Extend
+  `tests/kargo.bats` asserting the new pin. PR body must document the CVE, why
+  `1.6.4`, the CRD-compatibility verification performed, and the ADR-0004
+  caveat that this remote clusterless session cannot verify Kargo actually
+  starts cleanly on a live cluster post-bump — note the rollback path (revert
+  `targetRevision`; Kargo is on-demand and not currently synced anywhere, so
+  rollback carries zero live-cluster risk beyond what a `make kargo-up` would
+  encounter). `make ci` must pass. `docs/done/` entry required. Closes #508.
+  (auto/kargo-cve-bump-1-6-4)
+
 - [x] 🟢 **`kyverno` PSA `baseline` → `restricted` flip** (CHARTER **Objective
   O2** hardening, RFC #483 — architect decision 2026-07-17, converting audit
   #482). Kyverno's own official docs (`kyverno.io/docs/installation/platform-notes/`)
