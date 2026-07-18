@@ -1564,7 +1564,7 @@ You review and merge plan PRs, same as implementation PRs.
   must revert in lockstep if one was needed). `docs/done/` entry required. Closes #534.
   (auto/kro-bump-0-9)
 
-- [ ] 🟢 **Migrate Grafana chart source off the deprecated `grafana.github.io/helm-charts`
+- [x] 🟢 **Migrate Grafana chart source off the deprecated `grafana.github.io/helm-charts`
   repo** (RFC #544 — architect decision 2026-07-18. **No prerequisites — executor may
   pick up immediately.**) `gitops/platform/observability-grafana.yaml`'s chart source
   (`repoURL: https://grafana.github.io/helm-charts`, `targetRevision: 10.5.15`) is

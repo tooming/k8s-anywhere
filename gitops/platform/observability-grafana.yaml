@@ -10,9 +10,19 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://grafana.github.io/helm-charts
+    # Chart source migrated from the deprecated grafana.github.io/helm-charts
+    # (that repo's "grafana" chart entry carries deprecated: true and stopped
+    # receiving updates 2026-01-30) to the actively maintained
+    # grafana-community/helm-charts, RFC #544. This is a chart-template/schema
+    # bump only — the running Grafana binary stays pinned at image tag 13.0.1
+    # below (unified-storage migration bug history, ADR-0006); verified the
+    # security-critical valuesObject keys (securityContext,
+    # containerSecurityContext, and their pod/container template wiring) are
+    # byte-identical between the old (chart 10.5.15) and new (chart 12.7.2)
+    # sources before bumping.
+    repoURL: https://grafana-community.github.io/helm-charts
     chart: grafana
-    targetRevision: 10.5.15
+    targetRevision: 12.7.2
     helm:
       releaseName: grafana
       valuesObject:
@@ -39,7 +49,7 @@ spec:
         # (chart templates/_pod.tpl); GF_PATHS_LOGS (/var/log/grafana) is only
         # MkdirAll'd by Grafana under log.mode "file" (pkg/infra/log/log.go) — our
         # log.mode is "console" only, so it's never written. No other write path
-        # exists under this config (checked against grafana chart grafana-10.5.15
+        # exists under this config (checked against grafana chart grafana-12.7.2
         # and grafana/grafana image v13.0.1's docker entrypoint).
         #
         # Pod-level securityContext is set via the `securityContext` key, NOT
