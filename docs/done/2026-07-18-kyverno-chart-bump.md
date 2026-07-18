@@ -52,4 +52,4 @@ change, confirmed via `git stash` against unmodified `main`).
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/506
