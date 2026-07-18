@@ -125,7 +125,7 @@ so the executor never silently applies the wrong label.
 | `capstone-pipeline` | `restricted` | No workloads currently run in this namespace (Kargo itself runs in the `kargo` namespace; the Project CRD manages this namespace). `restricted` is a defense-in-depth floor ensuring any future pod admitted here is hardened by default. Per ROADMAP `auto/capstone-pipeline-psa`. |
 | `envoy-gateway-system` | `baseline` | Two pod types share the namespace: the Gateway controller (non-root, `restricted`-compatible) and Envoy proxy data-plane pods (default UID 0 in `gateway-helm` v1.8.0). Flipping to `restricted` risks breaking north-south traffic. `baseline` blocks the most dangerous controls while permitting root UIDs. **Flip condition:** upstream chart explicitly supports non-root proxy pods via `EnvoyProxy.spec.provider.kubernetes.envoyDeployment.pod.securityContext` AND maintainer verifies north-south traffic unaffected after label flip. Per RFC #230 (architect decision 2026-06-19). |
 | `lab-demo` | `baseline` | The upstream `jaegertracing/example-hotrod` image runs as root (no `USER` instruction in the Dockerfile). `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when the image ships a non-root UID or is superseded by the capstone-built image. Per ROADMAP `auto/pss-np-lab-demo`. |
-| `inkless` | `baseline` | The Aiven Inkless broker image (`ghcr.io/aiven/inkless:latest`) runs as root UID 0 — no `USER` directive in the base image. `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when `ghcr.io/aiven/inkless` ships with an explicit non-root `USER` directive. Per RFC #257 (architect decision 2026-06-23). |
+| `inkless` | `baseline` | The Aiven Inkless broker image (`ghcr.io/aiven/inkless:latest`) — see [§Re-evaluation log](#re-evaluation-log) 2026-07-18: the pinned upstream Dockerfile now ends `USER appuser` (non-root), but the profile stays `baseline` until the second half of the flip condition is also met. **Flip condition:** BOTH (a) `ghcr.io/aiven/inkless` ships an explicit non-root `USER` directive — met, see log — AND (b) the runtime is verified non-root on a live cluster — outstanding. Per RFC #257 (architect decision 2026-06-23), audit #494 (2026-07-18, kept). |
 | `longhorn-system` | `privileged` | longhorn-manager and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, and host `/dev`. Block storage cannot work under `restricted`. Per ADR-0013 §"PSA profile". |
 | `istio-system` | `privileged` | istio-cni runs as a DaemonSet that mutates host CNI config; ztunnel requires `NET_ADMIN`. Both fail under `restricted`. Per ADR-0012 §"PSA profile". (Kiali co-resides in this namespace; no separate `kiali` row needed. Per RFC #288.) |
 | `artifactory` | `baseline` | JVM initContainers in `jfrog/artifactory-oss` run as root UID 0 for `chown`; main JVM process runs as UID 1030. `restricted` is not viable without upstream chart changes documenting restricted-compatible initContainers. **Flip condition:** when the upstream `jfrog/artifactory-oss` chart documents restricted-compatible initContainers. Per RFC #287 (architect decision 2026-06-27). |
@@ -323,6 +323,50 @@ real `values.yaml`), not an assumption, but the maintainer should watch cluster
 admission health closely after this syncs given Kyverno's blast radius.
 Rollback: revert the namespace label commit — ArgoCD self-heals within its sync
 interval; no other component changed.
+
+### 2026-07-18 — `inkless` carve-out kept, evidence updated (audit [#494](https://github.com/tooming/k8s-anywhere/issues/494))
+
+**Trigger.** RFC #257's original flip condition (stated in full in the RFC #257
+issue body, but abbreviated in the `inkless` row above to only its first half):
+"when `ghcr.io/aiven/inkless` ships with an explicit non-root `USER` directive
+AND the runtime is verified non-root on a live cluster." Checked the real
+upstream source (`github.com/aiven/inkless`, `docker/inkless/Dockerfile`) at the
+latest release tag (`inkless-release-0.44`): the final build stage now ends
+`USER appuser` (after `adduser -D --shell /bin/bash appuser` and `chown
+appuser:appuser`/`chown appuser:root` on every directory the process writes —
+`/usr/logs`, `/opt/kafka`, `/var/lib/kafka`, `/etc/kafka/secrets`, `/etc/kafka`).
+`git log` on that file shows this has been true since commit `454eef1c53`,
+dated 2026-04-01 — not a brand-new change, just not previously checked against
+the real source rather than the digest-era assumption RFC #257 was written
+against.
+
+**Decision: keep `inkless: baseline`, condition partially met.** The Dockerfile
+half of the two-part flip condition is now satisfied by a real, pinnable
+upstream commit — but the second half ("verified non-root on a live cluster")
+cannot be satisfied from this remote clusterless environment for an on-demand
+heavy component this session cannot bring up. Flipping the namespace profile
+on Dockerfile evidence alone, without confirming the actual running container
+behaves correctly under the non-root UID (e.g., whether the entrypoint script
+that runs before `USER appuser` takes effect still needs root for something
+this Dockerfile read didn't surface), would assert a live posture this session
+has not verified (ADR-0004). Also corrected the `inkless` row's flip-condition
+text above, which had dropped RFC #257's live-verification requirement when
+originally transcribed from the RFC into the table — restoring the full
+two-part condition so a future audit doesn't repeat this partial reading.
+
+**Flip condition (unchanged in substance, now stated in full in the row
+above).** Both: (a) `ghcr.io/aiven/inkless` ships an explicit non-root `USER`
+directive — **met**, see above; (b) the maintainer (or a future session with
+live-cluster access) verifies the Inkless broker actually starts and operates
+correctly running as that non-root user on a real cluster. When (b) is also
+met, the executor PR is: flip `gitops/inkless/namespace.yaml`'s four PSA labels
+`baseline → restricted`; add a `securityContext`/`podSecurityContext`
+override to `gitops/inkless/inkless-statefulset.yaml` matching whichever key
+the pinned Inkless/Kafka Helm chart (or plain manifest, if not chart-based)
+actually reads — **verify against the actual manifest/chart source before
+assuming a key name**, per the key-path-mismatch bugfix this same run already
+found and fixed for four other components (kube-state-metrics, node-exporter,
+grafana, alloy — see `docs/done/2026-07-18-fix-podsecuritycontext-key-mismatch.md`).
 
 ---
 
