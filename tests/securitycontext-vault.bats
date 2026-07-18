@@ -20,6 +20,8 @@ setup() {
   NS="$REPO/gitops/vault/namespace.yaml"
   APP="$REPO/gitops/platform/vault.yaml"
   UNSEALER="$REPO/gitops/vault/unsealer.yaml"
+  # yqs(): yq-variant-robust scalar read (strips quoting differences).
+  load lib/yq
 }
 
 # --- namespace PSA restricted labels -----------------------------------------
@@ -68,30 +70,30 @@ setup() {
 }
 
 # --- vault Application: Layer 1 securityContext (ADR-0017) -------------------
+# Path-aware via yqs() so a regression back to a wrong/renamed key (the
+# containerSecurityContext-vs-securityContext bug class this repo has hit
+# repeatedly — KSM, node-exporter, Pyroscope, KRO) fails loudly instead of a
+# bare grep silently passing because the value string exists anywhere in the
+# file, possibly under the wrong key.
 
 @test "vault Application server statefulSet securityContext sets runAsNonRoot" {
-  run grep -q 'runAsNonRoot: true' "$APP"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.source.helm.valuesObject.server.statefulSet.securityContext.pod.runAsNonRoot' "$APP")" = "true" ]
 }
 
 @test "vault Application server statefulSet securityContext sets seccompProfile RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$APP"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.source.helm.valuesObject.server.statefulSet.securityContext.pod.seccompProfile.type' "$APP")" = "RuntimeDefault" ]
 }
 
 @test "vault Application server statefulSet securityContext disallows privilege escalation" {
-  run grep -q 'allowPrivilegeEscalation: false' "$APP"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.source.helm.valuesObject.server.statefulSet.securityContext.container.allowPrivilegeEscalation' "$APP")" = "false" ]
 }
 
 @test "vault Application server statefulSet securityContext drops all capabilities" {
-  run grep -q 'drop: \["ALL"\]' "$APP"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.source.helm.valuesObject.server.statefulSet.securityContext.container.capabilities.drop[0]' "$APP")" = "ALL" ]
 }
 
 @test "vault Application server statefulSet securityContext sets readOnlyRootFilesystem" {
-  run grep -q 'readOnlyRootFilesystem: true' "$APP"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.source.helm.valuesObject.server.statefulSet.securityContext.container.readOnlyRootFilesystem' "$APP")" = "true" ]
 }
 
 @test "vault Application adds a tmp emptyDir volume for the read-only root fs" {
@@ -109,28 +111,23 @@ setup() {
 }
 
 @test "vault-unsealer pod securityContext sets runAsNonRoot" {
-  run grep -q 'runAsNonRoot: true' "$UNSEALER"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.securityContext.runAsNonRoot' "$UNSEALER")" = "true" ]
 }
 
 @test "vault-unsealer pod securityContext sets seccompProfile RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$UNSEALER"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.securityContext.seccompProfile.type' "$UNSEALER")" = "RuntimeDefault" ]
 }
 
 @test "vault-unsealer container securityContext disallows privilege escalation" {
-  run grep -q 'allowPrivilegeEscalation: false' "$UNSEALER"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation' "$UNSEALER")" = "false" ]
 }
 
 @test "vault-unsealer container securityContext drops all capabilities" {
-  run grep -q 'drop: \["ALL"\]' "$UNSEALER"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.capabilities.drop[0]' "$UNSEALER")" = "ALL" ]
 }
 
 @test "vault-unsealer container securityContext sets readOnlyRootFilesystem" {
-  run grep -q 'readOnlyRootFilesystem: true' "$UNSEALER"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem' "$UNSEALER")" = "true" ]
 }
 
 @test "vault-unsealer mounts home and tmp emptyDir volumes for the read-only root fs" {
