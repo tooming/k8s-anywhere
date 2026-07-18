@@ -74,6 +74,17 @@ sign-image:
   before_script:
     - mkdir -p /tmp/cosign
     - cp "$COSIGN_KEY" /tmp/cosign/cosign.key
+  # Only the $CI_COMMIT_SHORT_SHA tag is signed here, even though build-and-push
+  # also pushes :latest (which is what gitops/apps/capstone/deployment.yaml and
+  # rollout.yaml actually reference). This is NOT a gap: cosign's signature is
+  # attached to the image's content digest (pushed as a "sha256-<digest>.sig"
+  # tag in the same repo), not to the tag name used at sign time. Since `docker
+  # tag` in build-and-push makes :latest an alias for the exact same digest as
+  # :$CI_COMMIT_SHORT_SHA, signing either tag produces one signature that both
+  # tags resolve to -- and Kyverno's verifyImages (gitops/kyverno/policies/
+  # verify-image-signatures.yaml) verifies by resolving the deployed image
+  # reference to its digest first, the same way. Don't "fix" this into signing
+  # both tags -- it would be redundant, not a correctness improvement.
   script:
     - cosign sign
         --key /tmp/cosign/cosign.key

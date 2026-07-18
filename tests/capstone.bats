@@ -35,6 +35,28 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
+# The sign-image job only cosign-signs the $CI_COMMIT_SHORT_SHA tag, not :latest
+# (which is what the deployed Deployment/Rollout actually reference) -- this
+# relies on `docker tag` making :latest an alias for the exact same digest, so
+# cosign's digest-based signature (and Kyverno's digest-based verifyImages
+# check) covers both tags from one signing call. If build-and-push ever
+# rebuilds :latest separately instead of tagging the already-built/pushed SHA
+# image, that assumption breaks silently and :latest would deploy unsigned.
+@test "build-and-push creates :latest via docker tag (same digest as the signed SHA tag), not a separate build" {
+  run grep -q 'docker tag ' "$REPO/.gitlab-ci.yml"
+  [ "$status" -eq 0 ]
+  # Only one docker build invocation should exist in the whole pipeline.
+  run bash -c "grep -c 'docker build ' '$REPO/.gitlab-ci.yml'"
+  [ "$output" = "1" ]
+}
+
+@test "sign-image signs the CI_COMMIT_SHORT_SHA tag (the digest both tags share)" {
+  run grep -q 'cosign sign' "$REPO/.gitlab-ci.yml"
+  [ "$status" -eq 0 ]
+  run bash -c "awk '/^sign-image:/{flag=1} flag' '$REPO/.gitlab-ci.yml' | grep -q 'CI_COMMIT_SHORT_SHA'"
+  [ "$status" -eq 0 ]
+}
+
 # --- Dockerfile for the pipeline build --------------------------------------
 @test "demo app Dockerfile exists for the capstone CI build" {
   [ -f "$REPO/gitops/apps/demo/Dockerfile" ]
