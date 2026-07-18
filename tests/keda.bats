@@ -19,8 +19,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "keda Application pins chart version 2.18.0" {
-  run grep -q 'targetRevision: 2.18.0' "$REPO/gitops/platform/keda.yaml"
+@test "keda Application pins chart version 2.20.1" {
+  run grep -q 'targetRevision: 2.20.1' "$REPO/gitops/platform/keda.yaml"
   [ "$status" -eq 0 ]
 }
 
