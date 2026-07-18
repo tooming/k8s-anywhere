@@ -7,6 +7,15 @@
 # land in the kyverno-policies Application (sync-wave 5, separate PR).
 # ALWAYS-ON: automated sync; kyverno-extras (wave 0) pre-creates the namespace
 # with PSA baseline labels before the Helm release schedules any pods.
+#
+# Bumped 3.3.4 -> 3.3.9 (upgrade-drafter, 2026-07-18): same-minor patch bump
+# (appVersion v1.13.2 -> v1.13.6, same 1.13.x line). Bundles several real CVE
+# fixes (kyverno/kyverno CVE-2025-46569, CVE-2025-30204, CVE-2025-22869, and a
+# golang-jwt/jwt/v4 CVE — verified via the actual commit range between the
+# kyverno-chart-3.3.4 and kyverno-chart-3.3.9 tags), not just a routine bump.
+# Re-verified chart 3.3.9's values.yaml still ships the identical restricted-
+# compatible securityContext defaults on all four controllers that RFC #483's
+# PSA-restricted flip (ADR-0017/ADR-0019) depends on — no regression.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -19,7 +28,7 @@ spec:
   source:
     repoURL: https://kyverno.github.io/kyverno/
     chart: kyverno
-    targetRevision: 3.3.4
+    targetRevision: 3.3.9
     helm:
       releaseName: kyverno
       valuesObject:
