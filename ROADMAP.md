@@ -1482,7 +1482,7 @@ You review and merge plan PRs, same as implementation PRs.
   scoped to the `capstone` namespace only (not a blanket exclusion). `make ci` must
   pass. `docs/done/` entry required. Closes #498. (auto/capstone-latest-tag-exclude)
 
-- [ ] 🟢 **Bump RabbitMQ `3.13` → `4.3.x`** (CHARTER **Core Values** §"Everything as
+- [x] 🟢 **Bump RabbitMQ `3.13` → `4.3.x`** (CHARTER **Core Values** §"Everything as
   code" + general hardening; RFC #522 — architect decision 2026-07-18. **No
   prerequisites — executor may pick up immediately.**) RabbitMQ's community-support
   policy now covers only the current + previous minor series (`4.3.x` / `4.2.x`);

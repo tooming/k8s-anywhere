@@ -35,8 +35,10 @@ well-known `guest/guest` default.
 
 - The two common charts (Bitnami) have been subject to image-distribution and licensing
   churn that breaks reproducibility — antithetical to the lab's "rebuild with one
-  command" charter bar. A pinned official `rabbitmq:3.13-management` image in a plain
-  `StatefulSet` is fully reproducible and transparent (no chart indirection).
+  command" charter bar. A pinned official `rabbitmq:4.3.2-management` image (bumped
+  from the original `3.13-management` pin 2026-07-18 — see
+  [§Re-evaluation log](#re-evaluation-log)) in a plain `StatefulSet` is fully
+  reproducible and transparent (no chart indirection).
 - The **RabbitMQ Cluster Operator** is the production-correct choice for HA, but adds CRDs
   and an operator pod for no teaching gain at single-node lab scale.
 - Plain manifests keep the whole definition reviewable in-repo and validated by
@@ -73,3 +75,51 @@ and is noted in `docs/dependency-tree.md`.
 | `gitops/data/rabbitmq/externalsecret.yaml` | `rabbitmq-creds` ← Vault `secret/rabbitmq/default` |
 | `gitops/data/demo/rabbitmq-load.yaml` | Demo publisher/consumer generating real traffic |
 | `grafana/dashboards/lab-rabbitmq.json` | "Lab — RabbitMQ" dashboard (real metrics) |
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision changes but the underlying technology choice does not. A version bump
+still leaves a dated trail so the reasoning behind the pin is never lost.
+
+### 2026-07-18 — bumped `3.13-management` → `4.3.2-management` (RFC #522)
+
+**Trigger.** Architect sweep found RabbitMQ's 2024 community-support policy now
+covers only the current + previous minor series (`4.3.x`/`4.2.x` as of this
+audit); the lab's `3.13-management` pin — four minor series back — no longer
+receives free security patches. A version-currency gap, not a single named CVE.
+
+**Decision: bump to `4.3.2-management`.** Groundable and low-risk for this lab:
+`gitops/data/rabbitmq/configmap.yaml` sets no `khepri_db` feature flag, so the
+node runs on RabbitMQ's default Mnesia metadata store. Per RFC #522's
+acceptance criteria, this executor independently re-checked the upgrade-path
+guidance at pickup time (RabbitMQ's own docs plus multiple
+`rabbitmq/rabbitmq-server` GitHub discussion threads on the Mnesia→Khepri
+migration, read as search-result summaries rather than full thread text — a
+live-cluster dry run is the only way to fully confirm this, which this
+clusterless session cannot do): a direct 3.13 → 4.x upgrade is the supported
+path for a Mnesia-based node; only nodes that had explicitly *enabled* Khepri
+on 3.13 are blocked from a direct jump and need blue-green instead — not this
+lab's case, since Khepri was never enabled here. The metadata store migrates
+automatically on first boot of the 4.x binary; no `rabbitmq.conf` change was
+needed for the bump itself.
+
+**ADR-0004 caveat.** This remote clusterless session cannot verify the
+Mnesia→Khepri migration actually completes cleanly against this lab's live
+persisted queue data on a real cluster — that's only exercisable on the
+maintainer's hardware. **Rollback path:** revert
+`gitops/data/rabbitmq/statefulset.yaml`'s image tag; ArgoCD self-heals the
+StatefulSet back onto the old binary. Note this is a genuine *downgrade* of an
+on-disk metadata format once Khepri has migrated in — the reverted 3.13 binary
+reads Mnesia's on-disk format, not Khepri's, so a clean revert is **not**
+guaranteed once the new node has booted and migrated. Per ADR-0005's
+already-accepted single-node recreate-over-HA posture, the realistic recovery
+path if a revert is ever needed is `make dr-restore` / reseeding the queue
+state from Velero, not an in-place downgrade.
+
+**Flip condition (next re-evaluation).** Re-check when RabbitMQ's `4.3.x` line
+itself ages out of the community-support window (per the project's own
+release-information page) or a specific CVE is filed against the then-current
+pin.

@@ -28,6 +28,17 @@ setup() {
   [[ "$output" == *"automated:"* ]]
 }
 
+# --- image pin (ADR-0009 §Re-evaluation log, RFC #522) ----------------------
+@test "rabbitmq image is pinned to a community-supported 4.x series (not 3.13)" {
+  run grep -q 'image: rabbitmq:4\.' "$REPO/gitops/data/rabbitmq/statefulset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "rabbitmq image is not pinned to the unsupported 3.13 series" {
+  run grep -q 'image: rabbitmq:3\.13' "$REPO/gitops/data/rabbitmq/statefulset.yaml"
+  [ "$status" -eq 1 ]
+}
+
 # --- Vault -> ESO secret chain ----------------------------------------------
 @test "rabbitmq-creds ExternalSecret pulls from vault key rabbitmq/default" {
   run grep -q 'key: rabbitmq/default' "$REPO/gitops/data/rabbitmq/externalsecret.yaml"
