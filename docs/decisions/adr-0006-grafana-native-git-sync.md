@@ -46,3 +46,46 @@ k8s-sidecar, dashboard ConfigMaps, and the `observability-dashboards` app are re
 The Repository connection is bootstrapped imperatively (`scripts/grafana-gitsync-bootstrap.sh`),
 the TLS proxy + CA via `scripts/gitlab-tls-bootstrap.sh`. Community (gnetId) dashboards
 are unaffected. (Follow-up: wire both bootstraps into `make up`/DR.)
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+No dedicated ADR exists for Loki/Tempo individually (they're part of the
+always-on LGTMP stack) — their audit results are recorded here as the closest
+Grafana-stack home.
+
+### 2026-07-18 — Grafana / Loki / Tempo CVE sweep kept (audit #518)
+
+**Trigger.** Routine CVE sweep of the observability stack:
+- **Grafana** (`13.0.1`): CVE-2026-27876 (critical RCE via SQL Expressions + an
+  Enterprise plugin, CVSS 9.1) affects `11.6.0`–`12.4.2`; "13.0.0 and above are
+  not affected" per the vendor advisory. CVE-2026-21720 (avatar-cache
+  goroutine-leak DoS) was fixed in the `release-12.0.9` backport, well below
+  this lab's line. Neither applies at `13.0.1`.
+- **Loki** (`3.7.2`, `gitops/observability/loki/deployment.yaml`):
+  CVE-2026-21726 (Ruler API double-encoded path traversal) affects versions
+  before `3.6.4`, fixed in `3.6.4`+. `3.7.2` already carries the fix.
+- **Tempo** (`2.10.5`, `gitops/observability/tempo/deployment.yaml`):
+  CVE-2026-28377 (S3 SSE-C key exposure via `/status/config`) affects versions
+  before `2.10.3`, fixed in `2.10.3`+. CVE-2026-27878 (TraceQL exemplars-hint
+  OOM) and CVE-2026-21728 (unbounded `max_result_limit` OOM, default fixed to
+  `262144` from `2.9` on) were both fixed at `2.8`/`2.9`. `2.10.5` carries all
+  three fixes, and this lab's Tempo config does not override
+  `search.max_result_limit` to reintroduce the unsafe pre-`2.9` default.
+- CVE-2026-10601 / CVE-2026-42129 (Loki/Tempo *datasource plugin* path
+  traversal — a Viewer reaching unintended backend endpoints) live in
+  Grafana's bundled datasource-plugin code, not the Loki/Tempo server. This
+  audit did not find a confirmed-fixed Grafana version for this specific CVE
+  pair — **not resolved as "not applicable"**, only as "no groundable action
+  found this run."
+
+**Decision: keep pins `grafana:13.0.1`, `loki:3.7.2`, `tempo:2.10.5`.** All
+three version-specific CVEs found are already fixed at the current pins.
+
+**Flip condition.** Revisit Grafana's pin specifically once a fixed-version
+citation for CVE-2026-10601/CVE-2026-42129 is found (re-run the search then);
+revisit Loki/Tempo when a new bulletin names a version at or above the
+current pins as affected.

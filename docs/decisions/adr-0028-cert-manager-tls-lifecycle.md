@@ -155,6 +155,31 @@ each cert renew" panel, and ACME/ready request rate.
 
 ---
 
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-18 — cert-manager CVE sweep kept (audit #517)
+
+**Trigger.** Routine CVE sweep found no cert-manager-specific CVE against the
+current `1.21.0` line. The only related findings were upstream Go-toolchain
+CVEs (CVE-2026-24051, CVE-2025-68121, CVE-2026-27145, CVE-2026-42504,
+CVE-2026-42507) that older cert-manager releases (`1.19.x`) picked up by
+bumping their bundled Go version — all predate this lab's pin.
+
+**Decision: keep chart pin `1.21.0`.** Confirmed `1.21.0` is the latest
+released tag as of this audit (no newer patch exists yet); the Go-toolchain
+CVEs that affected older `1.19.x` releases are already resolved by being on
+`1.21.0`.
+
+**Flip condition.** Revisit when a cert-manager security advisory names a
+version at or above `1.21.0` as affected.
+
+---
+
 ## Files this work will touch
 
 | Path | Role |

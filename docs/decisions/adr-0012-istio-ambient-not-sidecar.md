@@ -111,6 +111,38 @@ running Istio + Longhorn + Artifactory simultaneously would be tight. Therefore:
 
 ---
 
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-18 — Istio / Kiali CVE sweep kept (audit #516)
+
+**Trigger.** Routine CVE sweep found two Istio security bulletins: the
+ISTIO-SECURITY-2026-004 class (CVE-2026-47692, CVE-2026-47774, CVE-2026-47775
+padding oracle in the OAuth2 filter's cookie decryption, CVE-2026-47220 crash
+in the `%REQUESTED_SERVER_NAME%` formatter, and others in the same bulletin,
+CVSS 7.5) affecting **1.30.1–1.30.2**, fixed in **1.30.3**; and the older
+ISTIO-SECURITY-2026-001 class (CVE-2026-31837 JWKS fallback RSA key leak,
+CVE-2026-26308 RBAC header-matcher bypass) affecting the **1.27.x/1.28.x/
+1.29.x** lines, fixed in 1.27.8/1.28.5/1.29.1. No Kiali-specific CVE was found
+for 2026 against the upstream `kiali-server` chart this lab uses (the one hit,
+CVE-2025-13465, is a lodash prototype-pollution issue in the Red Hat OpenShift
+Service Mesh downstream fork, a different distribution).
+
+**Decision: keep chart pins `1.30.3` (base/istiod/cni/ztunnel) and `1.89.8`
+(kiali-server).** `1.30.3` already carries the 1.30.1–1.30.2 fixes, and sits
+far above the affected 1.27–1.29 range for the older bulletin. Kiali has no
+applicable CVE at the current pin.
+
+**Flip condition.** Revisit when a new Istio security bulletin names a
+version at or above `1.30.3` as affected, or a Kiali-specific CVE is
+published against the `kiali-server` chart (not a downstream OpenShift fork).
+
+---
+
 ## Files
 
 | Path | Role |
