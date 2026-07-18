@@ -78,4 +78,4 @@ ArgoCD self-heals within its sync interval.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/507
