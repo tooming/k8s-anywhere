@@ -30,12 +30,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "kargo Application pins chart version 1.6.4 (CVE-2026-24748 fix)" {
-  run grep -q 'targetRevision: 1.6.4' "$REPO/gitops/platform/kargo.yaml"
+@test "kargo Application pins chart version 1.10.9 (closes GHSA-xx8h/f72x/wp4p/g7gw)" {
+  run grep -q 'targetRevision: 1.10.9' "$REPO/gitops/platform/kargo.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "kargo Application does not pin the pre-CVE-fix 1.2.3 version" {
+@test "kargo Application does not pin the pre-bump 1.6.4 or 1.2.3 versions" {
+  run grep -q 'targetRevision: 1.6.4' "$REPO/gitops/platform/kargo.yaml"
+  [ "$status" -ne 0 ]
   run grep -q 'targetRevision: 1.2.3' "$REPO/gitops/platform/kargo.yaml"
   [ "$status" -ne 0 ]
 }
@@ -299,7 +301,8 @@ setup() {
 
 # --- argocd-update image override: kustomize.images, not bare sources.images -
 # The argocd-update step's config schema (verified against
-# internal/promotion/runner/builtin/schemas/argocd-update-config.json at both
+# pkg/promotion/runner/builtin/schemas/argocd-update-config.json -- this file
+# moved from internal/ to pkg/ between the 1.6.4 and 1.10.9 tags -- at both
 # the previous and new Kargo tags) has no bare `images` field directly under
 # `sources[]` -- image overrides must nest under `sources[].kustomize.images[]`
 # with a `repoURL` + `digest`/`tag` pair, and the digest must come from the
