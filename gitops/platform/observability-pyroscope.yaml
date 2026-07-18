@@ -43,6 +43,14 @@ spec:
           # chart default) — the metastore raft/db files the process writes always
           # land under one of those two paths, and the S3 backend (Garage, below)
           # holds the actual profile blocks. No other write path exists.
+          # Container-level fields live under `securityContext` (the chart's real key,
+          # verified against operations/pyroscope/helm/pyroscope/templates/
+          # deployments-statefulsets.yaml: `.Values.pyroscope.securityContext` renders
+          # the container securityContext block) -- NOT `containerSecurityContext`,
+          # which does not exist anywhere in this chart's schema and was silently a
+          # no-op (found in a janitor sweep for the same key-mismatch bug class PR
+          # #493 fixed for ksm/node-exporter/grafana/alloy; this fifth instance in
+          # the observability stack was missed by that PR's scope).
           podSecurityContext:
             runAsNonRoot: true
             runAsUser: 10001
@@ -50,7 +58,7 @@ spec:
             fsGroup: 10001
             seccompProfile:
               type: RuntimeDefault
-          containerSecurityContext:
+          securityContext:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
