@@ -10,6 +10,8 @@ setup() {
   VALKEY="$REPO/gitops/data/valkey/statefulset.yaml"
   RABBITMQ_LOAD="$REPO/gitops/data/demo/rabbitmq-load.yaml"
   VALKEY_LOAD="$REPO/gitops/data/demo/valkey-load.yaml"
+  # yqs(): yq-variant-robust scalar read (strips quoting differences).
+  load lib/yq
 }
 
 # --- namespace PSA labels ----------------------------------------------------
@@ -39,109 +41,94 @@ setup() {
 }
 
 # --- RabbitMQ StatefulSet securityContext ------------------------------------
+# Path-aware via yqs() so a regression back to a wrong/renamed key (the
+# containerSecurityContext-vs-securityContext bug class this repo has hit
+# repeatedly — KSM, node-exporter, Pyroscope, KRO) fails loudly instead of a
+# bare grep silently passing because the value string exists anywhere in the
+# file, possibly under the wrong key.
 
 @test "rabbitmq StatefulSet sets runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$RABBITMQ"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.securityContext.runAsNonRoot' "$RABBITMQ")" = "true" ]
 }
 
 @test "rabbitmq StatefulSet sets seccompProfile.type: RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$RABBITMQ"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.securityContext.seccompProfile.type' "$RABBITMQ")" = "RuntimeDefault" ]
 }
 
 @test "rabbitmq StatefulSet sets allowPrivilegeEscalation: false" {
-  run grep -q 'allowPrivilegeEscalation: false' "$RABBITMQ"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation' "$RABBITMQ")" = "false" ]
 }
 
 @test "rabbitmq StatefulSet sets readOnlyRootFilesystem: true" {
-  run grep -q 'readOnlyRootFilesystem: true' "$RABBITMQ"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem' "$RABBITMQ")" = "true" ]
 }
 
 @test "rabbitmq StatefulSet drops ALL capabilities" {
-  run grep -q '\- ALL' "$RABBITMQ"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.capabilities.drop[0]' "$RABBITMQ")" = "ALL" ]
 }
 
 # --- Valkey StatefulSet securityContext --------------------------------------
 
 @test "valkey StatefulSet sets runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$VALKEY"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.securityContext.runAsNonRoot' "$VALKEY")" = "true" ]
 }
 
 @test "valkey StatefulSet sets seccompProfile.type: RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$VALKEY"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.securityContext.seccompProfile.type' "$VALKEY")" = "RuntimeDefault" ]
 }
 
 @test "valkey StatefulSet sets allowPrivilegeEscalation: false" {
-  run grep -q 'allowPrivilegeEscalation: false' "$VALKEY"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation' "$VALKEY")" = "false" ]
 }
 
 @test "valkey StatefulSet sets readOnlyRootFilesystem: true" {
-  run grep -q 'readOnlyRootFilesystem: true' "$VALKEY"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem' "$VALKEY")" = "true" ]
 }
 
 @test "valkey StatefulSet drops ALL capabilities" {
-  run grep -q '\- ALL' "$VALKEY"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.capabilities.drop[0]' "$VALKEY")" = "ALL" ]
 }
 
 # --- rabbitmq-load Deployment securityContext --------------------------------
 
 @test "rabbitmq-load Deployment sets runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$RABBITMQ_LOAD"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.securityContext.runAsNonRoot' "$RABBITMQ_LOAD")" = "true" ]
 }
 
 @test "rabbitmq-load Deployment sets seccompProfile.type: RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$RABBITMQ_LOAD"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.securityContext.seccompProfile.type' "$RABBITMQ_LOAD")" = "RuntimeDefault" ]
 }
 
 @test "rabbitmq-load Deployment sets allowPrivilegeEscalation: false" {
-  run grep -q 'allowPrivilegeEscalation: false' "$RABBITMQ_LOAD"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation' "$RABBITMQ_LOAD")" = "false" ]
 }
 
 @test "rabbitmq-load Deployment sets readOnlyRootFilesystem: true" {
-  run grep -q 'readOnlyRootFilesystem: true' "$RABBITMQ_LOAD"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem' "$RABBITMQ_LOAD")" = "true" ]
 }
 
 @test "rabbitmq-load Deployment drops ALL capabilities" {
-  run grep -q '\- ALL' "$RABBITMQ_LOAD"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.capabilities.drop[0]' "$RABBITMQ_LOAD")" = "ALL" ]
 }
 
 # --- valkey-load Deployment securityContext ----------------------------------
 
 @test "valkey-load Deployment sets runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$VALKEY_LOAD"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.securityContext.runAsNonRoot' "$VALKEY_LOAD")" = "true" ]
 }
 
 @test "valkey-load Deployment sets seccompProfile.type: RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$VALKEY_LOAD"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.securityContext.seccompProfile.type' "$VALKEY_LOAD")" = "RuntimeDefault" ]
 }
 
 @test "valkey-load Deployment sets allowPrivilegeEscalation: false" {
-  run grep -q 'allowPrivilegeEscalation: false' "$VALKEY_LOAD"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation' "$VALKEY_LOAD")" = "false" ]
 }
 
 @test "valkey-load Deployment sets readOnlyRootFilesystem: true" {
-  run grep -q 'readOnlyRootFilesystem: true' "$VALKEY_LOAD"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem' "$VALKEY_LOAD")" = "true" ]
 }
 
 @test "valkey-load Deployment drops ALL capabilities" {
-  run grep -q '\- ALL' "$VALKEY_LOAD"
-  [ "$status" -eq 0 ]
+  [ "$(yqs '.spec.template.spec.containers[0].securityContext.capabilities.drop[0]' "$VALKEY_LOAD")" = "ALL" ]
 }
