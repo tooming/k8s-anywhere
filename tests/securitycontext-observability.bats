@@ -252,19 +252,28 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "pyroscope Application sets allowPrivilegeEscalation: false" {
-  run grep -q 'allowPrivilegeEscalation: false' "$PYROSCOPE"
-  [ "$status" -eq 0 ]
+# --- Pyroscope container-level securityContext -------------------------------
+# Container-level fields live under `pyroscope.securityContext` (the chart's
+# real key, verified against templates/deployments-statefulsets.yaml), NOT
+# `containerSecurityContext` (silent no-op in this chart's schema — the same
+# key-mismatch bug class PR #493 fixed for ksm/node-exporter/grafana/alloy).
+# Path-aware via yqs() so a regression back to the dead key fails these tests
+# instead of silently passing a bare grep.
+
+@test "pyroscope Application sets securityContext.allowPrivilegeEscalation: false" {
+  [ "$(yqs '.spec.source.helm.valuesObject.pyroscope.securityContext.allowPrivilegeEscalation' "$PYROSCOPE")" = "false" ]
 }
 
-@test "pyroscope Application drops ALL capabilities" {
-  run grep -q '\- ALL' "$PYROSCOPE"
-  [ "$status" -eq 0 ]
+@test "pyroscope Application drops ALL capabilities via securityContext.capabilities" {
+  [ "$(yqs '.spec.source.helm.valuesObject.pyroscope.securityContext.capabilities.drop[0]' "$PYROSCOPE")" = "ALL" ]
 }
 
-@test "pyroscope Application sets readOnlyRootFilesystem: true" {
-  run grep -q 'readOnlyRootFilesystem: true' "$PYROSCOPE"
-  [ "$status" -eq 0 ]
+@test "pyroscope Application sets securityContext.readOnlyRootFilesystem: true" {
+  [ "$(yqs '.spec.source.helm.valuesObject.pyroscope.securityContext.readOnlyRootFilesystem' "$PYROSCOPE")" = "true" ]
+}
+
+@test "pyroscope Application does NOT use the dead containerSecurityContext key" {
+  [ "$(yqs '.spec.source.helm.valuesObject.pyroscope.containerSecurityContext // "absent"' "$PYROSCOPE")" = "absent" ]
 }
 
 # --- node-exporter Application securityContext + carve-out -------------------
