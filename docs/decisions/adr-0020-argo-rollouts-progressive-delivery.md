@@ -31,8 +31,11 @@ by Alloy).
 
 ### Chart + version
 
-- **Chart:** `argo/argo-rollouts` v2.40.x (latest 2.x stable at executor
-  pickup time; pin in the Application).
+- **Chart:** `argo/argo-rollouts` `2.41.0` (`appVersion: 1.9.0`; pin lives in
+  `gitops/platform/argo-rollouts.yaml`'s `targetRevision` — this note read
+  "v2.40.x" until the 2026-07-18 audit corrected it to the actual pin; see
+  [§Re-evaluation log](#re-evaluation-log) for the current CVE status of this
+  pin).
 - **Source:** `https://argoproj.github.io/argo-helm`
 - **Namespace:** `argo-rollouts` (new namespace; PSA label `restricted` —
   controller is non-root-capable per upstream Helm chart).
@@ -197,3 +200,34 @@ canary in the lab).
 | [ADR-0008](adr-0008-envoy-gateway-not-traefik.md) | Gateway API plug-in writes `weight` on the capstone HTTPRoute — no second ingress layer. |
 | [ADR-0016](adr-0016-default-deny-networkpolicy.md) | `argo-rollouts` namespace gets default-deny during fan-out. |
 | [ADR-0017](adr-0017-pod-security-standards-restricted.md) | Controller runs under `restricted`; no carve-out. |
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-18 — Argo Rollouts CVE(s) in pinned `v1.9.0` kept (audit #520)
+
+**Trigger.** Routine architect CVE sweep found `argoproj/argo-rollouts` shipped
+`v1.9.1`, whose release notes name `CVE-2026-35469` (a `google.golang.org/grpc`
+dependency bump) as the fix, closing issue #4667 — which itself reports a
+broader set of unpatched vulnerabilities (1 critical, 3 high, 4 medium, 1 low
+per its linked ArtifactHub security report) against `v1.9.0`, the app version
+this lab's pinned chart currently ships.
+
+**Decision: keep chart pin `2.41.0` (`appVersion: 1.9.0`).** Not groundable yet
+— this lab deploys Argo Rollouts via the `argo/argo-rollouts` Helm chart, not
+the raw app binary, and the chart repo (`argoproj/argo-helm`) has not published
+a release tracking `appVersion >= 1.9.1`; `argo-rollouts-2.41.0` (`appVersion:
+1.9.0`) is still the newest chart tag as of this audit. Bumping `targetRevision`
+today would not change what's actually deployed — asserting a fixed posture
+with nothing newer to pin to would be the fabrication ADR-0004 forbids.
+
+**Flip condition.** `argo-helm` publishes a chart release whose `appVersion` is
+`>= 1.9.1` (or whichever later tag first includes the CVE-2026-35469 fix) —
+bump `gitops/platform/argo-rollouts.yaml`'s `targetRevision` to it, update
+`tests/argo-rollouts.bats`'s pin assertion, and this log entry's "kept" status.
