@@ -5,6 +5,16 @@
 # DO NOT add an `automated:` syncPolicy block — Cilium must be brought up
 # manually in the correct order (cluster → Cilium → ArgoCD → rest of stack).
 # Once the always-on stack is up, ArgoCD adopts and manages this release.
+#
+# Pinned at 1.17.18 (bumped from 1.16.6, RFC #501, 2026-07-18): CVE-2026-49445 —
+# Envoy's standalone DaemonSet (which runs by default since Cilium 1.16, whether
+# or not any L7 CiliumNetworkPolicy is authored — envoy.enabled defaults to null/
+# "true for new installation" in the chart) creates a world-accessible admin.sock
+# on cluster nodes. Fixed upstream in 1.17.14/1.18.8/1.19.2; 1.17.18 is the latest
+# 1.17.x patch, chosen as the smallest safe delta from the prior pin. Rollback:
+# revert targetRevision — ArgoCD self-heals; Cilium is a DaemonSet so a revert
+# re-rolls the same way the bump did. (ADR-0004 caveat: this remote clusterless
+# session cannot verify pod networking stays healthy post-bump on a live cluster.)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,7 +25,7 @@ spec:
   source:
     repoURL: https://helm.cilium.io
     chart: cilium
-    targetRevision: 1.16.6
+    targetRevision: 1.17.18
     helm:
       releaseName: cilium
       valuesObject:

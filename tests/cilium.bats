@@ -28,6 +28,17 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- Chart pin (RFC #501, CVE-2026-49445 — world-accessible Envoy admin.sock) --
+@test "cilium Application pins chart version 1.17.18 (CVE-2026-49445 fix)" {
+  run grep -q 'targetRevision: 1.17.18' "$REPO/gitops/platform/cilium.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "cilium Application does not pin the pre-CVE-fix 1.16.6 version" {
+  run grep -q 'targetRevision: 1.16.6' "$REPO/gitops/platform/cilium.yaml"
+  [ "$status" -ne 0 ]
+}
+
 @test "cilium Application sets kubeProxyReplacement: true" {
   run grep 'kubeProxyReplacement: true' "$REPO/gitops/platform/cilium.yaml"
   [ "$status" -eq 0 ]

@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump Cilium `1.16.6` → `1.17.18`** (CHARTER **Core Values** §"Everything
+- [x] 🟢 **Bump Cilium `1.16.6` → `1.17.18`** (CHARTER **Core Values** §"Everything
   as code" + general hardening; RFC/issue #501 — architect decision 2026-07-18,
   ADR audit resolved as **Convert**. **No prerequisites — executor may pick up
   immediately.**)
