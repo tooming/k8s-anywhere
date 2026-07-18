@@ -105,11 +105,39 @@ vocabulary, same observability hooks.
 
 ---
 
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-18 — Envoy Gateway CVE sweep kept (audit #515)
+
+**Trigger.** Routine CVE sweep found five fixes that landed in chart `v1.8.2`
+(xDS server auth bypass in `GatewayNamespaceMode`; Lua validator sandbox
+path-normalization bypass; missing read lock on the wasm HTTP server cache
+map; nil-dereference when a `SecurityPolicy` targets a `TCPRoute` without
+`spec.authorization`; OCI layer extraction untrusted-tar-header memory
+allocation) plus two from `v1.8.1` (cross-namespace `ReferenceGrant` bypass
+via custom `backendRef`; wasm HTTP fetch gzip decompression without an
+output-size limit).
+
+**Decision: keep chart pin `v1.8.2`.** `gitops/platform/envoy-gateway.yaml`
+is already pinned at the exact release that carries every fix found in this
+sweep — no bump is groundable because there's nothing newer needed yet.
+
+**Flip condition.** Revisit when a new Envoy Gateway security bulletin names
+a version above `v1.8.2` as affected, or `v1.8.2` itself is later found
+retroactively vulnerable to something not yet disclosed.
+
+---
+
 ## Files
 
 | Path | Role |
 |------|------|
-| `gitops/platform/envoy-gateway.yaml` | ArgoCD Application — installs Envoy Gateway chart (v1.8.0) from `docker.io/envoyproxy/gateway-helm` |
+| `gitops/platform/envoy-gateway.yaml` | ArgoCD Application — installs Envoy Gateway chart (currently pinned `v1.8.2`) from `docker.io/envoyproxy/gateway-helm` |
 | `gitops/platform/lab-gateway.yaml` | ArgoCD Application — applies `GatewayClass` + `Gateway` objects from `gitops/network/gateway.yaml` |
 | `gitops/network/gateway.yaml` | `GatewayClass eg` + shared `Gateway eg` in `lab-gateway` ns; `allowedRoutes: All` |
 | `gitops/network/argocd-route.yaml` | `HTTPRoute` for the ArgoCD UI (reference example) |
