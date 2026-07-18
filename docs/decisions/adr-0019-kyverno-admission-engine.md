@@ -154,6 +154,44 @@ The PSA label is set on the `Namespace` manifest the Kyverno Application creates
 
 ---
 
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-18 — CVE-2026-4789 (CEL `http.Get`/`http.Post` SSRF) kept (audit #502)
+
+**Trigger.** [CVE-2026-4789](https://github.com/advisories/GHSA-qqrv-2hch-83q4)
+(critical SSRF, disclosed 2026-07): Kyverno's CEL-based `http.Get()`/`http.Post()`
+library functions, available to `NamespacedValidatingPolicy` CEL expressions,
+enforce no URL restrictions — a namespace-scoped user authoring such a policy
+could make the cluster-privileged admission-controller pod issue arbitrary HTTP
+requests. Affects Kyverno 1.16.0+.
+
+**Decision: keep chart pin `3.3.4`.** This lab's entire policy set
+(`gitops/kyverno/policies/`) uses only the classic `kind: ClusterPolicy` CRD —
+`require-pod-security-restricted`, `disallow-latest-tag`, `add-default-seccomp`,
+`verify-image-signatures`, `add-default-runasnonroot` — none of which are the
+newer CEL-based `NamespacedValidatingPolicy` kind, and none reference
+`http.Get`/`http.Post` (verified: `grep -rn "http.Get\|http.Post\|NamespacedValidatingPolicy" gitops/kyverno/` returns zero matches). The vulnerable code
+path is never reached by this lab's actual deployed policies, regardless of
+chart version. Additionally, as of this audit no patched Kyverno release has
+shipped yet (the fix landed on `kyverno/kyverno`'s `main` branch via PR #15789
+but no tagged release cuts it) — there is nothing groundable to bump to even
+if this were applicable (ADR-0004).
+
+**Flip condition.** Revisit if either (a) this lab ever authors a CEL-based
+`NamespacedValidatingPolicy` — at that point, audit it against
+`http.Get`/`http.Post` usage and require `--httpBlocklist`/`--httpAllowlist`
+scoping before merging, or (b) a patched Kyverno release ships and the
+executor wants the defense-in-depth chart bump anyway as routine hygiene
+(upgrade-drafter's normal patch-bump lane, not an architect decision at that
+point).
+
+---
+
 ## Files this work will touch
 
 | Path | Role |
