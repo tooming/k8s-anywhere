@@ -162,6 +162,27 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# Path-aware versions of the three checks above: the bare grep checks only
+# confirm the field VALUES exist somewhere in the file, not that they're
+# actually nested under the chart's real container-level key
+# (`containerSecurityContext`, verified against this chart's own
+# values.yaml/templates). Closes the gap the janitor sweep found in PR #493's
+# otherwise-thorough fix for this same key-mismatch bug class (found while
+# diffing KRO's chart values.yaml for auto/kro-bump-0-9 and re-auditing the
+# other charts already fixed for it).
+
+@test "kube-state-metrics Application nests allowPrivilegeEscalation under containerSecurityContext (not just present anywhere)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.containerSecurityContext.allowPrivilegeEscalation' "$KSM")" = "false" ]
+}
+
+@test "kube-state-metrics Application nests readOnlyRootFilesystem under containerSecurityContext (not just present anywhere)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.containerSecurityContext.readOnlyRootFilesystem' "$KSM")" = "true" ]
+}
+
+@test "kube-state-metrics Application nests dropped ALL capabilities under containerSecurityContext (not just present anywhere)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.containerSecurityContext.capabilities.drop[0]' "$KSM")" = "ALL" ]
+}
+
 # --- Alloy Application securityContext ---------------------------------------
 # Pod-level fields live under `global.podSecurityContext` (the chart's real
 # key), NOT `controller.podSecurityContext` (silent no-op in this chart's
@@ -240,6 +261,21 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# Path-aware versions: see the kube-state-metrics block above for why these
+# close a gap the bare grep checks leave open (same recurrence-guard sweep).
+
+@test "grafana Application nests allowPrivilegeEscalation under containerSecurityContext (not just present anywhere)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.containerSecurityContext.allowPrivilegeEscalation' "$GRAFANA")" = "false" ]
+}
+
+@test "grafana Application nests readOnlyRootFilesystem under containerSecurityContext (not just present anywhere)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.containerSecurityContext.readOnlyRootFilesystem' "$GRAFANA")" = "true" ]
+}
+
+@test "grafana Application nests dropped ALL capabilities under containerSecurityContext (not just present anywhere)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.containerSecurityContext.capabilities.drop[0]' "$GRAFANA")" = "ALL" ]
+}
+
 # --- Pyroscope Application securityContext -----------------------------------
 
 @test "pyroscope Application sets runAsNonRoot: true" {
@@ -301,6 +337,21 @@ setup() {
 @test "node-exporter Application drops ALL capabilities" {
   run grep -q '\- ALL' "$NODE_EXPORTER"
   [ "$status" -eq 0 ]
+}
+
+# Path-aware versions: see the kube-state-metrics block above for why these
+# close a gap the bare grep checks leave open (same recurrence-guard sweep).
+
+@test "node-exporter Application nests allowPrivilegeEscalation under containerSecurityContext (not just present anywhere)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.containerSecurityContext.allowPrivilegeEscalation' "$NODE_EXPORTER")" = "false" ]
+}
+
+@test "node-exporter Application nests readOnlyRootFilesystem under containerSecurityContext (not just present anywhere)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.containerSecurityContext.readOnlyRootFilesystem' "$NODE_EXPORTER")" = "true" ]
+}
+
+@test "node-exporter Application nests dropped ALL capabilities under containerSecurityContext (not just present anywhere)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.containerSecurityContext.capabilities.drop[0]' "$NODE_EXPORTER")" = "ALL" ]
 }
 
 @test "node-exporter has hostPID disabled (PSS restricted compliance)" {
