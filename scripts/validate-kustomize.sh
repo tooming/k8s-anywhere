@@ -6,7 +6,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 1
 
-if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; Y=; Z=; B=; fi
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 
 printf '%s== validate kustomize builds ==%s\n' "$B" "$Z"
 

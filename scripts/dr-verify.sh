@@ -20,7 +20,7 @@ CURL_IMG="${DR_CURL_IMAGE:-curlimages/curl:8.11.1}"
 KCTX="${KCTX:-}"
 kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
 
-if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; Y=; B=; Z=; fi
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 FAILED=0
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; FAILED=1; }

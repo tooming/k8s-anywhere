@@ -20,7 +20,7 @@ cd "$ROOT" || exit 1
 
 K8S_VERSION="${KUBECONFORM_K8S_VERSION:-1.30.0}"
 CACHE_DIR="${KUBECONFORM_CACHE_DIR:-$HOME/.cache/kubeconform-schemas}"
-if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; Y=; B=; Z=; fi
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 
 printf '%s== validate manifests (kubeconform) ==%s\n' "$B" "$Z"
 

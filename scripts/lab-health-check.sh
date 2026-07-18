@@ -40,7 +40,7 @@ ONDEMAND_NS="$ONDEMAND_NS harbor"
 # "url|name", space-separated. Set LAB_UI_PROBES= to skip.
 UI_PROBES="${LAB_UI_PROBES:-http://localhost:8000/api/health|grafana(:8000) http://argocd.127.0.0.1.nip.io:8000/healthz|argocd(:8000)}"
 
-if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; Y=; B=; Z=; fi
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 ok()   { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad()  { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; }
 note() { printf '      %s%s%s\n' "$Y" "$1" "$Z"; }

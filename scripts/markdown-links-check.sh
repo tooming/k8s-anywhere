@@ -15,7 +15,7 @@ ROOT="${MDLINKS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 ROOT="$(cd "$ROOT" && pwd)" || exit 1
 cd "$ROOT" || exit 1
 
-if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Z=$'\033[0m'; else G=; R=; Z=; fi
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 
 drift=0
 broken=()

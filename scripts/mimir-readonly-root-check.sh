@@ -30,7 +30,7 @@ DIR="$ROOT/gitops/observability/mimir"
 DEPLOY="$DIR/deployment.yaml"
 CM="$DIR/configmap.yaml"
 
-if [ -t 1 ]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else G=; R=; Y=; B=; Z=; fi
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; }
 skip(){ printf '  %s·%s %s\n' "$Y" "$Z" "$1"; }
