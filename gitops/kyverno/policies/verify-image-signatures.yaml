@@ -4,11 +4,15 @@
 # rejected. The cosign public key is seeded by scripts/cosign-bootstrap.sh into the
 # Secret cosign-public-key in namespace kyverno.
 #
-# Audit mode + failurePolicy: Ignore until the cosign signing step in .gitlab-ci.yml
-# is wired (separate planner item: cosign-bootstrap-script). A follow-up item flips
-# this to Enforce + failurePolicy: Fail once O4 is end-to-end green. background: false
-# because image verification requires the live registry manifest during admission;
-# background scans cannot verify signatures without a running registry connection.
+# Audit mode + failurePolicy: Ignore. The cosign signing step (sign-image stage) is
+# already wired in .gitlab-ci.yml — this policy stays Audit/Ignore pending the
+# separate auto/cosign-enforce-flip ROADMAP item, which requires a maintainer to
+# confirm on a live cluster that at least one CI run actually pushed a signed
+# `.sig` tag to Artifactory before flipping to Enforce + failurePolicy: Fail (a
+# remote clusterless session cannot verify that condition itself). background:
+# false because image verification requires the live registry manifest during
+# admission; background scans cannot verify signatures without a running
+# registry connection.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:

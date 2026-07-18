@@ -15,11 +15,11 @@
 # 10.0.0.194, not 10.43.0.1) — the ClusterIP is never the real source address
 # on an outbound connection, so the ipBlock rule silently never matches. Found
 # via "failed calling webhook ... context deadline exceeded" on
-# rabbitmq-creds/valkey-creds/garage-secrets on a from-scratch `make up`; the
-# other three webhook-from-apiserver.yaml files carry the same latent bug
-# (untested until this webhook's traffic was actually exercised end-to-end) —
-# tracked for a follow-up fix, not fixed here to keep this PR's blast radius
-# to the ESO issue actually hit.
+# rabbitmq-creds/valkey-creds/garage-secrets on a from-scratch `make up`.
+# (Doc-precision update: the other three webhook-from-apiserver.yaml files —
+# gitops/kyverno, gitops/cert-manager, gitops/keda — were checked and are
+# already on this same CiliumNetworkPolicy + remote-node shape; no follow-up
+# fix remains outstanding.)
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
