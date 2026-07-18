@@ -1507,7 +1507,7 @@ You review and merge plan PRs, same as implementation PRs.
   already-accepted single-node recreate-over-HA risk posture). `docs/done/` entry
   required. Closes #522. (auto/rabbitmq-bump-4x)
 
-- [ ] 🟢 **Bump Longhorn `1.7.3` → `1.11.x`** (CHARTER **Core Values** §"Everything as
+- [x] 🟢 **Bump Longhorn `1.7.3` → `1.11.x`** (CHARTER **Core Values** §"Everything as
   code" + general hardening; RFC #528 — architect decision 2026-07-18). Longhorn's
   `1.7.x` line reached end-of-life 2025-09-04 (one year after its first stable
   release, under the pre-1.8 12-month support policy); this lab's pinned

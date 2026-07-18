@@ -8,6 +8,18 @@ setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   ALLOY="$REPO/gitops/platform/observability-alloy.yaml"
   DASH="$REPO/grafana/dashboards/lab-longhorn.json"
+  APP="$REPO/gitops/platform/longhorn.yaml"
+}
+
+# --- chart pin (ADR-0013 §Re-evaluation log, RFC #528) -----------------------
+@test "longhorn Application is pinned to a community-supported 1.11.x series (not 1.7.x)" {
+  run grep -q 'targetRevision: 1\.11\.' "$APP"
+  [ "$status" -eq 0 ]
+}
+
+@test "longhorn Application is not pinned to the EOL'd 1.7 series" {
+  run grep -q 'targetRevision: 1\.7\.' "$APP"
+  [ "$status" -eq 1 ]
 }
 
 # --- Alloy scrape block -------------------------------------------------------

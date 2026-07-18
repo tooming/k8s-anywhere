@@ -36,7 +36,9 @@ pattern (proven by TiDB, Artifactory, Istio) keeps it off the always-on budget.
 ## Decision
 
 Deploy **Longhorn** as the lab's on-demand distributed block storage layer, using the
-**official Helm chart** (`longhorn/longhorn` from `https://charts.longhorn.io`).
+**official Helm chart** (`longhorn/longhorn` from `https://charts.longhorn.io`), pinned
+at `1.11.3` (bumped from the original `1.7.3` pin 2026-07-18 after the `1.7.x` line
+reached end-of-life — see [§Re-evaluation log](#re-evaluation-log)).
 
 Longhorn is **on-demand, never auto-synced** (see *12 GB budget* below). The ArgoCD
 `Application` lives in `gitops/platform/longhorn.yaml` with no `automated:` block; users
@@ -142,3 +144,52 @@ un-defer:
 | `gitops/longhorn/route.yaml` | Envoy `HTTPRoute` for the Longhorn UI (`longhorn.127.0.0.1.nip.io`) |
 | `Makefile` | `longhorn-up` and `longhorn-down` targets |
 | `tests/platform.bats` | bats assertion: Longhorn Application has no `automated:` block |
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision changes but the underlying technology choice does not. A version bump
+still leaves a dated trail so the reasoning behind the pin is never lost.
+
+### 2026-07-18 — bumped `1.7.3` → `1.11.3` (RFC #528)
+
+**Trigger.** Architect sweep found Longhorn's `1.7.x` line reached end-of-life
+2025-09-04 (one year after its first stable release, under the pre-1.8
+12-month support policy); the lab's `1.7.3` pin — roughly a year past that
+line's support window — no longer receives security patches. A
+version-currency gap, not a single named CVE.
+
+**Decision: bump to `1.11.3`.** Deliberately one minor line behind the newest
+`1.12.x` (which just went GA with the V2 Data Engine — a bigger behavioral
+surface change than this routine currency bump warrants), same
+smallest-safe-delta reasoning as this session's other version bumps.
+Re-verified at pickup time (per RFC #528's acceptance criteria) that `1.11.3`
+was still the latest stable patch on the `1.11.x` line and that `1.12.0`
+remained the newest stable release overall (with only a `1.12.1-rc1`
+pre-release beyond it) — confirmed directly against
+`longhorn/longhorn`'s and `longhorn/charts`' GitHub release tags, not assumed
+from the RFC. Diffed the chart's `values.yaml` between the old and new pins
+for every key this repo's `valuesObject` sets
+(`defaultSettings.defaultReplicaCount`, `persistence.defaultClassReplicaCount`,
+`ingress.enabled`, `longhornUI.{replicas,resources}`,
+`longhornManager.resources`): all five paths still exist unchanged at
+`1.11.3` (the upstream default for `longhornUI.resources` is unset/`~`, but
+that's the *default*, not a removed key — this repo's own override still
+applies normally). The V2 (SPDK) Data Engine remains opt-in, not default, at
+this pin — no behavior change from that GA.
+
+**ADR-0004 caveat.** This remote clusterless session cannot verify Longhorn's
+CSI driver, manager, or UI actually start cleanly against real (or absent)
+volume data on a live cluster post-bump. **Rollback path:** revert
+`gitops/platform/longhorn.yaml`'s `targetRevision`; since Longhorn is
+on-demand and not auto-synced, this carries zero live-cluster risk unless the
+maintainer already has it running via `make longhorn-up` with real
+provisioned volumes, in which case a version-format mismatch on downgrade is
+possible (same class of risk as any stateful storage engine) — verify
+current state before reverting if Longhorn is actually up.
+
+**Flip condition (next re-evaluation).** Re-check when the `1.11.x` line
+itself approaches its own end-of-support window, or a specific CVE is filed
+against the then-current pin.
