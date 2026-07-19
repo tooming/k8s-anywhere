@@ -24,6 +24,7 @@ BUDGET_S=900   # CHARTER Objective O6: < 15 min (900 s) total wall-clock
 START=$SECONDS
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/budget-check.sh"
 
 declare -a STEP_NAMES
 declare -a STEP_ELAPSED
@@ -56,11 +57,7 @@ step_fail() {
 
 budget_check() {
   local total=$(( SECONDS - START ))
-  if [ "$total" -gt "$BUDGET_S" ]; then
-    printf '\n%s✗ BUDGET EXCEEDED: %ds elapsed > %ds (O6 budget).%s\n' \
-      "$R$B" "$total" "$BUDGET_S" "$Z"
-    FAILED=1
-  fi
+  budget_warn_if_exceeded "$total" "$BUDGET_S" "O6" || FAILED=1
 }
 
 echo ""
@@ -169,12 +166,7 @@ printf '%-36s  %-10s  %s\n' "----" "----------" "------"
 for i in "${!STEP_NAMES[@]}"; do
   printf '%-36s  %-10s  %s\n' "${STEP_NAMES[$i]}" "${STEP_ELAPSED[$i]}" "${STEP_STATUS[$i]}"
 done
-printf '\n  Total elapsed: %ds  (budget: %ds)\n' "$TOTAL_ELAPSED" "$BUDGET_S"
-
-if [ "$TOTAL_ELAPSED" -gt "$BUDGET_S" ]; then
-  printf '  %s✗ OVER BUDGET (Objective O6 requires < %ds)%s\n' "$R$B" "$BUDGET_S" "$Z"
-  FAILED=1
-fi
+budget_final_line "$TOTAL_ELAPSED" "$BUDGET_S" "O6" || FAILED=1
 
 echo ""
 if [ "$FAILED" -eq 0 ]; then
