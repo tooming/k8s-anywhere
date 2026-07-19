@@ -21,6 +21,11 @@ ENV_FILE="$STATE_DIR/.env"
 : "${OCI_TENANCY_ID:?set OCI_TENANCY_ID}"
 : "${OCI_SSH_PUBLIC_KEY_PATH:?set OCI_SSH_PUBLIC_KEY_PATH (path to a public key for instance access)}"
 : "${OCI_SSH_PRIVATE_KEY_PATH:?set OCI_SSH_PRIVATE_KEY_PATH (matching private key, for the SSH bootstrap steps below)}"
+# Optional hardening: restrict SSH + the Garage S3 API to a known CIDR instead of
+# the open-by-default 0.0.0.0/0 below — same OCI_ADMIN_CIDR env var the
+# infra/modules/oracle-k3s-cluster Terraform module reads (its admin_cidr
+# variable), so one setting hardens both Oracle-backend instances consistently.
+OCI_ADMIN_CIDR="${OCI_ADMIN_CIDR:-0.0.0.0/0}"
 
 command -v oci >/dev/null 2>&1 || { echo "[tfstate-oracle] oci CLI not found — install and 'oci setup config' first" >&2; exit 1; }
 
@@ -70,10 +75,10 @@ oci network route-table update --rt-id "$RT_ID" --route-rules "[{\"destination\"
 
 SL_ID="$(oci network security-list list --compartment-id "$OCI_COMPARTMENT_ID" --vcn-id "$VCN_ID" --display-name tfstate-oracle-sl --query 'data[0].id' --raw-output 2>/dev/null || true)"
 if [ -z "$SL_ID" ] || [ "$SL_ID" = "null" ]; then
-  echo "[tfstate-oracle] creating security list (SSH 22 + Garage S3 API 3900)"
+  echo "[tfstate-oracle] creating security list (SSH 22 + Garage S3 API 3900, source $OCI_ADMIN_CIDR)"
   SL_ID="$(oci network security-list create --compartment-id "$OCI_COMPARTMENT_ID" --vcn-id "$VCN_ID" --display-name tfstate-oracle-sl \
     --egress-security-rules '[{"destination":"0.0.0.0/0","protocol":"all"}]' \
-    --ingress-security-rules '[{"source":"0.0.0.0/0","protocol":"6","tcpOptions":{"destinationPortRange":{"min":22,"max":22}}},{"source":"0.0.0.0/0","protocol":"6","tcpOptions":{"destinationPortRange":{"min":3900,"max":3900}}}]' \
+    --ingress-security-rules "[{\"source\":\"$OCI_ADMIN_CIDR\",\"protocol\":\"6\",\"tcpOptions\":{\"destinationPortRange\":{\"min\":22,\"max\":22}}},{\"source\":\"$OCI_ADMIN_CIDR\",\"protocol\":\"6\",\"tcpOptions\":{\"destinationPortRange\":{\"min\":3900,\"max\":3900}}}]" \
     --query 'data.id' --raw-output --wait-for-state AVAILABLE)"
 fi
 
