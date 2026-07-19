@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Replace the dead "idle issue" fallback across every routine prompt with a
+- [x] 🟢 **Replace the dead "idle issue" fallback across every routine prompt with a
   `[Action needed]` PR** (CHARTER **Core Values** §"Docs & dashboards don't drift" +
   governance correctness; user-filed issue #569 — **no prerequisites, executor may pick
   up immediately**; this is a workflow/governance fix per CLAUDE.md's "governance...
@@ -262,13 +262,49 @@ You review and merge plan PRs, same as implementation PRs.
   grep-based structural check mirroring this repo's other `scripts/<thing>-check.sh`
   drift detectors. This is the mechanical guard per CLAUDE.md's bugfix-prevents-
   recurrence rule, preventing a future edit from reintroducing a fallback path the hook
-  will immediately undo. `make ci` must pass. `docs/done/` entry required. **Executor
-  note:** seven prompt files need the same shape of edit — if the combined diff
-  crosses ~400 changed lines (WAYS-OF-WORKING.md §3), ship `executor.prompt.md` +
-  `planner.prompt.md` (the two most-run roles, and the only two STEP 6b's chain
-  actually reaches) in PR 1, and note the remaining five roles as a follow-up item in
-  this PR's body for the next cycle to pick up. Closes #569.
+  will immediately undo. `make ci` must pass. `docs/done/` entry required. **Delivered
+  as PR 1 of 2:** the combined seven-file diff crossed the ~400 changed-line budget
+  (WAYS-OF-WORKING.md §3), so this PR fixes `executor.prompt.md` + `planner.prompt.md`
+  only (the two roles STEP 6b's fallback chain actually reaches) plus
+  `tests/action-needed-fallback.bats` covering those two files. The remaining five
+  roles are split into the follow-up item directly below. Closes #569.
   (auto/action-needed-pr-fallback)
+
+- [ ] 🟢 **`[Action needed]` PR fallback — remaining five routine prompts** (CHARTER
+  **Core Values** §"Docs & dashboards don't drift"; PR 2 of 2, follow-up to the item
+  directly above — **no prerequisites, executor may pick up immediately**). Apply the
+  same fix to `janitor.prompt.md` STEP 6, `doc-drift-author.prompt.md` STEP 7, and
+  `upgrade-drafter.prompt.md` STEP 7: replace each "file/refresh a `<role> idle — ...`
+  GitHub issue" terminal step with opening/refreshing a PR titled `[Action needed]
+  <one-line summary>` on the role's own branch prefix (`chore/action-needed-<slug>`
+  for janitor, `sync/action-needed-<slug>` for doc-drift-author,
+  `upgrade/action-needed-<slug>` for upgrade-drafter) whose only content is a new
+  `docs/backlog/YYYY-MM-DD-action-needed-<slug>.md` note — same shape as the executor
+  and planner fix above.
+
+  **`triager.prompt.md` and `learning-post-writer.prompt.md` need a *different* fix,
+  not the uniform one** — verify this before writing either file (ADR-0004): both
+  declare themselves PR-less by design (`triager.prompt.md`'s own CONSTRAINTS: "Labels
+  only... no PRs"; `learning-post-writer.prompt.md` writes exactly one
+  `docs/learnings/` file per run, no code). Opening an `[Action needed]` PR from either
+  would contradict their own stated contract. Instead, for both: drop the
+  issue-filing fallback entirely and treat "nothing to triage" / "quiet week, nothing
+  pedagogically interesting merged" as an accepted no-op — mirror
+  `routines/architect.prompt.md` STEP 9's precedent ("If there were no 🟡 items without
+  RFCs AND no ADR audit flags this week, do NOT open a churn PR... A no-op is
+  acceptable for the architect"). Each already ends with (or can easily gain) a
+  one-line summary in its own output (triager's CONSTRAINTS already require
+  `Triaged: N — needs-domain: M — skipped: K`) — that line is sufficient; no artifact
+  needed when there's genuinely nothing to do.
+
+  Extend `tests/action-needed-fallback.bats` with the same two-assertion pattern (no
+  `issue create`/`issue_write`, contains `[Action needed]`) for `janitor.prompt.md`,
+  `doc-drift-author.prompt.md`, and `upgrade-drafter.prompt.md`; add a third assertion
+  for `triager.prompt.md` and `learning-post-writer.prompt.md` confirming neither
+  contains `issue create`/`issue_write` either (their fix removes the call entirely
+  rather than replacing it with a PR). Update this bats file's own header comment to
+  drop the "tracked follow-up, not yet covered" note once all seven files are done.
+  `make ci` must pass. `docs/done/` entry required. (auto/action-needed-pr-fallback-2)
 
 - [x] 🟢 **Bump Grafana image tag `13.0.1` → `13.0.3`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC/issue #563 — architect decision

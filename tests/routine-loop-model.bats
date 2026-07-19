@@ -28,7 +28,7 @@ setup() {
 }
 
 @test "executor.prompt.md STEP 8 states an idle cycle is not a reason to stop" {
-  run grep -q 'not a cycle whose honest outcome was the idle issue either' "$EXECUTOR"
+  run grep -qF 'not a cycle whose honest outcome was an `[Action needed]` PR either' "$EXECUTOR"
   [ "$status" -eq 0 ]
 }
 
