@@ -231,3 +231,35 @@ with nothing newer to pin to would be the fabrication ADR-0004 forbids.
 `>= 1.9.1` (or whichever later tag first includes the CVE-2026-35469 fix) —
 bump `gitops/platform/argo-rollouts.yaml`'s `targetRevision` to it, update
 `tests/argo-rollouts.bats`'s pin assertion, and this log entry's "kept" status.
+
+### 2026-07-19 — Argo Rollouts CVE-2026-35469 converted to an image-tag pin (RFC #552)
+
+**Trigger.** Re-check of the 2026-07-18 flip condition: `argo-helm` still has not
+published a chart release tracking `appVersion >= 1.9.1` (`argo-rollouts-2.41.0`
+remains the newest chart tag). The flip condition as written has not fired — but
+this repo already has a precedent this audit hadn't considered: pinning the
+*running image* independently of the chart's own `appVersion` default, the same
+technique `gitops/platform/observability-grafana.yaml` uses (`image.tag:
+"13.0.1"` on top of `chart: grafana / targetRevision: 12.7.2`). The
+`argo/argo-rollouts` chart's `values.yaml` exposes the identical override for
+both `controller.image.tag` and `dashboard.image.tag`.
+
+**Decision: Convert.** `targetRevision` stays `2.41.0` (unchanged — that's the
+chart/template version), but `gitops/platform/argo-rollouts.yaml`'s
+`valuesObject` now pins `controller.image.tag: "v1.9.1"` and
+`dashboard.image.tag: "v1.9.1"`, matching the actual fixed release. This isn't
+a reversal of the 2026-07-18 "not groundable" finding — the chart genuinely
+still can't be bumped — it's a different, narrower lever that was available the
+whole time and wasn't evaluated.
+
+**Verification note (ADR-0004).** The `quay.io` registry API was unreachable
+from the architect routine's sandbox (egress policy blocks it); the `v1.9.1`
+image's existence was grounded indirectly — the `v1.9.1` git tag is real
+(fetched real file content at that ref) and `argoproj/argo-rollouts`'s own
+tag-triggered release workflow builds+pushes
+`quay.io/argoproj/argo-rollouts:${{ github.ref_name }}` and
+`quay.io/argoproj/kubectl-argo-rollouts:${{ github.ref_name }}` as part of the
+same pipeline that published the (live, fully-populated) `v1.9.1` GitHub
+Release. Not a direct manifest check — see RFC #552 for the full reasoning. If
+a future run can reach the registry directly, confirm the tag pulls and update
+this note.
