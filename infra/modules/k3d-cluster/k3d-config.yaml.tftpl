@@ -2,6 +2,13 @@ apiVersion: k3d.io/v1alpha5
 kind: Simple
 metadata:
   name: ${cluster_name}
+# Pinned explicitly (ADR-0030) -- k3d otherwise silently uses whatever k3s version
+# is bundled with the installed k3d CLI, breaking "recreate-from-code" reproducibility
+# and leaving k3s out of the weekly architect CVE sweep (nothing was on record to
+# check). Docker Hub tag format uses a hyphen; INSTALL_K3S_VERSION (oracle backend,
+# infra/modules/oracle-k3s-cluster/cloud-init.yaml) uses "+" for the same version --
+# keep both in sync on a future bump.
+image: rancher/k3s:v1.36.2-k3s1
 servers: ${servers}
 agents: ${agents}
 kubeAPI:
