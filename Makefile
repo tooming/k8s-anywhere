@@ -449,6 +449,12 @@ dr-bluegreen-promote: ## Complete blue/green: green->FULL + verify + cutover + R
 frontdoor: ## Ensure the stable front door is up on :8000 -> active cluster (canonical lab entry; UIs use :8000)
 	bash scripts/frontdoor-ensure.sh
 
+##@ Metrics (on-demand, clusterless)
+
+.PHONY: dora-metrics
+dora-metrics: ## Compute DORA metrics from git/CI history -> docs/dora-metrics.md (RFC #580, on-demand only)
+	bash scripts/dora-metrics.sh
+
 ##@ Capstone (demo + learning path)
 
 .PHONY: capstone-demo

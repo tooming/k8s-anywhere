@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **`scripts/dora-metrics.sh` + `make dora-metrics` — DORA metrics from git/CI
+- [x] 🟢 **`scripts/dora-metrics.sh` + `make dora-metrics` — DORA metrics from git/CI
   history** (CHARTER new **Objective O7**; RFC #580 — architect decision 2026-07-19.
   **No prerequisites — executor may pick up immediately.**) Implement RFC #580's
   binding spec exactly — do not re-derive the definitions, they are already decided:
