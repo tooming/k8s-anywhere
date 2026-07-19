@@ -44,6 +44,45 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [[ "$output" == *"Garage"* ]]
 }
 
+# --- adr-followup-sync-hook.sh (delegates to adr-followup-check.sh, which honors ---
+# --- ADRFOLLOWUPCHECK_ROOT — set it to a fixture tree rather than copying the ------
+# --- hook script, since its own ROOT resolution can stay pointed at the real repo -
+
+@test "adr-followup-sync-hook: empty payload exits 0" {
+  run bash "$REPO/scripts/adr-followup-sync-hook.sh" <<<"{}"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-followup-sync-hook: unrelated file exits 0 (filtered out)" {
+  run bash "$REPO/scripts/adr-followup-sync-hook.sh" <<<"$(mk_payload "$REPO/README.md")"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-followup-sync-hook: a real ADR (currently clean) exits 0" {
+  run bash "$REPO/scripts/adr-followup-sync-hook.sh" <<<"$(mk_payload "$REPO/docs/decisions/adr-0001-gitops-over-terraform-helm.md")"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-followup-sync-hook: CHARTER.md and WAYS-OF-WORKING.md paths are matched by the filter" {
+  run bash "$REPO/scripts/adr-followup-sync-hook.sh" <<<"$(mk_payload "$REPO/CHARTER.md")"
+  [ "$status" -eq 0 ]
+  run bash "$REPO/scripts/adr-followup-sync-hook.sh" <<<"$(mk_payload "$REPO/docs/WAYS-OF-WORKING.md")"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-followup-sync-hook: an ADR carrying an unchecked 'Follow-up:' promise exits 2" {
+  mkdir -p "$BATS_TEST_TMPDIR/fixture/docs/decisions"
+  {
+    echo "# ADR-9999 fixture"
+    echo "Follow-up: verify this later"
+  } >"$BATS_TEST_TMPDIR/fixture/docs/decisions/adr-9999-fixture.md"
+  run env ADRFOLLOWUPCHECK_ROOT="$BATS_TEST_TMPDIR/fixture" \
+      bash "$REPO/scripts/adr-followup-sync-hook.sh" \
+      <<<"$(mk_payload "docs/decisions/adr-9999-fixture.md")"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"Follow-up:"* ]]
+}
+
 # --- argocd-crd-ssa-sync-hook.sh ----------------------------------------------
 
 @test "argocd-crd-ssa-sync-hook: empty payload exits 0" {
