@@ -67,18 +67,24 @@ setup() {
 }
 
 # --- adr-followup-check --------------------------------------------------------
-@test "adr-followup-check: passes when no ADR carries a Follow-up note" {
+@test "adr-followup-check: passes when no governance doc carries a Follow-up note" {
   run env ADRFOLLOWUPCHECK_ROOT="$FIX/adr-followup-check/in-sync" bash "$REPO/scripts/adr-followup-check.sh"
   [ "$status" -eq 0 ]
 }
 
-@test "adr-followup-check: fails on an unchecked Follow-up note" {
-  run env ADRFOLLOWUPCHECK_ROOT="$FIX/adr-followup-check/drift" bash "$REPO/scripts/adr-followup-check.sh"
+@test "adr-followup-check: fails on an unchecked Follow-up note in an ADR" {
+  run env ADRFOLLOWUPCHECK_ROOT="$FIX/adr-followup-check/drift-adr" bash "$REPO/scripts/adr-followup-check.sh"
   [ "$status" -eq 1 ]
   [[ "$output" == *"Follow-up"* ]]
 }
 
-@test "adr-followup-check: passes on the real repo docs/decisions/" {
+@test "adr-followup-check: fails on an unchecked Follow-up note in CHARTER.md" {
+  run env ADRFOLLOWUPCHECK_ROOT="$FIX/adr-followup-check/drift-charter" bash "$REPO/scripts/adr-followup-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"CHARTER.md"* ]]
+}
+
+@test "adr-followup-check: passes on the real repo's ADRs/CHARTER.md/WAYS-OF-WORKING.md" {
   run bash "$REPO/scripts/adr-followup-check.sh"
   [ "$status" -eq 0 ]
 }

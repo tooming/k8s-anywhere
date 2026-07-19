@@ -110,7 +110,7 @@ mimir-readonly-root-check: ## Check every Mimir write path lands on a writable v
 	@bash scripts/mimir-readonly-root-check.sh
 
 .PHONY: adr-followup-check
-adr-followup-check: ## Check no ADR carries a stale unchecked "Follow-up:" promise (drift detector)
+adr-followup-check: ## Check no ADR/CHARTER.md/WAYS-OF-WORKING.md carries a stale unchecked "Follow-up:" promise (drift detector)
 	@bash scripts/adr-followup-check.sh
 
 ##@ Quality gates (clusterless; run on every commit + in CI)
