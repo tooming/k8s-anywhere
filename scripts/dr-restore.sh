@@ -22,6 +22,7 @@ fi
 BUDGET_S=600   # CHARTER Objective O3: < 10 min total wall-clock
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/budget-check.sh"
 
 START=$SECONDS
 FAILED=0
@@ -70,13 +71,9 @@ for NS in "${NAMESPACES[@]}"; do
 
   # Check cumulative budget after each restore
   TOTAL_ELAPSED=$(( SECONDS - START ))
-  if [ "$TOTAL_ELAPSED" -gt "$BUDGET_S" ]; then
-    printf '\n%s✗ BUDGET EXCEEDED: %ds elapsed > %ds budget (O3).%s\n' \
-      "$R$B" "$TOTAL_ELAPSED" "$BUDGET_S" "$Z"
-    FAILED=1
-    # Continue to restore remaining namespaces so the table is complete,
-    # but the exit code is already 1.
-  fi
+  # Continue to restore remaining namespaces so the table is complete,
+  # but the exit code is already 1.
+  budget_warn_if_exceeded "$TOTAL_ELAPSED" "$BUDGET_S" "O3" || FAILED=1
 done
 
 TOTAL_ELAPSED=$(( SECONDS - START ))
@@ -88,12 +85,7 @@ printf '%-16s  %-10s  %s\n' "---------" "----------" "------"
 for i in "${!RESULTS_NS[@]}"; do
   printf '%-16s  %-10s  %s\n' "${RESULTS_NS[$i]}" "${RESULTS_ELAPSED[$i]}" "${RESULTS_STATUS[$i]}"
 done
-printf '\n  Total elapsed: %ds  (budget: %ds)\n' "$TOTAL_ELAPSED" "$BUDGET_S"
-
-if [ "$TOTAL_ELAPSED" -gt "$BUDGET_S" ]; then
-  printf '  %s✗ OVER BUDGET (Objective O3 requires < %ds)%s\n' "$R$B" "$BUDGET_S" "$Z"
-  FAILED=1
-fi
+budget_final_line "$TOTAL_ELAPSED" "$BUDGET_S" "O3" || FAILED=1
 
 echo ""
 if [ "$FAILED" -eq 0 ]; then

@@ -67,8 +67,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "dr-restore.sh sources the shared budget-check lib" {
+  run grep -q 'lib/budget-check.sh' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
 @test "dr-restore.sh fails with exit 1 when budget is exceeded" {
-  run grep -qE 'BUDGET EXCEEDED|OVER BUDGET' "$SCRIPT"
+  run grep -qE 'BUDGET EXCEEDED|OVER BUDGET' "$REPO/scripts/lib/budget-check.sh"
   [ "$status" -eq 0 ]
 }
 
@@ -101,6 +106,6 @@ setup() {
 }
 
 @test "dr-restore.sh prints total elapsed vs budget" {
-  run grep -q 'Total elapsed' "$SCRIPT"
+  run grep -q 'Total elapsed' "$REPO/scripts/lib/budget-check.sh"
   [ "$status" -eq 0 ]
 }
