@@ -334,7 +334,7 @@ make up
 | ESO → grafana-admin | `← vault:grafana/admin` (admin user + password) | `gitops/secrets/grafana-admin-externalsecret.yaml` |
 | ESO → tidb-demo-creds *(on-demand)* | `← vault:tidb/demo` (username + password) | `gitops/tidb-demo/externalsecret.yaml` |
 | Mimir/Loki/Tempo/Pyroscope → Garage | S3 backend `garage.storage.svc:3900` | each component's config |
-| Alloy → Mimir/Loki/Pyroscope | remote_write / push | `gitops/observability/alloy` |
+| Alloy → Mimir/Loki/Pyroscope | remote_write / push | `gitops/platform/observability-alloy.yaml` |
 | hello (HotROD) → Tempo | OTLP HTTP `:4318` (`OTEL_EXPORTER_OTLP_ENDPOINT`) | `gitops/apps/demo/deployment.yaml` |
 | ACK → moto | S3 API `moto.moto.svc:5000` | `gitops/ack`, ACK chart values |
 | KRO → ACK | `S3BucketClaim` RGD composes a `Bucket` | `gitops/kro` |
