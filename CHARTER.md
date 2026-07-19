@@ -97,7 +97,11 @@ signing in CI, Kyverno verifyImages on admit, continuous Trivy scanning + SBOMs)
 **automated TLS certificate lifecycle** (cert-manager issuing and rotating certs from
 a self-signed root CA at the Gateway edge — not a one-off hand-issued Secret);
 **event-driven autoscaling** (KEDA scaling a workload on a real signal — a RabbitMQ
-queue's depth, a Prometheus expression — not a timer or a hand-set replica count); and
+queue's depth, a Prometheus expression — not a timer or a hand-set replica count);
+**operational-resilience discipline** (DORA's risk-management/incident/testing/
+third-party-risk pillars mapped onto concrete GitOps practice — ADRs, DR drills,
+continuous scanning, dependency pinning — explicitly as an educational lens, never
+a regulatory compliance claim this lab cannot honestly make); and
 **cloud-agnostic infrastructure design** — why the GitOps layer never encodes a
 backend, so the same platform runs free on a laptop or on a cloud Kubernetes service
 without a fork. The sequenced path lives in [docs/00-architecture.md](docs/00-architecture.md).

@@ -3236,9 +3236,9 @@ You review and merge plan PRs, same as implementation PRs.
   `scripts/dora-metrics.sh` + `make dora-metrics` on-demand target (not a new
   scheduled routine); new CHARTER Objective O7.
 
-- 🟡 **DORA = Digital Operational Resilience Act alignment for k8s-lab** (user-filed
-  issue #583 — **needs an architect RFC before the executor builds anything**,
-  planner sizing note, 2026-07-19). Maintainer clarification, mid-run: the original
+- 🟡 **DORA = Digital Operational Resilience Act alignment for k8s-lab** (RFC #586 —
+  architect decision 2026-07-19; user-filed issue #583; planner sizing note,
+  2026-07-19). Maintainer clarification, mid-run: the original
   "make the repo DORA-compliant" ask (issue #576, groomed earlier this same run
   under the DevOps Research and Assessment reading — see RFC #580 / Objective O7,
   landed unaffected, `auto/dora-metrics`) actually meant **DORA = the EU Digital
