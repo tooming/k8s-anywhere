@@ -3321,6 +3321,28 @@ You review and merge plan PRs, same as implementation PRs.
 > needs an architect RFC to define the exact GitLab CI job shape, unsigned-image
 > source, and rejection assertion method before the executor can build it.
 
+- 🟡 **GitHub Actions major-version bumps — `actions/checkout` v4→v7,
+  `actions/cache` v4→v6, `actions/github-script` v7→v9,
+  `hashicorp/setup-terraform` v3→v4** (issue #608 — filed by the upgrade-drafter
+  fallback role, 2026-07-19, per its own rule that same-source *major* bumps need
+  a human/architect look, not an auto-built `upgrade/*` PR). All four newer majors
+  are real, confirmed-published releases (verified directly against each action's
+  `package.json` at the candidate tag, not inferred) and all four require Node
+  ≥24 in their `engines` field — a jump from whatever Node runtime the currently
+  pinned majors expect. Needs an architect RFC (or at minimum an explicit,
+  verified decision recorded here) resolving: (1) does the GitHub-hosted
+  `ubuntu-latest` runner's bundled Node.js version for executing JS actions
+  support Node ≥24 today (this is runner-software-level, not OS-level, and
+  wasn't independently verifiable from this clusterless sandbox); (2) each
+  action's own migration notes for the specific major version(s) crossed (e.g.
+  `actions/checkout`'s v4→v5 default `fetch-depth`/input changes, `actions/cache`'s
+  v4→v5/v6 changes, if any breaking behavior applies to how this repo's workflows
+  use them). Once decided, the actual bump is a small, `make ci`-validated PR
+  updating the SHA + version comment on the 15 `uses:` lines
+  `chore/github-actions-sha-pinning` (#609) already pinned by commit SHA — same
+  shape as any other upgrade, just re-pointing the SHA and comment to the new
+  version once the compatibility question is resolved.
+
 - ~~🟡 **DORA-metrics compliance for k8s-lab**~~ (RFC #580) **Groomed ↗** into a 🟢
   item in *Now / next* above (`auto/dora-metrics`), planner run 2026-07-19. Decision:
   all four metrics re-grounded in git/CI history (never live-cluster state); a new
