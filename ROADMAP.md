@@ -210,6 +210,53 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump Grafana image tag `13.0.1` → `13.0.3`** (CHARTER **Core Values**
+  §"Everything as code" + general hardening; RFC/issue #563 — architect decision
+  2026-07-19, ADR audit #562 resolved as **Convert**. **No prerequisites — executor
+  may pick up immediately.**) `13.0.1` (our current pin, released 2026-04-17) is
+  vulnerable to seven CVEs fixed in `13.0.2` (2026-06-09): `CVE-2026-9029`,
+  `CVE-2026-33382`, `CVE-2026-42127`, `CVE-2026-42129`, `CVE-2026-10601`,
+  `CVE-2026-8609`, `CVE-2026-8595` — confirmed directly from Grafana's own
+  `CHANGELOG.md` fetched at the real `v13.0.2` git tag via
+  `raw.githubusercontent.com` (not inferred; `github.com`/`api.github.com` are
+  proxy-blocked in this environment but the raw CDN host is not), and via a real,
+  `active` `13.0.2` Docker Hub image (confirmed against Docker Hub's real tags
+  API). A distinct `v13.0.1+security-01` tag (different commit SHA than plain
+  `v13.0.1`) further confirms Grafana Labs shipped an out-of-band security
+  backport for exactly our pinned version. No ADR governs Grafana as a
+  technology/version choice (ADR-0006 only covers the git-sync delivery
+  mechanism), so this needs no ADR file change — same shape as the Kargo CVE
+  bumps.
+
+  Bump `gitops/platform/observability-grafana.yaml`'s `image.tag` override from
+  `"13.0.1"` to `"13.0.3"` — the newest patch on the `13.0.x` line (no distinct
+  new CVEs documented for it beyond `13.0.2`'s, likely a base-image maintenance
+  rebuild; it is the smallest safe delta that carries every known fix without
+  jumping to the `13.1.x` minor line, same reasoning as the Cilium 1.17.18 pick,
+  RFC #501). Do **not** change the chart `targetRevision` (`12.7.2` stays — the
+  CVEs are in Grafana's own binary, not the chart's templating; this is an
+  image-tag-only override, identical technique to the Argo Rollouts bump,
+  RFC #552). Grep the file for every literal `13.0.1` occurrence (the
+  `valuesObject.image.tag` field and the informational
+  `docker.io/grafana/grafana:13.0.1` reference) and update all of them.
+
+  Extend the relevant `tests/observability*.bats` file (check for an existing
+  Grafana image-tag pin assertion first; add one if none exists) asserting
+  `tag: "13.0.3"` / `grafana:13.0.3` is present — a recurrence guard mirroring
+  `tests/argo-rollouts.bats`'s image-tag assertions. No topology change, so no
+  README/`docs/dependency-tree.md` update is expected — note that explicitly in
+  the PR body. PR body must document: the seven CVE IDs, why `13.0.3` (smallest
+  safe delta), and the ADR-0004 caveat that this remote clusterless session
+  cannot verify Grafana actually starts cleanly post-bump on a live cluster —
+  call out the rollback path (revert the `image.tag` override; ArgoCD self-heals;
+  Grafana is a single Deployment so a revert re-rolls the same way the bump did).
+  Note explicitly that full CVSS/description detail for the seven CVE IDs could
+  not be fetched from this sandbox (`grafana.com/security/...` and
+  `github.com/advisories/...` were both unreachable/blocked) — the CVE IDs and
+  fixed-version mapping are grounded in Grafana's own official CHANGELOG.md, not
+  fabricated severity detail (ADR-0004). `make ci` must pass. `docs/done/` entry
+  required. Closes #563. (auto/grafana-cve-bump-13-0-3)
+
 - [x] 🟢 **Pin k3s to an explicit version on every backend** (CHARTER **Core Values**
   §"Recreate-from-code" + §"Clusterless gates stay green"; RFC/issue #558 — architect
   decision 2026-07-19, new [ADR-0030](docs/decisions/adr-0030-pin-k3s-version-explicitly.md)
