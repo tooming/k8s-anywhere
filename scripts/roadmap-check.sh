@@ -12,8 +12,9 @@ set -uo pipefail
 # ROOT defaults to the repo; tests point ROADMAPCHECK_ROOT at a fixture tree.
 ROOT="${ROADMAPCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 FILE="$ROOT/ROADMAP.md"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
+bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -f "$FILE" ] || { echo "no ROADMAP.md — nothing to check"; exit 0; }
 
@@ -24,5 +25,5 @@ if [ -n "$hits" ]; then
   printf '%s\n' "$hits" | sed 's/^/      /'
 fi
 
-[ "$drift" -eq 0 ] && printf '  \033[32m✓\033[0m ROADMAP.md has no inline planner notes (per-run narrative is in docs/backlog/)\n'
+[ "$drift" -eq 0 ] && printf '  %s✓%s ROADMAP.md has no inline planner notes (per-run narrative is in docs/backlog/)\n' "$G" "$Z"
 exit "$drift"

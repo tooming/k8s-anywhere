@@ -17,8 +17,9 @@ set -uo pipefail
 ROOT="${OBSV_TESTS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 FILE="$ROOT/tests/observability.bats"
 SNAP="$ROOT/tests/.observability-titles"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
+bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -f "$FILE" ] || { echo "no tests/observability.bats — nothing to check"; exit 0; }
 
@@ -34,5 +35,5 @@ elif ! diff -q <(titles "$FILE") "$SNAP" >/dev/null 2>&1; then
   printf '      %s\n' "→ If you intentionally renamed/edited a monolith test: make observability-tests-mark"
 fi
 
-[ "$drift" -eq 0 ] && printf '  \033[32m✓\033[0m tests/observability.bats frozen (new scopes go in observability-<scope>.bats)\n'
+[ "$drift" -eq 0 ] && printf '  %s✓%s tests/observability.bats frozen (new scopes go in observability-<scope>.bats)\n' "$G" "$Z"
 exit "$drift"

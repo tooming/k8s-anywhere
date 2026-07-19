@@ -21,11 +21,7 @@ fi
 
 BUDGET_S=600   # CHARTER Objective O3: < 10 min total wall-clock
 
-if [ -t 1 ]; then
-  G=$'\033[32m'; R=$'\033[31m'; B=$'\033[1m'; Z=$'\033[0m'
-else
-  G=; R=; B=; Z=
-fi
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 
 START=$SECONDS
 FAILED=0

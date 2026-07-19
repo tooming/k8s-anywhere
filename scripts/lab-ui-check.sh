@@ -12,8 +12,9 @@ set -uo pipefail
 # ROOT defaults to the repo; tests point LABUICHECK_ROOT at a fixture tree.
 ROOT="${LABUICHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 PANEL="$ROOT/grafana/dashboards/stack-health.json"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
+bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -f "$PANEL" ] || { echo "no stack-health.json — nothing to check"; exit 0; }
 
@@ -43,5 +44,5 @@ for u in $(grep -oE 'http://[a-z0-9-]+\.127\.0\.0\.1\.nip\.io(:[0-9]+)?' "$PANEL
   bad "Lab UIs panel URL '$u' is not on the stable front-door port :8000 (never hardcode per-cluster ports like :8080/:8082)"
 done
 
-[ "$drift" -eq 0 ] && printf '  \033[32m✓\033[0m Lab UIs panel matches the host-based HTTPRoutes in gitops (and uses the :8000 front door)\n'
+[ "$drift" -eq 0 ] && printf '  %s✓%s Lab UIs panel matches the host-based HTTPRoutes in gitops (and uses the :8000 front door)\n' "$G" "$Z"
 exit "$drift"

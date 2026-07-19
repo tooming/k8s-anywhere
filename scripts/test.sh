@@ -5,7 +5,7 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 1
-if [ -t 1 ]; then R=$'\033[31m'; Y=$'\033[33m'; Z=$'\033[0m'; else R=; Y=; Z=; fi
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 
 if ! command -v bats >/dev/null 2>&1; then
   if [ "${CI:-}" = "true" ]; then printf '  %s✗%s bats not installed (required in CI)\n' "$R" "$Z"; exit 1; fi

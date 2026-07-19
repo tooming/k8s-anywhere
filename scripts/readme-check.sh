@@ -11,9 +11,10 @@ set -uo pipefail
 ROOT="${READMECHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 README="$ROOT/README.md"
 MK="$ROOT/Makefile"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
-hint(){ printf '  \033[33m·\033[0m %s\n' "$1"; }
+bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
+hint(){ printf '  %s·%s %s\n' "$Y" "$Z" "$1"; }
 
 [ -f "$README" ] || { echo "no README.md"; exit 0; }
 
@@ -53,7 +54,7 @@ for f in "$ROOT"/gitops/platform/*.yaml; do
 done
 
 if [ "$drift" -eq 0 ]; then
-  printf '  \033[32m✓\033[0m README in sync with Makefile targets + required tools\n'
+  printf '  %s✓%s README in sync with Makefile targets + required tools\n' "$G" "$Z"
 fi
 [ -n "$missing" ] && hint "gitops apps not named in README (add to the stack table if user-facing):$missing"
 exit "$drift"

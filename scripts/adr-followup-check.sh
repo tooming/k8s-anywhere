@@ -13,8 +13,9 @@
 set -uo pipefail
 # ROOT defaults to the repo; tests point ADRFOLLOWUPCHECK_ROOT at a fixture tree.
 ROOT="${ADRFOLLOWUPCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
+bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 targets=()
 [ -d "$ROOT/docs/decisions" ] && targets+=("$ROOT"/docs/decisions/adr-*.md)
@@ -32,5 +33,5 @@ if [ -n "$hits" ]; then
   printf '%s\n' "$hits" | sed 's/^/      /'
 fi
 
-[ "$drift" -eq 0 ] && printf '  \033[32m✓\033[0m no ADR/CHARTER/WAYS-OF-WORKING doc carries a stale unchecked "Follow-up:" promise\n'
+[ "$drift" -eq 0 ] && printf '  %s✓%s no ADR/CHARTER/WAYS-OF-WORKING doc carries a stale unchecked "Follow-up:" promise\n' "$G" "$Z"
 exit "$drift"

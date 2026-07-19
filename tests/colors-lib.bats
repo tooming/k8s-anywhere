@@ -34,6 +34,23 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
+# Broader guard than the check above (found in a 2026-07-19 janitor sweep): the
+# single-line "^if [ -t 1 ]; then G=" grep only catches one exact shape. It
+# missed a multi-line "if [ -t 1 ]; then" / "G=..." split across two lines, a
+# same-line block starting with a different variable ("R=" instead of "G="),
+# and bare unconditional "\033[31m"-style literals with no tty check at all.
+# Rather than chase each new shape with its own regex, assert the invariant
+# directly: any script defining a raw \033 escape code must source
+# lib/colors.sh (the two are the same class of drift regardless of shape).
+@test "no script under scripts/ defines raw \\033 escape codes without sourcing lib/colors.sh" {
+  hits=""
+  for f in "$REPO"/scripts/*.sh; do
+    grep -q '\\033\[' "$f" || continue
+    grep -q 'lib/colors\.sh' "$f" || hits="$hits $f"
+  done
+  [ -z "$hits" ]
+}
+
 @test "every script sourcing lib/colors.sh does so via BASH_SOURCE-relative path" {
   run grep -rl 'source "\$(dirname "\${BASH_SOURCE\[0\]}")/lib/colors.sh"' "$REPO/scripts"
   [ "$status" -eq 0 ]
