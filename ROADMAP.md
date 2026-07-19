@@ -210,6 +210,56 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **`scripts/dora-metrics.sh` + `make dora-metrics` — DORA metrics from git/CI
+  history** (CHARTER new **Objective O7**; RFC #580 — architect decision 2026-07-19.
+  **No prerequisites — executor may pick up immediately.**) Implement RFC #580's
+  binding spec exactly — do not re-derive the definitions, they are already decided:
+
+  1. **Deployment frequency** = count of merge commits to `main` per calendar week,
+     across every agent branch prefix (`auto/*`, `plan/*`, `arch/*`, `upgrade/*`,
+     `sync/*`, `chore/*`) plus human `feat/*`/`fix/*`. Compute via `git log --merges
+     --since=<start> --until=<end> main` (default window: trailing 90 days).
+  2. **Lead time for changes** = median wall-clock time between a merged PR's first
+     commit's author-date and its merge-commit date on `main`, per PR in the window.
+  3. **Change failure rate** = (reverts + same-area fix-forwards) / total deployments
+     in the window. A "failure" is either (a) a merge commit whose message contains
+     "revert" referencing an earlier in-window commit, or (b) a `fix:`-titled PR
+     merged within 72h of a prior merge that touched at least one overlapping file
+     path (compare `git show --name-only` file lists between the two merge commits).
+  4. **Time to restore service** = for each red→green transition of `main`'s
+     `ci.yml` workflow (GitHub Actions API, `branch=main`, `workflow=ci.yml`), the
+     wall-clock delta between the first failing run's `created_at` and the next
+     successful run's `updated_at`.
+
+  New `scripts/dora-metrics.sh` (clusterless — no `kubectl`/`argocd`/`vault`/
+  `colima`; reads `git log` directly + calls the GitHub Actions API the same way
+  other routines already do) computes all four for the default 90-day window
+  (overridable via a `DORA_SINCE`/`DORA_UNTIL` env var pair) and regenerates
+  `docs/dora-metrics.md` as a plain markdown table. **Per ADR-0004: any metric that
+  cannot be computed for lack of evidence (e.g. zero CI runs in the window) MUST
+  render as the literal string "insufficient data" — never a fabricated or
+  extrapolated number.** New `dora-metrics` `.PHONY` Makefile target invoking the
+  script (mirror the `dr-verify` target's on-demand, non-`make up`-wired shape —
+  this is explicitly NOT registered in any auto-run path). Commit
+  `docs/dora-metrics.md` with one real generated snapshot from this repo's actual
+  history (not a stub/template — run the script for real and commit its output).
+
+  New `tests/dora-metrics.bats` (clusterless structural — no live git-log/API calls
+  required to run in CI beyond what this repo's own history already provides):
+  script exists + is executable; `Makefile` declares the `dora-metrics` target and
+  it is NOT invoked from the `up`/`ci` targets (on-demand only, mirroring the
+  `dr-verify` pattern); the script handles a synthetic zero-data window (e.g.
+  `DORA_SINCE`/`DORA_UNTIL` set to a date range with no commits) by printing
+  "insufficient data" and exiting 0, not crashing or fabricating a number.
+
+  Add **Objective O7** cross-reference: this item alone satisfies O7's `make ci`
+  presence check (script exists + executable + Makefile target wired) — O7 itself
+  was already added to CHARTER.md by RFC #580's own architect PR (#581), no further
+  CHARTER edit needed here. `make ci` must pass. `docs/done/` entry required.
+  **Executor note:** RFC #580's full spec (rationale, scope & exceptions, exact
+  acceptance criteria) is the binding source — read it before starting, don't
+  re-derive from this summary alone. Closes #580. (auto/dora-metrics)
+
 - [x] 🟢 **Replace the dead "idle issue" fallback across every routine prompt with a
   `[Action needed]` PR** (CHARTER **Core Values** §"Docs & dashboards don't drift" +
   governance correctness; user-filed issue #569 — **no prerequisites, executor may pick
@@ -3180,48 +3230,11 @@ You review and merge plan PRs, same as implementation PRs.
 > needs an architect RFC to define the exact GitLab CI job shape, unsigned-image
 > source, and rejection assertion method before the executor can build it.
 
-- 🟡 **DORA-metrics compliance for k8s-lab** (RFC #580 — architect decision
-  2026-07-19; user-filed issue #576 — "Make the repo DORA-compliant"; **needs an
-  architect RFC before the executor builds anything** — planner sizing note,
-  2026-07-19). The four DORA (DevOps Research and Assessment)
-  metrics — deployment frequency, lead time for changes, change failure rate, time to
-  restore service — are not currently defined or measured anywhere in this repo.
-  Grooming this raw request into buildable work requires answering questions this
-  planner run is not positioned to decide unilaterally (an architectural/methodology
-  choice, not an implementation detail):
-  1. **What counts as a "deployment" here?** This repo has no deploy step distinct
-     from a self-merged `auto/*`/`plan/*`/etc. PR landing on `main` (ArgoCD then
-     auto-syncs on its own schedule) — is "deployment frequency" the PR-merge-to-main
-     rate, or the ArgoCD sync-event rate (unobservable from this remote clusterless
-     session — no cluster access)?
-  2. **What counts as a "change failure"?** Every PR is self-reviewed and self-merged
-     by the same routine that authored it (WAYS-OF-WORKING.md §0.1) — there's no
-     external gate that fails a change before merge. Would this be measured post-hoc
-     (a merged PR later reverted or fixed-forward within N hours)?
-  3. **What counts as "time to restore service"?** This lab has no live
-     incident/on-call concept; the closest proxy is "how long was `main`'s CI red"
-     (`.github/workflows/ci.yml`'s `drift`/`unit`/`manifests`/`terraform`/`kustomize`
-     jobs) — is that an acceptable proxy, or does this need a different definition?
-  4. **Where does this get computed and surfaced?** DORA metrics here are
-     fundamentally about **git/CI/GitHub history**, not live-cluster state — unlike
-     every existing Grafana dashboard in this repo (all sourced from real
-     Mimir/Loki/Tempo data per ADR-0004). A live Grafana panel isn't the natural fit; a
-     CI-computed report (a script in `.github/workflows/ci.yml` or a scheduled job,
-     writing a `docs/dora-metrics.md` snapshot or a small static JSON) is the more
-     likely shape, but that's exactly the tooling/format choice this repo's ADR
-     process exists to pin down before executor fan-out begins.
-  5. **Does this become a new CHARTER Objective** (its own measurable bar and date,
-     following the O1–O6 pattern) or stay a lightweight one-off report? A CHARTER edit
-     is architect-only territory per `routines/architect.prompt.md`'s constraints
-     (never a standalone drive-by edit outside an RFC/ADR).
-
-  The architect fallback role (`routines/architect.prompt.md` STEPs 3–5) should pick
-  this up: scan this 🟡 item, make the concrete calls above, and open the RFC issue
-  with a binding `## Decision`. Once decided, the planner grooms the RFC into one or
-  more 🟢 `Now / next` items the normal way. No ADR is necessarily required (this
-  isn't a rejected-technology question), but the architect may choose to record the
-  metric definitions in one for future consistency. (groomed from issue #576, planner
-  run 2026-07-19)
+- ~~🟡 **DORA-metrics compliance for k8s-lab**~~ (RFC #580) **Groomed ↗** into a 🟢
+  item in *Now / next* above (`auto/dora-metrics`), planner run 2026-07-19. Decision:
+  all four metrics re-grounded in git/CI history (never live-cluster state); a new
+  `scripts/dora-metrics.sh` + `make dora-metrics` on-demand target (not a new
+  scheduled routine); new CHARTER Objective O7.
 
 - ~~🟡 **PSS-restricted hardening — `argocd` namespace**~~ (RFC #205)
   **Groomed ↗** into two 🟢 Phase items in *Now / next* above
