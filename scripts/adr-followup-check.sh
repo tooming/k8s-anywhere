@@ -5,10 +5,13 @@
 # actually wired in, and CHARTER.md carried an equivalent "A follow-up wires ..." note
 # for KEDA long after that work shipped too — both only caught by a manual gap-analysis
 # pass. A promise written in prose has no mechanism forcing anyone to re-check it; track
-# follow-up work as a GitHub issue or a ROADMAP item instead, which does. This flags the
-# literal string mechanically (case-sensitive on the capitalized "Follow-up:", which is
-# the consistent style both prior instances used) so the same silent-drift class can't
-# recur, across every governance doc that carries binding prose, not just ADRs.
+# follow-up work as a GitHub issue or a ROADMAP item instead, which does. This flags both
+# known stale-promise shapes mechanically: the capitalized literal "Follow-up:" (the style
+# both prior instances used) and the parenthetical "(follow-up item)" table-cell
+# annotation — a second syntactic shape that went stale the same way in ADR-0028/ADR-0029,
+# undetected by the first pattern (planner gap-analysis, 2026-07-19) — so the same
+# silent-drift class can't recur, across every governance doc that carries binding prose,
+# not just ADRs.
 # Runs in CI (the 'drift' gates) and as a PostToolUse hook. Exit 0 = clean; 1 = drift.
 set -uo pipefail
 # ROOT defaults to the repo; tests point ADRFOLLOWUPCHECK_ROOT at a fixture tree.
@@ -27,11 +30,11 @@ if [ "${#targets[@]}" -eq 0 ]; then
   exit 0
 fi
 
-hits="$(grep -ln 'Follow-up:' "${targets[@]}" 2>/dev/null || true)"
+hits="$(grep -lE 'Follow-up:|\(follow-up item\)' "${targets[@]}" 2>/dev/null || true)"
 if [ -n "$hits" ]; then
-  bad "Governance doc(s) contain an unchecked 'Follow-up:' promise — resolve it now (verify + remove the note) or track it as a GitHub issue/ROADMAP item instead of unchecked prose:"
+  bad "Governance doc(s) contain an unchecked 'Follow-up:' or '(follow-up item)' promise — resolve it now (verify + remove the note) or track it as a GitHub issue/ROADMAP item instead of unchecked prose:"
   printf '%s\n' "$hits" | sed 's/^/      /'
 fi
 
-[ "$drift" -eq 0 ] && printf '  %s✓%s no ADR/CHARTER/WAYS-OF-WORKING doc carries a stale unchecked "Follow-up:" promise\n' "$G" "$Z"
+[ "$drift" -eq 0 ] && printf '  %s✓%s no ADR/CHARTER/WAYS-OF-WORKING doc carries a stale unchecked "Follow-up:"/"(follow-up item)" promise\n' "$G" "$Z"
 exit "$drift"

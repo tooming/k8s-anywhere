@@ -3242,7 +3242,7 @@ You review and merge plan PRs, same as implementation PRs.
   **No prerequisites — executor may pick up immediately.**
   (auto/hook-scripts-negative-path-coverage)
 
-- [ ] 🟢 **Fix stale `(follow-up item)` markers in ADR-0028/ADR-0029 + widen
+- [x] 🟢 **Fix stale `(follow-up item)` markers in ADR-0028/ADR-0029 + widen
   `scripts/adr-followup-check.sh` to catch the parenthetical form** (CHARTER
   **Core Values** §"Docs & dashboards don't drift"; planner gap-analysis finding,
   2026-07-19 — **no prerequisites, executor may pick up immediately**). Verified

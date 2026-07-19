@@ -84,6 +84,12 @@ setup() {
   [[ "$output" == *"CHARTER.md"* ]]
 }
 
+@test "adr-followup-check: fails on a '(follow-up item)' table-cell annotation in an ADR" {
+  run env ADRFOLLOWUPCHECK_ROOT="$FIX/adr-followup-check/drift-adr-parenthetical" bash "$REPO/scripts/adr-followup-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"follow-up item"* ]]
+}
+
 @test "adr-followup-check: passes on the real repo's ADRs/CHARTER.md/WAYS-OF-WORKING.md" {
   run bash "$REPO/scripts/adr-followup-check.sh"
   [ "$status" -eq 0 ]
