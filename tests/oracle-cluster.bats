@@ -61,6 +61,28 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
+@test "oracle-k3s-cluster declares an admin_cidr variable, defaulting open (documented, not silent)" {
+  run sed -n '/^variable "admin_cidr" {/,/^}/p' "$MOD/variables.tf"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'default     = "0.0.0.0/0"'* ]]
+  [[ "$output" == *"exposes both SSH and the cluster control plane to the entire internet"* ]]
+}
+
+@test "oracle-k3s-cluster SSH + API ingress rules use var.admin_cidr, not a hardcoded 0.0.0.0/0" {
+  run sed -n '/resource "oci_core_security_list" "cluster"/,/^}/p' "$MOD/main.tf"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'source   = var.admin_cidr'* ]]
+  # the egress-all rule legitimately keeps a literal 0.0.0.0/0 destination (outbound
+  # internet access) — only the two ingress rules (SSH + API) must use the variable.
+  ingress_hardcoded="$(printf '%s\n' "$output" | grep -B2 'source   = "0.0.0.0/0"' || true)"
+  [ -z "$ingress_hardcoded" ]
+}
+
+@test "infra/live/oracle/cluster/terragrunt.hcl wires admin_cidr from OCI_ADMIN_CIDR, defaulting open" {
+  run grep -q 'admin_cidr = get_env("OCI_ADMIN_CIDR", "0.0.0.0/0")' "$LIVE/cluster/terragrunt.hcl"
+  [ "$status" -eq 0 ]
+}
+
 @test "infra/tfstate-oracle templates use placeholders, not literal secrets" {
   run grep -q '__RPC_SECRET__' "$REPO/infra/tfstate-oracle/garage.toml.tpl"
   [ "$status" -eq 0 ]

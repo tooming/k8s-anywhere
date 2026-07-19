@@ -59,6 +59,10 @@ resource "oci_core_default_route_table" "cluster" {
 
 # Explicit security list (not the implicit VCN default) so the SSH + k3s API rules
 # are self-documenting and reviewable in this file, not inferred from OCI defaults.
+# SSH + API ingress source defaults to var.admin_cidr ("0.0.0.0/0" unless overridden)
+# — the operator is expected to narrow it to their own IP/32 for anything beyond a
+# quick throwaway lab instance; the default stays open so the module works out of
+# the box with no extra input required (ADR-0027 doesn't mandate a restricted CIDR).
 resource "oci_core_security_list" "cluster" {
   compartment_id = var.compartment_id
   vcn_id         = oci_core_vcn.cluster.id
@@ -71,7 +75,7 @@ resource "oci_core_security_list" "cluster" {
 
   ingress_security_rules {
     protocol = "6" # TCP
-    source   = "0.0.0.0/0"
+    source   = var.admin_cidr
     tcp_options {
       min = 22
       max = 22
@@ -80,7 +84,7 @@ resource "oci_core_security_list" "cluster" {
 
   ingress_security_rules {
     protocol = "6" # TCP
-    source   = "0.0.0.0/0"
+    source   = var.admin_cidr
     tcp_options {
       min = var.api_port
       max = var.api_port

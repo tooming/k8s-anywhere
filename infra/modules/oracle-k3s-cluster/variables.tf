@@ -46,3 +46,9 @@ variable "api_port" {
   default     = 6443
   description = "Kubernetes API server port (k3s default) — opened in the security list and used to build the api_endpoint output."
 }
+
+variable "admin_cidr" {
+  type        = string
+  default     = "0.0.0.0/0"
+  description = "Source CIDR allowed to reach SSH (22) and the k3s API (var.api_port) on the instance. Defaults to open (0.0.0.0/0) so the module works with no extra input, but this exposes both SSH and the cluster control plane to the entire internet — set this to your own IP in CIDR form (e.g. \"203.0.113.4/32\") for anything beyond a quick throwaway lab instance."
+}

@@ -34,4 +34,8 @@ inputs = {
   # OCI_SSH_PUBLIC_KEY_PATH points at, matching that script's key pair.
   ssh_public_key       = file(get_env("OCI_SSH_PUBLIC_KEY_PATH"))
   ssh_private_key_path = get_env("OCI_SSH_PRIVATE_KEY_PATH")
+  # Optional hardening: restrict SSH + the k3s API to a known CIDR instead of the
+  # module's open-by-default 0.0.0.0/0 (see variables.tf's admin_cidr description).
+  # Unset OCI_ADMIN_CIDR to keep the current open-to-internet default.
+  admin_cidr = get_env("OCI_ADMIN_CIDR", "0.0.0.0/0")
 }
