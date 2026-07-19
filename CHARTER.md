@@ -175,9 +175,10 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 - **Event-driven autoscaling** (built): KEDA scales workloads on a real signal — a
   RabbitMQ queue's depth, a Prometheus expression — augmenting the stock HPA rather
   than replacing it. Engine is auto-synced, `restricted` PSA with zero carve-out (same
-  as cert-manager). A follow-up wires its admission webhook's TLS to cert-manager's
-  `k8s-lab-ca` (a second real consumer beyond the Gateway) and adds a `ScaledObject`
-  demo scaling on the `data` namespace's RabbitMQ queue depth. (ADR-0029)
+  as cert-manager). Its admission webhook's TLS is wired to cert-manager's
+  `k8s-lab-ca` (a second real consumer beyond the Gateway), and a `ScaledObject`
+  demo (`gitops/data/demo/keda-scaling/`) scales the `rabbitmq-load` Deployment on
+  the `data` namespace's RabbitMQ queue depth. (ADR-0029)
 
 ## How this drives the ROADMAP
 
