@@ -210,6 +210,46 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump Argo Rollouts image tag `v1.9.0` → `v1.9.1`** (CHARTER **Core Values**
+  §"Everything as code" + general hardening; RFC/issue #552 — architect decision
+  2026-07-19, ADR-0020 audit resolved as **Convert** (converts the 2026-07-18
+  "Keep" from audit #520 with new signal). **No prerequisites — executor may pick
+  up immediately.**)
+  [CVE-2026-35469](https://github.com/argoproj/argo-rollouts/releases/tag/v1.9.1)
+  (fixed in `v1.9.1`, released 2026-07-17): a `google.golang.org/grpc` dependency
+  fix closing upstream issue #4667. Audit #520 correctly kept the chart pin
+  because the `argo/argo-rollouts` Helm chart (this lab's deploy mechanism,
+  `gitops/platform/argo-rollouts.yaml`, `targetRevision: 2.41.0`) has not yet
+  published a release tracking `appVersion >= 1.9.1` — bumping `targetRevision`
+  today would assert a fixed posture with nothing newer to actually pin to
+  (ADR-0004). That audit did not consider a second lever this repo already uses
+  elsewhere: pinning the **image tag** independently of the chart version, the
+  same technique `gitops/platform/observability-grafana.yaml` uses (`image.tag:
+  "13.0.1"` on top of an unrelated chart version) — the `argo/argo-rollouts`
+  chart's `values.yaml` exposes the identical override for both
+  `controller.image.tag` and `dashboard.image.tag`.
+
+  Edit `gitops/platform/argo-rollouts.yaml`'s `spec.source.helm.valuesObject`:
+  add `image: { tag: "v1.9.1" }` under both the existing `controller:` block and
+  the existing `dashboard:` block (do not touch `targetRevision`, which stays
+  `2.41.0`). Extend `tests/argo-rollouts.bats` with two new assertions — grep
+  for `tag: "v1.9.1"` appearing under both the controller and dashboard sections
+  — alongside the existing, unchanged `targetRevision: 2\.41\.` pin assertion.
+  No topology change, so no README/`docs/dependency-tree.md` update is expected
+  — note that explicitly in the PR body so a reviewer doesn't wonder why it's
+  missing. See RFC #552 and
+  [ADR-0020's Re-evaluation log](docs/decisions/adr-0020-argo-rollouts-progressive-delivery.md#re-evaluation-log)
+  (2026-07-19 entry) for the full verification reasoning, including an explicit
+  ADR-0004 note that the `quay.io` image manifest itself could not be directly
+  confirmed from this environment (registry API blocked by the sandbox's egress
+  policy) — grounded instead via the real `v1.9.1` git tag plus the project's
+  own tag-triggered release workflow, which pushes that exact image as part of
+  the same pipeline that published the live GitHub Release. If the executor CAN
+  reach the registry directly and wants to double-check the tag pulls before
+  landing this, that's a welcome belt-and-suspenders step, not a blocker. `make
+  ci` must pass. `docs/done/` entry required. Closes #552.
+  (auto/argo-rollouts-cve-image-tag)
+
 - [x] 🟢 **ADR-0006 — remove stale "Follow-up: wire both bootstraps into `make up`/DR"
   note** (CHARTER **Core Values** §"Docs & dashboards don't drift"; planner gap-analysis
   finding, 2026-07-18 — **no prerequisites, executor may pick up immediately**). The
