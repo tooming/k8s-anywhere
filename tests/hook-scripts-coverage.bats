@@ -282,8 +282,9 @@ YAML
 
 setup_routines_fixture() {
   FIXROOT="$BATS_TEST_TMPDIR/routines-fixture"
-  mkdir -p "$FIXROOT/scripts" "$FIXROOT/routines"
+  mkdir -p "$FIXROOT/scripts/lib" "$FIXROOT/routines"
   cp "$REPO/scripts/routines-sync-hook.sh" "$FIXROOT/scripts/"
+  cp "$REPO/scripts/lib/hook-payload.sh" "$FIXROOT/scripts/lib/"
 }
 
 @test "routines-sync-hook: unrelated file path exits 0" {

@@ -8,8 +8,8 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-payload="$(cat 2>/dev/null || true)"
-fp="$(printf '%s' "$payload" | jq -r '.tool_input.file_path // .tool_input.path // empty' 2>/dev/null || true)"
+source "$ROOT/scripts/lib/hook-payload.sh"
+fp="$(hook_file_path)"
 [ -n "$fp" ] || exit 0
 
 # tests/fixtures/ holds deliberately-broken examples for the drift detectors — skip.
