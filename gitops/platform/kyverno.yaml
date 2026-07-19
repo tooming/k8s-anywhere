@@ -16,6 +16,20 @@
 # Re-verified chart 3.3.9's values.yaml still ships the identical restricted-
 # compatible securityContext defaults on all four controllers that RFC #483's
 # PSA-restricted flip (ADR-0017/ADR-0019) depends on — no regression.
+#
+# Bumped 3.3.9 -> 3.8.2 (upgrade-drafter, 2026-07-19): no newer 3.3.x/3.4.x/…
+# patch existed within the same minor — 3.8.2 is the newest STABLE chart
+# release (appVersion v1.13.6 -> v1.18.2), verified against the chart repo's
+# own index (kyverno.github.io/kyverno's backing gh-pages index.yaml), skipping
+# the 3.8.2-rc.2 pre-release. Not a chart-major bump (stays on chart major 3).
+# Re-verified (values.yaml at tag kyverno-chart-3.8.2) that all four
+# controllers keep the same replicas/resources.limits shape this Application's
+# valuesObject relies on, and that admissionController's containerSecurityContext
+# still ships the identical restricted-compatible defaults (runAsNonRoot: true,
+# allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities
+# drop: [ALL]) RFC #483's PSA-restricted flip depends on — no regression. The
+# `gitops/kyverno/policies/*.yaml` ClusterPolicies (separate Application) all
+# use the stable, unaffected `kyverno.io/v1` API — no policy-side change needed.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -28,7 +42,7 @@ spec:
   source:
     repoURL: https://kyverno.github.io/kyverno/
     chart: kyverno
-    targetRevision: 3.3.9
+    targetRevision: 3.8.2
     helm:
       releaseName: kyverno
       valuesObject:

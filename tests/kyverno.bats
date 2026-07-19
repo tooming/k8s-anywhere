@@ -21,13 +21,18 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "kyverno Application pins chart version 3.3.9" {
-  run grep -q 'targetRevision: 3.3.9' "$REPO/gitops/platform/kyverno.yaml"
+@test "kyverno Application pins chart version 3.8.2" {
+  run grep -q 'targetRevision: 3.8.2' "$REPO/gitops/platform/kyverno.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "kyverno Application does not pin the pre-CVE-fix 3.3.4 version" {
   run grep -q 'targetRevision: 3.3.4' "$REPO/gitops/platform/kyverno.yaml"
+  [ "$status" -ne 0 ]
+}
+
+@test "kyverno Application does not pin the superseded 3.3.9 version" {
+  run grep -q 'targetRevision: 3.3.9' "$REPO/gitops/platform/kyverno.yaml"
   [ "$status" -ne 0 ]
 }
 
