@@ -135,6 +135,15 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 - **O6 — Capstone end-to-end under 15 min.** By **2026-12-31**, a fresh `make up` to
   a Tempo-traced capstone request takes under 15 minutes on the maintainer's hardware,
   measured by a `make capstone-demo` target that wall-clocks the path.
+- **O7 — Deployment pipeline health is measured.** By **2026-10-31**, `make
+  dora-metrics` computes and `docs/dora-metrics.md` reports all four DORA (DevOps
+  Research and Assessment) metrics — deployment frequency, lead time for changes,
+  change failure rate, time to restore service — from real git/CI history for the
+  trailing 90 days, each re-grounded in this repo's clusterless, self-merging GitOps
+  model (RFC #580) rather than assumed unmeasurable; a metric with insufficient
+  evidence renders as "insufficient data", never a fabricated number (ADR-0004).
+  *Measured by:* a `make ci` presence check that `scripts/dora-metrics.sh` exists,
+  is executable, and the `dora-metrics` Makefile target is wired.
 
 ## Target end-state (initiatives — the platform we're growing toward)
 

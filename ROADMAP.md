@@ -3180,9 +3180,10 @@ You review and merge plan PRs, same as implementation PRs.
 > needs an architect RFC to define the exact GitLab CI job shape, unsigned-image
 > source, and rejection assertion method before the executor can build it.
 
-- 🟡 **DORA-metrics compliance for k8s-lab** (user-filed issue #576 — "Make the repo
-  DORA-compliant"; **needs an architect RFC before the executor builds anything** —
-  planner sizing note, 2026-07-19). The four DORA (DevOps Research and Assessment)
+- 🟡 **DORA-metrics compliance for k8s-lab** (RFC #580 — architect decision
+  2026-07-19; user-filed issue #576 — "Make the repo DORA-compliant"; **needs an
+  architect RFC before the executor builds anything** — planner sizing note,
+  2026-07-19). The four DORA (DevOps Research and Assessment)
   metrics — deployment frequency, lead time for changes, change failure rate, time to
   restore service — are not currently defined or measured anywhere in this repo.
   Grooming this raw request into buildable work requires answering questions this
