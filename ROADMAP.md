@@ -3236,6 +3236,42 @@ You review and merge plan PRs, same as implementation PRs.
   `scripts/dora-metrics.sh` + `make dora-metrics` on-demand target (not a new
   scheduled routine); new CHARTER Objective O7.
 
+- 🟡 **DORA = Digital Operational Resilience Act alignment for k8s-lab** (user-filed
+  issue #583 — **needs an architect RFC before the executor builds anything**,
+  planner sizing note, 2026-07-19). Maintainer clarification, mid-run: the original
+  "make the repo DORA-compliant" ask (issue #576, groomed earlier this same run
+  under the DevOps Research and Assessment reading — see RFC #580 / Objective O7,
+  landed unaffected, `auto/dora-metrics`) actually meant **DORA = the EU Digital
+  Operational Resilience Act** (Regulation (EU) 2022/2554). This is a genuinely
+  different, architect-level question, not a quick grooming pass:
+  1. **Applicability is unresolved.** DORA (the regulation) binds EU-regulated
+     "financial entities" and their designated "critical" ICT third-party
+     providers — a personal Kubernetes learning lab is neither. A literal
+     compliance claim would misrepresent the lab's actual regulatory status
+     (ADR-0004 discipline argues against asserting a posture that isn't real).
+  2. **What's plausibly valuable instead:** DORA's five pillars — ICT risk
+     management framework; ICT incident management/classification/reporting;
+     digital operational resilience testing; ICT third-party risk management;
+     information-sharing arrangements — overlap meaningfully with cloud-native
+     practices this lab already teaches or could teach (`make dr-verify`/`dr-test`/
+     blue-green as resilience testing; Velero backup/restore as recoverability;
+     Trivy scanning + SBOMs as third-party/supply-chain risk; the ADR process
+     itself as a risk-management framework, arguably). The likely-valuable framing
+     is "adopt DORA's *engineering discipline* as a CHARTER Goal/Objective,
+     explicitly not a regulatory compliance claim" — but that's the architect's
+     call to make concrete, not a planner default.
+  3. **Scope is broader than a single RFC** — closer to a new Goal/Objective
+     proposal (touching CHARTER.md directly) than a single implementation item,
+     given the five-pillar breadth and the need to explicitly scope out what does
+     NOT apply (no claiming actual regulatory compliance).
+
+  The architect fallback role should pick this up: decide which (if any) of the
+  five pillars map to concrete, honestly-scoped CHARTER work; explicitly reject
+  any framing that would assert real regulatory compliance this lab doesn't have;
+  open the RFC issue with a binding `## Decision`. Once decided, the planner grooms
+  the RFC into one or more 🟢 `Now / next` items the normal way — mirroring exactly
+  how RFC #580 was groomed above. (groomed from issue #583, planner run 2026-07-19)
+
 - ~~🟡 **PSS-restricted hardening — `argocd` namespace**~~ (RFC #205)
   **Groomed ↗** into two 🟢 Phase items in *Now / next* above
   (`auto/argocd-pss-warn-audit` + `auto/argocd-pss-enforce`),
