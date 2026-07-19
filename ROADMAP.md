@@ -3242,6 +3242,51 @@ You review and merge plan PRs, same as implementation PRs.
   **No prerequisites — executor may pick up immediately.**
   (auto/hook-scripts-negative-path-coverage)
 
+- [ ] 🟢 **Fix stale `(follow-up item)` markers in ADR-0028/ADR-0029 + widen
+  `scripts/adr-followup-check.sh` to catch the parenthetical form** (CHARTER
+  **Core Values** §"Docs & dashboards don't drift"; planner gap-analysis finding,
+  2026-07-19 — **no prerequisites, executor may pick up immediately**). Verified
+  directly against the actual repo state (not assumed, per ADR-0004): five table
+  rows across two ADRs still carry a `(follow-up item)` annotation for work that
+  has already shipped and is already tested:
+  - `docs/decisions/adr-0028-cert-manager-tls-lifecycle.md` lines 192-194: the
+    HTTPS `:443` listener (`gitops/network/gateway.yaml:32-34`), the wildcard
+    `Certificate` (`gitops/network/certificates/wildcard-certificate.yaml`), and
+    the `:8443` frontdoor port mapping (`scripts/bluegreen-frontdoor.sh`,
+    `scripts/frontdoor-ensure.sh`) all exist and are covered by
+    `tests/frontdoor-https.bats`.
+  - `docs/decisions/adr-0029-keda-event-driven-autoscaling.md` lines 184-185: the
+    cert-manager webhook TLS wiring (`gitops/platform/keda.yaml`'s
+    `certManager.enabled: true` block referencing the `k8s-lab-ca` issuer) and the
+    `ScaledObject`/`TriggerAuthentication` demo
+    (`gitops/data/demo/keda-scaling/{scaledobject,triggerauthentication}.yaml`)
+    both exist and are covered by `tests/keda.bats` /
+    `tests/keda-scaledobject.bats`.
+
+  `scripts/adr-followup-check.sh` (the existing mechanical guard for exactly this
+  drift class — its own header comment cites the ADR-0006/CHARTER precedent) only
+  greps for the capitalized literal `Follow-up:` and does not catch this
+  parenthetical `(follow-up item)` form, so it stayed green through both of these
+  going stale — the same undetected-drift failure mode the script exists to
+  prevent, recurring in a second syntactic shape.
+
+  Two changes: (1) edit the five table cells in ADR-0028/ADR-0029 above to drop
+  the stale `(follow-up item)` annotation now that each is verified shipped and
+  tested (cite the concrete file/test in the cell or an adjacent note, mirroring
+  how other ADRs' "Files touched"-style tables read once implemented); (2) widen
+  `scripts/adr-followup-check.sh`'s `grep` pattern (currently `'Follow-up:'`) to
+  an alternation also matching the literal string `(follow-up item)` — extend the
+  existing `hits=` grep line, keep the same exit-2/CI/hook wiring, no other
+  script structure change. Add fixtures/cases mirroring the existing
+  `tests/fixtures/adr-followup-check/{in-sync,drift-adr}` pattern: a new
+  drift fixture carrying `(follow-up item)` in a table cell should fail the
+  check the same way the existing `Follow-up:` drift fixture does. Extend
+  `tests/drift-detectors.bats` with one new `@test` asserting the check fails on
+  the new fixture, and confirm the existing "passes on the real repo" test
+  (`tests/drift-detectors.bats:87`) still passes once the stale markers are
+  removed. `make ci` must pass. `docs/done/` entry required.
+  (auto/adr-followup-parenthetical-form)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
