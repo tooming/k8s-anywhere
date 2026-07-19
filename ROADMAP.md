@@ -210,6 +210,52 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **`docs/dora-resilience-mapping.md` — DORA (EU regulation) pillar mapping,
+  explicitly not a compliance claim** (RFC #586 — architect decision 2026-07-19.
+  **No prerequisites — executor may pick up immediately.**) Implement RFC #586's
+  binding spec exactly — the applicability question is already decided, do not
+  re-litigate it: this lab is not an EU-regulated "financial entity" or a
+  designated critical ICT third-party provider under Regulation (EU) 2022/2554
+  Article 2, so it must never claim DORA regulatory compliance anywhere in the
+  repo.
+
+  New `docs/dora-resilience-mapping.md`. Opens with an explicit, prominent
+  disclaimer naming DORA's real Article 2 scope and this lab's non-membership in
+  it — do not bury or soften this. Then one section per pillar:
+  1. **ICT risk management framework** → cite this repo's ADR process
+     (`docs/decisions/`) + CHARTER Core Values, naming at least
+     [ADR-0016](docs/decisions/adr-0016-default-deny-networkpolicy.md)
+     (default-deny NetworkPolicy),
+     [ADR-0017](docs/decisions/adr-0017-pod-security-standards-restricted.md)
+     (PSS-restricted), and
+     [ADR-0022](docs/decisions/adr-0022-trivy-operator-supply-chain.md) (Trivy
+     continuous scanning) as concrete evidence.
+  2. **ICT incident management/classification/reporting** → cite
+     `docs/dora-metrics.md`'s real "Time to restore service" row (RFC #580 /
+     Objective O7, `make dora-metrics`) directly — do not re-derive or duplicate
+     that computation.
+  3. **Digital operational resilience testing** → cite `make dr-verify`,
+     `make dr-test`, `make dr-bluegreen` by name as real, exercised recovery
+     drills (see `docs/DR.md`).
+  4. **ICT third-party risk management** → cite Trivy Operator continuous
+     scanning ([ADR-0022](docs/decisions/adr-0022-trivy-operator-supply-chain.md)),
+     `scripts/helm-chart-pin-check.sh`, and
+     [ADR-0025](docs/decisions/adr-0025-free-oss-tiers-only.md)'s free/OSS-tier
+     policy.
+  5. **Information-sharing arrangements** → explicit **"not applicable"** note
+     (one line: this pillar concerns inter-financial-entity threat-intel
+     consortiums; nothing in a solo personal lab maps to it honestly) — do not
+     omit this section or stretch a mapping onto it.
+
+  Every citation must point at something that actually exists in the repo today —
+  verify each ADR number, script path, and `make` target resolves before
+  committing (ADR-0004; `make markdown-links-check` will catch broken relative
+  links but not a wrong ADR *number* cited in prose, so check by hand). Add the
+  CHARTER Goals-section sentence only if it isn't already present — verify first,
+  it may already have landed via RFC #586's own architect PR (#587). `make ci`
+  must pass. `docs/done/` entry required. Closes #586.
+  (auto/dora-resilience-mapping)
+
 - [x] 🟢 **`scripts/dora-metrics.sh` + `make dora-metrics` — DORA metrics from git/CI
   history** (CHARTER new **Objective O7**; RFC #580 — architect decision 2026-07-19.
   **No prerequisites — executor may pick up immediately.**) Implement RFC #580's
@@ -3236,41 +3282,13 @@ You review and merge plan PRs, same as implementation PRs.
   `scripts/dora-metrics.sh` + `make dora-metrics` on-demand target (not a new
   scheduled routine); new CHARTER Objective O7.
 
-- 🟡 **DORA = Digital Operational Resilience Act alignment for k8s-lab** (RFC #586 —
-  architect decision 2026-07-19; user-filed issue #583; planner sizing note,
-  2026-07-19). Maintainer clarification, mid-run: the original
-  "make the repo DORA-compliant" ask (issue #576, groomed earlier this same run
-  under the DevOps Research and Assessment reading — see RFC #580 / Objective O7,
-  landed unaffected, `auto/dora-metrics`) actually meant **DORA = the EU Digital
-  Operational Resilience Act** (Regulation (EU) 2022/2554). This is a genuinely
-  different, architect-level question, not a quick grooming pass:
-  1. **Applicability is unresolved.** DORA (the regulation) binds EU-regulated
-     "financial entities" and their designated "critical" ICT third-party
-     providers — a personal Kubernetes learning lab is neither. A literal
-     compliance claim would misrepresent the lab's actual regulatory status
-     (ADR-0004 discipline argues against asserting a posture that isn't real).
-  2. **What's plausibly valuable instead:** DORA's five pillars — ICT risk
-     management framework; ICT incident management/classification/reporting;
-     digital operational resilience testing; ICT third-party risk management;
-     information-sharing arrangements — overlap meaningfully with cloud-native
-     practices this lab already teaches or could teach (`make dr-verify`/`dr-test`/
-     blue-green as resilience testing; Velero backup/restore as recoverability;
-     Trivy scanning + SBOMs as third-party/supply-chain risk; the ADR process
-     itself as a risk-management framework, arguably). The likely-valuable framing
-     is "adopt DORA's *engineering discipline* as a CHARTER Goal/Objective,
-     explicitly not a regulatory compliance claim" — but that's the architect's
-     call to make concrete, not a planner default.
-  3. **Scope is broader than a single RFC** — closer to a new Goal/Objective
-     proposal (touching CHARTER.md directly) than a single implementation item,
-     given the five-pillar breadth and the need to explicitly scope out what does
-     NOT apply (no claiming actual regulatory compliance).
-
-  The architect fallback role should pick this up: decide which (if any) of the
-  five pillars map to concrete, honestly-scoped CHARTER work; explicitly reject
-  any framing that would assert real regulatory compliance this lab doesn't have;
-  open the RFC issue with a binding `## Decision`. Once decided, the planner grooms
-  the RFC into one or more 🟢 `Now / next` items the normal way — mirroring exactly
-  how RFC #580 was groomed above. (groomed from issue #583, planner run 2026-07-19)
+- ~~🟡 **DORA = Digital Operational Resilience Act alignment for k8s-lab**~~ (RFC
+  #586) **Groomed ↗** into a 🟢 item in *Now / next* above (`auto/dora-resilience-
+  mapping`), planner run 2026-07-19. Decision: no compliance claim (this lab isn't
+  an EU-regulated financial entity); a new `docs/dora-resilience-mapping.md` maps
+  four of DORA's five pillars onto real, already-existing lab mechanisms, with
+  Pillar 5 (information-sharing) explicitly marked out of scope. CHARTER Goals
+  sentence already landed in the RFC's own architect PR (#587).
 
 - ~~🟡 **PSS-restricted hardening — `argocd` namespace**~~ (RFC #205)
   **Groomed ↗** into two 🟢 Phase items in *Now / next* above
