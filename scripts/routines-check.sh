@@ -23,8 +23,9 @@ set -uo pipefail
 # ROOT defaults to the repo; tests point ROUTINESCHECK_ROOT at a fixture tree.
 ROOT="${ROUTINESCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 SNAP="$ROOT/.routines-applied"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
+bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -d "$ROOT/routines" ] || exit 0
 
@@ -55,6 +56,6 @@ while read -r rel _; do
 done < "$SNAP"
 
 if [ $drift -eq 0 ]; then
-  printf '  \033[32m✓\033[0m routines/ in sync with last apply\n'
+  printf '  %s✓%s routines/ in sync with last apply\n' "$G" "$Z"
 fi
 exit $drift

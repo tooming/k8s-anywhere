@@ -22,7 +22,7 @@ CLUSTER_NAME="k8s-lab"
 
 case "$SCOPE" in cluster|full|machine) ;; *) echo "unknown SCOPE '$SCOPE' (cluster|full|machine)" >&2; exit 2;; esac
 
-if [ -t 1 ]; then R=$'\033[31m'; Y=$'\033[33m'; B=$'\033[1m'; Z=$'\033[0m'; else R=; Y=; B=; Z=; fi
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 step(){ printf '%s[destroy:%s]%s %s\n' "$Y" "$SCOPE" "$Z" "$1"; }
 
 # confirmation (dr-test sets DR_ASSUME_YES=1 after its own single prompt)

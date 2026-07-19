@@ -17,8 +17,9 @@ set -uo pipefail
 # ROOT defaults to the repo; tests point YQRAW_CHECK_ROOT at a fixture tree.
 ROOT="${YQRAW_CHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 TESTS_DIR="$ROOT/tests"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
+bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -d "$TESTS_DIR" ] || { echo "no tests/ dir — nothing to check"; exit 0; }
 
@@ -47,5 +48,5 @@ if [ "$drift" -ne 0 ]; then
   printf '      %s\n' "→ See tests/lib/yq.bash and tests/argocd-resources.bats for the pattern."
 fi
 
-[ "$drift" -eq 0 ] && printf '  \033[32m✓\033[0m bats tests read yq scalars via yqs() (no bare yq calls)\n'
+[ "$drift" -eq 0 ] && printf '  %s✓%s bats tests read yq scalars via yqs() (no bare yq calls)\n' "$G" "$Z"
 exit "$drift"

@@ -51,8 +51,9 @@
 set -uo pipefail
 ROOT="${ROUTINES_AUTHOR_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 CLOUD_ID="Claude <noreply@anthropic.com>"   # the executor's commit identity
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
+bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 # The only file whose content must be applied to a live trigger to take effect.
 is_routine(){ case "$1" in routines.yaml) return 0;; *) return 1;; esac; }
@@ -121,5 +122,5 @@ if [ "${#touched[@]}" -gt 0 ] && { [ "$executor_branch" -eq 1 ] || [ "$cloud_aut
   printf '      %s\n' "→ From an autonomous run, open an issue for a human instead of editing it."
 fi
 
-[ "$drift" -eq 0 ] && printf '  \033[32m✓\033[0m no executor-authored routine edits (live-trigger drift guard)\n'
+[ "$drift" -eq 0 ] && printf '  %s✓%s no executor-authored routine edits (live-trigger drift guard)\n' "$G" "$Z"
 exit "$drift"

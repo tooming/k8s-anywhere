@@ -17,8 +17,9 @@ set -uo pipefail
 ROOT="${SECCTX_TESTS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 FILE="$ROOT/tests/securitycontext.bats"
 SNAP="$ROOT/tests/.securitycontext-titles"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
+bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -f "$FILE" ] || { echo "no tests/securitycontext.bats — nothing to check"; exit 0; }
 
@@ -34,5 +35,5 @@ elif ! diff -q <(titles "$FILE") "$SNAP" >/dev/null 2>&1; then
   printf '      %s\n' "→ If you intentionally renamed/edited a monolith test: make securitycontext-tests-mark"
 fi
 
-[ "$drift" -eq 0 ] && printf '  \033[32m✓\033[0m tests/securitycontext.bats frozen (new scopes go in securitycontext-<scope>.bats)\n'
+[ "$drift" -eq 0 ] && printf '  %s✓%s tests/securitycontext.bats frozen (new scopes go in securitycontext-<scope>.bats)\n' "$G" "$Z"
 exit "$drift"

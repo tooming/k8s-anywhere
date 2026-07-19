@@ -23,11 +23,7 @@ set -euo pipefail
 BUDGET_S=900   # CHARTER Objective O6: < 15 min (900 s) total wall-clock
 START=$SECONDS
 
-if [ -t 1 ]; then
-  G=$'\033[32m'; R=$'\033[31m'; B=$'\033[1m'; Z=$'\033[0m'
-else
-  G=; R=; B=; Z=
-fi
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 
 declare -a STEP_NAMES
 declare -a STEP_ELAPSED

@@ -19,8 +19,9 @@ set -uo pipefail
 # ROOT defaults to the repo; tests point GITFIX_CHECK_ROOT at a fixture tree.
 ROOT="${GITFIX_CHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 TESTS_DIR="$ROOT/tests"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; drift=1; }
+bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -d "$TESTS_DIR" ] || { echo "no tests/ dir — nothing to check"; exit 0; }
 
@@ -43,5 +44,5 @@ if [ "$drift" -ne 0 ]; then
   printf '      %s\n' "  GIT_NAMESPACE' to setup(). See tests/prune-stale-branches.bats for the pattern."
 fi
 
-[ "$drift" -eq 0 ] && printf '  \033[32m✓\033[0m git-fixture bats tests isolate GIT_* (survive a hook-invoked make ci)\n'
+[ "$drift" -eq 0 ] && printf '  %s✓%s git-fixture bats tests isolate GIT_* (survive a hook-invoked make ci)\n' "$G" "$Z"
 exit "$drift"
