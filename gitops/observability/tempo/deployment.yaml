@@ -28,7 +28,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: tempo
-          image: grafana/tempo:2.10.5
+          image: grafana/tempo:2.10.7
           args:
             - -config.file=/etc/tempo/tempo.yaml
             - -config.expand-env=true
