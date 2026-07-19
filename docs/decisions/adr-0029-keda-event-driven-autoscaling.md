@@ -181,8 +181,8 @@ actually exists (the follow-up item below).
 | `gitops/platform/observability-alloy.yaml` | New `keda` scrape job |
 | `grafana/dashboards/lab-keda.json` | Real-metric dashboard (Objective O5 pattern) |
 | `tests/keda.bats` | Clusterless tests: Application shape, chart pin, PSA labels, NetworkPolicy, scrape job, dashboard |
-| `docs/decisions/adr-0028-cert-manager-tls-lifecycle.md` / new manifests | cert-manager webhook TLS wiring (follow-up item) |
-| `gitops/keda/scaledobjects/` (new) | `ScaledObject` + `TriggerAuthentication` demo (follow-up item) |
+| `gitops/platform/keda.yaml` (`certificates.certManager`) | cert-manager webhook TLS wiring, referencing `k8s-lab-ca` (shipped; see `tests/keda.bats`) |
+| `gitops/data/demo/keda-scaling/` | `ScaledObject` + `TriggerAuthentication` demo scaling `rabbitmq-load` (shipped; see `tests/keda-scaledobject.bats`) |
 
 ---
 
