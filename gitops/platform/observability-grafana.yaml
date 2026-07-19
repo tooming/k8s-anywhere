@@ -14,7 +14,7 @@ spec:
     # (that repo's "grafana" chart entry carries deprecated: true and stopped
     # receiving updates 2026-01-30) to the actively maintained
     # grafana-community/helm-charts, RFC #544. This is a chart-template/schema
-    # bump only — the running Grafana binary stays pinned at image tag 13.0.1
+    # bump only — the running Grafana binary stays pinned at image tag 13.0.3
     # below (unified-storage migration bug history, ADR-0006); verified the
     # security-critical valuesObject keys (securityContext,
     # containerSecurityContext, and their pod/container template wiring) are
@@ -26,10 +26,13 @@ spec:
     helm:
       releaseName: grafana
       valuesObject:
-        # Pin Grafana 13.0.1 — keeps the Pure-Git Git Sync provider from ADR-0006 and
-        # avoids the 13.0.0 unified-storage migration bug for Git Sync users.
+        # Pin Grafana 13.0.3 — keeps the Pure-Git Git Sync provider from ADR-0006 and
+        # avoids the 13.0.0 unified-storage migration bug for Git Sync users. Bumped
+        # from 13.0.1 (CVE-2026-9029, CVE-2026-33382, CVE-2026-42127, CVE-2026-42129,
+        # CVE-2026-10601, CVE-2026-8609, CVE-2026-8595 — all fixed in 13.0.2; 13.0.3 is
+        # the newest 13.0.x patch, RFC #563).
         image:
-          tag: "13.0.1"
+          tag: "13.0.3"
         # admin login comes from Vault via the grafana-admin ExternalSecret
         # (gitops/secrets/grafana-admin-externalsecret.yaml): no plaintext default,
         # and a non-"admin" password means Grafana stops nagging to change it.
@@ -50,7 +53,8 @@ spec:
         # MkdirAll'd by Grafana under log.mode "file" (pkg/infra/log/log.go) — our
         # log.mode is "console" only, so it's never written. No other write path
         # exists under this config (checked against grafana chart grafana-12.7.2
-        # and grafana/grafana image v13.0.1's docker entrypoint).
+        # and grafana/grafana image v13.0.3's docker entrypoint — byte-identical to
+        # v13.0.1's packaging/docker/run.sh, re-diffed when bumping to 13.0.3).
         #
         # Pod-level securityContext is set via the `securityContext` key, NOT
         # `podSecurityContext` -- this chart's templates/_pod.tpl reads
@@ -107,7 +111,7 @@ spec:
             mountPath: /etc/ssl-custom
         extraInitContainers:
           - name: ca-bundle
-            image: docker.io/grafana/grafana:13.0.1
+            image: docker.io/grafana/grafana:13.0.3
             securityContext:
               runAsNonRoot: true
               runAsUser: 472
@@ -141,9 +145,9 @@ spec:
             kubernetesDashboards: true
           provisioning:
             # the generic "git" (Pure Git) provider isn't in the default allow-list
-            # (github|local), so enable it explicitly (needs the 13.0.1 image above).
+            # (github|local), so enable it explicitly (needs the 13.0.x image above).
             repository_types: "git|github|bitbucket|gitlab|local"
-          # 13.0.1 + kubernetesDashboards keeps dashboards/folders in unified storage;
+          # 13.0.x + kubernetesDashboards keeps dashboards/folders in unified storage;
           # existing legacy-format dashboards must be migrated on first boot, or Grafana
           # refuses to start while provisioning is on. Enable the one-time migration.
           unified_storage.folders.folder.grafana.app:
