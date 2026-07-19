@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Pin k3s to an explicit version on every backend** (CHARTER **Core Values**
+- [x] 🟢 **Pin k3s to an explicit version on every backend** (CHARTER **Core Values**
   §"Recreate-from-code" + §"Clusterless gates stay green"; RFC/issue #558 — architect
   decision 2026-07-19, new [ADR-0030](docs/decisions/adr-0030-pin-k3s-version-explicitly.md)
   (no existing ADR governed k3s's version — adopted directly per WAYS-OF-WORKING.md

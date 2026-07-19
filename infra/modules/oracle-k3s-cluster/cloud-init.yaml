@@ -3,7 +3,11 @@
 # and blocks until the kubeconfig exists, so the Terraform provisioner that scp's it
 # off the instance never races cloud-init.
 runcmd:
-  - curl -sfL https://get.k3s.io | sh -
+  # Pinned explicitly (ADR-0030) -- same v1.36.2 k3s release as the k3d backend
+  # (infra/modules/k3d-cluster/k3d-config.yaml.tftpl), in INSTALL_K3S_VERSION's "+"
+  # tag format (Docker Hub's image tag for the same release uses a hyphen instead --
+  # keep both in sync on a future bump).
+  - curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.36.2+k3s1 sh -
   # Bounded retry (150 * 2s = 300s): an unbounded `until` would leave cloud-init's
   # runcmd hanging forever if the k3s install silently failed, which would in turn
   # keep the Terraform provisioner's own SSH-wait loop polling a file that will
