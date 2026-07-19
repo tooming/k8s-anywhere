@@ -66,6 +66,23 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- adr-followup-check --------------------------------------------------------
+@test "adr-followup-check: passes when no ADR carries a Follow-up note" {
+  run env ADRFOLLOWUPCHECK_ROOT="$FIX/adr-followup-check/in-sync" bash "$REPO/scripts/adr-followup-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-followup-check: fails on an unchecked Follow-up note" {
+  run env ADRFOLLOWUPCHECK_ROOT="$FIX/adr-followup-check/drift" bash "$REPO/scripts/adr-followup-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Follow-up"* ]]
+}
+
+@test "adr-followup-check: passes on the real repo docs/decisions/" {
+  run bash "$REPO/scripts/adr-followup-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 # --- markdown-links-check -----------------------------------------------------
 @test "markdown-links-check: passes when every internal link resolves" {
   run env MDLINKS_ROOT="$FIX/markdown-links-check/in-sync" bash "$REPO/scripts/markdown-links-check.sh"

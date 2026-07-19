@@ -109,6 +109,10 @@ rollouts-plugin-list-check: ## Check Argo Rollouts plugin Helm values are YAML l
 mimir-readonly-root-check: ## Check every Mimir write path lands on a writable volume, not the read-only root (drift detector)
 	@bash scripts/mimir-readonly-root-check.sh
 
+.PHONY: adr-followup-check
+adr-followup-check: ## Check no ADR carries a stale unchecked "Follow-up:" promise (drift detector)
+	@bash scripts/adr-followup-check.sh
+
 ##@ Quality gates (clusterless; run on every commit + in CI)
 
 .PHONY: lint
@@ -155,6 +159,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/argocd-crd-ssa-check.sh
 	@bash scripts/rollouts-plugin-list-check.sh
 	@bash scripts/mimir-readonly-root-check.sh
+	@bash scripts/adr-followup-check.sh
 	@bash scripts/ci-parity-check.sh
 
 .PHONY: install-hooks

@@ -123,6 +123,12 @@
             "command": "bash scripts/mimir-readonly-root-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking Mimir write paths are writable"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/adr-followup-sync-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking ADR follow-up notes"
           }
         ]
       },
