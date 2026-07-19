@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **`docs/dora-resilience-mapping.md` — DORA (EU regulation) pillar mapping,
+- [x] 🟢 **`docs/dora-resilience-mapping.md` — DORA (EU regulation) pillar mapping,
   explicitly not a compliance claim** (RFC #586 — architect decision 2026-07-19.
   **No prerequisites — executor may pick up immediately.**) Implement RFC #586's
   binding spec exactly — the applicability question is already decided, do not
