@@ -67,6 +67,22 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- Image tag pin (CVE-2026-35469, RFC #552 / ADR-0020 Re-evaluation log) ---
+# Pinned independently of targetRevision — the chart hasn't published a release
+# tracking appVersion >= 1.9.1 yet, so the fix is applied via image.tag override
+# (same pattern as observability-grafana.yaml's image.tag pin).
+@test "argo-rollouts controller image tag is pinned to v1.9.1 (CVE-2026-35469)" {
+  run yqs '.spec.source.helm.valuesObject.controller.image.tag' "$REPO/gitops/platform/argo-rollouts.yaml"
+  [ "$status" -eq 0 ]
+  [ "$output" = "v1.9.1" ]
+}
+
+@test "argo-rollouts dashboard image tag is pinned to v1.9.1 (CVE-2026-35469)" {
+  run yqs '.spec.source.helm.valuesObject.dashboard.image.tag' "$REPO/gitops/platform/argo-rollouts.yaml"
+  [ "$status" -eq 0 ]
+  [ "$output" = "v1.9.1" ]
+}
+
 # --- argo-rollouts-extras (namespace + route pre-creation, wave 0) -----------
 @test "argo-rollouts-extras Application exists" {
   [ -f "$REPO/gitops/platform/argo-rollouts-extras.yaml" ]
