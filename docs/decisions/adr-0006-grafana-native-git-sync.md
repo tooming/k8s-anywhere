@@ -40,9 +40,14 @@ credentials or Vault's unseal key (ADR-0001 corollary).
   ConfigMaps, and the `observability-dashboards` ArgoCD Application. **Community
   dashboards (gnetId) are unaffected** — separate provider.
 
-**Status.** **Adopted.** Implemented + verified live: Grafana 13.0.1 syncs the lab
-dashboards (`grafana/dashboards/` in the repo) from GitLab over the TLS proxy; the
+**Status.** **Adopted.** Implemented + verified live at `13.0.1`: Grafana synced the
+lab dashboards (`grafana/dashboards/` in the repo) from GitLab over the TLS proxy; the
 k8s-sidecar, dashboard ConfigMaps, and the `observability-dashboards` app are removed.
+The pin is now `13.0.3` (2026-07-19, CVE bump — see §Re-evaluation log); the
+entrypoint script driving this Git Sync path was diffed byte-for-byte between
+`v13.0.1` and `v13.0.3` (identical) as part of that bump, but live re-verification of
+the sync flow at `13.0.3` on a real cluster is still pending the maintainer's next
+`make up` (this repo runs remotely and clusterless — ADR-0004).
 The Repository connection is bootstrapped imperatively (`scripts/grafana-gitsync-bootstrap.sh`),
 the TLS proxy + CA via `scripts/gitlab-tls-bootstrap.sh`. Community (gnetId) dashboards
 are unaffected. Both bootstraps are wired into `make up` (`Makefile`'s `up` target calls
@@ -90,3 +95,32 @@ three version-specific CVEs found are already fixed at the current pins.
 citation for CVE-2026-10601/CVE-2026-42129 is found (re-run the search then);
 revisit Loki/Tempo when a new bulletin names a version at or above the
 current pins as affected.
+
+### 2026-07-19 — Grafana flip condition met, pin bumped (audit #562, RFC #563)
+
+**Trigger.** The flip condition above was met: fetching Grafana's own real
+`CHANGELOG.md` at the `v13.0.2` git tag (via `raw.githubusercontent.com`) found
+the fixed-version citation audit #518 was waiting for — `13.0.2` (2026-06-09)
+lists `CVE-2026-10601` and `CVE-2026-42129` among seven CVEs it fixes (the other
+five — `CVE-2026-9029`, `CVE-2026-33382`, `CVE-2026-42127`, `CVE-2026-8609`,
+`CVE-2026-8595` — were not in audit #518's scope, which only checked the three
+CVE families it had a citation for at the time). A distinct `v13.0.1+security-01`
+Docker Hub tag (different commit SHA than plain `v13.0.1`) independently
+corroborated an out-of-band security backport existed for the prior pin.
+
+**Decision: bump `grafana:13.0.1` → `13.0.3`** (the newest `13.0.x` patch,
+smallest safe delta carrying every known fix). Loki (`3.7.2`) and Tempo
+(`2.10.5`) are unaffected by this audit — their own flip conditions
+(a new bulletin naming a version at or above their current pins) were not
+triggered this pass.
+
+Implemented via [RFC #563](https://github.com/tooming/k8s-anywhere/issues/563)
+→ `auto/grafana-cve-bump-13-0-3` (`gitops/platform/observability-grafana.yaml`'s
+`image.tag` override; chart `targetRevision` unchanged). See
+`docs/done/2026-07-19-grafana-cve-bump-13-0-3.md` for the full verification
+record (including the `packaging/docker/run.sh` byte-diff re-confirming this
+ADR's `readOnlyRootFilesystem` write-path analysis still holds at the new pin).
+
+**Flip condition (next re-evaluation).** Revisit Grafana's pin again when a new
+bulletin names a version at or above `13.0.3` as affected. Loki/Tempo flip
+conditions from audit #518 remain unchanged (unmet).
