@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump Argo Rollouts image tag `v1.9.0` → `v1.9.1`** (CHARTER **Core Values**
+- [x] 🟢 **Bump Argo Rollouts image tag `v1.9.0` → `v1.9.1`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC/issue #552 — architect decision
   2026-07-19, ADR-0020 audit resolved as **Convert** (converts the 2026-07-18
   "Keep" from audit #520 with new signal). **No prerequisites — executor may pick
