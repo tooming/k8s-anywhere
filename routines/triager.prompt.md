@@ -26,7 +26,7 @@ STEP 4 — Label each remaining issue:
 
 STEP 5 — Apply the labels in ONE call per issue: `gh issue edit <num> --add-label "domain:X,readiness:Y,priority:Z"`. If you used `triage:needs-domain`, add that label and *also* a readiness + priority guess (better a guess than nothing — the planner will refine).
 
-STEP 6 — Never end empty-handed. If there were NO triageable issues, do NOT fabricate. Ensure the label `triager` exists (`gh label create triager --color 5319E7 --description "Triager-surfaced state for the maintainer" 2>/dev/null || true`). Run `gh issue list --state open --label triager`: if a `triager idle — no untriaged issues` issue exists, add a one-line refresher; otherwise open one, @-mentioning the maintainer. One issue, refreshed each idle run.
+STEP 6 — A no-op is acceptable when there's nothing to triage. If there were NO triageable issues, do NOT fabricate, and do NOT file a GitHub issue — `scripts/idle-issue-guard-check.sh` unconditionally blocks any issue/comment carrying the word "idle" (see docs/done/2026-07-19-action-needed-pr-fallback.md), and this routine is labels-only by design (CONSTRAINTS below: "no PRs"), so unlike the PR-producing routines' `[Action needed]` fallback, opening one here would contradict this routine's own contract. Mirror `architect.prompt.md` STEP 9's precedent: a genuine no-op is fine, not a failure to paper over. The mandatory one-line summary (CONSTRAINTS below) is this run's honest record.
 
 CONSTRAINTS (every run):
   - **Labels only.** No comments (beyond optional one-line label rationale in the rare ambiguous case), no closing, no PRs.

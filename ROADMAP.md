@@ -270,7 +270,7 @@ You review and merge plan PRs, same as implementation PRs.
   roles are split into the follow-up item directly below. Closes #569.
   (auto/action-needed-pr-fallback)
 
-- [ ] 🟢 **`[Action needed]` PR fallback — remaining five routine prompts** (CHARTER
+- [x] 🟢 **`[Action needed]` PR fallback — remaining five routine prompts** (CHARTER
   **Core Values** §"Docs & dashboards don't drift"; PR 2 of 2, follow-up to the item
   directly above — **no prerequisites, executor may pick up immediately**). Apply the
   same fix to `janitor.prompt.md` STEP 6, `doc-drift-author.prompt.md` STEP 7, and
