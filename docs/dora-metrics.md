@@ -1,6 +1,6 @@
 # DORA metrics — k8s-lab
 
-Computed 2026-07-19T11:09:55Z for the trailing 90-day window (RFC #580).
+Computed 2026-07-19T11:15:36Z for the trailing 90-day window (RFC #580).
 Regenerate with `make dora-metrics`. All four metrics are re-grounded in this
 repo's clusterless, self-merging GitOps model — see RFC #580 for the full
 definitions and rationale. A value of "insufficient data" means exactly that: not
