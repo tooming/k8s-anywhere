@@ -53,7 +53,7 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
 
 ## Strategy (the bold choices — *how* we deliver the mission)
 
-The 26 ADRs in [docs/decisions/](docs/decisions/) are the binding receipts. This section
+The ADRs in [docs/decisions/](docs/decisions/) are the binding receipts. This section
 states the meta-choices the ADRs encode, so the *why* sits above the *what*.
 
 - **Cloud-agnostic over single-target.** The Terraform/Terragrunt bootstrap seam is a
