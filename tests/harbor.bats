@@ -22,8 +22,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "harbor Application pins a specific 1.16.x chart version" {
-  run grep -qE 'targetRevision: 1\.16\.' "$REPO/gitops/platform/harbor.yaml"
+@test "harbor Application pins a specific 1.19.x chart version" {
+  run grep -qE 'targetRevision: 1\.19\.' "$REPO/gitops/platform/harbor.yaml"
   [ "$status" -eq 0 ]
 }
 
