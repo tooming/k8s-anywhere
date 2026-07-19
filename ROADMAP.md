@@ -210,7 +210,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump Grafana image tag `13.0.1` → `13.0.3`** (CHARTER **Core Values**
+- [x] 🟢 **Bump Grafana image tag `13.0.1` → `13.0.3`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC/issue #563 — architect decision
   2026-07-19, ADR audit #562 resolved as **Convert**. **No prerequisites — executor
   may pick up immediately.**) `13.0.1` (our current pin, released 2026-04-17) is
