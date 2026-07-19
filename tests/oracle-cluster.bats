@@ -102,6 +102,18 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
+@test "tfstate-oracle-bootstrap.sh's SSH + Garage S3 API ingress rules use OCI_ADMIN_CIDR, not a hardcoded 0.0.0.0/0" {
+  run grep -q 'OCI_ADMIN_CIDR="${OCI_ADMIN_CIDR:-0.0.0.0/0}"' "$REPO/scripts/tfstate-oracle-bootstrap.sh"
+  [ "$status" -eq 0 ]
+  block="$(sed -n '/creating security list/,/wait-for-state AVAILABLE)"/p' "$REPO/scripts/tfstate-oracle-bootstrap.sh")"
+  run grep -q 'source\\":\\"\$OCI_ADMIN_CIDR' <<< "$block"
+  [ "$status" -eq 0 ]
+  # the egress-all rule legitimately keeps a literal 0.0.0.0/0 destination (outbound
+  # internet access) — only the two ingress "source" fields must use the variable.
+  run grep -oE 'source[\\]*":[\\]*"0\.0\.0\.0/0' <<< "$block"
+  [ "$status" -ne 0 ]
+}
+
 # --- infra/live/oracle/ contract: argocd + gitlab units are byte-identical to local/'s ---
 
 @test "infra/live/oracle/argocd/terragrunt.hcl is byte-identical to local/'s" {
