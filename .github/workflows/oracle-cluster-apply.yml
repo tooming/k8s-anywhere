@@ -37,9 +37,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: oracle-cloud
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.0
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           # Matches ci.yml's pin. Must be >= 1.6 -- root.hcl's s3 backend block uses
           # use_path_style/endpoints/skip_requesting_account_id, args the s3 backend

@@ -18,7 +18,7 @@ jobs:
   rebase-pr-branches:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.0
         with:
           fetch-depth: 0
           # Use a token with push rights (default GITHUB_TOKEN is enough for
@@ -35,7 +35,7 @@ jobs:
         run: git fetch --all --prune -q
 
       - name: Rebase open PR branches onto main
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.0.1
         env:
           MAIN_SHA: ${{ github.sha }}
         with:
