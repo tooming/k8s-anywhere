@@ -25,6 +25,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "argo-rollouts Application chart pin is at least 2.41.1 (CVE-2026-35469 fix, ADR-0020)" {
+  run grep -q 'targetRevision: 2.41.1' "$REPO/gitops/platform/argo-rollouts.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "argo-rollouts Application is auto-synced (always-on)" {
   run grep -q 'automated:' "$REPO/gitops/platform/argo-rollouts.yaml"
   [ "$status" -eq 0 ]
@@ -67,20 +72,17 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Image tag pin (CVE-2026-35469, RFC #552 / ADR-0020 Re-evaluation log) ---
-# Pinned independently of targetRevision — the chart hasn't published a release
-# tracking appVersion >= 1.9.1 yet, so the fix is applied via image.tag override
-# (same pattern as observability-grafana.yaml's image.tag pin).
-@test "argo-rollouts controller image tag is pinned to v1.9.1 (CVE-2026-35469)" {
+# --- Image tag (CVE-2026-35469, RFC #552 -> chart bump, ADR-0020 Re-evaluation log) ---
+# RFC #552 (2026-07-19) pinned controller/dashboard image.tag to "v1.9.1"
+# explicitly, as a stopgap while argo-helm hadn't yet published a chart release
+# tracking that appVersion. Once argo-rollouts-2.41.1 shipped tracking
+# appVersion v1.9.1 (upgrade-drafter, 2026-07-20), the chart's own default
+# already resolves to the fixed version, so the explicit override was removed
+# as redundant -- the chart-pin assertion above is now the CVE-2026-35469
+# recurrence guard instead of an image.tag assertion.
+@test "argo-rollouts Application does not carry a redundant image.tag override (chart default now tracks the fix)" {
   run yqs '.spec.source.helm.valuesObject.controller.image.tag' "$REPO/gitops/platform/argo-rollouts.yaml"
-  [ "$status" -eq 0 ]
-  [ "$output" = "v1.9.1" ]
-}
-
-@test "argo-rollouts dashboard image tag is pinned to v1.9.1 (CVE-2026-35469)" {
-  run yqs '.spec.source.helm.valuesObject.dashboard.image.tag' "$REPO/gitops/platform/argo-rollouts.yaml"
-  [ "$status" -eq 0 ]
-  [ "$output" = "v1.9.1" ]
+  [ "$status" -ne 0 ] || [ "$output" = "null" ]
 }
 
 # --- argo-rollouts-extras (namespace + route pre-creation, wave 0) -----------

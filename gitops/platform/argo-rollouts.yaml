@@ -19,20 +19,19 @@ spec:
   source:
     repoURL: https://argoproj.github.io/argo-helm
     chart: argo-rollouts
-    targetRevision: 2.41.0
+    # 2.41.1 (bumped from 2.41.0, upgrade-drafter fallback run, 2026-07-20):
+    # argo-helm finally published a chart release tracking appVersion v1.9.1 —
+    # the exact flip condition ADR-0020's Re-evaluation log named for the
+    # 2026-07-18/07-19 CVE-2026-35469 entries. The image.tag overrides those
+    # entries added (as a stopgap while only the image, not the chart, could be
+    # bumped) are gone below: the chart's own default now already resolves to
+    # v1.9.1, so pinning it explicitly would just be redundant.
+    targetRevision: 2.41.1
     helm:
       releaseName: argo-rollouts
       valuesObject:
         controller:
           replicas: 1
-          # Pin the image tag independently of the chart's appVersion default
-          # (2026-07-19, RFC #552 / ADR-0020 Re-evaluation log): CVE-2026-35469,
-          # fixed upstream in v1.9.1, but the argo-helm chart hasn't published a
-          # release tracking appVersion >= 1.9.1 yet — this chart's own default
-          # would still pull v1.9.0. Mirrors observability-grafana.yaml's
-          # image.tag override for the same class of reason.
-          image:
-            tag: "v1.9.1"
           resources:
             limits:
               memory: 128Mi
@@ -48,9 +47,6 @@ spec:
         dashboard:
           enabled: true
           replicas: 1
-          # Same CVE-2026-35469 fix, same image-tag-override rationale as controller above.
-          image:
-            tag: "v1.9.1"
           resources:
             limits:
               memory: 64Mi
