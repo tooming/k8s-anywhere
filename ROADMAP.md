@@ -3287,7 +3287,7 @@ You review and merge plan PRs, same as implementation PRs.
   removed. `make ci` must pass. `docs/done/` entry required.
   (auto/adr-followup-parenthetical-form)
 
-- [ ] 🟢 **GitHub Actions major-version bumps — `actions/checkout` v4.3.0→v7.0.0,
+- [x] 🟢 **GitHub Actions major-version bumps — `actions/checkout` v4.3.0→v7.0.0,
   `actions/cache` v4.3.0→v6.1.0, `actions/github-script` v7.0.1→v9.0.0,
   `hashicorp/setup-terraform` v3.1.2→v4.0.1** (CHARTER **Core Values**
   §"Clusterless gates stay green" + general CI hardening; RFC #611 — architect
