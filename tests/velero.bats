@@ -18,13 +18,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "velero Application pins a specific 8.x chart version" {
-  run grep -qE 'targetRevision: 8\.[0-9]+\.' "$REPO/gitops/platform/velero.yaml"
+@test "velero Application pins a specific 12.x chart version" {
+  run grep -qE 'targetRevision: 12\.[0-9]+\.' "$REPO/gitops/platform/velero.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "velero Application pins chart version 8.7.2 (latest 8.x, appVersion unchanged)" {
-  run grep -q 'targetRevision: 8.7.2' "$REPO/gitops/platform/velero.yaml"
+@test "velero Application pins chart version 12.1.0 (RFC #617, appVersion 1.18.1)" {
+  run grep -q 'targetRevision: 12.1.0' "$REPO/gitops/platform/velero.yaml"
   [ "$status" -eq 0 ]
 }
 

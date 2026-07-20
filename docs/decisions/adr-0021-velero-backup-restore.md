@@ -32,8 +32,10 @@ filesystem-snapshot uploader (the in-tree default since Velero 1.11).
 
 ### Chart + version
 
-- **Chart:** `vmware-tanzu/velero` v8.4.x (latest 8.x stable at executor
-  pickup time; pin in the Application).
+- **Chart:** `vmware-tanzu/velero` `12.1.0` (`appVersion: 1.18.1`; pin lives in
+  `gitops/platform/velero.yaml`'s `targetRevision` — this note read "v8.4.x
+  (latest 8.x stable at executor pickup time)" until the 2026-07-20 RFC #617
+  bump; see [§Re-evaluation log](#re-evaluation-log) for the full history).
 - **Source:** `https://vmware-tanzu.github.io/helm-charts`
 - **Namespace:** `velero` (new namespace; PSA label `restricted`).
 
@@ -229,3 +231,11 @@ real-metric dashboard.
   near-zero. **Audited → actioned as [RFC #617](https://github.com/tooming/k8s-anywhere/issues/617).**
   The question is now tracked as buildable work (chart bump only, no
   `valuesObject` schema change needed).
+
+- **2026-07-20 (executor — RFC #617 implemented).** Bumped
+  `gitops/platform/velero.yaml`'s `targetRevision` from `8.7.2` to `12.1.0`
+  (`appVersion: 1.15.2` → `1.18.1`), per the schema audit above — no
+  `valuesObject` change required. `tests/velero.bats` updated to pin the new
+  version. **Status: resolved.** Both the "Chart + version" summary above and
+  the 2026-07-18/2026-07-20 log entries are now superseded by the live pin;
+  this closes the flip condition.

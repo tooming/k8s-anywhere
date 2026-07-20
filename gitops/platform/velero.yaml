@@ -15,6 +15,17 @@
 # between both tags: purely additive (new optional fields), no renamed or
 # removed keys -- every valuesObject key this repo sets was verified present
 # and unchanged at the new pin.
+#
+# Bumped 8.7.2 -> 12.1.0 (RFC #617, 2026-07-20): appVersion 1.15.2 -> 1.18.1.
+# This is a chart-major jump (8.x -> 11.x -> 12.x) previously deferred by
+# ADR-0021's 2026-07-18 Re-evaluation log pending a values-schema audit --
+# that audit (RFC #617) fetched the real chart's values.yaml/Chart.yaml at
+# tag velero-12.1.0 and confirmed every valuesObject key below
+# (credentials.{useSecret,existingSecret}, configuration.{
+# defaultVolumesToFsBackup,features,uploaderType,backupStorageLocation},
+# deployNodeAgent, resources, nodeAgent.resources) is unchanged -- a
+# version-number-only bump, no schema migration needed. No CVE motivated
+# this; see ADR-0021 Re-evaluation log for the full reasoning.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -27,7 +38,7 @@ spec:
   source:
     repoURL: https://vmware-tanzu.github.io/helm-charts
     chart: velero
-    targetRevision: 8.7.2
+    targetRevision: 12.1.0
     helm:
       releaseName: velero
       valuesObject:
