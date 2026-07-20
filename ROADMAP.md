@@ -3287,6 +3287,48 @@ You review and merge plan PRs, same as implementation PRs.
   removed. `make ci` must pass. `docs/done/` entry required.
   (auto/adr-followup-parenthetical-form)
 
+- [ ] 🟢 **GitHub Actions major-version bumps — `actions/checkout` v4.3.0→v7.0.0,
+  `actions/cache` v4.3.0→v6.1.0, `actions/github-script` v7.0.1→v9.0.0,
+  `hashicorp/setup-terraform` v3.1.2→v4.0.1** (CHARTER **Core Values**
+  §"Clusterless gates stay green" + general CI hardening; RFC #611 — architect
+  decision 2026-07-20, resolving issue #608's open Node-runtime question.
+  **No prerequisites — executor may pick up immediately.**) RFC #611's binding
+  decision, verified against real sources (ADR-0004): GitHub-hosted
+  `ubuntu-latest` runners cache both Node.js 22.23.1 and 24.18.0 today
+  (`actions/runner-images`' `Ubuntu2404-Readme.md`, fetched directly), and
+  GitHub now requires actions to run on Node ≥24 (`github.blog` changelog,
+  2025-09-19 Node 20 deprecation). None of this repo's workflows use the
+  `pull_request_target`/`workflow_run` triggers checkout v7.0.0 restricts
+  (confirmed by grep across `.github/workflows/`), and the repo's one
+  github-script step (`auto-update-prs.yml`) uses only the injected
+  `github`/`context` globals and `require('child_process')`, never
+  `require('@actions/github')` or a `getOctokit` redeclaration — so v9.0.0's
+  ESM migration is a non-issue.
+
+  Update all 15 `uses:` lines across `.github/workflows/*.yml` to the exact
+  commit SHAs below (verified directly via `git ls-remote --tags`, not
+  inferred): **note the github-script SHA is the annotated tag's *peeled*
+  commit, not the tag-object SHA `git ls-remote` lists first** — a real
+  footgun, since the other three are lightweight tags where the listed SHA
+  already is the commit:
+  - `actions/checkout` → `9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0` # v7.0.0
+  - `actions/cache` → `55cc8345863c7cc4c66a329aec7e433d2d1c52a9` # v6.1.0
+  - `actions/github-script` → `3a2844b7e9c422d3c10d287c895573f7108da1b3` # v9.0.0
+    (peeled commit — do NOT use `d746ffe35508b1917358783b479e04febd2b8f71`,
+    the tag object itself)
+  - `hashicorp/setup-terraform` → `dfe3c3f87815947d99a8997f908cb6525fc44e9e` # v4.0.1
+
+  Mirror the exact `# vX.Y.Z` comment format `chore/github-actions-sha-pinning`
+  (#609) established. Extend or add a bats file (check for existing
+  GitHub-Actions-pin coverage first, else add `tests/github-actions-pins.bats`)
+  asserting the four new SHAs/version comments are present — a recurrence
+  guard mirroring this repo's other per-component pin-assertion pattern.
+  `make ci` must pass — and per RFC #611, the PR's own GitHub Actions run
+  (lint/unit/drift/manifests/terraform/kustomize/up-to-date, all executing on
+  the bumped actions) IS the live verification here; call that out explicitly
+  in the PR body instead of the usual clusterless-caveat framing. `docs/done/`
+  entry required. Closes #611. (auto/github-actions-node24-bump)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
@@ -3321,27 +3363,13 @@ You review and merge plan PRs, same as implementation PRs.
 > needs an architect RFC to define the exact GitLab CI job shape, unsigned-image
 > source, and rejection assertion method before the executor can build it.
 
-- 🟡 **GitHub Actions major-version bumps — `actions/checkout` v4→v7,
+- ~~🟡 **GitHub Actions major-version bumps — `actions/checkout` v4→v7,
   `actions/cache` v4→v6, `actions/github-script` v7→v9,
-  `hashicorp/setup-terraform` v3→v4** (RFC #611) (issue #608 — filed by the upgrade-drafter
-  fallback role, 2026-07-19, per its own rule that same-source *major* bumps need
-  a human/architect look, not an auto-built `upgrade/*` PR). All four newer majors
-  are real, confirmed-published releases (verified directly against each action's
-  `package.json` at the candidate tag, not inferred) and all four require Node
-  ≥24 in their `engines` field — a jump from whatever Node runtime the currently
-  pinned majors expect. Needs an architect RFC (or at minimum an explicit,
-  verified decision recorded here) resolving: (1) does the GitHub-hosted
-  `ubuntu-latest` runner's bundled Node.js version for executing JS actions
-  support Node ≥24 today (this is runner-software-level, not OS-level, and
-  wasn't independently verifiable from this clusterless sandbox); (2) each
-  action's own migration notes for the specific major version(s) crossed (e.g.
-  `actions/checkout`'s v4→v5 default `fetch-depth`/input changes, `actions/cache`'s
-  v4→v5/v6 changes, if any breaking behavior applies to how this repo's workflows
-  use them). Once decided, the actual bump is a small, `make ci`-validated PR
-  updating the SHA + version comment on the 15 `uses:` lines
-  `chore/github-actions-sha-pinning` (#609) already pinned by commit SHA — same
-  shape as any other upgrade, just re-pointing the SHA and comment to the new
-  version once the compatibility question is resolved.
+  `hashicorp/setup-terraform` v3→v4**~~ (RFC #611) **Groomed ↗** into a 🟢 item
+  in *Now / next* above (`auto/github-actions-node24-bump`), planner run
+  2026-07-20. Decision: bump to v7.0.0/v6.1.0/v9.0.0/v4.0.1 — GitHub-hosted
+  `ubuntu-latest` runners already cache Node.js 24 today, confirmed directly
+  against `actions/runner-images`' `Ubuntu2404-Readme.md`.
 
 - ~~🟡 **DORA-metrics compliance for k8s-lab**~~ (RFC #580) **Groomed ↗** into a 🟢
   item in *Now / next* above (`auto/dora-metrics`), planner run 2026-07-19. Decision:
