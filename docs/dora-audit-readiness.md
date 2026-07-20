@@ -1,13 +1,23 @@
 # DORA audit Q&A — ready-made structure
 
 **Scope note.** The EU Digital Operational Resilience Act (Regulation (EU) 2022/2554)
-applies to regulated financial entities and their critical ICT third-party providers.
-This lab is neither, so nothing here is a compliance claim or a legal filing. It exists
-so the questions a DORA audit/examination would ask have a rehearsed, honest answer —
-useful for practice, portfolio write-ups, or as a template to reuse on a real regulated
-system later. Every answer below is grounded in this repo's actual state (per
-[ADR-0004](decisions/adr-0004-no-fabricated-content.md) — no fabricated posture); where
-nothing exists, the answer says so plainly instead of inventing one.
+applies to regulated financial entities and their critical ICT third-party providers
+(Article 2). This lab is neither, so nothing here is a compliance claim or a legal
+filing. It exists so the questions a DORA audit/examination would ask have a rehearsed,
+honest answer — useful for practice, portfolio write-ups, or as a template to reuse on a
+real regulated system later. Every answer below is grounded in this repo's actual state
+(per [ADR-0004](decisions/adr-0004-no-fabricated-content.md) — no fabricated posture);
+where nothing exists, the answer says so plainly instead of inventing one.
+
+**Companion docs** (this file's evidence draws on both, rather than restating them):
+[docs/dora-resilience-mapping.md](dora-resilience-mapping.md) maps DORA's five pillars
+onto real repo mechanisms (RFC #586) — read that first for the pillar-level picture;
+this file turns it into rehearsed answers to the specific questions an audit would ask.
+[docs/dora-metrics.md](dora-metrics.md) (CHARTER Objective O7, `make dora-metrics`,
+RFC #580) computes the unrelated "DORA" — DevOps Research and Assessment — delivery
+metrics (deployment frequency, lead time, change failure rate, time to restore
+service) from real git/CI history; where relevant below it's cited as evidence, not
+duplicated.
 
 **Template for a new question (copy this row shape):**
 
@@ -83,19 +93,28 @@ nothing exists, the answer says so plainly instead of inventing one.
 - **Answer:** Detection is manual (`make status`, Grafana dashboards, `make dr-verify`)
   — nothing pages or alerts automatically. Resolution paths exist per-symptom (the
   cookbook), but there's no escalation concept since there's no one to escalate to.
-- **Evidence:** [docs/DR.md](DR.md#recovery-cookbook-single-component); `make status` target.
+  One real, automated signal now exists at the CI layer: `make dora-metrics`'s "time to
+  restore service" row measures the wall-clock gap between a CI run going red and the
+  next going green, from the real GitHub Actions API — a genuine MTTR-shaped metric,
+  just scoped to CI health, not live-cluster incidents.
+- **Evidence:** [docs/DR.md](DR.md#recovery-cookbook-single-component); `make status`
+  target; [docs/dora-metrics.md](dora-metrics.md) "Time to restore service" row.
 - **Gap:** no alerting (Grafana has dashboards, not alert rules, as far as this repo's
   gitops/ shows); no escalation path (N/A for a solo operator, but worth naming as an
-  explicit non-goal rather than a silent absence).
+  explicit non-goal rather than a silent absence); the CI-health metric doesn't cover a
+  live-cluster incident (e.g., Vault sealed, Garage unreachable) — those still have no
+  automated detection-to-resolution timer.
 
 **Q8. Are incidents logged with root cause and a corrective action, after the fact?**
 - **Answer:** No dedicated incident log exists. `docs/done/` records completed work
   (features, fixes), and CLAUDE.md's bugfix rule requires every bugfix to also add a
   mechanical recurrence guard — but there's no `docs/incidents/`-style directory
   capturing "what broke, in production-shape terms, and why" as its own artifact
-  distinct from the fix commit.
+  distinct from the fix commit. `dora-metrics.md`'s change-failure-rate row (currently
+  8.2%, 46/559 deployments in the trailing 90 days) is the closest thing to a rollup —
+  it quantifies *how often* something failed, but not *why* each one did.
 - **Evidence:** `docs/done/` directory; CLAUDE.md's "Every bugfix must prevent
-  recurrence" section.
+  recurrence" section; [docs/dora-metrics.md](dora-metrics.md) "Change failure rate" row.
 - **Gap:** real, and the most actionable one in this document — a lightweight
   `docs/incidents/YYYY-MM-DD-<slug>.md` template (symptom, detection method, blast
   radius, root cause, guard added) would close it cheaply by reusing the existing
@@ -215,5 +234,8 @@ resilience testing, dependency re-checks, and threat-intel digesting are all des
 correctly (the mechanism exists and works when invoked) but none run on a schedule —
 everything is on-demand, which matches this lab being clusterless-by-default and
 maintainer-triggered rather than continuously operated. The one *structural* gap, not
-just a cadence gap, is **Pillar 2 (incident classification & logging)** — no severity
-scheme and no incident-log artifact exist yet, independent of scheduling.
+just a cadence gap, is **Pillar 2 (incident classification & logging)** — `make
+dora-metrics` now gives a real, CI-scoped MTTR-shaped number (Q7) and a real
+change-failure-rate rollup (Q8), but neither is a substitute for a severity scheme or a
+root-cause incident log for live-cluster events — that gap is unchanged by their
+addition.
