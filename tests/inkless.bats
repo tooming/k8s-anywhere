@@ -124,6 +124,12 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "inkless-load producer/consumer are pinned to apache/kafka:3.9.2 (patch bump from 3.9.1)" {
+  run bash -c "grep -c 'image: apache/kafka:3\.9\.2' '$REPO/gitops/inkless/kafka-load.yaml'"
+  [ "$status" -eq 0 ]
+  [ "$output" -eq 2 ]
+}
+
 @test "inkless Service exposes metrics port for exporter" {
   run grep -q 'port: 9308' "$REPO/gitops/inkless/inkless-service.yaml"
   [ "$status" -eq 0 ]
