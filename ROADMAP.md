@@ -3329,7 +3329,7 @@ You review and merge plan PRs, same as implementation PRs.
   in the PR body instead of the usual clusterless-caveat framing. `docs/done/`
   entry required. Closes #611. (auto/github-actions-node24-bump)
 
-- [ ] 🟢 **Velero chart major bump `8.7.2` → `12.1.0`** (RFC #617 — architect
+- [x] 🟢 **Velero chart major bump `8.7.2` → `12.1.0`** (RFC #617 — architect
   decision 2026-07-20, actioning ADR-0021's 2026-07-18 Re-evaluation log flip
   condition. **No prerequisites — executor may pick up immediately.**)
   Implement RFC #617's binding spec exactly: bump
