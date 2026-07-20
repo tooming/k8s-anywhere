@@ -3323,7 +3323,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 - 🟡 **GitHub Actions major-version bumps — `actions/checkout` v4→v7,
   `actions/cache` v4→v6, `actions/github-script` v7→v9,
-  `hashicorp/setup-terraform` v3→v4** (issue #608 — filed by the upgrade-drafter
+  `hashicorp/setup-terraform` v3→v4** (RFC #611) (issue #608 — filed by the upgrade-drafter
   fallback role, 2026-07-19, per its own rule that same-source *major* bumps need
   a human/architect look, not an auto-built `upgrade/*` PR). All four newer majors
   are real, confirmed-published releases (verified directly against each action's
