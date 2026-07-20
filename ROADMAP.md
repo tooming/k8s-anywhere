@@ -118,6 +118,28 @@ rules below are binding.
     linked RFC yet, don't build around the open question: either author the RFC yourself
     (rule #9 covers writing it, same-run, executor-sanctioned) or open a GitHub issue
     naming the decision needed, then move to the next feasible 🟢 item.
+11. **A `maintainer-confirmation prerequisite` item is tracked by a standing
+    `[Action required]` GitHub issue, not just prose.** This is a different mechanism
+    from rule #9's `[Action needed]` PR fallback — don't conflate them. `[Action
+    needed]` PRs are a self-merging breadcrumb for a cycle that found nothing
+    buildable at all; they exist and merge in the same run, purely as a record.
+    `[Action required]` issues are for the narrower, specific case of a named ROADMAP
+    item that's ready to build except for one live-cluster/external-system fact only
+    the maintainer can observe (e.g. "did a CI run push a signed image", "does Harbor's
+    measured footprint fit the budget") — the issue **stays open**, unmerged, unclosed,
+    until the maintainer comments confirmation, so it's visible in the maintainer's
+    normal open-issues list rather than buried in merged-PR history. Each such gated
+    item names its tracking issue inline (e.g. #631/#632/#633 as of 2026-07-21). When
+    picking up a gated item: check its linked issue for a confirmation comment before
+    treating the gate as satisfied; if none, skip to the next item as usual (unchanged
+    from before). When the gated item finally lands, its PR closes the issue (`Closes
+    #NNN`). Never open a *second* standing issue for the same named gate — search
+    open issues titled `[Action required]` first, same "search before creating"
+    discipline as the `[Action needed]` PR pattern. If a genuinely new
+    maintainer-confirmation gate appears on a future item with no issue yet, open one
+    following this same shape (title `[Action required] <what to confirm>`, body states
+    exactly what to check/run and what it unblocks) rather than falling back to prose
+    alone.
 
 ---
 
@@ -1996,8 +2018,11 @@ You review and merge plan PRs, same as implementation PRs.
   policy file. PR body must document the flip condition and the rollback path (revert
   both fields to `Audit` + `Ignore`, push → ArgoCD syncs within 30 s, no cluster
   downtime per RFC #214 §"Rollback path"). `make ci` must pass. **Executor note:** this
-  item has a maintainer-confirmation prerequisite; skip to the next item if the condition
-  cannot be verified this run. (auto/cosign-enforce-flip)
+  item has a maintainer-confirmation prerequisite, tracked as a **standing**
+  `[Action required]` issue (#631, stays open until confirmed — unlike the self-merging
+  `[Action needed]` PR fallback) — check it for a confirmation comment before treating
+  this as satisfied; skip to the next item if unconfirmed this run; close #631 in this
+  item's PR once it merges. (auto/cosign-enforce-flip)
 
 - [x] 🟢 **Lab — Grafana Alloy self-monitoring dashboard + self-scrape** (CHARTER
   **Objective O5**, due **2026-09-30**; O5 gap — `observability-alloy` is
@@ -2711,7 +2736,9 @@ You review and merge plan PRs, same as implementation PRs.
   per WAYS-OF-WORKING.md §2**; **maintainer-confirmation prerequisite: pick up
   ONLY after the maintainer confirms on #297 that the minimal Harbor profile was
   measured on the live cluster and fits the 12 GB budget on-demand — the
-  ADR-0024 go/no-go gate; skip to the next item if it cannot be verified this
+  ADR-0024 go/no-go gate, tracked as a standing `[Action required]` issue (#632,
+  stays open until confirmed); check it for a confirmation comment before
+  treating this as satisfied; skip to the next item if it cannot be verified this
   run**). The registry-credential Secret (`auto/harbor-registry-secret-prep`)
   and the Kargo egress NetworkPolicy widen (`auto/harbor-kargo-egress-prep`) are
   already prepped, both above — this item is now scoped to the actual
@@ -3093,7 +3120,9 @@ You review and merge plan PRs, same as implementation PRs.
   end-to-end"; **maintainer-confirmation prerequisite: pick up ONLY after the
   maintainer confirms the Argo Rollouts canary pipeline has been exercised end-to-end
   on the live cluster — at least one successful Kargo promotion seen — the done-promise
-  gate; skip to the next item if not verifiable this run**). Three deliverables:
+  gate, tracked as a standing `[Action required]` issue (#633, stays open until
+  confirmed); check it for a confirmation comment before treating this as satisfied;
+  skip to the next item if not verifiable this run**). Three deliverables:
   (1) delete `gitops/apps/capstone/deployment.yaml` and remove `deployment.yaml`
   from the `resources:` list in `gitops/apps/capstone/kustomization.yaml` (the
   Rollout in `rollout.yaml` is the sole workload owner after this change; image-ref
