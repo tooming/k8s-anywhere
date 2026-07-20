@@ -95,6 +95,31 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- adr-chart-version-sync-check ----------------------------------------------
+@test "adr-chart-version-sync-check: passes when a self-tracking ADR matches its live gitops pin" {
+  run env ADRCHARTVERSIONCHECK_ROOT="$FIX/adr-chart-version-sync/in-sync" bash "$REPO/scripts/adr-chart-version-sync-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-chart-version-sync-check: fails when a self-tracking ADR's chart version no longer matches the live gitops pin" {
+  run env ADRCHARTVERSIONCHECK_ROOT="$FIX/adr-chart-version-sync/drift" bash "$REPO/scripts/adr-chart-version-sync-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Chart + version says"* ]]
+}
+
+@test "adr-chart-version-sync-check: ignores an ADR using the point-in-time (non-self-tracking) phrasing" {
+  run env ADRCHARTVERSIONCHECK_ROOT="$FIX/adr-chart-version-sync/no-self-tracking" bash "$REPO/scripts/adr-chart-version-sync-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no ADR uses the self-tracking"* ]]
+}
+
+@test "adr-chart-version-sync-check: passes on the real repo's ADRs (ADR-0020/0021 match their live pins)" {
+  run bash "$REPO/scripts/adr-chart-version-sync-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"adr-0020"* ]]
+  [[ "$output" == *"adr-0021"* ]]
+}
+
 # --- markdown-links-check -----------------------------------------------------
 @test "markdown-links-check: passes when every internal link resolves" {
   run env MDLINKS_ROOT="$FIX/markdown-links-check/in-sync" bash "$REPO/scripts/markdown-links-check.sh"
