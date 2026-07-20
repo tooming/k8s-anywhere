@@ -83,7 +83,7 @@ spec:
             - name: tmp
               mountPath: /tmp
         - name: exporter
-          image: oliver006/redis_exporter:v1.84.0-alpine
+          image: oliver006/redis_exporter:v1.87.0-alpine
           ports:
             - name: metrics
               containerPort: 9121
