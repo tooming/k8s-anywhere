@@ -89,3 +89,39 @@ one release to avoid stalling any in-flight deployments during the transition).
 | `gitops/data/valkey/externalsecret.yaml` | `valkey-creds` ← Vault `secret/valkey/default` |
 | `gitops/data/demo/valkey-load.yaml` | Demo client generating real SET/GET/INCR traffic |
 | `grafana/dashboards/lab-valkey.json` | "Lab — Valkey" dashboard (real metrics) |
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-20 — Valkey `8.1.0` release kept, pin stays `8.0-alpine` (audit #627)
+
+**Trigger.** Routine architect sweep (executor fallback role) found
+`valkey/valkey:8.1-alpine` is a real, currently-published tag on Docker Hub —
+one minor version ahead of this ADR's pinned `8.0-alpine` (verified directly
+against Docker Hub's tags API, not inferred).
+
+**Decision: keep the pin at `8.0-alpine`.** Valkey's own real release notes for
+`8.1.0` GA (fetched directly from
+`raw.githubusercontent.com/valkey-io/valkey/8.1.0/00-RELEASENOTES`, not
+inferred) state explicitly: "Upgrade urgency LOW: ... a minor version update
+designed to further enhance performance, reliability, observability and
+usability over Valkey 8.0 ... fully compatible with all previous Valkey
+releases." No security fixes are listed for the `8.1.0` GA release itself.
+Bumping a pin with no security or critical-bug rationale — only "a newer
+minor exists" — would be pure churn, inconsistent with this repo's own
+version-bump culture (every other pin change in this repo's history cites a
+specific CVE or critical-bug fix as its rationale).
+
+**Flip condition.** A CVE or critical-bug advisory is disclosed against the
+`8.0.x` line that `8.1.x` (or later) fixes, OR a concrete lab-teaching need
+emerges for an `8.1`+-only feature — bump
+`gitops/data/valkey/statefulset.yaml` and `gitops/data/demo/valkey-load.yaml`'s
+`valkey/valkey:8.0-alpine` pins to the fixed/needed version, update this ADR's
+"Chart + version" reference (§"Plain manifests over a Helm chart"), and this
+log entry's "kept" status.
