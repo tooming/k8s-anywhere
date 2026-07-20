@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: widget
+spec:
+  source:
+    repoURL: https://example.test/charts
+    chart: widget
+    targetRevision: 1.2.3
