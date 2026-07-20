@@ -31,9 +31,10 @@ by Alloy).
 
 ### Chart + version
 
-- **Chart:** `argo/argo-rollouts` `2.41.0` (`appVersion: 1.9.0`; pin lives in
+- **Chart:** `argo/argo-rollouts` `2.41.1` (`appVersion: 1.9.1`; pin lives in
   `gitops/platform/argo-rollouts.yaml`'s `targetRevision` — this note read
-  "v2.40.x" until the 2026-07-18 audit corrected it to the actual pin; see
+  "v2.40.x" until the 2026-07-18 audit corrected it to the actual pin, and
+  "2.41.0 (appVersion: 1.9.0)" until the 2026-07-20 upgrade-drafter bump; see
   [§Re-evaluation log](#re-evaluation-log) for the current CVE status of this
   pin).
 - **Source:** `https://argoproj.github.io/argo-helm`
@@ -263,3 +264,25 @@ same pipeline that published the (live, fully-populated) `v1.9.1` GitHub
 Release. Not a direct manifest check — see RFC #552 for the full reasoning. If
 a future run can reach the registry directly, confirm the tag pulls and update
 this note.
+
+### 2026-07-20 — Flip condition met, chart bumped to 2.41.1 (upgrade-drafter fallback)
+
+**Trigger.** Re-check of the 2026-07-18 flip condition, per a routine upgrade-drafter
+sweep of `gitops/**/*.yaml` chart pins: `git ls-remote --tags` against
+`argoproj/argo-helm` now shows tag `argo-rollouts-2.41.1` (previously
+`argo-rollouts-2.41.0` was the newest). Its `Chart.yaml`, fetched directly at that
+ref, confirms `version: 2.41.1` / `appVersion: v1.9.1` — the flip condition named on
+2026-07-18 ("`argo-helm` publishes a chart release whose `appVersion` is `>= 1.9.1`")
+has now fired.
+
+**Decision.** Bumped `gitops/platform/argo-rollouts.yaml`'s `targetRevision` from
+`2.41.0` to `2.41.1` (PR #615). Since the chart's own default `appVersion` now
+already resolves to `v1.9.1`, the `controller.image.tag`/`dashboard.image.tag:
+"v1.9.1"` overrides the 2026-07-19 entry above added (as a stopgap while only the
+image, not the chart, could be bumped) were removed as redundant. `tests/argo-
+rollouts.bats` now asserts `targetRevision: 2.41.1` directly as the CVE-2026-35469
+recurrence guard, replacing the prior image-tag assertions.
+
+**Status: resolved.** This closes out both the 2026-07-18 "kept" entry and the
+2026-07-19 "Convert" entry above — the lab now runs the actual fixed chart release,
+not a workaround pinned on top of an older one.
