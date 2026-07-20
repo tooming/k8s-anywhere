@@ -216,3 +216,16 @@ real-metric dashboard.
   future architect RFC that audits the `11.x`/`12.x` chart's values-schema
   compatibility with this Application's `valuesObject` and decides the major
   bump is worth the migration effort.
+
+- **2026-07-20 (architect fallback — flip condition actioned as RFC).** Performed
+  the values-schema audit the 2026-07-18 entry's second flip-condition branch
+  named: fetched `velero-12.1.0`'s real `values.yaml`/`Chart.yaml` and checked
+  every key this Application's `valuesObject` sets (`credentials.{useSecret,
+  existingSecret}`, `configuration.{defaultVolumesToFsBackup,features,
+  uploaderType,backupStorageLocation}`, `deployNodeAgent`, `resources`,
+  `nodeAgent.resources`) — all present and unchanged across the `8.x` → `12.x`
+  jump. No disclosed CVE motivates the bump either; this is purely the
+  "worth the migration effort" branch, and the verified migration effort is
+  near-zero. **Audited → actioned as [RFC #617](https://github.com/tooming/k8s-anywhere/issues/617).**
+  The question is now tracked as buildable work (chart bump only, no
+  `valuesObject` schema change needed).
