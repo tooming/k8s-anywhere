@@ -40,8 +40,8 @@ setup() {
 # of the four actions, so a future edit can't silently regress one back to a
 # stale Node-20-era major. Mirrors this repo's other per-component pin-assertion
 # pattern (argo-rollouts.bats, cilium.bats, k3s-version-pin.bats).
-@test "actions/checkout is pinned to v7.0.0 (RFC #611)" {
-  grep -rq 'actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0' "$WORKFLOWS"
+@test "actions/checkout is pinned to v7.0.1 (RFC #611, patch-bumped 2026-07-21)" {
+  grep -rq 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1' "$WORKFLOWS"
 }
 
 @test "actions/cache is pinned to v6.1.0 (RFC #611)" {
@@ -66,4 +66,8 @@ setup() {
     grep -rl "$stale" "$WORKFLOWS" >/dev/null 2>&1 && hits="$hits\n$stale"
   done
   [ -z "$hits" ] || { echo -e "$hits"; false; }
+}
+
+@test "no workflow references the pre-patch-bump actions/checkout v7.0.0 pin" {
+  ! grep -rl 'actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0' "$WORKFLOWS" >/dev/null 2>&1
 }
