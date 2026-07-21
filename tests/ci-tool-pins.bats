@@ -31,3 +31,19 @@ setup() {
 @test "no workflow references the pre-bump kustomize v5.4.3 pin" {
   ! grep -q 'kustomize%2Fv5.4.3' "$CI_YML"
 }
+
+@test "terraform is pinned to 1.15.8 via hashicorp/setup-terraform (upgrade-drafter, 2026-07-21)" {
+  grep -q 'terraform_version: "1.15.8"' "$CI_YML"
+}
+
+@test "no workflow references the pre-bump terraform 1.9.8 pin" {
+  ! grep -q 'terraform_version: "1.9.8"' "$CI_YML"
+}
+
+@test "every infra/ terraform module's required_version floor still admits the pinned CI terraform version" {
+  # required_version is a ">= X.Y" floor (never an exact pin), so a CI terraform
+  # bump only needs to stay >= that floor, not match it exactly.
+  for f in "$REPO"/infra/modules/*/main.tf; do
+    grep -q 'required_version = ">= 1.5"' "$f" || { echo "missing/changed floor in $f"; return 1; }
+  done
+}
