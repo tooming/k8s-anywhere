@@ -130,6 +130,36 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [ "$status" -eq 0 ]
 }
 
+# --- adr-chart-version-sync-hook.sh's second check (delegates to ------------
+# --- adr-image-pin-sync-check.sh, which honors ADRIMAGEPINCHECK_ROOT — -----
+# --- reuses the same fixture trees as tests/drift-detectors.bats's own -----
+# --- coverage of the check script). Both checks share one hook script, so -
+# --- ADRCHARTVERSIONCHECK_ROOT is pinned at an in-sync fixture throughout --
+# --- to isolate the image-pin behavior under test. ---------------------------
+
+@test "adr-chart-version-sync-hook: a self-tracking image-pin ADR matching its live tag exits 0" {
+  run env ADRCHARTVERSIONCHECK_ROOT="$REPO/tests/fixtures/adr-chart-version-sync/in-sync" \
+      ADRIMAGEPINCHECK_ROOT="$REPO/tests/fixtures/adr-image-pin-sync/in-sync" \
+      bash "$REPO/scripts/adr-chart-version-sync-hook.sh" \
+      <<<"$(mk_payload "docs/decisions/adr-0099-widget.md")"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-chart-version-sync-hook: a self-tracking image-pin ADR that drifted from its live tag exits 2" {
+  run env ADRCHARTVERSIONCHECK_ROOT="$REPO/tests/fixtures/adr-chart-version-sync/in-sync" \
+      ADRIMAGEPINCHECK_ROOT="$REPO/tests/fixtures/adr-image-pin-sync/drift" \
+      bash "$REPO/scripts/adr-chart-version-sync-hook.sh" \
+      <<<"$(mk_payload "docs/decisions/adr-0099-widget.md")"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"no longer matches its live manifest tag"* ]]
+}
+
+@test "adr-chart-version-sync-hook: real ADR-0009 (currently in sync) exits 0" {
+  run bash "$REPO/scripts/adr-chart-version-sync-hook.sh" \
+      <<<"$(mk_payload "$REPO/docs/decisions/adr-0009-rabbitmq-message-broker.md")"
+  [ "$status" -eq 0 ]
+}
+
 # --- argocd-crd-ssa-sync-hook.sh ----------------------------------------------
 
 @test "argocd-crd-ssa-sync-hook: empty payload exits 0" {

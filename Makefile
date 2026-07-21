@@ -117,6 +117,10 @@ adr-followup-check: ## Check no ADR/CHARTER.md/WAYS-OF-WORKING.md carries a stal
 adr-chart-version-sync-check: ## Check every ADR that self-declares its Chart + version note as a live pin mirror actually matches the gitops targetRevision (drift detector)
 	@bash scripts/adr-chart-version-sync-check.sh
 
+.PHONY: adr-image-pin-sync-check
+adr-image-pin-sync-check: ## Check every ADR that self-declares a "pinned official image" note actually matches its live manifest's image tag (drift detector)
+	@bash scripts/adr-image-pin-sync-check.sh
+
 ##@ Quality gates (clusterless; run on every commit + in CI)
 
 .PHONY: lint
@@ -165,6 +169,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/mimir-readonly-root-check.sh
 	@bash scripts/adr-followup-check.sh
 	@bash scripts/adr-chart-version-sync-check.sh
+	@bash scripts/adr-image-pin-sync-check.sh
 	@bash scripts/ci-parity-check.sh
 
 .PHONY: install-hooks
