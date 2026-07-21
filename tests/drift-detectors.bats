@@ -26,6 +26,12 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "readme-check: fails when an ADR names a make target that doesn't exist" {
+  run env READMECHECK_ROOT="$FIX/readme-check/adr-drift" bash "$REPO/scripts/readme-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"bogus-adr-target"* ]]
+}
+
 # --- lab-ui-check ------------------------------------------------------------
 @test "lab-ui-check: passes when the panel matches the HTTPRoutes" {
   run env LABUICHECK_ROOT="$FIX/lab-ui-check/in-sync" bash "$REPO/scripts/lab-ui-check.sh"
