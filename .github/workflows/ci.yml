@@ -41,16 +41,16 @@ jobs:
       - name: Install kubeconform
         run: |
           curl -fsSL -o /tmp/kc.tar.gz \
-            https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+            https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
           tar -xzf /tmp/kc.tar.gz -C /tmp kubeconform
           sudo install /tmp/kubeconform /usr/local/bin/kubeconform
       - name: Cache kubeconform schemas
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/kubeconform-schemas
-          key: kubeconform-schemas-v0.6.7-k8s1.30.0-${{ hashFiles('gitops/**/*.yaml') }}
+          key: kubeconform-schemas-v0.8.0-k8s1.30.0-${{ hashFiles('gitops/**/*.yaml') }}
           restore-keys: |
-            kubeconform-schemas-v0.6.7-k8s1.30.0-
+            kubeconform-schemas-v0.8.0-k8s1.30.0-
       - run: bash scripts/validate-manifests.sh
 
   terraform:
