@@ -213,6 +213,38 @@ setup() {
   [[ "$output" != *'branches: ["**"]'* ]]
 }
 
+# --- ci.yml jobs all set an explicit timeout-minutes --------------------------
+# Regression guard for 2026-07-21: without an explicit job-level timeout,
+# GitHub Actions' default 360-minute timeout applies, so a hung
+# network-dependent install step (apt-get, a release-binary curl, the helm
+# install script) can block a PR for hours instead of failing fast. Observed
+# directly that day on PR #648: the unit/drift jobs sat in_progress for 20+
+# minutes with zero progress across three separate attempts, needing a manual
+# cancel+rerun each time. Every job must set its own timeout-minutes
+# (job-level, not a single global default) so a future job added without one
+# doesn't silently fall back to 360. Scoped to the `jobs:` section only — `on:`
+# and `permissions:` also have 2-space-indented `key:` lines that would
+# false-positive as job names otherwise.
+@test "every ci.yml job sets an explicit timeout-minutes" {
+  run awk '
+    /^jobs:/{injobs=1}
+    injobs && /^  [a-z-]+:$/{
+      if (job) { if (!seen) { print "missing timeout-minutes: " job; bad=1 }; seen=0 }
+      job=$1; next
+    }
+    injobs && /timeout-minutes:/{ seen=1 }
+    END { if (job && !seen) { print "missing timeout-minutes: " job; bad=1 }; exit bad+0 }
+  ' "$REPO/.github/workflows/ci.yml"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "ci.yml job count matches its timeout-minutes count (one per job, no drift)" {
+  jobs="$(awk '/^jobs:/{f=1;next} f' "$REPO/.github/workflows/ci.yml" | grep -cE '^  [a-z-]+:$')"
+  timeouts="$(grep -cE '^    timeout-minutes:' "$REPO/.github/workflows/ci.yml")"
+  [ "$jobs" -eq "$timeouts" ]
+}
+
 # --- securitycontext-tests-check ---------------------------------------------
 @test "securitycontext-tests-check: passes when the monolith matches its snapshot" {
   run env SECCTX_TESTS_ROOT="$FIX/securitycontext-tests-check/in-sync" bash "$REPO/scripts/securitycontext-tests-check.sh"

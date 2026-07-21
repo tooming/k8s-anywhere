@@ -16,6 +16,19 @@ name: ci
 # #453, where four failed check entries were actually one root cause hitting two
 # jobs, doubled by this trigger overlap. `push: [main]` keeps the only case
 # `pull_request` doesn't cover: a direct push straight to main.
+#
+# Every job sets an explicit timeout-minutes (well above its normal duration —
+# lint/manifests/terraform/kustomize finish in well under a minute; unit/drift
+# take a few minutes for the full bats suite / full drift sweep). Without one,
+# GitHub Actions' default 360-minute job timeout applies: a network-dependent
+# install step (apt-get, a release-binary curl, the helm install script) that
+# hangs instead of failing would otherwise block a PR for hours with no
+# automatic recovery — observed directly on PR #648 (2026-07-21), where the
+# `unit` and `drift` jobs sat `in_progress` for 20+ minutes with zero progress
+# across three separate attempts while every other job in the same run
+# consistently finished in seconds, requiring a manual cancel+rerun each time.
+# A tight timeout turns a silent multi-hour stall into a fast, visible
+# failure that re-run/retry logic (human or agent) can act on quickly.
 
 on:
   push:
@@ -28,6 +41,7 @@ permissions:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install shellcheck + yamllint
@@ -36,6 +50,7 @@ jobs:
 
   manifests:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install kubeconform
@@ -55,6 +70,7 @@ jobs:
 
   terraform:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
@@ -66,6 +82,7 @@ jobs:
 
   kustomize:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install kustomize
@@ -78,6 +95,7 @@ jobs:
 
   unit:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install bats
@@ -90,6 +108,7 @@ jobs:
     # .githooks/pre-push) — nothing here can be "only caught if someone runs make ci
     # by hand".
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # Full history + main: routines-author-check derives the merge-base and the
       # commit author to decide whether an executor-authored (auto/*) change edited
