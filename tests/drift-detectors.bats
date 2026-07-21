@@ -120,6 +120,30 @@ setup() {
   [[ "$output" == *"adr-0021"* ]]
 }
 
+# --- adr-image-pin-sync-check --------------------------------------------------
+@test "adr-image-pin-sync-check: passes when a self-tracking ADR matches its live manifest image tag" {
+  run env ADRIMAGEPINCHECK_ROOT="$FIX/adr-image-pin-sync/in-sync" bash "$REPO/scripts/adr-image-pin-sync-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-image-pin-sync-check: fails when a self-tracking ADR's pinned image tag no longer matches the live manifest" {
+  run env ADRIMAGEPINCHECK_ROOT="$FIX/adr-image-pin-sync/drift" bash "$REPO/scripts/adr-image-pin-sync-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"says pinned image is"* ]]
+}
+
+@test "adr-image-pin-sync-check: ignores an ADR using the point-in-time (non-self-tracking) phrasing" {
+  run env ADRIMAGEPINCHECK_ROOT="$FIX/adr-image-pin-sync/no-self-tracking" bash "$REPO/scripts/adr-image-pin-sync-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no ADR uses the self-tracking"* ]]
+}
+
+@test "adr-image-pin-sync-check: passes on the real repo's ADRs (ADR-0009 matches its live RabbitMQ tag)" {
+  run bash "$REPO/scripts/adr-image-pin-sync-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"adr-0009"* ]]
+}
+
 # --- markdown-links-check -----------------------------------------------------
 @test "markdown-links-check: passes when every internal link resolves" {
   run env MDLINKS_ROOT="$FIX/markdown-links-check/in-sync" bash "$REPO/scripts/markdown-links-check.sh"
