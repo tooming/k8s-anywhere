@@ -23,3 +23,11 @@ setup() {
   ! grep -q 'kubeconform/releases/download/v0.6.7' "$CI_YML"
   ! grep -q 'kubeconform-schemas-v0.6.7' "$CI_YML"
 }
+
+@test "kustomize is pinned to v5.8.1 (upgrade-drafter, 2026-07-21)" {
+  grep -q 'kustomize/releases/download/kustomize%2Fv5.8.1/kustomize_v5.8.1_linux_amd64.tar.gz' "$CI_YML"
+}
+
+@test "no workflow references the pre-bump kustomize v5.4.3 pin" {
+  ! grep -q 'kustomize%2Fv5.4.3' "$CI_YML"
+}

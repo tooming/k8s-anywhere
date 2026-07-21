@@ -71,7 +71,7 @@ jobs:
       - name: Install kustomize
         run: |
           curl -fsSL -o /tmp/kustomize.tar.gz \
-            https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz
+            https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.1/kustomize_v5.8.1_linux_amd64.tar.gz
           tar -xzf /tmp/kustomize.tar.gz -C /tmp kustomize
           sudo install /tmp/kustomize /usr/local/bin/kustomize
       - run: bash scripts/validate-kustomize.sh
