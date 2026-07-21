@@ -30,7 +30,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: rabbitmq
-          image: rabbitmq:4.3.2-management
+          image: rabbitmq:4.3.3-management
           ports:
             - name: amqp
               containerPort: 5672

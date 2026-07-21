@@ -35,9 +35,9 @@ well-known `guest/guest` default.
 
 - The two common charts (Bitnami) have been subject to image-distribution and licensing
   churn that breaks reproducibility — antithetical to the lab's "rebuild with one
-  command" charter bar. A pinned official `rabbitmq:4.3.2-management` image (bumped
-  from the original `3.13-management` pin 2026-07-18 — see
-  [§Re-evaluation log](#re-evaluation-log)) in a plain `StatefulSet` is fully
+  command" charter bar. A pinned official `rabbitmq:4.3.3-management` image (bumped
+  from the original `3.13-management` pin 2026-07-18, patched to `4.3.3` 2026-07-21 —
+  see [§Re-evaluation log](#re-evaluation-log)) in a plain `StatefulSet` is fully
   reproducible and transparent (no chart indirection).
 - The **RabbitMQ Cluster Operator** is the production-correct choice for HA, but adds CRDs
   and an operator pod for no teaching gain at single-node lab scale.
@@ -123,3 +123,20 @@ state from Velero, not an in-place downgrade.
 itself ages out of the community-support window (per the project's own
 release-information page) or a specific CVE is filed against the then-current
 pin.
+
+### 2026-07-21 — patch bump `4.3.2-management` → `4.3.3-management` (upgrade-drafter)
+
+**Trigger.** `rabbitmq/rabbitmq-server` cut `v4.3.3` on 2026-07-20 (verified
+directly against the real release notes at
+`raw.githubusercontent.com/rabbitmq/rabbitmq-server/v4.3.3/release-notes/4.3.3.md`
+and the `rabbitmq:4.3.3-management` tag on Docker Hub, pushed 2026-07-21). Same
+`4.3.x` minor series as the current pin — a maintenance release (a Ra
+leader-election partition-scenario bug fix plus a `ra` dependency bump to
+`3.1.9`), not a metadata-store or config-format change.
+
+**Decision: bump to `4.3.3-management`.** Same-series patch bump, no Khepri/Mnesia
+migration risk beyond what the 2026-07-18 entry above already accepted (both
+`4.3.2` and `4.3.3` are past that one-time migration). No `rabbitmq.conf` change
+needed. Rollback path unchanged from the entry above.
+
+**Flip condition (next re-evaluation).** Unchanged from above.

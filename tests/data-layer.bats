@@ -39,6 +39,11 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
+@test "rabbitmq image is pinned to 4.3.3-management (patch bump from 4.3.2)" {
+  run grep -q 'image: rabbitmq:4\.3\.3-management' "$REPO/gitops/data/rabbitmq/statefulset.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "valkey's redis_exporter sidecar is pinned to v1.87.0-alpine (patch bump from v1.84.0)" {
   run grep -q 'image: oliver006/redis_exporter:v1\.87\.0-alpine' "$REPO/gitops/data/valkey/statefulset.yaml"
   [ "$status" -eq 0 ]
