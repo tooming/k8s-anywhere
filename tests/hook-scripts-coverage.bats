@@ -1,10 +1,11 @@
 #!/usr/bin/env bats
 # Structural coverage for the PostToolUse/SessionStart hook scripts that had zero
-# bats coverage: adr-context-hook.sh, argocd-crd-ssa-sync-hook.sh,
-# helm-chart-pin-sync-hook.sh, lab-ui-sync-hook.sh, mimir-readonly-root-sync-hook.sh,
-# networkpolicy-tests-sync-hook.sh, observability-tests-sync-hook.sh,
-# readme-sync-hook.sh, roadmap-sync-hook.sh, rollouts-plugin-list-sync-hook.sh,
-# routines-sync-hook.sh, securitycontext-tests-sync-hook.sh, yq-raw-sync-hook.sh.
+# bats coverage: adr-context-hook.sh, adr-chart-version-sync-hook.sh,
+# argocd-crd-ssa-sync-hook.sh, helm-chart-pin-sync-hook.sh, lab-ui-sync-hook.sh,
+# mimir-readonly-root-sync-hook.sh, networkpolicy-tests-sync-hook.sh,
+# observability-tests-sync-hook.sh, readme-sync-hook.sh, roadmap-sync-hook.sh,
+# rollouts-plugin-list-sync-hook.sh, routines-sync-hook.sh,
+# securitycontext-tests-sync-hook.sh, yq-raw-sync-hook.sh.
 #
 # Every other drift-detector gate (helm-chart-pin-check, roadmap-check, ...) has
 # both a `make ci` step AND a bats file for the check script itself — but the
@@ -81,6 +82,52 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
       <<<"$(mk_payload "docs/decisions/adr-9999-fixture.md")"
   [ "$status" -eq 2 ]
   [[ "$output" == *"Follow-up:"* ]]
+}
+
+# --- adr-chart-version-sync-hook.sh (delegates to adr-chart-version-sync-check.sh, ---
+# --- which honors ADRCHARTVERSIONCHECK_ROOT — reuses the same fixture trees as -------
+# --- tests/drift-detectors.bats's own coverage of the check script) ------------------
+
+@test "adr-chart-version-sync-hook: empty payload exits 0" {
+  run bash "$REPO/scripts/adr-chart-version-sync-hook.sh" <<<"{}"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-chart-version-sync-hook: unrelated file exits 0 (filtered out)" {
+  run bash "$REPO/scripts/adr-chart-version-sync-hook.sh" <<<"$(mk_payload "$REPO/README.md")"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-chart-version-sync-hook: docs/decisions/ and gitops/ paths are matched by the filter" {
+  run env ADRCHARTVERSIONCHECK_ROOT="$REPO/tests/fixtures/adr-chart-version-sync/in-sync" \
+      bash "$REPO/scripts/adr-chart-version-sync-hook.sh" \
+      <<<"$(mk_payload "$REPO/docs/decisions/adr-0099-widget.md")"
+  [ "$status" -eq 0 ]
+  run env ADRCHARTVERSIONCHECK_ROOT="$REPO/tests/fixtures/adr-chart-version-sync/in-sync" \
+      bash "$REPO/scripts/adr-chart-version-sync-hook.sh" \
+      <<<"$(mk_payload "$REPO/gitops/platform/widget.yaml")"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-chart-version-sync-hook: a self-tracking ADR matching its live pin exits 0" {
+  run env ADRCHARTVERSIONCHECK_ROOT="$REPO/tests/fixtures/adr-chart-version-sync/in-sync" \
+      bash "$REPO/scripts/adr-chart-version-sync-hook.sh" \
+      <<<"$(mk_payload "docs/decisions/adr-0099-widget.md")"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-chart-version-sync-hook: a self-tracking ADR that drifted from its live pin exits 2" {
+  run env ADRCHARTVERSIONCHECK_ROOT="$REPO/tests/fixtures/adr-chart-version-sync/drift" \
+      bash "$REPO/scripts/adr-chart-version-sync-hook.sh" \
+      <<<"$(mk_payload "docs/decisions/adr-0099-widget.md")"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"no longer matches its live gitops pin"* ]]
+}
+
+@test "adr-chart-version-sync-hook: real ADR-0020/0021 (currently in sync) exits 0" {
+  run bash "$REPO/scripts/adr-chart-version-sync-hook.sh" \
+      <<<"$(mk_payload "$REPO/docs/decisions/adr-0020-argo-rollouts-progressive-delivery.md")"
+  [ "$status" -eq 0 ]
 }
 
 # --- argocd-crd-ssa-sync-hook.sh ----------------------------------------------
