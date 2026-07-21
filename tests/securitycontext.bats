@@ -45,37 +45,38 @@ setup() {
 }
 
 # --- Deployment pod-level securityContext ------------------------------------
+# Path-aware via yqs() (not bare grep -q): $DEPLOY is a multi-doc file
+# (Deployment + Service), and a bare grep can't tell a value correctly nested
+# under the Deployment's pod/container securityContext from the same string
+# sitting anywhere else — the same key-mismatch gap class fixed for KSM/
+# node-exporter/Pyroscope/Grafana/KRO/moto/ack-s3/vault (see docs/done/
+# 2026-07-18-securitycontext-key-guard-hardening.md and its follow-ups).
+# select(.kind == "Deployment") scopes the query to the first document.
 
 @test "capstone Deployment sets runAsNonRoot: true" {
-  run grep -q 'runAsNonRoot: true' "$DEPLOY"
-  [ "$status" -eq 0 ]
+  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.securityContext.runAsNonRoot' "$DEPLOY")" = "true" ]
 }
 
 @test "capstone Deployment sets seccompProfile.type: RuntimeDefault" {
-  run grep -q 'type: RuntimeDefault' "$DEPLOY"
-  [ "$status" -eq 0 ]
+  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.securityContext.seccompProfile.type' "$DEPLOY")" = "RuntimeDefault" ]
 }
 
 # --- container-level securityContext -----------------------------------------
 
 @test "capstone Deployment sets allowPrivilegeEscalation: false" {
-  run grep -q 'allowPrivilegeEscalation: false' "$DEPLOY"
-  [ "$status" -eq 0 ]
+  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation' "$DEPLOY")" = "false" ]
 }
 
 @test "capstone Deployment sets readOnlyRootFilesystem: true" {
-  run grep -q 'readOnlyRootFilesystem: true' "$DEPLOY"
-  [ "$status" -eq 0 ]
+  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem' "$DEPLOY")" = "true" ]
 }
 
 @test "capstone Deployment drops ALL capabilities" {
-  run grep -q '\- ALL' "$DEPLOY"
-  [ "$status" -eq 0 ]
+  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.containers[0].securityContext.capabilities.drop[0]' "$DEPLOY")" = "ALL" ]
 }
 
 @test "capstone Deployment does not run as privileged" {
-  run grep -q 'privileged: true' "$DEPLOY"
-  [ "$status" -eq 1 ]
+  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.containers[0].securityContext.privileged' "$DEPLOY")" = "false" ]
 }
 
 # --- baseline carve-out namespaces (ADR-0017 §Per-namespace profile) ----------
