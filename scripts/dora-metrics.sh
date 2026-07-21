@@ -20,6 +20,20 @@
 # every squash commit, verified empirically against this repo's own history) —
 # it uses the GitHub PR API's createdAt -> mergedAt instead, which survives
 # branch deletion.
+#
+# Shallow-clone correction (found 2026-07-21): this script's only real-world
+# caller is the remote executor, which always runs from a freshly shallow-cloned
+# container — `git log --first-parent --since=...` against a shallow clone
+# doesn't error or fall back to "insufficient data", it silently computes a
+# real-but-badly-undercounted number bounded by the clone's shallow boundary
+# (observed: a shallow clone whose boundary happened to land 2 days back
+# reported "3.97 deployments/week (51 in 90d window)" against a true
+# "47.67 deployments/week (613 in 90d window)" from the same repo unshallowed —
+# a 12x undercount with no warning, an ADR-0004 risk since the output looks as
+# precise and grounded as a real 90-day figure). Fix: detect a shallow clone and
+# deepen it before measuring; if deepening fails (no network to the remote),
+# render "insufficient data" for the two git-log-derived metrics rather than a
+# number the caller can't trust.
 set -uo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -35,6 +49,13 @@ INSUFFICIENT="insufficient data"
 
 window_days=$(((UNTIL_EPOCH - SINCE_EPOCH) / 86400))
 [ "$window_days" -lt 1 ] && window_days=1
+
+# ---- deepen a shallow clone before measuring (see correction note above) ----
+GIT_HISTORY_TRUNCATED=0
+if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = "true" ]; then
+  git fetch --unshallow origin "$BRANCH" >/dev/null 2>&1 || true
+  [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = "true" ] && GIT_HISTORY_TRUNCATED=1
+fi
 
 iso_utc() {
   date -u -d "@$1" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -r "$1" +%Y-%m-%dT%H:%M:%SZ
@@ -53,7 +74,9 @@ git log --first-parent "$BRANCH" --since="@$SINCE_EPOCH" --until="@$UNTIL_EPOCH"
 deploy_count=$(wc -l <"$commits_file" | tr -d ' ')
 
 # ---- Metric 1: Deployment frequency ------------------------------------------
-if [ "$deploy_count" -gt 0 ]; then
+if [ "$GIT_HISTORY_TRUNCATED" -eq 1 ]; then
+  M1="${INSUFFICIENT} (shallow clone could not be deepened — window would be truncated)"
+elif [ "$deploy_count" -gt 0 ]; then
   weeks=$(awk -v d="$window_days" 'BEGIN{w=d/7; if (w<1) w=1; printf "%.2f", w}')
   freq=$(awk -v c="$deploy_count" -v w="$weeks" 'BEGIN{printf "%.2f", c/w}')
   M1="${freq} deployments/week (${deploy_count} in ${window_days}d window)"
@@ -65,7 +88,9 @@ fi
 # A "failure" = (a) a commit message containing "revert", or (b) a `fix:`-style
 # commit landing within 72h of an earlier in-window commit that touched at
 # least one overlapping file path.
-if [ "$deploy_count" -gt 0 ]; then
+if [ "$GIT_HISTORY_TRUNCATED" -eq 1 ]; then
+  M3="${INSUFFICIENT} (shallow clone could not be deepened — window would be truncated)"
+elif [ "$deploy_count" -gt 0 ]; then
   failures=0
   while IFS=$'\t' read -r sha ts subj; do
     lc_subj=$(printf '%s' "$subj" | tr '[:upper:]' '[:lower:]')
