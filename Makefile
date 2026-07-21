@@ -249,6 +249,10 @@ tfstate-up: ## Start + bootstrap the off-cluster Garage holding Terraform state 
 tfstate-down: ## Stop the off-cluster Terraform-state Garage (keeps its volume/state)
 	cd infra/tfstate && docker compose stop
 
+.PHONY: tfstate-clean
+tfstate-clean: ## Remove the off-cluster tfstate Garage container + its volume (irreversible; re-run tfstate-up to recreate)
+	cd infra/tfstate && docker compose down -v
+
 .PHONY: tfstate-oracle-up
 tfstate-oracle-up: ## Bootstrap the oracle backend's off-cluster Garage on a separate Always Free AMD Micro instance (ADR-0027; must precede any terragrunt apply under infra/live/oracle/)
 	bash scripts/tfstate-oracle-bootstrap.sh

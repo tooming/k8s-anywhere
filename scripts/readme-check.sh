@@ -53,6 +53,18 @@ for f in "$ROOT"/gitops/platform/*.yaml; do
   grep -qF "$nname" <<<"$norm_readme" || missing="$missing $name"
 done
 
+# --- 4. every `make <target>` an ADR mentions must exist in the Makefile ---
+# ADRs describe bootstrap/teardown machinery as binding fact (e.g. ADR-0007 promising
+# `make tfstate-clean`); a target named in an ADR but absent from the Makefile is the
+# same drift class as #1 above, just in docs/decisions/ instead of README.md.
+for f in "$ROOT"/docs/decisions/*.md; do
+  [ -e "$f" ] || continue
+  adr_targets="$(grep -oE '`make [a-z][a-z0-9-]+' "$f" | sed 's/`make //' | sort -u)"
+  for t in $adr_targets; do
+    grep -qx "$t" <<<"$mk_targets" || bad "$(basename "$f") mentions \`make $t\` but the Makefile has no '$t' target"
+  done
+done
+
 if [ "$drift" -eq 0 ]; then
   printf '  %s✓%s README in sync with Makefile targets + required tools\n' "$G" "$Z"
 fi
