@@ -22,7 +22,7 @@ spec:
     # sources before bumping.
     repoURL: https://grafana-community.github.io/helm-charts
     chart: grafana
-    targetRevision: 12.7.2
+    targetRevision: 12.7.3
     helm:
       releaseName: grafana
       valuesObject:
@@ -54,7 +54,10 @@ spec:
         # log.mode is "console" only, so it's never written. No other write path
         # exists under this config (checked against grafana chart grafana-12.7.2
         # and grafana/grafana image v13.0.3's docker entrypoint — byte-identical to
-        # v13.0.1's packaging/docker/run.sh, re-diffed when bumping to 13.0.3).
+        # v13.0.1's packaging/docker/run.sh, re-diffed when bumping to 13.0.3; the
+        # 12.7.2 -> 12.7.3 chart bump changed only the chart's default bundled
+        # image tag per its release notes, not templates/_pod.tpl, so this
+        # analysis still holds unchanged at 12.7.3).
         #
         # Pod-level securityContext is set via the `securityContext` key, NOT
         # `podSecurityContext` -- this chart's templates/_pod.tpl reads
