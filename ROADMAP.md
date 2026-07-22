@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump Valkey image tag `8.0-alpine` → `8.0.10-alpine`** (CHARTER **Core Values**
+- [x] 🟢 **Bump Valkey image tag `8.0-alpine` → `8.0.10-alpine`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC/issue #655 — architect decision
   2026-07-22, ADR-0018 audit #654 resolved as **Convert**. **No prerequisites —
   executor may pick up immediately.**) Valkey shipped a coordinated security release

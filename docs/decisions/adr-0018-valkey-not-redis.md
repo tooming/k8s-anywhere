@@ -125,3 +125,28 @@ emerges for an `8.1`+-only feature — bump
 `valkey/valkey:8.0-alpine` pins to the fixed/needed version, update this ADR's
 "Chart + version" reference (§"Plain manifests over a Helm chart"), and this
 log entry's "kept" status.
+
+### 2026-07-22 — Valkey `8.0.10` security release; pin bumped from `8.0-alpine` (RFC #655, audit #654)
+
+**Trigger.** Valkey shipped a coordinated security release across every
+maintained branch on 2026-07-21 (`8.0.10`/`8.1.9`/`9.0.5`/`9.1.1`) fixing
+**CVE-2026-56684** (TLS use-after-free in `CLIENT KILL` handling —
+authenticated-client DoS) and **CVE-2026-63639** (corrupt stream RDB files
+with a shared NACK across consumers) — verified directly from Valkey's real
+GitHub release page (`github.com/valkey-io/valkey/releases/tag/8.0.10`,
+marked "Upgrade Urgency: SECURITY"), not inferred. This is exactly the flip
+condition the prior audit (#627, 2026-07-20) recorded in advance: a CVE
+disclosed against the `8.0.x` line with a fix available on that same line.
+
+**Decision: bump the pin to `8.0.10-alpine`.** `gitops/data/valkey/statefulset.yaml`
+and `gitops/data/demo/valkey-load.yaml`'s `valkey/valkey:8.0-alpine` image
+references are updated to `valkey/valkey:8.0.10-alpine` — the smallest safe
+delta on the `8.0.x` line that carries both CVE fixes, deliberately not
+jumping to `8.1.x`/`9.x` (no lab-teaching need for those minors; same
+"smallest safe delta" reasoning as this repo's Cilium/Kargo/Grafana pin
+bumps).
+
+**Flip condition.** A CVE or critical-bug advisory is disclosed against the
+`8.0.x` line (from `8.0.10` onward) that a later patch fixes, OR a concrete
+lab-teaching need emerges for an `8.1`+-only feature — bump both files'
+pins to the fixed/needed version and add a new dated log entry here.
