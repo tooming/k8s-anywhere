@@ -20,10 +20,11 @@ set -uo pipefail
 ROOT="${ROLLOUTS_PLUGIN_CHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/yq-variant.sh"
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; }
 
-command -v yq >/dev/null 2>&1 || { echo "yq not installed — skipping rollouts plugin-list check"; exit 0; }
+require_mikefarah_yq "rollouts-plugin-list-check"
 
 SCAN_DIR="$ROOT/gitops"; [ -d "$SCAN_DIR" ] || SCAN_DIR="$ROOT"
 

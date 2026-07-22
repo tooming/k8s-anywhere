@@ -39,6 +39,7 @@ HELM_BIN="${HELM_BIN:-helm}"
 RENDERER="${CRDSSA_RENDERER:-}"
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/yq-variant.sh"
 ok()   { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad()  { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; }
 skip() { printf '  %s·%s %s\n' "$Y" "$Z" "$1"; }
@@ -85,14 +86,15 @@ render() {
 # Without a renderer stub we need helm + yq + jq. Missing tool: hard-fail in CI (the
 # gate must not silently no-op), skip-all locally — mirrors helm-chart-pin-check.
 if [ -z "$RENDERER" ]; then
-  for t in "$HELM_BIN" yq jq; do
+  for t in "$HELM_BIN" jq; do
     command -v "$t" >/dev/null 2>&1 && continue
     if [ "${CI:-}" = "true" ]; then bad "$t not installed (required in CI to render CRDs)"; exit 1; fi
     skip "$t not installed — skipping large-CRD SSA check (install to check locally)"; exit 0
   done
 else
-  for t in yq jq; do command -v "$t" >/dev/null 2>&1 || { skip "$t not installed — skipping"; exit 0; }; done
+  command -v jq >/dev/null 2>&1 || { skip "jq not installed — skipping"; exit 0; }
 fi
+require_mikefarah_yq "argocd-crd-ssa-check"
 
 printf '%s== argocd large-CRD server-side-apply ==%s\n' "$B" "$Z"
 fail=0
