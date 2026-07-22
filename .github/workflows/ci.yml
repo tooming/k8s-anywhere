@@ -131,6 +131,7 @@ jobs:
       - run: bash scripts/networkpolicy-tests-check.sh
       - run: bash scripts/observability-tests-check.sh
       - run: bash scripts/yq-raw-check.sh
+      - run: bash scripts/yq-variant-guard-check.sh
       - run: bash scripts/git-fixture-isolation-check.sh
       - run: bash scripts/routines-check.sh
       - run: bash scripts/routines-author-check.sh

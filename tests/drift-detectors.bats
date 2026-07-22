@@ -313,6 +313,24 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- yq-variant-guard-check ---------------------------------------------------
+@test "yq-variant-guard-check: passes when a mikefarah-only-syntax script calls require_mikefarah_yq" {
+  run env YQVARIANTGUARD_ROOT="$FIX/yq-variant-guard-check/in-sync" bash "$REPO/scripts/yq-variant-guard-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "yq-variant-guard-check: fails when a mikefarah-only-syntax script has no guard" {
+  run env YQVARIANTGUARD_ROOT="$FIX/yq-variant-guard-check/drift" bash "$REPO/scripts/yq-variant-guard-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"unguarded-check.sh"* ]]
+  [[ "$output" == *"require_mikefarah_yq"* ]]
+}
+
+@test "yq-variant-guard-check: passes on the real repo scripts/" {
+  run bash "$REPO/scripts/yq-variant-guard-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 # --- git-fixture-isolation-check ---------------------------------------------
 @test "git-fixture-isolation-check: passes when a fixture test unsets GIT_DIR" {
   run env GITFIX_CHECK_ROOT="$FIX/git-fixture-isolation-check/in-sync" bash "$REPO/scripts/git-fixture-isolation-check.sh"

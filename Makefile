@@ -67,6 +67,10 @@ observability-tests-check: ## Check tests/observability.bats stays frozen (new d
 yq-raw-check: ## Check bats tests read yq scalars via yqs() (no bare yq calls — variant-quoting guard)
 	@bash scripts/yq-raw-check.sh
 
+.PHONY: yq-variant-guard-check
+yq-variant-guard-check: ## Check scripts/*.sh calling mikefarah-only yq syntax (eval-all/eval/ea) guard it via require_mikefarah_yq
+	@bash scripts/yq-variant-guard-check.sh
+
 .PHONY: git-fixture-isolation-check
 git-fixture-isolation-check: ## Check git-fixture bats tests unset GIT_* (so make ci survives running from a hook)
 	@bash scripts/git-fixture-isolation-check.sh
@@ -160,6 +164,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/networkpolicy-tests-check.sh
 	@bash scripts/observability-tests-check.sh
 	@bash scripts/yq-raw-check.sh
+	@bash scripts/yq-variant-guard-check.sh
 	@bash scripts/git-fixture-isolation-check.sh
 	@bash scripts/routines-check.sh
 	@bash scripts/routines-author-check.sh

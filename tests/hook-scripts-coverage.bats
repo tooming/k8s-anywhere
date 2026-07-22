@@ -5,7 +5,8 @@
 # mimir-readonly-root-sync-hook.sh, networkpolicy-tests-sync-hook.sh,
 # observability-tests-sync-hook.sh, readme-sync-hook.sh, roadmap-sync-hook.sh,
 # rollouts-plugin-list-sync-hook.sh, routines-sync-hook.sh,
-# securitycontext-tests-sync-hook.sh, yq-raw-sync-hook.sh.
+# securitycontext-tests-sync-hook.sh, yq-raw-sync-hook.sh,
+# yq-variant-guard-sync-hook.sh.
 #
 # Every other drift-detector gate (helm-chart-pin-check, roadmap-check, ...) has
 # both a `make ci` step AND a bats file for the check script itself — but the
@@ -461,5 +462,22 @@ setup_routines_fixture() {
 
 @test "yq-raw-sync-hook: a real bats file with no bare yq calls exits 0" {
   run bash "$REPO/scripts/yq-raw-sync-hook.sh" <<<"$(mk_payload "$REPO/tests/commit-reminder-hook.bats")"
+  [ "$status" -eq 0 ]
+}
+
+# --- yq-variant-guard-sync-hook.sh --------------------------------------------
+
+@test "yq-variant-guard-sync-hook: empty payload exits 0" {
+  run bash "$REPO/scripts/yq-variant-guard-sync-hook.sh" <<<"{}"
+  [ "$status" -eq 0 ]
+}
+
+@test "yq-variant-guard-sync-hook: non-script file exits 0 (filtered out)" {
+  run bash "$REPO/scripts/yq-variant-guard-sync-hook.sh" <<<"$(mk_payload "$REPO/ROADMAP.md")"
+  [ "$status" -eq 0 ]
+}
+
+@test "yq-variant-guard-sync-hook: a real scripts/*.sh file with no bare mikefarah-only yq calls exits 0" {
+  run bash "$REPO/scripts/yq-variant-guard-sync-hook.sh" <<<"$(mk_payload "$REPO/scripts/readme-check.sh")"
   [ "$status" -eq 0 ]
 }
