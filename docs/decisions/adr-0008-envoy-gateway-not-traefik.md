@@ -131,13 +131,35 @@ sweep — no bump is groundable because there's nothing newer needed yet.
 a version above `v1.8.2` as affected, or `v1.8.2` itself is later found
 retroactively vulnerable to something not yet disclosed.
 
+### 2026-07-23 — Envoy Gateway v1.8.3 bump, Convert (RFC #671)
+
+**Trigger.** The 2026-07-18 flip condition fired: `v1.8.3` was found (a prior
+cycle's PR #663, 2026-07-22T05:46 UTC, held off because the chart/image
+hadn't been published to Docker Hub yet — 404 on `envoyproxy/gateway-helm:v1.8.3`).
+Re-verified 2026-07-23: the GitHub release is live (published
+2026-07-22T18:59:00Z, stable, not pre-release; changelog: dependency updates
+plus a fix that rejects a TLS secret when its certificate and private key
+don't match), and the Docker Hub OCI artifact resolves for real
+(`tag_status: active`, digest
+`sha256:cfb34ff4266c87a394cd6be5c13607a2dd47083aef771368302eaeaa99c4a0a9`,
+`last_updated: 2026-07-22T18:57:28Z`, confirmed via
+`https://hub.docker.com/v2/repositories/envoyproxy/gateway-helm/tags/v1.8.3`).
+
+**Decision: bump chart pin `v1.8.2` → `v1.8.3`.** Same source, same
+major.minor line — a same-source patch bump only, no architecture change.
+`gitops/platform/envoy-gateway.yaml`'s `targetRevision` now reads `v1.8.3`.
+
+**Flip condition.** Revisit when a new Envoy Gateway security bulletin names
+a version above `v1.8.3` as affected, or `v1.8.3` itself is later found
+retroactively vulnerable to something not yet disclosed.
+
 ---
 
 ## Files
 
 | Path | Role |
 |------|------|
-| `gitops/platform/envoy-gateway.yaml` | ArgoCD Application — installs Envoy Gateway chart (currently pinned `v1.8.2`) from `docker.io/envoyproxy/gateway-helm` |
+| `gitops/platform/envoy-gateway.yaml` | ArgoCD Application — installs Envoy Gateway chart (currently pinned `v1.8.3`) from `docker.io/envoyproxy/gateway-helm` |
 | `gitops/platform/lab-gateway.yaml` | ArgoCD Application — applies `GatewayClass` + `Gateway` objects from `gitops/network/gateway.yaml` |
 | `gitops/network/gateway.yaml` | `GatewayClass eg` + shared `Gateway eg` in `lab-gateway` ns; `allowedRoutes: All` |
 | `gitops/network/argocd-route.yaml` | `HTTPRoute` for the ArgoCD UI (reference example) |
