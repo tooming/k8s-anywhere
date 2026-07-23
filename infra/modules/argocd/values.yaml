@@ -14,7 +14,7 @@ global:
   # `.Values.global.securityContext`; `podSecurityContext` does not exist in
   # this chart's schema and was a silent no-op here previously (found during
   # a broader audit of this same bug class, PR #493). Verified against the
-  # pinned chart version (argo-cd-9.5.20): every component (controller,
+  # pinned chart version (argo-cd-9.7.1): every component (controller,
   # server, repoServer, applicationSet, dex, and the bundled session-cache
   # sub-chart) already defaults its own
   # `<component>.containerSecurityContext` to `runAsNonRoot: true`,
