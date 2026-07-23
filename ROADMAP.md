@@ -232,6 +232,27 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [x] 🟢 **Bump kiali-server chart `1.89.8` → `2.29.0`** (CHARTER **Core Values**
+  §"Everything as code" + §"Docs & dashboards don't drift"; RFC #668 — architect
+  decision 2026-07-23, ADR-0012 audit resolved as **Convert**.) Discovered live:
+  `gitops/platform/kiali.yaml`'s pinned `kiali-server` chart `1.89.8` (the last
+  pre-2.0 release) no longer resolves in the live `kiali.org/helm-charts` index,
+  breaking `make ci`'s `helm-chart-pin-check.sh` drift gate for every PR on
+  `main` regardless of diff — verified not transient (main's own CI passed this
+  exact check 4.5 hours before the break was found). Decision + implementation
+  landed in the same PR (rather than the usual RFC-then-separate-executor-PR
+  split) because the break affects the base branch itself: any subsequent PR's
+  CI would also show this same unrelated failure until the pin is fixed, so
+  waiting for a second PR would mean deliberately merging over a known-red
+  check with no way to get green first. See ADR-0012's Re-evaluation log
+  (2026-07-23 entry) and RFC #668 for the full verification trail (confirmed
+  the Kiali 2.0 breaking changes — Discovery Selectors, `kubernetes_config.
+  cache_*` removal, `istio_namespace` removal — don't touch this lab's
+  `valuesObject` keys). `docs/dependency-tree.md` and `tests/platform.bats`
+  updated. Kiali is on-demand/non-auto-synced (ADR-0012) — zero live-cluster
+  blast radius. `make ci` must pass. `docs/done/` entry required. Closes #668.
+  (arch/adr-0012-kiali-chart-index-audit)
+
 - [x] 🟢 **Bump Valkey image tag `8.0-alpine` → `8.0.10-alpine`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC/issue #655 — architect decision
   2026-07-22, ADR-0018 audit #654 resolved as **Convert**. **No prerequisites —
