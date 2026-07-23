@@ -141,6 +141,41 @@ applicable CVE at the current pin.
 version at or above `1.30.3` as affected, or a Kiali-specific CVE is
 published against the `kiali-server` chart (not a downstream OpenShift fork).
 
+### 2026-07-23 — kiali-server `1.89.8` pin no longer resolves; Convert to `2.29.0` (audit #668)
+
+**Trigger.** Not a CVE — a live-index availability break. An executor run found
+`scripts/helm-chart-pin-check.sh` (the `drift` job in `ci.yml`) failing on a
+clean `main` checkout with no relevant diff: `kiali.org/helm-charts` is
+reachable, but its served index no longer lists `kiali-server` version
+`1.89.8`. Confirmed not transient — `main`'s own CI run 4.5 hours earlier
+passed this exact check. Verified directly (ADR-0004): `v1.89.8` is a real git
+tag in `github.com/kiali/helm-charts` and is the **last pre-2.0 release** —
+the next tag in the series is `v2.0.0`. Kiali shipped a real major release,
+**Kiali 2.0** ("the first major Kiali release in over 5 years"), with named
+breaking changes: namespace-visibility config moved to Discovery Selectors;
+`.spec.kubernetes_config.cache_*` removed from the CRD; `spec.istio_namespace`
+/ `spec.external_services.istio.root_namespace` removed. None of those touch
+this lab's actual `valuesObject` (`auth.strategy`, `external_services.
+prometheus.{url,custom_headers}`, `external_services.tracing.enabled`,
+`deployment.resources`) — none of those keys appear in the breaking-change
+list, and cross-checking `external_services.prometheus.url`/`custom_headers`
+(the `X-Scope-OrgID` header this lab's multi-tenant Mimir needs) and
+`external_services.tracing.enabled` against current (2026) Kiali docs/
+community examples confirms both remain valid, unchanged config keys in
+Kiali 2.x. Full reasoning and verification trail: RFC #668.
+
+**Decision: Convert.** There is no smaller safe delta available — the entire
+pre-2.0 line appears pruned from the live-served index, not just this one
+patch, so "keep the pin" is not an option; the only real choice is which
+currently-resolvable version to move to. Bump to `v2.29.0` (2026-07-13, the
+newest verified-real tag), `valuesObject` unchanged (compatibility verified
+above). Tracked as RFC #668 for the executor to implement.
+
+**Flip condition.** Revisit when a Kiali-specific CVE is published against
+`kiali-server` at or above `2.29.0`, or the chart repo prunes `2.29.0` itself
+the same way it pruned `1.89.8` (in which case: bump again to whatever the
+newest resolvable tag is at that time, same reasoning as this entry).
+
 ---
 
 ## Files
