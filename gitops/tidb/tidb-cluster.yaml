@@ -3,13 +3,25 @@
 # single replicas here (ADR-0005 escape hatch — call out the trade-off explicitly).
 # ADR-0005: single host accepts SPOFs; optimises for recoverability.
 # ON-DEMAND: bring up with `make tidb-up` (requires tidb-operator running first).
+#
+# Bumped v8.1.2 -> v8.5.7 (upgrade-drafter, 2026-07-23): no dedicated ADR pins the
+# TiDB database version (only pingcap/tidb-operator's own chart is version-pinned,
+# unaffected here), so this is a routine same-major currency bump, not an
+# architect decision. v8.5.7 is the newest stable tag on pingcap/tidb's GitHub
+# releases (published 2026-07-09; v9.0.0-beta.1 exists but is a pre-release,
+# skipped per policy). No major bump (stays on TiDB major `8`). ADR-0004 caveat:
+# this remote clusterless session cannot verify tidb-operator 1.6.5 reconciles
+# this version cleanly on a live cluster (TiDB is on-demand, `make tidb-up`) —
+# rollback is a one-line revert of this field; ADR-0005's recreate-over-HA means
+# `make tidb-down && make tidb-up` rebuilds the cluster from manifest with no
+# state to lose beyond the demo data itself.
 apiVersion: pingcap.com/v1alpha1
 kind: TidbCluster
 metadata:
   name: lab
   namespace: tidb
 spec:
-  version: "v8.1.2"
+  version: "v8.5.7"
   timezone: UTC
   pvReclaimPolicy: Delete
   enableDynamicConfiguration: true
