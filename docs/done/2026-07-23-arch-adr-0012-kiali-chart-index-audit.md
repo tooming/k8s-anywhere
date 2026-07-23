@@ -4,4 +4,4 @@
 
 ## PR
 
-https://github.com/tooming/k8s-anywhere/pull/669 (to be confirmed after opening)
+https://github.com/tooming/k8s-anywhere/pull/669
