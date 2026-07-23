@@ -59,4 +59,4 @@ recovers immediately with no data loss.
 
 ## PR
 
-Closes #671.
+https://github.com/tooming/k8s-anywhere/pull/674 — closes #671.
