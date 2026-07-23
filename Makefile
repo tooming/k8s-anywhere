@@ -85,6 +85,15 @@ observability-tests-mark: ## Refresh tests/.observability-titles — run ONLY af
 	@grep -oE '^@test "[^"]*"' tests/observability.bats | sort > tests/.observability-titles
 	@echo "  ok  tests/.observability-titles refreshed ($$(wc -l < tests/.observability-titles | tr -d ' ') titles)"
 
+.PHONY: drift-detectors-tests-check
+drift-detectors-tests-check: ## Check tests/drift-detectors.bats stays frozen (new drift checks go in drift-<scope>.bats)
+	@bash scripts/drift-detectors-tests-check.sh
+
+.PHONY: drift-detectors-tests-mark
+drift-detectors-tests-mark: ## Refresh tests/.drift-detectors-titles — run ONLY after an intentional rename/edit of a monolith test
+	@grep -oE '^@test "[^"]*"' tests/drift-detectors.bats | sort > tests/.drift-detectors-titles
+	@echo "  ok  tests/.drift-detectors-titles refreshed ($$(wc -l < tests/.drift-detectors-titles | tr -d ' ') titles)"
+
 .PHONY: routines-check
 routines-check: ## Check routines/*.prompt.md match the last apply (catches edits not synced to claude.ai triggers)
 	@bash scripts/routines-check.sh
@@ -175,6 +184,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/adr-followup-check.sh
 	@bash scripts/adr-chart-version-sync-check.sh
 	@bash scripts/adr-image-pin-sync-check.sh
+	@bash scripts/drift-detectors-tests-check.sh
 	@bash scripts/ci-parity-check.sh
 
 .PHONY: install-hooks

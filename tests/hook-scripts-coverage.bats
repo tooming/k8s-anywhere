@@ -6,7 +6,7 @@
 # observability-tests-sync-hook.sh, readme-sync-hook.sh, roadmap-sync-hook.sh,
 # rollouts-plugin-list-sync-hook.sh, routines-sync-hook.sh,
 # securitycontext-tests-sync-hook.sh, yq-raw-sync-hook.sh,
-# yq-variant-guard-sync-hook.sh.
+# yq-variant-guard-sync-hook.sh, drift-detectors-tests-sync-hook.sh.
 #
 # Every other drift-detector gate (helm-chart-pin-check, roadmap-check, ...) has
 # both a `make ci` step AND a bats file for the check script itself — but the
@@ -445,6 +445,18 @@ setup_routines_fixture() {
 
 @test "securitycontext-tests-sync-hook: tests/securitycontext.bats (currently frozen/compliant) exits 0" {
   run bash "$REPO/scripts/securitycontext-tests-sync-hook.sh" <<<"$(mk_payload "$REPO/tests/securitycontext.bats")"
+  [ "$status" -eq 0 ]
+}
+
+# --- drift-detectors-tests-sync-hook.sh -----------------------------------------
+
+@test "drift-detectors-tests-sync-hook: unrelated file exits 0 (filtered out)" {
+  run bash "$REPO/scripts/drift-detectors-tests-sync-hook.sh" <<<"$(mk_payload "$REPO/tests/networkpolicy.bats")"
+  [ "$status" -eq 0 ]
+}
+
+@test "drift-detectors-tests-sync-hook: tests/drift-detectors.bats (currently frozen/compliant) exits 0" {
+  run bash "$REPO/scripts/drift-detectors-tests-sync-hook.sh" <<<"$(mk_payload "$REPO/tests/drift-detectors.bats")"
   [ "$status" -eq 0 ]
 }
 

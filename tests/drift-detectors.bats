@@ -3,6 +3,13 @@
 # gate correctness via the PostToolUse hooks, so they need their own proof that
 # they (a) pass on an in-sync tree and (b) actually FAIL on real drift. Each script
 # takes a ROOT override, so we point it at golden fixture trees under tests/fixtures.
+#
+# This file is now FROZEN (mirroring tests/securitycontext.bats /
+# tests/observability.bats / tests/networkpolicy.bats) — every new, unrelated
+# drift-check script had been appending its own @test section here (24+ sections
+# accumulated), the same "shared monolith multiple PRs append to" footgun those
+# other files were split off to prevent. New drift-check coverage goes in its own
+# tests/drift-<scope>.bats file; the drift-detectors-tests-check gate enforces this.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -659,4 +666,25 @@ An idle cycle is never a reason to stop the run; only credit exhaustion is." \
     fail=1
   done < <(find "$REPO/gitops" -name "namespace.yaml" | sort)
   [ "$fail" -eq 0 ]
+}
+
+# --- drift-detectors-tests-check ----------------------------------------------
+# This file is now FROZEN (same shape as securitycontext.bats / observability.bats
+# / networkpolicy.bats) — it had grown to 24+ unrelated drift-check sections with
+# every new CI gate script appending its own @test block here. New drift-check
+# coverage belongs in its own tests/drift-<scope>.bats file.
+@test "drift-detectors-tests-check: passes when the monolith matches its snapshot" {
+  run env DRIFTDET_TESTS_ROOT="$FIX/drift-detectors-tests-check/in-sync" bash "$REPO/scripts/drift-detectors-tests-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "drift-detectors-tests-check: fails when a new @test is appended to the frozen monolith" {
+  run env DRIFTDET_TESTS_ROOT="$FIX/drift-detectors-tests-check/drift" bash "$REPO/scripts/drift-detectors-tests-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FROZEN"* ]]
+}
+
+@test "drift-detectors-tests-check: passes on the real repo tests/drift-detectors.bats" {
+  run bash "$REPO/scripts/drift-detectors-tests-check.sh"
+  [ "$status" -eq 0 ]
 }
