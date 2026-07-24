@@ -127,3 +127,38 @@ make inkless-down # cascade-deletes all inkless resources
 | ADR-0004 (real metrics) | Grafana dashboard uses real KSM/cAdvisor metrics; no fabricated data |
 | ADR-0005 (recreate-over-HA) | 1 broker + 1 postgres; `make inkless-up` recreates from manifests |
 | ADR-0009/0010 (RabbitMQ/Redis) | Complementary data-layer patterns; different interfaces and durability models |
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision changes but the underlying technology choice does not. A version bump
+(or a deliberate decision to hold one) still leaves a dated trail so the
+reasoning is never lost.
+
+### 2026-07-24 — held `apache/kafka` client image at `3.9.2` (RFC #708)
+
+**Trigger.** Upgrade-drafter sweep (issue #705) found `apache/kafka:4.3.1` is now
+the newest Docker Hub tag for the image `gitops/inkless/kafka-load.yaml` pins at
+`3.9.2` (the newest patch on the `3.9.x` line) for its producer/consumer
+load-generator CLI containers. `4.3.1` is a major version.
+
+**Decision: hold at `3.9.2`.** Kafka `4.0` dropped ZooKeeper mode entirely
+(KRaft-only) and changed several client/CLI defaults and protocol-version
+negotiation behavior. This image is used purely as a Kafka-protocol client
+against the Inkless broker, not as a broker itself — the risk is whether
+Inkless's own Kafka-protocol implementation correctly negotiates with a 4.x
+client, which is undocumented (neither this ADR nor Inkless's own docs state a
+supported client-version range) and unverifiable from a remote clusterless
+session (no live cluster access, per ADR-0004). Mirrors
+[ADR-0013](adr-0013-longhorn-block-storage.md)'s Longhorn `1.12.0` hold: decline
+a bump whose behavioral change can't be confirmed safe against this lab's
+actual live topology, rather than chase the newest release blind.
+
+**Flip condition (next re-evaluation).** Re-check when either: (a) Inkless's own
+documentation or release notes explicitly state Kafka 4.x client-protocol
+compatibility, (b) a live-cluster verification confirms a Kafka 4.x
+producer/consumer CLI round-trips successfully against the running Inkless
+broker, or (c) a CVE is filed against `apache/kafka:3.9.x` that `4.x` fixes and
+`3.9.x` does not receive a backport for.
