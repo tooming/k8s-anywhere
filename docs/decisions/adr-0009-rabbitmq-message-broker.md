@@ -35,10 +35,10 @@ well-known `guest/guest` default.
 
 - The two common charts (Bitnami) have been subject to image-distribution and licensing
   churn that breaks reproducibility — antithetical to the lab's "rebuild with one
-  command" charter bar. A pinned official `rabbitmq:4.3.3-management` image (bumped
-  from the original `3.13-management` pin 2026-07-18, patched to `4.3.3` 2026-07-21 —
-  see [§Re-evaluation log](#re-evaluation-log)) in a plain `StatefulSet` is fully
-  reproducible and transparent (no chart indirection).
+  command" charter bar. A pinned official `rabbitmq:4.3.4-management` image (bumped
+  from the original `3.13-management` pin 2026-07-18, patched to `4.3.3` 2026-07-21,
+  then `4.3.4` 2026-07-24 — see [§Re-evaluation log](#re-evaluation-log)) in a plain
+  `StatefulSet` is fully reproducible and transparent (no chart indirection).
 - The **RabbitMQ Cluster Operator** is the production-correct choice for HA, but adds CRDs
   and an operator pod for no teaching gain at single-node lab scale.
 - Plain manifests keep the whole definition reviewable in-repo and validated by
@@ -138,5 +138,26 @@ leader-election partition-scenario bug fix plus a `ra` dependency bump to
 migration risk beyond what the 2026-07-18 entry above already accepted (both
 `4.3.2` and `4.3.3` are past that one-time migration). No `rabbitmq.conf` change
 needed. Rollback path unchanged from the entry above.
+
+**Flip condition (next re-evaluation).** Unchanged from above.
+
+### 2026-07-24 — patch bump `4.3.3-management` → `4.3.4-management` (upgrade-drafter)
+
+**Trigger.** `rabbitmq/rabbitmq-server` cut `v4.3.4` on 2026-07-23 (verified directly
+against the real release notes at
+`raw.githubusercontent.com/rabbitmq/rabbitmq-server/main/release-notes/4.3.4.md` — the
+tag-pinned `v4.3.4/release-notes/4.3.4.md` path 404s, the release notes only exist on
+`main`, same shape as prior verifications — and the `rabbitmq:4.3.4-management` Docker
+Hub tag, `tag_status: active`, `last_updated: 2026-07-23T23:54:39Z`, digest
+`sha256:a113bcac1f900561a90bce860bdbf6ac3edf23720e4a4ad3453709844be82153`). Same `4.3.x`
+minor series as the current pin — a maintenance release (quorum-queue metrics/snapshot
+fix after a `3.13.x`→`4.2.x`→`4.3.x` upgrade path, an AMQP 1.0 parser strictness fix, a
+stream single-active-consumer coordinator fix, and a management-UI CSP hardening change
+removing `unsafe-eval`/`unsafe-inline`), not a metadata-store or config-format change.
+
+**Decision: bump to `4.3.4-management`.** Same-series patch bump, no Khepri/Mnesia
+migration risk beyond what the 2026-07-18 entry above already accepted (`4.3.2`,
+`4.3.3`, and `4.3.4` are all past that one-time migration). No `rabbitmq.conf` change
+needed. Rollback path unchanged from the entries above.
 
 **Flip condition (next re-evaluation).** Unchanged from above.
