@@ -3570,6 +3570,29 @@ You review and merge plan PRs, same as implementation PRs.
 > yet. It depends on the verifyImages flip to Enforce (the unchecked item above) AND
 > needs an architect RFC to define the exact GitLab CI job shape, unsigned-image
 > source, and rejection assertion method before the executor can build it.
+>
+> **Two upgrade-drafter major-bump findings parked 2026-07-24** (issues #704, #705)
+> — both need an architect go/no-go call, not a mechanical bump, per
+> `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
+
+- 🟡 **`kube-state-metrics` chart major bump — `7.8.1` → `8.0.0`** (issue #704;
+  appVersion unchanged at `2.19.1` — chart-packaging-only major bump, the entire
+  breaking surface is the chart dropping its own bundled `CiliumNetworkPolicy`
+  template + `networkPolicy.flavor: cilium` values key, which
+  `gitops/platform/observability-ksm.yaml` never sets). Needs an architect call:
+  either confirm the empty-diff-for-our-config read and approve a direct 🟢 bump,
+  or explicitly hold with a documented reason (mirroring ADR-0013's Longhorn
+  `1.12.0` hold).
+
+- 🟡 **`apache/kafka` client image major bump — `3.9.2` → `4.3.1`** (issue #705;
+  `gitops/inkless/kafka-load.yaml`'s producer/consumer CLI containers, run against
+  the Aiven Inkless diskless-Kafka broker per
+  [ADR-0015](docs/decisions/adr-0015-inkless-diskless-kafka.md)). Unlike the KSM
+  finding above, this is a real behavioral major version (Kafka 4.x drops
+  ZooKeeper mode, changes client/protocol-negotiation defaults) and this remote
+  clusterless session cannot verify Inkless's Kafka-protocol compatibility with a
+  4.x client. Needs an architect call: verify compatibility (docs/changelog or a
+  live-cluster check) and approve, or hold at `3.9.x` with a documented reason.
 
 - ~~🟡 **GitHub Actions major-version bumps — `actions/checkout` v4→v7,
   `actions/cache` v4→v6, `actions/github-script` v7→v9,
