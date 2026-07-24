@@ -9,7 +9,7 @@ setup() {
   DEPLOYMENT="$REPO/gitops/observability/loki/deployment.yaml"
 }
 
-@test "loki deployment pins image tag 3.7.3" {
-  run grep -q 'image: grafana/loki:3.7.3' "$DEPLOYMENT"
+@test "loki deployment pins image tag 3.7.4" {
+  run grep -q 'image: grafana/loki:3.7.4' "$DEPLOYMENT"
   [ "$status" -eq 0 ]
 }
