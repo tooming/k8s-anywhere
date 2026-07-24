@@ -13,7 +13,6 @@ resources:
   - ../../network/policies/allow-dns-and-apiserver.yaml
   - allow-harbor-ingress.yaml
   - allow-harbor-garage-egress.yaml
-  - allow-harbor-valkey-egress.yaml
   - allow-harbor-intra-namespace.yaml
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-harbor-metrics-ingress.yaml

@@ -67,12 +67,12 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-valkey-ingress permits the harbor namespace (Harbor cache/session, ADR-0024)" {
-  # Harbor uses Valkey as its cache/session store (ADR-0018/ADR-0024). Without this
-  # ingress rule, default-deny in the data namespace drops harbor-core's connection
-  # and it crashloops on a Valkey i/o timeout. Pairs with allow-harbor-valkey-egress.
+@test "allow-valkey-ingress no longer permits the harbor namespace (Harbor uses bundled redis-photon, #632)" {
+  # Harbor's external-Redis wiring never rendered under ArgoCD (Helm lookup()
+  # always nil in helm template); Harbor now runs its own bundled cache and
+  # doesn't reach the data namespace. See gitops/platform/harbor.yaml.
   run grep -q 'kubernetes.io/metadata.name: harbor' "$DATA_NP/allow-valkey-ingress.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 @test "allow-data-demo-egress.yaml exists in data/networkpolicy/" {

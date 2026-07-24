@@ -12,10 +12,25 @@
 #   - persistence.imageChartStorage.type=s3: Garage S3 backend (ADR-0002)
 #   - database.type=internal: bundled Postgres acceptable for first cut
 #
-# ADR-0018 note: the `redis` key below is the Harbor chart's own API parameter name
-# for its cache/session dependency — it is not deploying Redis. The `type: external`
-# value redirects Harbor to use the platform Valkey instance (ADR-0018, `data` ns).
-# ADR-0024 §"Relationship to existing ADRs" explicitly names this reuse.
+# ADR-0018 exception — bundled internal redis-photon, not platform Valkey reuse:
+# ADR-0024 §"Minimal profile" originally called for pointing at the platform Valkey
+# (ADR-0018, `data` ns) "where practical" / "where the chart allows it". Verified
+# 2026-07-21: it doesn't. `redis.external.existingSecret` drives the chart's
+# `harbor.redis.pwdfromsecret` helper, which calls Helm's `lookup` to bake the
+# password into the core/jobservice connection URL at *template* time. ArgoCD only
+# ever renders via `helm template` (never `install`/`upgrade`), and `lookup` is
+# documented to always return nil outside a live install/upgrade — so this is a hard
+# incompatibility with ArgoCD's rendering model, not a config mistake; it fails
+# identically on any ArgoCD install. The failure is a manifest-generation crash (nil
+# pointer on REDIS_PASSWORD) that leaves the whole Application unsynced, which is why
+# `harbor` sat as an empty namespace rather than crashlooping.
+#
+# Explicit, scoped, user-approved deviation from ADR-0018 (2026-07-21, via #632):
+# `redis.type: internal` deploys the chart's bundled `goharbor/redis-photon` pod
+# instead. This is Harbor's own private cache instance, not a general re-adoption of
+# Redis over Valkey elsewhere in the lab — ADR-0018 (Valkey as *the lab's* cache/KV
+# store) is otherwise unaffected. The extra pod's footprint is exactly what the
+# §"12 GB gate" measurement below accounts for.
 #
 # S3 credentials (ADR-0002 — never inline): registry reads REGISTRY_STORAGE_S3_ACCESSKEY
 # and REGISTRY_STORAGE_S3_SECRETKEY from harbor-s3-creds Secret (ESO-rendered from
@@ -75,18 +90,20 @@ spec:
               limits:
                 cpu: 500m
                 memory: 512Mi
-        # ADR-0018: `redis` is the Harbor chart's API key name for its cache dependency.
-        # type=external redirects Harbor to use the platform Valkey (ADR-0018, data ns).
+        # `redis` is the Harbor chart's API key name for its cache dependency. See the
+        # ADR-0018 exception note above the Application header: type=internal (bundled
+        # redis-photon), not the platform Valkey, because Valkey reuse via
+        # existingSecret+lookup() doesn't render under ArgoCD.
         redis:
-          type: external
-          external:
-            addr: "valkey.data.svc.cluster.local:6379"
-            # Valkey runs with --requirepass (ADR-0018); authenticate via the
-            # REDIS_PASSWORD key in harbor-valkey-creds (ESO-rendered from Vault
-            # secret/valkey/default). Without it harbor-core/jobservice crashloop
-            # on `NOAUTH Authentication required`. See harbor-valkey-externalsecret.yaml.
-            existingSecret: harbor-valkey-creds
-            db: 1
+          type: internal
+          internal:
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                cpu: 200m
+                memory: 128Mi
         registry:
           registry:
             # ESO renders harbor-s3-creds Secret from Vault secret/harbor/s3.
