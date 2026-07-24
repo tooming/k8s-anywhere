@@ -64,6 +64,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "vault Application server image pinned to 2.0.3" {
+  [ "$(yqs '.spec.source.helm.valuesObject.server.image.tag' "$APP")" = "2.0.3" ]
+}
+
+@test "vault Application server image repository is hashicorp/vault" {
+  [ "$(yqs '.spec.source.helm.valuesObject.server.image.repository' "$APP")" = "hashicorp/vault" ]
+}
+
 @test "vault Application server config sets disable_mlock = true" {
   run grep -q 'disable_mlock = true' "$APP"
   [ "$status" -eq 0 ]

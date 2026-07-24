@@ -2104,7 +2104,7 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required. Closes #544.
   (auto/grafana-chart-source-migration)
 
-- [ ] 🟢 **Pin Vault's server image tag explicitly** (CHARTER **Core Values**
+- [x] 🟢 **Pin Vault's server image tag explicitly** (CHARTER **Core Values**
   §"Everything as code" + §"Recreate-from-code" + general hardening; planner
   gap-analysis finding, 2026-07-24 — **no prerequisites, executor may pick up
   immediately; no ADR change needed**, same reasoning as the Grafana image-tag

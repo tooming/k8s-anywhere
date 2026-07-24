@@ -24,6 +24,45 @@ spec:
         ui:
           enabled: true
         server:
+          # Explicit image pin (2026-07-24, ROADMAP "Pin Vault's server image
+          # tag explicitly"): previously inherited silently from the chart's
+          # own default (same value, `2.0.3` — this is a pin-what's-already-
+          # running change, not a version bump). Every other version-sensitive
+          # component in this repo (Grafana, Argo Rollouts, Valkey, Envoy
+          # Gateway, Kiali, k3s/ADR-0030) pins its running version explicitly;
+          # Vault previously did not, which meant "what version are we
+          # running" was only ever answerable from a prose comment, not a
+          # field a bats test or a future ADR-audit sweep could check.
+          #
+          # Re-evaluation log:
+          # - 2026-07-24: pinned at `2.0.3` (the chart v0.34.0 default).
+          #   Cross-checked against every 2026 Vault CVE/security bulletin
+          #   findable from this sandbox. Confirmed directly in Vault's own
+          #   CHANGELOG.md (fetched live from
+          #   raw.githubusercontent.com/hashicorp/vault/main/CHANGELOG.md,
+          #   not training-data recall): the `2.0.0` section fixes
+          #   CVE-2026-5807 (unauthenticated root-token/rekey DoS — "sys/rekey
+          #   endpoints are now authenticated by default"), CVE-2026-5052
+          #   (ACME SSRF — "Reject obviously unsafe validation targets during
+          #   ACME HTTP-01 and TLS-ALPN-01 challenge verification"), and
+          #   HCSEC-2026-07 (token exposure to auth plugins — "Correctly
+          #   remove any Vault tokens from the Authorization header when this
+          #   header is forwarded to plugin backends"). Two further bulletins
+          #   found only via secondary sources (SentinelOne, GitLab Advisory
+          #   DB; HashiCorp's own discuss.hashicorp.com bulletin pages
+          #   returned proxy/auth errors to direct fetch from this sandbox) —
+          #   CVE-2026-3605 (KVv2 glob-wildcard delete DoS) and HCSEC-2026-16
+          #   (audit device directory-guard bypass) — are both reported fixed
+          #   by `2.0.0`/`2.0.1` respectively; not independently confirmed in
+          #   the plain-text CHANGELOG.md, flagged here per ADR-0004 rather
+          #   than asserted as verified. `2.0.3` (this pin) is newer than all
+          #   five fixed versions either way.
+          #   Flip condition: revisit when a bulletin names a version above
+          #   `2.0.3` as affected, or when bumping the chart `targetRevision`
+          #   past `0.34.0` (a later chart may change the default image tag).
+          image:
+            repository: "hashicorp/vault"
+            tag: "2.0.3"
           standalone:
             enabled: true
             config: |
@@ -46,11 +85,11 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
-          # ADR-0017: chart v0.34.0 defaults to a Vault 2.0.3 image that no
-          # longer holds cap_ipc_lock (disable_mlock above is the required
-          # counterpart), so the PSS-restricted profile now applies. `home`
-          # (/home/vault) is already an unconditional chart-provided emptyDir;
-          # `/tmp` is not, so it's added explicitly for readOnlyRootFilesystem.
+          # ADR-0017: Vault 2.0.3 (pinned above) no longer holds cap_ipc_lock
+          # (disable_mlock above is the required counterpart), so the
+          # PSS-restricted profile now applies. `home` (/home/vault) is
+          # already an unconditional chart-provided emptyDir; `/tmp` is not,
+          # so it's added explicitly for readOnlyRootFilesystem.
           volumes:
             - name: tmp
               emptyDir: {}
