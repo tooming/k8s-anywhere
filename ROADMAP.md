@@ -3575,24 +3575,35 @@ You review and merge plan PRs, same as implementation PRs.
 > — both need an architect go/no-go call, not a mechanical bump, per
 > `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
 
-- 🟡 **`kube-state-metrics` chart major bump — `7.8.1` → `8.0.0`** (issue #704;
-  appVersion unchanged at `2.19.1` — chart-packaging-only major bump, the entire
-  breaking surface is the chart dropping its own bundled `CiliumNetworkPolicy`
-  template + `networkPolicy.flavor: cilium` values key, which
-  `gitops/platform/observability-ksm.yaml` never sets). Needs an architect call:
-  either confirm the empty-diff-for-our-config read and approve a direct 🟢 bump,
-  or explicitly hold with a documented reason (mirroring ADR-0013's Longhorn
-  `1.12.0` hold).
+- [ ] 🟢 **`kube-state-metrics` chart major bump — `7.8.1` → `8.0.0`** (issue #704;
+  RFC #707 — architect decision 2026-07-24: **Approve.** appVersion unchanged at
+  `2.19.1` — chart-packaging-only major bump, the entire breaking surface is the
+  chart dropping its own bundled `CiliumNetworkPolicy` template +
+  `networkPolicy.flavor: cilium` values key, which
+  `gitops/platform/observability-ksm.yaml` never sets (verified directly: a `git
+  diff` between the `kube-state-metrics-7.8.1` and `kube-state-metrics-8.0.0`
+  chart tags touches only `Chart.yaml`, `README.md`, the removed
+  `ciliumnetworkpolicy.yaml` template, and a combined 14-line
+  `networkpolicy.yaml`/`values.yaml` trim — nothing this Application's
+  `valuesObject` references). **No prerequisites — executor may pick up
+  immediately.** Bump `targetRevision: 7.8.1` → `8.0.0` in
+  `gitops/platform/observability-ksm.yaml`. Re-verify the chart's `values.yaml`
+  still matches this Application's `valuesObject` at pickup time before merging
+  (don't just trust this RFC's cached read — same due-diligence pattern as the
+  `auto/pyroscope-*`/`auto/grafana-chart-*` bumps). `make ci` must pass.
+  `docs/done/` entry required. Closes #707. (auto/ksm-chart-8-0-0 or
+  upgrade/ksm-chart-8-0-0)
 
-- 🟡 **`apache/kafka` client image major bump — `3.9.2` → `4.3.1`** (issue #705;
-  `gitops/inkless/kafka-load.yaml`'s producer/consumer CLI containers, run against
-  the Aiven Inkless diskless-Kafka broker per
-  [ADR-0015](docs/decisions/adr-0015-inkless-diskless-kafka.md)). Unlike the KSM
-  finding above, this is a real behavioral major version (Kafka 4.x drops
+- ~~🟡 **`apache/kafka` client image major bump — `3.9.2` → `4.3.1`**~~ (issue
+  #705; RFC #708 — architect decision 2026-07-24: **Hold.** `gitops/inkless/
+  kafka-load.yaml`'s producer/consumer CLI containers stay pinned to
+  `apache/kafka:3.9.2` — Kafka 4.x is a real behavioral major version (drops
   ZooKeeper mode, changes client/protocol-negotiation defaults) and this remote
   clusterless session cannot verify Inkless's Kafka-protocol compatibility with a
-  4.x client. Needs an architect call: verify compatibility (docs/changelog or a
-  live-cluster check) and approve, or hold at `3.9.x` with a documented reason.
+  4.x client (mirrors ADR-0013's Longhorn `1.12.0` hold). Resolved directly —
+  no executor fan-out needed. Decision + flip condition recorded in
+  [ADR-0015](docs/decisions/adr-0015-inkless-diskless-kafka.md)'s new
+  `## Re-evaluation log` section. Closed via RFC #708.
 
 - ~~🟡 **GitHub Actions major-version bumps — `actions/checkout` v4→v7,
   `actions/cache` v4→v6, `actions/github-script` v7→v9,
