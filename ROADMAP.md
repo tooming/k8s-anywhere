@@ -2104,6 +2104,61 @@ You review and merge plan PRs, same as implementation PRs.
   `make ci` must pass. `docs/done/` entry required. Closes #544.
   (auto/grafana-chart-source-migration)
 
+- [ ] 🟢 **Pin Vault's server image tag explicitly** (CHARTER **Core Values**
+  §"Everything as code" + §"Recreate-from-code" + general hardening; planner
+  gap-analysis finding, 2026-07-24 — **no prerequisites, executor may pick up
+  immediately; no ADR change needed**, same reasoning as the Grafana image-tag
+  override item above: no ADR governs Vault as a technology/version choice, only
+  the delivery mechanism). Verified directly against the repo (not assumed, per
+  ADR-0004): `gitops/platform/vault.yaml` pins the `vault` chart at
+  `targetRevision: 0.34.0` but never sets an explicit `server.image.tag` —
+  unlike every other version-sensitive component in this repo (Grafana, Argo
+  Rollouts, Valkey, Envoy Gateway, Kiali, k3s/ADR-0030), the actual Vault
+  **binary** version running in this lab is only ever recorded in a prose
+  comment ("chart v0.34.0 defaults to a Vault 2.0.3 image", line 49) — not a
+  field a `bats` test or a future architect ADR-audit sweep can check
+  mechanically. This is the same class of gap RFC #558 (ADR-0030) fixed for
+  k3s: an implicitly-inherited version with no recorded pin means "what
+  version are we actually running" is unanswerable from the repo alone, and a
+  future unrelated chart-patch bump (still `0.34.0` → `0.34.x`) could silently
+  change the running Vault major version with nobody noticing.
+
+  Verified live upstream (not training-data recall, ADR-0004): fetched
+  `raw.githubusercontent.com/hashicorp/vault-helm/v0.34.0/values.yaml` directly
+  — confirms the chart's actual default is `server.image: {repository:
+  hashicorp/vault, tag: "2.0.3"}` (the `injector`/`agentImage` defaults are
+  irrelevant here since this Application sets `injector.enabled: false`).
+  Cross-checked `2.0.3` against every Vault CVE/security-bulletin disclosed in
+  2026 findable from this sandbox (`CVE-2026-3605` KVv2 wildcard-delete DoS,
+  `CVE-2026-5807` unauthenticated root-token/rekey DoS, `CVE-2026-5052` ACME
+  SSRF, `HCSEC-2026-07` token-exposure-to-auth-plugins, `HCSEC-2026-16` audit
+  device directory-guard bypass): every one of these is fixed in Vault CE
+  `2.0.0` or `2.0.1` at the latest — `2.0.3` (our chart's current default)
+  already ships every fix. This is a pin-what's-already-running change, not a
+  version bump — the running Vault does not change.
+
+  Add `image: {repository: "hashicorp/vault", tag: "2.0.3"}` under the existing
+  `server:` block in `gitops/platform/vault.yaml`'s `valuesObject` (sibling to
+  `standalone`/`dataStorage`/`resources`/`statefulSet`), matching the chart's
+  own default exactly so this is a no-op for the running cluster. Update the
+  existing line-49 comment to note the version is now an explicit pin, not an
+  inherited default. Add a `## Re-evaluation log`-style dated note (a comment
+  block above the `server:` key is fine — no dedicated Vault ADR exists to host
+  a real `## Re-evaluation log` section) recording this pin, citing the five
+  CVE/bulletin IDs above and their fixed versions, with a flip condition for
+  the next audit (e.g. "revisit when a bulletin names a version above `2.0.3`
+  as affected, or when bumping the chart `targetRevision` past `0.34.0`").
+  Extend `tests/securitycontext-vault.bats` with a new assertion alongside the
+  existing `"vault Application chart bumped to 0.34.0"` test —
+  `"vault Application server image pinned to 2.0.3"` via `yqs
+  '.spec.source.helm.valuesObject.server.image.tag' "$APP"` equals `"2.0.3"` —
+  a recurrence guard mirroring this repo's other per-component image-tag pin
+  assertions (Grafana, Argo Rollouts, Valkey). No topology change and the
+  running image is identical to today's chart-default, so no
+  README/`docs/dependency-tree.md` update is expected — note that explicitly in
+  the PR body. `make ci` must pass. `docs/done/` entry required.
+  (auto/vault-server-image-tag-pin)
+
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
   maintainer confirms at least one CI run pushed a `.sig` tag to Artifactory** — check
