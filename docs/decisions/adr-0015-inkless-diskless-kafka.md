@@ -128,7 +128,6 @@ make inkless-down # cascade-deletes all inkless resources
 | ADR-0005 (recreate-over-HA) | 1 broker + 1 postgres; `make inkless-up` recreates from manifests |
 | ADR-0009/0010 (RabbitMQ/Redis) | Complementary data-layer patterns; different interfaces and durability models |
 
-
 ---
 
 ## Re-evaluation log
