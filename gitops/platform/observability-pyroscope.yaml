@@ -17,7 +17,7 @@ spec:
   source:
     repoURL: https://grafana.github.io/helm-charts
     chart: pyroscope
-    targetRevision: 2.1.2
+    targetRevision: 2.2.0
     helm:
       releaseName: pyroscope
       valuesObject:
@@ -34,8 +34,9 @@ spec:
           replicaCount: 1
           # Pod Security Standards restricted (ADR-0017). Pyroscope image runs as UID 10001.
           # readOnlyRootFilesystem verified true: checked the pinned chart source
-          # (grafana/pyroscope repo, tag pyroscope-2.1.2,
-          # operations/pyroscope/helm/pyroscope/templates/deployments-statefulsets.yaml).
+          # (grafana/pyroscope repo, tag pyroscope-2.2.0,
+          # operations/pyroscope/helm/pyroscope/templates/deployments-statefulsets.yaml —
+          # the values.yaml interface is byte-identical to pyroscope-2.1.2, diffed directly).
           # With this config (v1 disabled, v2 enabled — the chart default — and the
           # single "all" component, i.e. singleBinary mode with metastore folded in),
           # the container mounts the same "data" PVC (persistence below) twice: at
