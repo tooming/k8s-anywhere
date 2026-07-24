@@ -126,6 +126,38 @@ emerges for an `8.1`+-only feature — bump
 "Chart + version" reference (§"Plain manifests over a Helm chart"), and this
 log entry's "kept" status.
 
+### 2026-07-21 — Harbor's own cache scoped exception: bundled redis-photon, not Valkey (#632)
+
+**Trigger.** Confirming ADR-0024's "12 GB gate" measurement (issue #632) required
+actually running `make harbor-up` for the first time. The `harbor` namespace had
+sat empty since the Harbor migration landed — not crashlooping, just never
+synced. Root cause: `gitops/platform/harbor.yaml` pointed Harbor's cache
+dependency at this ADR's platform Valkey via `redis.external.existingSecret`,
+which drives the `goharbor/harbor` chart's `harbor.redis.pwdfromsecret` helper —
+a Helm `lookup()` call that bakes the password into the core/jobservice
+connection URL at *template* time. ArgoCD only ever renders manifests via `helm
+template` (never `install`/`upgrade`), and `lookup()` is documented to always
+return nil outside a live install/upgrade — so manifest generation hard-crashed
+(nil pointer on `REDIS_PASSWORD`) before anything was ever applied. This is a
+permanent chart/ArgoCD incompatibility, not a fixable misconfiguration.
+
+**Decision: scoped exception, not a reconsideration of this ADR.**
+`gitops/platform/harbor.yaml` now sets `redis.type: internal`, letting Harbor
+deploy its own bundled `goharbor/redis-photon` pod instead of reusing platform
+Valkey. This ADR's core decision — Valkey as *the lab's* cache/key-value store —
+is unaffected; Harbor's bundled instance is a private dependency of one
+on-demand component, exercising the discretion ADR-0024 §"Minimal profile"
+already built in ("reuse platform Valkey... where practical... where the chart
+allows it"). User-approved explicitly given the `adr-guard-hook` flag this
+correctly raised.
+
+**Flip condition.** If the `goharbor/harbor` chart ever supports injecting the
+external-Redis password via a runtime env var (matching the pattern its
+`registry` component already uses for `REGISTRY_REDIS_PASSWORD`, rather than
+baking it into a template-time URL via `lookup()`), or ArgoCD gains a supported
+way to make `lookup()` resolve during `helm template`, re-point
+`gitops/platform/harbor.yaml` back at platform Valkey and remove this entry.
+
 ### 2026-07-22 — Valkey `8.0.10` security release; pin bumped from `8.0-alpine` (RFC #655, audit #654)
 
 **Trigger.** Valkey shipped a coordinated security release across every

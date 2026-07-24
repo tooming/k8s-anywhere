@@ -1,11 +1,13 @@
 # Allow ingress to Valkey pods in the data namespace (ADR-0016).
 # Permits traffic on the Valkey port (6379) from other pods in the data namespace
-# (valkey-load client) and from the harbor namespace (Harbor uses Valkey as its
-# cache/session store per ADR-0018/ADR-0024 — harbor-core/jobservice/registry),
-# plus the redis_exporter metrics port (9121) from Alloy in the observability
-# namespace. The harbor side already permits the matching egress (allow-harbor-
-# valkey-egress, RFC #297); default-deny in the data namespace still needs this
-# ingress counterpart or harbor-core crashloops on a Valkey i/o timeout.
+# (valkey-load client), plus the redis_exporter metrics port (9121) from Alloy in
+# the observability namespace.
+#
+# Harbor is NOT a Valkey client (removed 2026-07-21, #632): Harbor's chart
+# renders its external-Redis wiring via Helm `lookup()`, which always returns nil
+# under ArgoCD's `helm template` rendering, crashing manifest generation. Harbor
+# now runs its own bundled redis-photon cache instead (gitops/platform/harbor.yaml
+# ADR-0018 exception note) and never reaches this namespace.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -23,9 +25,6 @@ spec:
           protocol: TCP
       from:
         - podSelector: {}
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: harbor
     - ports:
         - port: 9121
           protocol: TCP

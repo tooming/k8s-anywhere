@@ -80,24 +80,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Valkey cache egress allow (Harbor → Valkey TCP 6379) -------------------------
-@test "allow-harbor-valkey-egress.yaml exists in harbor/networkpolicy/" {
-  [ -f "$HARBOR_NP/allow-harbor-valkey-egress.yaml" ]
-}
-
-@test "harbor kustomization references the valkey egress allow file" {
+# Valkey cache egress allow removed 2026-07-21 (#632): Harbor's external-Redis
+# wiring never rendered under ArgoCD (Helm `lookup()` always nil in `helm
+# template`), so Harbor now uses its own bundled redis-photon cache and never
+# talks to the data namespace. See gitops/platform/harbor.yaml's ADR-0018
+# exception note.
+@test "harbor kustomization does not reference the removed valkey egress allow file" {
   run grep -q 'allow-harbor-valkey-egress.yaml' "$HARBOR_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-harbor-valkey-egress allows egress on port 6379" {
-  run grep -q 'port: 6379' "$HARBOR_NP/allow-harbor-valkey-egress.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-harbor-valkey-egress targets the data namespace" {
-  run grep -q 'kubernetes.io/metadata.name: data' "$HARBOR_NP/allow-harbor-valkey-egress.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 # --- intra-namespace allow (Harbor component-to-component + internal Postgres) ----

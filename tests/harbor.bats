@@ -259,21 +259,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "harbor allow-harbor-valkey-egress.yaml exists" {
-  [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-valkey-egress.yaml" ]
-}
-
-@test "harbor Valkey egress allow targets port 6379 to data namespace (ADR-0018)" {
-  run grep -q 'kubernetes.io/metadata.name: data' \
-    "$REPO/gitops/harbor/networkpolicy/allow-harbor-valkey-egress.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "harbor Valkey egress allow uses port 6379" {
-  run grep -q 'port: 6379' "$REPO/gitops/harbor/networkpolicy/allow-harbor-valkey-egress.yaml"
-  [ "$status" -eq 0 ]
-}
-
 @test "harbor allow-harbor-intra-namespace.yaml exists (internal DB + component traffic)" {
   [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-intra-namespace.yaml" ]
 }

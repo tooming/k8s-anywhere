@@ -89,9 +89,14 @@ trivy/notary/redis/db). The lab runs a **deliberately trimmed profile**:
 - **Disable bundled Trivy** — the lab already scans cluster-wide via **Trivy Operator
   (ADR-0022)**; running two scan paths is redundant.
 - **Disable Notary** — out of scope for the first cut (OCI pull/push only).
-- **Point at existing platform services where practical** — reuse the platform
-  **Valkey (ADR-0018)** for Harbor's Redis dependency and a shared Postgres rather than
-  bundling Harbor's own, where the chart allows it.
+- **Point at existing platform services where practical** — a shared Postgres rather
+  than bundling Harbor's own, where the chart allows it. **Redis is the exception**:
+  reusing the platform **Valkey (ADR-0018)** was the original intent but doesn't
+  render under ArgoCD (the chart's `existingSecret` path needs Helm `lookup()`, which
+  is always nil outside a live `install`/`upgrade` — see [ADR-0018's 2026-07-21 log
+  entry](adr-0018-valkey-not-redis.md#2026-07-21--harbors-own-cache-scoped-exception-bundled-redis-photon-not-valkey-632)).
+  Harbor runs its own bundled `redis-photon` instead; this is scoped to Harbor's own
+  cache and doesn't reopen ADR-0018.
 
 **Whether this trimmed profile actually beats Artifactory's 1–2 GB on this VM is an
 acceptance gate, not a foregone conclusion.** The measured footprint of the running minimal
@@ -128,7 +133,7 @@ no plaintext creds in CI. Out of scope for the first cut: any non-registry Harbo
 | [ADR-0008](adr-0008-envoy-gateway-not-traefik.md) | Harbor UI + registry endpoint exposed via an Envoy `HTTPRoute` (`harbor.127.0.0.1.nip.io`). |
 | [ADR-0011](adr-0011-artifactory-not-nexus.md) | **Superseded.** ADR-0011 chose Artifactory OSS; this ADR records the explicit switch to Harbor and the reasoning. |
 | [ADR-0017](adr-0017-pod-security-standards-restricted.md) | Target `restricted` for the `harbor` namespace if the chart renders non-root; the old `artifactory → baseline` row is removed. |
-| [ADR-0018](adr-0018-valkey-not-redis.md) | Reuse the platform Valkey for Harbor's Redis dependency where practical, rather than bundling Harbor's own. |
+| [ADR-0018](adr-0018-valkey-not-redis.md) | Platform Valkey reuse doesn't render under ArgoCD (Helm `lookup()` is nil in `helm template`); Harbor runs its own bundled `redis-photon` instead as a scoped exception — see ADR-0018's 2026-07-21 log entry. |
 | [ADR-0022](adr-0022-trivy-operator-supply-chain.md) | Bundled Harbor Trivy is **disabled** — scanning is already cluster-wide via Trivy Operator; one scan path, not two. |
 
 ---
