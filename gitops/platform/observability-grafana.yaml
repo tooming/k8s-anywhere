@@ -22,7 +22,7 @@ spec:
     # sources before bumping.
     repoURL: https://grafana-community.github.io/helm-charts
     chart: grafana
-    targetRevision: 12.7.3
+    targetRevision: 12.8.0
     helm:
       releaseName: grafana
       valuesObject:
@@ -57,7 +57,10 @@ spec:
         # v13.0.1's packaging/docker/run.sh, re-diffed when bumping to 13.0.3; the
         # 12.7.2 -> 12.7.3 chart bump changed only the chart's default bundled
         # image tag per its release notes, not templates/_pod.tpl, so this
-        # analysis still holds unchanged at 12.7.3).
+        # analysis still holds unchanged at 12.7.3; the 12.7.3 -> 12.8.0 bump
+        # touched only Chart.yaml's version + a testFramework bats image tag,
+        # values.yaml/templates/_pod.tpl diffed byte-identical, so this
+        # analysis still holds unchanged at 12.8.0).
         #
         # Pod-level securityContext is set via the `securityContext` key, NOT
         # `podSecurityContext` -- this chart's templates/_pod.tpl reads
