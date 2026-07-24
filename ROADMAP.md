@@ -3575,7 +3575,7 @@ You review and merge plan PRs, same as implementation PRs.
 > — both need an architect go/no-go call, not a mechanical bump, per
 > `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
 
-- [ ] 🟢 **`kube-state-metrics` chart major bump — `7.8.1` → `8.0.0`** (issue #704;
+- [x] 🟢 **`kube-state-metrics` chart major bump — `7.8.1` → `8.0.0`** (issue #704;
   RFC #707 — architect decision 2026-07-24: **Approve.** appVersion unchanged at
   `2.19.1` — chart-packaging-only major bump, the entire breaking surface is the
   chart dropping its own bundled `CiliumNetworkPolicy` template +
