@@ -39,8 +39,8 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-@test "rabbitmq image is pinned to 4.3.3-management (patch bump from 4.3.2)" {
-  run grep -q 'image: rabbitmq:4\.3\.3-management' "$REPO/gitops/data/rabbitmq/statefulset.yaml"
+@test "rabbitmq image is pinned to 4.3.4-management (patch bump from 4.3.3)" {
+  run grep -q 'image: rabbitmq:4\.3\.4-management' "$REPO/gitops/data/rabbitmq/statefulset.yaml"
   [ "$status" -eq 0 ]
 }
 
