@@ -1,5 +1,13 @@
 # ArgoCD Helm values — tuned for a 16 GB localhost lab.
 # See docs/00-architecture.md for the role ArgoCD plays.
+#
+# Note on `redis:`/`redisSecretInit:` below: these configure the argo-cd chart's
+# OWN bundled Redis instance, a mandatory upstream dependency of every argo-cd
+# Helm install (ArgoCD's API server cache) — present in this file since before
+# this comment existed. This is unrelated to ADR-0018 ("Valkey as the lab's own
+# cache/key-value store"), which scopes to workloads this repo chooses to run,
+# not a third-party chart's internal plumbing that ships regardless of that
+# decision. Not a reintroduction of Redis as lab infrastructure.
 
 global:
   domain: argocd.localhost
@@ -77,13 +85,26 @@ applicationSet:
 #
 # metrics.enabled creates the *-metrics Services that Alloy scrapes for the
 # stack-health dashboard (app sync/health, controller, repo-server, api).
+#
+# Explicit memory limit (found 2026-07-24, #632 investigation): with no
+# `limits.memory` set here, the argocd namespace's `standard-limits` LimitRange
+# (gitops/governance/argocd) filled in its `default` container limit of 512Mi —
+# identical to the request above. The Application count has grown to 124 (from
+# the ~50 this comment originally sized for); reconciling that many on
+# controller restart spikes well past 512Mi, and the container OOMKills
+# (exit 137) in ~13s, crashlooping indefinitely and leaving every Application
+# stuck in "Unknown" health. 2Gi gives headroom for further growth while
+# staying well inside the node's 12Gi budget and the LimitRange's 4Gi max.
 controller:
   metrics:
     enabled: true
   resources:
     requests:
       cpu: 250m
-      memory: 512Mi
+      memory: 768Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
   # application-controller has no livenessProbe by default; only readiness.
   readinessProbe:
     timeoutSeconds: 5
@@ -118,3 +139,17 @@ redis:
     requests:
       cpu: 25m
       memory: 64Mi
+
+# Found 2026-07-24 (#632 investigation): unlike every other component, the
+# redis-secret-init pre-upgrade hook Job does NOT inherit `global.securityContext`
+# — it has its own dedicated `redisSecretInit.securityContext` key (chart default:
+# `{}`, i.e. no pod-level securityContext at all). With ADR-0017's
+# require-pod-security-restricted Kyverno policy in Enforce mode, that empty
+# pod-level securityContext blocks the hook Job outright, which blocks every
+# `helm upgrade` (the pre-upgrade hook must succeed first) — this repo's `make
+# argocd` bootstrap/upgrade path was silently broken until this was set explicitly.
+redisSecretInit:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault

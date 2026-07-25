@@ -23,6 +23,14 @@ cpu_millis() {
   esac
 }
 
+# "768Mi" -> 768 ; "2Gi" -> 2048
+mem_mi() {
+  case "$1" in
+    *Gi) echo $(( ${1%Gi} * 1024 )) ;;
+    *Mi) echo "${1%Mi}" ;;
+  esac
+}
+
 @test "argocd values.yaml exists" {
   [ -f "$VALS" ]
 }
@@ -44,4 +52,23 @@ cpu_millis() {
 
 @test "application-controller readiness relaxes the chart-default 1s timeout" {
   [ "$(yqs '.controller.readinessProbe.timeoutSeconds' "$VALS")" -ge 3 ]
+}
+
+# Found 2026-07-24 (#632 investigation): with no explicit controller memory
+# limit, the argocd namespace's `standard-limits` LimitRange (gitops/governance/
+# argocd) silently filled in its 512Mi container default — identical to the
+# request, so any reconcile spike above 512Mi (routine at 100+ Applications)
+# OOMKilled the controller in seconds, crashlooping it indefinitely with every
+# Application stuck at health "Unknown". An explicit limit here is the only way
+# to keep this off the LimitRange's low default as the Application count grows.
+@test "application-controller sets an explicit memory limit (does not fall back to the namespace LimitRange default)" {
+  local limit
+  limit="$(yqs '.controller.resources.limits.memory' "$VALS")"
+  [ -n "$limit" ]
+  [ "$limit" != "null" ]
+}
+
+@test "application-controller memory limit >= 1Gi (512Mi LimitRange default OOMKilled it at 124 Applications)" {
+  run mem_mi "$(yqs '.controller.resources.limits.memory' "$VALS")"
+  [ "$output" -ge 1024 ]
 }
