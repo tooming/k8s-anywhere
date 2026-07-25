@@ -60,6 +60,23 @@
 # restructured into pkg/ across this version range) -- both are pure
 # code-reorganization moves, not schema changes: every field this repo sets
 # resolves identically at the new pin.
+#
+# Bumped 1.10.9 -> 1.11.0 (2026-07-25, upgrade-drafter sweep): confirmed via the
+# OCI registry's real tag list (ghcr.io/v2/akuity/kargo-charts/kargo/tags/list,
+# paginated with n=1000) that 1.11.0 is the newest stable tag above 1.10.9 --
+# only pre-1.11.0 -rc.* tags exist beyond it, no newer stable release. Not a
+# major bump (1.x line). Schema compatibility verified directly against the
+# chart's real values.yaml committed in the source repo at both git tags
+# (raw.githubusercontent.com/akuity/kargo/{v1.10.9,v1.11.0}/charts/kargo/values.yaml
+# -- the OCI blob CDN itself is proxy-blocked in this sandbox, this is the
+# equivalent real source, not fabricated): every path this Application sets
+# (global.securityContext, api.{replicas,resources,tls.selfSignedCert,secret},
+# controller.{replicas,resources}, webhooksServer.{replicas,resources}) is
+# present unchanged at both tags -- the diff is purely additive (new optional
+# Dex BYO-OIDC config, revisionHistoryLimit/rollingUpdate knobs, coarse
+# workloads/dataPlane install switches all defaulting to the prior behavior)
+# plus doc/comment rewording. No CVE is cited in the 1.11.0 release itself;
+# this bump is routine version currency, not a security fix.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -72,7 +89,7 @@ spec:
   source:
     repoURL: ghcr.io/akuity/kargo-charts
     chart: kargo
-    targetRevision: 1.10.9
+    targetRevision: 1.11.0
     helm:
       releaseName: kargo
       valuesObject:

@@ -31,9 +31,13 @@ Adopt **Kargo** as the lab's promotion-orchestration layer.
 
 ### Chart + version
 
-- **Helm repo:** `https://charts.kargo.io`
+- **Helm repo:** `ghcr.io/akuity/kargo-charts` (OCI; the original
+  `https://charts.kargo.io` HTTPS index was retired upstream — see
+  `gitops/platform/kargo.yaml`'s header comment)
 - **Chart:** `kargo`
-- **Version:** `1.2.0` (pin; update to latest stable before `make kargo-up`)
+- **Version:** `1.11.0` (pin; see [§Re-evaluation log](#re-evaluation-log) for the bump
+  history — CVE-driven bumps get their own dated entry there and in
+  `gitops/platform/kargo.yaml`'s header comment)
 - **Namespace:** `kargo` (new; PSA `restricted` — Kargo pods run as uid 65532)
 
 ### Footprint controls (ON-DEMAND)
@@ -209,6 +213,38 @@ bolt-on external notifier.
   `controller_runtime_reconcile_total{job="kargo",result="error"}` series) — that is
   Alertmanager-shaped work, not a Slack/webhook integration, and would need its own gap
   writeup if/when Alertmanager becomes a lab component.
+
+### 2026-07-25 — Chart bumped `1.10.9` → `1.11.0` (routine currency, upgrade-drafter sweep)
+
+**Trigger.** A same-source enumeration pass (upgrade-drafter role, invoked as an
+executor STEP 6b fallback after the "Now / next" lane came up fully gated on the
+standing `[Action required]` issues #631/#632/#633) found `gitops/platform/kargo.yaml`'s
+`1.10.9` pin one minor release behind the OCI registry's real newest stable tag.
+
+**Verification (ADR-0004).** Confirmed `1.11.0` is a real, non-pre-release tag via the
+OCI registry's own tag list (`ghcr.io/v2/akuity/kargo-charts/kargo/tags/list?n=1000`,
+paginated — the default unpaginated response silently truncates to very old tags).
+The OCI blob CDN itself is proxy-blocked in this sandbox, so schema compatibility was
+verified against the equivalent real source instead: the chart's committed
+`charts/kargo/values.yaml` at both git tags
+(`raw.githubusercontent.com/akuity/kargo/{v1.10.9,v1.11.0}/charts/kargo/values.yaml`).
+Every value path this Application sets (`global.securityContext`,
+`api.{replicas,resources,tls.selfSignedCert,secret}`,
+`controller.{replicas,resources}`, `webhooksServer.{replicas,resources}`) is present
+unchanged at both tags; the diff is purely additive (new optional Dex BYO-OIDC config,
+`revisionHistoryLimit`/`rollingUpdate` knobs, coarse `workloads`/`dataPlane` install
+switches all defaulting to prior behavior) plus comment rewording. No CVE is cited
+against `1.10.9` or fixed specifically by `1.11.0` — this is routine version currency,
+not a security-driven bump (unlike the two dated bumps recorded in
+`gitops/platform/kargo.yaml`'s own header comment).
+
+**Decision: bump.** No blast radius either way — Kargo is ON-DEMAND (not auto-synced;
+ADR-0005 budget), so this pin only takes effect on the next `make kargo-up`.
+
+**Flip conditions:** revisit when the OCI registry's tag list shows a newer stable
+release above `1.11.0`, or a security advisory is filed against `1.11.0` (check
+`github.com/akuity/kargo/security/advisories` — GitHub API access for arbitrary repos
+is proxy-blocked in this sandbox; check manually or via the maintainer).
 
 ---
 
