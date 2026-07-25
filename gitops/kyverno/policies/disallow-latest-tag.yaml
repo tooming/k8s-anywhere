@@ -9,6 +9,21 @@
 # from-scratch sync (crash/restart, node evict, Rollout scale event) is rejected and
 # ArgoCD's selfHeal keeps retrying the same failing reconcile. Remove this exclusion
 # once capstone's manifests reference a real, CI-pinned tag instead of `:latest`.
+#
+# argocd carve-out (found 2026-07-24, #632 investigation): infra/modules/argocd/
+# values.yaml pins `global.image.tag: latest` deliberately (documented TODO —
+# needs the /applicationsets UI route from argoproj/argo-cd#26666, which only
+# ships from v3.5.0-rc1 onward; no stable v3.5.0 exists yet, re-verified
+# 2026-07-24). Without this exclusion every ArgoCD-managed Pod this applies to
+# (application-controller, repo-server, server, the chart's bundled cache-init
+# hook Job, …) is rejected on any recreation — this silently went undetected
+# for days because the running Pods predated Kyverno enforcing the policy and
+# container restarts don't re-trigger admission, until application-controller
+# OOMKilled (separate fix, same investigation) and could never come back:
+# Kyverno blocked every recreation attempt, and `helm upgrade` (via `make
+# argocd`) failed identically on its pre-upgrade hook Job. Remove this
+# exclusion once argo-cd ships a stable release containing #26666 and the
+# `latest` pin in values.yaml is dropped in favor of a real version tag.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -30,7 +45,7 @@ spec:
     exclude:
       any:
       - resources:
-          namespaces: [capstone]
+          namespaces: [capstone, argocd]
     validate:
       message: "Image tag is required and must not be ':latest'."
       foreach:
