@@ -3,6 +3,13 @@
 # A co-located redis_exporter container exposes Prometheus metrics on :9121, scraped by Alloy and
 # shown on the "Lab — Valkey" dashboard. ADR-0005: single replica recovers in place;
 # production uses Valkey Cluster (ADR-0018).
+#
+# redis_exporter bumped v1.87.0 -> v1.88.0 (2026-07-25, upgrade-drafter sweep): confirmed
+# newest stable tag via the source repo's own git tags (github.com/oliver006/redis_exporter)
+# and cross-checked the exact `v1.88.0-alpine` variant exists on Docker Hub. Release adds one
+# new metric (`stream_entries_added_total`) only -- no flag/env-var changes, no CVE involved.
+# This container sets no custom command/flags beyond REDIS_ADDR/REDIS_PASSWORD env vars
+# (both long-stable), so the upgrade surface is minimal.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -83,7 +90,7 @@ spec:
             - name: tmp
               mountPath: /tmp
         - name: exporter
-          image: oliver006/redis_exporter:v1.87.0-alpine
+          image: oliver006/redis_exporter:v1.88.0-alpine
           ports:
             - name: metrics
               containerPort: 9121

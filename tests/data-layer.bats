@@ -44,8 +44,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "valkey's redis_exporter sidecar is pinned to v1.87.0-alpine (patch bump from v1.84.0)" {
-  run grep -q 'image: oliver006/redis_exporter:v1\.87\.0-alpine' "$REPO/gitops/data/valkey/statefulset.yaml"
+@test "valkey's redis_exporter sidecar is pinned to v1.88.0-alpine (patch bump from v1.87.0)" {
+  run grep -q 'image: oliver006/redis_exporter:v1\.88\.0-alpine' "$REPO/gitops/data/valkey/statefulset.yaml"
   [ "$status" -eq 0 ]
 }
 
