@@ -3289,6 +3289,36 @@ You review and merge plan PRs, same as implementation PRs.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
+- [ ] 🟢 **`capstone-pipeline` governance LimitRange — RFC #294 fan-out completion**
+  (CHARTER **Core Values** §"Fits the 16 GB reality" + §"Everything as code; GitOps
+  deploys it"; RFC #294 mapping-table completion gap — discovered via a systematic
+  cross-reference of every PSA-labeled namespace against
+  `gitops/platform/governance-appset.yaml`'s coverage list, same technique that found
+  the `auto/remove-dead-kiali-governance` cleanup. **No prerequisites — executor may
+  pick up immediately.**) The `capstone-pipeline` namespace
+  (`gitops/kargo-project/namespace.yaml`, PSA `restricted` — ADR-0017's own row calls
+  it "a defense-in-depth floor ensuring any future pod admitted here is hardened by
+  default") is the only PSA-labeled, non-excluded namespace still missing a
+  governance LimitRange entry: every other standard-tier namespace already has one,
+  and `capstone-pipeline` is not in the documented on-demand-heavy exclusion list
+  (`tidb`, `tidb-admin`, `longhorn-system`, `istio-system`, `inkless`) or the
+  ADR-0024 `artifactory` exclusion. Add
+  `gitops/governance/capstone-pipeline/kustomization.yaml` (standard tier, mirrors
+  every other leaf overlay: `resources: [../base/limitrange-standard.yaml]`). Add a
+  `capstone-pipeline-governance` entry to `governance-appset.yaml`'s list generator
+  (`gitPath: gitops/governance/capstone-pipeline`, `destNamespace:
+  capstone-pipeline`). Add `capstone-pipeline` to `tests/governance.bats`'s
+  `STANDARD_NS`. Update `docs/dependency-tree.md`'s wave-4 governance list to include
+  `capstone-pipeline`. **Executor note:** unlike most governance items, this creates
+  one new piece of always-on auto-synced cluster state (a `capstone-pipeline`
+  namespace + LimitRange, pre-created ahead of `make kargo-up`) — the same
+  pre-creation pattern already used for the `kargo` namespace itself via
+  `kargo-extras`, not a new pattern. PR body must call this out explicitly and note
+  the rollback path (revert the appset entry; ArgoCD prunes the LimitRange +
+  namespace within its sync interval — `capstone-pipeline` hosts no other workload
+  today, so pruning is lossless). `make ci` must pass. `docs/done/` entry required.
+  (auto/governance-capstone-pipeline)
+
 - [x] 🟢 **O5 bats gap — `lab-argocd.json` + `lab-gitsync.json` in
   `tests/dashboard-coverage.bats`** (CHARTER **Core Values** §"Docs &
   dashboards don't drift" + **Objective O5**, due **2026-09-30**; O5 drift
