@@ -3289,7 +3289,7 @@ You review and merge plan PRs, same as implementation PRs.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
-- [ ] 🟢 **`capstone-pipeline` governance LimitRange — RFC #294 fan-out completion**
+- [x] 🟢 **`capstone-pipeline` governance LimitRange — RFC #294 fan-out completion**
   (CHARTER **Core Values** §"Fits the 16 GB reality" + §"Everything as code; GitOps
   deploys it"; RFC #294 mapping-table completion gap — discovered via a systematic
   cross-reference of every PSA-labeled namespace against
