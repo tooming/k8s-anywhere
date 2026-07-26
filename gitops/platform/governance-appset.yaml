@@ -80,6 +80,9 @@ spec:
           - appName: keda-governance
             gitPath: gitops/governance/keda
             destNamespace: keda
+          - appName: capstone-pipeline-governance
+            gitPath: gitops/governance/capstone-pipeline
+            destNamespace: capstone-pipeline
           # heavy tier (RFC #294 mapping table)
           - appName: observability-governance
             gitPath: gitops/governance/observability

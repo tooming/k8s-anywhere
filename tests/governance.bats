@@ -87,7 +87,7 @@ setup() {
 # workload ever runs in (removed in the chore that added this comment).
 STANDARD_NS="argocd capstone kyverno external-secrets velero argo-rollouts \
 trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway harbor \
-cert-manager keda"
+cert-manager keda capstone-pipeline"
 
 @test "every standard-tier namespace has a governance leaf overlay" {
   for ns in $STANDARD_NS; do
