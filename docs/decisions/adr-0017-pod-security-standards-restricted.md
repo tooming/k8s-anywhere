@@ -128,7 +128,7 @@ so the executor never silently applies the wrong label.
 | `inkless` | `baseline` | The Aiven Inkless broker image (`ghcr.io/aiven/inkless:latest`) — see [§Re-evaluation log](#re-evaluation-log) 2026-07-18: the pinned upstream Dockerfile now ends `USER appuser` (non-root), but the profile stays `baseline` until the second half of the flip condition is also met. **Flip condition:** BOTH (a) `ghcr.io/aiven/inkless` ships an explicit non-root `USER` directive — met, see log — AND (b) the runtime is verified non-root on a live cluster — outstanding. Per RFC #257 (architect decision 2026-06-23), audit #494 (2026-07-18, kept). |
 | `longhorn-system` | `privileged` | longhorn-manager and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, and host `/dev`. Block storage cannot work under `restricted`. Per ADR-0013 §"PSA profile". |
 | `istio-system` | `privileged` | istio-cni runs as a DaemonSet that mutates host CNI config; ztunnel requires `NET_ADMIN`. Both fail under `restricted`. Per ADR-0012 §"PSA profile". (Kiali co-resides in this namespace; no separate `kiali` row needed. Per RFC #288.) |
-| `artifactory` | `baseline` | JVM initContainers in `jfrog/artifactory-oss` run as root UID 0 for `chown`; main JVM process runs as UID 1030. `restricted` is not viable without upstream chart changes documenting restricted-compatible initContainers. **Flip condition:** when the upstream `jfrog/artifactory-oss` chart documents restricted-compatible initContainers. Per RFC #287 (architect decision 2026-06-27). |
+| `artifactory` | `baseline` | JVM initContainers in `jfrog/artifactory-oss` run as root UID 0 for `chown`; main JVM process runs as UID 1030. `restricted` is not viable without upstream chart changes documenting restricted-compatible initContainers. **Flip condition:** when the upstream `jfrog/artifactory-oss` chart documents restricted-compatible initContainers — checked 2026-07-26, not yet met, see [§Re-evaluation log](#re-evaluation-log). Per RFC #287 (architect decision 2026-06-27). |
 | `node-exporter` | `privileged` | The `prometheus-node-exporter` DaemonSet mounts the host `/proc` and `/sys` via `hostPath` to read node metrics. `hostPath` volumes are forbidden by **both** `restricted` (Volume Types control) **and** `baseline` (verified against `baseline:latest`/`restricted:latest` on-cluster) — only `privileged` admits them. So it cannot run in the `restricted` `observability` namespace (it sat desired=2/ready=0, rejected at admission on the hostPath volumes), and `baseline` is not sufficient either. `privileged` is the tier `hostPath` requires — same class as `longhorn-system`/`istio-system` — not extra power: the workload stays hardened by its own securityContext (non-root UID 65534, `drop: [ALL]`, `readOnlyRootFilesystem`, seccomp `RuntimeDefault`, `hostPID`/`hostNetwork` false). Given its own namespace so the LGTMP `observability` stack stays `restricted`. **Flip condition:** none expected — host-metrics collection fundamentally requires `hostPath`. |
 | `harbor` | `restricted` | Harbor is Go-based; core/registry/jobservice all run as non-root UID 10000; portal uses nginx with a non-root UID in the 1.19.x chart (unchanged since 1.16.x — verified directly against the chart's `templates/portal/deployment.yaml` at both tags before the version bump, RFC/upgrade-drafter run 2026-07-19). No host volumes, no special capabilities. Per ADR-0024 / RFC #297 (architect decision 2026-06-30). |
 | `cert-manager` | `restricted` | Controller, webhook, and cainjector all default to `runAsNonRoot: true` + `seccompProfile.type: RuntimeDefault` (pod) and `allowPrivilegeEscalation: false` + `capabilities.drop: [ALL]` + `readOnlyRootFilesystem: true` (container) with no chart override — the full `restricted` profile out of the box, verified against the pinned chart's `values.yaml`. Per ADR-0028. |
@@ -391,6 +391,58 @@ actually reads — **verify against the actual manifest/chart source before
 assuming a key name**, per the key-path-mismatch bugfix this same run already
 found and fixed for four other components (kube-state-metrics, node-exporter,
 grafana, alloy — see `docs/done/2026-07-18-fix-podsecuritycontext-key-mismatch.md`).
+
+### 2026-07-26 — `artifactory` carve-out kept, flip condition re-checked (executor currency check)
+
+**Trigger.** Periodic re-check of RFC #287's flip condition: "when the
+upstream `jfrog/artifactory-oss` chart documents restricted-compatible
+initContainers" — done as part of the routine standing-issue-recheck cycle
+finding no other buildable work available.
+
+**What was checked.** This repo pins `gitops/platform/artifactory.yaml`'s
+`targetRevision` to `107.77.11`; upstream `jfrog/charts` master is currently
+at chart version `107.146.29` (latest CHANGELOG entry 2026-01-28). Searched
+the chart's CHANGELOG and GitHub issues/PRs for any announcement of PSS/
+restricted-compatible initContainers, `runAsNonRoot`, or a chown-avoidance
+change — found none. Inspected the **current master** `templates/
+artifactory-statefulset.yaml`: every initContainer there
+(`delete-db-properties`, `access-bootstrap-creds`,
+`copy-system-configurations`, `copy-custom-certificates`,
+`copy-circle-of-trust-certificates`, `wait-for-db`, `migration-artifactory`)
+applies the same non-root `containerSecurityContext` as the main container —
+no `runAsUser: 0` and no `CHOWN` capability grant found repo-wide in
+`stable/artifactory`. The chart's own CHANGELOG shows a much older
+change in this direction (`[11.0.11] — 2020-09-25`: "Update to use linux
+capability CAP_CHOWN instead of root base init container"), but that predates
+the chart's current `107.x` versioning scheme and no matching capability-add
+exists in the current templates either — suggesting reliance on `fsGroup`
+instead of an explicit root initContainer today.
+
+**Decision: keep `artifactory: baseline`, condition not met.** Two gaps stop
+this from counting as met: (1) there is no explicit upstream announcement
+("documents restricted-compatible initContainers") — the ADR's flip
+condition is written to require a documented statement, not just an absence
+of root in one file read; (2) this check only inspected the main
+`artifactory-statefulset.yaml` on **master**, not the pinned `107.77.11` tag
+specifically, and did not inspect the bundled `postgresql`/`nginx` subcharts
+(Bitnami-style postgresql charts commonly ship their own root
+`init-chmod-data`-style container for PVC permissions, independent of the
+main app chart). Asserting the flip condition met on this partial evidence
+would risk fabricating a security posture this session has not fully
+verified (ADR-0004) — and, unlike the read-only `inkless` Dockerfile check,
+getting an artifactory PSA flip wrong risks actually breaking the JVM's
+database/certificate bootstrap on a live cluster if a subchart initContainer
+does still need root.
+
+**Flip condition (unchanged, evidence gap narrowed for a future check).**
+When the upstream `jfrog/artifactory-oss` chart documents
+restricted-compatible initContainers. A future check should: (a) render
+(`helm template`) the exact pinned chart version rather than reading master;
+(b) inspect the `postgresql` and `nginx` subchart templates this chart
+bundles, not just the top-level `artifactory-statefulset.yaml`; (c) look for
+an explicit chart-maintainer statement (CHANGELOG/release notes), not just
+inferred behavior from template contents, before treating the condition as
+satisfied.
 
 ---
 
