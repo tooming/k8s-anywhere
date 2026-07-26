@@ -124,7 +124,7 @@ so the executor never silently applies the wrong label.
 | `kargo` | `restricted` | Kargo api/controller/webhooks-server all run as UID 65532 (non-root); no host volumes, no special capabilities. Per ROADMAP `auto/pss-kro-namespace` pattern. |
 | `capstone-pipeline` | `restricted` | No workloads currently run in this namespace (Kargo itself runs in the `kargo` namespace; the Project CRD manages this namespace). `restricted` is a defense-in-depth floor ensuring any future pod admitted here is hardened by default. Per ROADMAP `auto/capstone-pipeline-psa`. |
 | `envoy-gateway-system` | `baseline` | Two pod types share the namespace: the Gateway controller (non-root, `restricted`-compatible) and Envoy proxy data-plane pods (default UID 0 in `gateway-helm` v1.8.0). Flipping to `restricted` risks breaking north-south traffic. `baseline` blocks the most dangerous controls while permitting root UIDs. **Flip condition:** upstream chart explicitly supports non-root proxy pods via `EnvoyProxy.spec.provider.kubernetes.envoyDeployment.pod.securityContext` AND maintainer verifies north-south traffic unaffected after label flip. Per RFC #230 (architect decision 2026-06-19). |
-| `lab-demo` | `baseline` | The upstream `jaegertracing/example-hotrod` image runs as root (no `USER` instruction in the Dockerfile). `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when the image ships a non-root UID or is superseded by the capstone-built image. Per ROADMAP `auto/pss-np-lab-demo`. |
+| `lab-demo` | `baseline` | The upstream `jaegertracing/example-hotrod` image runs as root (no `USER` instruction in the Dockerfile). `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when the image ships a non-root UID or is superseded by the capstone-built image — checked 2026-07-26, not yet met, see [§Re-evaluation log](#re-evaluation-log). Per ROADMAP `auto/pss-np-lab-demo`. |
 | `inkless` | `baseline` | The Aiven Inkless broker image (`ghcr.io/aiven/inkless:latest`) — see [§Re-evaluation log](#re-evaluation-log) 2026-07-18: the pinned upstream Dockerfile now ends `USER appuser` (non-root), but the profile stays `baseline` until the second half of the flip condition is also met. **Flip condition:** BOTH (a) `ghcr.io/aiven/inkless` ships an explicit non-root `USER` directive — met, see log — AND (b) the runtime is verified non-root on a live cluster — outstanding. Per RFC #257 (architect decision 2026-06-23), audit #494 (2026-07-18, kept). |
 | `longhorn-system` | `privileged` | longhorn-manager and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, and host `/dev`. Block storage cannot work under `restricted`. Per ADR-0013 §"PSA profile". |
 | `istio-system` | `privileged` | istio-cni runs as a DaemonSet that mutates host CNI config; ztunnel requires `NET_ADMIN`. Both fail under `restricted`. Per ADR-0012 §"PSA profile". (Kiali co-resides in this namespace; no separate `kiali` row needed. Per RFC #288.) |
@@ -443,6 +443,35 @@ bundles, not just the top-level `artifactory-statefulset.yaml`; (c) look for
 an explicit chart-maintainer statement (CHANGELOG/release notes), not just
 inferred behavior from template contents, before treating the condition as
 satisfied.
+
+### 2026-07-26 — `lab-demo` carve-out kept, flip condition re-checked (executor currency check)
+
+**Trigger.** Same routine standing-issue-recheck cycle as the `artifactory`
+entry directly above — checking a different, fully self-contained ADR flip
+condition (no live-cluster-verification half, unlike `inkless`/`artifactory`)
+while the executor lane stays gated on #631/#632/#633.
+
+**What was checked.** This repo pins `gitops/apps/demo/deployment.yaml`'s
+image to the floating `jaegertracing/example-hotrod:latest`. Checked the
+actual upstream source: `examples/hotrod/Dockerfile` in `jaegertracing/jaeger`
+(`main` branch, HEAD). The file's most recent change (#7769, "Bump hotrod
+Dockerfile to Alpine 3.23 for security fix," merged 2025-12-25) is a base-image
+version bump only; the file has never contained a `USER` instruction across
+its full history back to its creation (#694, 2018-02) — final build stage is
+`FROM scratch`, entrypoint runs as root (UID 0) by default. Also checked
+CHANGELOG/release notes for hotrod-specific "non-root"/"drop root" language —
+none found. There is a long-standing, still-open upstream issue
+(`jaegertracing/jaeger#2460`, "Run the jaeger-agent as a non-root user by
+default", plus a related `jaeger-openshift#44`) confirming this is a known,
+unresolved upstream gap rather than something already shipped and simply
+unnoticed here.
+
+**Decision: keep `lab-demo: baseline`, condition not met.** Straightforward
+no this time — no ambiguity like the `artifactory` check above, since this
+Dockerfile has no build-time subchart/tag-pin nuance to further narrow.
+
+**Flip condition (unchanged).** When the image ships a non-root UID or is
+superseded by the capstone-built image.
 
 ---
 
