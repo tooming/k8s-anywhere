@@ -65,9 +65,6 @@ spec:
           - appName: lab-gateway-governance
             gitPath: gitops/governance/lab-gateway
             destNamespace: lab-gateway
-          - appName: kiali-governance
-            gitPath: gitops/governance/kiali
-            destNamespace: kiali
           - appName: harbor-governance
             gitPath: gitops/governance/harbor
             destNamespace: harbor

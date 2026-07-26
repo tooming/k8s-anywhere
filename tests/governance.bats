@@ -80,8 +80,13 @@ setup() {
 # auto/governance-cert-manager-keda — both landed after RFC #294's original
 # fan-out and were missing a governance leaf until this item.
 # `artifactory` is intentionally absent: ADR-0024 supersedes ADR-0011.
+# `kiali` is intentionally absent: Kiali co-resides in the `istio-system` namespace
+# (RFC #288) rather than getting its own namespace, and `istio-system` is itself
+# excluded from governance as an on-demand-heavy namespace too variable for static
+# defaults — a `kiali` governance leaf would create an empty, unused namespace no
+# workload ever runs in (removed in the chore that added this comment).
 STANDARD_NS="argocd capstone kyverno external-secrets velero argo-rollouts \
-trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway kiali harbor \
+trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway harbor \
 cert-manager keda"
 
 @test "every standard-tier namespace has a governance leaf overlay" {
