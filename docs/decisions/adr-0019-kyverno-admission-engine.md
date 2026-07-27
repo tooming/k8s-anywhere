@@ -198,7 +198,7 @@ point).
 
 **Trigger.** Re-checking audit #502's own recorded flip condition (b) — "a
 patched Kyverno release ships" — against this week's upstream findings.
-Kyverno **1.18** (tagged, shipped 2026-07-05) is the release that carries the
+Kyverno **1.18** (tagged, shipped 2026-05-05) is the release that carries the
 CVE-2026-4789 fix (confirmed via `kyverno/kyverno` PR #15729 and the CNCF
 1.18 announcement). Independently of this audit, `gitops/platform/kyverno.yaml`
 was already bumped `3.3.9` → `3.8.2` (appVersion `v1.13.6` → `v1.18.2`) by
