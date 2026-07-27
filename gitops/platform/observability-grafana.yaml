@@ -22,7 +22,7 @@ spec:
     # sources before bumping.
     repoURL: https://grafana-community.github.io/helm-charts
     chart: grafana
-    targetRevision: 12.8.0
+    targetRevision: 12.8.1
     helm:
       releaseName: grafana
       valuesObject:
