@@ -194,6 +194,34 @@ executor wants the defense-in-depth chart bump anyway as routine hygiene
 (upgrade-drafter's normal patch-bump lane, not an architect decision at that
 point).
 
+### 2026-07-27 — flip condition (b) above now satisfied; also closes two more CVEs (audit #760)
+
+**Trigger.** Re-checking audit #502's own recorded flip condition (b) — "a
+patched Kyverno release ships" — against this week's upstream findings.
+Kyverno **1.18** (tagged, shipped 2026-07-05) is the release that carries the
+CVE-2026-4789 fix (confirmed via `kyverno/kyverno` PR #15729 and the CNCF
+1.18 announcement). Independently of this audit, `gitops/platform/kyverno.yaml`
+was already bumped `3.3.9` → `3.8.2` (appVersion `v1.13.6` → `v1.18.2`) by
+upgrade-drafter on 2026-07-19 as routine same-minor-unavailable hygiene, one
+day after audit #502 closed — nobody connected that bump to this flip
+condition at the time.
+
+**Bonus finding, same sweep.** appVersion `v1.18.2` also independently fixes
+two more Kyverno CVEs found while re-auditing this: **CVE-2026-22039**
+(critical, CVSS 10.0, cross-namespace `apiCall` privilege escalation via
+namespaced Policy — fixed in 1.16.3/1.15.3) and **CVE-2026-41068** (ConfigMap
+context loader namespace-validation bypass, the "incomplete fix" follow-up to
+22039 — fixed in 1.17.2). Both predate `v1.18.2`.
+
+**Decision: keep — no bump needed, already satisfied.** The current pin
+(chart `3.8.2`, appVersion `v1.18.2`) already sits past the fixed version for
+all three CVEs (4789, 22039, 41068). No code change; this entry closes the
+loop on #502's flip condition (b) for the record.
+
+**Flip condition (next re-evaluation).** Unchanged: (a) this lab ever authors
+a CEL-based `NamespacedValidatingPolicy`, or (b) a new CVE is filed against a
+Kyverno version above `1.18.2`.
+
 ---
 
 ## Files this work will touch

@@ -161,3 +161,20 @@ migration risk beyond what the 2026-07-18 entry above already accepted (`4.3.2`,
 needed. Rollback path unchanged from the entries above.
 
 **Flip condition (next re-evaluation).** Unchanged from above.
+
+### 2026-07-27 — CVE-2026-44839 / CVE-2026-57219 audited, already fixed (audit #761)
+
+**Trigger.** This ADR's own flip condition (above): "a specific CVE is filed
+against the then-current pin." Two have been filed since the last entry:
+**CVE-2026-44839** (stored XSS via unsanitized vhost names in the management
+UI — affects `3.7.0` up to, not including, `4.1.2`/`4.0.13`) and
+**CVE-2026-57219** (unauthenticated management endpoint exposes the OAuth
+client secret, CVSS 8.7 — introduced in `3.13.0`, fixed in
+`4.3.0`/`4.2.6`/`4.1.11`/`4.0.20`/`3.13.15`).
+
+**Decision: keep `4.3.4-management` — already satisfied.** Both CVEs' fixed
+floors (`4.1.2`/`4.0.13` for 44839; `4.3.0` for 57219 on the `4.3.x` line) sit
+at or below the current pin `4.3.4`. No bump needed; recorded so this flip
+condition has an on-record answer instead of silently going unaddressed.
+
+**Flip condition (next re-evaluation).** Unchanged from above.
