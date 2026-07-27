@@ -168,6 +168,38 @@ actually exists (the follow-up item below).
 
 ---
 
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-27 — CVE-2025-68476 not applicable + already patched (audit #764)
+
+**Trigger.** Routine CVE sweep found **CVE-2025-68476** — arbitrary file read
+via `TriggerAuthentication`'s `spec.hashiCorpVault.credential.serviceAccount`
+path when configured for HashiCorp Vault auth (incorrect/insufficient path
+validation on the mounted Service Account Token path, letting an attacker who
+can create/edit a `TriggerAuthentication` exfiltrate arbitrary node-filesystem
+files). Affects all versions `< 2.17.3` and `2.18.0`–`<2.18.3`, fixed in
+`2.17.3`/`2.18.3`.
+
+**Decision: keep chart pin `2.20.1` — not applicable, and already patched
+anyway.** Two independent reasons: (1) `gitops/platform/keda.yaml` pins
+`2.20.1`, already past both fixed floors; (2) this lab's only
+`TriggerAuthentication` (`gitops/data/demo/keda-scaling/triggerauthentication.yaml`)
+uses `spec.secretTargetRef`, not `spec.hashiCorpVault` — grepped the full
+`gitops/` tree for `hashiCorpVault`, zero matches outside this ADR's own prose.
+The vulnerable code path is never reached by this lab's actual deployed
+config, regardless of chart version.
+
+**Flip condition (next re-evaluation).** Revisit if (a) this lab's
+`TriggerAuthentication` is ever changed to use `spec.hashiCorpVault`, or (b) a
+new CVE is filed against a KEDA version above `2.20.1`.
+
+---
+
 ## Files this work will touch
 
 | Path | Role |

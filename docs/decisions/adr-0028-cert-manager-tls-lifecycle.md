@@ -178,6 +178,20 @@ CVEs that affected older `1.19.x` releases are already resolved by being on
 **Flip condition.** Revisit when a cert-manager security advisory names a
 version at or above `1.21.0` as affected.
 
+### 2026-07-27 — two new CVEs checked, flip condition still not met (audit #763)
+
+**Trigger.** Two CVEs found this sweep: **CVE-2026-25518** (DNS-cache DoS via
+crafted DNS response during ACME DNS-01 challenge processing — affects
+`1.18.0`–`<1.18.5` and `1.19.0`–`<1.19.3`, fixed in `1.18.5`/`1.19.3`) and
+**CVE-2026-62290** (incorrect authorization in the ACME controller, CVSS 7.3 —
+affects `1.18.0`–`1.19.5` and `1.20.0`–`1.20.2`, fixed in `1.19.6`/`1.20.3`).
+
+**Decision: keep chart pin `1.21.0`.** Both CVEs' affected ranges top out
+below `1.21.0` (highest affected floor is `1.20.2`) — neither names a version
+at or above the current pin, so audit #517's flip condition is not triggered.
+
+**Flip condition (next re-evaluation).** Unchanged from audit #517.
+
 ---
 
 ## Files this work will touch
