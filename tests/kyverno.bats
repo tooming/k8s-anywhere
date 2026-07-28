@@ -238,9 +238,15 @@ setup() {
   [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces[1]' "$P")" = "argocd" ]
 }
 
+# --- inkless carve-out (found 2026-07-28, structural sweep) --------------------
+@test "disallow-latest-tag excludes the inkless namespace (no stable release tag upstream)" {
+  P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
+  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces[2]' "$P")" = "inkless" ]
+}
+
 @test "disallow-latest-tag exclude block is scoped to named namespaces only (not a blanket exclusion)" {
   P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
-  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces | length' "$P")" = "2" ]
+  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces | length' "$P")" = "3" ]
 }
 
 @test "add-default-seccomp ClusterPolicy file exists" {
