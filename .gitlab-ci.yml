@@ -36,10 +36,21 @@ variables:
 
 build-and-push:
   stage: build
-  image: docker:24
+  # Bumped docker:24 -> docker:29 (2026-07-28, executor currency check): the official
+  # `docker` image's `24`/`24-dind` tags last received an update 2024-07-26 (2 years
+  # stale, verified via the real Docker Hub API -- Docker no longer patches that major
+  # line) while `29`/`29-dind` is the actively-maintained tag (last updated 11 days
+  # before this check). This job only uses docker build/push/tag/login/logout, the
+  # DOCKER_HOST/DOCKER_TLS_CERTDIR env vars, and dockerd's --insecure-registry flag --
+  # all stable across every Docker Engine major release; this remote session cannot
+  # run a real GitLab pipeline regardless (no live GitLab), so make ci's clusterless
+  # structural bats coverage is the verification ceiling here, same as every other
+  # .gitlab-ci.yml change in this repo's history. Flip condition for the next audit:
+  # revisit when `docker`'s `29` tag itself goes stale (no update in the last year).
+  image: docker:29
   services:
     # Allow HTTP pushes to the in-lab registry (no TLS on the nip.io route).
-    - name: docker:24-dind
+    - name: docker:29-dind
       alias: docker
       command: ["--insecure-registry=artifactory.127.0.0.1.nip.io"]
   variables:
@@ -59,7 +70,19 @@ build-and-push:
 
 sign-image:
   stage: sign
-  image: bitnami/cosign:2
+  # Digest-pinned 2026-07-28 (executor currency check): the `bitnami/cosign:2` tag
+  # this job pinned no longer exists -- verified directly against the real Docker
+  # Hub API (`GET /v2/repositories/bitnami/cosign/tags/2` returns a 404 "tag '2' not
+  # found"). Bitnami has moved this image to its "Secure Images" model, which only
+  # publishes `latest` and content-addressed `sha256-<digest>` tags -- no more
+  # semver-numbered tags at all, so there is no looser floating tag to fall back to.
+  # Same reasoning as the cloudlena/s3manager digest-pin (PR #796): pin the real
+  # digest behind the current `latest` tag rather than a tag that will drift or
+  # vanish again. Digest below = bitnami/cosign:latest's manifest-list digest as of
+  # 2026-07-28 (last_updated 2026-07-17 per the Docker Hub API), covering both amd64
+  # and arm64 GitLab runners. Flip condition: revisit if Bitnami ever republishes
+  # numbered tags, or when this digest's underlying image goes stale.
+  image: bitnami/cosign@sha256:db4d480f96235bca0433be791ea156cf51c3c7b62874618d8fcacecc86555aee
   # COSIGN_KEY must be a GitLab CI variable of type File (masked, protected).
   # GitLab writes the file content to a temp path and exposes it as $COSIGN_KEY.
   # Set it in: GitLab → Settings → CI/CD → Variables → Add variable
