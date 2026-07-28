@@ -105,9 +105,17 @@ setup_ci() {
   [ "$status" -eq 0 ]
 }
 
-@test "sign-image job uses bitnami/cosign:2 image" {
+@test "sign-image job uses a digest-pinned bitnami/cosign image (2026-07-28: bitnami/cosign:2 no longer exists)" {
   setup_ci
-  run grep -q 'bitnami/cosign:2' "$CI_FILE"
+  run grep -q 'bitnami/cosign@sha256:' "$CI_FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "build-and-push job and its dind service use the actively-maintained docker:29 line (2026-07-28: docker:24 confirmed 2yr stale)" {
+  setup_ci
+  run grep -q '^\s*image: docker:29$' "$CI_FILE"
+  [ "$status" -eq 0 ]
+  run grep -q 'name: docker:29-dind' "$CI_FILE"
   [ "$status" -eq 0 ]
 }
 
