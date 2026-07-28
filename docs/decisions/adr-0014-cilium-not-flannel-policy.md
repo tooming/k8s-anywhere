@@ -156,3 +156,24 @@ No existing ADR is contradicted; this is a new decision in a domain (CNI choice)
 | `infra/live/local/cluster/terragrunt.hcl` | Flip `disable_default_cni = true`. |
 | `docs/DR.md` | "After `make up`, run `make cilium-up` before any workload" note. |
 | `tests/cilium.bats` | Application has no `automated:` block; default-deny baseline policies render. |
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-28 — CVE-2026-33726 kept, pin already past the fix floor (audit #772)
+
+**Trigger.** Routine CVE sweep found CVE-2026-33726 (Ingress NetworkPolicy
+bypass for pod→L7-Service traffic with a local backend, when Per-Endpoint
+Routing is enabled and BPF Host Routing is disabled), fixed in
+`1.17.14`/`1.18.8`/`1.19.2`.
+
+**Decision: Keep.** This lab's pin (`gitops/platform/cilium.yaml`'s
+`targetRevision: 1.17.18`) is already past the `1.17.14` fix floor on the same
+minor line — no bump needed. **Flip condition:** a CVE disclosed against
+`1.17.18` specifically, or the `1.17.x` line reaching end-of-support.

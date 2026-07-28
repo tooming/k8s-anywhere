@@ -151,3 +151,28 @@ The Artifactory manifests (`gitops/platform/artifactory.yaml`, `artifactory-extr
 `gitops/artifactory/route.yaml`), the `artifactory` Make targets, the `artifactory → baseline`
 PSS row, and the `artifactory` NetworkPolicy/appset entries are decommissioned as part of the
 same grooming, once Harbor lands and the footprint gate is met.
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-28 — CVE-2026-4404 (default admin credentials) kept, doubly clean (audit #774)
+
+**Trigger.** CVE-2026-4404 (CVSS 9.4): Harbor ships hardcoded default admin
+credentials (`admin`/`Harbor12345`), affecting `<=2.15.0`, fixed `2.15.1`+.
+
+**Decision: Keep.** This lab's pinned chart (`gitops/platform/harbor.yaml`'s
+`targetRevision: 1.19.1`) maps to `appVersion: 2.15.1` (confirmed directly
+against `goharbor/harbor-helm`'s real `Chart.yaml` at tag `v1.19.1`) — already
+past the fixed floor. Independently, this repo's `valuesObject` was already
+configured with `existingSecretAdminPassword: harbor-admin-creds` (a
+Vault-issued random credential via ESO), never relying on the hardcoded
+default — so the deployment would have been unaffected by the underlying
+weakness even on an older chart. **Flip condition:** a future chart bump ever
+drops or overrides `existingSecretAdminPassword`, or a new CVE is disclosed
+against `2.15.1`+.

@@ -197,3 +197,30 @@ ADR-0017's per-namespace profile table gains one row:
 | [ADR-0016](adr-0016-default-deny-networkpolicy.md) | `trivy-system` namespace gets default-deny during fan-out. |
 | [ADR-0017](adr-0017-pod-security-standards-restricted.md) | Adds `trivy-system: baseline` to the per-namespace profile table. ConfigAuditReports continuously audit pod-spec compliance with ADR-0017 — a useful drift signal. |
 | [ADR-0019](adr-0019-kyverno-admission-engine.md) | Companion supply-chain ADR (Kyverno = admission-side, Trivy = continuous-scan side). Possible future RFC merges the two via a Kyverno policy that consults `VulnerabilityReport` severity. |
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-28 — March 2026 Trivy supply-chain compromise (CVE-2026-33634) kept, not exposed (audit #773)
+
+**Trigger.** A threat actor published a malicious `trivy` binary `v0.69.4`
+release and force-pushed compromised tags to `aquasecurity/trivy-action` and
+`aquasecurity/setup-trivy` in March 2026.
+
+**Decision: Keep.** Not affected on either exposure path: the pinned chart
+(`gitops/platform/trivy-operator.yaml`'s `targetRevision: 0.34.0`, operator
+`appVersion: 0.32.0`) has no `trivy.image.tag` override, so the embedded
+scanner defaults to the chart's own pinned tag (`0.72.0`, verified against the
+chart's real `values.yaml`) — a later, unaffected release; and this repo's
+`.gitlab-ci.yml` has zero references to `trivy-action`/`setup-trivy`, so the
+CI pipeline was never exposed to the compromised GitHub Actions. **Flip
+condition:** a `trivy.image.tag` override is ever added pointing at `v0.69.4`
+specifically, or `trivy-action`/`setup-trivy` is ever adopted in CI without
+pinning to a post-incident safe tag (`>=0.35.0` for `trivy-action`, the
+recreated `0.2.6` for `setup-trivy`).
