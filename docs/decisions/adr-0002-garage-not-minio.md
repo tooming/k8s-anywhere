@@ -14,3 +14,26 @@ Garage = real workload storage). Bootstrap (layout/key/buckets) is imperative vi
 the `garage` CLI — see `scripts/garage-bootstrap.sh`.
 
 **Status.** Adopted. Deployed in `storage` ns; S3 verified.
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-28 — `v2.3.0` pin kept, still current (audit #776)
+
+**Trigger.** First re-evaluation of this ADR's own audit trail (Garage's
+currency was informally checked in a prior run's
+`docs/backlog/2026-07-27-action-needed-argo-rollouts-eso-garage-sweep.md`
+note, but never recorded against this ADR).
+
+**Decision: Keep.** Verified directly against `Deuxfleurs/garage`'s real
+release history: `v2.3.0` (released 2026-04-16, this lab's pin in
+`gitops/storage/garage/statefulset.yaml`) is still the newest stable release —
+no newer tag exists. No CVE found against Garage in any version. **Flip
+condition:** a new Garage stable release ships with a security fix, or a CVE
+is disclosed against `v2.3.0` specifically.
