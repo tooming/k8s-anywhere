@@ -67,6 +67,12 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "demo Dockerfile pins hotrod to 2.20.0, not a floating :latest tag (2026-07-28)" {
+  run grep -q 'FROM jaegertracing/example-hotrod:2.20.0' "$REPO/gitops/apps/demo/Dockerfile"
+  [ "$status" -eq 0 ]
+  ! grep -q 'FROM jaegertracing/example-hotrod:latest' "$REPO/gitops/apps/demo/Dockerfile"
+}
+
 # --- Vault seeding ----------------------------------------------------------
 @test "vault-bootstrap.sh seeds secret/artifactory/registry" {
   run grep -q 'secret/artifactory/registry' "$REPO/scripts/vault-bootstrap.sh"
