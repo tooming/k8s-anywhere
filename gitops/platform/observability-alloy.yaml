@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://grafana.github.io/helm-charts
     chart: alloy
-    targetRevision: 1.10.1
+    targetRevision: 1.11.0
     helm:
       releaseName: alloy
       valuesObject:
@@ -39,7 +39,13 @@ spec:
             # only config/varlog/dockercontainers/extra). Without this, /tmp/alloy
             # lands on the container's root filesystem, so it must be backed
             # explicitly before readOnlyRootFilesystem can be true. Re-verified
-            # unchanged at 1.10.1 (byte-identical volumes block in _pod.yaml vs 1.8.2).
+            # unchanged at 1.10.1 (byte-identical volumes block in _pod.yaml vs 1.8.2),
+            # and again at 1.11.0 (chart still creates no storage volume; the
+            # security-critical global.podSecurityContext / alloy.securityContext /
+            # alloy.mounts.extra / alloy.resources keys this Application relies on
+            # are unchanged — the 1.10.1 -> 1.11.0 bump only adds an `alloy.command`
+            # override key and bumps the bundled Alloy binary to v1.18.0, per the
+            # chart's own CHANGELOG.md).
             extra:
               - name: alloy-storage
                 emptyDir: {}
