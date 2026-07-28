@@ -4,10 +4,21 @@
 # `uses:` GitHub Actions steps, which tests/github-actions-pins.bats already
 # covers. Without this, a version bump could edit the download URL but forget
 # the cache key (or vice versa), silently drifting the two out of sync.
+#
+# 2026-07-28: the "no workflow references the pre-bump ... pin" checks below
+# used to grep only ci.yml — which is exactly how oracle-cluster-apply.yml and
+# oracle-cluster-apply-retry.yml silently kept `terraform_version: "1.9.8"` and
+# terragrunt v0.67.0 for a week after ci.yml bumped to 1.15.8, despite
+# oracle-cluster-apply-retry.yml's own comment declaring intent to "keep in
+# sync with oracle-cluster-apply.yml / ci.yml". Broadened to check every
+# workflow file, closing the exact gap that let that drift go undetected.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   CI_YML="$REPO/.github/workflows/ci.yml"
+  WORKFLOWS="$REPO/.github/workflows"
+  ORACLE_APPLY="$WORKFLOWS/oracle-cluster-apply.yml"
+  ORACLE_RETRY="$WORKFLOWS/oracle-cluster-apply-retry.yml"
 }
 
 @test "kubeconform is pinned to v0.8.0 (upgrade-drafter, 2026-07-21)" {
@@ -37,7 +48,7 @@ setup() {
 }
 
 @test "no workflow references the pre-bump terraform 1.9.8 pin" {
-  ! grep -q 'terraform_version: "1.9.8"' "$CI_YML"
+  ! grep -rq 'terraform_version: "1.9.8"' "$WORKFLOWS"/*.yml
 }
 
 @test "every infra/ terraform module's required_version floor still admits the pinned CI terraform version" {
@@ -46,4 +57,20 @@ setup() {
   for f in "$REPO"/infra/modules/*/main.tf; do
     grep -q 'required_version = ">= 1.5"' "$f" || { echo "missing/changed floor in $f"; return 1; }
   done
+}
+
+# --- oracle-cluster-apply.yml / oracle-cluster-apply-retry.yml tool pins ------
+
+@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terraform_version 1.15.8 (2026-07-28, in sync with ci.yml)" {
+  grep -q 'terraform_version: "1.15.8"' "$ORACLE_APPLY"
+  grep -q 'terraform_version: "1.15.8"' "$ORACLE_RETRY"
+}
+
+@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terragrunt v1.1.1 (2026-07-28)" {
+  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.1/terragrunt_linux_amd64' "$ORACLE_APPLY"
+  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.1/terragrunt_linux_amd64' "$ORACLE_RETRY"
+}
+
+@test "no workflow references the pre-bump terragrunt v0.67.0 pin" {
+  ! grep -rq 'terragrunt/releases/download/v0.67.0' "$WORKFLOWS"/*.yml
 }
