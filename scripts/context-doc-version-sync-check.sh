@@ -9,9 +9,9 @@
 # guard makes that recurrence impossible: it asserts each of those three prose version
 # citations equals the real live gitops pin.
 #
-# Run by `make context-doc-version-sync-check`, the CI 'drift' gate, and the
-# PostToolUse hook. Exit 0 = every tracked citation matches its live pin;
-# 1 = drift found.
+# Run by `make context-doc-version-sync-check` and the CI 'drift' gate (no
+# PostToolUse hook yet — this is a CI-time gate only). Exit 0 = every tracked
+# citation matches its live pin; 1 = drift found.
 set -uo pipefail
 ROOT="${CONTEXTDOCCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
