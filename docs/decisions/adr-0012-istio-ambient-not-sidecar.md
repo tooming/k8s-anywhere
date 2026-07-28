@@ -176,6 +176,25 @@ above). Tracked as RFC #668 for the executor to implement.
 the same way it pruned `1.89.8` (in which case: bump again to whatever the
 newest resolvable tag is at that time, same reasoning as this entry).
 
+### 2026-07-28 — ISTIO-SECURITY-2026-005 (missed by the 2026-07-18 audit) kept, pin already safe (audit #778)
+
+**Trigger.** Routine CVE sweep found a third Istio security bulletin,
+**ISTIO-SECURITY-2026-005** (dated 2026-06-24 — three weeks *before* the
+2026-07-18 audit above ran, but not cited by it), affecting
+`1.30.1`–`1.30.2`/`1.29.4`–`1.29.5`/`1.28.8`–`1.28.9` (CVSS 7.5; includes a
+DoS via HTTP/3 QPACK blocked decoding, a use-after-free in the `ext_authz`
+filter, and a memory-exhaustion issue in the Zstd decompressor), fixed in
+`1.30.3`/`1.29.5`/`1.28.9`. This is a correction to the audit *record*, not a
+new upstream event this lab was exposed to unpatched.
+
+**Decision: Keep.** This lab's pin (`1.30.3` across `istio-base`/`istiod`/
+`istio-cni`/`ztunnel`, re-confirmed consistent across all four files) already
+carries the `1.30.3` fix floor — the same target version the 2026-07-18
+audit's -004 finding already justified, so no version change was ever
+needed. **Flip condition:** unchanged from the 2026-07-18 entry — revisit
+when a new Istio security bulletin names a version at or above `1.30.3` as
+affected.
+
 ---
 
 ## Files
