@@ -41,6 +41,14 @@ global:
     fsGroup: 1000
     seccompProfile:
       type: RuntimeDefault
+  # RFC #785: chart 10.x flips this key's default from false to true. This repo
+  # already hand-manages its own default-deny + allow-list NetworkPolicy set for
+  # the argocd namespace via GitOps (gitops/argocd/networkpolicy/, ADR-0016
+  # pattern) -- leaving the chart default would let it template a second,
+  # uncoordinated NetworkPolicy set alongside that one. Explicit override
+  # preserves pre-10.x behavior.
+  networkPolicy:
+    create: false
 
 configs:
   params:
