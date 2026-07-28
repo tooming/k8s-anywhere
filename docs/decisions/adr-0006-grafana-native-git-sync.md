@@ -124,3 +124,22 @@ ADR's `readOnlyRootFilesystem` write-path analysis still holds at the new pin).
 **Flip condition (next re-evaluation).** Revisit Grafana's pin again when a new
 bulletin names a version at or above `13.0.3` as affected. Loki/Tempo flip
 conditions from audit #518 remain unchanged (unmet).
+
+### 2026-07-28 — flip conditions re-checked, all three pins kept (executor currency check)
+
+**Trigger.** Periodic re-check of the two outstanding flip conditions above
+(Grafana's from audit #562, Loki/Tempo's from audit #518), as part of this
+run's broader ADR re-evaluation sweep (this ADR had the oldest re-evaluation
+entry — 2026-07-19 — of any ADR in the repo at the time this check started).
+
+**Re-checked directly against live sources (ADR-0004):** GitHub Security
+Advisories for `grafana/grafana`, `grafana/loki`, and `grafana/tempo`. No new
+advisory naming a version at or above the current pins (`13.0.3`, `3.7.2`,
+`2.10.5` respectively) was found in any of the three. `grafana/loki` currently
+has zero published security advisories at all; `grafana/tempo`'s only listed
+advisory (`GHSA-fx6q-qhch-hxgp`) is unrelated to this version range.
+
+**Decision: kept `grafana:13.0.3`, `loki:3.7.2`, `tempo:2.10.5`.** None of the
+three flip conditions fired. No repo change this cycle.
+
+**Flip condition (next re-evaluation).** Unchanged from the prior entries above.
