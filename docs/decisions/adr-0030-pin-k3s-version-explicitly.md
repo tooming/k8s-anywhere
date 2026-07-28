@@ -153,3 +153,30 @@ the `context.md` note. A single, small, mechanically-verifiable diff.
 | [ADR-0005](adr-0005-spof-recreate-over-ha.md) | Recreate-from-code depends on the recreate actually being deterministic — an unpinned k3s version undermined that; this ADR closes the gap. |
 | [ADR-0026](adr-0026-cloud-agnostic-infrastructure.md) | Both backends now pin the *identical* k3s version — no backend-specific drift, consistent with the cloud-agnostic seam. |
 | [ADR-0027](adr-0027-first-cloud-backend-oracle-always-free-k3s.md) | The Oracle backend's `cloud-init.yaml` install line is the concrete file this ADR edits for that backend. |
+
+---
+
+## Re-evaluation log
+
+ADR audits (the architect routine's STEP 2) record their outcome here when the
+decision is **kept**. An audit terminates in a documented decision — not only
+when something changes — so a finding that survives review leaves a dated
+trail and an explicit *flip condition* instead of an open issue that lingers.
+
+### 2026-07-28 — `v1.36.2+k3s1` pin kept, still current (audit #770)
+
+**Trigger.** This ADR's first re-evaluation since its 2026-07-19 authoring —
+verified directly against `k3s-io/k3s`'s real release history
+(cross-referenced with `docs.k3s.io/release-notes/v1.36.X`) that `v1.36.2+k3s1`
+is still the newest stable k3s release; no `v1.36.3` or `v1.37.0` stable tag
+exists yet. Both backend pins (`infra/modules/k3d-cluster/k3d-config.yaml.tftpl`'s
+`image: rancher/k3s:v1.36.2-k3s1`; `infra/modules/oracle-k3s-cluster/cloud-init.yaml`'s
+`INSTALL_K3S_VERSION=v1.36.2+k3s1`) still match each other and the ADR's
+original decision — no drift between the two tag formats.
+
+**Decision: Keep.** No new k3s CVE found against the `1.36.x` line beyond
+CVE-2026-54250 (already the reason for this pin, and already fixed by it).
+**Flip condition:** a new k3s stable release (`v1.36.3+` or `v1.37.x`) ships
+with a security fix, or a CVE is disclosed against `v1.36.2` specifically —
+either should trigger a bump through the architect CVE-sweep + RFC path this
+ADR's own Scope & exceptions section specifies (not a routine drive-by bump).
