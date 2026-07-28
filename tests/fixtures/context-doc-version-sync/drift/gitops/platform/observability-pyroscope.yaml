@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pyroscope
+spec:
+  source:
+    repoURL: https://example.test/charts
+    chart: pyroscope
+    targetRevision: 2.2.0

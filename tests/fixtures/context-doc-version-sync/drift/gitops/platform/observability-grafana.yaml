@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+spec:
+  source:
+    repoURL: https://example.test/charts
+    chart: grafana
+    targetRevision: 12.10.0
+    helm:
+      valuesObject:
+        image:
+          tag: "13.0.3"

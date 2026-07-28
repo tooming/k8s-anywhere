@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kro
+spec:
+  source:
+    repoURL: https://example.test/charts
+    chart: kro
+    targetRevision: 0.9.2
