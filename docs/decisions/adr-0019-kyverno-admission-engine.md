@@ -135,7 +135,11 @@ ArgoCD-deployed workload in the lab.
   (#632 investigation, 2026-07-24) — its chart pins `global.image.tag: latest`
   deliberately pending a stable argo-cd release containing
   argoproj/argo-cd#26666. Remove once that release ships and the pin moves to
-  a real version tag.
+  a real version tag. Also excludes the `inkless` namespace (found 2026-07-28,
+  structural sweep) — `ghcr.io/aiven/inkless:latest` has no stable named
+  release to pin to (only rotating `edge-<commit>` builds); `make inkless-up`
+  would otherwise fail admission on every attempt, not just on recreation.
+  Remove once Aiven ships a stable, pinnable release tag.
 
 **Out of scope (this RFC):**
 
