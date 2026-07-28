@@ -3605,6 +3605,25 @@ You review and merge plan PRs, same as implementation PRs.
 > — both need an architect go/no-go call, not a mechanical bump, per
 > `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
 
+- [ ] 🟡 **`argo-cd` Helm chart major bump — `9.7.1` → `10.x`** (issue #781; needs
+  an architect RFC — not a mechanical bump per `routines/upgrade-drafter.prompt.md`'s
+  "skip major bumps, open an issue" rule). Chart's `9.x` → `10.x` line drops the
+  `server.additionalApplications`/`server.additionalProjects` values keys (moved to a
+  separate `argocd-apps` chart) — this repo's `infra/modules/argocd/values.yaml`
+  doesn't set either key, so that one documented breaking change wouldn't bite as-is,
+  but the full values-schema diff between `9.7.1` and `10.x` has not been audited.
+  `appVersion` is identical (`v3.4.4`) at chart `10.0.0`, one patch ahead (`v3.4.5`) on
+  `main`/chart `10.2.1` — the major chart-line bump alone changes nothing about the
+  deployed ArgoCD version. Needs the same values-schema audit technique the architect
+  used for Velero's `8.x`→`12.x` jump (RFC #617) before a go/no-go call: fetch
+  `argo-cd-10.x`'s real `values.yaml`, diff every key this repo's
+  `infra/modules/argocd/values.yaml`/`valuesObject` sets (`global.*`, `configs.*`,
+  `dex`, `notifications`, `applicationSet.*`, `controller.*`, `repoServer.*`,
+  `server.*`, `redis.*`, `redisSecretInit.*`) against the new schema. Once decided,
+  groom into a 🟢 bump item or resolve with a Hold + flip condition, same shape as the
+  kafka-client (#705/RFC #708) and kube-state-metrics (#704/RFC #707) precedents
+  below. Closes #781 once resolved.
+
 - [x] 🟢 **`kube-state-metrics` chart major bump — `7.8.1` → `8.0.0`** (issue #704;
   RFC #707 — architect decision 2026-07-24: **Approve.** appVersion unchanged at
   `2.19.1` — chart-packaging-only major bump, the entire breaking surface is the
