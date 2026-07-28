@@ -45,13 +45,32 @@ jobs:
           # use_path_style/endpoints/skip_requesting_account_id, args the s3 backend
           # only gained in 1.6; "~> 1.5" (this workflow's first version) resolved to
           # 1.5.x and failed "Unsupported argument" on all three at terraform init.
-          terraform_version: "1.9.8"
+          # Bumped 1.9.8 -> 1.15.8 (2026-07-28, executor currency check): this had
+          # silently drifted out of sync with ci.yml's own terraform_version (bumped
+          # 2026-07-21) despite this file's stated intent to match it -- ci.yml's
+          # `terraform` job has already run 1.15.8 against these same modules
+          # repeatedly since that bump, so this is a previously-verified version, not
+          # a fresh unknown.
+          terraform_version: "1.15.8"
           terraform_wrapper: false
 
       - name: Install terragrunt
         run: |
+          # Bumped v0.67.0 -> v1.1.1 (2026-07-28, executor currency check): v0.67.0 was
+          # 0.x-line and long superseded; verified directly against Terragrunt's real
+          # v1.0.0 release notes (github.com/gruntwork-io/terragrunt/releases/tag/v1.0.0)
+          # before bumping -- none of its documented breaking changes (tflint removal,
+          # .terragrunt-cache always generated, find/list hidden-dir discovery,
+          # render --format=json dependent-discovery removed, Windows path handling,
+          # terragrunt.stack.hcl warnings) touch anything this repo's infra/live/oracle/
+          # units use (no tflint hook, no find/list/render calls, no *.stack.hcl files,
+          # Linux runners only) -- and v1's own policy is no breaking changes in minor
+          # releases, so 1.1.1 carries the same guarantee. This remote session cannot
+          # run a real `terragrunt apply` against OCI regardless (no cloud credentials
+          # reachable from here), so this workflow's own next real run is the actual
+          # verification; flip condition: revisit if a v2.x line ships.
           curl -fsSL -o /usr/local/bin/terragrunt \
-            https://github.com/gruntwork-io/terragrunt/releases/download/v0.67.0/terragrunt_linux_amd64
+            https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.1/terragrunt_linux_amd64
           chmod +x /usr/local/bin/terragrunt
 
       - name: Render OCI + SSH credential files from secrets
