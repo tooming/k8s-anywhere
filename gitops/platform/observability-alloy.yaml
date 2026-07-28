@@ -477,6 +477,22 @@ spec:
                 scrape_interval = "30s"
               }
 
+              // ---- Istio ambient mesh control plane (on-demand) metrics -> Mimir ----
+              // istiod exposes Prometheus metrics at :15014/metrics via the istiod
+              // Service (the standard Istio monitoring port). Feeds the "Lab — Istio
+              // Ambient Mesh" dashboard with control-plane push/connection series
+              // (ADR-0012, ADR-0004). The NetworkPolicy allow (TCP 15014 ingress from
+              // observability) is in
+              // gitops/istio-system/networkpolicy/allow-istio-metrics-ingress.yaml.
+              // This target is idle unless Istio is manually synced via make istio-up.
+              prometheus.scrape "istiod" {
+                targets = [
+                  {"__address__" = "istiod.istio-system.svc.cluster.local:15014", "job" = "istiod"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
               // ---- Cilium agent (CNI, kube-system) metrics -> Mimir ----
               // Cilium DaemonSet uses hostNetwork: true; pod IP equals the node IP.
               // Pod discovery filtered by k8s-app=cilium in kube-system; address

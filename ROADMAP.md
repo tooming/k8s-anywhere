@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Lab — Istio ambient mesh (`istio-system`) observability wiring: Alloy
+- [x] 🟢 **Lab — Istio ambient mesh (`istio-system`) observability wiring: Alloy
   scrape + Grafana dashboard** (CHARTER **Objective O5**, due **2026-09-30**; O5 gap
   — planner gap-analysis sweep 2026-07-28, all five prior "Now / next" items being
   gated on maintainer-confirmation issues #631/#632/#633. `istio-system-extras`
