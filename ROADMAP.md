@@ -232,6 +232,56 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Lab — Istio ambient mesh (`istio-system`) observability wiring: Alloy
+  scrape + Grafana dashboard** (CHARTER **Objective O5**, due **2026-09-30**; O5 gap
+  — planner gap-analysis sweep 2026-07-28, all five prior "Now / next" items being
+  gated on maintainer-confirmation issues #631/#632/#633. `istio-system-extras`
+  (`gitops/platform/istio-system-extras.yaml`) is auto-synced under
+  `gitops/bootstrap/root-app.yaml`'s recursive `gitops/platform/` watch — the same
+  ALWAYS-ON PSA-floor pattern as `kargo-extras`/`longhorn-extras` (namespace +
+  privileged PSA labels pre-created ahead of `make istio-up`, the empty namespace
+  itself cheap to keep auto-synced) — but unlike those two it has **no Grafana
+  dashboard and no Alloy scrape wiring at all**: verified directly, zero
+  `grafana/dashboards/lab-istio*.json` files exist and `grep -rl "lab-istio"
+  tests/` returns nothing. `docs/dependency-tree.md`'s istio-system NetworkPolicy
+  note already anticipates this gap: `allow-istio-metrics-ingress.yaml` opens
+  ingress TCP 15014 from `observability` "for future istiod Prometheus scrape" —
+  that scrape was never actually added to `observability-alloy.yaml`. **No
+  prerequisites — executor may pick up immediately.**)
+
+  Mirror the `auto/longhorn-dashboard` / `auto/kargo-observability-dashboard`
+  precedent exactly (same always-present-namespace-but-component-may-be-off shape):
+  add a `prometheus.scrape "istiod"` block to
+  `gitops/platform/observability-alloy.yaml` (static target
+  `istiod.istio-system.svc.cluster.local:15014`, `scrape_interval = "30s"`,
+  mirroring the adjacent `longhorn`/`kargo` blocks) — the scrape naturally returns
+  no series until `make istio-up` actually runs istiod (ADR-0004-compliant "No
+  data" until then, same as every other on-demand component's always-on scrape
+  job). New `grafana/dashboards/lab-istio.json` (`uid: "lab-istio"`, title "Lab —
+  Istio Ambient Mesh") modelled on `lab-longhorn.json`'s stat-row: ArgoCD sync
+  state (`argocd_app_info{name="istio-system-extras", sync_status="Synced"}`);
+  namespace-present stat via KSM (`kube_pod_info{namespace="istio-system"}` count
+  or `kube_namespace_created{namespace="istio-system"}`) so at least one panel
+  returns real data via the always-on KSM scrape even before Istio's own
+  components ever run; istiod control-plane health once the scrape target exists
+  (verify istiod's actual exposed metric names against the pinned `istio/istiod`
+  chart version before committing an `expr` — e.g. `pilot_xds` push/connection
+  counters — ADR-0004: check the real metric name, don't guess one); ztunnel/
+  istio-cni pod readiness via KSM
+  (`kube_daemonset_status_number_ready{namespace="istio-system",
+  daemonset=~"ztunnel.*|istio-cni.*"}`). No HTTPRoute (istiod has no web UI of its
+  own; Kiali already has its own separate on-demand dashboard/route). New
+  `tests/istio-observability.bats` (clusterless structural, mirrors
+  `tests/longhorn.bats`'s shape): scrape block `"istiod"` exists in
+  `observability-alloy.yaml`; scrape target references port 15014; `lab-istio.json`
+  exists; has uid `lab-istio`; references the `istio-system` namespace in a real
+  KSM/ArgoCD query; no fabricated/placeholder content (ADR-0004 grep guard: `grep
+  -iE '"(fake|mock|placeholder|dummy|todo|fixme)"'`). Update
+  `docs/dependency-tree.md`'s istio-system entry to note the new dashboard + scrape
+  wiring (the existing NetworkPolicy note's "future istiod Prometheus scrape"
+  becomes real — update that sentence too). `make ci` must pass. `docs/done/` entry
+  required. (auto/istio-observability-dashboard)
+
 - [x] 🟢 **Bump Envoy Gateway chart `v1.8.2` → `v1.8.3`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC #671 — architect decision
   2026-07-23, ADR-0008 audit resolved as **Convert**. **No prerequisites —
