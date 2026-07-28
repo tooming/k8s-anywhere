@@ -16,7 +16,15 @@ spec:
     spec:
       containers:
         - name: hello
-          image: jaegertracing/example-hotrod:latest
+          # Pinned 2026-07-28 (recreate-from-code / no-floating-tag hardening): `latest`
+          # currently resolves to 2.20.0 (Docker Hub tags API, confirmed live) — this is
+          # a pin-what's-already-running change, not a version bump, same reasoning as
+          # the Vault image-tag pin. Also closes a real Kyverno gap: the
+          # `disallow-latest-tag` ClusterPolicy (Enforce mode) only excludes
+          # capstone/argocd, not lab-demo — a floating tag here risked the same
+          # "admission blocked on next Pod recreation" incident already hit ArgoCD
+          # (see gitops/kyverno/policies/disallow-latest-tag.yaml's header comments).
+          image: jaegertracing/example-hotrod:2.20.0
           ports:
             - containerPort: 8080
           env:
