@@ -53,21 +53,17 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- ConfigMap name matches verifyImages policy keyRef (conditional) ---------
-@test "verifyImages policy references cosign-public-key ConfigMap (if policy exists)" {
+# --- ConfigMap name matches verifyImages policy keyRef ----------------------
+@test "verifyImages policy references cosign-public-key ConfigMap" {
   POLICY="$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
-  if [ ! -f "$POLICY" ]; then
-    skip "verify-image-signatures.yaml not yet on branch — pending kyverno-policies PR merge"
-  fi
+  [ -f "$POLICY" ]
   run grep -q 'cosign-public-key' "$POLICY"
   [ "$status" -eq 0 ]
 }
 
-@test "verifyImages policy scopes to artifactory registry (if policy exists)" {
+@test "verifyImages policy scopes to artifactory registry" {
   POLICY="$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
-  if [ ! -f "$POLICY" ]; then
-    skip "verify-image-signatures.yaml not yet on branch — pending kyverno-policies PR merge"
-  fi
+  [ -f "$POLICY" ]
   run grep -q 'artifactory.127.0.0.1.nip.io' "$POLICY"
   [ "$status" -eq 0 ]
 }
