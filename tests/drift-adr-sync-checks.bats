@@ -90,3 +90,20 @@ setup() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"adr-0009"* ]]
 }
+
+# --- context-doc-version-sync-check -------------------------------------------------
+@test "context-doc-version-sync-check: passes when context.md's citations match the live gitops pins" {
+  run env CONTEXTDOCCHECK_ROOT="$FIX/context-doc-version-sync/in-sync" bash "$REPO/scripts/context-doc-version-sync-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "context-doc-version-sync-check: fails when context.md's Grafana citation no longer matches the live image tag" {
+  run env CONTEXTDOCCHECK_ROOT="$FIX/context-doc-version-sync/drift" bash "$REPO/scripts/context-doc-version-sync-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"context.md says"* ]]
+}
+
+@test "context-doc-version-sync-check: passes on the real repo's context.md (Grafana/Pyroscope/KRO all match their live pins)" {
+  run bash "$REPO/scripts/context-doc-version-sync-check.sh"
+  [ "$status" -eq 0 ]
+}
