@@ -3605,9 +3605,11 @@ You review and merge plan PRs, same as implementation PRs.
 > — both need an architect go/no-go call, not a mechanical bump, per
 > `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
 
-- [ ] 🟡 **`argo-cd` Helm chart major bump — `9.7.1` → `10.x`** (issue #781; needs
-  an architect RFC — not a mechanical bump per `routines/upgrade-drafter.prompt.md`'s
-  "skip major bumps, open an issue" rule). Chart's `9.x` → `10.x` line drops the
+- [ ] 🟡 **`argo-cd` Helm chart major bump — `9.7.1` → `10.x`** (issue #781; RFC #785 —
+  architect decision 2026-07-28: **Approve**, chart `10.2.1`, with a required
+  `global.networkPolicy.create: false` companion override — see RFC #785 for the full
+  values-schema diff and rationale; awaiting planner grooming into a 🟢 item). Chart's
+  `9.x` → `10.x` line drops the
   `server.additionalApplications`/`server.additionalProjects` values keys (moved to a
   separate `argocd-apps` chart) — this repo's `infra/modules/argocd/values.yaml`
   doesn't set either key, so that one documented breaking change wouldn't bite as-is,
