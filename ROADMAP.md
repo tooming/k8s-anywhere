@@ -2159,7 +2159,7 @@ You review and merge plan PRs, same as implementation PRs.
   the PR body. `make ci` must pass. `docs/done/` entry required.
   (auto/vault-server-image-tag-pin)
 
-- [ ] 🟢 **`argo-cd` Helm chart major bump — `9.7.1` → `10.2.1`** (RFC #785 — architect
+- [x] 🟢 **`argo-cd` Helm chart major bump — `9.7.1` → `10.2.1`** (RFC #785 — architect
   decision 2026-07-28: **Approve**, with a required `global.networkPolicy.create: false`
   companion override. **No prerequisites — executor may pick up immediately.**) Bump
   `infra/modules/argocd/variables.tf`'s `chart_version` default `"9.7.1"` → `"10.2.1"`
