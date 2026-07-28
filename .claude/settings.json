@@ -84,9 +84,21 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/drift-detectors-tests-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking drift-detectors.bats freeze"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/yq-raw-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking bats yq usage"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/yq-variant-guard-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking mikefarah-only yq calls guarded"
           },
           {
             "type": "command",
