@@ -193,3 +193,24 @@ current state before reverting if Longhorn is actually up.
 **Flip condition (next re-evaluation).** Re-check when the `1.11.x` line
 itself approaches its own end-of-support window, or a specific CVE is filed
 against the then-current pin.
+
+### 2026-07-28 — flip condition re-checked, `1.11.3` kept (executor currency check)
+
+**Trigger.** Periodic re-check of the 2026-07-18 flip condition above, as part of
+this run's broader pinned-version currency sweep (PRs #815/#817/#818/#819).
+
+**Re-checked directly against live sources (ADR-0004):** `longhorn/charts`' real
+tags (`raw.githubusercontent.com/longhorn/charts/<tag>/charts/longhorn/Chart.yaml`,
+since `api.github.com` and `charts.longhorn.io` are both proxy-blocked from this
+sandbox but the raw CDN host is not) confirm `longhorn-1.12.0` is still the only
+release past `1.11.3` — no `1.11.4`, `1.12.1`, or later tag exists yet. Neither
+flip condition has fired: `1.11.x` is 10 days into its support window, nowhere
+near end-of-life on the pre-1.8 12-month policy, and no CVE has been filed
+against `1.11.3` in that window (checked; none found).
+
+**Decision: kept at `1.11.3`.** The 2026-07-18 decision to deliberately stay one
+minor line behind `1.12.x` (V2 Data Engine GA — a bigger behavioral surface
+change than a routine currency bump warrants) still holds; overriding it without
+either flip condition firing would silently contradict a binding, reasoned
+architect decision rather than superseding it. No repo change this cycle.
+Flip condition unchanged from the 2026-07-18 entry above.
