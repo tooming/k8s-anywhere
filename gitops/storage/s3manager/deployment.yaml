@@ -20,7 +20,17 @@ spec:
       enableServiceLinks: false
       containers:
         - name: s3manager
-          image: cloudlena/s3manager:latest
+          # Pinned 2026-07-28 (recreate-from-code / no-floating-tag hardening) by
+          # digest, not tag: Docker Hub's tags API (confirmed live) shows `latest`'s
+          # manifest-list digest does NOT match any published version tag (`v0.7.0`
+          # is one build older, per last_updated timestamps) — pinning by digest is
+          # the only way to keep this a true no-op (identical image to what's
+          # running today) rather than an unverified version change. Also closes a
+          # real Kyverno gap: the `disallow-latest-tag` ClusterPolicy (Enforce mode)
+          # only excludes capstone/argocd, not storage — a floating tag here risked
+          # the same "admission blocked on next Pod recreation" incident already hit
+          # ArgoCD (see gitops/kyverno/policies/disallow-latest-tag.yaml's header).
+          image: cloudlena/s3manager@sha256:f666e6fca127ec07b90c3c207eeb6730817b6ad0807356db6eb63fbda6bdacb2
           env:
             - name: ENDPOINT
               value: "garage.storage.svc.cluster.local:3900"
