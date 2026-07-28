@@ -1,9 +1,23 @@
+# Provider constraint audit (issue #791, architect decision 2026-07-28, this run):
+# `~> 7.0` locked out the 8.x line forever (a `~>` pessimistic constraint never
+# auto-picks up a new major). Verified directly against upstream before widening
+# (ADR-0004 — not from training-data assumption): fetched the real
+# terraform-provider-oci CHANGELOG.md 8.0.0 (Feb 2026) and 7.0.0 entries — neither
+# lists a breaking-changes section, and none of the resources/data sources this
+# module uses (oci_identity_availability_domain, oci_core_images, oci_core_vcn,
+# oci_core_internet_gateway, oci_core_default_route_table, oci_core_security_list,
+# oci_core_subnet, oci_core_instance) appear in either changelog at all. No
+# dedicated upgrade guide exists past `version-3-upgrade.html.markdown` in the
+# provider's own `website/docs/guides/` — OCI's major-version bumps beyond v3
+# are routine annual releases, not schema-breaking ones, for this module's usage.
+# Widened to `~> 8.0`; next flip condition: revisit when a v9.x line ships or a
+# changelog entry names one of the resources above as breaking.
 terraform {
   required_version = ">= 1.5"
   required_providers {
     oci = {
       source  = "oracle/oci"
-      version = "~> 7.0"
+      version = "~> 8.0"
     }
     null = {
       source  = "hashicorp/null"
