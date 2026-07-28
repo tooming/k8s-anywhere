@@ -2159,6 +2159,27 @@ You review and merge plan PRs, same as implementation PRs.
   the PR body. `make ci` must pass. `docs/done/` entry required.
   (auto/vault-server-image-tag-pin)
 
+- [ ] 🟢 **`argo-cd` Helm chart major bump — `9.7.1` → `10.2.1`** (RFC #785 — architect
+  decision 2026-07-28: **Approve**, with a required `global.networkPolicy.create: false`
+  companion override. **No prerequisites — executor may pick up immediately.**) Bump
+  `infra/modules/argocd/variables.tf`'s `chart_version` default `"9.7.1"` → `"10.2.1"`
+  (`appVersion v3.4.4` → `v3.4.5`); update the variable's description comment to match.
+  Add `global.networkPolicy.create: false` to `infra/modules/argocd/values.yaml` with a
+  comment citing RFC #785: this repo already hand-manages its own default-deny +
+  allow-list `NetworkPolicy` set for the `argocd` namespace via GitOps
+  (`gitops/argocd/networkpolicy/`, ADR-0016 pattern), and chart `10.x` flips the
+  upstream default for this key from `false` to `true` — the override preserves current
+  behavior (RFC #785 verified this is the only functionally relevant key in the
+  `9.7.1`→`10.2.1` values-schema diff; everything else is irrelevant to this repo's
+  values or purely additive). Re-verify at pickup time that chart `10.2.1` actually
+  resolves from `https://argoproj.github.io/argo-helm` before merging (RFC #785's
+  authoring session could not reach that host directly — confirm the live Helm-repo
+  `index.yaml` entry exists, same due-diligence pattern as the `auto/pyroscope-*`/
+  `auto/grafana-chart-*` bumps). Extend the relevant `tests/*.bats` chart-pin coverage
+  to assert both the new `chart_version` default and the `global.networkPolicy.create:
+  false` override are present (recurrence guard). `make ci` must pass. `docs/done/`
+  entry required. Closes #785. (auto/argocd-chart-10x-bump or upgrade/argocd-chart-10x-bump)
+
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
   maintainer confirms at least one CI run pushed a `.sig` tag to Artifactory** — check
@@ -3605,26 +3626,10 @@ You review and merge plan PRs, same as implementation PRs.
 > — both need an architect go/no-go call, not a mechanical bump, per
 > `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
 
-- [ ] 🟡 **`argo-cd` Helm chart major bump — `9.7.1` → `10.x`** (issue #781; RFC #785 —
+- ~~🟡 **`argo-cd` Helm chart major bump — `9.7.1` → `10.x`**~~ (issue #781; RFC #785 —
   architect decision 2026-07-28: **Approve**, chart `10.2.1`, with a required
-  `global.networkPolicy.create: false` companion override — see RFC #785 for the full
-  values-schema diff and rationale; awaiting planner grooming into a 🟢 item). Chart's
-  `9.x` → `10.x` line drops the
-  `server.additionalApplications`/`server.additionalProjects` values keys (moved to a
-  separate `argocd-apps` chart) — this repo's `infra/modules/argocd/values.yaml`
-  doesn't set either key, so that one documented breaking change wouldn't bite as-is,
-  but the full values-schema diff between `9.7.1` and `10.x` has not been audited.
-  `appVersion` is identical (`v3.4.4`) at chart `10.0.0`, one patch ahead (`v3.4.5`) on
-  `main`/chart `10.2.1` — the major chart-line bump alone changes nothing about the
-  deployed ArgoCD version. Needs the same values-schema audit technique the architect
-  used for Velero's `8.x`→`12.x` jump (RFC #617) before a go/no-go call: fetch
-  `argo-cd-10.x`'s real `values.yaml`, diff every key this repo's
-  `infra/modules/argocd/values.yaml`/`valuesObject` sets (`global.*`, `configs.*`,
-  `dex`, `notifications`, `applicationSet.*`, `controller.*`, `repoServer.*`,
-  `server.*`, `redis.*`, `redisSecretInit.*`) against the new schema. Once decided,
-  groom into a 🟢 bump item or resolve with a Hold + flip condition, same shape as the
-  kafka-client (#705/RFC #708) and kube-state-metrics (#704/RFC #707) precedents
-  below. Closes #781 once resolved.
+  `global.networkPolicy.create: false` companion override.) **Groomed ↗** into a 🟢
+  item in *Now / next* above (`auto/argocd-chart-10x-bump`), planner run 2026-07-28.
 
 - [x] 🟢 **`kube-state-metrics` chart major bump — `7.8.1` → `8.0.0`** (issue #704;
   RFC #707 — architect decision 2026-07-24: **Approve.** appVersion unchanged at
