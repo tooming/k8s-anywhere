@@ -101,6 +101,12 @@ graph TD
     subgraph VELERO["Velero — always-on (velero ns, ADR-0021)"]
       veleroctl["velero<br/>backup controller + node-agent<br/>(metrics :8085, S3 → Garage)"]:::gitops
     end
+    subgraph CERTMANAGER["cert-manager — always-on (cert-manager ns, ADR-0028)"]
+      certmanagerctrl["cert-manager controller<br/>TLS lifecycle + root CA chain<br/>(metrics :9402)"]:::gitops
+    end
+    subgraph KEDA["KEDA — always-on (keda ns, ADR-0029)"]
+      kedaop["keda-operator<br/>event-driven autoscaling<br/>(metrics :8080)"]:::gitops
+    end
     subgraph CILIUM["Cilium CNI — bootstrap step (before ArgoCD on fresh clusters)"]
       ciliumagent["cilium-agent<br/>eBPF CNI DaemonSet<br/>(kube-system ns)"]:::ondemand
       ciliumop["cilium-operator<br/>Deployment (~70 MB)"]:::ondemand
@@ -245,6 +251,15 @@ graph TD
   veleroctl -->|"S3 PUT/GET :3900 (bucket velero)"| garage
   veleroctl -->|"scrape :8085"| alloy
   eso -->|"cloud-credentials ← velero/s3"| veleroctl
+
+  %% --- cert-manager TLS lifecycle ---
+  certmanagerctrl -->|"scrape :9402"| alloy
+  certmanagerctrl -.->|"issues k8s-lab-ca wildcard cert"| envoy
+
+  %% --- KEDA event-driven autoscaling ---
+  kedaop -->|"scrape :8080"| alloy
+  kedaop -.->|"queue depth poll (rabbitmq scaler)"| rabbitmq
+  certmanagerctrl -.->|"issues webhook TLS (k8s-lab-ca)"| kedaop
 
   %% --- ingress (north-south) ---
   user --> frontdoor
