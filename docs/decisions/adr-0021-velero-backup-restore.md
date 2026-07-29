@@ -84,14 +84,20 @@ S3 access key + grant on `velero` bucket; store creds at Vault path
 
 Land in `gitops/velero/schedules/` (separate ArgoCD Application, sync-wave 5
 so the controller is up first). Cron windows are deliberately spread so the
-node isn't snapshotting four namespaces concurrently:
+node isn't snapshotting two namespaces concurrently:
 
 | Schedule | Namespace | Cron | TTL | Includes |
 |----------|-----------|------|-----|----------|
+| `observability-daily` | `observability` | `0 1 * * *` | 168h | All resources + PVCs (Loki + Mimir + Tempo, 5Gi each) |
 | `data-daily` | `data` | `0 2 * * *` | 168h (7d) | All resources + PVCs (RabbitMQ + Valkey) |
 | `tidb-daily` | `tidb` | `30 2 * * *` | 168h | All resources + PVCs (PD/TiKV/TiDB) |
 | `capstone-daily` | `capstone` | `0 3 * * *` | 168h | All resources (no PVCs in pilot) |
 | `vault-daily` | `vault` | `30 3 * * *` | 168h | All resources + Vault PVC (file backend) |
+
+`observability-daily` added 2026-07-29 (architect gap audit — see
+§Re-evaluation log) to close the mismatch between CHARTER O3's "every
+stateful namespace" claim and the original four-namespace set, which
+predated the `observability` namespace holding its own PVCs.
 
 Each `Schedule` uses `defaultVolumesToFsBackup: true` so PVCs are captured
 via Kopia regardless of CSI driver. Restic is **not** used (deprecated in
@@ -147,11 +153,22 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 ## Scope & exceptions
 
 **In scope** — backup of every stateful namespace listed in CHARTER O3
-(`data`, `tidb`, `capstone`, `vault`); restore via `make dr-restore`;
-real-metric dashboard.
+(`data`, `tidb`, `capstone`, `vault`, `observability`); restore via
+`make dr-restore`; real-metric dashboard.
 
 **Out of scope (this RFC):**
 
+- **The in-cluster `storage` (Garage) namespace's own PVC.** Garage is both
+  the workload being backed up *and* the S3 target every Velero backup is
+  written to — a Garage PVC loss would destroy the live data and every
+  stored backup for every other namespace in the same event, which a
+  same-target fs-snapshot does not meaningfully protect against (unlike
+  `observability`/`data`/`tidb`/`vault`, which back up to a target
+  independent of themselves). Deferred rather than silently added, per
+  ADR-0004 (adding a Schedule here would assert protection this design does
+  not actually provide). **Flip condition:** a backup target independent of
+  the in-cluster Garage instance exists (e.g. the off-host tfstate Garage
+  below, once repurposed, or a genuine second copy per the next bullet).
 - Off-host backup (e.g. push to a cloud S3 bucket as second copy). The single
   off-host Garage instance for tfstate (ADR-0007) is for state, not backups —
   separate concern, can be a follow-up RFC.
@@ -201,6 +218,25 @@ real-metric dashboard.
 ---
 
 ## Re-evaluation log
+
+- **2026-07-29 (architect gap audit).** Cross-referenced every namespace
+  declaring a PVC or `volumeClaimTemplates` under `gitops/**` against the
+  Schedule set and CHARTER O3's "every stateful namespace" claim. Found two
+  namespaces with real PVCs outside the original four-namespace scope:
+  `observability` (Loki/Mimir/Tempo, 5Gi each) and `storage`/Garage.
+  **Decision: add `observability-daily`** — unambiguous, groundable now, same
+  mechanism and retention as the existing four schedules, no design trade-off
+  (see updated Schedule table above and CHARTER O3). **Decision: defer
+  `storage`/Garage** — Garage is simultaneously the workload and the backup
+  target, so an fs-snapshot of its own PVC does not protect against the
+  scenario that matters most (losing that PVC loses the live data *and*
+  every other namespace's stored backups at once); adding a schedule anyway
+  would assert protection the design doesn't provide (ADR-0004). Recorded as
+  an explicit out-of-scope carve-out above rather than silently omitted, with
+  a stated flip condition (see §Scope & exceptions). Also noted: `inkless`
+  (on-demand, has PVCs) has no pre-wired schedule, unlike `tidb`'s established
+  on-demand-but-pre-wired precedent — left open as a smaller follow-up, not
+  addressed in this pass.
 
 - **2026-07-18 (executor currency check).** Verified directly against
   `vmware-tanzu/helm-charts`: every `8.x` chart release (`8.4.0` through the
