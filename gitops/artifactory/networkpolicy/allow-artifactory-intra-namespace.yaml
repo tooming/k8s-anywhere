@@ -1,0 +1,30 @@
+# Allow all pods within the artifactory namespace to communicate with each other
+# (ADR-0016). This is a documented carve-out from ADR-0016's general "no catch-all
+# 'allow same namespace'" rule — see ADR-0016 §"Scope & exceptions" → Carve-outs
+# table (the argocd/harbor/inkless/istio-system/longhorn-system/tidb row) for the
+# binding rationale and flip condition.
+# Artifactory OSS uses a bundled internal PostgreSQL pod (artifactory-oss-postgresql)
+# on TCP 5432, and the nginx frontend (artifactory-oss-artifactory-nginx) proxies to
+# the artifactory-oss app on TCP 8081/8082/8025. Without this allow, the default-deny
+# floor blocks artifactory-oss → postgresql, so the app's wait-for-db init container
+# never completes and the pod never starts (found live: artifactory-oss-0 stuck on
+# Init:2/4 indefinitely — TCP to the postgresql ClusterIP and pod IP both refused).
+# A broad intra-namespace allow is correct here: all components are intentional
+# couplings of the Artifactory stack and the database pod lives in the same
+# namespace, same as the Harbor row this carve-out already covers.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-artifactory-intra-namespace
+  namespace: artifactory
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}

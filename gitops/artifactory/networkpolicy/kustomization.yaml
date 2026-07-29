@@ -14,3 +14,4 @@ resources:
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-artifactory-ingress.yaml
   - allow-artifactory-garage-egress.yaml
+  - allow-artifactory-intra-namespace.yaml
