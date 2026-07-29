@@ -48,7 +48,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller + `capstone-rollout` AnalysisTemplate — Mimir SLO-gated canary steps via Envoy Gateway traffic-split · `argo-rollouts-networkpolicy` default-deny overlay; ADR-0020) |
 | **Autoscaling** | KEDA (event-driven autoscaling — 60+ built-in scalers including RabbitMQ queue depth and Prometheus expressions, augments the stock HPA · `data-demo-keda-scaling` `ScaledObject` demo scaling `rabbitmq-load` 1→5 replicas on the `demo` queue's real depth via the RabbitMQ management API · `keda-networkpolicy` default-deny overlay; ADR-0029) |
 | **Promotion pipelines** | Kargo (`make kargo-up` / `make kargo-down` — Warehouse detects new image digests → Stage dev auto-promote → Stage prod manual gate · `kargo-project` capstone-pipeline Project · `kargo-networkpolicy` default-deny overlay · `kargo-project-networkpolicy` capstone-pipeline NetworkPolicy overlay; ADR-0023) |
-| **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Artifactory OSS (`make artifactory-up` / `make artifactory-down`) · Harbor CNCF OCI registry (`make harbor-up` / `make harbor-down` — Garage S3 backend; ADR-0024) · Istio ambient mesh — istio-base · istio-cni · istiod · ztunnel (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn distributed block storage (`make longhorn-up` / `make longhorn-down`) · Aiven Inkless diskless Kafka (`make inkless-up` / `make inkless-down`) · Kargo promotion engine (`make kargo-up` / `make kargo-down`) |
+| **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Harbor CNCF OCI registry (`make harbor-up` / `make harbor-down` — Garage S3 backend; ADR-0024) · Istio ambient mesh — istio-base · istio-cni · istiod · ztunnel (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn distributed block storage (`make longhorn-up` / `make longhorn-down`) · Aiven Inkless diskless Kafka (`make inkless-up` / `make inkless-down`) · Kargo promotion engine (`make kargo-up` / `make kargo-down`) |
 
 ## Prerequisites
 
@@ -111,7 +111,6 @@ After `make up`, UIs are served via the stable front door on **`:8000`**
 | Argo Rollouts | http://rollouts.127.0.0.1.nip.io:8000 |
 | Capstone *(demo app)* | http://capstone.127.0.0.1.nip.io:8000 |
 | GitLab | http://localhost:8929 |
-| Artifactory *(on-demand)* | http://artifactory.127.0.0.1.nip.io:8000 |
 | Kiali *(on-demand)* | http://kiali.127.0.0.1.nip.io:8000 |
 | Longhorn *(on-demand)* | http://longhorn.127.0.0.1.nip.io:8000 |
 | Kargo *(on-demand)* | http://kargo.127.0.0.1.nip.io:8000 |
@@ -152,7 +151,7 @@ them and enforces every gate.
 ## The 16 GB reality
 
 The always-on stack above fits the 12 GB Colima VM (~7 GB used). Adding a **heavy**
-profile (TiDB, Artifactory, Istio mesh, Longhorn) needs care, and two *full* stacks
+profile (TiDB, Harbor, Istio mesh, Longhorn) needs care, and two *full* stacks
 don't fit at once — proven by the blue/green drill, which is why its promote retires
 blue *before* growing green. GitLab runs as a standalone container (off the cluster
 budget; `make gitlab-down` frees ~3 GB).

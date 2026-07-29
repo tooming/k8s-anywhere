@@ -8,39 +8,6 @@ setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
 }
 
-# --- Artifactory must NOT be auto-synced (ADR-0011, 12 GB budget) -----------
-@test "artifactory Application has no automated: block (on-demand only)" {
-  run grep 'automated:' "$REPO/gitops/platform/artifactory.yaml"
-  [ "$status" -eq 1 ]
-}
-
-# artifactory-extras IS auto-synced — it only pre-creates the artifactory
-# namespace with PSA baseline labels (ADR-0017, RFC #287) + the Envoy HTTPRoute,
-# so the baseline PSA floor is in place before `make artifactory-up` admits any
-# pod. (The JVM-heavy artifactory.yaml chart stays manual-sync, asserted above —
-# ADR-0011 12 GB budget.) Mirrors the longhorn-extras / istio-system-extras pattern.
-@test "artifactory-extras Application is auto-synced (namespace floor before artifactory-up)" {
-  run grep 'automated:' "$REPO/gitops/platform/artifactory-extras.yaml"
-  [ "$status" -eq 0 ]
-}
-
-# --- Envoy HTTPRoute wiring --------------------------------------------------
-@test "Artifactory HTTPRoute declares artifactory.127.0.0.1.nip.io" {
-  run grep -r 'artifactory\.127\.0\.0\.1\.nip\.io' "$REPO/gitops/"
-  [ "$status" -eq 0 ]
-}
-
-# --- make targets exist ------------------------------------------------------
-@test "Makefile has artifactory-up target" {
-  run grep -E '^artifactory-up:' "$REPO/Makefile"
-  [ "$status" -eq 0 ]
-}
-
-@test "Makefile has artifactory-down target" {
-  run grep -E '^artifactory-down:' "$REPO/Makefile"
-  [ "$status" -eq 0 ]
-}
-
 # --- Istio ambient must NOT be auto-synced (ADR-0012, 12 GB budget) ----------
 @test "istio-base Application has no automated: block (on-demand only)" {
   run grep 'automated:' "$REPO/gitops/platform/istio-base.yaml"

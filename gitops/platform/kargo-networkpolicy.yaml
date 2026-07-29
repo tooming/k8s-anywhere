@@ -4,7 +4,7 @@
 # plus per-workload allow rules: Envoy Gateway → kargo-api on TCP 80 (Kargo UI);
 # kube-apiserver → webhooks on TCP 9443 (admission webhook callbacks for Kargo CRDs);
 # kargo → argocd-server on TCP 80 (argocd-update promotion step);
-# kargo → Artifactory on TCP 443 (image digest discovery from Warehouse).
+# kargo → Harbor on TCP 443 (image digest discovery from Warehouse).
 # ON-DEMAND: pairs with the kargo Application. No auto-sync block.
 # Wave 4: after kargo (wave 1) and kargo-extras (wave 0).
 apiVersion: argoproj.io/v1alpha1

@@ -2,7 +2,7 @@
 # GitLab CI pipeline (step 2 of the capstone demo). The workload is light (HotROD),
 # so auto-sync is safe (unlike the heavy on-demand components).
 # Wave 4: after ESO (wave 1) + secrets config including the capstone namespace + the
-# artifactory-registry ExternalSecret (wave 2) + data-layer (wave 3), so the
+# harbor-registry ExternalSecret (wave 2) + data-layer (wave 3), so the
 # imagePullSecret is available when the pod is scheduled.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
