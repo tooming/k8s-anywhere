@@ -3,10 +3,11 @@
 # now-frozen tests/drift-detectors.bats monolith (see that file's header
 # comment) into their own scope, per the drift-detectors-tests-check
 # convention: new drift-check coverage goes in its own tests/drift-<scope>.bats
-# file. Grouped together here (rather than three separate files) because all
-# three check scripts share one job: verifying a *different* frozen monolith
+# file. Grouped together here (rather than four separate files) because all
+# four check scripts share one job: verifying a *different* frozen monolith
 # (tests/securitycontext.bats, tests/observability.bats,
-# tests/networkpolicy.bats respectively) hasn't grown a new appended @test.
+# tests/networkpolicy.bats, tests/hook-scripts-coverage.bats respectively)
+# hasn't grown a new appended @test.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -61,5 +62,22 @@ setup() {
 
 @test "networkpolicy-tests-check: passes on the real repo tests/networkpolicy.bats" {
   run bash "$REPO/scripts/networkpolicy-tests-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+# --- hook-scripts-coverage-tests-check ----------------------------------------
+@test "hook-scripts-coverage-tests-check: passes when the monolith matches its snapshot" {
+  run env HOOKCOV_TESTS_ROOT="$FIX/hook-scripts-coverage-tests-check/in-sync" bash "$REPO/scripts/hook-scripts-coverage-tests-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "hook-scripts-coverage-tests-check: fails when a new @test is appended to the frozen monolith" {
+  run env HOOKCOV_TESTS_ROOT="$FIX/hook-scripts-coverage-tests-check/drift" bash "$REPO/scripts/hook-scripts-coverage-tests-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FROZEN"* ]]
+}
+
+@test "hook-scripts-coverage-tests-check: passes on the real repo tests/hook-scripts-coverage.bats" {
+  run bash "$REPO/scripts/hook-scripts-coverage-tests-check.sh"
   [ "$status" -eq 0 ]
 }

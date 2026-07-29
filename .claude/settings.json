@@ -90,6 +90,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/hook-scripts-coverage-tests-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking hook-scripts-coverage.bats freeze"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/yq-raw-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking bats yq usage"

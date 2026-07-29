@@ -94,6 +94,15 @@ drift-detectors-tests-mark: ## Refresh tests/.drift-detectors-titles — run ONL
 	@grep -oE '^@test "[^"]*"' tests/drift-detectors.bats | sort > tests/.drift-detectors-titles
 	@echo "  ok  tests/.drift-detectors-titles refreshed ($$(wc -l < tests/.drift-detectors-titles | tr -d ' ') titles)"
 
+.PHONY: hook-scripts-coverage-tests-check
+hook-scripts-coverage-tests-check: ## Check tests/hook-scripts-coverage.bats stays frozen (new hook coverage goes in hook-scripts-<scope>.bats)
+	@bash scripts/hook-scripts-coverage-tests-check.sh
+
+.PHONY: hook-scripts-coverage-tests-mark
+hook-scripts-coverage-tests-mark: ## Refresh tests/.hook-scripts-coverage-titles — run ONLY after an intentional rename/edit of a monolith test
+	@grep -oE '^@test "[^"]*"' tests/hook-scripts-coverage.bats | sort > tests/.hook-scripts-coverage-titles
+	@echo "  ok  tests/.hook-scripts-coverage-titles refreshed ($$(wc -l < tests/.hook-scripts-coverage-titles | tr -d ' ') titles)"
+
 .PHONY: routines-check
 routines-check: ## Check routines/*.prompt.md match the last apply (catches edits not synced to claude.ai triggers)
 	@bash scripts/routines-check.sh
@@ -190,6 +199,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/adr-image-pin-sync-check.sh
 	@bash scripts/context-doc-version-sync-check.sh
 	@bash scripts/drift-detectors-tests-check.sh
+	@bash scripts/hook-scripts-coverage-tests-check.sh
 	@bash scripts/ci-parity-check.sh
 
 .PHONY: install-hooks

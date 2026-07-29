@@ -22,6 +22,14 @@
 # hooks that delegate to network-tolerant checks — argocd-crd-ssa,
 # helm-chart-pin — degrade to a guaranteed exit 0 skip/pass offline, so those
 # assertions hold either way).
+#
+# This file is now FROZEN (mirroring tests/securitycontext.bats /
+# tests/observability.bats / tests/drift-detectors.bats) — every new hook
+# script had been appending its own @test section here (18 unrelated hooks /
+# 68 tests accumulated), the same "shared monolith multiple PRs append to"
+# footgun those other files were split off to prevent. New hook-script
+# coverage goes in its own tests/hook-scripts-<scope>.bats file; the
+# hook-scripts-coverage-tests-check gate enforces this.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
