@@ -43,4 +43,4 @@ now 243 lines, down from 662 at the start of this thread (63% reduction).
 
 ## PR
 
-(filled in after PR creation)
+[#687](https://github.com/tooming/k8s-anywhere/pull/687)

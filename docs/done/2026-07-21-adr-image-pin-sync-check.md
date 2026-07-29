@@ -74,4 +74,4 @@ way. `make ci` passes (modulo the pre-existing, unrelated yq-mismatch failures).
 
 ## PR
 
-(filled in after PR creation)
+[#637](https://github.com/tooming/k8s-anywhere/pull/637)

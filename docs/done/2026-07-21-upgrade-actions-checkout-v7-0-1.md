@@ -34,4 +34,4 @@ pre-RFC-#611 Node-20-era pin" test's shape).
 
 ## PR
 
-(filled in after PR creation)
+[#640](https://github.com/tooming/k8s-anywhere/pull/640)

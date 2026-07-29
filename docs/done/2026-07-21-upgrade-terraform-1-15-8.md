@@ -42,4 +42,4 @@ This closes out the cycle-7 CI-tool-pin sweep — all three pins found behind
 
 ## PR
 
-(filled in after PR creation)
+[#643](https://github.com/tooming/k8s-anywhere/pull/643)

@@ -147,6 +147,10 @@ adr-image-pin-sync-check: ## Check every ADR that self-declares a "pinned offici
 context-doc-version-sync-check: ## Check docs/decisions/context.md's tracked version citations (Grafana, Pyroscope, KRO) match their live gitops pins (drift detector)
 	@bash scripts/context-doc-version-sync-check.sh
 
+.PHONY: docs-done-pr-link-check
+docs-done-pr-link-check: ## Check every docs/done/*.md file's "## PR" section is backfilled with a real PR link, not left on the placeholder (drift detector)
+	@bash scripts/docs-done-pr-link-check.sh
+
 ##@ Quality gates (clusterless; run on every commit + in CI)
 
 .PHONY: lint
@@ -198,6 +202,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/adr-chart-version-sync-check.sh
 	@bash scripts/adr-image-pin-sync-check.sh
 	@bash scripts/context-doc-version-sync-check.sh
+	@bash scripts/docs-done-pr-link-check.sh
 	@bash scripts/drift-detectors-tests-check.sh
 	@bash scripts/hook-scripts-coverage-tests-check.sh
 	@bash scripts/ci-parity-check.sh

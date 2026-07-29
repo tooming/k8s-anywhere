@@ -52,4 +52,4 @@ pattern alternative to the same grep. `make ci` passes.
 
 ## PR
 
-(filled in after PR creation)
+[#601](https://github.com/tooming/k8s-anywhere/pull/601)

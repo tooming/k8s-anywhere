@@ -47,4 +47,4 @@ Actions).
 
 ## PR
 
-(filled in once the PR is opened — see `auto/governance-capstone-pipeline`)
+[#752](https://github.com/tooming/k8s-anywhere/pull/752)

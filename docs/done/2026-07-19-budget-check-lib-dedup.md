@@ -52,4 +52,4 @@ tests) are identical before and after this change. `make ci` passes.
 
 ## PR
 
-(filled in after PR creation)
+[#602](https://github.com/tooming/k8s-anywhere/pull/602)

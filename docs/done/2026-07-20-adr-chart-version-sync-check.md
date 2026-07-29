@@ -67,4 +67,4 @@ today and will fail the next time either drifts without an accompanying ADR edit
 
 ## PR
 
-(filled in after PR creation)
+[#622](https://github.com/tooming/k8s-anywhere/pull/622)

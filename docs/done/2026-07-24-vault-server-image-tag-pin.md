@@ -64,4 +64,4 @@ persistent file storage, so a revert doesn't touch data.
 
 ## PR
 
-(filled in once the PR is opened — see `auto/vault-server-image-tag-pin`)
+[#699](https://github.com/tooming/k8s-anywhere/pull/699)

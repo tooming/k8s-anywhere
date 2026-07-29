@@ -80,4 +80,4 @@ existing test's outcome.
 
 ## PR
 
-(filled in after PR creation)
+[#680](https://github.com/tooming/k8s-anywhere/pull/680)

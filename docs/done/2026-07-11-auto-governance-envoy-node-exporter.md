@@ -18,4 +18,4 @@ Three deliverables:
 
 ## PR
 
-<!-- filled in after PR creation -->
+[#362](https://github.com/tooming/k8s-anywhere/pull/362)

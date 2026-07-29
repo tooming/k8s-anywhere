@@ -52,4 +52,4 @@ green (they gate `routines.yaml` specifically, untouched here).
 
 ## PR
 
-(filled in after PR creation)
+[#691](https://github.com/tooming/k8s-anywhere/pull/691)

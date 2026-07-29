@@ -51,4 +51,4 @@ four controllers are Deployments so a revert re-rolls the same way the bump did.
 
 ## PR
 
-(filled in after PR creation)
+[#556](https://github.com/tooming/k8s-anywhere/pull/556)
