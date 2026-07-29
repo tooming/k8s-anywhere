@@ -2232,9 +2232,14 @@ You review and merge plan PRs, same as implementation PRs.
 
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
-  maintainer confirms at least one CI run pushed a `.sig` tag to Artifactory** — check
-  `curl http://artifactory.127.0.0.1.nip.io:8000/artifactory/docker-local/hello/.sig`
-  returns 200). Edit `gitops/kyverno/policies/verify-image-signatures.yaml`:
+  maintainer confirms at least one CI run pushed a signed image to the registry** — the
+  registry moved from Artifactory to Harbor (`auto/harbor-capstone-rewire` /
+  `auto/harbor-artifactory-decommission`, ADR-0024, 2026-07-29) after this item's original
+  Artifactory-specific verification command was written; check for a `<digest>.sig` tag in
+  Harbor's `library/hello` repository (e.g. `crane ls harbor.127.0.0.1.nip.io/library/hello`
+  or the Harbor UI/API), confirming the `sign-image` CI job actually ran and pushed a
+  signature — do not reuse the old `artifactory.../docker-local/hello/.sig` path, that host
+  no longer exists). Edit `gitops/kyverno/policies/verify-image-signatures.yaml`:
   `validationFailureAction: Audit` → `validationFailureAction: Enforce`;
   `failurePolicy: Ignore` → `failurePolicy: Fail`. Extend `tests/kyverno-policies.bats`
   (or `tests/kyverno.bats`) asserting `Enforce` and `Fail` values are present in the
