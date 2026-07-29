@@ -73,4 +73,4 @@ beyond the check/hook scripts and their wiring (`Makefile`,
 
 ## PR
 
-(filled in after PR creation)
+[#890](https://github.com/tooming/k8s-anywhere/pull/890)
