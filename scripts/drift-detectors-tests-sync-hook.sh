@@ -6,24 +6,15 @@
 # what causes the recurring "unrelated PRs collide at EOF" merge conflict.
 # Reads the Claude Code hook payload on stdin; non-blocking.
 #   exit 0 = nothing to say   |   exit 2 = stderr shown to Claude as a reminder
+# Shared hook logic lives in scripts/lib/frozen-monolith-sync-hook.sh.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/scripts/lib/frozen-monolith-sync-hook.sh"
 
-source "$ROOT/scripts/lib/hook-payload.sh"
-fp="$(hook_file_path)"
-
-# React only to edits of the frozen monolith itself.
-case "$fp" in
-  */tests/drift-detectors.bats|tests/drift-detectors.bats) ;;
-  *) exit 0 ;;
-esac
-
-if ! out="$(bash "$ROOT/scripts/drift-detectors-tests-check.sh" 2>&1)"; then
-  {
-    echo "tests/drift-detectors.bats is FROZEN — put new drift-check test coverage in its own tests/drift-<scope>.bats file instead of appending here (prevents the recurring unrelated-PR merge conflict):"
-    echo "$out"
-    echo "(intentional rename/edit of an existing monolith test? run: make drift-detectors-tests-mark — re-check: make drift-detectors-tests-check)"
-  } >&2
-  exit 2
-fi
-exit 0
+frozen_monolith_sync_hook \
+  "tests/drift-detectors.bats" \
+  "scripts/drift-detectors-tests-check.sh" \
+  "drift-detectors-tests-mark" \
+  "tests/drift-<scope>.bats" \
+  "$ROOT"
+exit "$?"
