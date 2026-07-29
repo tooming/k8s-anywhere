@@ -103,4 +103,4 @@ Closes #297.
 
 ## PR
 
-(filled in once opened)
+https://github.com/tooming/k8s-anywhere/pull/887
