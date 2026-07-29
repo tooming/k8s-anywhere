@@ -475,7 +475,7 @@ dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=c
 
 .PHONY: dr-restore
 dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
-	@./scripts/dr-restore.sh data tidb capstone vault
+	@./scripts/dr-restore.sh data tidb capstone vault observability inkless
 
 .PHONY: dr-bluegreen
 dr-bluegreen: ## Zero-downtime blue/green DR: stand up a green cluster + cut over, prove no outage
