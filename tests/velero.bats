@@ -189,6 +189,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "velero kopia-pv egress rule allows egress to inkless namespace" {
+  run grep -q -- '- inkless' "$REPO/gitops/velero/networkpolicy/allow-velero-egress-kopia-pv.yaml"
+  [ "$status" -eq 0 ]
+}
+
 # --- velero-networkpolicy Application (wave 4) --------------------------------
 @test "velero-networkpolicy Application exists" {
   [ -f "$REPO/gitops/platform/velero-networkpolicy.yaml" ]
@@ -320,6 +325,16 @@ setup() {
   grep -q 'schedule: "30 3 \* \* \*"' "$f"
   grep -q 'ttl: 168h' "$f"
   grep -qE '^[[:space:]]*- vault$' "$f"
+  grep -q 'defaultVolumesToFsBackup: true' "$f"
+}
+
+@test "inkless-daily Schedule exists with cron 0 4, ttl 168h, namespace inkless" {
+  f="$REPO/gitops/velero/schedules/inkless-daily.yaml"
+  [ -f "$f" ]
+  grep -q 'kind: Schedule' "$f"
+  grep -q 'schedule: "0 4 \* \* \*"' "$f"
+  grep -q 'ttl: 168h' "$f"
+  grep -qE '^[[:space:]]*- inkless$' "$f"
   grep -q 'defaultVolumesToFsBackup: true' "$f"
 }
 

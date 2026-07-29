@@ -1,0 +1,21 @@
+# inkless-daily — Velero Schedule for the on-demand inkless namespace (Aiven Inkless
+# broker + its Postgres catalog PVCs, 2Gi each). Follow-up from RFC #873/ADR-0021
+# §Re-evaluation log (2026-07-29): inkless has real PVCs but, unlike tidb-daily's
+# established on-demand-but-pre-wired precedent, had no Schedule at all. Matches that
+# precedent: the Schedule CR is present even though inkless is on-demand — once
+# `make inkless-up` brings it up, backups start on the next window without further
+# wiring. Cron 04:00 UTC, the next open slot after vault-daily's 03:30, so the single
+# node still snapshots one namespace at a time. defaultVolumesToFsBackup captures both
+# StatefulSets' PVCs via Kopia. 7-day (168h) retention, matching the existing set.
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: inkless-daily
+  namespace: velero
+spec:
+  schedule: "0 4 * * *"
+  template:
+    ttl: 168h
+    includedNamespaces:
+    - inkless
+    defaultVolumesToFsBackup: true

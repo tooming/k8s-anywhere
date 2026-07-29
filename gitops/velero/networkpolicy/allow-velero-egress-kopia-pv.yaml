@@ -4,10 +4,11 @@
 # volume and does NOT open TCP connections to application pods — this rule is a
 # belt-and-suspenders allow for any Kopia coordination traffic between the agent
 # and the backed-up namespace pods during live backup (e.g., freeze hooks).
-# Scoped to the five stateful namespaces: data, tidb, capstone, vault,
-# observability (added 2026-07-29 alongside the observability-daily Schedule —
-# ADR-0021 §Re-evaluation log). storage/Garage is deliberately excluded from
-# both the Schedule set and this list — see ADR-0021 §Scope & exceptions.
+# Scoped to the six stateful namespaces: data, tidb, capstone, vault,
+# observability, inkless (inkless added 2026-07-29 — tidb-style on-demand
+# pre-wired schedule follow-up from ADR-0021 §Re-evaluation log). storage/Garage
+# is deliberately excluded from both the Schedule set and this list — see
+# ADR-0021 §Scope & exceptions.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -29,3 +30,4 @@ spec:
                   - capstone
                   - vault
                   - observability
+                  - inkless
