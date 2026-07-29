@@ -73,27 +73,6 @@ setup() {
   ! grep -q 'FROM jaegertracing/example-hotrod:latest' "$REPO/gitops/apps/demo/Dockerfile"
 }
 
-# --- Vault seeding ----------------------------------------------------------
-@test "vault-bootstrap.sh seeds secret/artifactory/registry" {
-  run grep -q 'secret/artifactory/registry' "$REPO/scripts/vault-bootstrap.sh"
-  [ "$status" -eq 0 ]
-}
-
-# --- ESO ExternalSecret for in-cluster imagePullSecret material -------------
-@test "artifactory-registry ExternalSecret exists in gitops/secrets/" {
-  [ -f "$REPO/gitops/secrets/artifactory-registry-externalsecret.yaml" ]
-}
-
-@test "artifactory-registry ExternalSecret pulls from vault key artifactory/registry" {
-  run grep -q 'key: artifactory/registry' "$REPO/gitops/secrets/artifactory-registry-externalsecret.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "artifactory-registry ExternalSecret uses dockerconfigjson template" {
-  run grep -q 'kubernetes.io/dockerconfigjson' "$REPO/gitops/secrets/artifactory-registry-externalsecret.yaml"
-  [ "$status" -eq 0 ]
-}
-
 # --- Step 2: ArgoCD Application for the capstone app ---------------------------
 
 @test "capstone ArgoCD Application exists in gitops/platform/" {

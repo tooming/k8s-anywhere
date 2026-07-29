@@ -65,9 +65,6 @@ spec:
           - appName: longhorn-networkpolicy
             gitPath: gitops/longhorn/networkpolicy
             destNamespace: longhorn-system
-          - appName: artifactory-networkpolicy
-            gitPath: gitops/artifactory/networkpolicy
-            destNamespace: artifactory
           - appName: harbor-networkpolicy
             gitPath: gitops/harbor/networkpolicy
             destNamespace: harbor

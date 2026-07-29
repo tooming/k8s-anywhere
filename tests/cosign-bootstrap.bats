@@ -125,7 +125,7 @@ setup_ci() {
   [ "$status" -eq 0 ]
 }
 
-@test "sign-image job uses --allow-insecure-registry (HTTP Artifactory route)" {
+@test "sign-image job uses --allow-insecure-registry (HTTP Harbor route)" {
   setup_ci
   run grep -q '\-\-allow-insecure-registry' "$CI_FILE"
   [ "$status" -eq 0 ]

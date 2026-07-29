@@ -1,5 +1,5 @@
 # Thin wrapper on the public HotROD image so the capstone GitLab CI pipeline has
-# something to build + push to the in-lab Artifactory registry. The image itself
+# something to build + push to the in-lab Harbor registry. The image itself
 # is unchanged; the point is the pipeline mechanics (build → tag → push → pull).
 #
 # Pinned :latest -> 2.20.0 (2026-07-28, executor currency check): PR #796 fixed this

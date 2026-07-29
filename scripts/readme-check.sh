@@ -57,8 +57,13 @@ done
 # ADRs describe bootstrap/teardown machinery as binding fact (e.g. ADR-0007 promising
 # `make tfstate-clean`); a target named in an ADR but absent from the Makefile is the
 # same drift class as #1 above, just in docs/decisions/ instead of README.md.
+# Exception: a **Superseded by** ADR (e.g. ADR-0011 once the Harbor migration retired
+# its `make artifactory-*` targets) intentionally keeps its original decision text "for
+# the historical record" — that prose describes what was true when written, not current
+# live state, so its make-target mentions are expected to go stale and are not drift.
 for f in "$ROOT"/docs/decisions/*.md; do
   [ -e "$f" ] || continue
+  grep -q '\*\*Status\.\*\* Superseded by' "$f" && continue
   adr_targets="$(grep -oE '`make [a-z][a-z0-9-]+' "$f" | sed 's/`make //' | sort -u)"
   for t in $adr_targets; do
     grep -qx "$t" <<<"$mk_targets" || bad "$(basename "$f") mentions \`make $t\` but the Makefile has no '$t' target"

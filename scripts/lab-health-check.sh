@@ -9,9 +9,9 @@
 # It deliberately ignores two kinds of pod that are SUPPOSED to be transient/absent:
 #   * Job-owned pods (Trivy scans, hook jobs, …) — ephemeral by design; their
 #     Completion is what matters, not steady Readiness.
-#   * On-demand components — the manual `make *-up` targets (TiDB, Artifactory, Istio,
+#   * On-demand components — the manual `make *-up` targets (TiDB, Harbor, Istio,
 #     Kiali, Longhorn, Inkless, Kargo) + the capstone demo (needs the on-demand
-#     Artifactory). `make up` never starts them, so a missing/unhealthy one isn't a
+#     Harbor registry). `make up` never starts them, so a missing/unhealthy one isn't a
 #     `make up` failure. Override the set with LAB_ONDEMAND_NS="ns1 ns2 …".
 #
 # Polls up to HEALTH_WAIT seconds (default 90; 0 = single snapshot) so a workload that's
@@ -25,12 +25,7 @@ KCTX="${KCTX:-}"
 kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
 WAIT="${HEALTH_WAIT:-90}"
 IV="${HEALTH_INTERVAL:-10}"
-ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo artifactory istio-system kiali longhorn-system inkless kargo ack-system capstone}"
-# Harbor is on-demand (ADR-0024, no auto-sync) — appended so `make harbor-up` never
-# makes the always-on health gate fail on Harbor pods still converging. Appended on its
-# own line (not merged into the default list above) so the outgoing on-demand registry
-# entry, which stays until its manifests are decommissioned, is left untouched.
-ONDEMAND_NS="$ONDEMAND_NS harbor"
+ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo istio-system kiali longhorn-system inkless kargo ack-system capstone harbor}"
 # Front-door UIs to probe (HTTP, from the host) — readiness of the pods behind Envoy
 # isn't enough: if the Envoy data plane is down, every :8000 UI is unreachable while the
 # pods still look fine. Probes the stable front door (:8000), not a per-cluster Envoy

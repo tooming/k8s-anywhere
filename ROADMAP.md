@@ -2983,7 +2983,7 @@ You review and merge plan PRs, same as implementation PRs.
   **Executor note:** if this crosses ~400 lines, split the CI/registry-credential
   cutover from the GitOps app/image-ref cutover. (auto/harbor-capstone-rewire)
 
-- [ ] 🟢 **Decommission Artifactory manifests** (RFC #297 / ADR-0024 — architect
+- [x] 🟢 **Decommission Artifactory manifests** (RFC #297 / ADR-0024 — architect
   decision 2026-06-30; **maintainer-confirmation prerequisite: pick up ONLY
   after `auto/harbor-capstone-rewire` merges AND the maintainer has confirmed the
   Harbor footprint gate on #297; skip if not verifiable this run**). Remove

@@ -128,7 +128,6 @@ so the executor never silently applies the wrong label.
 | `inkless` | `baseline` | The Aiven Inkless broker image (`ghcr.io/aiven/inkless:latest`) — see [§Re-evaluation log](#re-evaluation-log) 2026-07-18: the pinned upstream Dockerfile now ends `USER appuser` (non-root), but the profile stays `baseline` until the second half of the flip condition is also met. **Flip condition:** BOTH (a) `ghcr.io/aiven/inkless` ships an explicit non-root `USER` directive — met, see log — AND (b) the runtime is verified non-root on a live cluster — outstanding. Per RFC #257 (architect decision 2026-06-23), audit #494 (2026-07-18, kept). |
 | `longhorn-system` | `privileged` | longhorn-manager and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, and host `/dev`. Block storage cannot work under `restricted`. Per ADR-0013 §"PSA profile". |
 | `istio-system` | `privileged` | istio-cni runs as a DaemonSet that mutates host CNI config; ztunnel requires `NET_ADMIN`. Both fail under `restricted`. Per ADR-0012 §"PSA profile". (Kiali co-resides in this namespace; no separate `kiali` row needed. Per RFC #288.) |
-| `artifactory` | `baseline` | JVM initContainers in `jfrog/artifactory-oss` run as root UID 0 for `chown`; main JVM process runs as UID 1030. `restricted` is not viable without upstream chart changes documenting restricted-compatible initContainers. **Flip condition:** when the upstream `jfrog/artifactory-oss` chart documents restricted-compatible initContainers — checked 2026-07-26, not yet met, see [§Re-evaluation log](#re-evaluation-log). Per RFC #287 (architect decision 2026-06-27). |
 | `node-exporter` | `privileged` | The `prometheus-node-exporter` DaemonSet mounts the host `/proc` and `/sys` via `hostPath` to read node metrics. `hostPath` volumes are forbidden by **both** `restricted` (Volume Types control) **and** `baseline` (verified against `baseline:latest`/`restricted:latest` on-cluster) — only `privileged` admits them. So it cannot run in the `restricted` `observability` namespace (it sat desired=2/ready=0, rejected at admission on the hostPath volumes), and `baseline` is not sufficient either. `privileged` is the tier `hostPath` requires — same class as `longhorn-system`/`istio-system` — not extra power: the workload stays hardened by its own securityContext (non-root UID 65534, `drop: [ALL]`, `readOnlyRootFilesystem`, seccomp `RuntimeDefault`, `hostPID`/`hostNetwork` false). Given its own namespace so the LGTMP `observability` stack stays `restricted`. **Flip condition:** none expected — host-metrics collection fundamentally requires `hostPath`. |
 | `harbor` | `restricted` | Harbor is Go-based; core/registry/jobservice all run as non-root UID 10000; portal uses nginx with a non-root UID in the 1.19.x chart (unchanged since 1.16.x — verified directly against the chart's `templates/portal/deployment.yaml` at both tags before the version bump, RFC/upgrade-drafter run 2026-07-19). No host volumes, no special capabilities. Per ADR-0024 / RFC #297 (architect decision 2026-06-30). |
 | `cert-manager` | `restricted` | Controller, webhook, and cainjector all default to `runAsNonRoot: true` + `seccompProfile.type: RuntimeDefault` (pod) and `allowPrivilegeEscalation: false` + `capabilities.drop: [ALL]` + `readOnlyRootFilesystem: true` (container) with no chart override — the full `restricted` profile out of the box, verified against the pinned chart's `values.yaml`. Per ADR-0028. |
@@ -472,6 +471,23 @@ Dockerfile has no build-time subchart/tag-pin nuance to further narrow.
 
 **Flip condition (unchanged).** When the image ships a non-root UID or is
 superseded by the capstone-built image.
+
+### 2026-07-29 — legacy registry's `baseline` row removed (ROADMAP `auto/harbor-artifactory-decommission`, RFC #297 / ADR-0024)
+
+**Trigger.** The Harbor capstone cutover (RFC #297 / ADR-0024) merged and its
+maintainer-confirmation footprint gate (issue #632) was confirmed the same
+day, unblocking the final migration slice: removing the legacy registry's
+manifests entirely now that nothing references them.
+
+**Decision.** The legacy registry's namespace no longer exists in the repo
+(`gitops/platform/*` Applications and its `gitops/<name>/` tree both removed
+in this PR), so its `baseline` carve-out row in the table above no longer
+describes a live namespace — removed rather than kept, since there is nothing
+left to carve out. This entry preserves the historical record: the row
+existed from RFC #287's architect decision (2026-06-27) through the
+2026-07-26 currency re-check (entry above) confirming the flip condition was
+never met before the registry itself was decommissioned in favor of Harbor
+(`harbor` row above, `restricted`, ADR-0024).
 
 ---
 
