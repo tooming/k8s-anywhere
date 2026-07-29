@@ -108,13 +108,16 @@ Velero 1.14; Kopia is the replacement).
 
 ```makefile
 dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
-	@./scripts/dr-restore.sh data tidb capstone vault
+	@./scripts/dr-restore.sh data tidb capstone vault observability inkless
 ```
 
 `scripts/dr-restore.sh` (new) iterates `velero restore create --from-schedule
 <ns>-daily --wait`. Wall-clock budgeted at 10 min total per CHARTER O3;
 script fails if wall time exceeds 600s. The script lives outside `tests/` so
-`make ci` doesn't run it (it needs a cluster).
+`make ci` doesn't run it (it needs a cluster). The default namespace list
+was extended to `observability` and `inkless` on 2026-07-29 once their own
+Schedules (`observability-daily`, `inkless-daily`, see above) landed — see
+§"Scope & exceptions" for the full six-namespace set this ADR covers.
 
 ### Observability
 

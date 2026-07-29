@@ -18,7 +18,7 @@ setup() {
   [ -x "$SCRIPT" ]
 }
 
-# --- Four namespace restore lines (data / tidb / capstone / vault) -----------
+# --- Six namespace restore lines (ADR-0021 §"Scope & exceptions") -----------
 @test "dr-restore.sh restores the data namespace" {
   run grep -q 'data' "$SCRIPT"
   [ "$status" -eq 0 ]
@@ -36,6 +36,16 @@ setup() {
 
 @test "dr-restore.sh restores the vault namespace" {
   run grep -q 'vault' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "dr-restore.sh restores the observability namespace" {
+  run grep -q 'observability' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "dr-restore.sh restores the inkless namespace" {
+  run grep -q 'inkless' "$SCRIPT"
   [ "$status" -eq 0 ]
 }
 
@@ -92,6 +102,17 @@ setup() {
   run grep -A1 '^dr-restore:' "$REPO/Makefile"
   [ "$status" -eq 0 ]
   [[ "$output" == *"dr-restore.sh"* ]]
+}
+
+@test "Makefile dr-restore target passes all six ADR-0021 namespaces" {
+  run grep -A1 '^dr-restore:' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"data"* ]]
+  [[ "$output" == *"tidb"* ]]
+  [[ "$output" == *"capstone"* ]]
+  [[ "$output" == *"vault"* ]]
+  [[ "$output" == *"observability"* ]]
+  [[ "$output" == *"inkless"* ]]
 }
 
 @test "Makefile dr-restore .PHONY is declared" {
