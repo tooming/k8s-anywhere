@@ -40,4 +40,4 @@ touched, only a tool-version pin).
 
 ## PR
 
-(filled in after PR creation)
+[#642](https://github.com/tooming/k8s-anywhere/pull/642)

@@ -73,4 +73,4 @@ release, no data migration involved (declarative, idempotent).
 
 ## PR
 
-(filled in after PR creation)
+[#788](https://github.com/tooming/k8s-anywhere/pull/788)

@@ -43,4 +43,4 @@ current `docs/decisions/` is clean (the guard passes) before landing it.
 
 ## PR
 
-(filled in after PR creation)
+[#568](https://github.com/tooming/k8s-anywhere/pull/568)

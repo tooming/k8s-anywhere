@@ -40,4 +40,4 @@ enough to land green in one run" rule. ~13 sections remain in the monolith
 
 ## PR
 
-(filled in after PR creation)
+[#684](https://github.com/tooming/k8s-anywhere/pull/684)

@@ -43,4 +43,4 @@ pre-existing verification gap the script always had, not a new one introduced he
 
 ## PR
 
-(filled in after PR creation)
+[#575](https://github.com/tooming/k8s-anywhere/pull/575)

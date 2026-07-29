@@ -72,4 +72,4 @@ larger follow-up — not attempted here.
 
 ## PR
 
-(filled in after PR creation)
+[#867](https://github.com/tooming/k8s-anywhere/pull/867)

@@ -61,4 +61,4 @@ available in this remote clusterless session to run it locally) must pass.
 
 ## PR
 
-(filled in after PR creation)
+[#690](https://github.com/tooming/k8s-anywhere/pull/690)

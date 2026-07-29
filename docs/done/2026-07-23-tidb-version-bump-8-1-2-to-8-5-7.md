@@ -51,4 +51,4 @@ the one real, actionable gap found.
 
 ## PR
 
-(filled in after PR creation)
+[#679](https://github.com/tooming/k8s-anywhere/pull/679)

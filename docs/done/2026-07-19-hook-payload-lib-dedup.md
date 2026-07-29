@@ -78,4 +78,4 @@ in `tests/hook-scripts-coverage.bats` that exercise the fixed fixture).
 
 ## PR
 
-(filled in after PR creation)
+[#557](https://github.com/tooming/k8s-anywhere/pull/557)

@@ -51,4 +51,4 @@ tooling quirk — not a repo bug — so it is out of this bounded cleanup's scop
 
 ## PR
 
-(filled in after PR creation)
+[#635](https://github.com/tooming/k8s-anywhere/pull/635)

@@ -53,4 +53,4 @@ same shape.
 
 ## PR
 
-(filled in after PR creation)
+[#681](https://github.com/tooming/k8s-anywhere/pull/681)

@@ -58,4 +58,4 @@ detect and warn about.
 
 ## PR
 
-(filled in once the PR is opened — see `chore/yq-variant-lib-coverage`)
+[#724](https://github.com/tooming/k8s-anywhere/pull/724)

@@ -38,4 +38,4 @@ further follow-up, not attempted here.
 
 ## PR
 
-(filled in after PR creation)
+[#686](https://github.com/tooming/k8s-anywhere/pull/686)

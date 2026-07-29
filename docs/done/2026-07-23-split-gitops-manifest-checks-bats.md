@@ -53,4 +53,4 @@ enough to land green in one run" rule.
 
 ## PR
 
-(filled in after PR creation)
+[#688](https://github.com/tooming/k8s-anywhere/pull/688)
