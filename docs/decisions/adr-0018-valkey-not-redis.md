@@ -182,3 +182,34 @@ bumps).
 `8.0.x` line (from `8.0.10` onward) that a later patch fixes, OR a concrete
 lab-teaching need emerges for an `8.1`+-only feature — bump both files'
 pins to the fixed/needed version and add a new dated log entry here.
+
+### 2026-07-29 — Redis's AGPLv3 tri-license option kept, Valkey stays the choice (audit #829)
+
+**Trigger.** Architect-role fallback sweep (executor `STEP 6b`, per this
+routine's own STEP 2b question: "has the *rejected* technology done
+something that would un-reject it?") found that Redis — the technology
+ADR-0010 rejected and this ADR superseded — now ships **Redis 8.0+**
+(current: 8.8, May 2026) under a **tri-license** that includes **AGPLv3**,
+an OSI-approved license, alongside the original SSPLv1/RSALv2 terms. ADR-0018's
+stated rationale for Valkey partly rested on Redis's then-non-OSI license.
+
+**Decision: keep Valkey.** AGPLv3, while OSI-approved, is still strong-copyleft
+— not the permissive BSD-3-Clause Valkey ships and the rest of this lab's stack
+uses (k3s, ArgoCD, Vault, Envoy Gateway, Grafana are all permissive). This
+trigger *weakens* ADR-0018's license argument (Redis is no longer non-OSI) but
+does not eliminate it, and the ADR's other two rationales — Linux Foundation
+vendor-neutral governance (vs. Redis Inc.-controlled licensing, which already
+changed direction once, in 2024) and the cloud-provider-default shift (AWS
+ElastiCache for Valkey, GCP Memorystore Valkey support) — are both untouched
+and, if anything, more solidly true today than when this ADR was written.
+Valkey remains fully protocol-compatible with Redis 7.2.x, so there is no
+lab-teaching gap left unfilled by staying put. Also verified this cycle,
+unrelated to this trigger: Valkey `8.0.10-alpine` (this ADR's current pin,
+from the 2026-07-22 entry above) is still the latest security-patched release
+on the `8.0.x` line — no newer CVE-fixing tag exists yet.
+
+**Flip condition.** Redis moves to a *permissive* (non-copyleft) OSI license
+across its whole codebase (matching or exceeding BSD-3-Clause's permissiveness),
+OR Redis Inc. cedes governance to a vendor-neutral foundation, OR a concrete
+lab-teaching need emerges that only Redis (not Valkey) can fill — revisit this
+ADR and record the new decision here. Closes #829.
