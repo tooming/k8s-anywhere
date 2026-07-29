@@ -52,6 +52,20 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "allow-artifactory-intra-namespace.yaml exists in artifactory/networkpolicy/" {
+  [ -f "$ARTIFACTORY_NP/allow-artifactory-intra-namespace.yaml" ]
+}
+
+@test "artifactory kustomization references the intra-namespace allow file" {
+  run grep -q 'allow-artifactory-intra-namespace.yaml' "$ARTIFACTORY_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-artifactory-intra-namespace allows Ingress and Egress within the namespace" {
+  run grep -qE 'Ingress|Egress' "$ARTIFACTORY_NP/allow-artifactory-intra-namespace.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "artifactory-networkpolicy entry exists in networkpolicy-appset.yaml" {
   run grep -q 'artifactory-networkpolicy' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]

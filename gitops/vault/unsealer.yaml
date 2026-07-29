@@ -2,6 +2,18 @@
 # Secret whenever it's sealed (e.g. after a pod restart). LAB-ONLY — the unseal
 # key sits in a k8s Secret, so this drops seal protection to "who can read that
 # Secret". Replace with KMS auto-unseal (seal "awskms" -> LocalStack) later.
+#
+# Found live 2026-07-29: vault-0 restarted during a cluster-wide network outage
+# (Cilium agents down) and came back sealed, and the unsealer's own `vault status`
+# call — with no timeout — hung on that dead connection instead of failing fast,
+# wedging the `while true` loop forever. The container never crashed (the shell
+# process was still "running"), so kubelet had no signal to restart it — Vault
+# stayed sealed for 4+ days, silently breaking every ExternalSecret refresh
+# cluster-wide (ClusterSecretStore "vault" reported not-ready the whole time, but
+# nothing surfaced that anywhere visible). Fixed two ways: `timeout` bounds each
+# vault call so a dead connection can't wedge the loop, and a heartbeat file +
+# liveness probe give kubelet a way to detect and restart a wedged loop even if
+# some other hang mode slips past the timeout.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -42,12 +54,21 @@ spec:
             - |
               echo "vault-unsealer watching $VAULT_ADDR";
               while true; do
-                if vault status 2>/dev/null | grep -E '^Sealed' | grep -q true; then
+                if timeout 5 vault status 2>/dev/null | grep -E '^Sealed' | grep -q true; then
                   echo "$(date) vault is sealed -> unsealing";
-                  vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1 || echo "unseal attempt failed (vault not ready?)";
+                  timeout 5 vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1 || echo "unseal attempt failed (vault not ready?)";
                 fi
+                date +%s > /tmp/last-check;
                 sleep 10;
               done
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "[ $(( $(date +%s) - $(cat /tmp/last-check 2>/dev/null || echo 0) )) -lt 60 ]"
+            initialDelaySeconds: 15
+            periodSeconds: 30
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
