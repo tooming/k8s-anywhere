@@ -1,0 +1,2 @@
+@test "alpha hook: exits 0"
+@test "beta hook: exits 0"
