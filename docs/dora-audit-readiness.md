@@ -47,8 +47,11 @@ duplicated.
 - **Applicable?** Yes.
 - **Answer:** Yes, for the stateful surface. CHARTER Objective O3 names the four
   stateful namespaces (`data`, `tidb`, `capstone`, `vault`) as critical; the always-on
-  vs. on-demand split (12GB budget, ADR-0003) documents which ~28 Applications are
-  load-bearing.
+  vs. on-demand split (12GB budget, ADR-0003) documents which ~58 Applications are
+  load-bearing (re-counted 2026-07-29, issue #846 — CHARTER's own "Always-on core"
+  bullet count is ~33 of those 58; the rest are the always-on next-wave/cert-manager/
+  KEDA/capstone Applications, distinct from the ~5 namespace-only PSA-floor shells
+  that merely pre-stage an otherwise on-demand heavy component).
 - **Evidence:** [CHARTER.md](../CHARTER.md) O3; [docs/dependency-tree.md](dependency-tree.md).
 - **Gap:** no equivalent criticality tiering for the *stateless* surface (e.g., is
   Envoy Gateway more critical than Kiali? Implicit from always-on/on-demand split, never
