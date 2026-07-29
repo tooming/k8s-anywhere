@@ -6,24 +6,15 @@
 # what causes the recurring "two parallel PSS PRs collide at EOF" merge conflict.
 # Reads the Claude Code hook payload on stdin; non-blocking.
 #   exit 0 = nothing to say   |   exit 2 = stderr shown to Claude as a reminder
+# Shared hook logic lives in scripts/lib/frozen-monolith-sync-hook.sh.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/scripts/lib/frozen-monolith-sync-hook.sh"
 
-source "$ROOT/scripts/lib/hook-payload.sh"
-fp="$(hook_file_path)"
-
-# React only to edits of the frozen monolith itself.
-case "$fp" in
-  */tests/securitycontext.bats|tests/securitycontext.bats) ;;
-  *) exit 0 ;;
-esac
-
-if ! out="$(bash "$ROOT/scripts/securitycontext-tests-check.sh" 2>&1)"; then
-  {
-    echo "tests/securitycontext.bats is FROZEN — put new per-namespace/per-scope PSS tests in their own tests/securitycontext-<scope>.bats file instead of appending here (prevents the recurring parallel-PR merge conflict):"
-    echo "$out"
-    echo "(intentional rename/edit of an existing monolith test? run: make securitycontext-tests-mark — re-check: make securitycontext-tests-check)"
-  } >&2
-  exit 2
-fi
-exit 0
+frozen_monolith_sync_hook \
+  "tests/securitycontext.bats" \
+  "scripts/securitycontext-tests-check.sh" \
+  "securitycontext-tests-mark" \
+  "tests/securitycontext-<scope>.bats" \
+  "$ROOT"
+exit "$?"

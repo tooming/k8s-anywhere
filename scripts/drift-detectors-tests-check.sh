@@ -16,28 +16,16 @@
 #
 # Runs in CI (the 'drift' gate) and as a PostToolUse hook. Exit 0 = clean; 1 = drift.
 # Intentional renames/edits to existing monolith tests: run `make drift-detectors-tests-mark`.
+# Shared check logic lives in scripts/lib/frozen-monolith-check.sh.
 set -uo pipefail
 # ROOT defaults to the repo; tests point DRIFTDET_TESTS_ROOT at a fixture tree.
 ROOT="${DRIFTDET_TESTS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-FILE="$ROOT/tests/drift-detectors.bats"
-SNAP="$ROOT/tests/.drift-detectors-titles"
-source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
-drift=0
-bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/frozen-monolith-check.sh"
 
-[ -f "$FILE" ] || { echo "no tests/drift-detectors.bats — nothing to check"; exit 0; }
-
-# The frozen baseline: the sorted set of @test titles in the monolith.
-titles(){ grep -oE '^@test "[^"]*"' "$1" | sort; }
-
-if [ ! -f "$SNAP" ]; then
-  bad "missing snapshot tests/.drift-detectors-titles — run: make drift-detectors-tests-mark"
-elif ! diff -q <(titles "$FILE") "$SNAP" >/dev/null 2>&1; then
-  bad "tests/drift-detectors.bats is FROZEN but its @test set changed:"
-  diff "$SNAP" <(titles "$FILE") | sed 's/^/      /' || true
-  printf '      %s\n' "→ Add NEW drift-check coverage in tests/drift-<scope>.bats (not the monolith)."
-  printf '      %s\n' "→ If you intentionally renamed/edited a monolith test: make drift-detectors-tests-mark"
-fi
-
-[ "$drift" -eq 0 ] && printf '  %s✓%s tests/drift-detectors.bats frozen (new drift checks go in drift-<scope>.bats)\n' "$G" "$Z"
-exit "$drift"
+frozen_monolith_check \
+  "$ROOT/tests/drift-detectors.bats" \
+  "$ROOT/tests/.drift-detectors-titles" \
+  "drift-detectors-tests-mark" \
+  "tests/drift-<scope>.bats" \
+  "tests/drift-detectors.bats"
+exit "$?"
