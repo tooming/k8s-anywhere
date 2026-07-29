@@ -61,10 +61,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "verifyImages policy scopes to artifactory registry" {
+@test "verifyImages policy scopes to Harbor registry" {
   POLICY="$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
   [ -f "$POLICY" ]
-  run grep -q 'artifactory.127.0.0.1.nip.io' "$POLICY"
+  run grep -q 'harbor.127.0.0.1.nip.io' "$POLICY"
   [ "$status" -eq 0 ]
 }
 

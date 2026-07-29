@@ -94,11 +94,11 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-# --- harbor-registry-externalsecret.yaml (capstone imagePullSecret prep) -----
-# Split-the-gate slice of auto/harbor-capstone-rewire (ROADMAP.md rule #9):
-# additive-only, not yet referenced by any Deployment/Rollout imagePullSecrets,
-# so it changes no running workload's behavior — the still-gated cutover item
-# is what actually points capstone at it.
+# --- harbor-registry-externalsecret.yaml (capstone imagePullSecret) ---------
+# Originally landed as an additive-only split-the-gate slice of
+# auto/harbor-capstone-rewire (ROADMAP.md rule #9); the cutover itself
+# (same-named PR) has since wired this Secret into the capstone
+# Deployment/Rollout imagePullSecrets.
 
 @test "harbor-registry ExternalSecret manifest exists" {
   [ -f "$REPO/gitops/secrets/harbor-registry-externalsecret.yaml" ]
@@ -131,7 +131,7 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "harbor-registry ExternalSecret is not yet referenced as an imagePullSecret anywhere (prep-only, still-gated cutover owns that wiring)" {
+@test "harbor-registry ExternalSecret is referenced as an imagePullSecret by the capstone workloads" {
   run grep -rl 'name: harbor-registry' "$REPO/gitops/apps/capstone/"
-  [ "$status" -ne 0 ]
+  [ "$status" -eq 0 ]
 }

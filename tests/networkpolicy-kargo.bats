@@ -123,12 +123,12 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-kargo-egress-registry keeps the existing legacy-registry namespaceSelector (additive, not a replacement)" {
+@test "allow-kargo-egress-registry no longer references the decommissioned legacy-registry namespaceSelector" {
   run grep -q 'kubernetes.io/metadata.name: artifactory' "$KARGO_NP/allow-kargo-egress-registry.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
-@test "allow-kargo-egress-registry now also allows egress to the harbor namespace (auto/harbor-capstone-rewire prep)" {
+@test "allow-kargo-egress-registry allows egress to the harbor namespace (auto/harbor-capstone-rewire cutover)" {
   run grep -q 'kubernetes.io/metadata.name: harbor' "$KARGO_NP/allow-kargo-egress-registry.yaml"
   [ "$status" -eq 0 ]
 }

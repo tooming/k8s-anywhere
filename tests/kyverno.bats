@@ -299,8 +299,8 @@ setup() {
 }
 
 # --- verifyImages policy structural checks -----------------------------------
-@test "verify-image-signatures references the Artifactory registry pattern" {
-  run grep -q 'artifactory.127.0.0.1.nip.io' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
+@test "verify-image-signatures references the Harbor registry pattern" {
+  run grep -q 'harbor.127.0.0.1.nip.io' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
   [ "$status" -eq 0 ]
 }
 

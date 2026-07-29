@@ -163,7 +163,7 @@ budget; `make gitlab-down` frees ~3 GB).
 - `gitops/` — what ArgoCD syncs: `bootstrap/` (root app-of-apps) → `platform/` (one
   `Application` per component) → `network/ vault/ secrets/ storage/ observability/
   moto/ ack/ kro/ apps/`; `bluegreen/` (green's serving-tier app-of-apps)
-- `gitlab/` — GitLab omnibus docker-compose · `.gitlab-ci.yml` — capstone build pipeline (builds `gitops/apps/demo/` → pushes to Artifactory; see [docs/dependency-tree.md](docs/dependency-tree.md))
+- `gitlab/` — GitLab omnibus docker-compose · `.gitlab-ci.yml` — capstone build pipeline (builds `gitops/apps/demo/` → pushes to Harbor; see [docs/dependency-tree.md](docs/dependency-tree.md))
 - `scripts/` — bootstrap + DR/blue-green scripts + the quality gates (`lint.sh`, `validate-*.sh`, `test.sh`)
 - `tests/` — `bats` unit tests + fixtures · `.github/workflows/ci.yml` — the clusterless CI gates · `docs/` — architecture, DR, decisions, dependency tree
 

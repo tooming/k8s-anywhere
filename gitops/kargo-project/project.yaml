@@ -2,7 +2,7 @@
 # The Project (cluster-scoped) creates and manages the capstone-pipeline namespace.
 # Warehouse, Stage, and other Kargo resources are namespace-scoped under that project.
 #
-# Pipeline: Warehouse detects new capstone image digests from Artifactory →
+# Pipeline: Warehouse detects new capstone image digests from Harbor →
 #   Stage dev (auto-promote) → argocd-update triggers ArgoCD sync →
 #   Stage prod (manual gate) → argocd-update after human approval in Kargo UI
 #
@@ -15,9 +15,9 @@ kind: Project
 metadata:
   name: capstone-pipeline
 ---
-# Warehouse: polls Artifactory for new digests of the capstone image.
+# Warehouse: polls Harbor for new digests of the capstone image.
 # imageSelectionStrategy: Digest — tracks every new image digest pushed to
-# artifactory.127.0.0.1.nip.io/docker-local/hello, regardless of tag name.
+# harbor.127.0.0.1.nip.io/library/hello, regardless of tag name.
 # This fires on every `docker push` from the GitLab CI pipeline (step 1 of
 # the capstone inner loop) even though the image is always tagged :latest.
 # NOTE (found during the auto/kargo-cve-bump-1-6-4 CRD-compatibility check):
@@ -37,7 +37,7 @@ metadata:
 spec:
   subscriptions:
     - image:
-        repoURL: artifactory.127.0.0.1.nip.io/docker-local/hello
+        repoURL: harbor.127.0.0.1.nip.io/library/hello
         imageSelectionStrategy: Digest
         discoveryLimit: 5
 ---
@@ -86,8 +86,8 @@ spec:
                   - repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
                     kustomize:
                       images:
-                        - repoURL: artifactory.127.0.0.1.nip.io/docker-local/hello
-                          digest: ${{ imageFrom("artifactory.127.0.0.1.nip.io/docker-local/hello").Digest }}
+                        - repoURL: harbor.127.0.0.1.nip.io/library/hello
+                          digest: ${{ imageFrom("harbor.127.0.0.1.nip.io/library/hello").Digest }}
 ---
 # Stage: prod
 # Subscribes to Freight that has successfully transited the dev Stage
@@ -120,5 +120,5 @@ spec:
                   - repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
                     kustomize:
                       images:
-                        - repoURL: artifactory.127.0.0.1.nip.io/docker-local/hello
-                          digest: ${{ imageFrom("artifactory.127.0.0.1.nip.io/docker-local/hello").Digest }}
+                        - repoURL: harbor.127.0.0.1.nip.io/library/hello
+                          digest: ${{ imageFrom("harbor.127.0.0.1.nip.io/library/hello").Digest }}

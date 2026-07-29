@@ -256,7 +256,7 @@ setup() {
 @test "kargo-project declares a Warehouse for the capstone image" {
   run grep -q 'kind: Warehouse' "$REPO/gitops/kargo-project/project.yaml"
   [ "$status" -eq 0 ]
-  run grep -q 'artifactory.127.0.0.1.nip.io/docker-local/hello' "$REPO/gitops/kargo-project/project.yaml"
+  run grep -q 'harbor.127.0.0.1.nip.io/library/hello' "$REPO/gitops/kargo-project/project.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -313,8 +313,8 @@ setup() {
 # back to the dead shape fails these tests instead of a bare grep passing.
 @test "dev Stage argocd-update step nests the image override under kustomize.images" {
   P="$REPO/gitops/kargo-project/project.yaml"
-  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "dev") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].repoURL' "$P")" = "artifactory.127.0.0.1.nip.io/docker-local/hello" ]
-  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "dev") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].digest' "$P")" = '${{ imageFrom("artifactory.127.0.0.1.nip.io/docker-local/hello").Digest }}' ]
+  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "dev") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].repoURL' "$P")" = "harbor.127.0.0.1.nip.io/library/hello" ]
+  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "dev") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].digest' "$P")" = '${{ imageFrom("harbor.127.0.0.1.nip.io/library/hello").Digest }}' ]
 }
 
 @test "dev Stage argocd-update step does NOT use the dead bare sources.images key" {
@@ -324,8 +324,8 @@ setup() {
 
 @test "prod Stage argocd-update step nests the image override under kustomize.images" {
   P="$REPO/gitops/kargo-project/project.yaml"
-  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "prod") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].repoURL' "$P")" = "artifactory.127.0.0.1.nip.io/docker-local/hello" ]
-  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "prod") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].digest' "$P")" = '${{ imageFrom("artifactory.127.0.0.1.nip.io/docker-local/hello").Digest }}' ]
+  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "prod") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].repoURL' "$P")" = "harbor.127.0.0.1.nip.io/library/hello" ]
+  [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "prod") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].digest' "$P")" = '${{ imageFrom("harbor.127.0.0.1.nip.io/library/hello").Digest }}' ]
 }
 
 @test "prod Stage argocd-update step does NOT use the dead bare sources.images key" {
