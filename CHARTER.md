@@ -153,7 +153,12 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 
 - **Always-on core** (built): k3d + ArgoCD + GitLab + Envoy Gateway + Vault + External
   Secrets + Garage + the full LGTMP observability stack + moto/ACK/KRO + a demo app
-  (~28 ArgoCD Applications).
+  (~33 ArgoCD `Application`s, re-counted 2026-07-29 — issue #846 found the prior "~28"
+  stale; the RabbitMQ/Valkey data layer and its always-on traffic-generating demo grew
+  this bucket since it was first written. Cilium is the one component conceptually part
+  of this core that lacks ArgoCD's `automated:` sync flag — it bootstraps manually
+  before ArgoCD itself can run, then is adopted by ArgoCD afterward, per its own
+  manifest comment).
 - **Always-on next wave** (built, ~500 MB total within budget): **Kyverno** (admission
   policy — validation, mutation, image verification); **Argo Rollouts** (SLO-driven
   canary delivery via Envoy traffic-splitting); **Velero** (cluster + PVC backup to
