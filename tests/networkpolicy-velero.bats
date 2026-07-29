@@ -110,6 +110,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "allow-velero-egress-kopia-pv covers the observability namespace" {
+  run grep -q -- '- observability' "$VELERO_NP/allow-velero-egress-kopia-pv.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "allow-velero-egress-kopia-pv uses Egress policyType" {
   run grep -q 'Egress' "$VELERO_NP/allow-velero-egress-kopia-pv.yaml"
   [ "$status" -eq 0 ]

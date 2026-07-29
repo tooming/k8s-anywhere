@@ -184,6 +184,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "velero kopia-pv egress rule allows egress to observability namespace" {
+  run grep -q -- '- observability' "$REPO/gitops/velero/networkpolicy/allow-velero-egress-kopia-pv.yaml"
+  [ "$status" -eq 0 ]
+}
+
 # --- velero-networkpolicy Application (wave 4) --------------------------------
 @test "velero-networkpolicy Application exists" {
   [ -f "$REPO/gitops/platform/velero-networkpolicy.yaml" ]
@@ -268,6 +273,16 @@ setup() {
 
 # Each Schedule: exists, is a velero.io/v1 Schedule, has the documented cron + TTL +
 # namespace, and sets defaultVolumesToFsBackup so PVCs are captured via Kopia.
+@test "observability-daily Schedule exists with cron 0 1, ttl 168h, namespace observability" {
+  f="$REPO/gitops/velero/schedules/observability-daily.yaml"
+  [ -f "$f" ]
+  grep -q 'kind: Schedule' "$f"
+  grep -q 'schedule: "0 1 \* \* \*"' "$f"
+  grep -q 'ttl: 168h' "$f"
+  grep -qE '^[[:space:]]*- observability$' "$f"
+  grep -q 'defaultVolumesToFsBackup: true' "$f"
+}
+
 @test "data-daily Schedule exists with cron 0 2, ttl 168h, namespace data" {
   f="$REPO/gitops/velero/schedules/data-daily.yaml"
   [ -f "$f" ]

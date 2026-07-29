@@ -1,9 +1,12 @@
-# velero-schedules — the four daily Velero Schedules, one per stateful namespace
+# velero-schedules — the five daily Velero Schedules, one per stateful namespace
 # (ADR-0021 §"Schedule set", RFC #155, CHARTER Objective O3):
+#   observability-daily (observability) 01:00 UTC — Loki/Mimir/Tempo PVCs (added 2026-07-29)
 #   data-daily      (data)     02:00 UTC  — RabbitMQ + Valkey PVCs
 #   tidb-daily      (tidb)     02:30 UTC  — PD/TiKV/TiDB PVCs (on-demand ns)
 #   capstone-daily  (capstone) 03:00 UTC  — end-to-end demo app
 #   vault-daily     (vault)    03:30 UTC  — Vault file-backend PVC
+# `storage` (Garage) is deliberately NOT scheduled — see ADR-0021 §Scope &
+# exceptions (Garage is both the workload and the backup target).
 #
 # Sync-wave 5: after velero-extras (wave 0, namespace) and velero (wave 1, controller
 # + the Schedule CRD) are established, so the Schedule CRs validate against a live CRD.
