@@ -70,4 +70,4 @@ manifests, Make targets, and the now-orphaned
 
 ## PR
 
-(filled in once opened)
+https://github.com/tooming/k8s-anywhere/pull/885
