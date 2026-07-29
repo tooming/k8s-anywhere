@@ -93,6 +93,7 @@ node isn't snapshotting two namespaces concurrently:
 | `tidb-daily` | `tidb` | `30 2 * * *` | 168h | All resources + PVCs (PD/TiKV/TiDB) |
 | `capstone-daily` | `capstone` | `0 3 * * *` | 168h | All resources (no PVCs in pilot) |
 | `vault-daily` | `vault` | `30 3 * * *` | 168h | All resources + Vault PVC (file backend) |
+| `inkless-daily` | `inkless` | `0 4 * * *` | 168h | All resources + PVCs (Inkless broker + Postgres catalog, 2Gi each; on-demand ns, pre-wired like `tidb-daily`) |
 
 `observability-daily` added 2026-07-29 (architect gap audit — see
 §Re-evaluation log) to close the mismatch between CHARTER O3's "every
@@ -153,7 +154,7 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 ## Scope & exceptions
 
 **In scope** — backup of every stateful namespace listed in CHARTER O3
-(`data`, `tidb`, `capstone`, `vault`, `observability`); restore via
+(`data`, `tidb`, `capstone`, `vault`, `observability`, `inkless`); restore via
 `make dr-restore`; real-metric dashboard.
 
 **Out of scope (this RFC):**
@@ -218,6 +219,16 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 ---
 
 ## Re-evaluation log
+
+- **2026-07-29 (executor follow-up).** Closed the smaller gap the same-day
+  architect gap audit (entry directly below) left open: `inkless` has real
+  PVCs (Aiven Inkless broker + Postgres catalog, 2Gi each) but, unlike
+  `tidb-daily`'s established on-demand-but-pre-wired-schedule precedent, had
+  no Schedule at all. **Decision: add `inkless-daily`** — mechanical, matches
+  the existing `tidb` pattern exactly (Schedule CR present now so backups
+  start on the first sync window after `make inkless-up`, no further wiring
+  needed), no new design trade-off. Cron `0 4 * * *`, the next open 30-minute
+  slot after `vault-daily`.
 
 - **2026-07-29 (architect gap audit).** Cross-referenced every namespace
   declaring a PVC or `volumeClaimTemplates` under `gitops/**` against the

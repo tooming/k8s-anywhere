@@ -115,6 +115,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "allow-velero-egress-kopia-pv covers the inkless namespace" {
+  run grep -q -- '- inkless' "$VELERO_NP/allow-velero-egress-kopia-pv.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "allow-velero-egress-kopia-pv uses Egress policyType" {
   run grep -q 'Egress' "$VELERO_NP/allow-velero-egress-kopia-pv.yaml"
   [ "$status" -eq 0 ]

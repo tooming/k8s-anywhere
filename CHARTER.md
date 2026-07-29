@@ -123,10 +123,10 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   *Measured by:* `tests/networkpolicy.bats` + `tests/securitycontext.bats` cover every
   namespace in `gitops/`.
 - **O3 — Stateful DR is exercised.** By **2026-12-31**, `make dr-restore` recovers
-  every stateful namespace (`data`, `tidb`, `capstone`, `vault`, `observability`)
-  from its latest Velero backup in under 10 minutes wall-clock on the
-  maintainer's hardware. (`observability` added 2026-07-29 — architect gap
-  audit found it held real PVCs with no Schedule; `storage`/Garage is a
+  every stateful namespace (`data`, `tidb`, `capstone`, `vault`, `observability`,
+  `inkless`) from its latest Velero backup in under 10 minutes wall-clock on the
+  maintainer's hardware. (`observability` and `inkless` added 2026-07-29 — a
+  gap audit found both held real PVCs with no Schedule; `storage`/Garage is a
   deliberate, documented carve-out — see ADR-0021 §Scope & exceptions.)
   *Measured by:* a bats target that times the restore and fails over budget.
 - **O4 — Every image is signed and verified.** By **2026-12-31**, 100% of images
