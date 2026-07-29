@@ -1,14 +1,16 @@
 # Capstone CI pipeline: builds the hello demo image, pushes it to the in-lab
-# Artifactory Docker registry, and cosign-signs the pushed image.
+# Harbor Docker registry, and cosign-signs the pushed image.
 # Runs on the local GitLab instance.
 #
 # Credential prerequisites (no plaintext stored here — all values live in Vault):
-#   1. make vault-bootstrap          seeds secret/artifactory/registry in Vault
+#   1. make vault-bootstrap          seeds secret/harbor/registry in Vault
 #   2. Retrieve the generated password:
-#        vault kv get secret/artifactory/registry
+#        vault kv get secret/harbor/registry
 #   3. In GitLab → Settings → CI/CD → Variables, add masked + protected variables:
-#        ARTIFACTORY_USER     ← username field from step 2
-#        ARTIFACTORY_PASSWORD ← password field from step 2
+#        HARBOR_USER          ← username field from step 2
+#        HARBOR_PASSWORD      ← password field from step 2
+#      (repoints the pipeline at Harbor creds — these GitLab CI/CD variables are
+#      not GitOps-managed, so the maintainer must set them outside this repo)
 #
 # Cosign signing prerequisites (RFC #214 — Objective O4):
 #   4. make cosign-bootstrap         generates infra/secrets/cosign/cosign.key + cosign.pub
@@ -18,10 +20,11 @@
 #       and exposes its path in $COSIGN_KEY; never store the raw key as a plain variable)
 #
 # Component prerequisites:
-#   make artifactory-up              Artifactory must be running before first push
-#   Create a local Docker repository named "docker-local" in the Artifactory UI
+#   make harbor-up                   Harbor must be running before first push
+#   Images push to the "library" project — Harbor's built-in default project,
+#   no manual repository creation needed.
 #
-# The in-cluster ESO ExternalSecret (gitops/secrets/artifactory-registry-externalsecret.yaml)
+# The in-cluster ESO ExternalSecret (gitops/secrets/harbor-registry-externalsecret.yaml)
 # makes the same credentials available to pods as an imagePullSecret in namespace capstone.
 # The Kyverno verifyImages ClusterPolicy (gitops/kyverno/policies/verify-image-signatures.yaml)
 # enforces that only cosign-signed images are admitted once $COSIGN_KEY is set here.
@@ -31,8 +34,8 @@ stages:
   - sign
 
 variables:
-  REGISTRY: "artifactory.127.0.0.1.nip.io"
-  IMAGE_NAME: "docker-local/hello"
+  REGISTRY: "harbor.127.0.0.1.nip.io"
+  IMAGE_NAME: "library/hello"
 
 build-and-push:
   stage: build
@@ -52,12 +55,12 @@ build-and-push:
     # Allow HTTP pushes to the in-lab registry (no TLS on the nip.io route).
     - name: docker:29-dind
       alias: docker
-      command: ["--insecure-registry=artifactory.127.0.0.1.nip.io"]
+      command: ["--insecure-registry=harbor.127.0.0.1.nip.io"]
   variables:
     DOCKER_HOST: "tcp://docker:2375"
     DOCKER_TLS_CERTDIR: ""
   before_script:
-    - echo "$ARTIFACTORY_PASSWORD" | docker login "$REGISTRY" -u "$ARTIFACTORY_USER" --password-stdin
+    - echo "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USER" --password-stdin
   script:
     - docker build -t "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" gitops/apps/demo/
     - docker push "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
@@ -112,8 +115,8 @@ sign-image:
     - cosign sign
         --key /tmp/cosign/cosign.key
         --allow-insecure-registry
-        --registry-username "$ARTIFACTORY_USER"
-        --registry-password "$ARTIFACTORY_PASSWORD"
+        --registry-username "$HARBOR_USER"
+        --registry-password "$HARBOR_PASSWORD"
         "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
   after_script:
     - rm -rf /tmp/cosign

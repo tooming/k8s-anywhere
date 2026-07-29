@@ -2953,7 +2953,7 @@ You review and merge plan PRs, same as implementation PRs.
   (not replaced), and the new harbor selector is present. `make ci` must pass.
   `docs/done/` entry required. (auto/harbor-kargo-egress-prep)
 
-- [ ] 🟢 **Capstone pipeline re-wire — Artifactory → Harbor registry host**
+- [x] 🟢 **Capstone pipeline re-wire — Artifactory → Harbor registry host**
   (CHARTER **Objective O4** + capstone RFC #62, RFC #297 / ADR-0024 — architect
   decision 2026-06-30; **CI / security-adjacent changes pre-approved by ADR-0024
   per WAYS-OF-WORKING.md §2**; **maintainer-confirmation prerequisite: pick up

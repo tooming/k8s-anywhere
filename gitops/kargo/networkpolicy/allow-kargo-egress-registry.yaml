@@ -2,15 +2,11 @@
 # The Kargo Warehouse polls image digests from the in-lab registry to detect new
 # Freight. The registry is served by Envoy Gateway (HTTPS/HTTP front door); Kargo
 # reaches it via the nip.io hostname which resolves to the cluster's ingress address.
-# Also allows egress to the capstone namespace's Envoy-proxied registry endpoint.
 #
-# Two egress targets today: the legacy registry namespace below — still the one
-# `gitops/kargo-project/project.yaml`'s Warehouse actually polls right now — and
-# `harbor`, added ahead of time (ROADMAP `auto/harbor-capstone-rewire` prep slice,
-# ADR-0024/RFC #297) so the network path exists before that item's live cutover
-# flips the Warehouse `repoURL` at the new registry host. Purely additive: nothing
-# in gitops points Kargo at Harbor yet, so this widen has no effect on current live
-# traffic — the legacy rule stays until the cutover PR removes it.
+# `gitops/kargo-project/project.yaml`'s Warehouse polls the Harbor host
+# (ADR-0024/RFC #297, auto/harbor-capstone-rewire cutover) — the prior legacy
+# registry egress target was removed once the Warehouse `repoURL` flipped, since
+# nothing in gitops points Kargo at it any longer.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -27,9 +23,6 @@ spec:
         - port: 80
           protocol: TCP
       to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: artifactory
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: harbor

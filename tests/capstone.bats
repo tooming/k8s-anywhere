@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 # Clusterless checks for the capstone pipeline (steps 1–2):
-# step 1: GitLab CI → Artifactory build+push
+# step 1: GitLab CI → Harbor build+push
 # step 2: ArgoCD Application deploying the pipeline-built image
 # These assert structural wiring is internally consistent — CI file, no plaintext
 # creds, Vault path seeded, ESO ExternalSecret in dockerconfigjson form, and the
@@ -22,10 +22,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "gitlab-ci.yml references ARTIFACTORY_USER and ARTIFACTORY_PASSWORD variables (no plaintext)" {
-  run grep -q 'ARTIFACTORY_USER' "$REPO/.gitlab-ci.yml"
+@test "gitlab-ci.yml references HARBOR_USER and HARBOR_PASSWORD variables (no plaintext)" {
+  run grep -q 'HARBOR_USER' "$REPO/.gitlab-ci.yml"
   [ "$status" -eq 0 ]
-  run grep -q 'ARTIFACTORY_PASSWORD' "$REPO/.gitlab-ci.yml"
+  run grep -q 'HARBOR_PASSWORD' "$REPO/.gitlab-ci.yml"
   [ "$status" -eq 0 ]
 }
 
@@ -114,13 +114,13 @@ setup() {
   [ -f "$REPO/gitops/apps/capstone/deployment.yaml" ]
 }
 
-@test "capstone Deployment pulls from the Artifactory docker-local registry" {
-  run grep -q 'artifactory.127.0.0.1.nip.io/docker-local/hello' "$REPO/gitops/apps/capstone/deployment.yaml"
+@test "capstone Deployment pulls from the Harbor library registry" {
+  run grep -q 'harbor.127.0.0.1.nip.io/library/hello' "$REPO/gitops/apps/capstone/deployment.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "capstone Deployment references artifactory-registry imagePullSecret" {
-  run grep -q 'artifactory-registry' "$REPO/gitops/apps/capstone/deployment.yaml"
+@test "capstone Deployment references harbor-registry imagePullSecret" {
+  run grep -q 'harbor-registry' "$REPO/gitops/apps/capstone/deployment.yaml"
   [ "$status" -eq 0 ]
 }
 

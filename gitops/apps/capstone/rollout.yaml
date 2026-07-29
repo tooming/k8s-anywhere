@@ -36,10 +36,10 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       imagePullSecrets:
-        - name: artifactory-registry
+        - name: harbor-registry
       containers:
         - name: capstone
-          image: artifactory.127.0.0.1.nip.io/docker-local/hello:latest
+          image: harbor.127.0.0.1.nip.io/library/hello:latest
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false

@@ -1,9 +1,9 @@
 # Capstone app variant — runs the pipeline-built image pulled from the in-lab
-# Artifactory Docker registry (step 2 of the capstone pipeline demo).
+# Harbor Docker registry (step 2 of the capstone pipeline demo).
 # The GitLab CI pipeline (step 1) builds and pushes this image; this Deployment
 # pulls the :latest tag so every pipeline push is reflected on the next pod restart.
 # imagePullSecrets references the dockerconfigjson Secret rendered by ESO from
-# Vault (secret/artifactory/registry) — see gitops/secrets/artifactory-registry-externalsecret.yaml.
+# Vault (secret/harbor/registry) — see gitops/secrets/harbor-registry-externalsecret.yaml.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,10 +29,10 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       imagePullSecrets:
-        - name: artifactory-registry
+        - name: harbor-registry
       containers:
         - name: capstone
-          image: artifactory.127.0.0.1.nip.io/docker-local/hello:latest
+          image: harbor.127.0.0.1.nip.io/library/hello:latest
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
