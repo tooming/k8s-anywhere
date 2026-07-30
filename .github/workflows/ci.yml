@@ -144,6 +144,7 @@ jobs:
       - run: bash scripts/adr-image-pin-sync-check.sh
       - run: bash scripts/context-doc-version-sync-check.sh
       - run: bash scripts/docs-done-pr-link-check.sh
+      - run: bash scripts/kustomize-orphan-check.sh
       - run: bash scripts/drift-detectors-tests-check.sh
       - run: bash scripts/hook-scripts-coverage-tests-check.sh
       - run: bash scripts/ci-parity-check.sh
