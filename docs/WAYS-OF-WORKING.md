@@ -63,7 +63,7 @@ way around; if they disagree, trust the YAML and fix this table.
 
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch |
 |---|---|---|---|---|---|
-| Executor | `trig_01XxtSdkPdRNjBfAidUXTwos` | @tooming | implements ROADMAP items back-to-back for as long as the run continues (one PR per item, STEP 8 loop — no longer one-and-done); empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no cycle is wasted | 21:00/22:00/23:00/00:00/01:00 UTC, every day (5/day) · Sonnet 5 | `auto/*` (fallback roles keep their own prefixes) |
+| Executor | `trig_01XxtSdkPdRNjBfAidUXTwos` | @tooming | implements ROADMAP items back-to-back for as long as the run continues (one PR per item, STEP 8 loop — no longer one-and-done); empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no cycle is wasted | 00:00/05:00/10:00/14:00/19:00 UTC, every day (5/day) · Sonnet 5 | `auto/*` (fallback roles keep their own prefixes) |
 
 **One trigger, not eight.** Planner, architect, triager, upgrade-drafter, doc-drift-author,
 industry-news-writer, and the old "executor 4th slot" each *used to* have their own
