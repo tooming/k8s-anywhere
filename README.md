@@ -38,7 +38,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Ingress** | Envoy Gateway (north-south, Gateway API · `envoy-gateway-system-networkpolicy` default-deny overlay; ADR-0008, ADR-0016) |
 | **Secrets** | Vault (KV v2) · External Secrets Operator |
 | **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
-| **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · `velero-schedules` daily Schedules for data / tidb / capstone / vault · `velero-networkpolicy` default-deny overlay; ADR-0021) |
+| **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · `velero-schedules` daily Schedules for data / tidb / capstone / vault / observability / inkless · `velero-networkpolicy` default-deny overlay; ADR-0021) |
 | **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
 | **Data layer** | RabbitMQ (message broker + management UI) · Valkey (cache / key-value) · redis_exporter · data-demo (traffic generator) |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator) |

@@ -98,7 +98,7 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **Velero** | Cluster resource + PVC backup/restore to Garage S3. Daily `Schedule` objects back up the `data`, `tidb`, `capstone`, and `vault` namespaces with the Kopia uploader. `make dr-restore` drives a verified restore drill. `velero-networkpolicy` default-deny overlay. (ADR-0021) |
+| **Velero** | Cluster resource + PVC backup/restore to Garage S3. Daily `Schedule` objects back up the `data`, `tidb`, `capstone`, `vault`, `observability`, and `inkless` namespaces with the Kopia uploader. `make dr-restore` drives a verified restore drill. `velero-networkpolicy` default-deny overlay. (ADR-0021) |
 
 ### Observability (LGTMP)
 
@@ -203,7 +203,7 @@ On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`har
 5. **Cloud control-plane patterns** — moto mocks AWS; ACK reconciles `Bucket` CRs against it; KRO composes the CRs into a higher-level claim.
 6. **Supply-chain security** — GitLab CI signs images with cosign; Kyverno's `verifyImages` ClusterPolicy blocks unsigned images at admission; Trivy Operator continuously scans what's running.
 7. **Progressive delivery** — Argo Rollouts replaces the capstone `Deployment` with a canary `Rollout`; Envoy weights traffic; a Mimir AnalysisTemplate gates the canary steps on real SLO data — not timers.
-8. **Stateful backup & restore** — Velero schedules back up `data`, `tidb`, `capstone`, and `vault` to Garage S3. `make dr-restore` drives a verified restore drill; `make dr-verify` asserts end-to-end health.
+8. **Stateful backup & restore** — Velero schedules back up `data`, `tidb`, `capstone`, `vault`, `observability`, and `inkless` to Garage S3. `make dr-restore` drives a verified restore drill; `make dr-verify` asserts end-to-end health.
 9. **Continuous scanning** — Trivy Operator produces `VulnerabilityReport` and `SbomReport` CRs for every running image; the Lab — Trivy Operator dashboard surfaces CVE findings and SBOM counts.
 10. **DR / blue-green** — `make dr-bluegreen` stands up a second k3d "green" cluster that sources the *same* `gitops/` repo via `gitops/bluegreen/green-root.yaml`, cuts Envoy Gateway traffic over to green, and verifies service continuity before retiring blue with `make dr-bluegreen-promote`; `make dr-bluegreen-down` reclaims green's RAM once the exercise is done (see [docs/DR.md §Zero-downtime blue/green](DR.md) for the full runbook). Steps 8 and 10 test two distinct recovery modes: Velero restores data from backup *on the same cluster*; blue-green rebuilds the whole platform on a *fresh* cluster with live traffic cut over — proving the "recreate-from-code" CHARTER Core Value under real traffic, not just a data restore.
 11. **GitOps promotion pipelines** — Kargo's `Warehouse` CRD watches Harbor for new image digests pushed by GitLab CI; a `dev` `Stage` auto-promotes; a `prod` `Stage` requires a manual gate approval in the Kargo UI (`kargo.127.0.0.1.nip.io`, `make kargo-up` / `make kargo-down` when done). Promotion history is visible in the Lab — Kargo dashboard (`lab-kargo.json`). See [ADR-0023](decisions/adr-0023-kargo-promotion-pipeline.md). This layer adds *multi-stage, Warehouse-gated* promotion on top of the Argo Rollouts canary at step 7 — the two complement each other: Argo Rollouts controls in-cluster traffic shaping during a release; Kargo controls which image digest gets promoted across environment stages in the first place.
