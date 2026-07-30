@@ -1,6 +1,7 @@
 # Kyverno admission policy engine (ADR-0019, CHARTER Objective O1).
 # Helm chart kyverno/kyverno from https://kyverno.github.io/kyverno/.
-# Single-replica per controller (ADR-0005 lab trade-off; production uses 3+).
+# Single-replica per controller (ADR-0005 lab trade-off; production uses 3+),
+# EXCEPT admissionController (see its own comment below for why).
 # Memory limits per ADR-0019 §"Footprint controls": admission 256Mi,
 # background 128Mi, cleanup 64Mi, reports 128Mi — ~200–300 MB steady-state.
 # Ships the engine and CRDs (ClusterPolicy, PolicyReport, …). ClusterPolicies
@@ -47,7 +48,22 @@ spec:
       releaseName: kyverno
       valuesObject:
         admissionController:
-          replicas: 1
+          # 2 replicas, not 1 like every other controller here — deliberate
+          # exception to ADR-0005's single-replica pattern, confirmed with the
+          # user 2026-07-29. ADR-0005's argument (2 copies on one host add no
+          # real HA) covers *host*-level failure; this is a different failure
+          # mode. The resourceValidatingWebhookConfiguration is fail-closed
+          # (ADR-0019): with 1 replica, that one pod restarting (routine under
+          # load — OOM, liveness kick, node hiccup) leaves the webhook with
+          # zero endpoints, which blocks *every* delete/create cluster-wide
+          # until it comes back — not just Kyverno-related resources. Hit
+          # live 2026-07-29: this exact deadlock repeatedly stalled unrelated
+          # cluster recovery work (couldn't even force-delete an unrelated
+          # stuck pod while the sole admission-controller replica was mid-
+          # restart). A second replica on the same node still answers the
+          # webhook while the first restarts, closing the gap — genuine
+          # resilience, not the SPOF theatre ADR-0005 warns against.
+          replicas: 2
           resources:
             limits:
               memory: 256Mi
