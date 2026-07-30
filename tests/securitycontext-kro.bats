@@ -62,6 +62,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "kro Application chart pin is exactly 0.9.3" {
+  run grep -q 'targetRevision: 0\.9\.3' "$APP"
+  [ "$status" -eq 0 ]
+}
+
 # --- namespace PSA restricted labels -----------------------------------------
 
 @test "kro namespace.yaml exists" {

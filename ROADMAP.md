@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump `kro` chart `0.9.2` → `0.9.3`** (CHARTER **Core Values** §"Everything as
+- [x] 🟢 **Bump `kro` chart `0.9.2` → `0.9.3`** (CHARTER **Core Values** §"Everything as
   code" + general hardening; planner gap-analysis sweep 2026-07-30 — all three
   standing "Now / next" items gated on maintainer-confirmation issues #631/#633, no
   ADR/RFC decision required for this one. **No prerequisites — executor may pick up
