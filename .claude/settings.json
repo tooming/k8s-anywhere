@@ -165,6 +165,12 @@
             "command": "bash scripts/kustomize-orphan-sync-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking kustomization.yaml has no orphaned files"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/context-doc-version-sync-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking context.md version sync"
           }
         ]
       },
