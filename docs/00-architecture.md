@@ -71,7 +71,7 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **GitLab** | Git source of truth. Hosts the `gitops/` manifests and runs the CI pipeline (build → cosign sign → push to Harbor per ADR-0024; the CI re-wire from Artifactory is in progress via `auto/harbor-capstone-rewire`). |
+| **GitLab** | Git source of truth. Hosts the `gitops/` manifests and runs the CI pipeline (build → cosign sign → push to Harbor per ADR-0024). |
 | **ArgoCD** | GitOps engine. Watches GitLab and makes the cluster match it (app-of-apps pattern). All workloads below arrive via ArgoCD, never by `helm install` or `kubectl apply`. |
 
 ### Ingress
@@ -153,7 +153,7 @@ Rows are grouped by layer, matching the README stack table.
 | Tool | Role in the platform |
 |------|----------------------|
 | **TiDB Operator / TiDB cluster** | Distributed, MySQL-compatible database (PD + TiKV + TiDB tiers). On-demand because the operator + cluster consume ~3 GB. `make tidb-operator-up` / `make tidb-up`. |
-| **Harbor** | OCI artifact and Docker registry (CNCF graduated; Go runtime, no JVM). Registry storage backed by Garage S3. `make harbor-up` / `make harbor-down`. (ADR-0024; supersedes ADR-0011) `gitops/platform/artifactory.yaml` remains until the capstone CI re-wire (`auto/harbor-capstone-rewire`) and Artifactory decommission (`auto/harbor-artifactory-decommission`) complete. |
+| **Harbor** | OCI artifact and Docker registry (CNCF graduated; Go runtime, no JVM). Registry storage backed by Garage S3. `make harbor-up` / `make harbor-down`. (ADR-0024; supersedes ADR-0011 — Artifactory OSS fully decommissioned) |
 | **Istio ambient mesh** | Zero-sidecar service mesh (istio-base · istio-cni · istiod · ztunnel). `make istio-up`. (ADR-0012) |
 | **Kiali** | Service-mesh topology and traffic UI. `make kiali-up`. |
 | **Longhorn** | Distributed block storage with UI. `make longhorn-up`. (ADR-0013) |
@@ -175,7 +175,7 @@ The capstone ties every layer together:
 
 ```
 GitLab CI                                     
-  └─ build hello:SHA ─► cosign sign ─► push to Harbor (ADR-0024; CI re-wire in progress)
+  └─ build library/hello:SHA ─► cosign sign ─► push to Harbor (ADR-0024)
                                                 │
                                          ArgoCD syncs
                                                 │
@@ -191,7 +191,7 @@ GitLab CI
                             Vault ExternalSecret (DB/registry creds)
 ```
 
-On every GitLab CI push a signed `hello:SHA` image lands in Harbor (`harbor.127.0.0.1.nip.io`, `make harbor-up`; per ADR-0024 — the CI re-wire from Artifactory is in progress via `auto/harbor-capstone-rewire`). ArgoCD updates the capstone `Rollout`; Kyverno's `verifyImages` policy audits signature presence (currently `Audit` mode — enforcement flip is a separate ROADMAP item). Once admitted, Argo Rollouts canaries traffic using Envoy's weighted-backend split, gating on a Mimir success-rate AnalysisTemplate. All activity is observable in Grafana.
+On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`harbor.127.0.0.1.nip.io`, `make harbor-up`; per ADR-0024). ArgoCD updates the capstone `Rollout`; Kyverno's `verifyImages` policy audits signature presence (currently `Audit` mode — enforcement flip is a separate ROADMAP item). Once admitted, Argo Rollouts canaries traffic using Envoy's weighted-backend split, gating on a Mimir success-rate AnalysisTemplate. All activity is observable in Grafana.
 
 ## Suggested learning path
 
