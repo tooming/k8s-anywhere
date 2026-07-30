@@ -47,18 +47,20 @@ Adopt **Kyverno** as the lab's always-on admission policy engine, using the
 ### Footprint controls (12 GB budget)
 
 Default Helm values target HA (3 replicas per controller, ~400-600 MB). Lab
-override **per ADR-0005** (single-host, recreate-over-HA):
+override **per ADR-0005** (single-host, recreate-over-HA), **except
+`admissionController`, which runs 2 replicas — see the 2026-07-29
+Re-evaluation log entry below for why**:
 
 ```yaml
-admissionController:   { replicas: 1, resources: { limits: { memory: 256Mi } } }
+admissionController:   { replicas: 2, resources: { limits: { memory: 256Mi } } }
 backgroundController:  { replicas: 1, resources: { limits: { memory: 128Mi } } }
 cleanupController:     { replicas: 1, resources: { limits: { memory: 64Mi  } } }
 reportsController:     { replicas: 1, resources: { limits: { memory: 128Mi } } }
 ```
 
-Total cap: ~600 MiB combined limits, ~200-300 MiB steady-state. Fits inside
-the planned 500 MB Tier 1 next-wave envelope when combined with the other
-three controllers (Argo Rollouts, Velero, Trivy Operator).
+Total cap: ~832 MiB combined limits (512 MiB for `admissionController`'s two
+replicas + 320 MiB for the other three single-replica controllers), ~300-400
+MiB steady-state.
 
 ### Initial `ClusterPolicy` set
 
@@ -225,6 +227,34 @@ loop on #502's flip condition (b) for the record.
 **Flip condition (next re-evaluation).** Unchanged: (a) this lab ever authors
 a CEL-based `NamespacedValidatingPolicy`, or (b) a new CVE is filed against a
 Kyverno version above `1.18.2`.
+
+---
+
+### 2026-07-29 — `admissionController` bumped to 2 replicas (fail-closed self-lockout)
+
+**Trigger.** `resourceValidatingWebhookConfiguration` is fail-closed: with the
+single `admissionController` replica this ADR originally specified, that one
+pod restarting (routine under load — OOM, liveness kick, node hiccup) leaves
+the webhook with zero endpoints, which blocks *every* delete/create
+cluster-wide until it comes back — not just Kyverno-related resources. Hit
+live 2026-07-29: this exact deadlock repeatedly stalled unrelated cluster
+recovery work (couldn't even force-delete an unrelated stuck pod while the
+sole admission-controller replica was mid-restart).
+
+**Decision: keep the single-replica pattern for every other controller, but
+carve out `admissionController` to 2 replicas** (confirmed with the user
+2026-07-29). ADR-0005's argument (2 copies on one host add no real HA)
+covers *host*-level failure; this is a different failure mode — a second
+replica on the same node still answers the fail-closed webhook while the
+first restarts, closing the gap. This is genuine resilience against a
+correctness-blocking deadlock, not the SPOF theatre ADR-0005 warns against.
+`gitops/platform/kyverno.yaml`'s `admissionController.replicas` is `2`; the
+"Footprint controls" table above reflects the updated total.
+
+**Flip condition (next re-evaluation).** Revisit if the fail-closed webhook
+deadlock recurs even with 2 replicas (would suggest raising further, or a
+different mitigation), or if upstream Kyverno adds a non-webhook admission
+path that removes this failure mode entirely.
 
 ---
 
