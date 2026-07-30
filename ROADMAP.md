@@ -258,8 +258,9 @@ You review and merge plan PRs, same as implementation PRs.
   (`targetRevision: 0\.9\.3` alongside or replacing the looser `0\.9\.` match) — a
   recurrence guard mirroring this repo's other per-component exact-version pin
   assertions. No topology change, so no README/`docs/dependency-tree.md` update is
-  expected — note that explicitly in the PR body. PR body must document: the fix summary above, why `0.9.3` (smallest safe
-  delta), and the ADR-0004 caveat that this remote clusterless session cannot verify
+  expected — note that explicitly in the PR body, which must also document: the fix
+  summary above, why `0.9.3` (smallest safe delta), and the ADR-0004 caveat that this
+  remote clusterless session cannot verify
   `kro` starts cleanly post-bump on a live cluster — call out the rollback path (revert
   `targetRevision`; ArgoCD self-heals within its sync interval; `kro` is a stateless
   controller Deployment, so a revert recovers immediately with no data loss, same
