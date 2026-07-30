@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: ghcr.io/kro-run/kro
     chart: kro
-    targetRevision: 0.9.2
+    targetRevision: 0.9.3
     helm:
       releaseName: kro
       valuesObject:
