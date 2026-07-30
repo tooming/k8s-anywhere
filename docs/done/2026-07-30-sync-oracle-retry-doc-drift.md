@@ -38,4 +38,4 @@ relative link to `oracle-cluster-apply-retry.yml` resolves).
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/921
