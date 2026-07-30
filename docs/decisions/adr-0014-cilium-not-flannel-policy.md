@@ -177,3 +177,24 @@ Routing is enabled and BPF Host Routing is disabled), fixed in
 `targetRevision: 1.17.18`) is already past the `1.17.14` fix floor on the same
 minor line — no bump needed. **Flip condition:** a CVE disclosed against
 `1.17.18` specifically, or the `1.17.x` line reaching end-of-support.
+
+### 2026-07-30 — 1.17.x reached end-of-support, converted to RFC (audit #916)
+
+**Trigger.** Cilium `v1.20.0` was published 2026-07-29 (confirmed:
+`github.com/cilium/cilium/releases.atom`). Cilium's `SECURITY.md` support
+table (fetched directly, not training knowledge — ADR-0004) now marks every
+version `< 1.18.0` as unsupported — this is exactly the flip condition
+recorded in the 2026-07-28 entry above ("the `1.17.x` line reaching
+end-of-support").
+
+**Decision: Convert.** The pin should move off the unsupported line, but
+Cilium's own upgrade path is sequential minor-by-minor — a live-cluster jump
+straight from `1.17.18` to `1.20.0` is not a supported upgrade path, and this
+remote clusterless session cannot verify pod networking survives any Cilium
+version change on the live cluster (ADR-0004). Turned into
+[RFC #917](https://github.com/tooming/k8s-anywhere/issues/917): bump to
+`1.18.12` (latest `1.18.x` patch, confirmed via `git ls-remote --tags
+https://github.com/cilium/cilium.git`) — one minor-line step, not the full
+jump to `1.20.0`. **Flip condition for the next step:** once `1.18.12` lands,
+revisit when `1.18.x` itself reaches end-of-support, or a CVE lands against
+`1.18.12` specifically.
