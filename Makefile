@@ -151,6 +151,10 @@ context-doc-version-sync-check: ## Check docs/decisions/context.md's tracked ver
 docs-done-pr-link-check: ## Check every docs/done/*.md file's "## PR" section is backfilled with a real PR link, not left on the placeholder (drift detector)
 	@bash scripts/docs-done-pr-link-check.sh
 
+.PHONY: kustomize-orphan-check
+kustomize-orphan-check: ## Check every file next to a kustomization.yaml is referenced by it (no dead/orphaned manifests, drift detector)
+	@bash scripts/kustomize-orphan-check.sh
+
 ##@ Quality gates (clusterless; run on every commit + in CI)
 
 .PHONY: lint
@@ -203,6 +207,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/adr-image-pin-sync-check.sh
 	@bash scripts/context-doc-version-sync-check.sh
 	@bash scripts/docs-done-pr-link-check.sh
+	@bash scripts/kustomize-orphan-check.sh
 	@bash scripts/drift-detectors-tests-check.sh
 	@bash scripts/hook-scripts-coverage-tests-check.sh
 	@bash scripts/ci-parity-check.sh

@@ -159,6 +159,12 @@
             "command": "bash scripts/docs-done-pr-link-sync-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking docs/done/ PR links"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/kustomize-orphan-sync-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking kustomization.yaml has no orphaned files"
           }
         ]
       },
