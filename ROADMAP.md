@@ -232,6 +232,40 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump `kro` chart `0.9.2` → `0.9.3`** (CHARTER **Core Values** §"Everything as
+  code" + general hardening; planner gap-analysis sweep 2026-07-30 — all three
+  standing "Now / next" items gated on maintainer-confirmation issues #631/#633, no
+  ADR/RFC decision required for this one. **No prerequisites — executor may pick up
+  immediately.**) Verified directly (not assumed, ADR-0004): `git ls-remote --tags
+  https://github.com/kro-run/kro.git` (git protocol — this sandbox's proxy blocks the
+  `ghcr.io`/chart-index HTTPS host directly, same constraint noted on prior chart-pin
+  bumps) shows `v0.9.3` as the newest stable tag, one patch ahead of this lab's pinned
+  `0.9.2` (`gitops/platform/kro.yaml`). `v0.9.3`'s release notes (fetched from the real
+  GitHub release page) describe bug fixes only — a nil-pointer dereference fix in
+  ExternalDocs conversion, a fix for instance deletion getting stuck when SSA field
+  managers owned finalizers, panic recovery during dynamic-controller reconciliation,
+  and a dependency bump (OpenTelemetry to a version addressing a CVE in that
+  dependency) — with no breaking changes noted. This is the same smallest-safe-delta
+  pattern as this lab's other chart-pin bumps (patch-only, no minor/major jump).
+
+  Bump `gitops/platform/kro.yaml`'s `targetRevision: 0.9.2` → `0.9.3`. Also update
+  `docs/decisions/context.md`'s "KRO chart version: 0.9.2" line to `0.9.3` — `make ci`'s
+  context.md-version-sync check (`scripts/`, the "context.md version sync" gate)
+  cross-checks this literal citation against `gitops/platform/kro.yaml`'s live pin and
+  fails the PR if they drift, same mechanism already catching Grafana/Pyroscope
+  version citations. Update `tests/securitycontext-kro.bats`'s `"kro Application chart
+  pin is 0.9.x (not the old 0.4.1)"` test to also assert the specific patch
+  (`targetRevision: 0\.9\.3` alongside or replacing the looser `0\.9\.` match) — a
+  recurrence guard mirroring this repo's other per-component exact-version pin
+  assertions. No topology change, so no README/`docs/dependency-tree.md` update is
+  expected — note that explicitly in the PR body. PR body must document: the fix summary above, why `0.9.3` (smallest safe
+  delta), and the ADR-0004 caveat that this remote clusterless session cannot verify
+  `kro` starts cleanly post-bump on a live cluster — call out the rollback path (revert
+  `targetRevision`; ArgoCD self-heals within its sync interval; `kro` is a stateless
+  controller Deployment, so a revert recovers immediately with no data loss, same
+  pattern as the Envoy Gateway/Vault/Valkey/Grafana chart-pin bumps). `make ci` must
+  pass. `docs/done/` entry required. (auto/kro-cve-bump-0-9-3)
+
 - [x] 🟢 **Lab — Istio ambient mesh (`istio-system`) observability wiring: Alloy
   scrape + Grafana dashboard** (CHARTER **Objective O5**, due **2026-09-30**; O5 gap
   — planner gap-analysis sweep 2026-07-28, all five prior "Now / next" items being
