@@ -3678,7 +3678,7 @@ You review and merge plan PRs, same as implementation PRs.
   backup data). `make ci` must pass. `docs/done/` entry required. Closes #617.
   (auto/velero-chart-bump-12-1-0)
 
-- [ ] 🟢 **Bump Cilium chart `1.17.18` → `1.18.12`** (CHARTER **Core Values**
+- [x] 🟢 **Bump Cilium chart `1.17.18` → `1.18.12`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC #917 — architect decision
   2026-07-30, ADR-0014 audit #916 resolved as **Convert**. **No prerequisites —
   executor may pick up immediately.**) Cilium's `SECURITY.md` support table now
