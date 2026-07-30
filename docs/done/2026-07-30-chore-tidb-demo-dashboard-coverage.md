@@ -36,4 +36,4 @@ none present by default in this remote sandbox).
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/905
