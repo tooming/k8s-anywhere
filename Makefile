@@ -179,6 +179,10 @@ rebase-prs: ## Prune stale branches, then show/rebase the open PR branches (PUSH
 	@bash scripts/prune-stale-branches.sh $(if $(PUSH),--push) || echo "  · prune skipped (no branch-delete permission here) — run 'make prune-branches PUSH=1' where deletes are allowed"
 	@bash scripts/rebase-open-prs.sh $(if $(PUSH),--push)
 
+.PHONY: stale-prs-check
+stale-prs-check: ## List open agent-branch PRs that are CI-green but missing the self-reviewed label (STEP 1b helper)
+	@bash scripts/stale-prs-check.sh
+
 .PHONY: ci
 ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/lint.sh
