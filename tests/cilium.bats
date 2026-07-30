@@ -28,10 +28,15 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Chart pin (RFC #501, CVE-2026-49445 — world-accessible Envoy admin.sock) --
-@test "cilium Application pins chart version 1.17.18 (CVE-2026-49445 fix)" {
-  run grep -q 'targetRevision: 1.17.18' "$REPO/gitops/platform/cilium.yaml"
+# --- Chart pin (RFC #917, ADR-0014 audit #916 — 1.17.x reached end-of-support) --
+@test "cilium Application pins chart version 1.18.12 (off the EOL 1.17.x line)" {
+  run grep -q 'targetRevision: 1.18.12' "$REPO/gitops/platform/cilium.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "cilium Application does not pin the EOL 1.17.18 version" {
+  run grep -q 'targetRevision: 1.17.18' "$REPO/gitops/platform/cilium.yaml"
+  [ "$status" -ne 0 ]
 }
 
 @test "cilium Application does not pin the pre-CVE-fix 1.16.6 version" {

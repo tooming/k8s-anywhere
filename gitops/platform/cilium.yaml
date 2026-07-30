@@ -10,11 +10,16 @@
 # Envoy's standalone DaemonSet (which runs by default since Cilium 1.16, whether
 # or not any L7 CiliumNetworkPolicy is authored — envoy.enabled defaults to null/
 # "true for new installation" in the chart) creates a world-accessible admin.sock
-# on cluster nodes. Fixed upstream in 1.17.14/1.18.8/1.19.2; 1.17.18 is the latest
-# 1.17.x patch, chosen as the smallest safe delta from the prior pin. Rollback:
-# revert targetRevision — ArgoCD self-heals; Cilium is a DaemonSet so a revert
-# re-rolls the same way the bump did. (ADR-0004 caveat: this remote clusterless
-# session cannot verify pod networking stays healthy post-bump on a live cluster.)
+# on cluster nodes. Fixed upstream in 1.17.14/1.18.8/1.19.2.
+#
+# Bumped to 1.18.12 (RFC #917, 2026-07-30): Cilium's SECURITY.md support table
+# marks every version < 1.18.0 as unsupported (v1.20.0 released 2026-07-29) —
+# ADR-0014 audit #916. 1.18.12 is the latest 1.18.x patch, chosen as one
+# sequential minor-line step (Cilium's upgrade path is minor-by-minor; not a
+# jump straight to 1.20.0). Rollback: revert targetRevision — ArgoCD self-heals;
+# Cilium is a DaemonSet so a revert re-rolls the same way the bump did.
+# (ADR-0004 caveat: this remote clusterless session cannot verify pod
+# networking stays healthy post-bump on a live cluster.)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -25,7 +30,7 @@ spec:
   source:
     repoURL: https://helm.cilium.io
     chart: cilium
-    targetRevision: 1.17.18
+    targetRevision: 1.18.12
     helm:
       releaseName: cilium
       valuesObject:

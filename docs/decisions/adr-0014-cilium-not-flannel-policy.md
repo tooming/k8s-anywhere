@@ -198,3 +198,17 @@ https://github.com/cilium/cilium.git`) — one minor-line step, not the full
 jump to `1.20.0`. **Flip condition for the next step:** once `1.18.12` lands,
 revisit when `1.18.x` itself reaches end-of-support, or a CVE lands against
 `1.18.12` specifically.
+
+### 2026-07-30 — RFC #917 bump landed: `1.17.18` → `1.18.12`
+
+**Decision.** `gitops/platform/cilium.yaml`'s `targetRevision` bumped to
+`1.18.12` per the Convert decision above. Re-verified directly at pickup time
+(not just the RFC's cached read): the `1.18.12` chart's `values.yaml` still
+contains every key this Application's `valuesObject` sets unchanged in shape
+— `kubeProxyReplacement`, `prometheus.enabled`/`port`, `hubble.enabled`,
+`operator.replicas`/`resources`, top-level `resources` (fetched directly from
+`raw.githubusercontent.com/cilium/cilium/v1.18.12/install/kubernetes/cilium/values.yaml`
+and diffed against the `v1.17.18` tag's copy — no schema change). **Flip
+condition:** revisit when `1.18.x` itself reaches end-of-support (per
+Cilium's `SECURITY.md` support table), or a CVE lands against `1.18.12`
+specifically.
