@@ -40,6 +40,12 @@ that choice gets its own ADR rather than silently expanding this one.
 
 **Status.** Adopted 2026-07-13. Supersedes the CHARTER.md Strategy statement
 "Localhost over cloud" (see the current [CHARTER.md](../../CHARTER.md) Strategy
-section for the replacement). This ADR is a target-architecture decision — the
-pluggable cloud backend module itself is not yet built; it is tracked as ROADMAP work
-the planner/architect derive from the CHARTER per the usual cadence.
+section for the replacement). This ADR is a target-architecture decision. The first
+pluggable cloud backend module ([ADR-0027](adr-0027-first-cloud-backend-oracle-always-free-k3s.md),
+`infra/live/oracle/` + `infra/modules/oracle-k3s-cluster/`) is now built and partially
+verified against a real OCI tenancy — see [`infra/live/README.md`](../../infra/live/README.md)'s
+Status table for exactly what's confirmed end-to-end versus still pending (the k3s
+compute instance launch itself remains blocked by a transient Oracle Always Free
+capacity constraint, not a gap in this ADR). Further backend modules beyond Oracle
+remain tracked as ROADMAP work the planner/architect derive from the CHARTER per the
+usual cadence.
