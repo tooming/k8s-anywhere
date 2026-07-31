@@ -125,7 +125,7 @@ make_fixture() {
   git branch -q --set-upstream-to=origin/main 2>/dev/null || true
 
   for prefix in plan upgrade sync digest; do
-    git checkout -q -b "${prefix}/merged-test" main
+    git checkout -q -b "${prefix}/merged-test" origin/main
     echo "$prefix" > "${prefix}.txt" && git add -A && git commit -qm "${prefix} work"
     git push -q origin "${prefix}/merged-test"
     git checkout -q main
