@@ -1,11 +1,21 @@
-# TiDB Operator namespace — applies PSA baseline labels to tidb-admin.
-# ON-DEMAND: no automated: block — syncs alongside tidb-operator-up.
-# Do NOT add automated: here; TiDB lives outside the always-on 12 GB stack.
+# tidb-admin-extras — pre-creates the tidb-admin namespace with PSA baseline labels
+# (ADR-0017 §Per-namespace profile — the TiDB Operator controller needs elevated
+# capabilities). Running at sync-wave 0 ensures the namespace with baseline labels
+# is in place before `make tidb-operator-up`/`make tidb-up` admit any pod.
+# The main tidb-operator Application (gitops/platform/tidb-operator.yaml) remains
+# on-demand (manual-sync only) so TiDB never starts automatically within the 12 GB
+# budget — only this namespace-floor shim is always-on, matching the established
+# harbor-extras/longhorn-extras/istio-system-extras pattern (empty namespace + PSA
+# labels is cheap and harmless while the heavy component itself stays manual-sync).
+# ALWAYS-ON: automated sync so the PSA floor is always present regardless of whether
+# TiDB Operator is currently running.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: tidb-admin-extras
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:
@@ -16,6 +26,9 @@ spec:
     server: https://kubernetes.default.svc
     namespace: tidb-admin
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
