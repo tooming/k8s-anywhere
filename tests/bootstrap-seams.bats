@@ -87,6 +87,21 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   [ "$output" -ge 1 ]
 }
 
+# --- every make up sub-target is documented in DR.md's order table -----------
+# DR.md's table previously omitted 4 of 15 real `make up` steps (tfstate-up,
+# coredns-host-alias, cosign-bootstrap, frontdoor) — caught by a doc-drift sweep,
+# not by any prior test. This generically re-derives the full step list from the
+# Makefile's own `up:` recipe so a future step added to `up:` without a matching
+# DR.md row fails CI, instead of relying on one hardcoded assertion per step.
+@test "every make up sub-target appears in DR.md's bootstrap order table" {
+  targets=$(sed -n '/^up:/,/^\.PHONY: down/p' "$REPO/Makefile" | grep -oE '\$\(MAKE\) [a-z0-9-]+' | awk '{print $2}')
+  [ -n "$targets" ]
+  while IFS= read -r target; do
+    run grep -q "\`$target\`" "$REPO/docs/DR.md"
+    [ "$status" -eq 0 ]
+  done <<< "$targets"
+}
+
 # --- gitlab/.env self-heal (gitlab-up can't run without GITLAB_ROOT_PASSWORD) -
 # gitlab/.env is gitignored, so a fresh clone has none and `docker compose up`
 # dies on interpolation. gitlab-env-ensure.sh creates it; gitlab-up must call it
