@@ -1,6 +1,8 @@
-# Code owners — GitHub routes every PR to the owners of the paths it touches, and
-# (with branch protection) requires their review before merge. This is what stops an
-# agent PR from merging without a human owner's approval. See docs/WAYS-OF-WORKING.md.
+# Code owners — GitHub routes every PR to the owners of the paths it touches. Branch
+# protection on main was removed 2026-07-13 and self-merge (no human approval gate,
+# no autonomy-tier system) was adopted 2026-07-14 — this file no longer blocks or
+# gates a merge; it's ownership routing/attribution metadata only. See
+# docs/WAYS-OF-WORKING.md §0.1/§4.
 #
 # As the team grows, replace the catch-all and fill in the per-domain owners below
 # (mirrors the ownership map in docs/WAYS-OF-WORKING.md §7).
@@ -8,7 +10,7 @@
 # Catch-all — until per-domain owners are assigned
 *                          @tooming
 
-# 🔴 High-trust paths (Red tier): goals, decisions, governance, CI, bootstrap
+# Governance/decision/CI/bootstrap paths — ownership attribution only, not a merge gate
 /CHARTER.md                @tooming
 /docs/WAYS-OF-WORKING.md   @tooming
 /docs/decisions/           @tooming
