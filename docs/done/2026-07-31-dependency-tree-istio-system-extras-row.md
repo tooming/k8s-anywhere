@@ -42,4 +42,4 @@ avoid an under-verified fix; flagging for a future doc-drift pass.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/949
