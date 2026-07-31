@@ -318,3 +318,8 @@ setup() {
   run grep -q 'cosign-public-key' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
   [ "$status" -eq 0 ]
 }
+
+@test "docs/dependency-tree.md wave-0 row lists kyverno-extras with the current restricted PSA level" {
+  run grep -q 'kyverno-extras (namespace PSA restricted labels' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
