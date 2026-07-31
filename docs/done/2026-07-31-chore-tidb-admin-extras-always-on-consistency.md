@@ -55,4 +55,4 @@ namespace itself is not pruned by reverting sync policy alone).
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/946
