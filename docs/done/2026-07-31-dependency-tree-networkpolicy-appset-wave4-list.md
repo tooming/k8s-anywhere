@@ -33,4 +33,4 @@ reconciles the doc's prose with the already-correct, already-live
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/947
