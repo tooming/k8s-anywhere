@@ -48,4 +48,4 @@ without a DR.md row now fails CI automatically.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/951
