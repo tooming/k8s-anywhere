@@ -39,4 +39,4 @@ is unchanged; this is pure status-accuracy reconciliation. Fourth fix in this ru
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/936
