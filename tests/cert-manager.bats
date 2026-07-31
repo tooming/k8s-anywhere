@@ -20,8 +20,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "cert-manager Application pins chart version 1.21.0" {
-  run grep -q 'targetRevision: 1.21.0' "$REPO/gitops/platform/cert-manager.yaml"
+@test "cert-manager Application pins chart version 1.21.1" {
+  run grep -q 'targetRevision: 1.21.1' "$REPO/gitops/platform/cert-manager.yaml"
   [ "$status" -eq 0 ]
 }
 

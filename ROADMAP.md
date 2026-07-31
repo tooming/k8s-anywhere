@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump cert-manager chart `1.21.0` → `1.21.1`** (CHARTER **Core Values**
+- [x] 🟢 **Bump cert-manager chart `1.21.0` → `1.21.1`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC #933 — architect decision
   2026-07-31, ADR-0028 audit #931 resolved as **Convert**. **No prerequisites —
   executor may pick up immediately.**) `v1.21.1` exists — confirmed directly via
