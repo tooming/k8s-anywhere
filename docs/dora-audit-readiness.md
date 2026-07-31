@@ -45,8 +45,9 @@ duplicated.
 
 **Q2. Are critical functions/assets identified and mapped to supporting ICT systems?**
 - **Applicable?** Yes.
-- **Answer:** Yes, for the stateful surface. CHARTER Objective O3 names the four
-  stateful namespaces (`data`, `tidb`, `capstone`, `vault`) as critical; the always-on
+- **Answer:** Yes, for the stateful surface. CHARTER Objective O3 names the six
+  stateful namespaces (`data`, `tidb`, `capstone`, `vault`, `observability`,
+  `inkless`) as critical; the always-on
   vs. on-demand split (12GB budget, ADR-0003) documents which ~58 Applications are
   load-bearing (re-counted 2026-07-29, issue #846 — CHARTER's own "Always-on core"
   bullet count is ~33 of those 58; the rest are the always-on next-wave/cert-manager/
