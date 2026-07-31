@@ -182,3 +182,8 @@ setup() {
   run grep -q 'lab-trivy.json' "$REPO/docs/dependency-tree.md"
   [ "$status" -eq 0 ]
 }
+
+@test "docs/dependency-tree.md wave-0 row lists trivy-extras" {
+  run grep -q 'trivy-extras (namespace PSA baseline labels' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}

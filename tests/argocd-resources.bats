@@ -72,3 +72,15 @@ mem_mi() {
   run mem_mi "$(yqs '.controller.resources.limits.memory' "$VALS")"
   [ "$output" -ge 1024 ]
 }
+
+@test "docs/dependency-tree.md wave-0 row lists argocd-extras" {
+  REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  run grep -q 'argocd-extras (SSA-patches full PSA' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
+
+@test "argocd-extras.yaml comment reflects the current (not superseded) PSA phase" {
+  REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  run grep -q 'Phase 1 warn/audit labels' "$REPO/gitops/platform/argocd-extras.yaml"
+  [ "$status" -ne 0 ]
+}

@@ -413,3 +413,12 @@ setup() {
   run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-kargo.json"
   [ "$status" -eq 1 ]
 }
+
+@test "docs/dependency-tree.md documents kargo, kargo-extras, and kargo-project in the apply-order table" {
+  run grep -q '| — | kargo \*(on-demand)\* |' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+  run grep -q '| — | kargo-extras \*(auto-synced, wave 0)\* |' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+  run grep -q '| — | kargo-project \*(on-demand, wave 6)\* |' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
