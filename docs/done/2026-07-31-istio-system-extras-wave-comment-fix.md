@@ -34,4 +34,4 @@ changed.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/948
