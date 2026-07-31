@@ -2306,7 +2306,7 @@ You review and merge plan PRs, same as implementation PRs.
   false` override are present (recurrence guard). `make ci` must pass. `docs/done/`
   entry required. Closes #785. (auto/argocd-chart-10x-bump or upgrade/argocd-chart-10x-bump)
 
-- [ ] 🟢 **`tests/frozen-monolith-lib.bats` — direct unit coverage for
+- [x] 🟢 **`tests/frozen-monolith-lib.bats` — direct unit coverage for
   `scripts/lib/frozen-monolith-check.sh` + `frozen-monolith-sync-hook.sh`**
   (CHARTER **Core Values** §"Everything as code" + CLAUDE.md's bugfix-prevents-
   recurrence rule; planner gap-analysis sweep 2026-07-31 — all three standing
