@@ -34,4 +34,4 @@ table with what every script and routine prompt already does.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/941
