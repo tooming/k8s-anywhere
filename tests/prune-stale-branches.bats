@@ -107,3 +107,37 @@ make_fixture() {
   run git rev-parse --verify origin/auto/active
   [ "$status" -eq 0 ]    # kept
 }
+
+# Recurrence guard: PR #936 (a sync/* branch) fell behind main undetected for the
+# rest of a run because this script's branch-discovery regex only matched
+# auto/arch/chore/claude/copilot — every other agent prefix in
+# docs/WAYS-OF-WORKING.md's "Branch prefix signals origin" list (plan/ upgrade/
+# sync/ digest/) was silently invisible to it. Assert every prefix is recognised.
+@test "prune: recognises every agent branch prefix from WAYS-OF-WORKING.md, not just auto/arch/chore" {
+  git init -q --bare "$WORK/remote.git"
+  git clone -q "$WORK/remote.git" "$WORK/clone"
+  cd "$WORK/clone"
+  git config user.email t@example.com
+  git config user.name tester
+  echo base > a.txt
+  git add -A && git commit -qm "init"
+  git push -q origin HEAD:refs/heads/main
+  git branch -q --set-upstream-to=origin/main 2>/dev/null || true
+
+  for prefix in plan upgrade sync digest; do
+    git checkout -q -b "${prefix}/merged-test" main
+    echo "$prefix" > "${prefix}.txt" && git add -A && git commit -qm "${prefix} work"
+    git push -q origin "${prefix}/merged-test"
+    git checkout -q main
+    git merge -q --no-ff "${prefix}/merged-test" -m "merge ${prefix}/merged-test"
+    git push -q origin main
+  done
+  git fetch -q origin
+  git reset -q --hard origin/main
+
+  run env PRUNE_ROOT="$WORK/clone" bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  for prefix in plan upgrade sync digest; do
+    [[ "$output" == *"[stale:merged]    ${prefix}/merged-test"* ]]
+  done
+}

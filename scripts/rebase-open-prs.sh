@@ -20,7 +20,12 @@
 #                        # (used by the test harness; also handy when gh is unauthed)
 #
 # Requirements: git, git-remote access to the GitHub remote, optional: gh CLI for PR list.
-# Falls back to listing remote branches matching auto/* arch/* chore/* claude/* copilot/*.
+# Falls back to listing remote branches matching every agent/PR prefix in
+# docs/WAYS-OF-WORKING.md's "Branch prefix signals origin" list (auto/ plan/ arch/
+# upgrade/ sync/ digest/ chore/) plus claude/ copilot/. Missing a prefix here means
+# that role's open PRs are silently never rebased when gh is unavailable — this
+# exact gap (sync/* missing) let PR #936 fall behind main undetected for the rest
+# of a run. Keep this list in sync with prune-stale-branches.sh's identical regex.
 #
 # NOTE: intentionally NOT `set -e`. This script's whole job is to keep going across
 # many branches, most of which may fail to rebase; aborting on the first failure is
@@ -63,7 +68,7 @@ fi
 if [[ "${#BRANCHES[@]}" -eq 0 ]]; then
   mapfile -t BRANCHES < <(
     git branch -r \
-      | grep -E "${REMOTE}/(auto|arch|chore|claude|copilot)/" \
+      | grep -E "${REMOTE}/(auto|arch|chore|claude|copilot|plan|upgrade|sync|digest)/" \
       | sed "s|.*${REMOTE}/||" \
       | sort
   )
