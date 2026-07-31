@@ -2306,6 +2306,57 @@ You review and merge plan PRs, same as implementation PRs.
   false` override are present (recurrence guard). `make ci` must pass. `docs/done/`
   entry required. Closes #785. (auto/argocd-chart-10x-bump or upgrade/argocd-chart-10x-bump)
 
+- [ ] 🟢 **`tests/frozen-monolith-lib.bats` — direct unit coverage for
+  `scripts/lib/frozen-monolith-check.sh` + `frozen-monolith-sync-hook.sh`**
+  (CHARTER **Core Values** §"Everything as code" + CLAUDE.md's bugfix-prevents-
+  recurrence rule; planner gap-analysis sweep 2026-07-31 — all three standing
+  "Now / next" items are still gated on unconfirmed maintainer-confirmation
+  issues #631/#633 (checked directly this run: neither issue has a comment
+  confirming its ask; `gitops/kyverno/policies/verify-image-signatures.yaml`
+  still reads `validationFailureAction: Audit` / `failurePolicy: Ignore`, so
+  the gate is accurate, not stale), so this is rule #9 coverage/hardening
+  filler, not CHARTER-objective progress — call this out explicitly in the PR
+  body. **No prerequisites — executor may pick up immediately.**) Verified
+  directly (not assumed, ADR-0004): every other shared `scripts/lib/*.sh`
+  helper extracted from repeated copy-paste (`colors.sh`, `hook-payload.sh`,
+  `yq-variant.sh`, `budget-check.sh`) has its own dedicated
+  `tests/<name>-lib.bats` asserting the shared function's behavior directly
+  (`colors-lib.bats`, `hook-payload-lib.bats`, `lib-yq-variant.bats`,
+  `budget-check-lib.bats`) — `frozen-monolith-check.sh` and
+  `frozen-monolith-sync-hook.sh` are the only two `scripts/lib/*.sh` files with
+  no bats file exercising them directly (`grep -rl "lib/frozen-monolith-check"
+  tests/*.bats` and the `-sync-hook` equivalent both return nothing); they are
+  only exercised transitively through the four wrapper scripts they back
+  (`securitycontext-tests-check.sh`, `observability-tests-check.sh`,
+  `drift-detectors-tests-check.sh`, `hook-scripts-coverage-tests-check.sh`) via
+  `tests/drift-frozen-monolith-checks.bats`. Not a functional bug — behavior is
+  covered indirectly — but it's the one lib extraction that skipped the
+  pattern's own direct-unit-test half, and per CLAUDE.md every extracted
+  helper should carry its own recurrence guard rather than relying solely on
+  transitive coverage through callers.
+
+  New `tests/frozen-monolith-lib.bats` mirroring `hook-payload-lib.bats`'s
+  shape exactly: (1) both lib files exist; (2) both are valid, sourceable bash
+  (`bash -n`); (3) `frozen-monolith-check.sh` defines `frozen_monolith_check()`
+  and `frozen-monolith-sync-hook.sh` defines `frozen_monolith_sync_hook()`;
+  (4) exercise `frozen_monolith_check()` directly against two small fixture
+  files under a temp dir — one case where the live `@test` title set matches
+  the snapshot (expect success, drift=0) and one where it's been edited to
+  differ (expect the function to report drift and print the
+  "put NEW tests in <scope_hint>" guidance) — no need for `bats`-style fixture
+  files beyond plain heredocs written to `$BATS_TEST_TMPDIR`; (5) exercise
+  `frozen_monolith_sync_hook()` directly with a synthetic JSON hook payload
+  (via `hook_file_path`'s existing stdin contract) targeting the monolith path
+  vs. a non-monolith path, asserting it only fires (exit 2) on the former;
+  (6) a recurrence guard: assert every `scripts/lib/*.sh` file has at least one
+  `tests/*.bats` file whose content references its basename by name (the same
+  structural check this item is fixing, turned into a permanent gate so a
+  future fifth lib extraction can't silently skip its own direct-unit-test
+  half again). `make ci` must pass. No topology change, so no
+  README/`docs/dependency-tree.md` update is expected — note that explicitly
+  in the PR body. `docs/done/` entry required.
+  (auto/frozen-monolith-lib-test-coverage)
+
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
   maintainer confirms at least one CI run pushed a signed image to the registry** — the
