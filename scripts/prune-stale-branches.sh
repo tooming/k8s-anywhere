@@ -38,9 +38,13 @@ MAIN=$(git rev-parse "$REMOTE/main") || { echo "$REMOTE/main not found" >&2; exi
 echo "$REMOTE/main HEAD: ${MAIN:0:12}"
 
 # Only branches under the bot/PR prefixes are ever candidates. main is excluded.
+# Keep this list in sync with rebase-open-prs.sh's identical fallback regex — every
+# agent/PR prefix in docs/WAYS-OF-WORKING.md's "Branch prefix signals origin" list
+# (auto/ plan/ arch/ upgrade/ sync/ digest/ chore/) plus claude/ copilot/. A missing
+# prefix here means that role's merged/orphaned branches never get pruned.
 mapfile -t BRANCHES < <(
   git branch -r \
-    | grep -E "${REMOTE}/(auto|arch|chore|claude|copilot)/" \
+    | grep -E "${REMOTE}/(auto|arch|chore|claude|copilot|plan|upgrade|sync|digest)/" \
     | sed "s|.*${REMOTE}/||" \
     | sort
 )

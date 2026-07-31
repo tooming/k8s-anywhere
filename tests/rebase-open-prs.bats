@@ -108,3 +108,36 @@ make_fixture() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"No open PR branches found"* ]]
 }
+
+# Recurrence guard: PR #936 (a sync/* branch) fell behind main undetected for the
+# rest of a run because this script's no-gh fallback branch-discovery regex only
+# matched auto/arch/chore/claude/copilot — every other agent prefix in
+# docs/WAYS-OF-WORKING.md's "Branch prefix signals origin" list (plan/ upgrade/
+# sync/ digest/) was silently invisible to it. Assert every prefix is discovered.
+@test "rebase-open-prs: discovers every agent branch prefix from WAYS-OF-WORKING.md, not just auto/arch/chore" {
+  git init -q --bare "$WORK/remote.git"
+  git clone -q "$WORK/remote.git" "$WORK/clone"
+  cd "$WORK/clone"
+  git config user.email t@example.com
+  git config user.name tester
+  echo base > a.txt
+  git add -A && git commit -qm "init"
+  git push -q origin HEAD:refs/heads/main
+  git branch -q --set-upstream-to=origin/main 2>/dev/null || true
+
+  for prefix in plan upgrade sync digest; do
+    git checkout -q -b "${prefix}/behind-test" origin/main
+    echo "$prefix" > "${prefix}.txt" && git add -A && git commit -qm "${prefix} work"
+    git push -q origin "${prefix}/behind-test"
+    git checkout -q main
+  done
+  echo more >> a.txt
+  git add -A && git commit -qm "advance main"
+  git push -q origin main
+
+  run env REBASE_PRS_NO_GH=1 bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  for prefix in plan upgrade sync digest; do
+    [[ "$output" == *"[rebase] ${prefix}/behind-test"* ]]
+  done
+}
