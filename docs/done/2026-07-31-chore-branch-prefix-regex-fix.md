@@ -42,12 +42,18 @@ discovers/reports it. Regressing the regex back to the narrower set fails both.
 ## Verification performed
 
 `bats` is not installed in this sandbox (`make ci` skips unit tests locally, same as
-every PR this run) — manually exercised both fixture scenarios against the real
-scripts with a throwaway git repo (`init.defaultBranch=main`, matching the CI runner's
-git config, confirmed as the actual cause of an initial false-negative in a local repro
-using this sandbox's own `master`-default git config) and confirmed all four new
-prefixes are correctly discovered/reported by both scripts before writing the bats
-tests to codify the same scenario.
+every PR this run), so the real GitHub Actions `unit` job was the actual test of the
+new bats coverage — and it caught a real bug in the first version of these tests: the
+prefix-iteration loops used `git checkout -b <name> main` (the explicit-start-point
+form), which doesn't trigger git's remote-tracking auto-vivification the way a bare
+`git checkout main` does. That form failed to resolve on both this sandbox's git
+(defaults to `master`) *and* the real CI runner's git (confirmed live: CI failed on
+the `plan` prefix with `fatal: 'main' is not a commit`) — the CI runner does **not**
+default to `main`, contrary to an initial assumption. Fixed by checking out
+`origin/main` explicitly (the same pattern this file's own pre-existing "active"
+fixture already used), re-verified locally against this sandbox's real `master`-default
+git before pushing again, and confirmed green on the actual GitHub Actions `unit` job
+(all ~2350+ assertions passing, including the new tests) before merging.
 
 Behavior-preserving: no existing branch (`auto/*`, `arch/*`, `chore/*`, `claude/*`,
 `copilot/*`) changes match status; the regex only gains new alternatives, none removed.
