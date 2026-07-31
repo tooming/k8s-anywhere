@@ -1,12 +1,17 @@
 # ADR-0024 — Harbor as the on-demand artifact registry (supersedes ADR-0011)
 
-**Status.** Adopted (architect decision, RFC #297). **Supersedes
-[ADR-0011](adr-0011-artifactory-not-nexus.md).** Manifests pending — to be groomed from
-RFC #297 into executor items. The trimmed minimal-profile footprint **must be measured and
-shown to fit the 12 GB budget on-demand before the migration is considered done** — that
-measurement is the go/no-go acceptance gate (see *Minimal profile & the 12 GB gate*), not a
-foregone conclusion. Per ADR-0004 this ADR records the **decision and direction only**;
-nothing here asserts Harbor is deployed or running.
+**Status.** Adopted (architect decision, RFC #297) and **live**. **Supersedes
+[ADR-0011](adr-0011-artifactory-not-nexus.md).** Harbor's manifests landed
+(`docs/done/2026-06-30-harbor-application.md`), the trimmed minimal-profile footprint
+was measured on-demand at ~6.6 GB/12 GB (~55%), comfortably meeting the 12 GB gate
+(see *Minimal profile & the 12 GB gate*, and `docs/done/2026-07-29-harbor-capstone-
+rewire.md`), the capstone pipeline was rewired to Harbor
+(`docs/done/2026-07-29-harbor-capstone-rewire.md`), and Artifactory's manifests were
+fully decommissioned (`docs/done/2026-07-29-harbor-artifactory-decommission.md`,
+`tests/no-artifactory.bats`). Harbor is on-demand (manual-sync, ADR-0003) — it is
+not auto-synced, so "live" here means code-complete and footprint-verified, not
+continuously running; per ADR-0004 this status reflects real, verified state, not
+an aspiration.
 
 ---
 
