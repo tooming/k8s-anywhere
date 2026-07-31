@@ -35,4 +35,4 @@ and the Kyverno replica-count fix in ADR-0019/docs/dependency-tree.md, PR #930).
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/932
