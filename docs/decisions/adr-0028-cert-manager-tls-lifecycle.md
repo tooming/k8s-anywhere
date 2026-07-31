@@ -192,6 +192,34 @@ at or above the current pin, so audit #517's flip condition is not triggered.
 
 **Flip condition (next re-evaluation).** Unchanged from audit #517.
 
+### 2026-07-31 — bumped `1.21.0` → `1.21.1` (audit #931, RFC #933)
+
+**Trigger.** `v1.21.1` was published 2026-07-29 (confirmed directly via
+`git ls-remote --tags https://github.com/cert-manager/cert-manager.git` and a
+real shallow clone at that tag — not training knowledge, ADR-0004), two days
+after audit #763. `git log refs/tags/v1.21.0..refs/tags/v1.21.1` on that clone
+shows a fix for a controller panic/incorrect-renewal bug (`fix(renew): Do not
+renew a certificate if its renewPolicy=Disabled`), plus four dependency bumps
+cert-manager's own renovate automation tagged `[security]`:
+`golang.org/x/text` → `v0.40.0`, `google.golang.org/grpc` → `v1.82.1`,
+`github.com/google/cel-go` → `v0.29.0`, `go.opentelemetry.io/otel` →
+`v1.44.0`.
+
+**Decision: bump to `1.21.1`.** These security-tagged dependency bumps satisfy
+audit #517's flip condition ("a cert-manager security advisory names a version
+at or above `1.21.0` as affected") in substance — the fixed dependencies ship
+in the pinned `1.21.0` release and are only patched starting `1.21.1` — same
+reasoning this lab already applied to the Valkey (#654) and Envoy Gateway
+(#515) CVE-driven patch bumps: smallest safe delta that closes a real,
+upstream-confirmed security fix. `gitops/platform/cert-manager.yaml`'s
+`targetRevision` is `1.21.1`; re-verified directly at pickup time that the
+`1.21.1` chart's `values.yaml` still contains every key this Application's
+`valuesObject` sets (`crds.enabled`, `resources`, `webhook.resources`,
+`cainjector.resources`) unchanged in shape — no schema drift.
+
+**Flip condition (next re-evaluation).** Revisit when a cert-manager security
+advisory names a version at or above `1.21.1` as affected.
+
 ---
 
 ## Files this work will touch
