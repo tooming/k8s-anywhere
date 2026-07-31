@@ -33,4 +33,4 @@ ADR-0024 status header #936, WAYS-OF-WORKING chore/* prefix #941).
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/943
