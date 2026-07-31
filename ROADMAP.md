@@ -11,7 +11,7 @@ whenever its own lane runs dry, which can happen more than once in a single run.
 
 The always-on stack is already built (Envoy, Vault, External Secrets, Garage,
 the full LGTMP observability stack, moto/ACK/KRO, the RabbitMQ + Valkey data layer,
-the demo app — ~28 ArgoCD apps). What's left is the heavy *on-demand* components,
+the demo app — ~33 ArgoCD apps). What's left is the heavy *on-demand* components,
 the end-to-end capstone, and cross-cutting hardening.
 
 ---
