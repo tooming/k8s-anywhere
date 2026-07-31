@@ -49,3 +49,8 @@ setup() {
   run grep -q 'istio-cni wave 2, istiod wave 3, ztunnel wave 4' "$EXTRAS"
   [ "$status" -eq 0 ]
 }
+
+@test "docs/dependency-tree.md documents istio-system-extras in the apply-order table" {
+  run grep -q 'istio-system-extras \*(auto-synced, wave 0)\*' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+}
