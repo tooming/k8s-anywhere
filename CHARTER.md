@@ -31,8 +31,9 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
 - **Recreate-from-code.** `make up` rebuilds the whole lab; DR is verified, not assumed
   (`make dr-verify` / `dr-test` / blue-green). (ADR-0005)
 - **Stateful DR is exercised.** Every stateful namespace (`data`, `tidb`, `capstone`,
-  `vault`) has a Velero schedule and a `make dr-restore` path that recovers it from the
-  latest backup — not just re-creates the workload from manifest.
+  `vault`, `observability`, `inkless`) has a Velero schedule and a `make dr-restore`
+  path that recovers it from the latest backup — not just re-creates the workload
+  from manifest.
 - **Images are signed and verified.** Every image deployed into the cluster is signed
   by the lab's cosign key in CI and admitted by a Kyverno `verifyImages` policy; an
   unsigned image is rejected at admission.
