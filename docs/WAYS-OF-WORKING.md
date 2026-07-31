@@ -105,9 +105,10 @@ _(As the team grows, replace the single-owner entries above with the owning engi
 - **One item per PR**, focused and bounded (target < ~400 changed lines; larger work is
   split by the planner first). Reviewers may reject oversized PRs on sight.
 - **Branch prefix signals origin:** `auto/*` (executor), `plan/*` (planner), `arch/*`
-  (architect), `upgrade/*` (upgrade drafter), `sync/*` (doc-drift author), `digest/*`
-  (industry-news writer); `feat/*` / `fix/*` / `chore/*` (humans). Agent prefixes are
-  reserved — humans don't use them.
+  (architect), `upgrade/*` (upgrade drafter), `sync/*` (doc-drift author), `chore/*`
+  (janitor), `digest/*` (industry-news writer, retired 2026-06-13 — folded into the
+  architect, kept here as a dead-prefix reference for any stray leftover branches);
+  `feat/*` / `fix/*` (humans). Agent prefixes are reserved — humans don't use them.
 - **PR body must state:** what changed + why, the ROADMAP item / issue it addresses, and
   that it's an agent run plus which routine produced it.
 - **Green before review:** `make ci` passes; ADRs honored; heavy components stay
