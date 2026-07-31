@@ -37,7 +37,7 @@ duplicated.
 - **Applicable?** Loosely — no "management body" exists (it's a personal lab), but the
   equivalent artifact (a written, binding risk/architecture framework) does.
 - **Answer:** Yes. [CHARTER.md](../CHARTER.md) states the Core Values and Objectives;
-  [docs/decisions/](decisions/) holds 29 binding ADRs recording every material risk
+  [docs/decisions/](decisions/) holds a full set of binding ADRs recording every material risk
   decision; [CLAUDE.md](../CLAUDE.md) + [WAYS-OF-WORKING.md](WAYS-OF-WORKING.md) govern
   how changes to it are made.
 - **Evidence:** CHARTER.md Core Values section; ADR index.
@@ -177,9 +177,9 @@ duplicated.
 
 **Q14. Is there a register of ICT third-party dependencies?**
 - **Answer:** Not as a single consolidated register — but the information exists,
-  scattered across 29 ADRs, each naming the chosen tool, its upstream source, rejected
-  alternatives, and why.
-- **Evidence:** `docs/decisions/` (29 files); [docs/decisions/README.md](decisions/README.md).
+  scattered across the ADRs in `docs/decisions/`, each naming the chosen tool, its
+  upstream source, rejected alternatives, and why.
+- **Evidence:** `docs/decisions/`; [docs/decisions/README.md](decisions/README.md).
 - **Gap:** real but cheap to close — a `docs/dependency-register.md` tabulating
   (tool, criticality, upstream source, ADR, last-reviewed date) would turn the existing
   ADR content into a queryable register without gathering new information.
