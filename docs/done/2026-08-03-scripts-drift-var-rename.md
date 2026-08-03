@@ -55,4 +55,4 @@ adds a recurrence guard — gated on this item having merged first.
 
 ## PR
 
-(filled in after PR creation)
+[#959](https://github.com/tooming/k8s-anywhere/pull/959)
