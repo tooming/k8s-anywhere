@@ -17,15 +17,15 @@ setup() {
   load lib/yq
 }
 
-@test "argocd chart_version default is pinned to 10.2.1 (RFC #785)" {
+@test "argocd chart_version default is pinned to 10.2.2 (RFC #785)" {
   run sed -n '/^variable "chart_version" {/,/^}/p' "$VARS"
   [ "$status" -eq 0 ]
-  [[ "$output" == *'default     = "10.2.1"'* ]]
+  [[ "$output" == *'default     = "10.2.2"'* ]]
 }
 
 @test "argocd terragrunt.hcl inputs don't silently override the module default" {
-  grep -q 'chart_version = "10.2.1"' "$LOCAL_TG"
-  grep -q 'chart_version = "10.2.1"' "$ORACLE_TG"
+  grep -q 'chart_version = "10.2.2"' "$LOCAL_TG"
+  grep -q 'chart_version = "10.2.2"' "$ORACLE_TG"
 }
 
 @test "argocd values.yaml sets global.networkPolicy.create: false (RFC #785)" {
