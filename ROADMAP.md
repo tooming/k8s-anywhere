@@ -3492,7 +3492,7 @@ You review and merge plan PRs, same as implementation PRs.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
-- [ ] 🟢 **Standardize scripts/*.sh's `bad()` failure-flag variable to `drift`**
+- [x] 🟢 **Standardize scripts/*.sh's `bad()` failure-flag variable to `drift`**
   (janitor finding, issue #957 — a duplication sweep found `ok()`/`bad()` printf
   helpers redefined inline in ~35 `scripts/*.sh` files, but unlike the `yqs()`
   dedup in PR #956 the `bad()` body isn't byte-identical everywhere: it sets a

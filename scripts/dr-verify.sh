@@ -21,9 +21,9 @@ KCTX="${KCTX:-}"
 kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
-FAILED=0
+drift=0
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
-bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; FAILED=1; }
+bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 note(){ printf '      %s%s%s\n' "$Y" "$1" "$Z"; }
 
 # retry <timeout_s> <interval_s> <predicate-fn> : 0 if predicate succeeds in time
@@ -122,7 +122,7 @@ retry "$T_MIMIR"   10 p_mimir   && ok "Mimir queryable (tenant lab, 'up' has ser
 retry "$T_GRAFANA" 10 p_grafana && ok "Grafana /api/health database=ok"         || bad "Grafana /api/health"
 
 echo
-if [ "$FAILED" -eq 0 ]; then
+if [ "$drift" -eq 0 ]; then
   printf '%s%sDR VERIFY: PASS%s — lab is healthy end-to-end.\n' "$B" "$G" "$Z"
   exit 0
 else

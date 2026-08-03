@@ -10,10 +10,10 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 1
-rc=0
+drift=0
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 ok()   { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
-bad()  { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; rc=1; }
+bad()  { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 skip() { printf '  %s·%s %s\n' "$Y" "$Z" "$1"; }
 
 printf '%s== validate terraform ==%s\n' "$B" "$Z"
@@ -66,5 +66,5 @@ else
 fi
 
 echo
-[ "$rc" -eq 0 ] && printf '%s%sterraform: PASS%s\n' "$B" "$G" "$Z" || printf '%s%sterraform: FAIL%s\n' "$B" "$R" "$Z"
-exit "$rc"
+[ "$drift" -eq 0 ] && printf '%s%sterraform: PASS%s\n' "$B" "$G" "$Z" || printf '%s%sterraform: FAIL%s\n' "$B" "$R" "$Z"
+exit "$drift"
