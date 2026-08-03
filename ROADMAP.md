@@ -3492,6 +3492,42 @@ You review and merge plan PRs, same as implementation PRs.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
+- [ ] 🟢 **Standardize scripts/*.sh's `bad()` failure-flag variable to `drift`**
+  (janitor finding, issue #957 — a duplication sweep found `ok()`/`bad()` printf
+  helpers redefined inline in ~35 `scripts/*.sh` files, but unlike the `yqs()`
+  dedup in PR #956 the `bad()` body isn't byte-identical everywhere: it sets a
+  different failure-flag variable per script — `drift`, `rc`, or `FAILED` — each
+  read later via that script's own `exit "$<var>"`. **No prerequisites — executor
+  may pick up immediately.** Pure rename, no logic change: in every
+  `scripts/*.sh` that defines its own `bad()` setting `rc=1` or `FAILED=1`,
+  rename that variable (and every read of it, typically just the trailing
+  `exit "$rc"`/`exit "$FAILED"`) to `drift`, matching the majority convention
+  already used by most of these scripts. Do NOT touch scripts whose `bad()` sets
+  no variable at all (informational-only) or extract the shared helper yet —
+  this item is rename-only prep, split from the extraction to stay within
+  WAYS-OF-WORKING.md §3's ~400-line PR cap; the follow-up extraction item below
+  depends on this one merging first. `make ci` must pass (every renamed script's
+  actual pass/fail behavior is unchanged — verify each one still exits the same
+  way before/after). `docs/done/` entry required. (auto/scripts-drift-var-rename)
+
+- [ ] 🟢 **Extract shared `ok()`/`bad()` helpers to `scripts/lib/colors.sh`; add a
+  recurrence guard** (janitor finding, issue #957; **pick up ONLY after
+  `auto/scripts-drift-var-rename` merges** — every `scripts/*.sh` defining its
+  own `bad()` must already use `drift` as the failure-flag variable name before
+  this extraction is safe, since the shared version below writes to the
+  sourcing script's own `drift` variable). Add `ok()`/`bad()` function
+  definitions to `scripts/lib/colors.sh` (which already centralizes the
+  `$G`/`$R`/`$Z` color codes these two functions use); remove each script's own
+  inline `ok()`/`bad()` copy, replacing with (or confirming) a
+  `source .../lib/colors.sh` line. New `scripts/ok-bad-lib-check.sh` (+ `make
+  ok-bad-lib-check`, wired into `make ci` and the GitHub Actions `drift` job,
+  plus a PostToolUse sync hook) mirroring `scripts/yqs-lib-check.sh`'s pattern
+  (PR #956): fails if any `scripts/*.sh` still defines its own local
+  `ok()`/`bad()` instead of sourcing the shared copy. Add matching bats coverage
+  (`tests/drift-<scope>.bats` + `tests/hook-scripts-<scope>.bats` conventions —
+  the relevant monoliths are frozen). `make ci` must pass. `docs/done/` entry
+  required. Closes #957. (auto/ok-bad-lib-extract)
+
 - [x] 🟢 **`capstone-pipeline` governance LimitRange — RFC #294 fan-out completion**
   (CHARTER **Core Values** §"Fits the 16 GB reality" + §"Everything as code; GitOps
   deploys it"; RFC #294 mapping-table completion gap — discovered via a systematic
