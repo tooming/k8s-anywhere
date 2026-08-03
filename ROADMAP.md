@@ -3526,7 +3526,7 @@ You review and merge plan PRs, same as implementation PRs.
   `ok()`/`bad()` instead of sourcing the shared copy. Add matching bats coverage
   (`tests/drift-<scope>.bats` + `tests/hook-scripts-<scope>.bats` conventions —
   the relevant monoliths are frozen). `make ci` must pass. `docs/done/` entry
-  required. Closes #957. (auto/ok-bad-lib-extract)
+  required. (auto/ok-bad-lib-extract)
 
 - [x] 🟢 **`capstone-pipeline` governance LimitRange — RFC #294 fan-out completion**
   (CHARTER **Core Values** §"Fits the 16 GB reality" + §"Everything as code; GitOps
