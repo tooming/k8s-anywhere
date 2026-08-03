@@ -232,6 +232,69 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump Harbor chart `1.19.1` → `1.19.2`** (CHARTER **Core Values**
+  §"Everything as code" + general hardening; planner gap-analysis sweep 2026-08-03 —
+  the architect-fallback ADR upstream sweep (`routines/architect.prompt.md` STEP 1)
+  checked all 17 checklist components plus Harbor/Garage directly; every other
+  component was already current, this was the one real delta. **No prerequisites —
+  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004): a
+  full clone of `github.com/goharbor/harbor-helm` shows `v1.19.2` tagged and
+  published 2026-08-03 (same day), one patch ahead of this lab's pinned `1.19.1`
+  (`gitops/platform/harbor.yaml`). `git diff v1.19.1 v1.19.2 -- Chart.yaml
+  values.yaml` on that real clone shows: `appVersion: 2.15.1` → `2.15.2` (every
+  component image tag bumped `v2.15.1` → `v2.15.2` — `nginx`, `portal`, `core`,
+  `jobservice`, `registry`/`registryctl`, `trivy` adapter, `database`, `redis`,
+  `exporter`); and one structural change — the bundled cache's image repository
+  changed from `docker.io/goharbor/redis-photon` to
+  `docker.io/goharbor/valkey-photon` (upstream's own bundled-cache image switching
+  base, unrelated to this lab's separate ADR-0018 Valkey-not-Redis choice for the
+  platform-wide cache — this is Harbor's *own* internal instance, `redis.type:
+  internal`, per the ADR-0024 exception documented in `harbor.yaml`'s header
+  comment). No `values.yaml` key was added, removed, or renamed — every key this
+  Application's `valuesObject` sets (`expose`, `trivy.enabled`, `notary.enabled`,
+  `persistence.imageChartStorage`, `database.type`, `redis.type`, `registry`,
+  `core`, `jobservice`, `portal`, `metrics.enabled`) is unchanged in shape. ADR-0024's
+  Re-evaluation log's most recent entry (audit #774, 2026-07-28) confirmed
+  `1.19.1`/`appVersion 2.15.1` already sat past CVE-2026-4404's fix floor
+  (`2.15.1`+) with a flip condition of "a future chart bump ever drops or
+  overrides `existingSecretAdminPassword`, or a new CVE is disclosed against
+  `2.15.1`+" — neither triggers here (no CVE against `2.15.2`; the diff above
+  shows `existingSecretAdminPassword`/`existingSecretAdminPasswordKey` untouched
+  by the chart bump), so this is a routine currency bump, not a CVE response —
+  same "smallest safe delta, bug-fix-only" pattern as the `kro 0.9.2→0.9.3` bump.
+
+  Bump `gitops/platform/harbor.yaml`'s `targetRevision: 1.19.1` → `1.19.2`.
+  Update `docs/dependency-tree.md`'s harbor bullet (line ~318), which cites the
+  chart version explicitly (`v1.19.1` → `v1.19.2`) — **while there, also fix a
+  separate, pre-existing inaccuracy in the same sentence found during this
+  verification**: it currently says Harbor uses "platform Valkey for cache",
+  which contradicts `harbor.yaml`'s own header comment and `redis.type: internal`
+  setting (Harbor uses its own bundled internal cache instance, not the lab's
+  shared `data`-namespace Valkey — the ADR-0018 exception documented in
+  `harbor.yaml` since 2026-07-21 because ArgoCD's template-only rendering can't
+  resolve the chart's `lookup()`-based external-Valkey wiring); correct the
+  phrase to describe the bundled internal cache instead (e.g. "bundled internal
+  cache, `redis.type: internal` — an ADR-0018 exception, ADR-0024 §recorded").
+  Tighten `tests/harbor.bats`'s existing chart-pin assertion (`"harbor
+  Application pins a specific 1.19.x chart version"`, currently the loose regex
+  `1\.19\.`) to assert the specific patch `targetRevision: 1\.19\.2` — a
+  recurrence guard mirroring this repo's other per-component exact-version pin
+  assertions (matches the kro/cert-manager precedent). Add a new dated entry to
+  ADR-0024's `## Re-evaluation log` (after the existing 2026-07-28 audit #774
+  entry) recording this bump, citing the appVersion bump + the redis→valkey
+  bundled-image change, with a new flip condition for the next audit (e.g.
+  "revisit when a Harbor security advisory names a version at or above
+  `2.15.2` as affected"). `make ci` must pass. PR body must document the diff
+  findings above, why `1.19.2` (smallest safe delta, non-security), and the
+  ADR-0004 caveat that this remote clusterless session cannot verify Harbor
+  starts cleanly post-bump on a live cluster (Harbor is on-demand/never
+  auto-synced per ADR-0024, so this bump has zero live-cluster blast radius
+  until the maintainer next runs `make harbor-up`) — call out the rollback path
+  (revert `targetRevision`; next `make harbor-up` picks up the reverted chart;
+  no data loss since Harbor's registry/database state lives in Garage S3 plus
+  a PVC-backed internal Postgres, both untouched by a chart-version revert).
+  `docs/done/` entry required. (auto/harbor-chart-1-19-2)
+
 - [x] 🟢 **Bump cert-manager chart `1.21.0` → `1.21.1`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC #933 — architect decision
   2026-07-31, ADR-0028 audit #931 resolved as **Convert**. **No prerequisites —
