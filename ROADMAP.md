@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump Harbor chart `1.19.1` → `1.19.2`** (CHARTER **Core Values**
+- [x] 🟢 **Bump Harbor chart `1.19.1` → `1.19.2`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; planner gap-analysis sweep 2026-08-03 —
   the architect-fallback ADR upstream sweep (`routines/architect.prompt.md` STEP 1)
   checked all 17 checklist components plus Harbor/Garage directly; every other
