@@ -155,6 +155,10 @@ docs-done-pr-link-check: ## Check every docs/done/*.md file's "## PR" section is
 kustomize-orphan-check: ## Check every file next to a kustomization.yaml is referenced by it (no dead/orphaned manifests, drift detector)
 	@bash scripts/kustomize-orphan-check.sh
 
+.PHONY: yqs-lib-check
+yqs-lib-check: ## Check no scripts/*.sh defines its own local yqs() helper instead of sourcing scripts/lib/yq.sh (drift detector)
+	@bash scripts/yqs-lib-check.sh
+
 ##@ Quality gates (clusterless; run on every commit + in CI)
 
 .PHONY: lint
@@ -212,6 +216,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/context-doc-version-sync-check.sh
 	@bash scripts/docs-done-pr-link-check.sh
 	@bash scripts/kustomize-orphan-check.sh
+	@bash scripts/yqs-lib-check.sh
 	@bash scripts/drift-detectors-tests-check.sh
 	@bash scripts/hook-scripts-coverage-tests-check.sh
 	@bash scripts/ci-parity-check.sh
