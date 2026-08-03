@@ -181,3 +181,24 @@ default — so the deployment would have been unaffected by the underlying
 weakness even on an older chart. **Flip condition:** a future chart bump ever
 drops or overrides `existingSecretAdminPassword`, or a new CVE is disclosed
 against `2.15.1`+.
+
+### 2026-08-03 — chart bump `1.19.1` → `1.19.2`, currency only (not a re-audit)
+
+**Trigger.** Planner gap-analysis sweep (real upstream check, not training
+knowledge): `github.com/goharbor/harbor-helm` tagged `v1.19.2` the same day
+(`appVersion: 2.15.1` → `2.15.2`), one patch ahead of this lab's pin. `git diff
+v1.19.1 v1.19.2` on a real clone shows every component image tag bumped
+`v2.15.1` → `v2.15.2`, plus one structural note: the bundled cache's image
+repository changed from `docker.io/goharbor/redis-photon` to
+`docker.io/goharbor/valkey-photon` upstream — still Harbor's own bundled
+internal instance (`redis.type: internal`, the ADR-0018 exception recorded
+above), not a change to the platform Valkey relationship. No CVE against
+`2.15.2` — this bump doesn't answer the 2026-07-28 audit's flip condition, it
+is routine chart currency, tracked here for the same reason every other
+chart-pin bump in this repo logs its dated trail.
+
+**Decision: Bump (not a Keep/Supersede/Convert audit outcome).** Chart bumped
+to `1.19.2`. **Flip condition for the next CVE-style audit:** unchanged from
+the 2026-07-28 entry above — revisit if `existingSecretAdminPassword` is ever
+dropped/overridden by a future bump, or a new CVE is disclosed against
+`2.15.2`+.
