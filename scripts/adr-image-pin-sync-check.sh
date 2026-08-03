@@ -22,8 +22,6 @@ set -uo pipefail
 # ROOT defaults to the repo; tests point ADRIMAGEPINCHECK_ROOT at a fixture tree.
 ROOT="${ADRIMAGEPINCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
-ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
-bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 ADR_DIR="$ROOT/docs/decisions"
 if [ ! -d "$ADR_DIR" ]; then

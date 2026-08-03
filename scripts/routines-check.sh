@@ -25,7 +25,6 @@ ROOT="${ROUTINESCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 SNAP="$ROOT/.routines-applied"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -d "$ROOT/routines" ] || exit 0
 

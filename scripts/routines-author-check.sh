@@ -53,7 +53,6 @@ ROOT="${ROUTINES_AUTHOR_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 CLOUD_ID="Claude <noreply@anthropic.com>"   # the executor's commit identity
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 # The only file whose content must be applied to a live trigger to take effect.
 is_routine(){ case "$1" in routines.yaml) return 0;; *) return 1;; esac; }

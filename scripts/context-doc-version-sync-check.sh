@@ -16,8 +16,6 @@ set -uo pipefail
 ROOT="${CONTEXTDOCCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/yq.sh"
-ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
-bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 CONTEXT_MD="$ROOT/docs/decisions/context.md"
 if [ ! -f "$CONTEXT_MD" ]; then

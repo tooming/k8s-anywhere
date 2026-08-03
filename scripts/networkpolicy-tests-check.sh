@@ -22,7 +22,6 @@ ROOT="${NETPOL_TESTS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 FILE="$ROOT/tests/networkpolicy.bats"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -f "$FILE" ] || { echo "no tests/networkpolicy.bats — nothing to check"; exit 0; }
 

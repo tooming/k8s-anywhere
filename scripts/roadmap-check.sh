@@ -14,7 +14,6 @@ ROOT="${ROADMAPCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 FILE="$ROOT/ROADMAP.md"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -f "$FILE" ] || { echo "no ROADMAP.md — nothing to check"; exit 0; }
 

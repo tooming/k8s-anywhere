@@ -19,7 +19,6 @@ ROOT="${YQRAW_CHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 TESTS_DIR="$ROOT/tests"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -d "$TESTS_DIR" ] || { echo "no tests/ dir — nothing to check"; exit 0; }
 
