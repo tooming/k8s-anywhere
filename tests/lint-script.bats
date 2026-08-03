@@ -94,7 +94,7 @@ setup() {
   [ "$status" -eq 0 ]
   run grep -q 'lint: FAIL' "$LINT"
   [ "$status" -eq 0 ]
-  run grep -q 'exit "\$rc"' "$LINT"
+  run grep -q 'exit "\$drift"' "$LINT"
   [ "$status" -eq 0 ]
 }
 

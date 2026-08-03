@@ -11,11 +11,11 @@ cd "$ROOT" || exit 1
 
 # Severity gate for shellcheck: warnings + errors fail; info/style are advisory.
 SHELLCHECK_SEVERITY="${SHELLCHECK_SEVERITY:-warning}"
-rc=0
+drift=0
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 ok()   { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
-bad()  { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; rc=1; }
+bad()  { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 skip() { printf '  %s·%s %s\n' "$Y" "$Z" "$1"; }
 
 # need <tool>: 0 if present. If missing: hard-fail under CI, else mark skip.
@@ -48,5 +48,5 @@ if need yamllint; then
 fi
 
 echo
-[ "$rc" -eq 0 ] && printf '%s%slint: PASS%s\n' "$B" "$G" "$Z" || printf '%s%slint: FAIL%s\n' "$B" "$R" "$Z"
-exit "$rc"
+[ "$drift" -eq 0 ] && printf '%s%slint: PASS%s\n' "$B" "$G" "$Z" || printf '%s%slint: FAIL%s\n' "$B" "$R" "$Z"
+exit "$drift"
