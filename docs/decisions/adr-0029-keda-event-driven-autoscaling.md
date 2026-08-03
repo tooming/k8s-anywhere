@@ -198,6 +198,24 @@ config, regardless of chart version.
 `TriggerAuthentication` is ever changed to use `spec.hashiCorpVault`, or (b) a
 new CVE is filed against a KEDA version above `2.20.1`.
 
+### 2026-08-03 — chart bump `2.20.1` → `2.20.2`, currency only (not a re-audit)
+
+**Trigger.** Upgrade-drafter routine sweep (real upstream check, not training
+knowledge): `github.com/kedacore/charts` tags `v2.20.2` (confirmed via `git
+diff v2.20.1 v2.20.2` on a real clone of the chart repo). Chart version and
+appVersion track 1:1 for KEDA (`2.20.1` → `2.20.2` on both). `values.yaml`
+diff is purely additive — three new optional `http.maxIdleConns`/
+`maxIdleConnsPerHost`/`idleConnTimeout` keys with defaults, no key removed or
+renamed. No CVE against `2.20.2` — this bump doesn't answer the 2026-07-27
+audit's flip condition above, it is routine chart currency.
+
+**Decision: Bump (not a Keep/Supersede/Convert audit outcome).** Chart
+bumped to `2.20.2`. **Flip condition for the next CVE-style audit:**
+unchanged in kind from the 2026-07-27 entry above, now against the `2.20.2`
+floor — revisit if this lab's `TriggerAuthentication` is ever changed to use
+`spec.hashiCorpVault`, or a new CVE is filed against a KEDA version above
+`2.20.2`.
+
 ---
 
 ## Files this work will touch
