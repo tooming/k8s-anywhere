@@ -58,3 +58,39 @@ setup() {
   count="$(grep -rl 'source "\$(dirname "\${BASH_SOURCE\[0\]}")/lib/colors.sh"' "$REPO/scripts" | wc -l)"
   [ "$count" -ge 10 ]
 }
+
+# --- ok()/bad() shared printers (extracted from ~19 scripts, issue #957) -----
+
+@test "colors.sh defines ok() and bad()" {
+  run grep -q '^ok()' "$REPO/scripts/lib/colors.sh"
+  [ "$status" -eq 0 ]
+  run grep -q '^bad()' "$REPO/scripts/lib/colors.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "ok(): prints the message, no side effect on drift" {
+  source "$REPO/scripts/lib/colors.sh"
+  drift=0
+  # Plain redirection (not command substitution / a pipeline) keeps this call
+  # in the current shell, so a side-effect assignment inside ok()/bad() would
+  # still be visible on $drift below — command substitution would fork a
+  # subshell and silently hide it.
+  ok "all good" > "$BATS_TEST_TMPDIR/out"
+  grep -q "all good" "$BATS_TEST_TMPDIR/out"
+  [ "$drift" -eq 0 ]
+}
+
+@test "bad(): prints the message AND sets the caller's drift variable" {
+  source "$REPO/scripts/lib/colors.sh"
+  drift=0
+  bad "went wrong" > "$BATS_TEST_TMPDIR/out"
+  grep -q "went wrong" "$BATS_TEST_TMPDIR/out"
+  [ "$drift" -eq 1 ]
+}
+
+@test "bad(): sets drift even if it was never initialized (matches prior per-script behavior)" {
+  source "$REPO/scripts/lib/colors.sh"
+  unset drift
+  bad "went wrong" > "$BATS_TEST_TMPDIR/out"
+  [ "$drift" -eq 1 ]
+}

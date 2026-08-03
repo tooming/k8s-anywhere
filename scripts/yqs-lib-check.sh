@@ -23,7 +23,6 @@ ROOT="${YQSLIB_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 SCRIPTS_DIR="$ROOT/scripts"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 [ -d "$SCRIPTS_DIR" ] || { echo "no scripts/ dir — nothing to check"; exit 0; }
 

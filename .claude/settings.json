@@ -177,6 +177,12 @@
             "command": "bash scripts/yqs-lib-sync-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking for a duplicated yqs() helper"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/ok-bad-lib-sync-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking for a duplicated ok()/bad() helper"
           }
         ]
       },

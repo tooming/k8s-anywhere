@@ -3510,7 +3510,7 @@ You review and merge plan PRs, same as implementation PRs.
   actual pass/fail behavior is unchanged — verify each one still exits the same
   way before/after). `docs/done/` entry required. (auto/scripts-drift-var-rename)
 
-- [ ] 🟢 **Extract shared `ok()`/`bad()` helpers to `scripts/lib/colors.sh`; add a
+- [x] 🟢 **Extract shared `ok()`/`bad()` helpers to `scripts/lib/colors.sh`; add a
   recurrence guard** (janitor finding, issue #957; **pick up ONLY after
   `auto/scripts-drift-var-rename` merges** — every `scripts/*.sh` defining its
   own `bad()` must already use `drift` as the failure-flag variable name before

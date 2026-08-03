@@ -22,8 +22,6 @@ kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
-bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 note(){ printf '      %s%s%s\n' "$Y" "$1" "$Z"; }
 
 # retry <timeout_s> <interval_s> <predicate-fn> : 0 if predicate succeeds in time

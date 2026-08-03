@@ -13,7 +13,6 @@ README="$ROOT/README.md"
 MK="$ROOT/Makefile"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
-bad(){ printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 hint(){ printf '  %s·%s %s\n' "$Y" "$Z" "$1"; }
 
 [ -f "$README" ] || { echo "no README.md"; exit 0; }

@@ -26,8 +26,6 @@ set -uo pipefail
 ROOT="${ADRCHARTVERSIONCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/yq.sh"
-ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
-bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 ADR_DIR="$ROOT/docs/decisions"
 if [ ! -d "$ADR_DIR" ]; then
