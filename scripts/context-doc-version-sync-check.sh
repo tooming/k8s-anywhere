@@ -15,6 +15,7 @@
 set -uo pipefail
 ROOT="${CONTEXTDOCCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/yq.sh"
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
@@ -32,14 +33,6 @@ if ! command -v yq >/dev/null 2>&1; then
   echo "yq not installed — skipping context.md version sync check (install to check locally)"
   exit 0
 fi
-
-yqs() {
-  local out rc
-  out="$(yq "$@" 2>/dev/null)"; rc=$?
-  [ "$rc" -eq 0 ] || return "$rc"
-  out="${out%\"}"; out="${out#\"}"
-  printf '%s\n' "$out"
-}
 
 drift=0
 printf '%s== context.md version sync ==%s\n' "$B" "$Z"

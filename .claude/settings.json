@@ -171,6 +171,12 @@
             "command": "bash scripts/context-doc-version-sync-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking context.md version sync"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/yqs-lib-sync-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking for a duplicated yqs() helper"
           }
         ]
       },

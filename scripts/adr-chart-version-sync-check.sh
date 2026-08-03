@@ -25,6 +25,7 @@ set -uo pipefail
 # ROOT defaults to the repo; tests point ADRCHARTVERSIONCHECK_ROOT at a fixture tree.
 ROOT="${ADRCHARTVERSIONCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/yq.sh"
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
@@ -42,17 +43,6 @@ if ! command -v yq >/dev/null 2>&1; then
   echo "yq not installed — skipping ADR chart-version sync check (install to check locally)"
   exit 0
 fi
-
-# yq-variant-robust scalar read (mikefarah yq prints raw, python-yq JSON-quotes
-# — mirrors tests/lib/yq.bash's yqs() helper; deliberately no "eval"/"eval-all"
-# keyword, which python-yq does not support as a subcommand).
-yqs() {
-  local out rc
-  out="$(yq "$@" 2>/dev/null)"; rc=$?
-  [ "$rc" -eq 0 ] || return "$rc"
-  out="${out%\"}"; out="${out#\"}"
-  printf '%s\n' "$out"
-}
 
 drift=0
 found=0
