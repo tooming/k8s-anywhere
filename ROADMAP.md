@@ -232,6 +232,52 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump `kiali-server` chart `2.29.0` → `2.30.0`** (CHARTER **Core Values**
+  §"Everything as code" + general hardening; ADR-0012's own Re-evaluation log flip
+  condition ("revisit when a Kiali-specific CVE is published against `kiali-server`
+  at or above `2.29.0`") has fired — planner-fallback upstream check 2026-08-04
+  (reached via `executor.prompt.md` STEP 6b, Now/next starved by #631/#633). **No
+  prerequisites — executor may pick up immediately.**) Verified directly (not
+  assumed, ADR-0004): a real clone of `github.com/kiali/helm-charts` shows `v2.30.0`
+  as a genuine tag past the currently-pinned `v2.29.0` (both non-`-master` stable
+  tags); a real clone of the `kiali/kiali` app repo (same versioning — chart version
+  tracks app version 1:1 in this project, confirmed at the prior `1.89.8`→`2.29.0`
+  Convert audit too) shows `git log v2.29.0..v2.30.0` contains three named CVE fixes
+  in Kiali's bundled frontend dependencies: **CVE-2026-59877** (`protobufjs` →
+  `7.6.5`), **CVE-2026-49978** (`dompurify` → `3.4.7+`), and **CVE-2026-59869**
+  (`js-yaml` → `4.3.0`) — each affects versions up to and including `2.29.0` and is
+  fixed in `2.30.0`, which is exactly ADR-0012's recorded flip condition. The rest of
+  the `v2.29.0..v2.30.0` range is feature work (opt-in OpenShift impersonation mode,
+  Gateway API TCPRoute/UDPRoute support, Ambient-mesh validation improvements) plus
+  CI/chore commits — none of it touches this lab's `valuesObject` keys (`auth.strategy`,
+  `external_services.prometheus.{url,custom_headers}`, `external_services.tracing.enabled`,
+  `deployment.resources`); the new opt-in `auth.openshift.impersonation.*` block this
+  lab doesn't set stays at its (still-present) default.
+
+  Bump `gitops/platform/kiali.yaml`'s `targetRevision: 2.29.0` → `2.30.0`. Re-verify
+  directly at pickup time that the `2.30.0` chart's `values.yaml` still contains every
+  key this Application's `valuesObject` sets unchanged in shape (same due-diligence
+  pattern as the Harbor/cert-manager/kro bumps). Update `tests/platform.bats`'s
+  `"kiali Application pins kiali-server chart 2.29.0"` assertion to assert `2.30.0`
+  instead — a recurrence guard mirroring this repo's other per-component
+  exact-version pin assertions. Update `docs/dependency-tree.md`'s kiali bullet
+  (line ~326), which cites the chart version explicitly (`v2.29.0` → `v2.30.0`). Add
+  a new dated entry to ADR-0012's `## Re-evaluation log` (after the existing
+  2026-07-28 audit #778 entry) recording this bump, citing the three CVE IDs above
+  and the CVE-fix-floor reasoning, with a new flip condition for the next audit
+  (e.g. "revisit when a Kiali-specific CVE is published against `kiali-server` at or
+  above `2.30.0`, or the chart repo prunes `2.30.0` itself"). `make ci` must pass. PR
+  body must document the three CVEs, why `2.30.0` (smallest safe delta that clears
+  the CVE floor — the next tag is a real minor bump, not a patch, but Kiali's
+  versioning scheme doesn't publish narrower patch releases for the `2.29.x` line),
+  and the ADR-0004 caveat that this remote clusterless session cannot verify Kiali's
+  UI starts cleanly post-bump on a live cluster (Kiali is on-demand/never
+  auto-synced per ADR-0012, so this bump has zero live-cluster blast radius until
+  the maintainer next runs `make kiali-up`) — call out the rollback path (revert
+  `targetRevision`; next `make kiali-up` picks up the reverted chart; Kiali is a
+  stateless UI/API service reading from Prometheus, so a revert recovers immediately
+  with no data loss). `docs/done/` entry required. (auto/kiali-chart-2-30-0)
+
 - [x] 🟢 **Bump Harbor chart `1.19.1` → `1.19.2`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; planner gap-analysis sweep 2026-08-03 —
   the architect-fallback ADR upstream sweep (`routines/architect.prompt.md` STEP 1)
