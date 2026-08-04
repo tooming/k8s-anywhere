@@ -20,6 +20,7 @@ case "$SCOPE" in
 esac
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
 phase(){ printf '\n%s========== %s ==========%s\n' "$B" "$1" "$Z"; }
 hms(){ printf '%dm%02ds' $(( $1/60 )) $(( $1%60 )); }
 
@@ -28,15 +29,8 @@ printf '  will wipe : %s\n' "$WIPE"
 printf '  rebuild   : make up (from code)\n'
 printf '  est. time : %s\n' "$EST"
 
-if [ "${DR_ASSUME_YES:-0}" != "1" ]; then
-  if [ -t 0 ]; then
-    printf '%sThis destroys the running lab.%s ' "$R$B" "$Z"
-    read -r -p "Type 'dr' to start the drill: " ans
-    [ "$ans" = "dr" ] || { echo "aborted."; exit 1; }
-  else
-    echo "Refusing non-interactively without DR_ASSUME_YES=1." >&2; exit 1
-  fi
-fi
+confirm_or_abort "$(printf '%sThis destroys the running lab.%s ' "$R$B" "$Z")" \
+  "dr" "to start the drill"
 export DR_ASSUME_YES=1   # children inherit the go-ahead
 
 START=$SECONDS

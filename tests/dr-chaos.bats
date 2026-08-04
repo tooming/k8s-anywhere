@@ -37,13 +37,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dr-chaos.sh has a DR_ASSUME_YES non-interactive confirmation guard" {
-  run grep -q 'DR_ASSUME_YES' "$SCRIPT"
+@test "dr-chaos.sh sources the shared confirm lib" {
+  run grep -q 'lib/confirm.sh' "$SCRIPT"
   [ "$status" -eq 0 ]
 }
 
-@test "dr-chaos.sh refuses to run non-interactively without DR_ASSUME_YES=1" {
-  run grep -q 'Refusing non-interactively without DR_ASSUME_YES=1' "$SCRIPT"
+@test "dr-chaos.sh uses the shared confirm_or_abort guard" {
+  run grep -q 'confirm_or_abort' "$SCRIPT"
   [ "$status" -eq 0 ]
 }
 

@@ -29,6 +29,7 @@ MIN_UPTIME="${MIN_UPTIME:-99.0}"
 MAX_OUTAGE="${MAX_OUTAGE:-2.0}"
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
 phase(){ printf '\n%s========== %s ==========%s\n' "$B" "$1" "$Z"; }
 probe(){ curl -s -o /dev/null -w '%{http_code}' --max-time 8 -H "Host: $CANARY_HOST" "http://localhost:$FRONTDOOR_PORT/" 2>/dev/null || echo 000; }
 
@@ -37,15 +38,8 @@ printf '  order : serving-green -> cutover -> %sDELETE BLUE%s -> promote green t
 printf '  guard : serving stays up the whole time (probe must show >=%s%% uptime)\n' "$MIN_UPTIME"
 printf '  note  : brief observability gap after blue is gone until green finishes full sync\n'
 
-if [ "${DR_ASSUME_YES:-0}" != "1" ]; then
-  if [ -t 0 ]; then
-    printf '%sThis DELETES the blue cluster (after a verified cutover).%s ' "$R$B" "$Z"
-    read -r -p "Type 'promote' to run: " ans
-    [ "$ans" = "promote" ] || { echo "aborted."; exit 1; }
-  else
-    echo "Refusing non-interactively without DR_ASSUME_YES=1." >&2; exit 1
-  fi
-fi
+confirm_or_abort "$(printf '%sThis DELETES the blue cluster (after a verified cutover).%s ' "$R$B" "$Z")" \
+  "promote" "to run"
 export DR_ASSUME_YES=1
 
 START=$SECONDS
