@@ -26,3 +26,9 @@ fi
 # wrinkle this extraction avoids by design (see scripts/ok-bad-lib-check.sh).
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
+
+# Shared phase() section-header printer — sourced, not executed. Duplicated
+# identically across scripts/dr-bluegreen.sh, scripts/dr-bluegreen-promote.sh,
+# and scripts/dr-test.sh before this extraction (janitor duplication sweep,
+# mirrors the ok()/bad() precedent above).
+phase(){ printf '\n%s========== %s ==========%s\n' "$B" "$1" "$Z"; }

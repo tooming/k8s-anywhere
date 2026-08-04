@@ -26,12 +26,10 @@ MIN_UPTIME="${MIN_UPTIME:-99.0}"   # PASS threshold (%)
 MAX_OUTAGE="${MAX_OUTAGE:-2.0}"    # PASS threshold (seconds)
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
-phase(){ printf '\n%s========== %s ==========%s\n' "$B" "$1" "$Z"; }
-probe(){ curl -s -o /dev/null -w '%{http_code}' --max-time 8 -H "Host: $CANARY_HOST" "http://localhost:$FRONTDOOR_PORT/" 2>/dev/null || echo 000; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/canary-probe.sh"
 
 START=$SECONDS
 PROBE_PID=""
-stop_probe(){ [ -n "$PROBE_PID" ] && kill -TERM "$PROBE_PID" 2>/dev/null || true; }
 fail(){ stop_probe; printf '\n%s%sBLUE/GREEN DR FAILED%s at: %s  (elapsed %ds)\n' "$B" "$R" "$Z" "$1" "$((SECONDS-START))"; exit 1; }
 
 printf '%s== BLUE/GREEN DR DRILL ==%s  stable endpoint :%s, canary Host %s\n' "$B" "$Z" "$FRONTDOOR_PORT" "$CANARY_HOST"
