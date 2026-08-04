@@ -140,8 +140,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dr-bluegreen-promote.sh exits non-zero when run non-interactively without guard" {
-  run grep -q 'Refusing non-interactively' "$PROMOTE"
+@test "dr-bluegreen-promote.sh sources the shared confirm lib" {
+  run grep -q 'lib/confirm.sh' "$PROMOTE"
   [ "$status" -eq 0 ]
 }
 

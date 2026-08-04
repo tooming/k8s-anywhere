@@ -23,18 +23,12 @@ CLUSTER_NAME="k8s-lab"
 case "$SCOPE" in cluster|full|machine) ;; *) echo "unknown SCOPE '$SCOPE' (cluster|full|machine)" >&2; exit 2;; esac
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
 step(){ printf '%s[destroy:%s]%s %s\n' "$Y" "$SCOPE" "$Z" "$1"; }
 
 # confirmation (dr-test sets DR_ASSUME_YES=1 after its own single prompt)
-if [ "${DR_ASSUME_YES:-0}" != "1" ]; then
-  printf '%sThis DESTROYS the lab (scope=%s) so it can be rebuilt from scratch.%s\n' "$R$B" "$SCOPE" "$Z"
-  if [ -t 0 ]; then
-    read -r -p "Type 'destroy' to continue: " ans
-    [ "$ans" = "destroy" ] || { echo "aborted."; exit 1; }
-  else
-    echo "Refusing non-interactively without DR_ASSUME_YES=1." >&2; exit 1
-  fi
-fi
+confirm_or_abort "$(printf '%sThis DESTROYS the lab (scope=%s) so it can be rebuilt from scratch.%s\n' "$R$B" "$SCOPE" "$Z")" \
+  "destroy"
 
 tg_destroy(){ # best-effort terragrunt destroy of a unit
   local unit="$1"

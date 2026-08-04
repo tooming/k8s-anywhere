@@ -26,19 +26,10 @@ BUDGET_S=120
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/budget-check.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
 
-# confirmation (DR_ASSUME_YES=1 bypasses for non-interactive/scripted use,
-# mirrors dr-destroy.sh's confirmation-prompt precedent for a destructive action)
-if [ "${DR_ASSUME_YES:-0}" != "1" ]; then
-  printf '%sThis DELETES a live pod in the %s namespace to test self-heal.%s\n' "$R$B" "$NAMESPACE" "$Z"
-  if [ -t 0 ]; then
-    read -r -p "Type 'chaos' to continue: " ans
-    [ "$ans" = "chaos" ] || { echo "aborted."; exit 1; }
-  else
-    echo "Refusing non-interactively without DR_ASSUME_YES=1." >&2
-    exit 1
-  fi
-fi
+confirm_or_abort "$(printf '%sThis DELETES a live pod in the %s namespace to test self-heal.%s\n' "$R$B" "$NAMESPACE" "$Z")" \
+  "chaos"
 
 echo ""
 printf '%s== Chaos drill: kill a random %s pod, assert self-heal (budget %ds) ==%s\n' \

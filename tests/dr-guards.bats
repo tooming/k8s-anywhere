@@ -37,3 +37,9 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   [ "$status" -eq 1 ]
   [[ "$output" == *"Refusing non-interactively"* ]]
 }
+
+@test "dr-chaos.sh: refuses non-interactively without DR_ASSUME_YES" {
+  run env -u DR_ASSUME_YES bash "$REPO/scripts/dr-chaos.sh" </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Refusing non-interactively"* ]]
+}
