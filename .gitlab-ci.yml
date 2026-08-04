@@ -34,7 +34,13 @@ stages:
   - sign
 
 variables:
-  REGISTRY: "harbor.127.0.0.1.nip.io"
+  # :8080 is required — that's the actual published host port for the k3d gateway
+  # (infra/modules/k3d-cluster/variables.tf http_port, fixed at 8080). Without an
+  # explicit port, `docker login`/`push` default to port 80 over plain HTTP, which
+  # nothing listens on from the runner's job containers (found live 2026-08-03: they
+  # run as Docker siblings, not on the Mac host, so the bare hostname resolves to the
+  # gitlab_default bridge gateway on port 80, not the k3d LB's published :8080).
+  REGISTRY: "harbor.127.0.0.1.nip.io:8080"
   IMAGE_NAME: "library/hello"
 
 build-and-push:
@@ -55,7 +61,7 @@ build-and-push:
     # Allow HTTP pushes to the in-lab registry (no TLS on the nip.io route).
     - name: docker:29-dind
       alias: docker
-      command: ["--insecure-registry=harbor.127.0.0.1.nip.io"]
+      command: ["--insecure-registry=harbor.127.0.0.1.nip.io:8080"]
   variables:
     DOCKER_HOST: "tcp://docker:2375"
     DOCKER_TLS_CERTDIR: ""

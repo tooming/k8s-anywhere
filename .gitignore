@@ -28,6 +28,7 @@ gitlab/logs/
 gitlab/tls/
 gitlab/config/
 gitlab/.gitlab-token
+gitlab/runner-config/
 
 # OS / editor
 .DS_Store
