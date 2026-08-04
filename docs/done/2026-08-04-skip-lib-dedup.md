@@ -58,4 +58,4 @@ the full suite runs in GitHub Actions per `CLAUDE.md`).
 
 ## PR
 
-(filled in after PR creation)
+[#984](https://github.com/tooming/k8s-anywhere/pull/984)
