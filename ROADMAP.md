@@ -3601,6 +3601,66 @@ You review and merge plan PRs, same as implementation PRs.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
+- [ ] 🟢 **Chaos / fault-injection drill — `make dr-chaos`** (CHARTER **Goals**
+  §"operational-resilience discipline" + §"DR / blue-green on a single host" — DORA's
+  Pillar 3 "digital operational resilience testing" (TLPT — threat-led penetration
+  testing — concept); planner-fallback gap analysis 2026-08-04, reached via
+  `executor.prompt.md` STEP 6b after all three standing "Now / next" items were found
+  gated on unconfirmed maintainer-confirmation issues #631/#633 (unchanged since the
+  prior planner-fallback pass this same run — re-checked both issues' comments, no new
+  confirmation) with no live-state-safe slice to split off. **No prerequisites —
+  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004):
+  `docs/dora-audit-readiness.md`'s Q12 ("Is there an adversarial/penetration-style test
+  (DORA's TLPT concept)?") answers "No fault-injection or chaos-engineering scenario
+  exists... the closest analog — blue/green cutover — tests *planned* failover, not an
+  *injected* failure" and its own "Gap" line names the exact scoped fix: "a `make
+  dr-chaos` that kills a random capstone pod during `make capstone-demo` and asserts
+  the Rollout/ArgoCD self-heals within budget." Grepping ROADMAP.md for "chaos"/
+  "fault-inject" turns up nothing already tracking this (the only hit is this same
+  gap's own PR #973 follow-up note). This is real gap-analysis output the audit doc
+  itself flags as "a reasonable, scoped future ROADMAP item if you want to close it" —
+  not manufactured filler.
+
+  Add `scripts/dr-chaos.sh` mirroring `scripts/dr-restore.sh`'s style (sources
+  `lib/colors.sh` + `lib/budget-check.sh`; a `BUDGET_S` constant — pick one consistent
+  with the Rollout's own canary/self-heal timing, e.g. 300s, and justify the number in
+  the PR body against `gitops/apps/capstone/rollout.yaml`'s actual canary steps/
+  `progressDeadlineSeconds`, not a guessed value): picks one running capstone pod at
+  random (`kubectl get pods -n capstone -l <rollout label> -o name | shuf -n1`, or the
+  active ReplicaSet's pod if `shuf` isn't guaranteed available — check), deletes it
+  (`kubectl delete pod`), then polls until either (a) a replacement pod reaches Ready
+  and the Rollout/Deployment's available-replica count is back to its pre-injection
+  value within budget (self-heal confirmed, exit 0) or (b) the budget is exceeded
+  (exit 1, mirroring `dr-restore.sh`'s `budget_warn_if_exceeded`/`budget_final_line`
+  pattern). Follow `dr-destroy.sh`'s confirmation-prompt precedent for a destructive
+  action — since this deletes a live capstone pod, gate it the same way (`DR_ASSUME_YES=1`
+  bypass for non-interactive/scripted use, an explicit typed confirmation otherwise).
+  Add `dr-chaos: ## Chaos drill: kill a random capstone pod, assert self-heal within
+  budget (DORA Pillar 3 TLPT concept)` to the Makefile's DR section (on-demand only —
+  do NOT wire into `make up`, `make dr-test`, or `make ci`, same on-demand pattern as
+  `dr-bluegreen`). New `tests/dr-chaos.bats` (clusterless structural, mirrors
+  `tests/dr-bluegreen.bats`'s shape exactly — no live cluster required): script exists
+  + is executable; sources both shared libs; declares a `BUDGET_S` constant; has a
+  `DR_ASSUME_YES`-style non-interactive guard (grep for the same pattern
+  `dr-destroy.sh` uses); Makefile declares the `dr-chaos` target; the target is NOT
+  invoked from `up`, `ci`, or `dr-test`'s own block (mirrors the existing "target is
+  NOT invoked from X (on-demand only)" assertions in `tests/dora-metrics.bats`).
+  Update `docs/DR.md` with a new "Chaos / fault-injection drill" subsection under the
+  existing DR sections explaining what it does, why (TLPT concept, distinct from
+  blue/green's *planned* failover), and its budget. Update
+  `docs/dora-audit-readiness.md`'s Q12 answer from "No fault-injection... exists" to
+  describe the new drill (cite `docs/DR.md` + the script), updating its "Gap" line
+  accordingly — do not overclaim a live-cluster run happened; this remote clusterless
+  session can author and structurally verify the script but cannot execute it against
+  a real cluster (ADR-0004 caveat, same pattern as every other DR-script PR). PR body
+  must state the chosen `BUDGET_S` value's justification and the rollback/safety story
+  (worst case: the deleted pod's ReplicaSet/Rollout recreates it exactly as ArgoCD/
+  Kubernetes already guarantee for any pod deletion — this script only *observes and
+  times* that self-heal, it doesn't change cluster behavior itself, so there is no
+  new failure mode beyond "one capstone pod restarts," an event the lab already
+  tolerates routinely). `make ci` must pass. `docs/done/` entry required.
+  (auto/dr-chaos-fault-injection)
+
 - [x] 🟢 **Incident classification (severity) scheme + incident log** (CHARTER
   **Goals** §"operational-resilience discipline" — DORA's incident-management pillar
   mapped onto concrete practice; planner-fallback gap analysis 2026-08-04, reached via
