@@ -1,0 +1,65 @@
+#!/usr/bin/env bats
+# Structural coverage for docs/incident-log.md (ROADMAP "Incident classification
+# (severity) scheme + incident log" item, DORA audit readiness Q6/Q8). Clusterless —
+# every assertion is a grep against real, committed doc content, never a live-cluster
+# check.
+
+setup() {
+  REPO="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+  DOC="$REPO/docs/incident-log.md"
+  AUDIT="$REPO/docs/dora-audit-readiness.md"
+}
+
+@test "docs/incident-log.md exists" {
+  [ -f "$DOC" ]
+}
+
+@test "incident-log.md defines a P0-P3 severity scheme" {
+  run grep -q '\*\*P0\*\*' "$DOC"
+  [ "$status" -eq 0 ]
+  run grep -q '\*\*P1\*\*' "$DOC"
+  [ "$status" -eq 0 ]
+  run grep -q '\*\*P2\*\*' "$DOC"
+  [ "$status" -eq 0 ]
+  run grep -q '\*\*P3\*\*' "$DOC"
+  [ "$status" -eq 0 ]
+}
+
+@test "incident-log.md names no-paging/no-escalation as an intentional non-goal" {
+  run grep -qi 'non-goal' "$DOC"
+  [ "$status" -eq 0 ]
+}
+
+@test "incident-log.md contains a log-entry template" {
+  run grep -q 'How to log a new incident' "$DOC"
+  [ "$status" -eq 0 ]
+  run grep -q 'Root cause' "$DOC"
+  [ "$status" -eq 0 ]
+}
+
+@test "incident-log.md backfills the real incidents found while working #631/#633" {
+  for needle in '#884' '#968' 'Cilium' 'GitLab Runner'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "incident-log.md has no fabricated/placeholder content (ADR-0004)" {
+  run grep -iE '"(fake|mock|placeholder|dummy)"' "$DOC"
+  [ "$status" -ne 0 ]
+}
+
+@test "dora-audit-readiness.md's Q6 answer is no longer 'No'" {
+  # Isolate the Q6 block (up to the next "**Q" heading) and assert it doesn't
+  # contain the old negative answer literal.
+  q6_block=$(awk '/\*\*Q6\./{flag=1} flag{print} /\*\*Q7\./{exit}' "$AUDIT")
+  [ -n "$q6_block" ]
+  ! grep -q '\*\*Answer:\*\* No\.' <<<"$q6_block"
+  grep -q 'incident-log.md' <<<"$q6_block"
+}
+
+@test "dora-audit-readiness.md's Q8 answer references the new incident log" {
+  q8_block=$(awk '/\*\*Q8\./{flag=1} flag{print} /\*\*Q9\./{exit}' "$AUDIT")
+  [ -n "$q8_block" ]
+  grep -q 'incident-log.md' <<<"$q8_block"
+}

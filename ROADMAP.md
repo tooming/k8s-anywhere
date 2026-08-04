@@ -3601,7 +3601,7 @@ You review and merge plan PRs, same as implementation PRs.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
-- [ ] 🟢 **Incident classification (severity) scheme + incident log** (CHARTER
+- [x] 🟢 **Incident classification (severity) scheme + incident log** (CHARTER
   **Goals** §"operational-resilience discipline" — DORA's incident-management pillar
   mapped onto concrete practice; planner-fallback gap analysis 2026-08-04, reached via
   `executor.prompt.md` STEP 6b after all three standing "Now / next" items were found

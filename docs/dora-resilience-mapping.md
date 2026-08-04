@@ -45,7 +45,10 @@ green, queried from the actual GitHub Actions API, never fabricated. See the
 "Time to restore service" row in [`docs/dora-metrics.md`](dora-metrics.md) —
 regenerate it with `make dora-metrics`; a value of "insufficient data" there
 means exactly that (no `gh`/`jq`, or no CI failures in the window), never an
-invented number.
+invented number. Classification and root-cause logging for live-cluster incidents
+now has its own artifact too: [`docs/incident-log.md`](incident-log.md) defines a
+P0–P3 severity scheme and logs real incidents this lab has actually hit, each cited
+against the issue/PR where it was found and fixed.
 
 ## Pillar 3 — Digital operational resilience testing
 
