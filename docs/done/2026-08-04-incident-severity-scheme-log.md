@@ -58,4 +58,4 @@ GitHub Actions). Zero live-cluster blast radius — no `gitops/` files touched.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/973
