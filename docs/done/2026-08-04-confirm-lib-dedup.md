@@ -85,4 +85,4 @@ Actions per CLAUDE.md).
 
 ## PR
 
-(filled in after PR creation)
+[#982](https://github.com/tooming/k8s-anywhere/pull/982)
