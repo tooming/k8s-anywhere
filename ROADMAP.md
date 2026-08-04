@@ -3601,7 +3601,7 @@ You review and merge plan PRs, same as implementation PRs.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
-- [ ] 🟢 **Chaos / fault-injection drill — `make dr-chaos`** (CHARTER **Goals**
+- [x] 🟢 **Chaos / fault-injection drill — `make dr-chaos`** (CHARTER **Goals**
   §"operational-resilience discipline" + §"DR / blue-green on a single host" — DORA's
   Pillar 3 "digital operational resilience testing" (TLPT — threat-led penetration
   testing — concept); planner-fallback gap analysis 2026-08-04, reached via

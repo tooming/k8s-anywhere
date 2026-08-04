@@ -160,14 +160,17 @@ duplicated.
   run; they're just not on a calendar.
 
 **Q12. Is there an adversarial/penetration-style test (DORA's TLPT concept)?**
-- **Answer:** No fault-injection or chaos-engineering scenario exists. The closest
-  analog — blue/green cutover — tests *planned* failover, not an *injected* failure
-  (e.g., killing a pod mid-request, cutting a NetworkPolicy, simulating Garage
-  unavailability).
-- **Evidence:** n/a (absence).
-- **Gap:** real; a reasonable, scoped future ROADMAP item if you want to close it (e.g.,
-  a `make dr-chaos` that kills a random capstone pod during `make capstone-demo` and
-  asserts the Rollout/ArgoCD self-heals within budget).
+- **Answer:** Yes, in a scoped form. `make dr-chaos` (`scripts/dr-chaos.sh`) kills a
+  random capstone pod and asserts a replacement reaches Running within a 120s
+  budget — an *injected* failure, distinct from blue/green's *planned* cutover.
+- **Evidence:** [docs/DR.md](DR.md#chaos--fault-injection-drill-make-dr-chaos);
+  `scripts/dr-chaos.sh`.
+- **Gap:** narrower now — this covers one fault type (a single pod kill) against
+  one component (capstone). Cutting a NetworkPolicy or simulating Garage
+  unavailability, as this question's original framing suggested, are still real,
+  separately-scoped future drills if wanted. This remote clusterless session
+  authored and structurally verified the script but has not executed it against a
+  real cluster (ADR-0004 caveat, same as every other DR-script addition here).
 
 **Q13. Are test results tracked with remediation deadlines?**
 - **Answer:** Pass/fail is enforced by exit codes (CI-style), but there's no historical

@@ -204,6 +204,35 @@ environment (canonical endpoint stays `:8000`; `:8080` is gone with blue).
 (`make dr-bluegreen` alone stops at cutover and keeps blue as a rollback target;
 `make dr-bluegreen-down` reclaims green's RAM.) See ADR-0005.
 
+## Chaos / fault-injection drill (`make dr-chaos`)
+
+The drills above all test *planned* failover — you decide when the disaster
+happens. This one tests an **injected** failure instead (DORA's Pillar 3 "digital
+operational resilience testing" — the TLPT, threat-led penetration testing,
+concept): it kills a running capstone pod at a moment you don't control the
+timing of, then asserts the cluster self-heals within budget.
+
+```sh
+make dr-chaos   # kill a random capstone pod, assert a replacement reaches Running within 120s
+```
+
+What it does: pick one running capstone pod at random (`scripts/dr-chaos.sh`,
+bash `$RANDOM`, no external random-picker dependency), delete it, then poll until
+the pod count is back to its pre-injection value or the budget is exceeded. The
+capstone Rollout runs a **single replica** (no HA — ADR-0005), so this is an
+honest test of *recreate*, not of masking an outage behind a spare replica: there
+*is* a brief gap while Kubernetes reschedules. The 120 s budget is 4x the ~30 s a
+healthy node normally takes to reschedule + restart a pod whose image is already
+cached (the pod we killed was already running it, so no cold image pull is
+needed) — generous enough to absorb a slow node without masking a real
+regression.
+
+This introduces no new failure mode: pod-delete-then-recreate is a guarantee
+Kubernetes' ReplicaSet controller (which the Rollout manages) already provides.
+The drill only *observes and times* that existing guarantee — its only
+real-world side effect is one capstone pod restarting, the same event a node
+drain or an OOM-kill would already cause routinely.
+
 ## Single points of failure (and why true HA isn't possible here)
 
 Once you cut over to green and retire blue, two SPOFs remain — in **different paths**:
