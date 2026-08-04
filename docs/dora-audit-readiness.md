@@ -184,13 +184,18 @@ duplicated.
 ## Pillar 4 — ICT third-party risk management (Ch V)
 
 **Q14. Is there a register of ICT third-party dependencies?**
-- **Answer:** Not as a single consolidated register — but the information exists,
-  scattered across the ADRs in `docs/decisions/`, each naming the chosen tool, its
-  upstream source, rejected alternatives, and why.
-- **Evidence:** `docs/decisions/`; [docs/decisions/README.md](decisions/README.md).
-- **Gap:** real but cheap to close — a `docs/dependency-register.md` tabulating
-  (tool, criticality, upstream source, ADR, last-reviewed date) would turn the existing
-  ADR content into a queryable register without gathering new information.
+- **Answer:** Yes. [`docs/dependency-register.md`](dependency-register.md) tabulates
+  every third-party tool named in a binding ADR — 22 tools across 20 ADRs — by
+  criticality, upstream source, deciding ADR, and last-reviewed date, re-indexed
+  purely from existing ADR content.
+- **Evidence:** [docs/dependency-register.md](dependency-register.md).
+- **Gap:** the register has no mechanical drift guard yet — it's a manual snapshot
+  that can go stale as future ADR bumps land without a matching register update (the
+  file says so explicitly, rather than implying a freshness guarantee that doesn't
+  exist). Several dates are honestly marked "not dated in ADR" rather than guessed,
+  since a number of ADRs never stated an explicit decision date to begin with — that
+  gap is in the ADRs themselves, not something this register could invent its way
+  around.
 
 **Q15. Is each dependency risk-assessed (license, maintenance status, single-vendor
 concentration)?**

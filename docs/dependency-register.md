@@ -1,0 +1,87 @@
+# Third-party dependency register
+
+A single, queryable register of this lab's third-party dependencies — closing
+[`docs/dora-audit-readiness.md`](dora-audit-readiness.md)'s Q14 ("Is there a register
+of ICT third-party dependencies?"), which named this exact gap as "real but cheap to
+close... without gathering new information." Every row below is pure re-indexing of
+content that already exists in [`docs/decisions/`](decisions/) (the ADRs) — no new
+dependency-risk judgment was made in producing this file.
+
+**How this relates to the other two dependency docs** (they answer different
+questions, not duplicates of each other):
+- [`docs/decisions/`](decisions/) — the **why**: the full reasoning, rejected
+  alternatives, and re-evaluation history behind each choice.
+- [`docs/dependency-tree.md`](dependency-tree.md) — the **topology**: how components
+  wire together in GitOps (namespaces, sync waves, NetworkPolicy paths).
+- **This file** — the **third-party-risk rollup**: at a glance, which upstream
+  projects the lab depends on, how critical each is, and when it was last reviewed.
+
+## Scope note
+
+Of the 29 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0029; ADR-0030 exists but isn't in that index, so it's out of scope
+here too, matching the index's own boundary), two are **Superseded** and excluded
+per the index's own convention (only their replacement is listed): ADR-0010 (Redis,
+superseded by ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by
+ADR-0024/Harbor).
+
+Of the remaining 27, **seven decide a policy or architectural posture rather than a
+single third-party product** — they're excluded from the table below because there's
+no one upstream project to attach a criticality/upstream-source/last-reviewed row to:
+ADR-0003 (decoupled/no-SPOF design principle), ADR-0004 (no-fabricated-content
+policy), ADR-0005 (recreate-over-HA posture), ADR-0016 (default-deny NetworkPolicy
+pattern — enforced via Cilium, which *is* in the table), ADR-0017 (Pod Security
+Standards — a built-in Kubernetes admission feature, not a third-party dependency),
+ADR-0025 (free/OSS-tier governance rule), and ADR-0026 (cloud-agnostic architecture
+policy). The remaining 20 ADRs name 22 distinct third-party tools (two ADRs —
+ADR-0001 and ADR-0012 — each decide on two tools at once; one tool, Garage, is named
+by two ADRs for two different roles and gets one merged row).
+
+**Criticality** reuses CHARTER's own "Target end-state" groupings rather than
+inventing a new scheme: **always-on-core** (part of the always-on base stack),
+**always-on-next-wave** (the four CHARTER Objective O1 components), **heavy-on-demand**
+(manual `make <name>-up`/`-down`, never auto-synced), or **cloud-backend (opt-in)**
+(ADR-0027's alternate Oracle Cloud infra path — not part of the localhost budget
+tiers at all, since it's an operator-chosen alternative to the default backend, not
+a component running alongside it).
+
+**Last reviewed** is the most recent dated entry in the ADR's own "Re-evaluation log"
+section where one exists; where an ADR has no such section *and* states no explicit
+decision date in its `Status` line either, this is marked **"not dated in ADR"**
+rather than guessed (ADR-0004 — never fabricate a date not actually in the source).
+
+| Tool | Criticality | Upstream source | ADR | Last reviewed |
+|---|---|---|---|---|
+| Terraform / Terragrunt | always-on-core (day-0 bootstrap only, ADR-0001) | terraform.io, terragrunt.gruntwork.io | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | not dated in ADR (no Re-evaluation log) |
+| ArgoCD | always-on-core | argoproj.github.io, github.com/argoproj/argo-cd | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | not dated in ADR (no Re-evaluation log) |
+| Garage | always-on-core (in-cluster S3, ADR-0002) + bootstrap substrate (off-cluster Terraform-state backend, ADR-0007) | github.com/Deuxfleurs/garage | [ADR-0002](decisions/adr-0002-garage-not-minio.md), [ADR-0007](decisions/adr-0007-off-cluster-garage-tfstate-backend.md) | 2026-07-28 (ADR-0002 audit #776, `v2.3.0` kept) |
+| Grafana | always-on-core (observability stack) | grafana.com, github.com/grafana/grafana | [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md) | 2026-07-28 (all three flip conditions re-checked, kept) |
+| Envoy Gateway | always-on-core | github.com/envoyproxy/gateway | [ADR-0008](decisions/adr-0008-envoy-gateway-not-traefik.md) | 2026-07-23 (`v1.8.2` → `v1.8.3` bump) |
+| RabbitMQ | always-on-core | github.com/rabbitmq/rabbitmq-server | [ADR-0009](decisions/adr-0009-rabbitmq-message-broker.md) | 2026-07-27 (CVE-2026-44839/CVE-2026-57219 audit #761, kept) |
+| Istio (ambient mode) | heavy-on-demand (`make istio-up`/`istio-down`) | istio.io, github.com/istio/istio | [ADR-0012](decisions/adr-0012-istio-ambient-not-sidecar.md) | 2026-08-04 (kiali-server bump audit, shared ADR) |
+| Kiali | heavy-on-demand (`make kiali-up`/`kiali-down`) | kiali.io, github.com/kiali/kiali | [ADR-0012](decisions/adr-0012-istio-ambient-not-sidecar.md) | 2026-08-04 (`kiali-server` 2.29.0 → 2.30.0, CVE fix floor) |
+| Longhorn | heavy-on-demand (`make longhorn-up`/`longhorn-down`) | github.com/longhorn/longhorn | [ADR-0013](decisions/adr-0013-longhorn-block-storage.md) | 2026-07-28 (flip condition re-checked, `1.11.3` kept) |
+| Cilium | always-on-core (CNI — the network data plane itself) | github.com/cilium/cilium | [ADR-0014](decisions/adr-0014-cilium-not-flannel-policy.md) | 2026-07-30 (RFC #917, `1.17.18` → `1.18.12`) |
+| Aiven Inkless | heavy-on-demand (`make inkless-up`/`inkless-down`) | github.com/aiven/inkless | [ADR-0015](decisions/adr-0015-inkless-diskless-kafka.md) | 2026-07-24 (`apache/kafka` client held at `3.9.2`, RFC #708) |
+| Valkey (supersedes Redis, ADR-0010) | always-on-core | github.com/valkey-io/valkey | [ADR-0018](decisions/adr-0018-valkey-not-redis.md) | 2026-07-29 (Redis AGPLv3 re-check, Valkey kept, audit #829) |
+| Kyverno | always-on-next-wave (Objective O1) | github.com/kyverno/kyverno | [ADR-0019](decisions/adr-0019-kyverno-admission-engine.md) | 2026-07-29 (`admissionController` bumped to 2 replicas) |
+| Argo Rollouts | always-on-next-wave (Objective O1) | github.com/argoproj/argo-rollouts | [ADR-0020](decisions/adr-0020-argo-rollouts-progressive-delivery.md) | 2026-07-20 (flip condition met, chart bumped to `2.41.1`) |
+| Velero | always-on-next-wave (Objective O1) | github.com/vmware-tanzu/velero | [ADR-0021](decisions/adr-0021-velero-backup-restore.md) | 2026-07-29 (`inkless-daily` schedule added) |
+| Trivy Operator | always-on-next-wave (Objective O1) | github.com/aquasecurity/trivy-operator | [ADR-0022](decisions/adr-0022-trivy-operator-supply-chain.md) | 2026-07-28 (CVE-2026-33634 supply-chain compromise, kept, audit #773) |
+| Kargo | heavy-on-demand (`make kargo-up`/`kargo-down`) | github.com/akuity/kargo | [ADR-0023](decisions/adr-0023-kargo-promotion-pipeline.md) | 2026-07-25 (chart bumped `1.10.9` → `1.11.0`) |
+| Harbor (supersedes Artifactory, ADR-0011) | heavy-on-demand (`make harbor-up`/`harbor-down`) | github.com/goharbor/harbor-helm | [ADR-0024](decisions/adr-0024-harbor-not-artifactory.md) | 2026-08-03 (chart bumped `1.19.1` → `1.19.2`) |
+| Oracle Cloud Infrastructure | cloud-backend (opt-in) | cloud.oracle.com | [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md) | not dated in ADR (no Re-evaluation log; decision date 2026-07-13) |
+| k3s | cloud-backend (opt-in) | github.com/k3s-io/k3s | [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md) | not dated in ADR (no Re-evaluation log; decision date 2026-07-13) |
+| cert-manager | always-on-core | github.com/cert-manager/cert-manager | [ADR-0028](decisions/adr-0028-cert-manager-tls-lifecycle.md) | 2026-07-31 (chart bumped `1.21.0` → `1.21.1`, audit #931/RFC #933) |
+| KEDA | always-on-core | github.com/kedacore/keda | [ADR-0029](decisions/adr-0029-keda-event-driven-autoscaling.md) | 2026-08-03 (chart bumped `2.20.1` → `2.20.2`) |
+
+## Keeping this in sync
+
+This register has no mechanical drift guard yet — it's a manual, best-effort snapshot
+as of 2026-08-04. Every future chart/image-version bump PR already updates its own
+ADR's Re-evaluation log (an existing, enforced convention); this file's "Last
+reviewed" column should be updated in the same PR when it touches a row here, but
+nothing currently fails `make ci` if it drifts. A future item could add a mechanical
+check (e.g. flag when an ADR's Re-evaluation log has a newer entry than this file's
+corresponding row) if staleness here proves to be a real recurring problem —
+premature to build before it's shown to actually drift.
