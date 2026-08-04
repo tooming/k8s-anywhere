@@ -27,6 +27,14 @@ fi
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
+# Shared skip() informational-notice printer — sourced, not executed. Pairs
+# with ok()/bad() above (no side effect on `drift`, unlike bad()) — for a
+# check that was skipped rather than passed or failed. Duplicated identically
+# across scripts/argocd-crd-ssa-check.sh, scripts/helm-chart-pin-check.sh,
+# scripts/lint.sh, and scripts/validate-terraform.sh before this extraction
+# (janitor duplication sweep, same pattern as the ok()/bad()/phase() extractions).
+skip() { printf '  %s·%s %s\n' "$Y" "$Z" "$1"; }
+
 # Shared phase() section-header printer — sourced, not executed. Duplicated
 # identically across scripts/dr-bluegreen.sh, scripts/dr-bluegreen-promote.sh,
 # and scripts/dr-test.sh before this extraction (janitor duplication sweep,

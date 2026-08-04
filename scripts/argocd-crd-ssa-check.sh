@@ -42,7 +42,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/yq-variant.sh"
 ok()   { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad()  { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; }
-skip() { printf '  %s·%s %s\n' "$Y" "$Z" "$1"; }
 
 SCAN_DIR="$ROOT/gitops"; [ -d "$SCAN_DIR" ] || SCAN_DIR="$ROOT"
 

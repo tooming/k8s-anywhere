@@ -14,7 +14,6 @@ SHELLCHECK_SEVERITY="${SHELLCHECK_SEVERITY:-warning}"
 drift=0
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
-skip() { printf '  %s·%s %s\n' "$Y" "$Z" "$1"; }
 
 # need <tool>: 0 if present. If missing: hard-fail under CI, else mark skip.
 need() {

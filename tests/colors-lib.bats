@@ -95,6 +95,33 @@ setup() {
   [ "$drift" -eq 1 ]
 }
 
+# --- skip() shared informational-notice printer (extracted from 4 scripts) --
+
+@test "colors.sh defines skip()" {
+  run grep -q '^skip()' "$REPO/scripts/lib/colors.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "skip(): prints the message, no side effect on drift (unlike bad())" {
+  source "$REPO/scripts/lib/colors.sh"
+  drift=0
+  skip "tool not installed" > "$BATS_TEST_TMPDIR/out"
+  grep -q "tool not installed" "$BATS_TEST_TMPDIR/out"
+  [ "$drift" -eq 0 ]
+}
+
+@test "every script defining its own 'skip()' function has been de-duplicated (source lib/colors.sh instead)" {
+  run grep -l '^skip() {' "$REPO"/scripts/*.sh
+  [ "$status" -ne 0 ]
+}
+
+@test "argocd-crd-ssa-check.sh, helm-chart-pin-check.sh, lint.sh, and validate-terraform.sh all source lib/colors.sh (for skip())" {
+  for f in argocd-crd-ssa-check.sh helm-chart-pin-check.sh lint.sh validate-terraform.sh; do
+    run grep -q 'lib/colors.sh' "$REPO/scripts/$f"
+    [ "$status" -eq 0 ]
+  done
+}
+
 # --- phase() shared section-header printer (extracted from 3 DR scripts) ----
 
 @test "colors.sh defines phase()" {
