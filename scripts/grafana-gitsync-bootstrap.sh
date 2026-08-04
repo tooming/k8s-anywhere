@@ -11,8 +11,7 @@ set -euo pipefail
 
 ONS=observability
 VNS=vault
-KCTX="${KCTX:-}"
-kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 
 # Grafana front-door (the stable :8000 proxy, not a per-cluster Envoy port —
 # scripts/bluegreen-frontdoor.sh, docs/DR.md). Override for port-forward / a

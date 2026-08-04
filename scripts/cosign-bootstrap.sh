@@ -12,8 +12,7 @@ NS=kyverno
 CM_NAME=cosign-public-key
 
 # Optionally target a specific cluster (e.g. KCTX=k3d-k8s-lab-green).
-KCTX="${KCTX:-}"
-kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 
 mkdir -p "$COSIGN_DIR"
 

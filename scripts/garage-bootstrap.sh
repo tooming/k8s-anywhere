@@ -8,8 +8,7 @@ SNS=storage
 VNS=vault
 
 # Optionally target a specific cluster (KCTX=k3d-k8s-lab-green). Unset = current context.
-KCTX="${KCTX:-}"
-kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 
 g() { kubectl -n "$SNS" exec sts/garage -- /garage "$@"; }
 

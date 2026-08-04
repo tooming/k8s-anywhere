@@ -21,8 +21,7 @@
 # Exit 0 = every always-on pod + workload healthy. 1 = an always-on workload is down. 2 = tooling/cluster unreachable.
 set -uo pipefail
 
-KCTX="${KCTX:-}"
-kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 WAIT="${HEALTH_WAIT:-90}"
 IV="${HEALTH_INTERVAL:-10}"
 ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo istio-system kiali longhorn-system inkless kargo ack-system capstone harbor}"
