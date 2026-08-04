@@ -3601,6 +3601,75 @@ You review and merge plan PRs, same as implementation PRs.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
+- [ ] 🟢 **Incident classification (severity) scheme + incident log** (CHARTER
+  **Goals** §"operational-resilience discipline" — DORA's incident-management pillar
+  mapped onto concrete practice; planner-fallback gap analysis 2026-08-04, reached via
+  `executor.prompt.md` STEP 6b after all three standing "Now / next" items were found
+  gated on unconfirmed maintainer-confirmation issues #631/#633 with no live-state-safe
+  slice to split off. **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): `docs/dora-audit-readiness.md`'s Q6
+  ("Is there a documented incident classification (severity) scheme?") answers "No...
+  Gap: real" and Q7 notes the same absence; the file's closing summary (¶ after
+  "## Overall summary") names this the one *structural* (non-cadence) DORA gap left —
+  "neither [`make dora-metrics`'s MTTR row nor its change-failure-rate row] is a
+  substitute for a severity scheme or a root-cause incident log for live-cluster
+  events." `docs/dora-resilience-mapping.md`'s Pillar 2 section cites only the
+  CI-health MTTR metric, nothing about classification or a log. Grepping ROADMAP.md
+  and `docs/` for "incident classification"/"incident log" turns up nothing already
+  tracking this. This is genuine, real gap-analysis output (Core Value/Goal not
+  covered), not manufactured filler — and unlike the three gated items above it, it
+  mutates no live-synced cluster state at all (pure docs), so it carries zero blast
+  radius risk.
+
+  Add `docs/incident-log.md`: (1) a severity scheme sized for this lab's actual
+  solo-operator, clusterless-by-default shape — explicitly name "no paging, no
+  escalation path" as an intentional non-goal (mirroring Q7's own gap note) rather
+  than a silent absence, e.g. P0 (whole-lab-down / data-loss risk — fix same session),
+  P1 (single always-on component down or a security-relevant gap — fix same session
+  or next), P2 (on-demand/heavy component or non-blocking defect — backlog item), P3
+  (cosmetic/doc drift — filler-lane item); (2) a "How to log a new incident" template
+  row shape (mirror the existing `| Field | Content |` template already used in
+  `docs/dora-audit-readiness.md`'s own "Template for a new question" — Date,
+  Severity, Component(s), Detection, Root cause, Fix, Time to resolve, Follow-up);
+  (3) backfill the real, already-observed incidents narrated in issue #631/#633's own
+  comment history (verified directly against those comments, not fabricated,
+  ADR-0004) — at minimum: Cilium agents losing apiserver connectivity after a k3d
+  node IP reshuffle (fixed live via `make cilium-up`, #631 comment 2026-07-29);
+  `artifactory` namespace's default-deny NetworkPolicy missing an intra-namespace
+  allow so `artifactory-oss` could never reach its own bundled `postgresql` (fixed in
+  PR #884, `allow-artifactory-intra-namespace.yaml`); Harbor's HTTPRoute unreachable
+  because `allow-envoy-proxy-backend-egress` never allowlisted the `harbor` backend
+  namespace (fixed in PR #968); Harbor's Vault-held admin credential never matching
+  Harbor's real password so CI `docker login` could never succeed (fixed live,
+  Vault/GitLab-CI-variable data, not GitOps-managed, no PR); and the still-open
+  finding that no GitLab Runner has ever been registered against this lab's GitLab
+  instance, so no `.gitlab-ci.yml` pipeline has ever executed here (#631/#633,
+  2026-08-04 comments — log this one with no "Fix"/"Time to resolve" yet, an
+  explicitly unresolved row, not a fabricated resolution).
+
+  Update `docs/dora-audit-readiness.md`'s Q6 answer from "No" to describe the new
+  scheme (cite `docs/incident-log.md`), updating its "Gap" line accordingly; leave
+  Q7's alerting/escalation gap language intact (this item adds classification +
+  logging, not automated paging — don't overclaim). Update the closing summary
+  paragraph to reflect that classification + a real incident log now exist, while
+  keeping the honest residual gap (no automated detection/alerting) explicit. Add one
+  sentence to `docs/dora-resilience-mapping.md`'s Pillar 2 section pointing to the new
+  doc alongside the existing MTTR metric citation. Add a one-line pointer to
+  `docs/incident-log.md` from `docs/DR.md`'s "Recovery cookbook" section for
+  severity triage. New `tests/incident-log.bats` (clusterless structural,
+  mirrors the shape of other doc-presence bats files): `docs/incident-log.md`
+  exists; contains a severity scheme referencing `P0`/`P1`/`P2`/`P3`; contains at
+  least the five backfilled incidents above (grep for `#884`, `#968`, `cilium`,
+  `GitLab Runner`); `dora-audit-readiness.md`'s Q6 answer no longer contains the
+  literal string "**Answer:** No" for Q6 specifically; no fabricated/placeholder
+  content (ADR-0004 grep guard: `grep -iE '"(fake|mock|placeholder|dummy)"'`).
+  `make ci` must pass (in particular `markdown-links-check.sh` for the new
+  cross-references). PR body must note this only closes Q6, not Q7 (alerting/
+  escalation remains a real, separately-scoped gap — Q12's chaos-testing idea
+  already named in the audit doc is a reasonable follow-up planner item if wanted,
+  not bundled into this one to stay within WAYS-OF-WORKING.md §3's size cap).
+  `docs/done/` entry required. (auto/incident-severity-scheme-log)
+
 - [x] 🟢 **Standardize scripts/*.sh's `bad()` failure-flag variable to `drift`**
   (janitor finding, issue #957 — a duplication sweep found `ok()`/`bad()` printf
   helpers redefined inline in ~35 `scripts/*.sh` files, but unlike the `yqs()`
