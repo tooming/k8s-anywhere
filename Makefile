@@ -501,6 +501,10 @@ dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=c
 dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
 	@./scripts/dr-restore.sh data tidb capstone vault observability inkless
 
+.PHONY: dr-chaos
+dr-chaos: ## Chaos drill: kill a random capstone pod, assert self-heal within budget (DORA Pillar 3 TLPT concept)
+	bash scripts/dr-chaos.sh
+
 .PHONY: dr-bluegreen
 dr-bluegreen: ## Zero-downtime blue/green DR: stand up a green cluster + cut over, prove no outage
 	bash scripts/dr-bluegreen.sh
