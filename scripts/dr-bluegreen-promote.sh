@@ -30,8 +30,7 @@ MAX_OUTAGE="${MAX_OUTAGE:-2.0}"
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
-phase(){ printf '\n%s========== %s ==========%s\n' "$B" "$1" "$Z"; }
-probe(){ curl -s -o /dev/null -w '%{http_code}' --max-time 8 -H "Host: $CANARY_HOST" "http://localhost:$FRONTDOOR_PORT/" 2>/dev/null || echo 000; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/canary-probe.sh"
 
 printf '%s== COMPLETE BLUE/GREEN DR (migrate to green, retire blue) ==%s\n' "$B" "$Z"
 printf '  order : serving-green -> cutover -> %sDELETE BLUE%s -> promote green to FULL\n' "$R" "$Z"
@@ -44,7 +43,6 @@ export DR_ASSUME_YES=1
 
 START=$SECONDS
 PROBE_PID=""
-stop_probe(){ [ -n "$PROBE_PID" ] && kill -TERM "$PROBE_PID" 2>/dev/null || true; }
 fail(){ stop_probe; printf '\n%s%sPROMOTE FAILED%s at: %s  (elapsed %ds)\n' "$B" "$R" "$Z" "$1" "$((SECONDS-START))"; exit 1; }
 
 phase "1/7  Front door up -> BLUE"

@@ -21,7 +21,6 @@ esac
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
-phase(){ printf '\n%s========== %s ==========%s\n' "$B" "$1" "$Z"; }
 hms(){ printf '%dm%02ds' $(( $1/60 )) $(( $1%60 )); }
 
 printf '%s== DR DRILL (scope=%s) ==%s\n' "$B" "$SCOPE" "$Z"

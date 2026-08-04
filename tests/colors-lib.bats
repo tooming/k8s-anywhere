@@ -94,3 +94,30 @@ setup() {
   bad "went wrong" > "$BATS_TEST_TMPDIR/out"
   [ "$drift" -eq 1 ]
 }
+
+# --- phase() shared section-header printer (extracted from 3 DR scripts) ----
+
+@test "colors.sh defines phase()" {
+  run grep -q '^phase()' "$REPO/scripts/lib/colors.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "phase(): prints a bold section header with the given label" {
+  source "$REPO/scripts/lib/colors.sh"
+  run phase "1/5  Front door up"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"1/5  Front door up"* ]]
+  [[ "$output" == *"=========="* ]]
+}
+
+@test "every script defining its own 'phase()' function has been de-duplicated (source lib/colors.sh instead)" {
+  run grep -l '^phase(){' "$REPO"/scripts/*.sh
+  [ "$status" -ne 0 ]
+}
+
+@test "dr-bluegreen.sh, dr-bluegreen-promote.sh, and dr-test.sh all source lib/colors.sh (for phase())" {
+  for f in dr-bluegreen.sh dr-bluegreen-promote.sh dr-test.sh; do
+    run grep -q 'lib/colors.sh' "$REPO/scripts/$f"
+    [ "$status" -eq 0 ]
+  done
+}
