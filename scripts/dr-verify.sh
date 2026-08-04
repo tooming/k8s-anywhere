@@ -17,8 +17,7 @@ T_GRAFANA="${DR_T_GRAFANA:-180}"
 CURL_IMG="${DR_CURL_IMAGE:-curlimages/curl:8.11.1}"
 
 # Optionally verify a specific cluster (KCTX=k3d-k8s-lab-green). Unset = current context.
-KCTX="${KCTX:-}"
-kubectl() { command kubectl ${KCTX:+--context "$KCTX"} "$@"; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 drift=0
