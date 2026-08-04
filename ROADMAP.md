@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump `kiali-server` chart `2.29.0` → `2.30.0`** (CHARTER **Core Values**
+- [x] 🟢 **Bump `kiali-server` chart `2.29.0` → `2.30.0`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; ADR-0012's own Re-evaluation log flip
   condition ("revisit when a Kiali-specific CVE is published against `kiali-server`
   at or above `2.29.0`") has fired — planner-fallback upstream check 2026-08-04

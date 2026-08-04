@@ -46,9 +46,9 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-# --- Kiali chart-version pin (ADR-0012 Re-evaluation log, 2026-07-23 audit) --
-@test "kiali Application pins kiali-server chart 2.29.0" {
-  run grep 'targetRevision: 2.29.0' "$REPO/gitops/platform/kiali.yaml"
+# --- Kiali chart-version pin (ADR-0012 Re-evaluation log, 2026-08-04 audit) --
+@test "kiali Application pins kiali-server chart 2.30.0" {
+  run grep 'targetRevision: 2.30.0' "$REPO/gitops/platform/kiali.yaml"
   [ "$status" -eq 0 ]
 }
 
