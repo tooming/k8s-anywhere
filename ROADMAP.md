@@ -3661,6 +3661,58 @@ You review and merge plan PRs, same as implementation PRs.
   tolerates routinely). `make ci` must pass. `docs/done/` entry required.
   (auto/dr-chaos-fault-injection)
 
+- [ ] 🟢 **Third-party dependency register — `docs/dependency-register.md`** (CHARTER
+  **Goals** §"operational-resilience discipline" — DORA Pillar 4 (ICT third-party risk
+  management); planner-fallback gap analysis 2026-08-04, reached via
+  `executor.prompt.md` STEP 6b after all three standing "Now / next" items were found
+  gated on unconfirmed maintainer-confirmation issues #631/#633 (re-checked, no new
+  confirmation) with no live-state-safe slice to split off. **No prerequisites —
+  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004):
+  `docs/dora-audit-readiness.md`'s Q14 ("Is there a register of ICT third-party
+  dependencies?") answers "Not as a single consolidated register — but the information
+  exists, scattered across the ADRs in `docs/decisions/`" and its own "Gap" line calls
+  this "real but cheap to close — a `docs/dependency-register.md` tabulating (tool,
+  criticality, upstream source, ADR, last-reviewed date) would turn the existing ADR
+  content into a queryable register **without gathering new information**." Grepping
+  ROADMAP.md for "dependency-register"/"dependency register" turns up nothing already
+  tracking this (distinct from the existing `docs/dependency-tree.md`, which maps
+  GitOps sync topology/namespaces, not third-party risk fields like criticality or
+  license tier). This is real gap-analysis output the audit doc itself names as the
+  cheapest-to-close gap in the whole document — a pure re-indexing task, not new
+  investigation, so it fits a single clusterless PR cleanly.
+
+  Add `docs/dependency-register.md`: one row per ADR-backed dependency in
+  `docs/decisions/README.md`'s index (skip **Superseded** ADRs — ADR-0010, ADR-0011 —
+  list only their superseding replacement, per that index's own convention), columns
+  **Tool | Criticality | Upstream source | ADR | Last reviewed**. Populate purely from
+  each ADR's existing content (per Q14's own framing — "without gathering new
+  information"): *Criticality* — always-on core vs. next-wave vs. heavy/on-demand
+  (already a documented distinction in ROADMAP.md's "Target end-state" section and
+  CHARTER's own "Always-on core"/"Always-on next wave"/"Heavy / on-demand" initiative
+  groupings — reuse that existing categorization, don't invent a new scheme);
+  *Upstream source* — the project's real repo/chart source as cited in its own ADR
+  (e.g. Kyverno → `github.com/kyverno/kyverno`); *ADR* — a link to the deciding ADR
+  file; *Last reviewed* — the most recent dated entry in that ADR's own
+  "Re-evaluation log" section if it has one, else the ADR's own decision date. Add a
+  short intro paragraph explaining the register's purpose (Q14) and its two companion
+  artifacts (`docs/decisions/` for the *why*, `docs/dependency-tree.md` for the GitOps
+  *topology*, this file for the third-party-risk *rollup*) so the three don't read as
+  redundant. Update `docs/dora-audit-readiness.md`'s Q14 answer from "Not as a single
+  consolidated register" to "Yes" (cite the new file), updating its "Gap" line
+  accordingly. New `tests/dependency-register.bats` (clusterless structural, mirrors
+  the shape of `tests/incident-log.bats`): file exists; has the five-column header row;
+  contains at least N rows (pick N ≥ 20, sized to the real non-superseded ADR count at
+  pickup time — count `docs/decisions/adr-*.md` files minus superseded ones, don't
+  guess); spot-checks a couple of specific, stable entries (e.g. a row citing ADR-0002/
+  Garage, a row citing ADR-0018/Valkey); no fabricated/placeholder content (ADR-0004
+  grep guard). `make ci` must pass. PR body must note this is a pure re-indexing task
+  (no new dependency-risk judgment made, no new criticality tier invented) and that
+  keeping it in sync with future ADRs is a manual/best-effort convention for now (note
+  in the PR body whether a drift-guard mechanical check is worth a follow-up item, per
+  CLAUDE.md's bugfix-recurrence-guard spirit — though this is a new-doc gap-fill, not a
+  bugfix, so a follow-up guard is a judgment call for the PR body to make, not a hard
+  requirement). `docs/done/` entry required. (auto/dependency-register)
+
 - [x] 🟢 **Incident classification (severity) scheme + incident log** (CHARTER
   **Goals** §"operational-resilience discipline" — DORA's incident-management pillar
   mapped onto concrete practice; planner-fallback gap analysis 2026-08-04, reached via
