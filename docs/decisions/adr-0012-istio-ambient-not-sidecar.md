@@ -195,6 +195,34 @@ needed. **Flip condition:** unchanged from the 2026-07-18 entry — revisit
 when a new Istio security bulletin names a version at or above `1.30.3` as
 affected.
 
+### 2026-08-04 — `kiali-server` `2.29.0` → `2.30.0`, CVE fix floor (planner-fallback currency check)
+
+**Trigger.** The 2026-07-23 audit's flip condition ("revisit when a
+Kiali-specific CVE is published against `kiali-server` at or above `2.29.0`")
+fired. Verified directly (ADR-0004): a real clone of
+`github.com/kiali/helm-charts` shows `v2.30.0` as a genuine stable tag past
+the pinned `v2.29.0`; a real clone of the `kiali/kiali` app repo (versioning
+tracks 1:1 with the chart, same as the prior audit) shows `git log
+v2.29.0..v2.30.0` contains three named CVE fixes in Kiali's bundled frontend
+dependencies: **CVE-2026-59877** (`protobufjs` → `7.6.5`), **CVE-2026-49978**
+(`dompurify` → `3.4.7+`), and **CVE-2026-59869** (`js-yaml` → `4.3.0`) — each
+affects versions up to and including `2.29.0`, fixed in `2.30.0`.
+
+**Decision: Convert (bump to `2.30.0`).** The rest of the `v2.29.0..v2.30.0`
+range is feature work (an opt-in OpenShift impersonation mode, Gateway API
+TCPRoute/UDPRoute support, Ambient-mesh validation improvements) plus CI/chore
+commits — none of it touches this lab's `valuesObject` keys (`auth.strategy`,
+`external_services.prometheus.{url,custom_headers}`,
+`external_services.tracing.enabled`, `deployment.resources`); the new opt-in
+`auth.openshift.impersonation.*` block this lab doesn't set stays at its
+(still-present) default. Same smallest-safe-delta reasoning as this lab's
+other chart-pin bumps.
+
+**Flip condition (next re-evaluation).** Revisit when a Kiali-specific CVE is
+published against `kiali-server` at or above `2.30.0`, or the chart repo
+prunes `2.30.0` itself (same as the 2026-07-23 entry's pattern — bump again to
+whatever the newest resolvable tag is at that time).
+
 ---
 
 ## Files
