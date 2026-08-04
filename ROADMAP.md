@@ -3661,7 +3661,7 @@ You review and merge plan PRs, same as implementation PRs.
   tolerates routinely). `make ci` must pass. `docs/done/` entry required.
   (auto/dr-chaos-fault-injection)
 
-- [ ] 🟢 **Third-party dependency register — `docs/dependency-register.md`** (CHARTER
+- [x] 🟢 **Third-party dependency register — `docs/dependency-register.md`** (CHARTER
   **Goals** §"operational-resilience discipline" — DORA Pillar 4 (ICT third-party risk
   management); planner-fallback gap analysis 2026-08-04, reached via
   `executor.prompt.md` STEP 6b after all three standing "Now / next" items were found
