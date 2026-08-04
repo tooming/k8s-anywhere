@@ -88,10 +88,12 @@ duplicated.
 ## Pillar 2 — Incident management, classification & reporting (Ch III)
 
 **Q6. Is there a documented incident classification (severity) scheme?**
-- **Answer:** No. There is no P0/P1/P2-style tiering anywhere in the repo.
-- **Evidence:** n/a.
-- **Gap:** real. The "Recovery cookbook" in [docs/DR.md](DR.md) lists fixes but doesn't
-  rank them by severity or blast radius.
+- **Answer:** Yes. [`docs/incident-log.md`](incident-log.md) defines a P0–P3 scheme
+  sized for this lab's solo-operator, clusterless-by-default shape (blast radius →
+  expected response), plus a template for logging new incidents against it.
+- **Evidence:** [docs/incident-log.md](incident-log.md) "Severity scheme" section.
+- **Gap:** none in scheme *existence*. The scheme covers classification, not
+  automated paging/escalation — that residual gap is unchanged, see Q7.
 
 **Q7. Is there a defined detection → escalation → resolution path?**
 - **Answer:** Detection is manual (`make status`, Grafana dashboards, `make dr-verify`)
@@ -110,19 +112,22 @@ duplicated.
   automated detection-to-resolution timer.
 
 **Q8. Are incidents logged with root cause and a corrective action, after the fact?**
-- **Answer:** No dedicated incident log exists. `docs/done/` records completed work
-  (features, fixes), and CLAUDE.md's bugfix rule requires every bugfix to also add a
-  mechanical recurrence guard — but there's no `docs/incidents/`-style directory
-  capturing "what broke, in production-shape terms, and why" as its own artifact
-  distinct from the fix commit. `dora-metrics.md`'s change-failure-rate row (currently
-  8.2%, 46/559 deployments in the trailing 90 days) is the closest thing to a rollup —
-  it quantifies *how often* something failed, but not *why* each one did.
-- **Evidence:** `docs/done/` directory; CLAUDE.md's "Every bugfix must prevent
-  recurrence" section; [docs/dora-metrics.md](dora-metrics.md) "Change failure rate" row.
-- **Gap:** real, and the most actionable one in this document — a lightweight
-  `docs/incidents/YYYY-MM-DD-<slug>.md` template (symptom, detection method, blast
-  radius, root cause, guard added) would close it cheaply by reusing the existing
-  `docs/done/` convention.
+- **Answer:** Yes, as of [`docs/incident-log.md`](incident-log.md)'s "Real incident
+  history" table — a dedicated artifact distinct from the fix commit, capturing "what
+  broke, in production-shape terms, and why" for each real incident found so far
+  (root cause, fix reference, time to resolve, follow-up). `docs/done/` still records
+  completed work and CLAUDE.md's bugfix rule still requires a mechanical recurrence
+  guard per fix — this log is additive on top of both, not a replacement.
+  `dora-metrics.md`'s change-failure-rate row remains the quantitative *how often*
+  rollup; this log is the qualitative *why* for each entry.
+- **Evidence:** [docs/incident-log.md](incident-log.md) "Real incident history"
+  table; `docs/done/` directory; CLAUDE.md's "Every bugfix must prevent recurrence"
+  section; [docs/dora-metrics.md](dora-metrics.md) "Change failure rate" row.
+- **Gap:** the log currently only has entries backfilled from issue #631/#633's own
+  investigation history — it isn't yet a habit enforced going forward (no mechanical
+  gate requires a new row per incident, only a bats presence/shape check on the file
+  itself). A future item could wire a reminder into the bugfix workflow if that gap
+  proves worth closing.
 
 **Q9. Is there a reporting timeline to a regulator for major incidents?**
 - **Applicable?** No. There is no regulator and no reporting obligation.
@@ -237,9 +242,10 @@ real repo state. The recurring gap pattern is **cadence, not design**: risk revi
 resilience testing, dependency re-checks, and threat-intel digesting are all designed
 correctly (the mechanism exists and works when invoked) but none run on a schedule —
 everything is on-demand, which matches this lab being clusterless-by-default and
-maintainer-triggered rather than continuously operated. The one *structural* gap, not
-just a cadence gap, is **Pillar 2 (incident classification & logging)** — `make
-dora-metrics` now gives a real, CI-scoped MTTR-shaped number (Q7) and a real
-change-failure-rate rollup (Q8), but neither is a substitute for a severity scheme or a
-root-cause incident log for live-cluster events — that gap is unchanged by their
-addition.
+maintainer-triggered rather than continuously operated. **Pillar 2 (incident
+classification & logging)** was the one *structural* gap, not just a cadence one —
+`docs/incident-log.md` now closes the classification (Q6) and root-cause-logging (Q8)
+halves of it with a real severity scheme and a backfilled incident history; the
+narrower residual gap is automated detection/alerting/escalation (Q7), which remains
+unchanged and is named there as an intentional non-goal for a solo-operator lab rather
+than a silent absence.

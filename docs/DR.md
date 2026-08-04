@@ -299,4 +299,7 @@ backups; not in scope).
   Grafana if needed), then `make grafana-gitsync-bootstrap` (re-creates the Repository in
   unified storage). Both are idempotent. After `make up` these steps are automatic.
 
+For severity triage when something breaks, see [`docs/incident-log.md`](incident-log.md)'s
+severity scheme (P0–P3) and its log of real incidents this lab has actually hit.
+
 See [decisions/](decisions/) for the rationale behind these choices.
