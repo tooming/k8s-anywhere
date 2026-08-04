@@ -22,7 +22,7 @@ spec:
     # sources before bumping.
     repoURL: https://grafana-community.github.io/helm-charts
     chart: grafana
-    targetRevision: 12.10.0
+    targetRevision: 12.10.2
     helm:
       releaseName: grafana
       valuesObject:
@@ -67,7 +67,16 @@ spec:
         # securityContext/containerSecurityContext/initChownData defaults and
         # templates/_pod.tpl's unconditional "search" emptyDir at
         # /var/lib/grafana-search: all byte-identical to 12.8.1, so this
-        # analysis still holds unchanged at 12.10.0).
+        # analysis still holds unchanged at 12.10.0; the 12.10.0 -> 12.10.2 bump
+        # (no CVE, routine currency bump — upstream diff is a new optional
+        # startupProbe key defaulting to {} (renders nothing, unused here), an
+        # image-tag bump for the chart's optional dashboard-loader helper
+        # container (that delivery path is disabled per ADR-0006 — dashboards
+        # sync via native Git Sync, not a config-map watcher), and a new
+        # chart-internal test file only) touched neither values.yaml's
+        # securityContext/containerSecurityContext/initChownData defaults nor
+        # templates/_pod.tpl's "search" emptyDir, so this analysis still holds
+        # unchanged at 12.10.2).
         #
         # Pod-level securityContext is set via the `securityContext` key, NOT
         # `podSecurityContext` -- this chart's templates/_pod.tpl reads
