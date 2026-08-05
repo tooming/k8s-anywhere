@@ -67,6 +67,15 @@ setup() {
   [ "$(yqs '.spec.template.spec.containers[0].securityContext.capabilities.drop[0]' "$RABBITMQ")" = "ALL" ]
 }
 
+# 2026-08-05 live incident: without this, kubelet's fsGroup volume-ownership fixup
+# runs on every pod (re)mount and force-adds group rw to the erlang cookie file
+# RabbitMQ itself writes at 0600, which RabbitMQ's own security check then refuses
+# to start against — crashlooping any freshly (re)scheduled rabbitmq-0 pod
+# permanently. See the inline comment on this key in the manifest for the full story.
+@test "rabbitmq StatefulSet sets fsGroupChangePolicy: OnRootMismatch (fsGroup+erlang-cookie interaction)" {
+  [ "$(yqs '.spec.template.spec.securityContext.fsGroupChangePolicy' "$RABBITMQ")" = "OnRootMismatch" ]
+}
+
 # --- Valkey StatefulSet securityContext --------------------------------------
 
 @test "valkey StatefulSet sets runAsNonRoot: true" {
