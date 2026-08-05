@@ -77,6 +77,30 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# 2026-08-05: found live that the storage namespace had NO ingress policy at all
+# covering s3manager (only Garage had allow rules) — under the default-deny floor
+# the s3.127.0.0.1.nip.io front-door route had never actually worked.
+@test "allow-s3manager-ingress.yaml exists in storage/networkpolicy/" {
+  [ -f "$STORAGE_NP/allow-s3manager-ingress.yaml" ]
+}
+
+@test "allow-s3manager-ingress targets s3manager pods (app: s3manager)" {
+  run grep -q 'app: s3manager' "$STORAGE_NP/allow-s3manager-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-s3manager-ingress allows port 8080 from envoy-gateway-system" {
+  run grep -q 'port: 8080' "$STORAGE_NP/allow-s3manager-ingress.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$STORAGE_NP/allow-s3manager-ingress.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "storage kustomization references allow-s3manager-ingress.yaml" {
+  run grep -q 'allow-s3manager-ingress.yaml' "$STORAGE_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "storage-networkpolicy ArgoCD Application targets the storage namespace" {
   run grep -q 'destNamespace: storage' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]

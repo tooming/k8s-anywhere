@@ -2,7 +2,9 @@
 # Pulls the two shared baseline templates and adds per-workload allow rules for
 # Garage's two real ingress flows: from the LGTMP stack in observability (S3 writes
 # on TCP 3900 + Alloy metrics scrape on TCP 3903) and from the Inkless broker in the
-# inkless namespace (diskless Kafka log-segment S3 writes on TCP 3900).
+# inkless namespace (diskless Kafka log-segment S3 writes on TCP 3900). Also allows
+# Envoy (envoy-gateway-system) to reach s3manager on TCP 8080 for the
+# s3.127.0.0.1.nip.io front-door route.
 # No egress allows needed beyond the baseline — Garage does not reach other namespaces.
 # Wired into gitops/platform/storage-networkpolicy.yaml (auto-synced, wave 4).
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -16,3 +18,4 @@ resources:
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-garage-s3-from-observability.yaml
   - allow-garage-s3-from-inkless.yaml
+  - allow-s3manager-ingress.yaml

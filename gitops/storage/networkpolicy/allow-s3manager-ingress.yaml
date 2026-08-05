@@ -1,0 +1,29 @@
+# Allow ingress to the s3manager pod from the envoy-gateway-system namespace
+# (ADR-0016). `gitops/storage/s3manager/route.yaml` proxies
+# s3.127.0.0.1.nip.io through it to the s3manager Service on port 8080.
+#
+# Found missing live 2026-08-05 while recovering an unrelated resource-exhaustion
+# incident: the `storage` namespace only had ingress allows for Garage
+# (allow-garage-s3-from-observability/inkless) — nothing at all covered s3manager,
+# so under the default-deny floor the front-door UI has likely never actually
+# worked. Same bug class as the harbor carve-out documented in
+# gitops/envoy-gateway-system/networkpolicy/allow-envoy-proxy-backend-egress.yaml.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-s3manager-ingress
+  namespace: storage
+spec:
+  podSelector:
+    matchLabels:
+      app: s3manager
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system

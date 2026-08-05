@@ -8,6 +8,14 @@
 # trigger (ADR-0029 §"Scope & exceptions" ScaledObject-demo follow-up) -- kept as its
 # own rule instead of widening the block above so keda gets no access to AMQP (5672)
 # or the metrics port (15692) it has no need for.
+# A third rule permits Envoy (namespace envoy-gateway-system) to reach the
+# management API on 15672 only -- `gitops/data/rabbitmq/route.yaml` proxies
+# rabbitmq.127.0.0.1.nip.io through it. Found missing live 2026-08-05 while
+# recovering an unrelated resource-exhaustion incident: this policy predates
+# the HTTPRoute (or the HTTPRoute predates this policy's last edit) and the two
+# were never reconciled, so the front-door UI has likely never actually worked
+# -- same bug class as the harbor carve-out documented in
+# gitops/envoy-gateway-system/networkpolicy/allow-envoy-proxy-backend-egress.yaml.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -39,3 +47,10 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: keda
+    - ports:
+        - port: 15672
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
