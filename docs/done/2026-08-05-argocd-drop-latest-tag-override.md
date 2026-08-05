@@ -67,4 +67,4 @@ is unchanged), so there is nothing to roll back on that side.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1000
