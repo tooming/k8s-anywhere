@@ -26,6 +26,19 @@ spec:
         runAsUser: 999
         runAsGroup: 999
         fsGroup: 999
+        # Without this, kubelet's fsGroup volume-ownership fixup runs on EVERY pod
+        # (re)mount — not just the first — and force-adds group read/write to every
+        # file under the PVC, including the erlang cookie RabbitMQ itself creates at
+        # 0600. RabbitMQ's own security check refuses to start against a
+        # group-readable cookie file ("Cookie file .../.erlang.cookie must be
+        # accessible by owner only"), so any pod recreation (not just a container
+        # restart within the same pod) permanently crashloops it — found live
+        # 2026-08-05 recovering an unrelated resource-exhaustion incident that forced
+        # this pod to be recreated for the first time in weeks. OnRootMismatch skips
+        # the recursive fixup once the volume's root already has the right group
+        # ownership, which is the documented fix for exactly this RabbitMQ+fsGroup
+        # interaction (kubernetes/kubernetes#82405).
+        fsGroupChangePolicy: OnRootMismatch
         seccompProfile:
           type: RuntimeDefault
       containers:
