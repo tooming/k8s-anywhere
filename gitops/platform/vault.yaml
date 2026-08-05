@@ -35,6 +35,27 @@ spec:
           # field a bats test or a future ADR-audit sweep could check.
           #
           # Re-evaluation log:
+          # - 2026-08-05: bumped `2.0.3` -> `2.0.4`. HashiCorp's published
+          #   CHANGELOG.md has no `2.0.x` section at either tag (a gap in
+          #   their own changelog publishing for this release line, not
+          #   silently worked around — confirmed via a real clone + `git log
+          #   v2.0.3..v2.0.4` instead). Three "security:"-titled commits in
+          #   that range turn out to be false-positive suppressions, not real
+          #   vulnerabilities (their own origin commits are titled "Suppress
+          #   false positive for GO-2026-5856 & 4970" and the same shape for
+          #   GO-2026-5298) — these do NOT count toward the flip condition.
+          #   Two fixes ARE real: `go.mod`/`go.sum` bump `klauspost/compress`
+          #   to `v1.18.7` and `go.opentelemetry.io/otel` to `v1.44.0`,
+          #   resolving GO-2026-5158 and GO-2026-5841 (real dependency CVEs).
+          #   Separately, a "Fix Goroutine Leak in Seal Encryption" commit
+          #   touches `vault/seal/seal.go` — the shared encrypt/decrypt path
+          #   every seal type (including this lab's Shamir/file-storage seal)
+          #   goes through, a real reliability fix. Satisfies this pin's flip
+          #   condition in spirit (a real security-relevant fix past `2.0.3`)
+          #   even though no public bulletin names `2.0.3` itself as affected.
+          #   Flip condition: revisit when a bulletin names a version above
+          #   `2.0.4` as affected, or when bumping the chart `targetRevision`
+          #   past `0.34.0`.
           # - 2026-07-24: pinned at `2.0.3` (the chart v0.34.0 default).
           #   Cross-checked against every 2026 Vault CVE/security bulletin
           #   findable from this sandbox. Confirmed directly in Vault's own
@@ -62,7 +83,7 @@ spec:
           #   past `0.34.0` (a later chart may change the default image tag).
           image:
             repository: "hashicorp/vault"
-            tag: "2.0.3"
+            tag: "2.0.4"
           standalone:
             enabled: true
             config: |
@@ -85,7 +106,7 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
-          # ADR-0017: Vault 2.0.3 (pinned above) no longer holds cap_ipc_lock
+          # ADR-0017: Vault 2.0.x (pinned above) no longer holds cap_ipc_lock
           # (disable_mlock above is the required counterpart), so the
           # PSS-restricted profile now applies. `home` (/home/vault) is
           # already an unconditional chart-provided emptyDir; `/tmp` is not,

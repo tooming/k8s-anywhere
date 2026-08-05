@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump Vault's pinned image `hashicorp/vault:2.0.3` → `2.0.4` (server +
+- [x] 🟢 **Bump Vault's pinned image `hashicorp/vault:2.0.3` → `2.0.4` (server +
   unsealer)** (CHARTER **Core Values** §"Everything as code" + general hardening;
   planner-fallback upstream check 2026-08-05, reached via `executor.prompt.md`
   STEP 6b — Now/next re-confirmed still gated on #631/#633, no new comment; this
