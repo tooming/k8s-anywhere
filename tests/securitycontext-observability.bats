@@ -183,6 +183,19 @@ setup() {
   [ "$(yqs '.spec.source.helm.valuesObject.containerSecurityContext.capabilities.drop[0]' "$KSM")" = "ALL" ]
 }
 
+# --- kube-state-metrics chart-pin recurrence guard ----------------------------
+# Packaging-only currency bump (appVersion unchanged) — see docs/done/ entry.
+
+@test "kube-state-metrics Application pins chart version 8.1.3" {
+  run grep -q 'targetRevision: 8.1.3' "$KSM"
+  [ "$status" -eq 0 ]
+}
+
+@test "kube-state-metrics Application does not pin the stale 8.0.0 version" {
+  run grep -q 'targetRevision: 8.0.0' "$KSM"
+  [ "$status" -ne 0 ]
+}
+
 # --- Alloy Application securityContext ---------------------------------------
 # Pod-level fields live under `global.podSecurityContext` (the chart's real
 # key), NOT `controller.podSecurityContext` (silent no-op in this chart's
