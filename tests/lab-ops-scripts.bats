@@ -264,6 +264,20 @@ setup() {
   done
 }
 
+# 2026-08-05 same-session regression: the root app-of-apps declares these Application
+# objects in git, so ArgoCD recreates a deleted one on its next auto-sync — existence
+# alone is true FOREVER once a unit has ever been brought up once, permanently
+# false-positiving the guard. Must key off health.status, not `kubectl get` exit code.
+@test "ondemand-budget-check.sh checks Application health, not mere existence (root app-of-apps recreates deleted Applications)" {
+  run grep -q "status.health.status" "$BUDGET"
+  [ "$status" -eq 0 ]
+  run grep -q '!= "Missing"' "$BUDGET"
+  [ "$status" -eq 0 ]
+  # the old, wrong pattern must be gone
+  run grep -q 'kubectl get application -n argocd "\$app" >/dev/null 2>&1 && return 0' "$BUDGET"
+  [ "$status" -eq 1 ]
+}
+
 @test "ondemand-budget-check.sh flags orphaned on-demand namespaces (no owning Application)" {
   run grep -q "ORPHANS" "$BUDGET"
   [ "$status" -eq 0 ]
