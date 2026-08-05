@@ -551,6 +551,22 @@ define argocd-delete
 	kubectl -n argocd delete application $(1) --ignore-not-found
 endef
 
+# Blocking pre-flight for on-demand `-up` targets (2026-08-05 incident: Harbor, Istio,
+# Kiali, Longhorn, Kargo, TiDB, and Inkless all ended up running simultaneously across
+# several unrelated debugging sessions that each brought one up and never back down,
+# exhausting the 12 GB VM and taking down every front-door UI). Docs/00-architecture.md's
+# own stated tolerance is ONE heavy unit at a time. Override: ONDEMAND_BUDGET_FORCE=1.
+# $(1) = unit name (a key in scripts/ondemand-budget-check.sh's UNIT_APPS)
+define ondemand-guard
+	@bash scripts/ondemand-budget-check.sh --pre $(1) || { \
+	  echo ""; echo "Refusing to bring up '$(1)' over budget. See report above."; exit 1; \
+	}
+endef
+
+.PHONY: ondemand-budget-check
+ondemand-budget-check: ## Report which on-demand units (Harbor/Istio/Kiali/Longhorn/Kargo/TiDB/Inkless) are live + flag orphaned namespaces
+	@bash scripts/ondemand-budget-check.sh
+
 # --- Cilium CNI (always-on once enabled; run before ArgoCD on fresh clusters) ----
 # Cilium replaces k3s-bundled Flannel (disable_default_cni=true — ADR-0014).
 # Bootstrap order: make cluster-up → make cilium-up → make argocd → rest of make up.
@@ -594,6 +610,7 @@ tidb-operator-down: ## Remove TiDB Operator (cascade-deletes resources; keeps na
 
 .PHONY: tidb-up
 tidb-up: ## Deploy TiDB cluster via ArgoCD manual sync (~1.5 GB; requires tidb-operator-up first)
+	$(call ondemand-guard,tidb)
 	$(call argocd-sync,tidb-cluster)
 
 .PHONY: tidb-down
@@ -610,6 +627,7 @@ tidb-demo-down: ## Remove TiDB demo app (cascade-deletes pods/secrets; keeps nam
 
 .PHONY: harbor-up
 harbor-up: ## Deploy Harbor CNCF OCI registry via ArgoCD manual sync (Garage S3 backend; ADR-0024)
+	$(call ondemand-guard,harbor)
 	$(call argocd-sync,harbor)
 	$(call argocd-sync,harbor-extras)
 
@@ -620,6 +638,7 @@ harbor-down: ## Remove Harbor OCI registry and namespace floor (reclaims resourc
 
 .PHONY: istio-up
 istio-up: ## Deploy Istio ambient mesh via ArgoCD manual sync (~480 MB; do after make up)
+	$(call ondemand-guard,istio)
 	$(call argocd-sync,istio-base)
 	$(call argocd-sync,istio-cni)
 	$(call argocd-sync,istiod)
@@ -634,6 +653,7 @@ istio-down: ## Remove Istio ambient mesh: ztunnel → istiod → cni → base (r
 
 .PHONY: kiali-up
 kiali-up: ## Deploy Kiali service mesh UI via ArgoCD manual sync (~200 MB; requires istio-up first)
+	$(call ondemand-guard,kiali)
 	$(call argocd-sync,kiali)
 	$(call argocd-sync,kiali-extras)
 
@@ -650,6 +670,7 @@ mesh-down: kiali-down istio-down ## Remove Kiali then Istio ambient mesh (kiali-
 
 .PHONY: longhorn-up
 longhorn-up: ## Deploy Longhorn distributed block storage via ArgoCD manual sync (~350-400 MB; do after make up)
+	$(call ondemand-guard,longhorn)
 	$(call argocd-sync,longhorn)
 	$(call argocd-sync,longhorn-extras)
 
@@ -660,6 +681,7 @@ longhorn-down: ## Remove Longhorn and its Envoy route (reclaims ~350-400 MB)
 
 .PHONY: inkless-up
 inkless-up: ## Deploy Aiven Inkless (diskless Kafka) via ArgoCD manual sync (~1.1 GB; requires garage-bootstrap; do after make up)
+	$(call ondemand-guard,inkless)
 	$(call argocd-sync,inkless)
 
 .PHONY: inkless-down
@@ -668,6 +690,7 @@ inkless-down: ## Remove Aiven Inkless and PostgreSQL (reclaims ~1.1 GB RAM; does
 
 .PHONY: kargo-up
 kargo-up: ## Deploy Kargo promotion-orchestration engine via ArgoCD manual sync (~250-450 MB; do after make up)
+	$(call ondemand-guard,kargo)
 	$(call argocd-sync,kargo-extras)
 	$(call argocd-sync,kargo)
 	$(call argocd-sync,kargo-networkpolicy)

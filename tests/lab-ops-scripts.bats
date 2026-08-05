@@ -15,6 +15,7 @@ setup() {
   FRONTDOOR="$REPO/scripts/frontdoor-ensure.sh"
   HEALTHCHECK="$REPO/scripts/lab-health-check.sh"
   TFSTATE="$REPO/scripts/tfstate-bootstrap.sh"
+  BUDGET="$REPO/scripts/ondemand-budget-check.sh"
   MAKEFILE="$REPO/Makefile"
 }
 
@@ -240,4 +241,59 @@ setup() {
   run grep '^argocd-ui:' "$MAKEFILE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"argocd.127.0.0.1.nip.io:8000"* ]]
+}
+
+# --- scripts/ondemand-budget-check.sh ------------------------------------------
+# 2026-08-05 incident: Harbor, Istio, Kiali, Longhorn, Kargo, TiDB, and Inkless all
+# ended up running simultaneously across unrelated debugging sessions (each brought
+# one up, none brought it back down), exhausting the 12 GB Colima VM's documented
+# budget (docs/00-architecture.md "Why on-demand for heavy components") and taking
+# every front-door UI down. This script is the mechanical guard.
+@test "ondemand-budget-check.sh exists" {
+  [ -f "$BUDGET" ]
+}
+
+@test "ondemand-budget-check.sh is executable" {
+  [ -x "$BUDGET" ]
+}
+
+@test "ondemand-budget-check.sh tracks all seven documented heavy on-demand units" {
+  for unit in harbor istio kiali longhorn inkless kargo tidb; do
+    run grep -q "\[$unit\]=" "$BUDGET"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "ondemand-budget-check.sh flags orphaned on-demand namespaces (no owning Application)" {
+  run grep -q "ORPHANS" "$BUDGET"
+  [ "$status" -eq 0 ]
+}
+
+@test "ondemand-budget-check.sh supports a --pre <unit> mode for blocking pre-flight use" {
+  run grep -q -- '--pre)' "$BUDGET"
+  [ "$status" -eq 0 ]
+}
+
+@test "ondemand-budget-check.sh has a force override, never a silent skip of the report" {
+  run grep -q "ONDEMAND_BUDGET_FORCE" "$BUDGET"
+  [ "$status" -eq 0 ]
+}
+
+@test "Makefile guards every heavy *-up target with ondemand-guard" {
+  for t in harbor-up istio-up kiali-up longhorn-up inkless-up kargo-up tidb-up; do
+    run grep -A2 "^$t:" "$MAKEFILE"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ondemand-guard"* ]]
+  done
+}
+
+@test "Makefile ondemand-budget-check target invokes ondemand-budget-check.sh" {
+  run grep -A1 '^ondemand-budget-check:' "$MAKEFILE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ondemand-budget-check.sh"* ]]
+}
+
+@test "lab-health-check.sh reports the on-demand budget informationally (never flips PASS/FAIL)" {
+  run grep -q "ondemand-budget-check.sh" "$HEALTHCHECK"
+  [ "$status" -eq 0 ]
 }

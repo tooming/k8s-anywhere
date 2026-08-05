@@ -212,3 +212,18 @@ On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`har
 ## Why on-demand for heavy components
 
 A 12 GB Colima VM holds the always-on stack at ~7 GB. Heavy components (TiDB, Harbor, Istio, Longhorn, Inkless, Kargo) each add 1–4 GB. Running two full stacks at once would exhaust the VM. So heavy components are on-demand — `make <name>-up` / `make <name>-down` — and never registered in `gitops/bootstrap/root-app.yaml`'s auto-synced set. (ADR-0003, ADR-0005)
+
+**This budget is mechanically enforced, not just documented** (2026-08-05 incident: several
+unrelated live-debugging sessions each ran a `make <name>-up` and never the matching
+`-down`, so Harbor + Istio + Kiali + Longhorn + Kargo + TiDB + Inkless ended up running
+simultaneously — plus a fully orphaned `artifactory` namespace with no owning ArgoCD
+Application, left over from before ADR-0024 decommissioned it. The VM hit its memory
+ceiling, the apiserver started timing out, envoy-gateway lost leader election and
+crashlooped, and every front-door UI in the table above 502'd). `scripts/ondemand-budget-check.sh`
+(`make ondemand-budget-check`) reports which on-demand units are currently live and flags
+orphaned on-demand namespaces; every `<name>-up` target calls it as a blocking pre-flight
+(override: `ONDEMAND_BUDGET_FORCE=1`) so bringing a second heavy unit up without tearing
+the first one down fails fast instead of silently degrading the whole lab hours or days
+later. `make health` also prints its report (informational — on-demand load never flips
+`make health`'s pass/fail, matching the always-on-only contract above), so a stray
+component shows up on the very next health check even outside a fresh `-up` attempt.

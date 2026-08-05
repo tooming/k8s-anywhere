@@ -116,6 +116,13 @@ if [ -n "${O_POD:-}" ]; then
   printf '%s' "$O_POD" | while read -r l; do [ -n "$l" ] && note "$l"; done
 fi
 
+# Informational only — never flips PASS/FAIL (on-demand load isn't a `make up` failure,
+# same reasoning as O_POD above), but surfaces the resource-budget picture that health
+# checks alone can't: an unhealthy always-on pod can be a SYMPTOM of on-demand overload
+# (2026-08-05 incident — see scripts/ondemand-budget-check.sh's header for the story).
+echo
+bash "$(dirname "${BASH_SOURCE[0]}")/ondemand-budget-check.sh" 2>/dev/null || true
+
 echo
 if [ "$fail" -eq 0 ]; then printf '%s%sLAB HEALTH: PASS%s — the always-on stack is fully up.\n' "$B" "$G" "$Z"
 else printf '%s%sLAB HEALTH: FAIL%s — an always-on workload is down (see ✗).\n' "$B" "$R" "$Z"; fi
