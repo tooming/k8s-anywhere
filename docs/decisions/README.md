@@ -38,3 +38,4 @@ rationale travels with the code.
   - [ADR-0028](adr-0028-cert-manager-tls-lifecycle.md) — cert-manager for automated TLS certificate lifecycle (self-signed root CA, not public ACME)
   - [ADR-0029](adr-0029-keda-event-driven-autoscaling.md) — KEDA for event-driven autoscaling (RabbitMQ/Prometheus-triggered scaling, augments the stock HPA)
   - [ADR-0030](adr-0030-pin-k3s-version-explicitly.md) — Pin k3s to an explicit version on every backend
+  - [ADR-0031](adr-0031-tidb-operator-version-policy.md) — TiDB Operator version-pin policy: hold at the 1.6.x line
