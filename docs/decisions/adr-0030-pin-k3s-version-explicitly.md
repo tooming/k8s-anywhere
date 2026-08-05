@@ -180,3 +180,41 @@ CVE-2026-54250 (already the reason for this pin, and already fixed by it).
 with a security fix, or a CVE is disclosed against `v1.36.2` specifically —
 either should trigger a bump through the architect CVE-sweep + RFC path this
 ADR's own Scope & exceptions section specifies (not a routine drive-by bump).
+
+### 2026-08-05 — bumped to `v1.36.3+k3s1` (RFC #995, ADR audit #994 → Convert)
+
+**Trigger.** The flip condition above was met: `v1.36.3+k3s1` shipped —
+verified directly against `k3s-io/k3s`'s real tag list (`git ls-remote --tags`)
+and re-confirmed at pickup time, not just at RFC-authoring time. `git log
+v1.36.2+k3s1..v1.36.3+k3s1` on a real clone contains commit `11f5071f57`
+("Redact single-dash secret flags in the node args annotation") — the
+`k3s.io/node-args` annotation's redaction logic previously only matched
+double-dash secret flags, letting a single-dash secret flag's value leak in
+plaintext into a `Node` object annotation readable by anyone with `get`/`list`
+RBAC on `nodes`. No formal CVE/GHSA is attached to this specific commit
+(checked GitHub's published security advisories for `k3s-io/k3s` directly —
+none matches), but it is a genuine credential-exposure fix — satisfying this
+ADR's flip condition ("ships with a security fix"), which is explicitly
+broader than "a CVE is disclosed." No breaking changes in the range (the rest
+is routine dependency bumps — etcd, Traefik, CoreDNS, Metrics Server, spegel,
+kine, dynamiclistener — plus CI/build chores).
+
+**Decision: Convert (bump).** Pinned `v1.36.3+k3s1` on both backends:
+`infra/modules/k3d-cluster/k3d-config.yaml.tftpl`'s `image:
+rancher/k3s:v1.36.3-k3s1`; `infra/modules/oracle-k3s-cluster/cloud-init.yaml`'s
+`INSTALL_K3S_VERSION=v1.36.3+k3s1`. Both tag formats moved together, per this
+ADR's own footgun note. `docs/decisions/context.md`'s descriptive k3s line
+updated to match. Full audit trail: [ADR audit
+#994](https://github.com/tooming/k8s-anywhere/issues/994), [RFC
+#995](https://github.com/tooming/k8s-anywhere/issues/995).
+
+**ADR-0004 caveat, per this ADR's own Scope & exceptions (unchanged):** this
+remote, clusterless session cannot verify a `make up`/Oracle bootstrap with
+this pin succeeds end-to-end — the maintainer should watch the first
+post-merge `make up` and the next Oracle `terragrunt apply` before fully
+trusting this pin in practice.
+
+**Flip condition (next re-evaluation):** a new k3s stable release at or above
+`v1.36.3` ships with a security fix, or a CVE is disclosed against `v1.36.3`
+specifically — same architect CVE-sweep + RFC path, not a routine drive-by
+bump.
