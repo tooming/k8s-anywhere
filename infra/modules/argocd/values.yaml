@@ -11,10 +11,22 @@
 
 global:
   domain: argocd.localhost
-  # Pin to latest (master) to include the /applicationsets UI route (merged post-v3.4.3, not yet in a stable release).
-  # TODO: drop this override once argo-cd chart >= the version that ships the expose-appset-ui commit (#26666).
-  image:
-    tag: latest
+  # No image.tag override needed anymore (janitor cleanup 2026-08-05): this used to
+  # pin `tag: latest` to include the /applicationsets UI route (argoproj/argo-cd#26666),
+  # which only shipped from v3.5.0 onward and had no stable release at the time this
+  # override was added. `auto/argocd-chart-10-2-3` (2026-08-05) bumped chart_version to
+  # 10.2.3, whose appVersion IS v3.5.0 (verified: `git merge-base --is-ancestor
+  # 4d02fc2f5 v3.5.0` on a real argoproj/argo-cd clone confirms v3.5.0 is the first
+  # stable tag containing that commit) — the chart's own `global.image.tag` default is
+  # `""`, which falls back to `.Chart.AppVersion` (the chart's own comment: "Overrides
+  # the global Argo CD image tag whose default is the chart appVersion"), so omitting
+  # this key now resolves to the real, stable `v3.5.0` tag automatically, and stays in
+  # sync with the chart's own appVersion on every future bump instead of needing a
+  # manual re-pin. See `gitops/kyverno/policies/disallow-latest-tag.yaml`'s `argocd`
+  # carve-out comment for the maintainer-confirmation gate on removing that exclusion
+  # (Issue #999) — this values.yaml fix landing does NOT by itself make it safe to drop,
+  # since this module is Terraform-bootstrap-only (ADR-0001) and needs a live
+  # `terraform apply` to actually take effect on the cluster.
   # PSS restricted — Phase 2 (RFC #205, ADR-0017). ArgoCD components run as UID 1000 (non-root).
   # Pod-level securityContext is set via `global.securityContext`, NOT
   # `global.podSecurityContext` -- the argo-cd chart's templates (e.g.
