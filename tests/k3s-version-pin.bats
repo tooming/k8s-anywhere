@@ -16,8 +16,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "k3d-cluster pins k3s v1.36.2-k3s1 (Docker Hub tag format, ADR-0030)" {
-  run grep -q 'image: rancher/k3s:v1.36.2-k3s1' "$K3D_CONFIG"
+@test "k3d-cluster pins k3s v1.36.3-k3s1 (Docker Hub tag format, ADR-0030)" {
+  run grep -q 'image: rancher/k3s:v1.36.3-k3s1' "$K3D_CONFIG"
   [ "$status" -eq 0 ]
 }
 
@@ -26,8 +26,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "oracle-k3s-cluster pins k3s v1.36.2+k3s1 (INSTALL_K3S_VERSION tag format, ADR-0030)" {
-  run grep -q 'INSTALL_K3S_VERSION=v1.36.2+k3s1 sh -' "$CLOUD_INIT"
+@test "oracle-k3s-cluster pins k3s v1.36.3+k3s1 (INSTALL_K3S_VERSION tag format, ADR-0030)" {
+  run grep -q 'INSTALL_K3S_VERSION=v1.36.3+k3s1 sh -' "$CLOUD_INIT"
   [ "$status" -eq 0 ]
 }
 
@@ -50,7 +50,7 @@ setup() {
 }
 
 @test "docs/decisions/context.md documents the pinned k3s version" {
-  run grep -q 'k3s v1.36.2+k3s1' "$REPO/docs/decisions/context.md"
+  run grep -q 'k3s v1.36.3+k3s1' "$REPO/docs/decisions/context.md"
   [ "$status" -eq 0 ]
 }
 

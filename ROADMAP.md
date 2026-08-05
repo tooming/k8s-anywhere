@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump k3s pin `v1.36.2+k3s1` → `v1.36.3+k3s1` on both backends** (CHARTER
+- [x] 🟢 **Bump k3s pin `v1.36.2+k3s1` → `v1.36.3+k3s1` on both backends** (CHARTER
   **Core Values** §"Recreate-from-code" + general hardening; RFC #995 — architect
   decision 2026-08-05, ADR-0030 audit #994 resolved as **Convert**. **No
   prerequisites — executor may pick up immediately.**) Verified directly (not

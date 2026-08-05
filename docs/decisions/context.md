@@ -23,7 +23,7 @@ not Docker Desktop.
 ## Components & where they run
 | Component | How / where | Notes |
 |---|---|---|
-| Cluster | k3d (Terraform/Terragrunt), Traefik off | k3s v1.36.2+k3s1 (pinned, ADR-0030), 2 nodes |
+| Cluster | k3d (Terraform/Terragrunt), Traefik off | k3s v1.36.3+k3s1 (pinned, ADR-0030), 2 nodes |
 | GitOps engine | ArgoCD (Helm via Terraform = bootstrap) | reads from GitLab |
 | Git source | GitLab CE omnibus (docker container) | host `:8929`, cluster `host.k3d.internal:8929` |
 | Ingress | Envoy Gateway (Gateway API) | shared Gateway `eg` in `lab-gateway` ns |
