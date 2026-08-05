@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Pin Inkless's batch-coordinator `postgres` image explicitly —
+- [x] 🟢 **Pin Inkless's batch-coordinator `postgres` image explicitly —
   `postgres:17` → `postgres:17.10`** (CHARTER **Core Values** §"Everything as
   code" + general hardening; planner-fallback finding 2026-08-05, surfaced
   during this run's ARCHITECT-fallback audit of ADR-0015 (issue #1013/PR

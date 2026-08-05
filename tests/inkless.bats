@@ -144,6 +144,16 @@ setup() {
   [ -f "$REPO/gitops/inkless/postgres-statefulset.yaml" ]
 }
 
+@test "postgres StatefulSet image pinned to explicit patch 17.10" {
+  run grep -q 'image: postgres:17.10' "$REPO/gitops/inkless/postgres-statefulset.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "postgres StatefulSet does not use the floating postgres:17 tag" {
+  run grep -Eq 'image: postgres:17$' "$REPO/gitops/inkless/postgres-statefulset.yaml"
+  [ "$status" -ne 0 ]
+}
+
 @test "inkless StatefulSet mounts no data PVC for broker logs (diskless)" {
   run grep -c 'volumeClaimTemplates' "$REPO/gitops/inkless/inkless-statefulset.yaml"
   [ "$status" -eq 0 ]
