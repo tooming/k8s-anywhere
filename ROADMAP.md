@@ -232,6 +232,90 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump Terraform-bootstrapped `argo-cd` chart `10.2.2` → `10.2.3`** (CHARTER
+  **Core Values** §"Everything as code" + general hardening; planner-fallback
+  upstream check 2026-08-05, reached via `executor.prompt.md` STEP 6b, Now/next
+  starved by #631/#633 — follow-up from this same run's earlier Grafana-currency
+  sweep note (`docs/backlog/2026-08-05-planner-note-grafana-chart-currency.md`),
+  which flagged this delta but declined to add it without checking argo-cd's own
+  `v3.4.6`→`v3.5.0` release notes for breaking changes first. **No
+  prerequisites — executor may pick up immediately** — that diligence is now
+  done, see below.) Verified directly (not assumed, ADR-0004): `git ls-remote
+  --tags argoproj/argo-helm` shows `argo-cd-10.2.3` one patch ahead of
+  `infra/modules/argocd/variables.tf`'s pinned `chart_version` default
+  `"10.2.2"` (RFC #785's approved 9.x→10.x major-bump target line). A full
+  clone diff (`git diff argo-cd-10.2.2 argo-cd-10.2.3 -- charts/argo-cd/`)
+  shows only `Chart.yaml` (`version` 10.2.2→10.2.3, `appVersion` `v3.4.6`→
+  `v3.5.0`) plus 336 added lines of new *optional* fields across the
+  `Application`/`ApplicationSet`/`AppProject` CRDs — zero `values.yaml`
+  changes, so RFC #785's `global.networkPolicy.create: false` companion
+  override is untouched.
+
+  The `appVersion` jump is a **minor** ArgoCD release, not a patch, so this
+  run read ArgoCD's own official upgrade guide
+  (`docs/operator-manual/upgrading/3.4-3.5.md` at the `v3.5.0` tag, not
+  training knowledge) rather than assuming a chart patch bump is automatically
+  safe. It lists six real breaking/behavioral changes; checked each directly
+  against this repo's actual `gitops/**/*.yaml` + `infra/**` config:
+  - **Helm v3→v4 (plain-HTTP OCI registries need `--insecure-oci-force-http`
+    now):** this lab has zero `oci://`-scheme `repoURL`s and zero
+    `enableOCI`/`enable-oci` settings anywhere in `gitops/`/`infra/` (checked
+    directly). The one Application that *is* OCI-shaped
+    (`gitops/platform/ack-s3.yaml`, `repoURL: public.ecr.aws/aws-controllers-k8s`)
+    talks to AWS public ECR, which is TLS-only by construction — not a plain-HTTP
+    registry. **Not applicable.**
+  - **UI extensions must externalize `react/jsx-runtime` (React 16→19):** this
+    lab installs no custom ArgoCD UI extensions. **Not applicable** (guide's own
+    "no action required" carve-out).
+  - **Event-listing gRPC methods return a new type:** only affects custom/
+    generated gRPC clients calling those specific RPCs directly; this lab has
+    none (grepped for gRPC-client code — none exists). REST/UI paths are
+    explicitly unchanged per the guide. **Not applicable.**
+  - **Impersonation extended to server operations:** this lab's `argocd`
+    `AppProject`/RBAC config sets no `destinationServiceAccounts` — impersonation
+    is not enabled (checked directly, and RFC #785's own decision record for the
+    9.x→10.x bump never mentions impersonation). **Not applicable** (guide's own
+    "no action required" carve-out).
+  - **SSH `known_hosts` behavior change:** every `repoURL` in this lab is
+    `http://`/`https://` (checked directly — zero `ssh://`/`git@` entries).
+    **Not applicable.**
+  - **GnuPG signature verification → Source Integrity:** this lab configures no
+    `AppProject.spec.signatureKeys` anywhere (checked directly). **Not
+    applicable.**
+
+  None of the six documented breaking changes touch this lab's actual
+  configuration. This is Terraform-bootstrap-only (ADR-0001 seam) — the module
+  only re-applies on the maintainer's next explicit `terraform apply` against
+  the `argocd` unit, so this bump has zero live-cluster blast radius until
+  then regardless.
+
+  Bump `infra/modules/argocd/variables.tf`'s `chart_version` default `"10.2.2"`
+  → `"10.2.3"` (update the inline comment's `"10.2.2 => ArgoCD v3.4.6"` to
+  `"10.2.3 => ArgoCD v3.5.0"`). Update both `infra/live/local/argocd/terragrunt.hcl`
+  and `infra/live/oracle/argocd/terragrunt.hcl`'s `chart_version = "10.2.2"`
+  input to `"10.2.3"` (both must move together — a prior currency gap here sat
+  undetected for two sweep cycles specifically because these three sites drifted
+  independently, `docs/done/2026-07-23-argocd-chart-bump-9-5-20-to-9-7-1.md`).
+  Update `tests/argocd-chart-pin.bats`'s three assertions (`chart_version`
+  default, both terragrunt.hcl inputs) from `10.2.2` to `10.2.3` — this file is
+  the RFC #785 recurrence guard verifying the chart pin and its
+  `global.networkPolicy.create: false` companion move together; re-verify that
+  key is still `false` in the `10.2.3` chart's `values.yaml` at pickup time
+  (confirmed unchanged in this run's diff, but re-check against a fresh clone
+  per this repo's own due-diligence convention). No `docs/dependency-tree.md`
+  or `context.md` update needed — neither cites this chart's version. `make ci`
+  (specifically `terraform validate`/`fmt`, clusterless — this seam needs no
+  live OCI/cloud credentials) must pass. PR body must document the six
+  breaking-change findings above, why `10.2.3` (smallest safe delta past a
+  verified-safe minor bump, not a blind patch assumption), and the ADR-0004
+  caveat that this remote clusterless session cannot verify a real
+  `terraform apply` against this pin succeeds end-to-end — call out the
+  rollback path (revert the three pins; the next `terraform apply` re-installs
+  the prior chart version; ArgoCD's own state — Applications, RBAC, repo
+  credentials — lives in the `argocd` namespace's Secrets/ConfigMaps on the
+  cluster, untouched by a chart-version revert in the bootstrap module).
+  `docs/done/` entry required. (auto/argocd-chart-10-2-3)
+
 - [x] 🟢 **Bump `grafana` chart `12.10.2` → `12.10.3`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; planner-fallback upstream check
   2026-08-05, reached via `executor.prompt.md` STEP 6b, Now/next starved by
