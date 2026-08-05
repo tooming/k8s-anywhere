@@ -232,6 +232,74 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump Vault's pinned image `hashicorp/vault:2.0.3` → `2.0.4` (server +
+  unsealer)** (CHARTER **Core Values** §"Everything as code" + general hardening;
+  planner-fallback upstream check 2026-08-05, reached via `executor.prompt.md`
+  STEP 6b — Now/next re-confirmed still gated on #631/#633, no new comment; this
+  run's first PLANNER-fallback pass (ack-s3, merged as #1008/#1009) exhausted the
+  chart-`targetRevision` currency angle (every other pin in `gitops/**/*.yaml`
+  re-verified current against real upstream tags: harbor, kiali, kro,
+  argo-rollouts, envoy-gateway, pyroscope, node-exporter, velero — all clean),
+  so this pass checked plain container `image:` tags instead — a lens today's
+  earlier cycles hadn't used. **No prerequisites — executor may pick up
+  immediately.**) Verified directly (not assumed, ADR-0004): `git ls-remote
+  --tags hashicorp/vault` shows `v2.0.4` as the newest tag on the `2.0.x` line
+  this lab already runs (`gitops/platform/vault.yaml`'s
+  `server.image.tag: "2.0.3"` and `gitops/vault/unsealer.yaml`'s
+  `image: hashicorp/vault:2.0.3` — both pinned 2026-07-24, RFC/audit trail in
+  `vault.yaml`'s own inline `## Re-evaluation log`-style comment, mirroring an
+  ADR's re-evaluation log since Vault itself has no dedicated numbered ADR).
+  A full clone (`git clone hashicorp/vault`) + `git log v2.0.3..v2.0.4`
+  (real commit history, not the published `CHANGELOG.md`, which has no `2.0.x`
+  section at either tag — a pre-existing gap in HashiCorp's own changelog
+  publishing for this release line, flagged here per ADR-0004 rather than
+  silently worked around) shows the real fix set: three "security:" commits
+  turn out to be **false-positive suppressions**, not real vulnerabilities —
+  `git log --grep` on the suppressed IDs finds their origin commits titled
+  "Suppress false positive for GO-2026-5856 & 4970" and (same shape) for
+  GO-2026-5298; these do NOT count toward the flip condition. Two more ARE
+  real: `go.mod`/`go.sum` bump `klauspost/compress` → `v1.18.7` and
+  `go.opentelemetry.io/otel` → `v1.44.0`, resolving GO-2026-5158 and
+  GO-2026-5841 (real dependency CVEs, not suppressions — commit
+  `e6dfd6375b`, "security: bump klauspost/compress to v1.18.7 and otel to
+  v1.44.0"). Separately, `af5fd5a1cc` ("Fix Goroutine Leak in Seal
+  Encryption") touches `vault/seal/seal.go` — the shared encrypt/decrypt path
+  every seal type (including this lab's Shamir/file-storage seal) goes
+  through, a real reliability fix, not seal-type-specific. This satisfies
+  this pin's own flip condition in spirit (a real security-relevant fix past
+  `2.0.3`) even though no public CVE bulletin names `2.0.3` itself as
+  affected — same "ships with a security fix" standard this run's earlier
+  k3s bump (RFC #995) used, not a blind patch assumption.
+
+  Bump `gitops/platform/vault.yaml`'s `server.image.tag: "2.0.3"` → `"2.0.4"`
+  (server) AND `gitops/vault/unsealer.yaml`'s `image: hashicorp/vault:2.0.3`
+  → `hashicorp/vault:2.0.4` (unsealer CLI) — both must move together, same
+  footgun-avoidance pattern as k3s's two-tag-format note (RFC #995) and
+  ADR-0030's own history. Update `tests/securitycontext-vault.bats`'s two
+  pin assertions (`"vault Application server image pinned to 2.0.3"` →
+  `2.0.4`; `"vault-unsealer image bumped to hashicorp/vault:2.0.3"` →
+  `2.0.4`). Extend `vault.yaml`'s inline `## Re-evaluation log`-style comment
+  with a new dated entry (after the existing 2026-07-24 entry) recording this
+  bump: cite the false-positive-suppression findings (GO-2026-5856/4970/5298),
+  the two real dependency-CVE fixes (GO-2026-5158/5841 via
+  klauspost/compress + otel bumps), and the goroutine-leak fix, with a new
+  flip condition for the next audit (e.g. "revisit when a bulletin names a
+  version above `2.0.4` as affected, or when bumping the chart
+  `targetRevision` past `0.34.0`"). No ADR-0017 edit needed — its `2.0.3`
+  mentions are historical narrative describing the 2026-07-17 PSS-flip
+  decision, not a live pin the drift checks track (confirmed directly:
+  `scripts/adr-image-pin-sync-check.sh` does not reference vault/2.0.3 at
+  all — only `adr-0009-rabbitmq-message-broker.md` is wired into that check).
+  `make ci` must pass. PR body must document the false-positive-vs-real
+  finding above (don't just cite "three security commits exist" — say which
+  ones are noise) and the ADR-0004 caveat that this remote clusterless
+  session cannot verify Vault starts cleanly / unseals correctly post-bump on
+  a live cluster — call out the rollback path (revert both tags; ArgoCD
+  re-syncs the server image on next reconciliation; the unsealer Deployment
+  picks up the reverted tag on its next rollout; no data-loss risk — Vault's
+  file-storage PVC data is untouched by an image-tag revert).
+  `docs/done/` entry required. (auto/vault-image-2-0-4)
+
 - [x] 🟢 **Bump `ack-s3` (AWS Controllers for Kubernetes S3 chart) `1.8.2` → `1.9.0`**
   (CHARTER **Core Values** §"Everything as code" + general hardening;
   planner-fallback upstream check 2026-08-05, reached via `executor.prompt.md`
