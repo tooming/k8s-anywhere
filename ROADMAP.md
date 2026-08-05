@@ -232,6 +232,61 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump `kube-state-metrics` chart `8.0.0` → `8.1.3`** (CHARTER **Core
+  Values** §"Everything as code" + general hardening; planner-fallback upstream
+  check 2026-08-05, reached via `executor.prompt.md` STEP 6b, Now/next starved
+  by #631/#633 (re-checked this run, no new comment) — this run's chart-currency
+  sweeps to date had checked `harbor`, `kiali`, `kro`, `argo-rollouts`,
+  `envoy-gateway`, `pyroscope`, `node-exporter`, `velero`, `grafana`, `ack-s3`,
+  `argo-cd`, `cilium` but never `kube-state-metrics` — this pass closed that
+  gap. **No prerequisites — executor may pick up immediately.**) Verified
+  directly (not assumed, ADR-0004): a real clone of
+  `github.com/prometheus-community/helm-charts` (the `repoURL`
+  `gitops/platform/observability-ksm.yaml` actually uses) shows
+  `kube-state-metrics-8.1.3` as the newest stable tag, three minor/patch
+  releases past this lab's pinned `8.0.0` (`8.1.0`, `8.1.1`, `8.1.2`, `8.1.3`,
+  no pre-release beyond it). `git diff kube-state-metrics-8.0.0
+  kube-state-metrics-8.1.3 -- charts/kube-state-metrics/Chart.yaml` shows
+  `appVersion: 2.19.1` **unchanged** at both tags — the underlying
+  kube-state-metrics binary this lab runs does not change at all; this is a
+  packaging-only bump, the same smallest-safe-delta pattern as the
+  Grafana/Harbor/cert-manager/Kiali/kro precedents already in `## Done`.
+  `git log kube-state-metrics-8.0.0..kube-state-metrics-8.1.3 --
+  charts/kube-state-metrics/` shows 4 commits: two purely additive
+  (`collectorsExclude`/`collectorsExtra` values + a `nameOverride`/
+  `fullnameOverride` doc comment) and one CI-testing-only change — no `values.yaml`
+  key this lab's `valuesObject` sets (`fullnameOverride`, `securityContext.*`,
+  `containerSecurityContext.*`, `resources.*`) was renamed or removed. The
+  `role.yaml`/`deployment.yaml` diff (`$.Values.collectors` →
+  `$activeCollectors`, a helper that layers the new
+  `collectorsExclude`/`collectorsExtra` on top of `.Values.collectors`) is a
+  behavior-preserving refactor: this lab's Application sets neither new key, so
+  `$activeCollectors` resolves to the exact same list `.Values.collectors` did
+  before — RBAC rules and the `--resources` flag are unchanged for this lab's
+  config. No breaking changes in the range.
+
+  Bump `gitops/platform/observability-ksm.yaml`'s `targetRevision: 8.0.0` →
+  `8.1.3`. Re-verify directly at pickup time that the `8.1.3` chart's
+  `values.yaml` still contains every key this Application's `valuesObject` sets
+  unchanged in shape — confirm against a fresh clone, don't trust this note's
+  cached read. Add a new chart-pin recurrence-guard assertion to
+  `tests/securitycontext-observability.bats` (or a new
+  `tests/observability-ksm.bats` if that file's scope doesn't fit) asserting
+  `targetRevision: 8.1.3` is present in `observability-ksm.yaml` — mirrors the
+  `ack-s3.bats`/`observability-grafana.bats` per-component exact-version pin
+  pattern (no such assertion exists for this chart yet). No
+  `docs/dependency-tree.md`/`context.md` update needed — neither cites this
+  chart's specific version (checked directly). `make ci` must pass. PR body
+  must document the diff/commit findings above (appVersion unchanged, packaging
+  + additive-only diff, why `8.1.3` is the smallest safe delta) and the
+  ADR-0004 caveat that this remote clusterless session cannot verify
+  kube-state-metrics reconciles cleanly and the stack-health/KSM dashboards
+  keep populating post-bump on a live cluster — call out the rollback path
+  (revert `targetRevision`; ArgoCD re-syncs the prior chart version on next
+  reconciliation; kube-state-metrics is stateless, so a rollback recovers
+  immediately with no data loss). `docs/done/` entry required.
+  (auto/ksm-chart-8-1-3)
+
 - [x] 🟢 **Pin Inkless's batch-coordinator `postgres` image explicitly —
   `postgres:17` → `postgres:17.10`** (CHARTER **Core Values** §"Everything as
   code" + general hardening; planner-fallback finding 2026-08-05, surfaced
