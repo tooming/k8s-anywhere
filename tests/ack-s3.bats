@@ -11,12 +11,12 @@ setup() {
   [ -f "$ACK_S3" ]
 }
 
-@test "ack-s3 Application pins chart version 1.8.2" {
-  run grep -q 'targetRevision: 1.8.2' "$ACK_S3"
+@test "ack-s3 Application pins chart version 1.9.0" {
+  run grep -q 'targetRevision: 1.9.0' "$ACK_S3"
   [ "$status" -eq 0 ]
 }
 
-@test "ack-s3 Application does not pin the stale 1.8.1 version" {
-  run grep -q 'targetRevision: 1.8.1' "$ACK_S3"
+@test "ack-s3 Application does not pin the stale 1.8.2 version" {
+  run grep -q 'targetRevision: 1.8.2' "$ACK_S3"
   [ "$status" -ne 0 ]
 }
