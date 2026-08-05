@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump `ack-s3` (AWS Controllers for Kubernetes S3 chart) `1.8.2` → `1.9.0`**
+- [x] 🟢 **Bump `ack-s3` (AWS Controllers for Kubernetes S3 chart) `1.8.2` → `1.9.0`**
   (CHARTER **Core Values** §"Everything as code" + general hardening;
   planner-fallback upstream check 2026-08-05, reached via `executor.prompt.md`
   STEP 6b after all three standing Now/next items were re-confirmed gated on
