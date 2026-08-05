@@ -232,6 +232,58 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump `grafana` chart `12.10.2` → `12.10.3`** (CHARTER **Core Values**
+  §"Everything as code" + general hardening; planner-fallback upstream check
+  2026-08-05, reached via `executor.prompt.md` STEP 6b, Now/next starved by
+  #631/#633. **No prerequisites — executor may pick up immediately.**) Verified
+  directly (not assumed, ADR-0004): a real clone of
+  `github.com/grafana-community/helm-charts` (the actual `repoURL` this lab's
+  `gitops/platform/observability-grafana.yaml` Application uses — note this is
+  the community-maintained fork, a **different** repo than `grafana/helm-charts`,
+  which is stale/archived upstream and does not carry recent tags) shows
+  `grafana-12.10.3` as a genuine tag past the currently-pinned
+  `grafana-12.10.2`. `git diff grafana-12.10.2 grafana-12.10.3 -- charts/grafana/`
+  on that real clone touches **only** `charts/grafana/Chart.yaml` — `version:
+  12.10.2` → `12.10.3` and `appVersion: 13.1.1` → `13.1.2` — zero changes to
+  `values.yaml` or any template. This chart bump does **not** change the Grafana
+  binary this lab actually runs: `observability-grafana.yaml`'s
+  `valuesObject.image.tag` override (currently `13.0.3`) and the matching
+  ca-bundle init-container image both pin the running Grafana version
+  independently of the chart's own `appVersion` default, per ADR-0006's
+  CVE-driven re-evaluation log (last audited 2026-07-28, kept at `13.0.3` — this
+  bump doesn't touch or reset that pin, and does not itself constitute a new
+  audit of it). `git log grafana-12.10.2..grafana-12.10.3 -- charts/grafana` on
+  the real clone shows one commit, a routine renovate-bot Docker-tag bump
+  (`Update docker.io/grafana/grafana Docker tag to v13.1.2`) — packaging-only,
+  same smallest-safe-delta pattern as the Harbor/cert-manager/Kiali/kro bumps
+  already in `## Done`.
+
+  Bump `gitops/platform/observability-grafana.yaml`'s `targetRevision: 12.10.2`
+  → `12.10.3`. Re-verify directly at pickup time that the `12.10.3` chart's
+  `values.yaml` still contains every key this Application's `valuesObject` sets
+  unchanged in shape (`image.tag`, `persistence.*`, `provisioning.*`,
+  `grafana.ini.*`, `resources.*` — whatever the Application actually sets;
+  confirm against a fresh clone, don't trust this note's cached read). Add a new
+  `tests/observability-grafana.bats` assertion (that file currently only guards
+  the `image.tag`/ca-bundle pins, RFC #563 — no test guards the chart
+  `targetRevision` at all yet) asserting
+  `targetRevision: 12.10.3` is present in `observability-grafana.yaml` — a
+  recurrence guard mirroring this repo's other per-component exact-version pin
+  assertions (Harbor/cert-manager/Kiali/kro precedent). No ADR re-evaluation-log
+  entry is needed — ADR-0006's log tracks the CVE-driven `image.tag` pin, not
+  chart packaging currency, and this bump doesn't touch that pin. No
+  `docs/dependency-tree.md` or `docs/decisions/context.md` update needed —
+  neither cites the chart's `targetRevision` (checked directly: only the image
+  tag `13.0.3` is cited, in `context.md`, and that citation is unaffected).
+  `make ci` must pass. PR body must document the diff findings above, why
+  `12.10.3` (smallest safe delta, packaging-only, non-security), and the
+  ADR-0004 caveat that this remote clusterless session cannot verify Grafana's
+  Git Sync / dashboard provisioning starts cleanly post-bump on a live cluster
+  — call out the rollback path (revert `targetRevision`; ArgoCD self-heals
+  within its sync interval; Grafana's DB lives on a PVC untouched by a chart
+  revert, so a rollback recovers immediately with no data loss). `docs/done/`
+  entry required. (auto/grafana-chart-12-10-3)
+
 - [x] 🟢 **Bump `kiali-server` chart `2.29.0` → `2.30.0`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; ADR-0012's own Re-evaluation log flip
   condition ("revisit when a Kiali-specific CVE is published against `kiali-server`
