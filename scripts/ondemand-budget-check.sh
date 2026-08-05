@@ -67,9 +67,17 @@ command -v kubectl >/dev/null 2>&1 || { echo "kubectl not installed"; exit 2; }
 kubectl get nodes >/dev/null 2>&1 || { bad "cluster unreachable (kubectl get nodes failed)"; exit 2; }
 
 unit_is_up() {
-  local unit="$1" app
+  # NOT mere existence: the "root" app-of-apps (gitops/platform/*.yaml) declares
+  # these Application objects in git, so ArgoCD's own auto-sync/selfHeal recreates
+  # them the moment `make X-down` deletes one — existence alone is true FOREVER once
+  # a unit has ever been brought up, permanently false-positiving the guard (found
+  # live 2026-08-05 recovering the very incident this script guards against: kiali/
+  # longhorn/tidb-demo Applications reappeared with health=Missing minutes after
+  # being deleted). health=Missing means no live resources — genuinely down.
+  local unit="$1" app health
   for app in ${UNIT_APPS[$unit]}; do
-    kubectl get application -n argocd "$app" >/dev/null 2>&1 && return 0
+    health="$(kubectl get application -n argocd "$app" -o jsonpath='{.status.health.status}' 2>/dev/null)"
+    [ -n "$health" ] && [ "$health" != "Missing" ] && return 0
   done
   return 1
 }
