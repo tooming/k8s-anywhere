@@ -232,8 +232,9 @@ setup() {
   [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces[0]' "$P")" = "capstone" ]
 }
 
-# --- argocd carve-out (#632 investigation) -------------------------------------
-@test "disallow-latest-tag excludes the argocd namespace (global.image.tag: latest pin)" {
+# --- argocd carve-out (#632 investigation; pending live-apply confirmation
+#     before removal, issue #999) -----------------------------------------------
+@test "disallow-latest-tag excludes the argocd namespace (pending issue #999 confirmation)" {
   P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
   [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces[1]' "$P")" = "argocd" ]
 }

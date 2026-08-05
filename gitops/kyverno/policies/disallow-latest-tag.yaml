@@ -11,19 +11,35 @@
 # once capstone's manifests reference a real, CI-pinned tag instead of `:latest`.
 #
 # argocd carve-out (found 2026-07-24, #632 investigation): infra/modules/argocd/
-# values.yaml pins `global.image.tag: latest` deliberately (documented TODO —
-# needs the /applicationsets UI route from argoproj/argo-cd#26666, which only
-# ships from v3.5.0-rc1 onward; no stable v3.5.0 exists yet, re-verified
-# 2026-07-24). Without this exclusion every ArgoCD-managed Pod this applies to
-# (application-controller, repo-server, server, the chart's bundled cache-init
-# hook Job, …) is rejected on any recreation — this silently went undetected
-# for days because the running Pods predated Kyverno enforcing the policy and
-# container restarts don't re-trigger admission, until application-controller
-# OOMKilled (separate fix, same investigation) and could never come back:
-# Kyverno blocked every recreation attempt, and `helm upgrade` (via `make
-# argocd`) failed identically on its pre-upgrade hook Job. Remove this
-# exclusion once argo-cd ships a stable release containing #26666 and the
-# `latest` pin in values.yaml is dropped in favor of a real version tag.
+# values.yaml used to pin `global.image.tag: latest` deliberately (documented
+# TODO — needed the /applicationsets UI route from argoproj/argo-cd#26666,
+# which only ships from v3.5.0 onward). Without this exclusion every
+# ArgoCD-managed Pod this applies to (application-controller, repo-server,
+# server, the chart's bundled cache-init hook Job, …) is rejected on any
+# recreation — this silently went undetected for days because the running
+# Pods predated Kyverno enforcing the policy and container restarts don't
+# re-trigger admission, until application-controller OOMKilled (separate fix,
+# same investigation) and could never come back: Kyverno blocked every
+# recreation attempt, and `helm upgrade` (via `make argocd`) failed
+# identically on its pre-upgrade hook Job.
+#
+# UPDATE (janitor cleanup, 2026-08-05): `auto/argocd-chart-10-2-3` bumped the
+# chart to `10.2.3` (appVersion `v3.5.0`, confirmed the first stable tag
+# containing #26666) and this cleanup dropped the `latest` pin from
+# `infra/modules/argocd/values.yaml` entirely — the chart's own
+# `global.image.tag` default now resolves to the real, stable `v3.5.0` tag.
+# **This exclusion is NOT yet safe to remove**, even though the code-level
+# TODO is resolved: `infra/modules/argocd` is Terraform-bootstrap-only
+# (ADR-0001) and does not auto-apply to the live cluster, so removing this
+# exclusion before a live `terraform apply` actually picks up the new pin
+# would reintroduce the exact OOMKilled-recreation-loop failure described
+# above (the live Pods would still be running `:latest`). Standing
+# maintainer-confirmation gate: [Issue
+# #999](https://github.com/tooming/k8s-anywhere/issues/999) — remove `argocd`
+# from the `namespaces:` list below (and this whole carve-out comment, and the
+# matching `tests/kyverno.bats` assertion) once that issue confirms a live
+# `terraform apply` has run and every ArgoCD Pod is actually running a
+# `v3.5.0`-tagged image, not `:latest`.
 #
 # inkless carve-out (found 2026-07-28, structural sweep for the same conflict class
 # as issue #498/the argocd carve-out above): gitops/inkless/inkless-statefulset.yaml
