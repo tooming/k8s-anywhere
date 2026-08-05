@@ -25,3 +25,8 @@ setup() {
   run grep -q 'image: docker.io/grafana/grafana:13.0.1' "$GRAFANA"
   [ "$status" -ne 0 ]
 }
+
+# --- Chart currency pin (planner-fallback upstream check, 2026-08-05) -------
+@test "observability-grafana.yaml pins grafana chart to 12.10.3" {
+  [ "$(yqs '.spec.source.targetRevision' "$GRAFANA")" = "12.10.3" ]
+}

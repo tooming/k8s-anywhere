@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump `grafana` chart `12.10.2` → `12.10.3`** (CHARTER **Core Values**
+- [x] 🟢 **Bump `grafana` chart `12.10.2` → `12.10.3`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; planner-fallback upstream check
   2026-08-05, reached via `executor.prompt.md` STEP 6b, Now/next starved by
   #631/#633. **No prerequisites — executor may pick up immediately.**) Verified
