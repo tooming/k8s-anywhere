@@ -232,6 +232,48 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump `ack-s3` (AWS Controllers for Kubernetes S3 chart) `1.8.2` → `1.9.0`**
+  (CHARTER **Core Values** §"Everything as code" + general hardening;
+  planner-fallback upstream check 2026-08-05, reached via `executor.prompt.md`
+  STEP 6b after all three standing Now/next items were re-confirmed gated on
+  unconfirmed maintainer-confirmation issues #631/#633 (both re-checked this
+  run, no new comment) with no live-state-safe slice to split off, and Planner
+  STEP 2's own intake pass found zero ungroomed issues and zero un-RFC'd 🟡
+  items to promote — this is a genuine upstream-currency gap-analysis finding,
+  not manufactured filler. **No prerequisites — executor may pick up
+  immediately.**) Verified directly (not assumed, ADR-0004): `git ls-remote
+  --tags aws-controllers-k8s/s3-controller` shows `v1.9.0` as the newest stable
+  tag (no pre-release beyond it), one **minor** release ahead of this lab's
+  pinned `1.8.2` (`gitops/platform/ack-s3.yaml`) — not a major bump, so within
+  this routine's mandate. A full clone diff (`git diff v1.8.2 v1.9.0 --
+  helm/`) touches **only** three files: `helm/Chart.yaml` (`version`/
+  `appVersion` `1.8.2` → `1.9.0`), `helm/templates/NOTES.txt`, and
+  `helm/values.yaml`'s `image.tag` — all three are just the version-string
+  bump itself. `git log v1.8.2..v1.9.0 -- helm/` shows exactly one commit:
+  "Update to ACK runtime `v0.62.0`, code-generator `v0.62.0`" (#240) — a
+  routine ACK-framework dependency bump, not a behavioral change to the S3
+  controller's own reconciliation logic. Every key this lab's
+  `ack-s3.yaml` Application sets in `valuesObject` (`aws.*`, `installScope`,
+  `podSecurityContext.*`, `securityContext.*`, `resources.*`) is unchanged in
+  the new chart's `values.yaml` — confirmed directly, not assumed.
+
+  Bump `gitops/platform/ack-s3.yaml`'s `targetRevision: 1.8.2` → `1.9.0`.
+  Update `tests/ack-s3.bats`'s two chart-pin assertions (the "pins chart
+  version" assertion to `1.9.0`, the "does not pin the stale ... version"
+  assertion to the now-stale `1.8.2`) — this is the existing recurrence-guard
+  pattern, mirroring `envoy-gateway.bats`/`harbor.bats`. No
+  `docs/dependency-tree.md` or `context.md` update needed — neither cites this
+  chart's specific version number (checked directly; the dependency-tree's
+  wave-3 table row lists `ack-s3` by name only, no version). `make ci` must
+  pass. PR body must document the diff/commit findings above, why `1.9.0`
+  (smallest safe delta past a routine framework bump, not a blind assumption),
+  and the ADR-0004 caveat that this remote clusterless session cannot verify
+  the ACK S3 controller reconciles a live `Bucket` CR against moto
+  post-bump on a real cluster — call out the rollback path (revert
+  `targetRevision`; ArgoCD re-syncs the prior chart version on next
+  reconciliation; no CRD/CR schema change in this bump, so no data-loss risk).
+  `docs/done/` entry required. (auto/ack-s3-chart-1-9-0)
+
 - [x] 🟢 **Bump k3s pin `v1.36.2+k3s1` → `v1.36.3+k3s1` on both backends** (CHARTER
   **Core Values** §"Recreate-from-code" + general hardening; RFC #995 — architect
   decision 2026-08-05, ADR-0030 audit #994 resolved as **Convert**. **No
