@@ -64,8 +64,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "vault Application server image pinned to 2.0.3" {
-  [ "$(yqs '.spec.source.helm.valuesObject.server.image.tag' "$APP")" = "2.0.3" ]
+@test "vault Application server image pinned to 2.0.4" {
+  [ "$(yqs '.spec.source.helm.valuesObject.server.image.tag' "$APP")" = "2.0.4" ]
 }
 
 @test "vault Application server image repository is hashicorp/vault" {
@@ -113,8 +113,8 @@ setup() {
 
 # --- vault-unsealer Deployment: image bump + securityContext -----------------
 
-@test "vault-unsealer image bumped to hashicorp/vault:2.0.3" {
-  run grep -q 'image: hashicorp/vault:2.0.3' "$UNSEALER"
+@test "vault-unsealer image bumped to hashicorp/vault:2.0.4" {
+  run grep -q 'image: hashicorp/vault:2.0.4' "$UNSEALER"
   [ "$status" -eq 0 ]
 }
 
