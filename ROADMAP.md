@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump `kube-state-metrics` chart `8.0.0` → `8.1.3`** (CHARTER **Core
+- [x] 🟢 **Bump `kube-state-metrics` chart `8.0.0` → `8.1.3`** (CHARTER **Core
   Values** §"Everything as code" + general hardening; planner-fallback upstream
   check 2026-08-05, reached via `executor.prompt.md` STEP 6b, Now/next starved
   by #631/#633 (re-checked this run, no new comment) — this run's chart-currency
