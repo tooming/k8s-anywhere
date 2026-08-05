@@ -18,24 +18,25 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 29 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0029; ADR-0030 exists but isn't in that index, so it's out of scope
-here too, matching the index's own boundary), two are **Superseded** and excluded
-per the index's own convention (only their replacement is listed): ADR-0010 (Redis,
-superseded by ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by
-ADR-0024/Harbor).
+Of the 30 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0030), two are **Superseded** and excluded per the index's own
+convention (only their replacement is listed): ADR-0010 (Redis, superseded by
+ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor).
 
-Of the remaining 27, **seven decide a policy or architectural posture rather than a
+Of the remaining 28, **eight decide a policy or architectural posture rather than a
 single third-party product** — they're excluded from the table below because there's
 no one upstream project to attach a criticality/upstream-source/last-reviewed row to:
 ADR-0003 (decoupled/no-SPOF design principle), ADR-0004 (no-fabricated-content
 policy), ADR-0005 (recreate-over-HA posture), ADR-0016 (default-deny NetworkPolicy
 pattern — enforced via Cilium, which *is* in the table), ADR-0017 (Pod Security
 Standards — a built-in Kubernetes admission feature, not a third-party dependency),
-ADR-0025 (free/OSS-tier governance rule), and ADR-0026 (cloud-agnostic architecture
-policy). The remaining 20 ADRs name 22 distinct third-party tools (two ADRs —
-ADR-0001 and ADR-0012 — each decide on two tools at once; one tool, Garage, is named
-by two ADRs for two different roles and gets one merged row).
+ADR-0025 (free/OSS-tier governance rule), ADR-0026 (cloud-agnostic architecture
+policy), and ADR-0030 (k3s version-pinning governance — enforced via k3s, whose
+backend choice ADR-0027 already covers in the table, the same "policy enforced via
+an already-listed tool" shape as ADR-0016/Cilium). The remaining 20 ADRs name 22
+distinct third-party tools (two ADRs — ADR-0001 and ADR-0012 — each decide on two
+tools at once; one tool, Garage, is named by two ADRs for two different roles and
+gets one merged row).
 
 **Criticality** reuses CHARTER's own "Target end-state" groupings rather than
 inventing a new scheme: **always-on-core** (part of the always-on base stack),
