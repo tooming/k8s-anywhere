@@ -48,6 +48,15 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# 2026-08-05: found live that this policy never allowed envoy-gateway-system, so
+# the rabbitmq.127.0.0.1.nip.io front-door route (gitops/data/rabbitmq/route.yaml)
+# had never actually worked — same bug class as the harbor carve-out.
+@test "allow-rabbitmq-ingress allows envoy-gateway-system on port 15672 (front-door route)" {
+  run grep -B6 'kubernetes.io/metadata.name: envoy-gateway-system' "$DATA_NP/allow-rabbitmq-ingress.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"15672"* ]]
+}
+
 @test "allow-valkey-ingress.yaml exists in data/networkpolicy/" {
   [ -f "$DATA_NP/allow-valkey-ingress.yaml" ]
 }
