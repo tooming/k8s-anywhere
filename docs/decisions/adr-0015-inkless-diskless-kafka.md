@@ -137,6 +137,36 @@ decision changes but the underlying technology choice does not. A version bump
 (or a deliberate decision to hold one) still leaves a dated trail so the
 reasoning is never lost.
 
+### 2026-08-05 — held `postgres` batch-coordinator image at the `17.x` line (issue #1013)
+
+**Trigger.** Executor run, STEP 6b PLANNER-fallback image-tag sweep found
+`postgres/postgres`'s real tags include the `REL_18_*` series (up to
+`REL_18_4`) — PostgreSQL 18 is a released major version, one line past this
+ADR's pinned `postgres:17` (the batch-metadata coordinator database in
+`gitops/inkless/postgres-statefulset.yaml`). Docker Hub confirms matching
+`18.x` image tags exist.
+
+**Decision: hold at the `17.x` line.** PostgreSQL major-version upgrades are
+not binary-compatible across majors — they require `pg_upgrade` or a
+dump/restore against the existing on-disk data directory, not just a fresh
+container start. `inkless-postgres` is a single-replica StatefulSet
+(ADR-0005) backed by a real PersistentVolume holding live batch-metadata
+state whenever Inkless is brought up (`make inkless-up`). A remote
+clusterless session cannot verify a `17`→`18` data-directory upgrade path
+succeeds without data loss, nor confirm the Inkless broker's own SQL/driver
+usage is 18-compatible — mirrors this same log's own `apache/kafka` hold
+(2026-07-24, RFC #708) and [ADR-0013](adr-0013-longhorn-block-storage.md)'s
+Longhorn `1.12.0` hold: decline a major bump whose upgrade-path safety can't
+be confirmed against this lab's actual live topology from this sandbox,
+rather than chase the newest release blind.
+
+**Flip condition (next re-evaluation).** Re-check when either: (a) a
+live-cluster session verifies a `17`→`18` upgrade path (`pg_upgrade` or
+dump/restore) against a real `inkless-postgres` PVC succeeds without data
+loss, (b) Inkless's own documentation states PostgreSQL 18 compatibility
+explicitly, or (c) a CVE is filed against `postgres:17.x` that `18.x` fixes
+and `17.x` does not receive a backport for.
+
 ### 2026-07-24 — held `apache/kafka` client image at `3.9.2` (RFC #708)
 
 **Trigger.** Upgrade-drafter sweep (issue #705) found `apache/kafka:4.3.1` is now
