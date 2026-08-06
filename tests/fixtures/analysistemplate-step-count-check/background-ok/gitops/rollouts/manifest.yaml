@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate-by-route
+  namespace: capstone
+spec:
+  metrics:
+  - name: error-rate-by-route
+    interval: 30s
+    successCondition: result[0] < 0.05
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: capstone
+  namespace: capstone
+spec:
+  strategy:
+    canary:
+      analysis:
+        templates:
+        - templateName: error-rate-by-route
+      steps:
+      - setWeight: 10

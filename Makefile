@@ -127,6 +127,10 @@ argocd-crd-ssa-check: ## Check Applications whose chart ships an oversized CRD s
 rollouts-plugin-list-check: ## Check Argo Rollouts plugin Helm values are YAML lists, not strings (drift detector)
 	@bash scripts/rollouts-plugin-list-check.sh
 
+.PHONY: analysistemplate-step-count-check
+analysistemplate-step-count-check: ## Check step-gating AnalysisTemplates set count (not just interval), else the controller crashloops (drift detector)
+	@bash scripts/analysistemplate-step-count-check.sh
+
 .PHONY: mimir-readonly-root-check
 mimir-readonly-root-check: ## Check every Mimir write path lands on a writable volume, not the read-only root (drift detector)
 	@bash scripts/mimir-readonly-root-check.sh
@@ -213,6 +217,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/helm-chart-pin-check.sh
 	@bash scripts/argocd-crd-ssa-check.sh
 	@bash scripts/rollouts-plugin-list-check.sh
+	@bash scripts/analysistemplate-step-count-check.sh
 	@bash scripts/mimir-readonly-root-check.sh
 	@bash scripts/adr-followup-check.sh
 	@bash scripts/adr-chart-version-sync-check.sh

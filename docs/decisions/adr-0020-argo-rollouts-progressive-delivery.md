@@ -77,6 +77,7 @@ spec:
   metrics:
   - name: success-rate
     interval: 30s
+    count: 5
     successCondition: result[0] >= 0.95
     failureLimit: 3
     provider:
@@ -286,3 +287,36 @@ recurrence guard, replacing the prior image-tag assertions.
 **Status: resolved.** This closes out both the 2026-07-18 "kept" entry and the
 2026-07-19 "Convert" entry above — the lab now runs the actual fixed chart release,
 not a workaround pinned on top of an older one.
+
+### 2026-08-06 — `success-rate` AnalysisTemplate missing `count` crashlooped the controller (bugfix)
+
+**Trigger.** Observed 145 controller-pod restarts over 45 hours (~every 18min) in
+`argo-rollouts`, and intermittent 503s from `rollouts.127.0.0.1.nip.io` (same pod
+serves the dashboard). `kubectl logs` showed a reconcile error on every sync of the
+capstone Rollout: `AnalysisTemplate success-rate has metric success-rate which runs
+indefinitely. Invalid value for count: <nil>`.
+
+**Root cause.** This ADR's own §"AnalysisTemplate from Mimir" snippet (and the
+`gitops/argo-rollouts/analysistemplates/success-rate.yaml` manifest copied from it)
+set `interval` with no `count`. That's a valid *background*-analysis metric (runs for
+the Rollout's lifetime), but this template is referenced from
+`spec.strategy.canary.steps[].analysis` (step-gating, §"Capstone integration" above)
+— Argo Rollouts requires a step-gating analysis to terminate, so an interval-only
+metric there is rejected on every reconcile, and the resulting error-log volume
+eventually OOMs/crashloops the controller.
+
+**Decision: add `count: 5`.** 5 measurements × the existing 30s `interval` ≈ 2.5min
+gate window per canary step — short enough not to stall the demo, long enough to
+outlast the existing `failureLimit: 3` (a rollback fires before `count` is reached on
+sustained failure; `count` only bounds the *success* path). No design change: the
+template stays step-gating, matching the "gate each weight increment" intent this ADR
+already documents — the background-analysis alternative (moving it to
+`spec.strategy.canary.analysis`) was rejected because nothing here calls for
+continuous cross-step analysis.
+
+**Mechanical guard.** `scripts/analysistemplate-step-count-check.sh` (`make
+analysistemplate-step-count-check`, wired into `make ci`) fails the build if any
+`AnalysisTemplate` referenced by a Rollout's `steps[].analysis.templates[]` has a
+metric with `interval` set and `count` unset — the exact invalid combination above.
+Covers the `latency-p95` / `error-rate-by-route` follow-up templates this ADR's
+§"Scope & exceptions" names, not just `success-rate`.
