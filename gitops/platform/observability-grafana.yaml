@@ -14,7 +14,7 @@ spec:
     # (that repo's "grafana" chart entry carries deprecated: true and stopped
     # receiving updates 2026-01-30) to the actively maintained
     # grafana-community/helm-charts, RFC #544. This is a chart-template/schema
-    # bump only — the running Grafana binary stays pinned at image tag 13.0.3
+    # bump only — the running Grafana binary stays pinned at image tag 13.0.5
     # below (unified-storage migration bug history, ADR-0006); verified the
     # security-critical valuesObject keys (securityContext,
     # containerSecurityContext, and their pod/container template wiring) are
@@ -26,13 +26,15 @@ spec:
     helm:
       releaseName: grafana
       valuesObject:
-        # Pin Grafana 13.0.3 — keeps the Pure-Git Git Sync provider from ADR-0006 and
+        # Pin Grafana 13.0.5 — keeps the Pure-Git Git Sync provider from ADR-0006 and
         # avoids the 13.0.0 unified-storage migration bug for Git Sync users. Bumped
         # from 13.0.1 (CVE-2026-9029, CVE-2026-33382, CVE-2026-42127, CVE-2026-42129,
-        # CVE-2026-10601, CVE-2026-8609, CVE-2026-8595 — all fixed in 13.0.2; 13.0.3 is
-        # the newest 13.0.x patch, RFC #563).
+        # CVE-2026-10601, CVE-2026-8609, CVE-2026-8595 — all fixed in 13.0.2; RFC #563),
+        # then from 13.0.3 (GHSA-mpwr-8vm7-h73f, a go-pkcs12 PKCS#12
+        # password-authentication bypass, fixed in the 13.0.4 release — 2026-08-06
+        # currency sweep). 13.0.5 is the newest 13.0.x patch.
         image:
-          tag: "13.0.3"
+          tag: "13.0.5"
         # admin login comes from Vault via the grafana-admin ExternalSecret
         # (gitops/secrets/grafana-admin-externalsecret.yaml): no plaintext default,
         # and a non-"admin" password means Grafana stops nagging to change it.
@@ -53,8 +55,9 @@ spec:
         # MkdirAll'd by Grafana under log.mode "file" (pkg/infra/log/log.go) — our
         # log.mode is "console" only, so it's never written. No other write path
         # exists under this config (checked against grafana chart grafana-12.7.2
-        # and grafana/grafana image v13.0.3's docker entrypoint — byte-identical to
-        # v13.0.1's packaging/docker/run.sh, re-diffed when bumping to 13.0.3; the
+        # and grafana/grafana image v13.0.5's docker entrypoint — byte-identical to
+        # v13.0.1's packaging/docker/run.sh, re-diffed at every bump since (the
+        # 13.0.3 -> 13.0.5 diff of packaging/docker/ is also empty); the
         # 12.7.2 -> 12.7.3 chart bump changed only the chart's default bundled
         # image tag per its release notes, not templates/_pod.tpl, so this
         # analysis still holds unchanged at 12.7.3; the 12.7.3 -> 12.8.0 bump
@@ -79,7 +82,7 @@ spec:
         # unchanged at 12.10.2; the 12.10.2 -> 12.10.3 bump (no CVE, routine
         # currency bump — upstream diff is Chart.yaml's version + appVersion
         # bump only, appVersion 13.1.1 -> 13.1.2, irrelevant here since the
-        # running image tag is pinned separately above at 13.0.3 per ADR-0006;
+        # running image tag is pinned separately above at 13.0.5 per ADR-0006;
         # zero values.yaml/templates changes at all) so this analysis still
         # holds unchanged at 12.10.3).
         #
@@ -138,7 +141,7 @@ spec:
             mountPath: /etc/ssl-custom
         extraInitContainers:
           - name: ca-bundle
-            image: docker.io/grafana/grafana:13.0.3
+            image: docker.io/grafana/grafana:13.0.5
             securityContext:
               runAsNonRoot: true
               runAsUser: 472

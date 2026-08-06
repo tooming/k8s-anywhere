@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump Grafana image tag `13.0.3` → `13.0.5` (security fix) + correct
+- [x] 🟢 **Bump Grafana image tag `13.0.3` → `13.0.5` (security fix) + correct
   ADR-0006's stale Tempo pin citation** (CHARTER **Core Values** §"Everything as
   code" + general hardening; planner-fallback currency sweep 2026-08-06,
   second pass this run, reached via `executor.prompt.md` STEP 6b — Now/next's
