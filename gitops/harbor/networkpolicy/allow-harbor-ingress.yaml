@@ -1,11 +1,18 @@
 # Allow ingress to Harbor pods from the envoy-gateway-system namespace (ADR-0016).
 # The Envoy HTTPRoute `gitops/harbor/route.yaml` proxies traffic for
-# `harbor.127.0.0.1.nip.io` to the Harbor service on port 80
-# (expose.type=clusterIP, tls.enabled=false per ADR-0024 §"Minimal profile").
-# Covers portal (nginx frontend), core, and registry API endpoints served
-# via the unified Harbor clusterIP service.
-# Without this allow the default-deny floor blocks Envoy proxy → Harbor traffic
-# when Harbor is running.
+# `harbor.127.0.0.1.nip.io` to the Harbor Service's port 80, which targetPorts to
+# the harbor-nginx container's actual listening port, 8080 (expose.type=clusterIP,
+# tls.enabled=false per ADR-0024 §"Minimal profile"). NetworkPolicy `ports:` match
+# the destination POD's port, not the Service's port — this rule listed 80 (the
+# Service port) instead of 8080 (the pod's real containerPort), so the default-deny
+# floor silently blocked every request the whole time this policy existed. Found
+# live 2026-08-06/07 chasing a chronic Envoy 503 that survived multiple unrelated
+# fixes (Vault seal, Harbor probe timeouts, a stale EndpointSlice) — confirmed via
+# Envoy's own /clusters admin endpoint (cx_connect_fail incrementing against the
+# correct, healthy pod IP) and a direct same-namespace exec test (worked fine),
+# isolating it to cross-namespace NetworkPolicy specifically. Covers portal (nginx
+# frontend), core, and registry API endpoints served via the unified Harbor
+# clusterIP service — all multiplexed through nginx on 8080.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -17,7 +24,7 @@ spec:
     - Ingress
   ingress:
     - ports:
-        - port: 80
+        - port: 8080
           protocol: TCP
       from:
         - namespaceSelector:
