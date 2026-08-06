@@ -232,6 +232,49 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [x] 🟢 **Bump Loki image `grafana/loki:3.7.4` → `3.7.5`** (CHARTER **Core
+  Values** §"Everything as code" + general hardening; this run's second-cycle
+  currency sweep 2026-08-06, reached via `executor.prompt.md` STEP 6b — Now/next's
+  three items remain gated on #631/#633 (re-checked this cycle, unchanged), this
+  same run's first cycle's PLANNER/ARCHITECT fallback passes found no ungroomed
+  issues, no un-RFC'd 🟡 items, and resolved the only fresh ADR-audit trigger found
+  (ADR-0032, TiDB) already. This cycle's fresh angle: a full inventory of every
+  `image:` line under `gitops/` — not just ArgoCD `Application` `targetRevision`s,
+  which the day's earlier sweeps focused on — surfaced a one-patch-behind Loki pin.
+  **No prerequisites — executor may pick up immediately.**) Verified directly (not
+  assumed, ADR-0004): `git ls-remote --tags grafana/loki` shows `v3.7.5` as the
+  newest tag on the `3.7.x` line this lab already runs (no major/minor jump). A
+  real clone's `git log v3.7.4..v3.7.5` (25 commits) shows six `[SECURITY]`-tagged
+  dependency-CVE fixes (`klauspost/compress` → `v1.18.7` ×3 module paths,
+  `golang.org/x/text` → `v0.39.0` ×2, `go.opentelemetry.io/otel` → `v1.42.0`,
+  `google.golang.org/grpc` → `v1.82.1`) plus a real reliability fix
+  (`fix(ingester): Fix flush race in ingester`, #23682) — the same "ships with a
+  security fix" flip-condition standard this repo's k3s (RFC #995) and Vault
+  (2026-08-05) bumps used, not a blind patch assumption. This also catches up a
+  small pre-existing gap: the live pin had already moved `3.7.2` → `3.7.4` since
+  [ADR-0006](docs/decisions/adr-0006-grafana-native-git-sync.md)'s last dated log
+  entry (2026-07-28, which still cited `3.7.2`) without a matching log update or
+  `docs/done/` record — noted honestly in the ADR's new entry rather than silently
+  re-dated.
+
+  Bump `gitops/observability/loki/deployment.yaml`'s `image: grafana/loki:3.7.4`
+  → `grafana/loki:3.7.5`. Update `tests/observability-loki.bats`'s assertion to
+  `3.7.5` and add a "does not pin the stale `3.7.4` tag" recurrence guard (mirrors
+  this repo's other exact-version-pin test pairs, e.g. `ack-s3.bats`). Add a new
+  dated entry to ADR-0006's `## Re-evaluation log` (after the existing 2026-07-28
+  entry) recording the security-fix findings above, the log-drift note, and a new
+  flip condition for the next audit ("revisit when a new advisory/fix range names
+  a version at or above `3.7.5` as affected"). No `docs/dependency-tree.md` update
+  needed — it doesn't cite Loki's specific version (checked directly). `make ci`
+  must pass. PR body must document the security-fix findings above and the
+  ADR-0004 caveat that this remote clusterless session cannot verify Loki starts
+  cleanly and continues ingesting logs post-bump on a live cluster — call out the
+  rollback path (revert the `image:` tag; Loki is a plain `Deployment`, not an
+  ArgoCD-templated Helm release, so a revert takes effect on the next manual
+  apply/GitOps sync; no data loss either way since Loki's log storage lives in
+  Garage S3, untouched by an image-tag change). `docs/done/` entry required.
+  (auto/loki-image-3-7-5)
+
 - [x] 🟢 **Bump `kube-state-metrics` chart `8.0.0` → `8.1.3`** (CHARTER **Core
   Values** §"Everything as code" + general hardening; planner-fallback upstream
   check 2026-08-05, reached via `executor.prompt.md` STEP 6b, Now/next starved

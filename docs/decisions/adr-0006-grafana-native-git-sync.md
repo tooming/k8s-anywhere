@@ -143,3 +143,57 @@ advisory (`GHSA-fx6q-qhch-hxgp`) is unrelated to this version range.
 three flip conditions fired. No repo change this cycle.
 
 **Flip condition (next re-evaluation).** Unchanged from the prior entries above.
+
+### 2026-08-06 — Loki security fix range found, pin bumped `3.7.4` → `3.7.5`
+
+**Log-drift note.** This entry also catches up a gap: the live pin
+(`gitops/observability/loki/deployment.yaml`) had already moved to `loki:3.7.4`
+by the time this run started — a routine bump that landed without a matching
+entry here (the audit trail above stops at `3.7.2`, 2026-07-28). No `docs/done/`
+record of that intermediate bump was found either. Noting the gap honestly
+rather than silently re-dating the log to make it look continuous — the pin
+itself was never wrong, only this ADR's own tracking of it lagged.
+
+**Trigger.** Fresh currency sweep (this run's second cycle, `executor.prompt.md`
+rule #9 judgment — Now/next's three items remain gated on #631/#633, unchanged;
+PLANNER/ARCHITECT fallback passes this run found no ungroomed issues, no
+un-RFC'd 🟡 items, and no new ADR-audit triggers beyond what this run's first
+cycle already resolved — see ADR-0032/`docs/industry/2026-W32-digest.md`). A
+full inventory of every `image:` line under `gitops/` (not just ArgoCD
+`Application` `targetRevision`s) found `grafana/loki:3.7.4` one patch behind
+the real newest tag.
+
+**Verified directly (not assumed, ADR-0004):** `git ls-remote --tags
+grafana/loki` shows `v3.7.5` as the newest tag on the `3.7.x` line pinned here
+(no major/minor jump). A real clone's commit range `v3.7.4..v3.7.5` (25
+commits) contains genuine security fixes, not just routine chores: six
+`[SECURITY]`-tagged dependency bumps — `github.com/klauspost/compress` →
+`v1.18.7` (three separate module paths), `golang.org/x/text` → `v0.39.0` (two
+module paths), `go.opentelemetry.io/otel` → `v1.42.0`, `google.golang.org/grpc`
+→ `v1.82.1` — plus a real reliability fix, `fix(ingester): Fix flush race in
+ingester [release-3.7.x]` (#23682). This satisfies this ADR's own flip
+condition standard ("a new bulletin/fix names a version at or above the
+current pin") in the same "ships with a security fix" sense the k3s (RFC #995)
+and Vault (2026-08-05 bump) precedents used — not a blind patch assumption.
+
+**Decision: bump `loki:3.7.4` → `3.7.5`** (the newest `3.7.x` patch, smallest
+safe delta carrying every fix in the range).
+`gitops/observability/loki/deployment.yaml`'s `image:` field updated;
+`tests/observability-loki.bats` updated to assert `3.7.5` present and `3.7.4`
+absent (recurrence guard, mirrors this repo's other exact-version-pin tests).
+Grafana (`13.0.3`) and Tempo (`2.10.5`, confirmed still the newest `2.10.x` tag
+via `git ls-remote --tags grafana/tempo` this same run) are unaffected — their
+own flip conditions from the prior entries remain unmet.
+
+**ADR-0004 caveat.** This remote, clusterless session verified the commit-range
+facts above directly against a real `grafana/loki` clone, but cannot verify
+Loki starts cleanly and continues ingesting logs post-bump on a live cluster —
+rollback is a one-line revert of the `image:` tag; ArgoCD is not involved here
+(Loki is a plain `Deployment`, not an ArgoCD-templated Helm release), so a
+revert takes effect on the next manual apply/GitOps sync of `gitops/observability/`;
+no data loss either way since Loki's log storage lives in Garage S3, untouched
+by an image-tag change.
+
+**Flip condition (next re-evaluation).** Revisit Loki's pin again when a new
+advisory/fix range names a version at or above `3.7.5` as affected. Grafana and
+Tempo flip conditions remain unchanged from the prior entries above.
