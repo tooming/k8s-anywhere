@@ -351,3 +351,29 @@ setup() {
   run grep -qi 'placeholder\|TODO\|FIXME\|fake\|dummy\|fabricat' "$REPO/grafana/dashboards/lab-harbor.json"
   [ "$status" -ne 0 ]
 }
+
+# --- Probe timeouts (found live 2026-08-06) -----------------------------------
+# The chart's own default timeoutSeconds: 1 (every component) is too tight for a
+# resource-constrained host under any real load — exec healthchecks routinely took
+# longer than 1s here, causing a self-inflicted crashloop-on-every-recreation with
+# nothing to do with actual component health. Every component gets a 5s override.
+@test "harbor Application overrides database.internal probe timeoutSeconds to 5s" {
+  run grep -A1 'internal:' "$REPO/gitops/platform/harbor.yaml"
+  run grep -c 'timeoutSeconds: 5' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 6 ]
+}
+
+@test "harbor Application overrides core probe timeouts (startup/liveness/readiness)" {
+  run grep -A20 '^        core:' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"startupProbe"* ]]
+  [[ "$output" == *"livenessProbe"* ]]
+  [[ "$output" == *"readinessProbe"* ]]
+}
+
+@test "harbor Application overrides exporter probe timeouts" {
+  run grep -A5 '^        exporter:' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"timeoutSeconds: 5"* ]]
+}
