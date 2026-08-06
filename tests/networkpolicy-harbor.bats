@@ -30,7 +30,7 @@ setup() {
 }
 
 
-# --- ingress allow (Envoy Gateway → Harbor TCP 80) --------------------------------
+# --- ingress allow (Envoy Gateway → Harbor TCP 8080) -------------------------------
 @test "allow-harbor-ingress.yaml exists in harbor/networkpolicy/" {
   [ -f "$HARBOR_NP/allow-harbor-ingress.yaml" ]
 }
@@ -40,9 +40,19 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-harbor-ingress allows ingress on port 80" {
-  run grep -q 'port: 80' "$HARBOR_NP/allow-harbor-ingress.yaml"
+# 2026-08-06/07: this rule listed port 80 (the Harbor Service's port) instead of
+# 8080 (the harbor-nginx container's actual containerPort, which NetworkPolicy
+# `ports:` must match) — the default-deny floor silently blocked every request the
+# whole time this policy existed. Found live chasing a chronic Envoy 503 that
+# survived several unrelated fixes; confirmed via Envoy's /clusters admin endpoint
+# (cx_connect_fail against a correct, healthy pod IP) plus a same-namespace exec
+# test that worked fine, isolating it to this cross-namespace policy specifically.
+# Exact match (not substring) so this can't silently pass against "8080" too.
+@test "allow-harbor-ingress allows ingress on port 8080 (the pod's real containerPort, not the Service's port 80)" {
+  run grep -qE '^\s*- port: 8080$' "$HARBOR_NP/allow-harbor-ingress.yaml"
   [ "$status" -eq 0 ]
+  run grep -qE '^\s*- port: 80$' "$HARBOR_NP/allow-harbor-ingress.yaml"
+  [ "$status" -eq 1 ]
 }
 
 @test "allow-harbor-ingress restricts source to envoy-gateway-system namespace" {
