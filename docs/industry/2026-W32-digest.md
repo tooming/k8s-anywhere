@@ -35,8 +35,16 @@ recently covered.
   directly verified kube-state-metrics, Vault, ack-s3, k3s, argo-cd, grafana,
   kyverno, rabbitmq, valkey, garage against real upstream tags; nothing new surfaced
   in this run's own fetch pass on top of that.
-- **No CVE or security advisory found this run** against any pinned version in
-  `gitops/**` or `infra/**`.
+- **Update (later the same day): two real findings landed after this entry was
+  first written** — a Loki query-correctness fix (`3.7.5`→`3.7.6`, #1042) and a
+  real `Security:`-tagged Grafana CVE fix (`13.0.3`→`13.0.5`, GHSA-mpwr-8vm7-h73f,
+  #1044), both from this same run-sequence's own later currency-sweep cycles. The
+  "No CVE found" line below is corrected accordingly — see the new "Loki" and
+  "Grafana image tag" entries under "Lab stack".
+- **One real CVE found and fixed this run**, corrected from the original "no CVE
+  found" claim below: GHSA-mpwr-8vm7-h73f (Grafana's `image.tag` pin, fixed in
+  `13.0.4`/`13.0.5`) — see "Lab stack" below. No other CVE/security advisory found
+  against any other pinned version in `gitops/**` or `infra/**`.
 
 ---
 
@@ -90,6 +98,36 @@ the `1.18.12` bump in the first place). Nothing new here.
 **What this means for the lab:** no action. Existing ADR-0014 hold stands.
 
 Source: <https://github.com/cilium/cilium/tags> (fetched 2026-08-06).
+
+---
+
+### Grafana image tag — `grafana/grafana` — pin bumped `13.0.3` → `13.0.5` (real CVE)
+
+**Added retroactively** — this run's later PLANNER-fallback cycle (after this digest
+entry was first drafted) found a real gap this digest's "everything else... current"
+line above hadn't caught, since it only checked the Grafana **chart** version
+(`12.10.3`), not the separately-tracked (ADR-0006) `image.tag` binary pin. `git log
+v13.0.3..v13.0.5 --no-merges` on a real `grafana/grafana` clone contains one
+explicitly `Security:`-tagged commit: `[release-13.0.4] Security: Bump go-pkcs12 to
+v0.7.2 (GO-2026-5052)`, fixing **GHSA-mpwr-8vm7-h73f** — a PKCS#12
+password-authentication bypass pulled in transitively via `grafana-azure-sdk-go`.
+Bumped to `13.0.5` (the newest `13.0.x` patch); `docs/done/2026-08-06-grafana-image-13-0-5.md`
+and ADR-0006's own `## Re-evaluation log` have the full writeup. Also corrected a
+log-drift gap found in the same pass: ADR-0006's log cited Tempo's pin as `2.10.5`
+while the live pin was already the current `2.10.7` (record-only, no `gitops/`
+change). Source: <https://github.com/grafana/grafana/releases> (fetched 2026-08-06).
+
+### Loki — `grafana/loki` — pin bumped `3.7.5` → `3.7.6` (real correctness fix)
+
+**Added retroactively**, same reason as above. `v3.7.6` was published on the
+`grafana/loki` GitHub repo (and its matching Docker Hub image) the same day this
+digest's window covers, hours after this run's own prior `3.7.4`→`3.7.5` bump
+merged. The commit range contains one real fix: `fix(queryrange): Preserve sketch in
+MergeLabels [release-3.7.x]` (#23770), a query-correctness bug in detected-labels
+sketch merging — no `[SECURITY]` tag this time, but a verified real fix, the same
+bar the prior `3.7.4`→`3.7.5` bump's own non-CVE commit used.
+`docs/done/2026-08-06-loki-image-3-7-6.md` has the full writeup. Source:
+<https://github.com/grafana/loki/releases> (fetched 2026-08-06).
 
 ---
 
