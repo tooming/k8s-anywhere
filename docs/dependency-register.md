@@ -18,12 +18,12 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 30 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0030), two are **Superseded** and excluded per the index's own
+Of the 32 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0032), two are **Superseded** and excluded per the index's own
 convention (only their replacement is listed): ADR-0010 (Redis, superseded by
 ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor).
 
-Of the remaining 28, **eight decide a policy or architectural posture rather than a
+Of the remaining 30, **eight decide a policy or architectural posture rather than a
 single third-party product** — they're excluded from the table below because there's
 no one upstream project to attach a criticality/upstream-source/last-reviewed row to:
 ADR-0003 (decoupled/no-SPOF design principle), ADR-0004 (no-fabricated-content
@@ -33,10 +33,12 @@ Standards — a built-in Kubernetes admission feature, not a third-party depende
 ADR-0025 (free/OSS-tier governance rule), ADR-0026 (cloud-agnostic architecture
 policy), and ADR-0030 (k3s version-pinning governance — enforced via k3s, whose
 backend choice ADR-0027 already covers in the table, the same "policy enforced via
-an already-listed tool" shape as ADR-0016/Cilium). The remaining 20 ADRs name 22
+an already-listed tool" shape as ADR-0016/Cilium). The remaining 22 ADRs name 24
 distinct third-party tools (two ADRs — ADR-0001 and ADR-0012 — each decide on two
 tools at once; one tool, Garage, is named by two ADRs for two different roles and
-gets one merged row).
+gets one merged row; ADR-0031/ADR-0032 each name one — TiDB Operator and TiDB itself
+are distinct products with distinct version lines, so they get separate rows, same
+shape as Istio/Kiali under ADR-0012).
 
 **Criticality** reuses CHARTER's own "Target end-state" groupings rather than
 inventing a new scheme: **always-on-core** (part of the always-on base stack),
@@ -56,7 +58,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | Terraform / Terragrunt | always-on-core (day-0 bootstrap only, ADR-0001) | terraform.io, terragrunt.gruntwork.io | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | not dated in ADR (no Re-evaluation log) |
 | ArgoCD | always-on-core | argoproj.github.io, github.com/argoproj/argo-cd | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | not dated in ADR (no Re-evaluation log) |
 | Garage | always-on-core (in-cluster S3, ADR-0002) + bootstrap substrate (off-cluster Terraform-state backend, ADR-0007) | github.com/Deuxfleurs/garage | [ADR-0002](decisions/adr-0002-garage-not-minio.md), [ADR-0007](decisions/adr-0007-off-cluster-garage-tfstate-backend.md) | 2026-07-28 (ADR-0002 audit #776, `v2.3.0` kept) |
-| Grafana | always-on-core (observability stack) | grafana.com, github.com/grafana/grafana | [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md) | 2026-07-28 (all three flip conditions re-checked, kept) |
+| Grafana | always-on-core (observability stack) | grafana.com, github.com/grafana/grafana | [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md) | 2026-08-06 (Loki bumped `3.7.4`→`3.7.5`, real security fixes; Grafana/Tempo flip conditions re-confirmed unmet) |
 | Envoy Gateway | always-on-core | github.com/envoyproxy/gateway | [ADR-0008](decisions/adr-0008-envoy-gateway-not-traefik.md) | 2026-07-23 (`v1.8.2` → `v1.8.3` bump) |
 | RabbitMQ | always-on-core | github.com/rabbitmq/rabbitmq-server | [ADR-0009](decisions/adr-0009-rabbitmq-message-broker.md) | 2026-07-27 (CVE-2026-44839/CVE-2026-57219 audit #761, kept) |
 | Istio (ambient mode) | heavy-on-demand (`make istio-up`/`istio-down`) | istio.io, github.com/istio/istio | [ADR-0012](decisions/adr-0012-istio-ambient-not-sidecar.md) | 2026-08-04 (kiali-server bump audit, shared ADR) |
@@ -64,6 +66,8 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | Longhorn | heavy-on-demand (`make longhorn-up`/`longhorn-down`) | github.com/longhorn/longhorn | [ADR-0013](decisions/adr-0013-longhorn-block-storage.md) | 2026-07-28 (flip condition re-checked, `1.11.3` kept) |
 | Cilium | always-on-core (CNI — the network data plane itself) | github.com/cilium/cilium | [ADR-0014](decisions/adr-0014-cilium-not-flannel-policy.md) | 2026-07-30 (RFC #917, `1.17.18` → `1.18.12`) |
 | Aiven Inkless | heavy-on-demand (`make inkless-up`/`inkless-down`) | github.com/aiven/inkless | [ADR-0015](decisions/adr-0015-inkless-diskless-kafka.md) | 2026-07-24 (`apache/kafka` client held at `3.9.2`, RFC #708) |
+| TiDB Operator | heavy-on-demand (`make tidb-up`/`tidb-down`) | github.com/pingcap/tidb-operator | [ADR-0031](decisions/adr-0031-tidb-operator-version-policy.md) | 2026-08-05 (new ADR authored; held at the `1.6.x` line, `v2.0.0` major rewrite deferred) |
+| TiDB | heavy-on-demand (`make tidb-up`/`tidb-down`) | github.com/pingcap/tidb | [ADR-0032](decisions/adr-0032-tidb-version-policy.md) | 2026-08-06 (new ADR authored; held at the `v8.5.x` line, `v26.x` calendar-versioning scheme change deferred) |
 | Valkey (supersedes Redis, ADR-0010) | always-on-core | github.com/valkey-io/valkey | [ADR-0018](decisions/adr-0018-valkey-not-redis.md) | 2026-07-29 (Redis AGPLv3 re-check, Valkey kept, audit #829) |
 | Kyverno | always-on-next-wave (Objective O1) | github.com/kyverno/kyverno | [ADR-0019](decisions/adr-0019-kyverno-admission-engine.md) | 2026-07-29 (`admissionController` bumped to 2 replicas) |
 | Argo Rollouts | always-on-next-wave (Objective O1) | github.com/argoproj/argo-rollouts | [ADR-0020](decisions/adr-0020-argo-rollouts-progressive-delivery.md) | 2026-07-20 (flip condition met, chart bumped to `2.41.1`) |
@@ -79,7 +83,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 ## Keeping this in sync
 
 This register has no mechanical drift guard yet — it's a manual, best-effort snapshot
-as of 2026-08-04. Every future chart/image-version bump PR already updates its own
+as of 2026-08-06. Every future chart/image-version bump PR already updates its own
 ADR's Re-evaluation log (an existing, enforced convention); this file's "Last
 reviewed" column should be updated in the same PR when it touches a row here, but
 nothing currently fails `make ci` if it drifts. A future item could add a mechanical
