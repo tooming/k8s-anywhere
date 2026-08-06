@@ -78,3 +78,25 @@ setup() {
   run grep -q 'destNamespace: vault' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
+
+# 2026-08-06: found live that vault-unsealer (gitops/vault/unsealer.yaml, added
+# 2026-07-29 specifically to fix a prior "Vault sealed for 4+ days undetected"
+# incident) had no NetworkPolicy ingress rule of its own — under default-deny its
+# `vault operator unseal` calls were silently dropped the whole time, so the SAME
+# incident class recurred. Confirmed live: manual unseal from inside vault-0
+# (no network) succeeds instantly; the identical call from vault-unsealer times out.
+@test "allow-vault-from-unsealer.yaml exists in vault/networkpolicy/" {
+  [ -f "$VAULT_NP/allow-vault-from-unsealer.yaml" ]
+}
+
+@test "allow-vault-from-unsealer allows port 8200 from the vault-unsealer pod (same namespace)" {
+  run grep -q 'port: 8200' "$VAULT_NP/allow-vault-from-unsealer.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'app: vault-unsealer' "$VAULT_NP/allow-vault-from-unsealer.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "vault kustomization references allow-vault-from-unsealer.yaml" {
+  run grep -q 'allow-vault-from-unsealer.yaml' "$VAULT_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}

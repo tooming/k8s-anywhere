@@ -1,0 +1,33 @@
+# Allow ingress to vault-0 from the vault-unsealer pod (same namespace) on TCP 8200
+# (ADR-0016). Found missing live 2026-08-06: the unsealer (gitops/vault/unsealer.yaml)
+# was added 2026-07-29 specifically to fix a prior incident where Vault stayed
+# sealed for 4+ days undetected — but its own NetworkPolicy ingress rule was never
+# created, so under the default-deny floor its `vault operator unseal` calls were
+# silently dropped the entire time. The unsealer's own hang-detection fix (a
+# `timeout` around each vault call, landed in that same incident) meant it failed
+# fast and looped forever instead of wedging — which looks identical to "working
+# but Vault is still sealed" from the outside, so this went undetected for days
+# again. Confirmed live: `vault operator unseal` from inside the vault-0 pod itself
+# (no network involved) succeeds instantly; the exact same call from the unsealer
+# pod times out. Neither allow-vault-from-eso.yaml nor allow-vault-from-gateway.yaml
+# cover same-namespace traffic.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-vault-from-unsealer
+  namespace: vault
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: vault
+      component: server
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 8200
+          protocol: TCP
+      from:
+        - podSelector:
+            matchLabels:
+              app: vault-unsealer
