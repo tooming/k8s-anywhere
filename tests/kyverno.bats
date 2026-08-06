@@ -232,22 +232,26 @@ setup() {
   [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces[0]' "$P")" = "capstone" ]
 }
 
-# --- argocd carve-out (#632 investigation; pending live-apply confirmation
-#     before removal, issue #999) -----------------------------------------------
-@test "disallow-latest-tag excludes the argocd namespace (pending issue #999 confirmation)" {
-  P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
-  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces[1]' "$P")" = "argocd" ]
-}
+# argocd carve-out REMOVED 2026-08-06 (issue #999 confirmed: live terraform apply
+# picked up the v3.5.0 pin, every ArgoCD Pod verified running v3.5.0, not :latest).
 
 # --- inkless carve-out (found 2026-07-28, structural sweep) --------------------
 @test "disallow-latest-tag excludes the inkless namespace (no stable release tag upstream)" {
   P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
-  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces[2]' "$P")" = "inkless" ]
+  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces[1]' "$P")" = "inkless" ]
 }
 
 @test "disallow-latest-tag exclude block is scoped to named namespaces only (not a blanket exclusion)" {
   P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
-  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces | length' "$P")" = "3" ]
+  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces | length' "$P")" = "2" ]
+}
+
+# Regression: issue #999 confirmed live and the carve-out was removed 2026-08-06 —
+# pin this so a future edit can't silently reintroduce it without a matching new gate.
+@test "disallow-latest-tag no longer excludes the argocd namespace (issue #999 resolved)" {
+  P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
+  run grep -q 'argocd' <(yqs '.spec.rules[0].exclude.any[0].resources.namespaces' "$P")
+  [ "$status" -eq 1 ]
 }
 
 @test "add-default-seccomp ClusterPolicy file exists" {
