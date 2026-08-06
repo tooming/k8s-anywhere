@@ -197,3 +197,44 @@ by an image-tag change.
 **Flip condition (next re-evaluation).** Revisit Loki's pin again when a new
 advisory/fix range names a version at or above `3.7.5` as affected. Grafana and
 Tempo flip conditions remain unchanged from the prior entries above.
+
+### 2026-08-06 — Loki correctness fix found same day, pin bumped `3.7.5` → `3.7.6`
+
+**Trigger.** Planner-fallback currency sweep (`executor.prompt.md` STEP 6b,
+Now/next's three standing items still gated on unconfirmed
+maintainer-confirmation issues #631/#633) re-checked `grafana/loki`
+specifically since it was the freshest bump in this lab's history — the
+`3.7.4`→`3.7.5` entry directly above, merged earlier the same day. A new
+`v3.7.6` tag had been published in the hours since.
+
+**Verified directly (not assumed, ADR-0004):** `git ls-remote --tags
+grafana/loki` / `git log v3.7.5..v3.7.6` on a real clone shows `v3.7.6` as the
+newest tag on the `3.7.x` line pinned here (no major/minor jump; nothing newer
+released yet). Docker Hub's public tags API confirms the `grafana/loki:3.7.6`
+image itself is published (multi-arch manifest, pushed 2026-08-06T09:36 UTC)
+— not just a source-repo tag with no matching image. The commit range
+contains one substantive fix past a docs backport:
+`fix(queryrange): Preserve sketch in MergeLabels [release-3.7.x]` (#23770), a
+real query-correctness fix in `pkg/storage/detected/labels.go` (topk/sketch
+merging for detected-labels queries returned wrong results without it). No
+`[SECURITY]`-tagged commit this time, but a real, verified fix on the exact
+patch line this lab tracks meets the same bar the `3.7.4`→`3.7.5` entry's own
+non-CVE commit (`fix(ingester): Fix flush race`) used.
+
+**Decision: bump `loki:3.7.5` → `3.7.6`** (the newest `3.7.x` patch, smallest
+safe delta carrying the fix above). `gitops/observability/loki/deployment.yaml`'s
+`image:` field updated; `tests/observability-loki.bats` updated to assert
+`3.7.6` present and `3.7.5` absent (recurrence guard, same pattern as the prior
+entry). Grafana and Tempo were not re-checked this cycle (out of scope — this
+was a targeted re-check of Loki specifically, not a full stack sweep); their
+flip conditions from the prior entries remain unmet as of their last audit.
+
+**ADR-0004 caveat.** Same as the prior entry: this remote, clusterless session
+verified the commit-range and published-image facts directly, but cannot
+verify Loki starts cleanly and continues ingesting logs post-bump on a live
+cluster. Rollback is a one-line revert of the `image:` tag; no data loss
+either way since Loki's log storage lives in Garage S3, untouched by an
+image-tag change.
+
+**Flip condition (next re-evaluation).** Revisit Loki's pin again when a new
+advisory/fix range names a version at or above `3.7.6` as affected.
