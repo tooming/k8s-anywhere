@@ -270,6 +270,17 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
+# Found live 2026-08-06/07 (#633): Kargo 1.11.0's admission webhook rejects a
+# Digest-strategy image subscription with no constraint --
+# "spec.subscriptions[0].image.constraint: Invalid value: \"\": must be set
+# when imageSelectionStrategy is Digest" -- Digest strategy still needs to
+# know which tag's digest to watch. Verified live that adding this field
+# lets the Warehouse actually create.
+@test "Warehouse sets an explicit constraint for the Digest strategy (required by Kargo's admission webhook)" {
+  run grep -q 'constraint: latest' "$REPO/gitops/kargo-project/project.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "kargo-project declares dev and prod Stages" {
   run grep -q 'name: dev' "$REPO/gitops/kargo-project/project.yaml"
   [ "$status" -eq 0 ]

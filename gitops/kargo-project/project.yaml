@@ -29,6 +29,14 @@ metadata:
 # never existed in any Kargo version this lab has run.
 # `tagSelectionStrategy` was silently ignored (Kargo defaults an unset
 # strategy to SemVer), so the Warehouse was never actually tracking digests.
+# 2026-08-06/07: found live (#633) — Kargo 1.11.0's admission webhook rejects
+# this Warehouse outright: "spec.subscriptions[0].image.constraint: Invalid
+# value: \"\": must be set when imageSelectionStrategy is Digest". Digest
+# strategy still needs to know *which* tag's digest to watch (it can't poll
+# "all tags" with no filter) — set to the tag this image is actually always
+# pushed as (per the comment above: "even though the image is always tagged
+# :latest"). Every new push to :latest with a changed digest becomes new
+# Freight; the tag name itself never changes, only the digest it points to.
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Warehouse
 metadata:
@@ -39,6 +47,7 @@ spec:
     - image:
         repoURL: harbor.127.0.0.1.nip.io/library/hello
         imageSelectionStrategy: Digest
+        constraint: latest
         discoveryLimit: 5
 ---
 # Stage: dev
