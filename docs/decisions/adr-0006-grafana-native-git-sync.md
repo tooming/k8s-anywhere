@@ -238,3 +238,63 @@ image-tag change.
 
 **Flip condition (next re-evaluation).** Revisit Loki's pin again when a new
 advisory/fix range names a version at or above `3.7.6` as affected.
+
+### 2026-08-06 — Grafana security fix found, pin bumped `13.0.3` → `13.0.5`; Tempo log-drift corrected
+
+**Trigger.** Second planner-fallback currency sweep this run (`executor.prompt.md`
+STEP 6b, Now/next's three standing items still gated on unconfirmed
+maintainer-confirmation issues #631/#633). A batch `git ls-remote --tags`
+check of GitHub-hosted `image:` pins not yet re-checked this run (Mimir,
+Grafana's `image.tag` override, RabbitMQ, Valkey) found Grafana's binary pin
+one patch behind.
+
+**Verified directly (not assumed, ADR-0004):** `git ls-remote --tags
+grafana/grafana` shows `v13.0.5` as the newest tag on the `13.0.x` line (no
+minor/major jump — `13.1.x` exists but a version-line jump needs its own
+deeper diligence per this ADR's established bar, not bundled into a routine
+patch bump). `git log v13.0.3..v13.0.5 --no-merges` (37 commits) contains one
+explicitly `Security:`-tagged commit: `[release-13.0.4] Security: Bump
+go-pkcs12 to v0.7.2 (GO-2026-5052)`, fixing GHSA-mpwr-8vm7-h73f — a PKCS#12
+password-authentication bypass in `software.sslmate.com/src/go-pkcs12`
+(affected v0.6.0 up to the fix, pulled in transitively via
+`grafana-azure-sdk-go`). This satisfies this ADR's own flip condition
+("advisory naming a version at or above the current pin") the same way the
+2026-07-19 CVE bump did. `git diff v13.0.3 v13.0.5 -- packaging/docker/` is
+**empty** — the Docker image's `run.sh`/`Dockerfile` are byte-identical
+across the whole range, so the existing packaging/read-only-root-filesystem
+analysis in `observability-grafana.yaml`'s comments carries forward
+unchanged, re-verified rather than assumed.
+
+**Decision: bump `grafana:13.0.3` → `13.0.5`** (the newest `13.0.x` patch,
+smallest safe delta carrying the fix above).
+`gitops/platform/observability-grafana.yaml`'s `valuesObject.image.tag` and
+the `ca-bundle` `extraInitContainers` image both updated in lockstep (same
+pin, same analysis); `tests/observability-grafana.bats` updated to assert
+`13.0.5` present and `13.0.3` absent; `docs/decisions/context.md`'s "Grafana
+13.0.3" prose citation updated to `13.0.5` (mechanically enforced by
+`make context-doc-version-sync-check`).
+
+**Log-drift correction (Tempo).** While re-checking Tempo's own pin as part
+of this same sweep, found it needs no bump — `git ls-remote --tags
+grafana/tempo` confirms `2.10.7` (the live pin in
+`gitops/observability/tempo/deployment.yaml`) is already the newest `2.10.x`
+tag — but this ADR's own last two dated entries (2026-07-28, 2026-08-06)
+both still cited the pin as `2.10.5`. That citation lagged an earlier,
+undocumented bump; the live pin itself was never wrong. Noting the gap
+honestly here rather than silently re-dating the prior entries — same
+pattern the 2026-08-06 Loki entry above used for its own `3.7.2`→`3.7.4`
+catch-up. No `gitops/` change needed for Tempo.
+
+**ADR-0004 caveat.** This remote, clusterless session verified the
+commit-range and packaging-diff facts directly, but cannot verify Grafana
+starts cleanly and Git Sync/dashboard provisioning continues working
+post-bump on a live cluster. Rollback is a one-line revert of both `image:`
+references; Grafana's chart Application syncs via ArgoCD, so a revert takes
+effect on the next automated sync; Grafana's session/dashboard state lives on
+its PVC, untouched by an image-tag change.
+
+**Flip condition (next re-evaluation).** Revisit Grafana's pin again when a
+new advisory names a version at or above `13.0.5` as affected. Tempo's own
+flip condition (revisit when a new advisory/fix range names a version at or
+above `2.10.7`) is unchanged in substance, only its log citation is now
+accurate.
