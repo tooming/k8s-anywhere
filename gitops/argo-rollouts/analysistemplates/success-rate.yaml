@@ -3,8 +3,18 @@
 # provider. X-Scope-OrgID: lab matches the single-tenant config used by the existing Mimir
 # Application (same header the Kiali datasource uses). Referenced by the capstone Rollout's
 # analysis steps (gitops/apps/capstone/rollout.yaml) to gate each weight increment at
-# ≥ 95% HTTP success rate. Success condition evaluated per 30s interval; 3 consecutive
-# failures trigger a rollback.
+# ≥ 95% HTTP success rate. Success condition evaluated per 30s interval, for 5 measurements
+# (count: 5 — a ~2.5min gate window); 3 consecutive failures trigger a rollback before that.
+#
+# `count` is REQUIRED here, not optional tuning: this template is referenced from
+# steps[].analysis (a step-gating analysis, not a background one — see
+# gitops/apps/capstone/rollout.yaml), and Argo Rollouts rejects a step-gating
+# AnalysisTemplate whose metric has `interval` but no `count` as "runs indefinitely" —
+# every reconcile of the capstone Rollout then errors and the controller pod eventually
+# crashloops on OOM/backoff. A background analysis (spec.strategy.canary.analysis) is the
+# only place an interval-only, indefinite metric is valid — see
+# scripts/analysistemplate-step-count-check.sh, the mechanical guard against this
+# recurring (regression: 145 controller restarts / 45h before this fix).
 # Namespace: capstone — must be co-located with the Rollout that references it by name.
 # Synced by the capstone-rollout Application (gitops/platform/capstone-rollout.yaml).
 apiVersion: argoproj.io/v1alpha1
@@ -18,6 +28,7 @@ spec:
   metrics:
   - name: success-rate
     interval: 30s
+    count: 5
     successCondition: result[0] >= 0.95
     failureLimit: 3
     provider:

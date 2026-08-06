@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: success-rate
+  namespace: capstone
+spec:
+  metrics:
+  - name: success-rate
+    interval: 30s
+    successCondition: result[0] >= 0.95
+    failureLimit: 3
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: capstone
+  namespace: capstone
+spec:
+  strategy:
+    canary:
+      steps:
+      - setWeight: 10
+      - analysis:
+          templates:
+          - templateName: success-rate
