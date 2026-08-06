@@ -233,13 +233,28 @@ concentration)?**
 
 **Q18. Is there a mechanism to receive relevant threat/operational intelligence about
 the stack in use?**
-- **Answer:** Designed and demonstrated once, not sustained. `docs/industry/` is a
-  weekly-digest format that already produced one real entry (`2026-W23`) covering
-  actual CVEs and breaking changes across the exact stack this lab runs (Vault, Valkey,
-  Alloy, Envoy Gateway, Longhorn).
-- **Evidence:** `docs/industry/2026-W23-digest.md`.
-- **Gap:** cadence — no routine produces the next week's digest; it stopped after one
-  entry.
+- **Answer:** Designed, demonstrated, and now mechanically sustained. `docs/industry/`
+  is a weekly-digest format. It produced one real entry (`2026-W23`) covering actual
+  CVEs and breaking changes across the exact stack this lab runs (Vault, Valkey,
+  Alloy, Envoy Gateway, Longhorn), then went silent for 9 weeks — the root cause was
+  that the `news-writer` trigger's function was absorbed into
+  `architect.prompt.md` STEP 1 (2026-06-13) as a research step, but that step never
+  wrote its findings to `docs/industry/`, so nothing produced a new file after the
+  original one-off. `routines/architect.prompt.md` STEP 1c now makes the write
+  unconditional — every future architect-fallback invocation writes or refreshes the
+  current ISO week's digest file regardless of whether that run finds any RFC/audit
+  work — closing the gap the same way this repo's other drift classes are closed: in
+  the routine's own contract, not a note to remember.
+- **Evidence:** `docs/industry/2026-W23-digest.md`; `docs/industry/2026-W32-digest.md`
+  (the cadence-resumption entry); `routines/architect.prompt.md` STEP 1c.
+- **Gap:** the fix is structural (every architect-fallback run now writes it) but the
+  architect role itself only fires when the executor's fallback chain reaches it
+  (STEP 6b) — there's still no fixed calendar cadence guaranteeing a specific weekly
+  fire time, only "at least as often as the fallback chain reaches this role." Given
+  this repo's single-trigger, fallback-chain architecture (see `routines/routines.yaml`),
+  a dedicated weekly cron for this alone would reintroduce the multi-trigger quota
+  cost the 2026-06-13 consolidation deliberately removed — an acceptable trade-off
+  for a personal lab, named here rather than silently assumed away.
 
 ---
 
