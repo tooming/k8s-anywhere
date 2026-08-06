@@ -16,12 +16,18 @@ dependency "cluster" {
 }
 
 # The helm provider points at the k3d cluster created by the cluster unit.
+# `kubernetes` is an ATTRIBUTE here, not a block — hashicorp/helm v3 changed the
+# provider's own connection config schema (separate from the helm_release resource
+# schema audited in infra/modules/argocd/main.tf's issue #791 comment, which never
+# ran a real `terraform apply` to catch this: `kubernetes { ... }` (v2 block syntax)
+# fails immediately in v3 with "Blocks of type kubernetes are not expected here" —
+# found live 2026-08-06 running the first real apply since the v3 constraint bump.
 generate "provider" {
   path      = "provider.tf"
   if_exists = "overwrite"
   contents  = <<-EOF
     provider "helm" {
-      kubernetes {
+      kubernetes = {
         config_path    = pathexpand("~/.kube/config")
         config_context = "${dependency.cluster.outputs.kube_context}"
       }
