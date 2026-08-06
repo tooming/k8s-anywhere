@@ -90,6 +90,16 @@ spec:
               limits:
                 cpu: 500m
                 memory: 512Mi
+            # Found live 2026-08-06: the chart's own default timeoutSeconds: 1 (every
+            # Harbor component, not just database) is too tight for this host under any
+            # real load — the exec healthcheck (`/docker-healthcheck.sh`) routinely takes
+            # longer than 1s here, causing a self-inflicted crashloop-on-every-recreation
+            # that has nothing to do with database health. Bumped to 5s (matches the
+            # convention already used for argocd's own probes elsewhere in this repo).
+            livenessProbe:
+              timeoutSeconds: 5
+            readinessProbe:
+              timeoutSeconds: 5
         # `redis` is the Harbor chart's API key name for its cache dependency. See the
         # ADR-0018 exception note above the Application header: type=internal (bundled
         # redis-photon), not the platform Valkey, because Valkey reuse via
@@ -110,6 +120,11 @@ spec:
             # Docker Distribution registry2 reads REGISTRY_STORAGE_S3_ACCESSKEY and
             # REGISTRY_STORAGE_S3_SECRETKEY to override the empty config.yaml values.
             extraEnvVarsSecret: harbor-s3-creds
+            # See database.internal's probe comment above — same host-timeout fix.
+            livenessProbe:
+              timeoutSeconds: 5
+            readinessProbe:
+              timeoutSeconds: 5
           resources:
             requests:
               cpu: 50m
@@ -125,6 +140,10 @@ spec:
               limits:
                 cpu: 200m
                 memory: 128Mi
+            livenessProbe:
+              timeoutSeconds: 5
+            readinessProbe:
+              timeoutSeconds: 5
         core:
           resources:
             requests:
@@ -133,6 +152,13 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+          # See database.internal's probe comment above — same host-timeout fix.
+          startupProbe:
+            timeoutSeconds: 5
+          livenessProbe:
+            timeoutSeconds: 5
+          readinessProbe:
+            timeoutSeconds: 5
         jobservice:
           resources:
             requests:
@@ -141,6 +167,10 @@ spec:
             limits:
               cpu: 200m
               memory: 256Mi
+          livenessProbe:
+            timeoutSeconds: 5
+          readinessProbe:
+            timeoutSeconds: 5
         portal:
           resources:
             requests:
@@ -149,8 +179,18 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+          livenessProbe:
+            timeoutSeconds: 5
+          readinessProbe:
+            timeoutSeconds: 5
         metrics:
           enabled: true
+        exporter:
+          # See database.internal's probe comment above — same host-timeout fix.
+          livenessProbe:
+            timeoutSeconds: 5
+          readinessProbe:
+            timeoutSeconds: 5
   destination:
     server: https://kubernetes.default.svc
     namespace: harbor
