@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump Loki image `grafana/loki:3.7.5` → `3.7.6`** (CHARTER **Core
+- [x] 🟢 **Bump Loki image `grafana/loki:3.7.5` → `3.7.6`** (CHARTER **Core
   Values** §"Everything as code" + general hardening; planner-fallback currency
   sweep 2026-08-06, reached via `executor.prompt.md` STEP 6b — Now/next's three
   standing items remain gated on unconfirmed maintainer-confirmation issues
