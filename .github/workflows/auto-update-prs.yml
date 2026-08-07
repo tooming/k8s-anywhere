@@ -17,6 +17,10 @@ permissions:
 jobs:
   rebase-pr-branches:
     runs-on: ubuntu-latest
+    # Without an explicit timeout, GitHub Actions' 360-minute default applies --
+    # see ci.yml's matching comment (PR #648) for the incident that established
+    # this as a recognized failure mode; propagated here 2026-08-07 (janitor sweep).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
