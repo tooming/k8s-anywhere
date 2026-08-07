@@ -40,19 +40,19 @@ gets one merged row; ADR-0031/ADR-0032 each name one — TiDB Operator and TiDB 
 are distinct products with distinct version lines, so they get separate rows, same
 shape as Istio/Kiali under ADR-0012).
 
-**Real gap, distinct from the policy-ADR exclusions above:** several real, always-on
-third-party dependencies have **no dedicated ADR at all**, so they cannot appear in
-this table by its own construction rule (every row cites the ADR that decided it) —
-checked directly (grepping `docs/decisions/*.md` for each name; ADR-0001–ADR-0032):
-**GitLab** (the git source of truth + CI runner, referenced by name across many ADRs
-but never itself the *subject* of one), and the observability pipeline's internals
-**Mimir, Loki, Tempo, Pyroscope, Alloy, kube-state-metrics, and node-exporter** (only
-Grafana, the pane-of-glass on top of all of them, has its own ADR-0006). This isn't
-this register's gap to fix — re-indexing an ADR that doesn't exist would mean
-inventing content (ADR-0004) — but it's worth naming plainly rather than silently
-under-counting the lab's real third-party surface; closing it is architect-scoped
-work (deciding whether each warrants its own retroactive ADR, or a combined one for
-the LGTMP stack), not a mechanical doc-sync fix.
+**Gap closed 2026-08-07 (was: "Real gap, distinct from the policy-ADR exclusions
+above").** This register's construction rule (every row cites the ADR that decided
+it) used to leave two real, always-on dependency groups un-rowable: **GitLab** (the
+git source of truth + CI runner, referenced by name across many ADRs but never itself
+the *subject* of one) and the observability pipeline's internals **Mimir, Loki, Tempo,
+Pyroscope, Alloy, kube-state-metrics, and node-exporter** (only Grafana, the
+pane-of-glass on top of all of them, had its own ADR-0006). An architect-fallback
+cycle (RFC #1073) closed the gap by authoring
+[ADR-0033](decisions/adr-0033-gitlab-git-source-and-ci.md) (GitLab, its own ADR — a
+distinct axis from ADR-0001's GitOps-vs-imperative decision) and
+[ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) (one combined ADR for the
+seven observability-internals tools, mirroring ADR-0012's Istio+Kiali
+one-ADR-two-tools precedent). All eight tools now have rows in the table below.
 
 **Criticality** reuses CHARTER's own "Target end-state" groupings rather than
 inventing a new scheme: **always-on-core** (part of the always-on base stack),
@@ -93,12 +93,22 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | k3s | cloud-backend (opt-in) | github.com/k3s-io/k3s | [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md) | not dated in ADR (no Re-evaluation log; decision date 2026-07-13) |
 | cert-manager | always-on-core | github.com/cert-manager/cert-manager | [ADR-0028](decisions/adr-0028-cert-manager-tls-lifecycle.md) | 2026-07-31 (chart bumped `1.21.0` → `1.21.1`, audit #931/RFC #933) |
 | KEDA | always-on-core | github.com/kedacore/keda | [ADR-0029](decisions/adr-0029-keda-event-driven-autoscaling.md) | 2026-08-03 (chart bumped `2.20.1` → `2.20.2`) |
+| GitLab | always-on-core (self-hosted git source + CI runner, host-level Docker Compose, outside the cluster) | about.gitlab.com, gitlab.com/gitlab-org/gitlab | [ADR-0033](decisions/adr-0033-gitlab-git-source-and-ci.md) | 2026-08-07 (ADR-0033 authored; `gitlab-ce`/`gitlab-runner` also pinned to explicit versions the same day, see the `k3s`-style pin precedent) |
+| Mimir | always-on-core (observability — metrics store) | github.com/grafana/mimir | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
+| Loki | always-on-core (observability — log store) | github.com/grafana/loki | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
+| Tempo | always-on-core (observability — trace store) | github.com/grafana/tempo | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
+| Pyroscope | always-on-core (observability — continuous profiling) | github.com/grafana/pyroscope | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
+| Alloy | always-on-core (observability — unified collector) | github.com/grafana/alloy | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
+| kube-state-metrics | always-on-core (observability — Kubernetes object-state exporter) | github.com/kubernetes/kube-state-metrics | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
+| node-exporter | always-on-core (observability — node/host metrics exporter) | github.com/prometheus/node_exporter | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
 
 ## Keeping this in sync
 
 This register has no mechanical drift guard yet — it's a manual, best-effort snapshot
-as of 2026-08-07 (the ArgoCD and Trivy Operator rows above were updated that day, so
-this summary line is corrected to match rather than left one day stale). Every future
+as of 2026-08-07 (the ArgoCD and Trivy Operator rows were updated that day, and eight
+new rows — GitLab plus the seven LGTMP observability-internals tools — were added the
+same day once ADR-0033/ADR-0034 closed the gap that used to leave them un-rowable; see
+above). Every future
 chart/image-version bump PR already updates its own
 ADR's Re-evaluation log (an existing, enforced convention); this file's "Last
 reviewed" column should be updated in the same PR when it touches a row here, but
