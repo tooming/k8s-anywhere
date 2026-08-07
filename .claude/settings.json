@@ -60,6 +60,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/workflow-timeout-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking GitHub Actions workflow job timeouts"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/roadmap-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking ROADMAP planner-note sync"

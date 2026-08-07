@@ -127,6 +127,7 @@ jobs:
       - run: bash scripts/lab-ui-check.sh
       - run: bash scripts/envoy-egress-allowlist-check.sh
       - run: bash scripts/appset-list-coverage-check.sh
+      - run: bash scripts/workflow-timeout-check.sh
       - run: bash scripts/roadmap-check.sh
       - run: bash scripts/markdown-links-check.sh
       - run: bash scripts/securitycontext-tests-check.sh
