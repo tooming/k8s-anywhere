@@ -3188,7 +3188,7 @@ You review and merge plan PRs, same as implementation PRs.
   next `make gitlab-up` run's job, same caveat pattern as every other currency-bump PR
   in this repo). `docs/done/` entry required. (auto/gitlab-version-pin)
 
-- [ ] 🟢 **`docs/dependency-register.md` — add rows for ADR-0033 (GitLab) and ADR-0034
+- [x] 🟢 **`docs/dependency-register.md` — add rows for ADR-0033 (GitLab) and ADR-0034
   (LGTMP observability internals)** (CHARTER **Core Values** §"Decisions written down";
   architect-fallback follow-up 2026-08-07, RFC #1073 acceptance criteria's remaining
   unchecked box. **No prerequisites — executor may pick up immediately.**) Add a
