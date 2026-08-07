@@ -22,6 +22,14 @@ spec:
       releaseName: trivy-operator
       valuesObject:
         operator:
+          # scanJobsConcurrentLimit: cap concurrent scan-job pods (chart default: 10).
+          # A burst of workload churn (e.g. tearing down an on-demand component like
+          # Harbor, which deletes many Deployments/StatefulSets/Secrets at once) makes
+          # the operator schedule a scan Job per affected workload simultaneously —
+          # observed 13+ scan-vulnerabilityreport-* pods running/pending concurrently
+          # on 2026-08-07, adding CPU load exactly when the host is already under
+          # pressure. Cap it low so scan bursts queue instead of stacking.
+          scanJobsConcurrentLimit: 3
           vulnerabilityScannerEnabled: true
           configAuditScannerEnabled: true
           rbacAssessmentScannerEnabled: true
