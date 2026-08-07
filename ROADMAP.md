@@ -232,6 +232,64 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump Terraform-bootstrapped `argo-cd` chart `10.2.3` → `10.3.0`**
+  (CHARTER **Core Values** §"Everything as code" + general hardening;
+  planner-fallback upstream check 2026-08-06, reached via
+  `executor.prompt.md` STEP 6b after Now/next's three standing items were
+  found gated (unchanged) on unconfirmed maintainer-confirmation issues
+  #631/#633. **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): `git ls-remote --tags
+  argoproj/argo-helm` shows `argo-cd-10.3.0` one release ahead of
+  `infra/modules/argocd/variables.tf`'s pinned `chart_version` default
+  `"10.2.3"` (the bump this same file's `auto/argocd-chart-10-2-3` item
+  landed 2026-08-05). A full clone diff (`git diff argo-cd-10.2.3
+  argo-cd-10.3.0 -- charts/argo-cd/`) touches exactly three lines across
+  three files: `Chart.yaml` (`version` 10.2.3→10.3.0 only — `appVersion`
+  stays `v3.5.0`, so this is **not** an ArgoCD version bump, only a chart
+  packaging bump) and its `artifacthub.io/changes` annotation; `README.md`'s
+  auto-generated table; and `values.yaml`'s bundled `redis.image.tag`
+  (`8.2.3-alpine` → `8.6.4-alpine`, the chart's own mandatory Redis
+  dependency used for ArgoCD's API-server cache — unrelated to ADR-0018's
+  Valkey decision per the existing header comment in
+  `infra/modules/argocd/values.yaml`, which this bump doesn't touch). Zero
+  CRD changes, zero other `values.yaml` changes — confirmed RFC #785's
+  `global.networkPolicy.create: false` companion override
+  (`infra/modules/argocd/values.yaml`) stays correct: the chart's own
+  `global.networkPolicy.create` default is unchanged (`true`) in both
+  10.2.3 and 10.3.0, so the repo's override is still needed and still
+  applies untouched.
+
+  Because `appVersion` doesn't move, there is no ArgoCD upgrade guide to
+  re-check (unlike the 10.2.2→10.2.3 minor bump, which required reading
+  ArgoCD's `3.4-3.5` upgrade doc) — this is the smallest possible currency
+  delta: a same-appVersion chart repackage bumping one bundled dependency's
+  patch tag.
+
+  Bump `infra/modules/argocd/variables.tf`'s `chart_version` default
+  `"10.2.3"` → `"10.3.0"` (inline comment already reads `"10.2.3 => ArgoCD
+  v3.5.0"` — update only the chart-version half to `"10.3.0 => ArgoCD
+  v3.5.0"`, appVersion unchanged). Update both
+  `infra/live/local/argocd/terragrunt.hcl` and
+  `infra/live/oracle/argocd/terragrunt.hcl`'s `chart_version = "10.2.3"`
+  input to `"10.3.0"` (both must move together with the module default —
+  RFC #785's own recurrence-guard rationale for why all three sites are
+  checked in the same bats file). Update `tests/argocd-chart-pin.bats`'s
+  three assertions (`chart_version` default, both terragrunt.hcl inputs)
+  from `10.2.3` to `10.3.0`. No `docs/dependency-tree.md` or `context.md`
+  update needed — neither cites this chart's specific version (checked
+  directly). Update `docs/dependency-register.md`'s ArgoCD row "Last
+  reviewed" cell to cite this bump. `make ci` (specifically `terraform
+  validate`/`fmt`, clusterless — this Terraform-bootstrap seam needs no live
+  OCI/cloud credentials per ADR-0001) must pass. PR body must document the
+  three-line upstream diff above and the ADR-0004 caveat that this remote
+  clusterless session cannot verify a real `terraform apply` against this
+  pin succeeds end-to-end — call out the rollback path (revert the three
+  pins; the next `terraform apply` re-installs the prior chart version;
+  ArgoCD's own state — Applications, RBAC, repo credentials — lives in the
+  `argocd` namespace's Secrets/ConfigMaps on the cluster, untouched by a
+  chart-version revert in the bootstrap module). `docs/done/` entry
+  required. (auto/argocd-chart-10-3-0)
+
 - [x] 🟢 **Bump Grafana image tag `13.0.3` → `13.0.5` (security fix) + correct
   ADR-0006's stale Tempo pin citation** (CHARTER **Core Values** §"Everything as
   code" + general hardening; planner-fallback currency sweep 2026-08-06,
