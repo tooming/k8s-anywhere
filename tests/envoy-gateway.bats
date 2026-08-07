@@ -34,3 +34,24 @@ setup() {
   run grep -q 'targetRevision: v1.8.2' "$REPO/gitops/platform/envoy-gateway.yaml"
   [ "$status" -ne 0 ]
 }
+
+# --- Leader election disabled (chronic-bug fix, single-replica ADR-0008/ADR-0005) ---
+# controller-runtime's manager enables leader election by default even at
+# replicas: 1, where it serves no purpose (one candidate, nothing to
+# arbitrate) but still self-inflicts a full-manager restart on any apiserver
+# latency spike ("leader election lost") — observed repeatedly, most recently
+# 17+ restarts in ~2h during the #631/#633 investigation on 2026-08-07, and it
+# takes down every HTTPRoute behind the gateway, not just one. Disabling it
+# removes the failure mode by construction rather than widening a timeout
+# around it.
+@test "envoy-gateway Application disables leader election (single replica, chronic 502 fix)" {
+  run grep -A2 'leaderElection:' "$REPO/gitops/platform/envoy-gateway.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"disable: true"* ]]
+}
+
+@test "envoy-gateway Application's leaderElection.disable sits under provider.kubernetes (EnvoyGateway config shape)" {
+  run grep -B2 'leaderElection:' "$REPO/gitops/platform/envoy-gateway.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"kubernetes:"* ]]
+}
