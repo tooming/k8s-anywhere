@@ -4,7 +4,16 @@
 # http://host.k3d.internal:8929 (both hit the same container via Colima's docker).
 services:
   gitlab:
-    image: gitlab/gitlab-ce:latest
+    # Pinned explicit version (not :latest) per ADR-0030's precedent — an
+    # unpinned tag can silently jump major versions on a routine `docker
+    # compose pull`, with no PR, no changelog review, and no rollback record.
+    # 19.2.1-ce.0 is what `:latest` itself resolved to as of 2026-08-07
+    # (confirmed via the Docker Hub tags API: the `latest` tag's
+    # `tag_last_pushed` timestamp exactly matches `19.2.1-ce.0`'s) — pinning
+    # to it changes nothing about what's actually running, it only removes
+    # the floating-tag footgun. Bump deliberately via a future PR, not an
+    # automatic `docker compose pull`.
+    image: gitlab/gitlab-ce:19.2.1-ce.0
     container_name: gitlab
     hostname: gitlab.local
     restart: unless-stopped
@@ -58,7 +67,11 @@ services:
   # Vault credentials, and Harbor registry were all correctly wired, but nothing had
   # ever actually executed a pipeline in this lab's history).
   gitlab-runner:
-    image: gitlab/gitlab-runner:latest
+    # Pinned explicit version (not :latest) — same rationale as the `gitlab`
+    # service above. v19.2.1 is the newest stable tag on Docker Hub as of
+    # 2026-08-07 (confirmed via the Docker Hub tags API), aligned with the
+    # gitlab-ce pin above.
+    image: gitlab/gitlab-runner:v19.2.1
     container_name: gitlab-runner
     restart: unless-stopped
     depends_on:
