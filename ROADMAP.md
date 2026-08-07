@@ -3155,7 +3155,7 @@ You review and merge plan PRs, same as implementation PRs.
   explicitly in the PR body. `make ci` must pass. `docs/done/` entry required.
   (auto/charter-o3-rpo-target)
 
-- [ ] 🟢 **Pin `gitlab-ce`/`gitlab-runner` to explicit versions (currently `:latest`)**
+- [x] 🟢 **Pin `gitlab-ce`/`gitlab-runner` to explicit versions (currently `:latest`)**
   (CHARTER **Core Values** §"Everything as code" + general hardening, mirroring
   [ADR-0030](docs/decisions/adr-0030-pin-k3s-version-explicitly.md)'s explicit-pin
   precedent; architect-fallback finding 2026-08-07, surfaced while researching
