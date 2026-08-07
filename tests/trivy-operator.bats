@@ -44,6 +44,19 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- Scan-job concurrency cap (2026-08-07: 13+ concurrent scan pods observed
+# during an on-demand-component teardown, compounding host CPU pressure) -------
+@test "trivy-operator caps concurrent scan jobs (scanJobsConcurrentLimit set)" {
+  run grep -qE '^ +scanJobsConcurrentLimit: [0-9]+$' "$REPO/gitops/platform/trivy-operator.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "trivy-operator scanJobsConcurrentLimit is low (<=3, below chart default of 10)" {
+  limit="$(grep -oE '^ +scanJobsConcurrentLimit: [0-9]+$' "$REPO/gitops/platform/trivy-operator.yaml" | grep -oE '[0-9]+$')"
+  [ -n "$limit" ]
+  [ "$limit" -le 3 ]
+}
+
 @test "trivy-operator enables SBOM generation (CHARTER supply-chain goal)" {
   run grep -q 'sbomGeneration: true' "$REPO/gitops/platform/trivy-operator.yaml"
   [ "$status" -eq 0 ]
