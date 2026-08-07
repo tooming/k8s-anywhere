@@ -153,6 +153,42 @@ major.minor line — a same-source patch bump only, no architecture change.
 a version above `v1.8.3` as affected, or `v1.8.3` itself is later found
 retroactively vulnerable to something not yet disclosed.
 
+### 2026-08-07 — Leader election disabled (chronic front-door 502 fix)
+
+**Trigger.** The control-plane Deployment (`replicas: 1`, per this ADR's
+"single replica … acceptable" call and [ADR-0005](adr-0005-spof-recreate-over-ha.md))
+still ran controller-runtime's default Kubernetes leader election. On any
+apiserver latency spike — routine on this lab's single Colima VM host (see
+the on-demand-budget-incident and blue/green-contention project notes) — the
+sole pod failed to renew its own lease within controller-runtime's tight
+defaults (~10s renew deadline / 15s lease duration), logged
+`leaderelection.go: error retrieving lease lock` / `leader election lost`,
+and `os.Exit`'d, killing and restarting the only replica. Observed
+repeatedly across sessions; most recently 17+ restarts in ~2h during the
+#631/#633 investigation on 2026-08-07. Each restart is a full front-door
+outage — every `HTTPRoute` behind the shared gateway 502s, not just one —
+since there is no second replica to take over traffic while the pod
+restarts.
+
+**Decision: set `provider.kubernetes.leaderElection.disable: true`** in
+`gitops/platform/envoy-gateway.yaml`'s Helm `valuesObject` (gateway-helm
+`v1.8.3` exposes this via the `EnvoyGateway` config's `LeaderElection` type —
+verified against the chart's rendered `EnvoyGateway` config, not just
+`values.yaml`). With exactly one candidate, election arbitrates nothing;
+disabling it removes the self-inflicted-restart failure mode by
+construction rather than by loosening a timeout around it. The chart's
+Deployment template hardcodes `livenessProbe`/`readinessProbe` with no
+`.Values` override hook (checked directly in
+`envoy-gateway-deployment.yaml`), so — unlike Harbor's probe-timeout fix,
+PR #1040 — there was no probe knob available to loosen as a secondary
+mitigation; moot here regardless, since the restarts were leader-election
+process exits, not probe-triggered kills.
+
+**Flip condition.** Revisit if the control plane ever moves to
+`replicas > 1` (at which point leader election becomes meaningful again and
+must be re-enabled), or if a future gateway-helm release changes where this
+knob lives.
+
 ---
 
 ## Files
