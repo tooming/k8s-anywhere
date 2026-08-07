@@ -39,6 +39,10 @@ readme-check: ## Check README.md is in sync with the Makefile + tools (drift det
 lab-ui-check: ## Check the Grafana "Lab UIs" panel matches the HTTPRoutes in gitops
 	@bash scripts/lab-ui-check.sh
 
+.PHONY: envoy-egress-allowlist-check
+envoy-egress-allowlist-check: ## Check every HTTPRoute namespace is allowed proxy egress (envoy-gateway-system)
+	@bash scripts/envoy-egress-allowlist-check.sh
+
 .PHONY: roadmap-check
 roadmap-check: ## Check ROADMAP.md has no inline planner notes (per-run narrative belongs in docs/backlog/)
 	@bash scripts/roadmap-check.sh
@@ -204,6 +208,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/test.sh
 	@bash scripts/readme-check.sh
 	@bash scripts/lab-ui-check.sh
+	@bash scripts/envoy-egress-allowlist-check.sh
 	@bash scripts/roadmap-check.sh
 	@bash scripts/markdown-links-check.sh
 	@bash scripts/securitycontext-tests-check.sh

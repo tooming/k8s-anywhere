@@ -9,7 +9,7 @@
 # until the proxy restarts (e.g. a node flap), then can't reconnect — so it surfaces
 # as an intermittent total-ingress outage, not a clean from-scratch failure.
 #
-# allow-envoy-proxy-backend-egress only covers the twelve *backend* namespaces the
+# allow-envoy-proxy-backend-egress only covers the seventeen *backend* namespaces the
 # proxy routes INTO; the allow-dns-and-apiserver baseline only covers DNS + apiserver.
 # The proxy→control-plane xDS hop (same namespace) was covered by neither.
 apiVersion: networking.k8s.io/v1

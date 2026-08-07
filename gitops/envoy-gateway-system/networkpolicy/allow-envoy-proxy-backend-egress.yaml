@@ -1,4 +1,4 @@
-# Allow egress from Envoy data-plane proxy pods to all thirteen backend namespaces
+# Allow egress from Envoy data-plane proxy pods to all seventeen backend namespaces
 # (ADR-0016, RFC #206). The proxy forwards HTTPRoute traffic to Services in these
 # namespaces; a default-deny floor without this rule would silently drop every
 # HTTPRoute response, breaking all lab UIs. No port restriction is applied because
@@ -12,6 +12,15 @@
 # namespace, so the default-deny floor silently dropped the proxy's egress to it.
 # The same gap this file's own header warns about, just for a namespace added
 # after this policy was last touched.
+#
+# `tidb`/`longhorn-system`/`istio-system`/`kargo` added 2026-08-07 (janitor sweep):
+# the exact same gap, recurred — each of these four namespaces already had a live
+# HTTPRoute through the shared gateway (`gitops/tidb-demo/route.yaml`,
+# `gitops/longhorn/route.yaml`, `gitops/kiali/route.yaml` (istio-system),
+# `gitops/kargo/route.yaml`) but was never added here, so their responses would be
+# silently dropped the same way harbor's were. `scripts/envoy-egress-allowlist-check.sh`
+# (wired into `make ci`) now catches this mechanically going forward — every
+# HTTPRoute namespace routed through the shared gateway must appear in this list.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -43,3 +52,7 @@ spec:
                   - velero
                   - trivy-system
                   - harbor
+                  - tidb
+                  - longhorn-system
+                  - istio-system
+                  - kargo
