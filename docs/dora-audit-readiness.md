@@ -61,11 +61,10 @@ duplicated.
 **Q3. What are the recovery targets (RTO/RPO) for critical functions?**
 - **Applicable?** Yes.
 - **Answer:** RTO = **< 10 minutes** (O3, enforced by `make dr-restore`'s 600s budget).
-  RPO = **≤ 24 hours** (Velero daily schedules, 168h retention) — true today but never
-  labeled "RPO" anywhere in the docs before this file.
-- **Evidence:** [docs/DR.md](DR.md#velero-backup-restore-make-dr-restore); `gitops/velero/schedules/*.yaml`.
-- **Gap:** RPO isn't named as a target anywhere else — CHARTER only states the RTO.
-  Cheap fix: add an explicit RPO line to O3 in CHARTER.md.
+  RPO = **≤ 24 hours** (Velero daily schedules, 168h retention).
+- **Evidence:** [CHARTER.md](../CHARTER.md) Objective O3; [docs/DR.md](DR.md#velero-backup-restore-make-dr-restore); `gitops/velero/schedules/*.yaml`.
+- **Gap:** none — CHARTER's O3 bullet now states the RPO explicitly (closed
+  2026-08-07), alongside the pre-existing RTO.
 
 **Q4. Is there a backup policy (scope, frequency, retention, and is restoration tested)?**
 - **Answer:** Yes, and restoration is tested — not just assumed. `make dr-restore`

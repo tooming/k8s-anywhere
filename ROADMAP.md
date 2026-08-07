@@ -3127,7 +3127,7 @@ You review and merge plan PRs, same as implementation PRs.
   in the PR body. `docs/done/` entry required.
   (auto/frozen-monolith-lib-test-coverage)
 
-- [ ] 🟢 **Name O3's RPO target explicitly in CHARTER.md** (CHARTER **Objective O3**;
+- [x] 🟢 **Name O3's RPO target explicitly in CHARTER.md** (CHARTER **Objective O3**;
   planner gap-analysis 2026-08-07, reached via `executor.prompt.md` STEP 6b after
   every standing "Now / next" item was found gated (unchanged) on unconfirmed
   maintainer-confirmation issues #631/#633, with no ungroomed intake issues and no
