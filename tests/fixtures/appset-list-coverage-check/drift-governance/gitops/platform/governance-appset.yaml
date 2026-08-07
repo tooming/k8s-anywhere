@@ -1,0 +1,7 @@
+spec:
+  generators:
+    - list:
+        elements:
+          - appName: bar-governance
+            gitPath: gitops/governance/bar
+            destNamespace: bar
