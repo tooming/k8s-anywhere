@@ -5042,6 +5042,50 @@ You review and merge plan PRs, same as implementation PRs.
   (mechanical drift guard — mirrors the repo's existing drift-detector pattern).
   (auto/oracle-cluster-bats)
 
+- [ ] 🟡 **Author retroactive ADR(s) for GitLab and the LGTMP observability-stack
+  internals** (CHARTER **Core Values** §"Decisions written down, rejected options
+  off-limits" — "every meaningful technical choice lands as an ADR"; planner
+  gap-analysis 2026-08-07, reached via `executor.prompt.md` STEP 6b after
+  Now/next's three standing items were re-checked and found still gated
+  (unchanged) on unconfirmed maintainer-confirmation issues #631/#633, plus a
+  fresh #1034 (disk-pressure precondition on retrying either) — and this run's
+  own sweep found no un-RFC'd 🟡 item and no other green-able item anywhere in
+  the backlog to promote into *Now / next* (every other item in this file is
+  already `[x]`). **Needs an architect RFC before the executor may build
+  it — do NOT build around this open question.**) `docs/dependency-register.md`'s
+  own "Real gap, distinct from the policy-ADR exclusions above" paragraph
+  already names this directly: **GitLab** (the git source of truth + CI runner,
+  referenced by name across many ADRs — e.g. ADR-0001's GitOps framing — but
+  never itself the *subject* of one) and the observability pipeline's internals
+  — **Mimir, Loki, Tempo, Pyroscope, Alloy, kube-state-metrics, and
+  node-exporter** — have no dedicated ADR; only Grafana, the pane-of-glass on
+  top of them, has one (ADR-0006). Verified directly (not assumed, ADR-0004):
+  grepped `docs/decisions/*.md` (all 32 existing ADRs, ADR-0001–ADR-0032) for
+  each of these eight names — none is the subject of its own ADR file, and the
+  register's table construction rule (every row cites the ADR that decided it)
+  means they structurally cannot appear in it until one exists.
+
+  The register's own text already flags closing this as "architect-scoped work
+  (deciding whether each warrants its own retroactive ADR, or a combined one for
+  the LGTMP stack), not a mechanical doc-sync fix" — this item exists so that
+  observation has a place to be picked up rather than sitting as an unlinked
+  prose note nobody actions. **RFC scope for the architect:** decide (a)
+  whether GitLab gets its own ADR or is folded into an existing one (e.g.
+  ADR-0001's GitOps-source-of-truth framing) as a documented extension; (b)
+  whether the seven observability-internals tools get one combined "LGTMP
+  stack" ADR — mirroring ADR-0012's existing precedent of one ADR deciding two
+  related tools (Istio + Kiali) — or per-tool ADRs; (c) for each, whether the
+  retroactive ADR's Decision is simply "ratify the tool already running" (the
+  likely outcome, since all eight are already deployed and battle-tested in
+  this lab) or whether re-litigating the choice surfaces a real alternative
+  worth naming for the record. Acceptance criteria for the resulting RFC(s):
+  the new ADR file(s) land under `docs/decisions/`; `docs/dependency-register.md`
+  gains a row per newly-ADR'd tool (closing its own "cannot appear in this
+  table" gap) in the same or a prompt follow-up executor PR; and the register's
+  "Real gap" paragraph is edited to say the gap is closed (or narrowed, if the
+  architect scopes it down) rather than silently deleted. No branch yet — 🟡,
+  architect RFC required first.
+
 - [x] 🟢 **`infra/live/README.md` + `docs/dependency-tree.md` — document the
   `oracle/` backend** (RFC #377 item 5 — depends on items 1–2 existing). Added an
   `oracle/` row to `infra/live/README.md`'s "Status" section, explicitly marked
