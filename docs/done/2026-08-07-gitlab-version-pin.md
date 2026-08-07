@@ -51,4 +51,4 @@ currency-bump PR in this repo.
 
 ## PR
 
-(filled in after PR creation)
+[#1075](https://github.com/tooming/k8s-anywhere/pull/1075)
