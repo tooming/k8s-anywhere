@@ -45,6 +45,17 @@ declare -A UNIT_APPS=(
   [kargo]="kargo-extras kargo kargo-networkpolicy kargo-project"
   [tidb]="tidb-operator tidb-cluster tidb-demo"
 )
+# unit -> space-separated namespace(s) actually holding its workload pods. Used as the
+# authoritative "is it really consuming host resources" signal (see unit_is_up()).
+declare -A UNIT_NS=(
+  [harbor]="harbor"
+  [istio]="istio-system"
+  [kiali]="kiali"
+  [longhorn]="longhorn-system"
+  [inkless]="inkless"
+  [kargo]="kargo"
+  [tidb]="tidb tidb-admin"
+)
 # unit -> documented size (Makefile `##` comments / docs/00-architecture.md). Harbor has
 # no committed estimate anywhere in the repo — don't invent one (ADR-0004); flag it as
 # heavy-but-undocumented instead.
@@ -74,12 +85,29 @@ unit_is_up() {
   # live 2026-08-05 recovering the very incident this script guards against: kiali/
   # longhorn/tidb-demo Applications reappeared with health=Missing minutes after
   # being deleted). health=Missing means no live resources — genuinely down.
-  local unit="$1" app health
+  #
+  # health!=Missing alone isn't sufficient either (found live 2026-08-07): a
+  # freshly-recreated Application with a single leftover resource ArgoCD's
+  # foreground-cascade delete didn't remove (observed: a PersistentVolumeClaim,
+  # which `kubectl delete` intentionally preserves unless the PVC itself is
+  # targeted) rolls the aggregate health up to "Healthy" even though every
+  # Deployment/StatefulSet/Pod is gone — `harbor` reported health=Healthy for
+  # hours after `make harbor-down` with zero pods actually running. The
+  # authoritative signal for "is this unit consuming host resources right now"
+  # is whether it has any live Pod in its own namespace(s), not ArgoCD's
+  # resource-rollup health, which reflects git-desired state as much as live
+  # state. Require both: a non-Missing Application AND at least one real Pod.
+  local unit="$1" app health ns pod_count=0
+  local any_healthy=1
   for app in ${UNIT_APPS[$unit]}; do
     health="$(kubectl get application -n argocd "$app" -o jsonpath='{.status.health.status}' 2>/dev/null)"
-    [ -n "$health" ] && [ "$health" != "Missing" ] && return 0
+    [ -n "$health" ] && [ "$health" != "Missing" ] && any_healthy=0
   done
-  return 1
+  [ "$any_healthy" -eq 1 ] && return 1
+  for ns in ${UNIT_NS[$unit]}; do
+    pod_count=$(( pod_count + $(kubectl get pods -n "$ns" --no-headers 2>/dev/null | wc -l) ))
+  done
+  [ "$pod_count" -gt 0 ]
 }
 
 MODE="report"; EXCLUDE=""
