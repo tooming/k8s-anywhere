@@ -3155,6 +3155,59 @@ You review and merge plan PRs, same as implementation PRs.
   explicitly in the PR body. `make ci` must pass. `docs/done/` entry required.
   (auto/charter-o3-rpo-target)
 
+- [ ] 🟢 **Pin `gitlab-ce`/`gitlab-runner` to explicit versions (currently `:latest`)**
+  (CHARTER **Core Values** §"Everything as code" + general hardening, mirroring
+  [ADR-0030](docs/decisions/adr-0030-pin-k3s-version-explicitly.md)'s explicit-pin
+  precedent; architect-fallback finding 2026-08-07, surfaced while researching
+  [ADR-0033](docs/decisions/adr-0033-gitlab-git-source-and-ci.md) — RFC #1073. **No
+  prerequisites — executor may pick up immediately.**) Verified directly (not assumed,
+  ADR-0004): `gitlab/docker-compose.yml` pins both the `gitlab` service
+  (`image: gitlab/gitlab-ce:latest`) and the `gitlab-runner` service
+  (`image: gitlab/gitlab-runner:latest`) to the floating `:latest` tag — the only two
+  always-on lab components still doing this; every other pinned dependency in this repo
+  (RabbitMQ, Valkey, Grafana, Tempo, Mimir, Loki, k3s itself per ADR-0030, etc.) uses an
+  explicit version tag. Un-pinned `:latest` means a routine `docker compose pull` +
+  `make gitlab-up` cycle can silently jump GitLab CE major versions with no PR, no
+  changelog review, and no rollback path recorded anywhere — the exact failure mode
+  ADR-0030 exists to prevent for k3s.
+
+  Pin `gitlab/docker-compose.yml`'s `gitlab` service to the current GitLab CE release at
+  time of the PR (check `https://gitlab.com/gitlab-org/omnibus-gitlab/-/releases` or
+  `docker manifest inspect gitlab/gitlab-ce:latest` for the concrete tag actually
+  running, since this remote clusterless session cannot itself run `docker compose pull`
+  against a live daemon — ADR-0004 caveat, note this explicitly in the PR body) and the
+  `gitlab-runner` service similarly. Add a `tests/gitlab-compose.bats` (or extend
+  `tests/gitlab-push.bats` if more natural) assertion that neither image reference in
+  `gitlab/docker-compose.yml` is `:latest` — a recurrence guard per CLAUDE.md's
+  bug-fix-prevents-recurrence rule, mirroring `tests/argocd-chart-pin.bats`'s exact-pin
+  assertion pattern. Update `docs/dependency-register.md`'s eventual GitLab row (or this
+  item's own follow-up) to cite the pinned version. `make ci` must pass — this is a
+  docker-compose/test-only change, no cluster needed. PR body must note the rollback
+  path (revert the pin; `make gitlab-up` re-pulls the prior tag) and that this remote
+  session cannot verify the pinned tag actually starts healthy end-to-end (that's the
+  next `make gitlab-up` run's job, same caveat pattern as every other currency-bump PR
+  in this repo). `docs/done/` entry required. (auto/gitlab-version-pin)
+
+- [ ] 🟢 **`docs/dependency-register.md` — add rows for ADR-0033 (GitLab) and ADR-0034
+  (LGTMP observability internals)** (CHARTER **Core Values** §"Decisions written down";
+  architect-fallback follow-up 2026-08-07, RFC #1073 acceptance criteria's remaining
+  unchecked box. **No prerequisites — executor may pick up immediately.**) Add a
+  `GitLab` row (criticality `always-on-core`, source `about.gitlab.com`,
+  `gitlab.com/gitlab-org/gitlab`, citing [ADR-0033](docs/decisions/adr-0033-gitlab-git-source-and-ci.md))
+  and seven new rows — one each for Mimir, Loki, Tempo, Pyroscope, Alloy,
+  kube-state-metrics, node-exporter (criticality `always-on-core`, each citing
+  [ADR-0034](docs/decisions/adr-0034-lgtmp-observability-stack.md)) — to
+  `docs/dependency-register.md`'s table, in the same row shape as every existing entry
+  (Tool / Criticality / Upstream source / ADR / Last reviewed, the last column dated
+  today with a one-line note "ADR-0033/ADR-0034 authored"). Edit the "Real gap, distinct
+  from the policy-ADR exclusions above" paragraph to say the gap is closed (both ADRs
+  now exist) rather than leaving it describing a now-stale state. Update the "Keeping
+  this in sync" summary line's date if this PR lands on a later date than its current
+  "as of" citation. Doc-only change — no code, no `gitops/` touch. `make ci` must pass
+  (`readme-check`/link-check cover markdown; no drift-check currently enforces this
+  register's content per its own "no mechanical drift guard yet" note). `docs/done/`
+  entry required. (auto/dependency-register-adr-0033-0034-rows)
+
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
   maintainer confirms at least one CI run pushed a signed image to the registry** — the
@@ -5043,7 +5096,12 @@ You review and merge plan PRs, same as implementation PRs.
   (auto/oracle-cluster-bats)
 
 - [ ] 🟡 **Author retroactive ADR(s) for GitLab and the LGTMP observability-stack
-  internals** (CHARTER **Core Values** §"Decisions written down, rejected options
+  internals** (RFC #1073 — architect decision 2026-08-07: two ADRs, GitLab standalone
+  + one combined LGTMP ADR, both authored in the RFC's own PR; see
+  `docs/decisions/adr-0033-gitlab-git-source-and-ci.md` and
+  `docs/decisions/adr-0034-lgtmp-observability-stack.md`. Remaining follow-up:
+  `docs/dependency-register.md` gaining rows for both — see the new 🟢 item below.)
+  (CHARTER **Core Values** §"Decisions written down, rejected options
   off-limits" — "every meaningful technical choice lands as an ADR"; planner
   gap-analysis 2026-08-07, reached via `executor.prompt.md` STEP 6b after
   Now/next's three standing items were re-checked and found still gated

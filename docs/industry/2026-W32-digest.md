@@ -1,6 +1,8 @@
 # Industry digest — week 2026-W32
 
-_Period: 2026-08-03 – 2026-08-09. Fetched and written 2026-08-06._
+_Period: 2026-08-03 – 2026-08-09. Fetched and written 2026-08-06; refreshed 2026-08-07
+(architect-fallback cycle, `executor.prompt.md` STEP 6b, after Now/next's three
+standing items were re-checked and found still gated on #631/#633/#1034)._
 
 **Cadence note.** The prior digest ([2026-W23](2026-W23-digest.md)) covered
 2026-05-29–2026-06-06 — a 9-week gap followed, because nothing in this repo's
@@ -178,6 +180,61 @@ format Q18 asks for, not to re-derive them.
   standalone `trivy` CLI. Source: <https://github.com/aquasecurity/trivy/releases>
 
 ---
+
+## Update — 2026-08-07 (architect-fallback cycle)
+
+This run's own executor cycle reached PLANNER (all three `Now / next` items still
+gated on #631/#633/#1034, unchanged) then ARCHITECT (the planner's fresh finding was a
+🟡 item needing exactly the RFC an architect cycle exists to make). Findings this pass:
+
+- **New ADRs authored: ADR-0033 (GitLab) + ADR-0034 (LGTMP observability internals).**
+  `docs/dependency-register.md`'s self-flagged gap (GitLab and seven observability
+  internals — Mimir, Loki, Tempo, Pyroscope, Alloy, kube-state-metrics, node-exporter —
+  had no dedicated ADR) is closed via **RFC #1073**. GitLab gets its own ADR (distinct
+  axis from ADR-0001's GitOps-vs-imperative decision); the seven observability tools
+  get one combined ADR mirroring ADR-0012's Istio+Kiali precedent. Both ratify the
+  tools already running — Keep, not Supersede.
+- **New gap found while researching ADR-0033: GitLab CE + GitLab Runner are pinned to
+  `:latest`**, not an explicit version — the only two always-on components in this lab
+  still doing that, unlike ADR-0030's explicit-pin precedent for k3s. New 🟢 ROADMAP
+  item added this run (`auto/gitlab-version-pin`) so the executor can fix it directly,
+  no further RFC needed.
+- **Vault `hashicorp/vault:2.0.4`** (`gitops/vault/unsealer.yaml`) — confirmed this is
+  already the lab's live pin, not a newer finding; a same-run currency sweep's earlier
+  fetch pass surfaced `2.0.4` and this pass cross-checked it directly against the
+  manifest rather than re-asserting it as new (ADR-0004: don't re-claim a fact already
+  verified as "found" when it's actually the status quo).
+- **Argo Rollouts `appVersion` `1.9.1`** — reconfirmed this is already the lab's live
+  chart pin's `appVersion` (`2.41.1` chart, per ADR-0020's own tracking); a security
+  advisory associated with `1.9.1` in this pass's fetch describes the fix `1.9.1`
+  itself ships, not a vulnerability in it — no action needed, already on the fixed
+  version.
+- **Valkey `9.1.1`** — a same-run fetch surfaced this as the newest overall tag, but
+  directly checking `valkey-io/valkey`'s security-advisories + release pages confirmed
+  the two CVEs cited (CVE-2026-56684, CVE-2026-63639) are **already fixed in `8.0.10`**
+  (this lab's live pin, on the `8.0.x` line) — `9.1.1` is a separate major-line release,
+  not a required upgrade for these CVEs. ADR-0018's existing hold stands; no new audit
+  needed since the current pin is already the fixed version, not a stale one.
+- **Cilium `1.21.0-pre.0`, Longhorn `1.12.1-rc3`, Istio `1.31.0-alpha.0`, Kyverno
+  `v1.19.0-rc.1`** — all pre-release/RC tags fetched this pass; each project's
+  respective governing ADR (ADR-0014, ADR-0013, ADR-0012, ADR-0019) already tracks
+  only stable releases per its own established hold policy. No action — consistent
+  with each ADR's existing re-evaluation log.
+- **Grafana `13.1.3`** — a fetch this pass shows this as newer than the lab's just-bumped
+  `13.0.5` pin, but it's a **minor-line jump** (`13.0.x` → `13.1.x`), not a same-line
+  patch; ADR-0006's own established precedent (used for the `13.0.3`→`13.0.5` bump
+  earlier this same run-sequence) is that a line jump needs its own deeper diligence,
+  not a routine currency bump. Not chased this pass — left for a dedicated future
+  currency sweep if/when a security advisory or a real feature need motivates it.
+
+Source repos fetched this pass (GitHub releases pages, `git ls-remote`-equivalent):
+`k3s-io/k3s`, `argoproj/argo-cd`, `cilium/cilium`, `hashicorp/vault`,
+`envoyproxy/gateway`, `grafana/grafana`, `longhorn/longhorn`, `valkey-io/valkey`,
+`rabbitmq/rabbitmq-server`, `pingcap/tidb`, `istio/istio`, `jfrog/charts`,
+`kyverno/kyverno`, `argoproj/argo-rollouts`, `aquasecurity/trivy`,
+`vmware-tanzu/velero`. `deuxfleurs/garage` fetch failed (HTTP 404 — Garage's releases
+are hosted on its own Gitea instance, git.deuxfleurs.fr, not GitHub; noted rather than
+skipped silently).
 
 ## For the architect
 
