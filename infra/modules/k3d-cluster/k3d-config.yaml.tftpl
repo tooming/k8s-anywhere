@@ -20,6 +20,23 @@ ports:
   - port: ${https_port}:443
     nodeFilters:
       - loadbalancer
+# `nip.io` resolves `<anything>.<IP>.nip.io` to the literal `<IP>` embedded in the
+# hostname regardless of WHERE the DNS query originates. `harbor.127.0.0.1.nip.io`
+# correctly means "the Colima host" from *outside* the cluster (a human's browser
+# or curl) but means "this pod's own loopback" from *inside* any pod -- so any
+# in-cluster containerd pull (or Kargo Warehouse digest discovery) of that image
+# host fails with a connection-refused error, not a real registry problem. This
+# mirror redirects in-cluster pulls of harbor.127.0.0.1.nip.io straight to
+# Harbor's real in-cluster Service instead, leaving the nip.io hostname meaning
+# "Colima host" everywhere else (browser, curl, ArgoCD's own repo config). Harbor
+# itself is on-demand (ADR-0024) -- this mirror sits inert, harmlessly, whenever
+# Harbor isn't running; it only matters once `make harbor-up` is used.
+registries:
+  config: |
+    mirrors:
+      "harbor.127.0.0.1.nip.io":
+        endpoint:
+          - "http://harbor.harbor.svc.cluster.local"
 %{ if disable_traefik || disable_default_cni ~}
 options:
   k3s:

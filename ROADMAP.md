@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **k3d containerd registry mirror — resolve `harbor.127.0.0.1.nip.io` in-cluster**
+- [x] 🟢 **k3d containerd registry mirror — resolve `harbor.127.0.0.1.nip.io` in-cluster**
   (CHARTER **Core Values** §"Recreate-from-code" (`make up` should let the capstone demo
   actually run) + §"Images are signed and verified" (O4's admission-signing chain needs a
   real image to reach the pod before it's exercisable at all); planner gap-analysis
