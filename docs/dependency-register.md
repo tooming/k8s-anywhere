@@ -40,6 +40,20 @@ gets one merged row; ADR-0031/ADR-0032 each name one — TiDB Operator and TiDB 
 are distinct products with distinct version lines, so they get separate rows, same
 shape as Istio/Kiali under ADR-0012).
 
+**Real gap, distinct from the policy-ADR exclusions above:** several real, always-on
+third-party dependencies have **no dedicated ADR at all**, so they cannot appear in
+this table by its own construction rule (every row cites the ADR that decided it) —
+checked directly (grepping `docs/decisions/*.md` for each name; ADR-0001–ADR-0032):
+**GitLab** (the git source of truth + CI runner, referenced by name across many ADRs
+but never itself the *subject* of one), and the observability pipeline's internals
+**Mimir, Loki, Tempo, Pyroscope, Alloy, kube-state-metrics, and node-exporter** (only
+Grafana, the pane-of-glass on top of all of them, has its own ADR-0006). This isn't
+this register's gap to fix — re-indexing an ADR that doesn't exist would mean
+inventing content (ADR-0004) — but it's worth naming plainly rather than silently
+under-counting the lab's real third-party surface; closing it is architect-scoped
+work (deciding whether each warrants its own retroactive ADR, or a combined one for
+the LGTMP stack), not a mechanical doc-sync fix.
+
 **Criticality** reuses CHARTER's own "Target end-state" groupings rather than
 inventing a new scheme: **always-on-core** (part of the always-on base stack),
 **always-on-next-wave** (the four CHARTER Objective O1 components), **heavy-on-demand**
@@ -83,7 +97,9 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 ## Keeping this in sync
 
 This register has no mechanical drift guard yet — it's a manual, best-effort snapshot
-as of 2026-08-06. Every future chart/image-version bump PR already updates its own
+as of 2026-08-07 (the ArgoCD and Trivy Operator rows above were updated that day, so
+this summary line is corrected to match rather than left one day stale). Every future
+chart/image-version bump PR already updates its own
 ADR's Re-evaluation log (an existing, enforced convention); this file's "Last
 reviewed" column should be updated in the same PR when it touches a row here, but
 nothing currently fails `make ci` if it drifts. A future item could add a mechanical
