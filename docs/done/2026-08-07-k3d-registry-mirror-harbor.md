@@ -86,4 +86,4 @@ entry required. (auto/k3d-registry-mirror-harbor)
 
 ## PR
 
-auto/k3d-registry-mirror-harbor — PR number to be filled once opened.
+https://github.com/tooming/k8s-anywhere/pull/1080
