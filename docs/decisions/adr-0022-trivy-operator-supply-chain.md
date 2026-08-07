@@ -224,3 +224,44 @@ condition:** a `trivy.image.tag` override is ever added pointing at `v0.69.4`
 specifically, or `trivy-action`/`setup-trivy` is ever adopted in CI without
 pinning to a post-incident safe tag (`>=0.35.0` for `trivy-action`, the
 recreated `0.2.6` for `setup-trivy`).
+
+### 2026-08-07 — Chart currency bump `0.34.0` → `0.35.0` kept current
+
+**Trigger.** Routine currency sweep (`gitops/`-wide `targetRevision` audit) found
+`aquasecurity/helm-charts`' `gh-pages` index publishing `trivy-operator-0.35.0`
+(2026-08-06T03:12:49Z) one release past this lab's pinned `0.34.0` — the
+`aquasecurity/helm-charts` git repo's `main` branch no longer carries chart
+source (chart-releaser publishes packaged `.tgz` assets + a `gh-pages` Helm
+repo index instead), so verification here downloaded and diffed the two real
+release tarballs directly rather than a git-tag diff.
+
+**Findings, verified directly (not assumed, ADR-0004).** `diff -ru` between the
+extracted `trivy-operator-0.34.0.tgz` and `trivy-operator-0.35.0.tgz` shows
+exactly three kinds of change: `Chart.yaml`'s `version`/`appVersion` fields
+(`0.34.0`→`0.35.0`, `appVersion` `0.32.0`→`0.33.0`), the `README.md` badges +
+values-table doc for the same, and the bundled `trivy.image.tag` default
+(`0.72.0`→`0.73.0`, in both `values.yaml` and the generated `README.md` row) —
+plus the same version-label bump repeated across five `templates/specs/*.yaml`
+compliance-scan CronJob manifests (`app.kubernetes.io/version` label only, not
+behavior). No other `values.yaml` key changed shape — every key this lab's
+`valuesObject` sets (`operator.*`, `trivy.resources`/`storageClassName`/
+`storageSize`, `nodeCollector.*`) is present and unchanged.
+
+A real clone's `git log v0.32.0..v0.33.0` (trivy-operator app repo) shows 4
+commits: 2 routine dependency bumps (`golang.org/x/text` 0.38.0→0.39.0, the
+`k8s.io/*` client group 0.36.2→0.36.3) and the `trivy` scanner version bump
+itself — no operator-side feature/fix commit in this range. The bundled Trivy
+scanner bump (`v0.72.0`→`v0.73.0`, `aquasecurity/trivy`) does carry two real
+detection-accuracy fixes: `fix(vuln): don't skip packages covered by a
+driver's own advisory feed` (#10980) and `fix(vex): reject non-local VEX
+repository names` (#10987) — both correctness fixes to the scanner's own
+vulnerability-detection path, the same "ships with a real fix" bar this
+repo's other non-CVE currency bumps (e.g. Loki's ingester flush-race fix) use.
+
+**Decision: Keep current — bump the pin.** Smallest-safe-delta, same-shape
+`values.yaml`, no breaking change. Does not touch this ADR's compromise
+finding above (`0.69.4` is still the only affected tag; `0.73.0` postdates it
+by many releases) — noted here only because the pin this entry's own citation
+references moved. **Flip condition (unchanged):** re-evaluate on the next
+Trivy supply-chain advisory, or when a future chart bump changes a
+`valuesObject` key shape.
