@@ -278,6 +278,28 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
+# 2026-08-07 regression: health.status alone still false-positives. A freshly
+# recreated Application (root's selfHeal) with one leftover resource ArgoCD's
+# foreground-cascade delete doesn't remove (observed: a PersistentVolumeClaim)
+# rolls the aggregate health up to "Healthy" with zero live workload pods —
+# `harbor` reported up for hours after `make harbor-down`. Require an actual
+# Pod in the unit's own namespace(s) as the authoritative signal.
+@test "ondemand-budget-check.sh also requires a live Pod in the unit's namespace, not just Application health" {
+  run grep -q "declare -A UNIT_NS=" "$BUDGET"
+  [ "$status" -eq 0 ]
+  run grep -q 'kubectl get pods -n "\$ns"' "$BUDGET"
+  [ "$status" -eq 0 ]
+  run grep -q 'pod_count' "$BUDGET"
+  [ "$status" -eq 0 ]
+}
+
+@test "ondemand-budget-check.sh maps all seven units to a namespace for the Pod check" {
+  for unit in harbor istio kiali longhorn inkless kargo tidb; do
+    run bash -c "grep -A10 'declare -A UNIT_NS=' '$BUDGET' | grep -q '\[$unit\]='"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "ondemand-budget-check.sh flags orphaned on-demand namespaces (no owning Application)" {
   run grep -q "ORPHANS" "$BUDGET"
   [ "$status" -eq 0 ]
