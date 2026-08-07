@@ -1,6 +1,6 @@
 # ADR-0033 — GitLab (self-hosted) as the lab's git source of truth + CI runner
 
-**Status.** Adopted (retroactive). Architect decision, RFC #NNN — ratifies a component
+**Status.** Adopted (retroactive). Architect decision, RFC #1073 — ratifies a component
 that has been running in this lab since its earliest bootstrap steps; this ADR gives it
 the dedicated record every other real, always-on dependency already has. Not a
 supersession — no prior ADR named GitLab as its subject.

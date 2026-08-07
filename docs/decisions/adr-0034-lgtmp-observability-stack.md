@@ -1,6 +1,6 @@
 # ADR-0034 — Grafana LGTM(P) stack internals + kube-state-metrics/node-exporter for observability
 
-**Status.** Adopted (retroactive). Architect decision, RFC #NNN — ratifies components
+**Status.** Adopted (retroactive). Architect decision, RFC #1073 — ratifies components
 that have been running as this lab's observability pipeline since early bootstrap;
 this ADR gives the internals the dedicated record every other real, always-on
 dependency already has. Not a supersession — no prior ADR named these tools as its
