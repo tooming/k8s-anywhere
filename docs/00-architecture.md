@@ -31,12 +31,14 @@ grouping appears in the README stack table.
 │  Always-on in-cluster workloads                                            │
 │                                                                            │
 │  INGRESS      Envoy Gateway  (Gateway API; north-south traffic)            │
+│  TLS          cert-manager  (auto-renewed certs from a self-signed CA)    │
 │  SECRETS      Vault  ──►  External Secrets Operator  ──►  k8s Secrets     │
 │  CNI / POLICY Cilium  (NetworkPolicy enforcement; default-deny per ns)     │
 │  POLICY       Kyverno  (admission validation · mutation · verifyImages)    │
 │  STORAGE      Garage (S3)  ──►  s3manager (bucket browser UI)             │
 │  BACKUP       Velero  (cluster + PVC snapshots → Garage S3)               │
 │  DATA         RabbitMQ  ·  Valkey (cache/KV)  ·  data-demo (generator)   │
+│  AUTOSCALE    KEDA  (scales rabbitmq-load on real RabbitMQ queue depth)  │
 │  CLOUD        moto (AWS mock)  ·  ACK (S3 controller)  ·  KRO             │
 │  OBSERV.      Alloy  ──►  Mimir / Loki / Tempo / Pyroscope  ──►  Grafana  │
 │               kube-state-metrics  ·  node-exporter                        │
@@ -80,6 +82,12 @@ Rows are grouped by layer, matching the README stack table.
 |------|----------------------|
 | **Envoy Gateway** | North-south ingress. External traffic enters via the Kubernetes Gateway API (`HTTPRoute`s); Envoy routes it to in-cluster Services. `envoy-gateway-system-networkpolicy` default-deny overlay applies ADR-0016 to the namespace. (ADR-0008) |
 
+### TLS / certificates
+
+| Tool | Role in the platform |
+|------|----------------------|
+| **cert-manager** | Automated TLS certificate lifecycle — issues and auto-renews certs from a self-signed root CA (`k8s-lab-ca`) at the Gateway edge, backing a wildcard `*.127.0.0.1.nip.io` Certificate. Every north-south route is reachable over both HTTP and the shared Gateway's HTTPS listener (:8443); this is additive alongside the original HTTP-only path, never a breaking cutover. `restricted` PSA, zero carve-out. (ADR-0028) |
+
 ### Secrets
 
 | Tool | Role in the platform |
@@ -120,6 +128,12 @@ Rows are grouped by layer, matching the README stack table.
 | **RabbitMQ** | Message broker with management UI. (ADR-0009) |
 | **Valkey** | In-memory cache / key-value store; drop-in Redis replacement. (ADR-0018) |
 | **data-demo** | Traffic generator that publishes messages to RabbitMQ and reads/writes Valkey — keeps the data-layer dashboards alive with real activity. |
+
+### Autoscaling
+
+| Tool | Role in the platform |
+|------|----------------------|
+| **KEDA** | Event-driven autoscaling — scales a workload on a real signal (a RabbitMQ queue's depth, a Prometheus expression), augmenting the stock HPA rather than replacing it. A `ScaledObject` demo (`gitops/data/demo/keda-scaling/`) scales the `rabbitmq-load` Deployment on the `data` namespace's RabbitMQ queue depth. Its admission webhook's TLS is wired to cert-manager's `k8s-lab-ca` — a second real consumer beyond the Gateway. `restricted` PSA, zero carve-out. (ADR-0029) |
 
 ### Cloud / platform-engineering
 
@@ -197,9 +211,9 @@ On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`har
 
 0. **Toolchain + Colima** — container runtime VM. Set up first.
 1. **Foundation** — `make up` (k3d + ArgoCD + GitLab wiring). The whole lab rebuilds from this one command.
-2. **Core platform** — Envoy Gateway routes traffic; Vault + External Secrets manage secrets; Garage + s3manager store objects.
+2. **Core platform** — Envoy Gateway routes traffic; cert-manager issues and auto-renews the TLS certs the Gateway's HTTPS listener serves from a self-signed root CA; Vault + External Secrets manage secrets; Garage + s3manager store objects.
 3. **Observability** — Alloy ships telemetry to Mimir (metrics), Loki (logs), Tempo (traces), and Pyroscope (profiles). Grafana displays all four. KSM and node-exporter add cluster and host vitals.
-4. **Data layer** — RabbitMQ messages and Valkey key-value, kept busy by data-demo. Real activity means real dashboard data.
+4. **Data layer** — RabbitMQ messages and Valkey key-value, kept busy by data-demo. Real activity means real dashboard data. KEDA scales the `rabbitmq-load` Deployment on the queue's real depth — event-driven autoscaling, not a timer or a hand-set replica count.
 5. **Cloud control-plane patterns** — moto mocks AWS; ACK reconciles `Bucket` CRs against it; KRO composes the CRs into a higher-level claim.
 6. **Supply-chain security** — GitLab CI signs images with cosign; Kyverno's `verifyImages` ClusterPolicy blocks unsigned images at admission; Trivy Operator continuously scans what's running.
 7. **Progressive delivery** — Argo Rollouts replaces the capstone `Deployment` with a canary `Rollout`; Envoy weights traffic; a Mimir AnalysisTemplate gates the canary steps on real SLO data — not timers.
