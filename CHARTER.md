@@ -128,7 +128,10 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   `inkless`) from its latest Velero backup in under 10 minutes wall-clock on the
   maintainer's hardware. (`observability` and `inkless` added 2026-07-29 — a
   gap audit found both held real PVCs with no Schedule; `storage`/Garage is a
-  deliberate, documented carve-out — see ADR-0021 §Scope & exceptions.)
+  deliberate, documented carve-out — see ADR-0021 §Scope & exceptions.) **RPO ≤ 24
+  hours** — every stateful namespace's `gitops/velero/schedules/*.yaml` Schedule
+  runs once daily (staggered 01:00–04:00) with `ttl: 168h` (7-day retention), so the
+  worst-case gap between a change and its next backup is one day.
   *Measured by:* a bats target that times the restore and fails over budget.
 - **O4 — Every image is signed and verified.** By **2026-12-31**, 100% of images
   deployed into the cluster are cosign-signed in CI and admitted by a Kyverno
