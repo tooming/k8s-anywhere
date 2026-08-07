@@ -1,0 +1,7 @@
+spec:
+  generators:
+    - list:
+        elements:
+          - appName: foo-networkpolicy
+            gitPath: gitops/foo/networkpolicy
+            destNamespace: foo

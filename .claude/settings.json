@@ -54,6 +54,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/appset-list-coverage-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking ApplicationSet list-generator coverage"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/roadmap-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking ROADMAP planner-note sync"

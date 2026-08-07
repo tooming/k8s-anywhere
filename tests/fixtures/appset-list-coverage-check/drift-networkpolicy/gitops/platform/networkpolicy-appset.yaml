@@ -1,0 +1,7 @@
+spec:
+  generators:
+    - list:
+        elements:
+          - appName: bar-networkpolicy
+            gitPath: gitops/bar/networkpolicy
+            destNamespace: bar
