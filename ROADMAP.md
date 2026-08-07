@@ -5095,12 +5095,16 @@ You review and merge plan PRs, same as implementation PRs.
   (mechanical drift guard — mirrors the repo's existing drift-detector pattern).
   (auto/oracle-cluster-bats)
 
-- [ ] 🟡 **Author retroactive ADR(s) for GitLab and the LGTMP observability-stack
+- [x] ~~🟡~~ **Author retroactive ADR(s) for GitLab and the LGTMP observability-stack
   internals** (RFC #1073 — architect decision 2026-08-07: two ADRs, GitLab standalone
   + one combined LGTMP ADR, both authored in the RFC's own PR; see
   `docs/decisions/adr-0033-gitlab-git-source-and-ci.md` and
-  `docs/decisions/adr-0034-lgtmp-observability-stack.md`. Remaining follow-up:
-  `docs/dependency-register.md` gaining rows for both — see the new 🟢 item below.)
+  `docs/decisions/adr-0034-lgtmp-observability-stack.md`. **Resolved 2026-08-07** — the
+  follow-up `docs/dependency-register.md` rows this item's own body called out also
+  landed the same day (`auto/dependency-register-adr-0033-0034-rows`, #1076), so every
+  part of this item is now built, not just RFC'd. Planner pass 2026-08-07 checked this
+  off directly (STEP 3's "prune items already done") rather than leaving a
+  fully-resolved item permanently unchecked.)
   (CHARTER **Core Values** §"Decisions written down, rejected options
   off-limits" — "every meaningful technical choice lands as an ADR"; planner
   gap-analysis 2026-08-07, reached via `executor.prompt.md` STEP 6b after
