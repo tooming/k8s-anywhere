@@ -48,6 +48,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/envoy-egress-allowlist-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking Envoy backend-egress allowlist sync"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/roadmap-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking ROADMAP planner-note sync"

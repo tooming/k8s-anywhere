@@ -4,7 +4,7 @@
 # for: Alloy metrics scrape of the controller on TCP 19001; Alloy metrics scrape of
 # the data-plane proxy on TCP 19000; north-south listener traffic on TCP 10080
 # (Envoy proxy container port — the Service maps port 80 → container 10080); proxy-pod
-# egress to the twelve backend namespaces it proxies HTTPRoute traffic into.
+# egress to the seventeen backend namespaces it proxies HTTPRoute traffic into.
 # The allow-dns-and-apiserver baseline covers both controller and proxy k8s API calls
 # (Gateway reconciliation, EndpointSlice watches, leader election); a dedicated rule
 # adds the proxy→control-plane xDS hop (TCP 18000) that neither baseline nor the

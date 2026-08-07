@@ -95,16 +95,23 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-envoy-proxy-backend-egress includes all thirteen backend namespaces" {
-  run grep -c 'argocd\|capstone\|vault\|observability\|data\|storage\|moto\|ack-system\|argo-rollouts\|kyverno\|velero\|trivy-system\|harbor' \
+@test "allow-envoy-proxy-backend-egress includes all seventeen backend namespaces" {
+  run grep -c 'argocd\|capstone\|vault\|observability\|data\|storage\|moto\|ack-system\|argo-rollouts\|kyverno\|velero\|trivy-system\|harbor\|tidb\|longhorn-system\|istio-system\|kargo' \
     "$ENVOY_GW_NP/allow-envoy-proxy-backend-egress.yaml"
   [ "$status" -eq 0 ]
-  [ "$output" -ge 13 ]
+  [ "$output" -ge 17 ]
 }
 
 @test "allow-envoy-proxy-backend-egress includes the harbor namespace" {
   run grep -q '^\s*- harbor\s*$' "$ENVOY_GW_NP/allow-envoy-proxy-backend-egress.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "allow-envoy-proxy-backend-egress includes the tidb, longhorn-system, istio-system, and kargo namespaces" {
+  for ns in tidb longhorn-system istio-system kargo; do
+    run grep -q "^\s*- $ns\s*\$" "$ENVOY_GW_NP/allow-envoy-proxy-backend-egress.yaml"
+    [ "$status" -eq 0 ]
+  done
 }
 
 @test "allow-envoy-proxy-backend-egress uses matchExpressions operator In" {
