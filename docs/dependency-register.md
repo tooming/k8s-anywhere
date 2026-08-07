@@ -56,7 +56,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | Tool | Criticality | Upstream source | ADR | Last reviewed |
 |---|---|---|---|---|
 | Terraform / Terragrunt | always-on-core (day-0 bootstrap only, ADR-0001) | terraform.io, terragrunt.gruntwork.io | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | not dated in ADR (no Re-evaluation log) |
-| ArgoCD | always-on-core | argoproj.github.io, github.com/argoproj/argo-cd | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | not dated in ADR (no Re-evaluation log) |
+| ArgoCD | always-on-core | argoproj.github.io, github.com/argoproj/argo-cd | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | 2026-08-07 (Terraform-bootstrapped `argo-cd` chart bumped `10.2.3` → `10.3.0`, same-appVersion `v3.5.0` chart repackage) |
 | Garage | always-on-core (in-cluster S3, ADR-0002) + bootstrap substrate (off-cluster Terraform-state backend, ADR-0007) | github.com/Deuxfleurs/garage | [ADR-0002](decisions/adr-0002-garage-not-minio.md), [ADR-0007](decisions/adr-0007-off-cluster-garage-tfstate-backend.md) | 2026-07-28 (ADR-0002 audit #776, `v2.3.0` kept) |
 | Grafana | always-on-core (observability stack) | grafana.com, github.com/grafana/grafana | [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md) | 2026-08-06 (Grafana image tag bumped `13.0.3`→`13.0.5`, real CVE fix GHSA-mpwr-8vm7-h73f; Loki bumped `3.7.4`→`3.7.5`→`3.7.6`, real fixes each hop; Tempo pin `2.10.7` reconfirmed current, ADR-0006 log-drift corrected) |
 | Envoy Gateway | always-on-core | github.com/envoyproxy/gateway | [ADR-0008](decisions/adr-0008-envoy-gateway-not-traefik.md) | 2026-07-23 (`v1.8.2` → `v1.8.3` bump) |
