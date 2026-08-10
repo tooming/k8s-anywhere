@@ -193,7 +193,7 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 | `docs/decisions/adr-0021-velero-backup-restore.md` | This ADR |
 | `gitops/platform/velero.yaml` | Auto-synced ArgoCD `Application` for the controller + node-agent |
 | `gitops/platform/velero-schedules.yaml` | Auto-synced ArgoCD `Application` for the Schedule set (sync-wave 5) |
-| `gitops/velero/schedules/*.yaml` | Four `Schedule` CRs |
+| `gitops/velero/schedules/*.yaml` | Six `Schedule` CRs (grew from the original four — see §Schedule set and the 2026-07-29 Re-evaluation log entry) |
 | `gitops/velero/networkpolicy/kustomization.yaml` | Default-deny overlay |
 | `gitops/secrets/velero-s3-externalsecret.yaml` | Renders `cloud-credentials` Secret from Vault |
 | `scripts/garage-bootstrap.sh` | Day-0 seam — create `velero-key` + bucket, seed Vault path |
@@ -201,7 +201,7 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 | `Makefile` | New `dr-restore` target |
 | `gitops/platform/observability-alloy.yaml` | New `velero` scrape job |
 | `grafana/dashboards/lab-velero.json` | Real-metric dashboard (Objective O5) |
-| `tests/velero.bats` | Clusterless tests: Application shape, four schedules, ExternalSecret wired, scrape job present, dashboard exists |
+| `tests/velero.bats` | Clusterless tests: Application shape, six schedules, ExternalSecret wired, scrape job present, dashboard exists |
 
 ---
 
