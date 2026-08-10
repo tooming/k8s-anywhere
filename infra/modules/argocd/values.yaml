@@ -127,8 +127,19 @@ controller:
       memory: 2Gi
   # application-controller has no livenessProbe by default; only readiness.
   readinessProbe:
-    timeoutSeconds: 5
+    timeoutSeconds: 15
 
+# 2026-08-07: repo-server was found crashlooping continuously for 24h+ (54+
+# restarts) — its own healthz handler was missing the probe's timeout under
+# sustained host latency, not the cold-start CPU-throttling the 5s value above
+# was originally sized for (see configs.params comment): logs showed repeated
+# "Error serving health check request ... duration=5.0-5.4s" right at/over the
+# old 5s ceiling, with the probe cancelling the in-flight request and killing
+# the container before it could ever finish a health check, on an indefinite
+# loop (never converges — every sync/comparison this component serves fails
+# while it's down, cascading to every Application, not just one). Bumped
+# further, matching the margin already used for Harbor's identical failure
+# mode (PR #1040).
 repoServer:
   metrics:
     enabled: true
@@ -140,10 +151,10 @@ repoServer:
       cpu: "1"
       memory: 512Mi
   livenessProbe:
-    timeoutSeconds: 5
+    timeoutSeconds: 15
     initialDelaySeconds: 20
   readinessProbe:
-    timeoutSeconds: 5
+    timeoutSeconds: 15
     initialDelaySeconds: 20
 
 server:
