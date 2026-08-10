@@ -377,6 +377,20 @@ gitlab-up: ## Start GitLab omnibus and wait until healthy (first boot ~5 min)
 gitlab-down: ## Stop GitLab omnibus (frees ~3 GB; keeps its volumes)
 	cd gitlab && docker compose stop
 
+# --- Forgejo (ADR-0035, migration stage 1 — additive, NOT yet the live git source) ---
+.PHONY: forgejo-up
+forgejo-up: ## Start Forgejo + runner and wait until healthy (migration stage 1, ADR-0035)
+	@bash scripts/forgejo-env-ensure.sh
+	cd forgejo && docker compose up -d
+	@echo "waiting for Forgejo to be healthy..."
+	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' forgejo 2>/dev/null)" = "healthy" ]; do sleep 5; done
+	@echo "Forgejo healthy."
+	@bash scripts/forgejo-admin-ensure.sh
+
+.PHONY: forgejo-down
+forgejo-down: ## Stop Forgejo + runner (keeps volumes)
+	cd forgejo && docker compose stop
+
 .PHONY: gitlab-configure
 gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the repo
 	bash scripts/gitlab-pat.sh >/dev/null
@@ -479,6 +493,7 @@ creds: ## Print all lab UI logins (reads live secrets; needs the cluster/GitLab 
 	@a=$$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "ArgoCD   admin / $${a:-<cluster down>}    http://argocd.127.0.0.1.nip.io:8000"
 	@g=$$(kubectl -n observability get secret grafana-admin -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d); echo "Grafana  admin / $${g:-<cluster down>}    http://localhost:8000"
 	@r=$$(grep -E '^GITLAB_ROOT_PASSWORD=' gitlab/.env 2>/dev/null | cut -d= -f2-); echo "GitLab   root  / $${r:-<gitlab/.env missing>}    http://localhost:8929"
+	@fp=$$(grep -E '^FORGEJO_ADMIN_PASSWORD=' forgejo/.env 2>/dev/null | cut -d= -f2-); echo "Forgejo  lab-admin / $${fp:-<forgejo/.env missing>}    http://localhost:3300 (migration stage 1, ADR-0035 — not yet the live git source)"
 	@t=$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); echo "Vault    token / $${t:-<cluster down>}    http://vault.127.0.0.1.nip.io:8000"
 	@ru=$$(kubectl -n data get secret rabbitmq-creds -o jsonpath='{.data.username}' 2>/dev/null | base64 -d); rp=$$(kubectl -n data get secret rabbitmq-creds -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "RabbitMQ $${ru:-<cluster down>} / $${rp:-<cluster down>}    http://rabbitmq.127.0.0.1.nip.io:8000"
 	@dp=$$(kubectl -n data get secret valkey-creds -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "Valkey   (requirepass) / $${dp:-<cluster down>}    valkey://valkey.data.svc:6379"
@@ -498,6 +513,7 @@ status: ## Show VM resources + per-namespace memory + any non-running pods
 	@echo "--- pods not Running/Completed ---"; \
 		kubectl get pods -A --no-headers 2>/dev/null | awk '$$4!="Running" && $$4!="Completed" {print "  "$$1"/"$$2"  "$$4}' || true
 	@echo "--- GitLab container ---"; docker ps --filter name=gitlab --format '  {{.Names}}  {{.Status}}' 2>/dev/null || true
+	@echo "--- Forgejo container (migration stage 1, ADR-0035) ---"; docker ps --filter name=forgejo --format '  {{.Names}}  {{.Status}}' 2>/dev/null || true
 
 .PHONY: health
 health: ## Assert every always-on pod + workload is actually Running+Ready (exit 1 if not)
