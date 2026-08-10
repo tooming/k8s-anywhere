@@ -45,6 +45,18 @@ mem_mi() {
   [ "$(yqs '.repoServer.readinessProbe.timeoutSeconds' "$VALS")" -ge 3 ]
 }
 
+# 2026-08-07: found repo-server crashlooping continuously for 24h+ with the old
+# 5s timeout — its healthz handler was observed missing it by 0.0-0.4s under
+# sustained host latency (not the cold-start CPU-throttling the original 5s was
+# sized for), killing and restarting the only replica in an indefinite loop
+# that never converges (every sync fails while it's down). >= 3 alone doesn't
+# guard against regressing back to a value that's merely "relaxed" but still
+# too tight for this host's actual latency profile.
+@test "repo-server probes are generous enough to survive sustained host latency, not just the cold-start default" {
+  [ "$(yqs '.repoServer.livenessProbe.timeoutSeconds' "$VALS")" -ge 10 ]
+  [ "$(yqs '.repoServer.readinessProbe.timeoutSeconds' "$VALS")" -ge 10 ]
+}
+
 @test "application-controller requests >= 200m CPU" {
   run cpu_millis "$(yqs '.controller.resources.requests.cpu' "$VALS")"
   [ "$output" -ge 200 ]
