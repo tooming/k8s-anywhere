@@ -5355,6 +5355,49 @@ You review and merge plan PRs, same as implementation PRs.
   backend has never been deployed, so adding it there would misrepresent
   never-run code as live system state.
 
+- 🟡 **Grafana/Mimir alerting rules for known failure conditions** (CHARTER **Core
+  Values** §"operational-resilience discipline"; DORA audit-readiness gap Q7 —
+  `docs/dora-audit-readiness.md`'s own "Gap" line for Q7 names this precisely: "no
+  alerting (Grafana has dashboards, not alert rules, as far as this repo's `gitops/`
+  shows)"; planner-fallback gap analysis 2026-08-10, reached via
+  `executor.prompt.md` STEP 6b after two currency-bump cycles this run
+  (`auto/external-secrets-chart-2-9-0`, `auto/pyroscope-chart-2-2-1`) and an
+  extensive `git ls-remote --tags` sweep across every remaining chart pin not
+  checked in the 2026-08-07 sweep (cert-manager, keda, vault, ack-s3, kargo,
+  envoy-gateway, node-exporter, alloy, mimir, tempo, rabbitmq, valkey, k3s,
+  gitlab-ce, gitlab-runner — all confirmed current) turned up no further version
+  gap. Standing Now/next items remain gated on #631/#633/#1034, unchanged.
+  Verified directly (ADR-0004): `gitops/observability/mimir/configmap.yaml` already
+  wires a `ruler_storage` backend (Garage bucket `mimir-ruler`) and a `ruler:`
+  block with `rule_path: /data/ruler` — the mechanism exists — but grepping the
+  entire `gitops/` tree for `PrometheusRule`/`ruler`/rule-group YAML turns up zero
+  actual alert or recording rule definitions loaded anywhere; the ruler component
+  is wired but empty. Grafana's own `valuesObject`
+  (`gitops/platform/observability-grafana.yaml`) sets no `unifiedAlerting`
+  configuration either.) **Needs an architect RFC before an executor can build
+  it** — this is a first-time operational-capability decision for the lab, not a
+  mechanical config addition, and several real architecture questions are open:
+  (a) which failure conditions actually warrant an alert (pod down, PVC full,
+  Vault sealed, ArgoCD OutOfSync for N minutes — CHARTER's own DR/resilience
+  language is the natural source list, but the RFC should pick a small, concrete
+  starting set, not "alert on everything"); (b) mechanism — rules loaded into
+  Mimir's ruler (already wired storage-wise) evaluated against its own metrics,
+  vs. Grafana's native Unified Alerting querying Mimir as a datasource — these
+  have different config surfaces and the RFC should pick one, not both; (c)
+  notification receiver — this is a solo-operator lab with no pager/Slack/email
+  integration anywhere in the repo, so per Q7's own "worth naming as an explicit
+  non-goal rather than a silent absence" framing, the RFC should decide whether
+  alerts stay purely visual (Grafana's Alerting UI showing firing state, no
+  external notification) or whether a lightweight receiver (e.g. a webhook into
+  an existing in-cluster consumer) is worth adding — recommend visual-only as the
+  default given ADR-0025's free/OSS-tier constraint and the lack of any existing
+  notification channel to hang a receiver off of, but this is the architect's
+  call to make explicitly, not assume. Acceptance criteria for the resulting
+  RFC: names the mechanism, the starting rule set (with the specific PromQL/
+  Mimir query per rule), the notification decision, and a flip condition for
+  reconsidering scope later; the planner then grooms it into one or more 🟢 items
+  in *Now / next*. No branch yet — 🟡, architect RFC required first.
+
 _New 🟡 items proposed by the architect live in
 [`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until
 the planner absorbs them here. Do **not** append new 🟡 items directly to this
