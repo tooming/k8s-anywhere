@@ -5355,7 +5355,11 @@ You review and merge plan PRs, same as implementation PRs.
   backend has never been deployed, so adding it there would misrepresent
   never-run code as live system state.
 
-- 🟡 **Grafana/Mimir alerting rules for known failure conditions** (CHARTER **Core
+- 🟡 **Grafana/Mimir alerting rules for known failure conditions** (RFC #1084 —
+  architect decision 2026-08-10: **Grafana Unified Alerting** querying Mimir, NOT
+  Mimir's own ruler; file-based provisioning; visual-only, no external notification
+  receiver; four starting rules on already-scraped metrics — see the RFC for exact
+  PromQL. Awaiting planner grooming into a 🟢 *Now / next* item.) (CHARTER **Core
   Values** §"operational-resilience discipline"; DORA audit-readiness gap Q7 —
   `docs/dora-audit-readiness.md`'s own "Gap" line for Q7 names this precisely: "no
   alerting (Grafana has dashboards, not alert rules, as far as this repo's `gitops/`
