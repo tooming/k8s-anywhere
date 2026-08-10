@@ -186,13 +186,18 @@ setup() {
 # --- kube-state-metrics chart-pin recurrence guard ----------------------------
 # Packaging-only currency bump (appVersion unchanged) — see docs/done/ entry.
 
-@test "kube-state-metrics Application pins chart version 8.1.3" {
-  run grep -q 'targetRevision: 8.1.3' "$KSM"
+@test "kube-state-metrics Application pins chart version 8.2.0" {
+  run grep -q 'targetRevision: 8.2.0' "$KSM"
   [ "$status" -eq 0 ]
 }
 
 @test "kube-state-metrics Application does not pin the stale 8.0.0 version" {
   run grep -q 'targetRevision: 8.0.0' "$KSM"
+  [ "$status" -ne 0 ]
+}
+
+@test "kube-state-metrics Application does not pin the stale 8.1.3 version" {
+  run grep -q 'targetRevision: 8.1.3' "$KSM"
   [ "$status" -ne 0 ]
 }
 
