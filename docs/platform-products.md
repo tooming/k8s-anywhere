@@ -7,8 +7,8 @@ work once they exist.
 
 This is the org/product companion to [dependency-tree.md](dependency-tree.md) (the
 runtime + bootstrap graph) and [00-architecture.md](00-architecture.md) (roles).
-Everything below maps to components that exist in this repo today, plus the *planned*
-heavy add-ons named in the README.
+Everything below maps to components that exist in this repo today, including the
+heavy add-ons named in the README — all now built and on-demand, not planned.
 
 ---
 
@@ -72,8 +72,8 @@ graph TD
   subgraph T4["Tier 4 — Self-service control plane"]
     claims["Resource claims: KRO + ACK + moto"]:::ss
   end
-  subgraph T5["Tier 5 — Planned heavy add-ons (on-demand)"]
-    heavy["TiDB · Artifactory/Nexus · Istio+Kiali · Longhorn"]:::plan
+  subgraph T5["Tier 5 — Heavy add-ons (on-demand, built)"]
+    heavy["TiDB · Harbor · Istio+Kiali · Longhorn"]:::plan
   end
 
   compute --> state --> scm --> cd
@@ -93,7 +93,7 @@ graph TD
 | **2 Data** | Object storage (Garage) | **P1** | Stateful backends for observability and apps. |
 | **3 Observability** | LGTMP + Grafana | **P1** | You can ship without it, but you can't *operate* without it. Depends on object storage. |
 | **4 Self-service** | KRO + ACK + moto claims | **P2** | The "internal API" layer that turns primitives into one-line self-service. |
-| **5 Heavy** | TiDB, Artifactory, Istio mesh, Longhorn | **P3** | On-demand, capacity-gated (the 16 GB reality); pulled in per customer need. |
+| **5 Heavy** | TiDB, Harbor, Istio mesh, Longhorn | **P3** | On-demand, capacity-gated (the 16 GB reality); pulled in per customer need — all four are built (`make <name>-up`), not just planned. |
 
 ---
 
@@ -119,15 +119,15 @@ The paved road for shipping. Substrate that's also offered as a "deploy here" pr
 | Product | Consumer contract | Backed by | Depends on | Maturity |
 |---------|-------------------|-----------|------------|----------|
 | **Ingress / north-south routing** | `kind: HTTPRoute` (Gateway API) on the shared gateway | Envoy Gateway (+ off-cluster front door) | ArgoCD | ✅ self-service |
-| **Service mesh (east-west)** | *planned* — sidecarless `PeerAuthentication`/traffic policy + Kiali topology | Istio ambient + Kiali | ingress | 📋 planned (heavy) |
+| **Service mesh (east-west)** | sidecarless `PeerAuthentication`/traffic policy + Kiali topology (`make istio-up`) | Istio ambient + Kiali | ingress | 🟡 on-demand (heavy) |
 
 ### D. Data & storage
 | Product | Consumer contract | Backed by | Depends on | Maturity |
 |---------|-------------------|-----------|------------|----------|
 | **Object storage (S3)** | a bucket + credentials (today provisioned by `garage-bootstrap`; browse via s3manager) | Garage S3 | Secrets | 🟡 platform-provisioned (self-service path = Cloud Resources below) |
-| **Relational database** | *planned* — a DB-claim CRD | TiDB | storage | 📋 planned (heavy) |
-| **Artifact registry** | *planned* — push/pull endpoint + repo | Artifactory/Nexus | storage | 📋 planned (heavy) |
-| **Block storage / PVs** | *planned* — a StorageClass | Longhorn | compute | 📋 planned (heavy) |
+| **Relational database** | a TiDB cluster via `make tidb-up`; no DB-claim CRD yet — direct `kubectl`/GitOps access | TiDB | storage | 🟡 on-demand (heavy) |
+| **Artifact registry** | push/pull endpoint + repo via `make harbor-up` | Harbor | storage | 🟡 on-demand (heavy) |
+| **Block storage / PVs** | a `longhorn` StorageClass via `make longhorn-up` | Longhorn | compute | 🟡 on-demand (heavy) |
 
 ### E. Observability
 | Product | Consumer contract | Backed by | Depends on | Maturity |
@@ -202,7 +202,7 @@ one team, treating them as distinct product lines keeps ownership and the roadma
 | **Platform core / paved road** | Continuous Delivery, Cluster/env | k3d, Terraform/Terragrunt, **off-cluster Garage (state)**, GitLab, ArgoCD |
 | **Security & secrets** | Secrets | Vault, ESO |
 | **Connectivity** | Ingress, (mesh) | Envoy Gateway, front door |
-| **Data & storage** | Object storage, (DB/registry/PV) | Garage, (Longhorn/TiDB/Artifactory) |
+| **Data & storage** | Object storage, (DB/registry/PV) | Garage, (Longhorn/TiDB/Harbor) |
 | **Observability** | Metrics/Logs/Traces/Profiles | LGTMP, Grafana |
 | **Developer self-service** | Cloud Resources Service | KRO, ACK, moto |
 

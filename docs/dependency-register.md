@@ -18,8 +18,8 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 32 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0032), two are **Superseded** and excluded per the index's own
+Of the 34 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0034), two are **Superseded** and excluded per the index's own
 convention (only their replacement is listed): ADR-0010 (Redis, superseded by
 ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor).
 

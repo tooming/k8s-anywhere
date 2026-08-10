@@ -126,7 +126,8 @@ actually exists (the follow-up item below).
   default for webhook TLS (self-signed, chart-managed) — fully additive, no existing
   workload is touched, buildable and clusterless-verifiable in one item.
 
-**Out of scope (this ADR, explicit follow-ups):**
+**Out of scope at this ADR's original adoption (both shipped since — see the "Files"
+table below, tagged "shipped"):**
 
 - **Wiring the admission webhook's TLS to cert-manager** instead of the chart's
   built-in self-signed cert generation. The chart supports this natively

@@ -194,7 +194,7 @@ duplicated.
 
 **Q14. Is there a register of ICT third-party dependencies?**
 - **Answer:** Yes. [`docs/dependency-register.md`](dependency-register.md) tabulates
-  every third-party tool named in a binding ADR — 22 tools across 20 ADRs — by
+  every third-party tool named in a binding ADR — 32 tools across 24 ADRs — by
   criticality, upstream source, deciding ADR, and last-reviewed date, re-indexed
   purely from existing ADR content.
 - **Evidence:** [docs/dependency-register.md](dependency-register.md).
