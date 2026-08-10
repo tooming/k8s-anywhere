@@ -33,7 +33,7 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-# --- Chart currency pin (planner-fallback upstream check, 2026-08-05) -------
-@test "observability-grafana.yaml pins grafana chart to 12.10.3" {
-  [ "$(yqs '.spec.source.targetRevision' "$GRAFANA")" = "12.10.3" ]
+# --- Chart currency pin (upgrade-drafter fallback, 2026-08-10) --------------
+@test "observability-grafana.yaml pins grafana chart to 12.10.4" {
+  [ "$(yqs '.spec.source.targetRevision' "$GRAFANA")" = "12.10.4" ]
 }
