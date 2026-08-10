@@ -3406,6 +3406,54 @@ You review and merge plan PRs, same as implementation PRs.
   by a chart-version revert). `docs/done/` entry required.
   (auto/pyroscope-chart-2-2-1)
 
+- [ ] 🟢 **Grafana Unified Alerting — four rules for known failure conditions** (RFC
+  #1084 — architect decision 2026-08-10; closes `docs/dora-audit-readiness.md` Q7's
+  "no alerting" gap; planner-groomed 2026-08-10 — the RFC's own Acceptance criteria
+  is the spec below, no further sizing needed. **No prerequisites — executor may
+  pick up immediately.**) Add an alerting-provisioning ConfigMap to
+  `gitops/platform/observability-grafana.yaml`'s `valuesObject` (Grafana's chart
+  supports mounting extra provisioning files the same way dashboards/datasources
+  are already provisioned — check the chart's own `extraConfigmapMounts` or
+  equivalent `valuesObject` key, mirroring whatever mechanism the existing
+  datasource provisioning in this same file already uses) defining exactly these
+  four rules, each `for:` the duration below, in Grafana's file-based alerting
+  provisioning YAML format (`apiVersion: 1`, a `groups:` list under the
+  provisioning `alerting` kind):
+  1. **ArgoCDAppUnhealthy** — `argocd_app_info{health_status!="Healthy"} == 1`,
+     `for: 10m`.
+  2. **ArgoCDAppOutOfSync** — `argocd_app_info{sync_status="OutOfSync"} == 1`,
+     `for: 30m`.
+  3. **DeploymentReplicasUnavailable** —
+     `kube_deployment_status_replicas_available < kube_deployment_spec_replicas`,
+     `for: 10m`.
+  4. **PVCStuckPendingOrLost** —
+     `kube_persistentvolumeclaim_status_phase{phase=~"Pending|Lost"} == 1`,
+     `for: 10m`.
+  All four query the existing Mimir datasource (already configured with
+  `X-Scope-OrgID: lab`) — no new datasource, no new scrape target. Do **not** add
+  any `receivers:`/contact-point/notification config — per the RFC, this is
+  visual-only (Grafana's Alerting UI shows firing state; no external channel
+  exists in this lab to wire one to). New `tests/observability-alerting.bats`
+  (clusterless structural, mirrors the `tests/observability-<scope>.bats`
+  per-component pattern): asserts all four rule names + their exact PromQL
+  expressions + `for:` durations are present in the provisioning config; asserts
+  no `receivers:`/webhook/SMTP/contact-point key exists anywhere in the same
+  block (recurrence guard — per the RFC, adding a notification channel later
+  needs its own fresh decision, not a silent addition). Update
+  `docs/dependency-tree.md` with a short note that Grafana Unified Alerting is
+  wired, querying Mimir, visual-only, four rules. Update
+  `docs/dora-audit-readiness.md`'s Q7 answer to record this closes the "no
+  alerting" half of the gap (the escalation/paging half stays an explicit
+  non-goal per the RFC — state that plainly, don't silently drop it). `make ci`
+  must pass — this is config-only and clusterless-verifiable (structural
+  assertions on the provisioning YAML; no live Grafana instance needed to
+  confirm the rules are well-formed and present). PR body must document the
+  ADR-0004 caveat that this remote clusterless session cannot verify the rules
+  actually evaluate correctly or fire on a live cluster — call out the rollback
+  path (revert the provisioning block; Grafana re-syncs via ArgoCD on next
+  reconciliation; no other component depends on these rules existing). Closes
+  #1084. `docs/done/` entry required. (auto/grafana-alerting-rules)
+
 - [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
   maintainer confirms at least one CI run pushed a signed image to the registry** — the
@@ -5355,52 +5403,11 @@ You review and merge plan PRs, same as implementation PRs.
   backend has never been deployed, so adding it there would misrepresent
   never-run code as live system state.
 
-- 🟡 **Grafana/Mimir alerting rules for known failure conditions** (RFC #1084 —
-  architect decision 2026-08-10: **Grafana Unified Alerting** querying Mimir, NOT
+- ~~🟡 **Grafana/Mimir alerting rules for known failure conditions**~~ (RFC #1084 —
+  architect decision 2026-08-10: **Grafana Unified Alerting** querying Mimir, not
   Mimir's own ruler; file-based provisioning; visual-only, no external notification
-  receiver; four starting rules on already-scraped metrics — see the RFC for exact
-  PromQL. Awaiting planner grooming into a 🟢 *Now / next* item.) (CHARTER **Core
-  Values** §"operational-resilience discipline"; DORA audit-readiness gap Q7 —
-  `docs/dora-audit-readiness.md`'s own "Gap" line for Q7 names this precisely: "no
-  alerting (Grafana has dashboards, not alert rules, as far as this repo's `gitops/`
-  shows)"; planner-fallback gap analysis 2026-08-10, reached via
-  `executor.prompt.md` STEP 6b after two currency-bump cycles this run
-  (`auto/external-secrets-chart-2-9-0`, `auto/pyroscope-chart-2-2-1`) and an
-  extensive `git ls-remote --tags` sweep across every remaining chart pin not
-  checked in the 2026-08-07 sweep (cert-manager, keda, vault, ack-s3, kargo,
-  envoy-gateway, node-exporter, alloy, mimir, tempo, rabbitmq, valkey, k3s,
-  gitlab-ce, gitlab-runner — all confirmed current) turned up no further version
-  gap. Standing Now/next items remain gated on #631/#633/#1034, unchanged.
-  Verified directly (ADR-0004): `gitops/observability/mimir/configmap.yaml` already
-  wires a `ruler_storage` backend (Garage bucket `mimir-ruler`) and a `ruler:`
-  block with `rule_path: /data/ruler` — the mechanism exists — but grepping the
-  entire `gitops/` tree for `PrometheusRule`/`ruler`/rule-group YAML turns up zero
-  actual alert or recording rule definitions loaded anywhere; the ruler component
-  is wired but empty. Grafana's own `valuesObject`
-  (`gitops/platform/observability-grafana.yaml`) sets no `unifiedAlerting`
-  configuration either.) **Needs an architect RFC before an executor can build
-  it** — this is a first-time operational-capability decision for the lab, not a
-  mechanical config addition, and several real architecture questions are open:
-  (a) which failure conditions actually warrant an alert (pod down, PVC full,
-  Vault sealed, ArgoCD OutOfSync for N minutes — CHARTER's own DR/resilience
-  language is the natural source list, but the RFC should pick a small, concrete
-  starting set, not "alert on everything"); (b) mechanism — rules loaded into
-  Mimir's ruler (already wired storage-wise) evaluated against its own metrics,
-  vs. Grafana's native Unified Alerting querying Mimir as a datasource — these
-  have different config surfaces and the RFC should pick one, not both; (c)
-  notification receiver — this is a solo-operator lab with no pager/Slack/email
-  integration anywhere in the repo, so per Q7's own "worth naming as an explicit
-  non-goal rather than a silent absence" framing, the RFC should decide whether
-  alerts stay purely visual (Grafana's Alerting UI showing firing state, no
-  external notification) or whether a lightweight receiver (e.g. a webhook into
-  an existing in-cluster consumer) is worth adding — recommend visual-only as the
-  default given ADR-0025's free/OSS-tier constraint and the lack of any existing
-  notification channel to hang a receiver off of, but this is the architect's
-  call to make explicitly, not assume. Acceptance criteria for the resulting
-  RFC: names the mechanism, the starting rule set (with the specific PromQL/
-  Mimir query per rule), the notification decision, and a flip condition for
-  reconsidering scope later; the planner then grooms it into one or more 🟢 items
-  in *Now / next*. No branch yet — 🟡, architect RFC required first.
+  receiver; four starting rules on already-scraped metrics.) **Groomed ↗** into a 🟢
+  item in *Now / next* above (`auto/grafana-alerting-rules`), planner run 2026-08-10.
 
 _New 🟡 items proposed by the architect live in
 [`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until
