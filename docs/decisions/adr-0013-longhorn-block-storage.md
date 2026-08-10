@@ -1,8 +1,8 @@
 # ADR-0013 — Longhorn distributed block storage on-demand
 
-**Status.** Adopted. Decision taken in RFC #60. Manifests pending (next ROADMAP item);
-will live in `gitops/platform/longhorn.yaml` (non-auto-synced ArgoCD `Application`) and
-brought up with `make longhorn-up`.
+**Status.** Adopted. Decision taken in RFC #60. Manifests live in
+`gitops/platform/longhorn.yaml` (non-auto-synced ArgoCD `Application`, chart pinned per
+the Re-evaluation log below) and brought up with `make longhorn-up`.
 
 ---
 

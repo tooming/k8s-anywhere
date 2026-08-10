@@ -40,3 +40,5 @@ rationale travels with the code.
   - [ADR-0030](adr-0030-pin-k3s-version-explicitly.md) — Pin k3s to an explicit version on every backend
   - [ADR-0031](adr-0031-tidb-operator-version-policy.md) — TiDB Operator version-pin policy: hold at the 1.6.x line
   - [ADR-0032](adr-0032-tidb-version-policy.md) — TiDB database version-pin policy: hold at the v8.5.x line
+  - [ADR-0033](adr-0033-gitlab-git-source-and-ci.md) — GitLab (self-hosted) as the lab's git source of truth + CI runner
+  - [ADR-0034](adr-0034-lgtmp-observability-stack.md) — Grafana LGTM(P) stack internals + kube-state-metrics/node-exporter for observability
