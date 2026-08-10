@@ -30,6 +30,10 @@ gitlab/config/
 gitlab/.gitlab-token
 gitlab/runner-config/
 
+# Forgejo runtime data (bind-mounted) — ADR-0035
+forgejo/runner-config/
+forgejo/.forgejo-token
+
 # OS / editor
 .DS_Store
 *.swp
