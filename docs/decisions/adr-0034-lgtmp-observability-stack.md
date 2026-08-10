@@ -69,7 +69,7 @@ bootstrapped, formally recorded here for the first time.
 | **Mimir** | Raw manifests (`gitops/observability/mimir`), single-binary `-target=all`, filesystem storage | ArgoCD `Application` `mimir`, `targetRevision: main` (kustomize path, not a Helm chart — Mimir has no official chart this lab tracks) | Image tag tracked via `context.md` (currently `3.1.4` per this run's earlier currency sweep) |
 | **Loki** | Raw manifests (`gitops/observability/loki`), single-binary, Garage S3-backed | ArgoCD `Application` `loki`, `targetRevision: main` | Image tag tracked via ADR-0006 (currently `3.7.6`) |
 | **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.7` directly | `2.10.7` (tracked in ADR-0006's Re-evaluation log per this run's earlier correction) |
-| **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.0` | `2.2.0` |
+| **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.1` | `2.2.1` |
 | **Alloy** | Helm chart | `gitops/platform/observability-alloy.yaml`, `targetRevision: 1.11.1` | `1.11.1` |
 | **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.1.3` | `8.1.3` |
 | **node-exporter** | Helm chart, `prometheus-community/helm-charts` (`prometheus-node-exporter`) | `gitops/platform/observability-node-exporter.yaml`, `targetRevision: 4.56.1`; dedicated `node-exporter` namespace (not `observability`) because it needs `hostPID`/`hostNetwork`/`hostRootFsMount` semantics [ADR-0017](adr-0017-pod-security-standards-restricted.md)'s `restricted` profile forbids | `4.56.1` |
@@ -113,8 +113,23 @@ shape (Alloy as sole collector feeding all four Grafana-authored stores).
 
 ## Re-evaluation log
 
-_(No entries yet — this is the ADR's first version. Future architect audits record
-Keep/Supersede/Convert outcomes here.)_
+**2026-08-10** — Pyroscope chart bumped `2.2.0` → `2.2.1` (executor-fallback currency
+sweep). Verified directly (ADR-0004): `git ls-remote --tags grafana/pyroscope` shows
+`pyroscope-2.2.1` as the newest tag; the chart's own `Chart.yaml` `version`/`appVersion`
+both move together, and a full source diff (`git diff pyroscope-2.2.0 pyroscope-2.2.1 --
+operations/pyroscope/helm/pyroscope/`) shows only version-label churn in the rendered
+manifests — `values.yaml` and every template are byte-identical, so this repo's existing
+`readOnlyRootFilesystem: true` verification (this ADR's own table, checked against the
+pinned chart source) carries forward unchanged. The upstream release (PR grafana/
+pyroscope#5474) is explicitly a **security release**: `github.com/getkin/kin-openapi`
+(GHSA-r277-6w6q-xmqw, critical), `google.golang.org/grpc` (GHSA-hrxh-6v49-42gf),
+`golang.org/x/text` (CVE-2026-56852), `golang.org/x/net` (CVE-2026-46600), plus a
+`klauspost/compress` bump and UI-dependency (tar/js-yaml/brace-expansion/ip-address)
+fixes. **Keep** — no reason to reconsider Pyroscope itself, this is a routine security
+patch. Flip condition unchanged from below.
+
+_(This is the ADR's first version besides the entry above. Future architect audits
+record Keep/Supersede/Convert outcomes here.)_
 
 **Flip condition:** revisit any individual component if (a) it stops satisfying
 ADR-0004 (a dashboard panel is found sourcing fabricated/placeholder data), (b) Grafana
