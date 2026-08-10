@@ -71,7 +71,7 @@ bootstrapped, formally recorded here for the first time.
 | **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.7` directly | `2.10.7` (tracked in ADR-0006's Re-evaluation log per this run's earlier correction) |
 | **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.1` | `2.2.1` |
 | **Alloy** | Helm chart | `gitops/platform/observability-alloy.yaml`, `targetRevision: 1.11.1` | `1.11.1` |
-| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.1.3` | `8.1.3` |
+| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.2.0` | `8.2.0` |
 | **node-exporter** | Helm chart, `prometheus-community/helm-charts` (`prometheus-node-exporter`) | `gitops/platform/observability-node-exporter.yaml`, `targetRevision: 4.56.1`; dedicated `node-exporter` namespace (not `observability`) because it needs `hostPID`/`hostNetwork`/`hostRootFsMount` semantics [ADR-0017](adr-0017-pod-security-standards-restricted.md)'s `restricted` profile forbids | `4.56.1` |
 
 Mimir and Loki are deliberately **not** Helm charts (Mimir has no chart this lab
@@ -112,6 +112,14 @@ shape (Alloy as sole collector feeding all four Grafana-authored stores).
 ---
 
 ## Re-evaluation log
+
+**2026-08-10** — kube-state-metrics chart bumped `8.1.3` → `8.2.0` (upgrade-drafter
+fallback, PR #1098; this entry added by a separate janitor cleanup since chart-pin
+bumps stay out of that routine's own scope). Chart's `appVersion` unchanged (`2.19.1`
+→ `2.19.1`) — a packaging-only release adding an optional `aggregationRule` values
+key, no change to any key this repo's `valuesObject` sets, so the existing
+`securityContext`/`containerSecurityContext` hardening in this ADR's own table above
+carries forward unchanged. **Keep** — no reason to reconsider the component itself.
 
 **2026-08-10** — Pyroscope chart bumped `2.2.0` → `2.2.1` (executor-fallback currency
 sweep). Verified directly (ADR-0004): `git ls-remote --tags grafana/pyroscope` shows
