@@ -70,7 +70,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | Tool | Criticality | Upstream source | ADR | Last reviewed |
 |---|---|---|---|---|
 | Terraform / Terragrunt | always-on-core (day-0 bootstrap only, ADR-0001) | terraform.io, terragrunt.gruntwork.io | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | not dated in ADR (no Re-evaluation log) |
-| ArgoCD | always-on-core | argoproj.github.io, github.com/argoproj/argo-cd | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | 2026-08-07 (Terraform-bootstrapped `argo-cd` chart bumped `10.2.3` → `10.3.0`, same-appVersion `v3.5.0` chart repackage) |
+| ArgoCD | always-on-core | argoproj.github.io, github.com/argoproj/argo-cd | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | 2026-08-10 (Terraform-bootstrapped `argo-cd` chart bumped `10.3.0` → `10.3.2`, same-appVersion `v3.5.0` chart repackage) |
 | Garage | always-on-core (in-cluster S3, ADR-0002) + bootstrap substrate (off-cluster Terraform-state backend, ADR-0007) | github.com/Deuxfleurs/garage | [ADR-0002](decisions/adr-0002-garage-not-minio.md), [ADR-0007](decisions/adr-0007-off-cluster-garage-tfstate-backend.md) | 2026-07-28 (ADR-0002 audit #776, `v2.3.0` kept) |
 | Grafana | always-on-core (observability stack) | grafana.com, github.com/grafana/grafana | [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md) | 2026-08-06 (Grafana image tag bumped `13.0.3`→`13.0.5`, real CVE fix GHSA-mpwr-8vm7-h73f; Loki bumped `3.7.4`→`3.7.5`→`3.7.6`, real fixes each hop; Tempo pin `2.10.7` reconfirmed current, ADR-0006 log-drift corrected) |
 | Envoy Gateway | always-on-core | github.com/envoyproxy/gateway | [ADR-0008](decisions/adr-0008-envoy-gateway-not-traefik.md) | 2026-08-07 (`provider.kubernetes.leaderElection.disable: true` set on the single-replica control plane — chronic front-door 502 fix, 17+ restarts/~2h observed 2026-08-07; ADR-0005 already accepted the single-replica posture, this closes the self-inflicted-restart gap it left) |
@@ -99,7 +99,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | Tempo | always-on-core (observability — trace store) | github.com/grafana/tempo | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
 | Pyroscope | always-on-core (observability — continuous profiling) | github.com/grafana/pyroscope | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-10 (chart bumped `2.2.0` → `2.2.1`, upstream security release — `grpc-go`/`golang.org/x/text`/`golang.org/x/net`/`kin-openapi` CVE fixes) |
 | Alloy | always-on-core (observability — unified collector) | github.com/grafana/alloy | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
-| kube-state-metrics | always-on-core (observability — Kubernetes object-state exporter) | github.com/kubernetes/kube-state-metrics | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
+| kube-state-metrics | always-on-core (observability — Kubernetes object-state exporter) | github.com/kubernetes/kube-state-metrics | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-10 (chart bumped `8.1.3` → `8.2.0`, packaging-only release — `appVersion` unchanged) |
 | node-exporter | always-on-core (observability — node/host metrics exporter) | github.com/prometheus/node_exporter | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
 
 ## Keeping this in sync
