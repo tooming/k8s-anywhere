@@ -70,7 +70,7 @@ so the engine is up first):
 | Policy | Type | What it does |
 |--------|------|--------------|
 | `require-pod-security-restricted` | `validate` | Backstop ADR-0017: reject pods missing `runAsNonRoot`, `allowPrivilegeEscalation=false`, `capabilities.drop=[ALL]`, `seccompProfile=RuntimeDefault`. Skips namespaces labelled `pod-security.kubernetes.io/enforce=baseline` or `=privileged` (matches the ADR-0017 carve-out table). |
-| `disallow-latest-tag` | `validate` | Reject any container `image:` ending in `:latest` or with no tag. **Carve-out (issue #498, 2026-07-18):** excludes the `capstone` namespace, whose manifests still hardcode a floating `:latest` placeholder pending Kargo wiring a real CI-pinned tag to capstone's image ref — without it, any Pod creation after the initial sync (crash/restart, Rollout scale event) is rejected and ArgoCD's `selfHeal` retries the same failing reconcile forever. Flip condition: remove the exclusion once `gitops/apps/capstone/{deployment,rollout}.yaml` reference a real, CI-pinned tag. **Carve-out (#632 investigation, 2026-07-24):** also excludes the `argocd` namespace, whose chart pins `global.image.tag: latest` deliberately (`infra/modules/argocd/values.yaml`, pending the `/applicationsets` UI route from argoproj/argo-cd#26666, unshipped as of any stable v3.5.0) — without it every ArgoCD-managed Pod recreation (controller restart, `helm upgrade` via `make argocd`) is rejected identically to the capstone case. Flip condition: remove the exclusion once argo-cd ships a stable release containing #26666 and the `latest` pin in `values.yaml` is dropped for a real version tag. |
+| `disallow-latest-tag` | `validate` | Reject any container `image:` ending in `:latest` or with no tag. **Carve-out (issue #498, 2026-07-18):** excludes the `capstone` namespace, whose manifests still hardcode a floating `:latest` placeholder pending Kargo wiring a real CI-pinned tag to capstone's image ref — without it, any Pod creation after the initial sync (crash/restart, Rollout scale event) is rejected and ArgoCD's `selfHeal` retries the same failing reconcile forever. Flip condition: remove the exclusion once `gitops/apps/capstone/{deployment,rollout}.yaml` reference a real, CI-pinned tag. **Carve-out (found 2026-07-28, structural sweep):** also excludes the `inkless` namespace — `ghcr.io/aiven/inkless:latest` has no stable named release to pin to (only rotating `edge-<commit>` builds); remove once Aiven ships a stable, pinnable release tag. **`argocd` carve-out REMOVED 2026-08-06** (issue #999, PR #1037) — its flip condition (a stable argo-cd release containing argoproj/argo-cd#26666, with the `latest` pin in `infra/modules/argocd/values.yaml` dropped for a real version tag) was met: the chart bumped to `10.2.3` (appVersion `v3.5.0`) and a live `terragrunt apply` picked up the pin. `gitops/kyverno/policies/disallow-latest-tag.yaml`'s `exclude` list is now `[capstone, inkless]` only — see this ADR's Re-evaluation log for the full writeup. |
 | `add-default-seccomp` | `mutate` | Inject `seccompProfile.type=RuntimeDefault` when missing (defence-in-depth alongside the validation rule). |
 | `verify-image-signatures` | `verifyImages` | Required for **Objective O4**. Admit only images cosign-signed by the lab's CI key (public key stored in a ConfigMap `cosign-public-key` in `kyverno` namespace, seeded by `scripts/cosign-bootstrap.sh`). Scope: registries in `artifactory.127.0.0.1.nip.io/**` to start; expand once O4 is end-to-end green. |
 | `add-default-runasnonroot` | `mutate` | Inject pod-level `runAsNonRoot: true` when missing — closes the admission gap exposed by the Harbor migration (ADR-0024): the `goharbor` chart sets container-level but not pod-level `runAsNonRoot`, and `require-pod-security-restricted` validates the pod level. See `tests/kyverno-add-default-runasnonroot.bats`. |
@@ -133,15 +133,14 @@ ArgoCD-deployed workload in the lab.
 - **`disallow-latest-tag` policy** excludes the `capstone` namespace (issue
   #498, 2026-07-18) — its manifests still hardcode a floating `:latest`
   placeholder pending Kargo wiring a real CI-pinned tag. Remove once
-  capstone's image refs are CI-pinned. Also excludes the `argocd` namespace
-  (#632 investigation, 2026-07-24) — its chart pins `global.image.tag: latest`
-  deliberately pending a stable argo-cd release containing
-  argoproj/argo-cd#26666. Remove once that release ships and the pin moves to
-  a real version tag. Also excludes the `inkless` namespace (found 2026-07-28,
-  structural sweep) — `ghcr.io/aiven/inkless:latest` has no stable named
-  release to pin to (only rotating `edge-<commit>` builds); `make inkless-up`
-  would otherwise fail admission on every attempt, not just on recreation.
-  Remove once Aiven ships a stable, pinnable release tag.
+  capstone's image refs are CI-pinned. Also excludes the `inkless` namespace
+  (found 2026-07-28, structural sweep) — `ghcr.io/aiven/inkless:latest` has no
+  stable named release to pin to (only rotating `edge-<commit>` builds);
+  `make inkless-up` would otherwise fail admission on every attempt, not just
+  on recreation. Remove once Aiven ships a stable, pinnable release tag. The
+  `argocd` namespace carve-out (#632 investigation, 2026-07-24) was **removed
+  2026-08-06** (issue #999, PR #1037) once its flip condition was met — see
+  the Re-evaluation log below.
 
 **Out of scope (this RFC):**
 
@@ -255,6 +254,44 @@ correctness-blocking deadlock, not the SPOF theatre ADR-0005 warns against.
 deadlock recurs even with 2 replicas (would suggest raising further, or a
 different mitigation), or if upstream Kyverno adds a non-webhook admission
 path that removes this failure mode entirely.
+
+---
+
+### 2026-08-06 — `disallow-latest-tag`'s `argocd` carve-out flip condition met, exclusion removed (issue #999, PR #1037)
+
+**Trigger.** This ADR's `disallow-latest-tag` carve-out for the `argocd`
+namespace (added #632 investigation, 2026-07-24) had an explicit flip
+condition: "remove the exclusion once argo-cd ships a stable release
+containing argoproj/argo-cd#26666 and the `latest` pin in `values.yaml` is
+dropped for a real version tag." `auto/argocd-chart-10-2-3` bumped the
+Terraform-bootstrapped chart to `10.2.3` (appVersion `v3.5.0`, which contains
+#26666) and dropped `infra/modules/argocd/values.yaml`'s deliberate
+`global.image.tag: latest` pin — but per ADR-0001, `infra/` is
+Terraform-bootstrap-only and doesn't auto-apply, so the exclusion stayed live
+until a real `terraform apply` picked up the change. Issue #999 tracked that
+remaining live-cluster gate.
+
+**Decision: flip condition met, exclusion removed.** A live-cluster session
+ran `terragrunt apply` against `infra/live/local/argocd` 2026-08-06 (fixing a
+separate, unrelated bug found along the way — a `provider "helm" { kubernetes
+{ ... } }` block syntax break against the already-locked `hashicorp/helm`
+v3.2.0 provider, which changed `kubernetes` from a block to an attribute).
+Verified live (ADR-0004): every `argocd` Pod
+(application-controller/applicationset-controller/redis/repo-server/server)
+runs `quay.io/argoproj/argocd:v3.5.0`, confirmed via `kubectl get pods -n
+argocd -o jsonpath='{.items[*].spec.containers[*].image}'`. PR #1037 removed
+the `argocd` entry from `gitops/kyverno/policies/disallow-latest-tag.yaml`'s
+`exclude.any[0].resources.namespaces` list (now `[capstone, inkless]` only)
+and added a regression test (`tests/kyverno.bats`: "disallow-latest-tag no
+longer excludes the argocd namespace (issue #999 resolved)") asserting
+`argocd` stays absent.
+
+**Flip condition (recurrence guard).** None needed going forward — this
+carve-out is fully closed, not held pending a future condition. If a future
+ArgoCD chart bump ever reintroduces a `latest`-tagged image pin, `tests/
+kyverno.bats`'s new regression test would need updating alongside re-adding
+the carve-out — that would be a fresh, deliberate decision, not a silent
+regression, since the test actively asserts the exclusion's absence today.
 
 ---
 
