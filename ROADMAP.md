@@ -5359,8 +5359,9 @@ You review and merge plan PRs, same as implementation PRs.
   fresh #1034 (disk-pressure precondition on retrying either) — and this run's
   own sweep found no un-RFC'd 🟡 item and no other green-able item anywhere in
   the backlog to promote into *Now / next* (every other item in this file is
-  already `[x]`). **Needs an architect RFC before the executor may build
-  it — do NOT build around this open question.**) `docs/dependency-register.md`'s
+  already `[x]`). At the time this item was written it needed an architect RFC
+  before the executor could build it — RFC #1073 (below) resolved that the same
+  day this item was filed.) `docs/dependency-register.md`'s
   own "Real gap, distinct from the policy-ADR exclusions above" paragraph
   already names this directly: **GitLab** (the git source of truth + CI runner,
   referenced by name across many ADRs — e.g. ADR-0001's GitOps framing — but
@@ -5391,8 +5392,10 @@ You review and merge plan PRs, same as implementation PRs.
   gains a row per newly-ADR'd tool (closing its own "cannot appear in this
   table" gap) in the same or a prompt follow-up executor PR; and the register's
   "Real gap" paragraph is edited to say the gap is closed (or narrowed, if the
-  architect scopes it down) rather than silently deleted. No branch yet — 🟡,
-  architect RFC required first.
+  architect scopes it down) rather than silently deleted. (This acceptance
+  criteria described what the RFC needed to deliver at the time this item was
+  written; RFC #1073 delivered all of it the same day, per the "Resolved
+  2026-08-07" note above.)
 
 - [x] 🟢 **`infra/live/README.md` + `docs/dependency-tree.md` — document the
   `oracle/` backend** (RFC #377 item 5 — depends on items 1–2 existing). Added an
