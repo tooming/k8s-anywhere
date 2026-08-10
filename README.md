@@ -114,6 +114,8 @@ After `make up`, UIs are served via the stable front door on **`:8000`**
 | Kiali *(on-demand)* | http://kiali.127.0.0.1.nip.io:8000 |
 | Longhorn *(on-demand)* | http://longhorn.127.0.0.1.nip.io:8000 |
 | Kargo *(on-demand)* | http://kargo.127.0.0.1.nip.io:8000 |
+| Harbor *(on-demand)* | http://harbor.127.0.0.1.nip.io:8000 |
+| TiDB demo *(on-demand)* | http://tidb-demo.127.0.0.1.nip.io:8000 |
 
 `make argocd-password` prints the ArgoCD admin password. `:8080` is a per-cluster
 Envoy LB port used underneath the front door and is not the canonical UI entrypoint.

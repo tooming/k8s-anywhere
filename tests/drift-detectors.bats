@@ -62,6 +62,18 @@ setup() {
   [[ "$output" == *"front-door port :8000"* ]]
 }
 
+@test "lab-ui-check: fails when a routed UI is missing from README.md's Endpoints table" {
+  run env LABUICHECK_ROOT="$FIX/lab-ui-check/readme-missing" bash "$REPO/scripts/lab-ui-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"MISSING from README.md's Endpoints table"* ]]
+}
+
+@test "lab-ui-check: fails when README.md's Endpoints table has a stale row" {
+  run env LABUICHECK_ROOT="$FIX/lab-ui-check/readme-stale" bash "$REPO/scripts/lab-ui-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"stale row?"* ]]
+}
+
 # --- roadmap-check -----------------------------------------------------------
 @test "roadmap-check: passes when ROADMAP has no inline planner note" {
   run env ROADMAPCHECK_ROOT="$FIX/roadmap-check/in-sync" bash "$REPO/scripts/roadmap-check.sh"
