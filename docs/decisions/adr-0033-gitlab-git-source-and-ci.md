@@ -1,9 +1,16 @@
 # ADR-0033 — GitLab (self-hosted) as the lab's git source of truth + CI runner
 
-**Status.** Adopted (retroactive). Architect decision, RFC #1073 — ratifies a component
-that has been running in this lab since its earliest bootstrap steps; this ADR gives it
-the dedicated record every other real, always-on dependency already has. Not a
-supersession — no prior ADR named GitLab as its subject.
+**Status.** Superseded by [ADR-0035](adr-0035-forgejo-not-gitlab.md). Forgejo Actions
+matured past the CI-runner-maturity gap that was this ADR's central rejection reason for
+Forgejo, and GitLab CE's measured resource footprint (3.7 GiB / 32% of host memory,
+2026-08-11) became a real cost on a host that had spent an extended investigation
+fighting resource-pressure crashloops elsewhere. See ADR-0035 for the full re-evaluation
+and migration plan.
+
+Originally: Adopted (retroactive). Architect decision, RFC #1073 — ratified a component
+that had been running in this lab since its earliest bootstrap steps; this ADR gave it
+the dedicated record every other real, always-on dependency already had. Not a
+supersession at the time — no prior ADR named GitLab as its subject.
 
 ---
 
@@ -107,9 +114,17 @@ placement outside the GitOps-managed cluster state (ADR-0001's boundary).
 
 ## Re-evaluation log
 
-_(No entries yet — this is the ADR's first version. Future architect audits record
-Keep/Supersede/Convert outcomes here, per the pattern established in every other ADR's
-Re-evaluation log.)_
+**2026-08-11 — Supersede.** The flip condition this ADR names last ("a lighter
+self-hosted git+CI combination reaches comparable maturity to GitLab's bundled
+offering") was checked directly rather than assumed: Forgejo Actions has matured to
+production-ready with broad GitHub Actions workflow-syntax compatibility since this ADR
+characterized it as "newer and less battle-tested." Live `docker stats` also measured
+GitLab CE's actual cost on this host at 3.744 GiB / 32% of the 11.65 GiB Colima VM for
+the `gitlab` container alone — a real number, checked (not assumed) alongside a check
+that ruled out an emulation-tax angle (GitLab CE's images are genuinely multi-arch,
+confirmed via `docker manifest inspect`; unlike Harbor, it isn't running under QEMU on
+this arm64 host). See [ADR-0035](adr-0035-forgejo-not-gitlab.md) for the full
+comparison and migration plan.
 
 **Flip condition:** revisit if GitLab CE's licensing terms change in a way that
 conflicts with [ADR-0025](adr-0025-free-oss-tiers-only.md) (free/OSS-tier requirement —

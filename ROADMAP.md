@@ -232,6 +232,38 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+**GitLab → Forgejo migration (ADR-0035, 2026-08-11, superseding ADR-0033) — six items,
+work top-to-bottom, each its own PR.** GitLab keeps running unmodified until item 6;
+there is no point where the lab loses a working git source or CI path.
+
+- [ ] 🟢 **Forgejo compose stack, additive alongside GitLab** — `forgejo/docker-compose.yml`
+  (`forgejo` + `forgejo-runner` services, reuse the existing `nginx` TLS-terminator
+  pattern from `gitlab/docker-compose.yml`), `make forgejo-up`/`forgejo-down` targets,
+  `tests/forgejo-compose.bats`. Zero risk to the current CI path — GitLab is untouched.
+  No prerequisites, executor may pick up immediately.
+- [ ] 🟢 **`infra/modules/forgejo-config` Terraform module** — org/repo/branch-protection/
+  deploy-token resources via `svalabs/terraform-provider-forgejo` (or
+  `adyxax/terraform-provider-forgejo` if its resource coverage fits better — check both
+  before committing), `infra/live/{local,oracle}/forgejo/`. Parallels `gitlab-config`.
+  Prerequisite: previous item (needs a live Forgejo instance to point Terraform at).
+- [ ] 🟢 **Port `.gitlab-ci.yml` → `.forgejo/workflows/build-sign-push.yml`** — same
+  build → `cosign sign` → push-to-Harbor job (ADR-0011/ADR-0024). Verify live (ADR-0004):
+  a real pipeline run must push a genuinely signed image to Harbor, not just parse.
+  Prerequisite: previous item.
+- [ ] 🟢 **Re-point ArgoCD's repo-credential Secret + `Application`s at the Forgejo
+  remote** — verify a real sync, not just a config change. Prerequisite: previous item.
+- [ ] 🟢 **Rename `scripts/gitlab-*.sh` → `scripts/forgejo-*.sh` + matching `Makefile`
+  targets** (bootstrap, TLS bootstrap, push, force-push, `rebase-prs`' GitLab leg);
+  `tests/gitlab-compose.bats`/`tests/gitlab-push.bats` → `forgejo-*` bats files with
+  equivalent coverage (mechanical-guard parity, not a regression). Prerequisite: previous
+  item — don't rename the scripts the still-live pipeline depends on before item 3/4 land.
+- [ ] 🟢 **Decommission `gitlab/docker-compose.yml` + `infra/modules/gitlab-config`** —
+  only once items 1–5 are verified live and stable for a real work cycle, matching how
+  Artifactory's decommission followed (not preceded) Harbor's proven-live cutover
+  (`docs/done/2026-07-29-harbor-artifactory-decommission.md`). Update
+  `docs/dependency-register.md`'s GitLab row (currently flagged "still the live, running
+  component" pending this) to a Forgejo row once this lands.
+
 - [x] 🟢 **k3d containerd registry mirror — resolve `harbor.127.0.0.1.nip.io` in-cluster**
   (CHARTER **Core Values** §"Recreate-from-code" (`make up` should let the capstone demo
   actually run) + §"Images are signed and verified" (O4's admission-signing chain needs a
