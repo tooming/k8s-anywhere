@@ -159,6 +159,28 @@ spec:
             timeoutSeconds: 5
           readinessProbe:
             timeoutSeconds: 5
+          # GOMAXPROCS=1 — this host is Apple Silicon (arm64); goharbor/harbor-core
+          # publishes amd64-only images, so every core/jobservice process runs under
+          # QEMU user-mode x86_64 emulation the whole time it's up (confirmed live:
+          # `kubectl exec ... uname -m` reports x86_64 from inside the container on
+          # this arm64 node). QEMU's binary translation has known correctness gaps
+          # around the atomic/memory-ordering operations Go's runtime and GC rely on
+          # for true multi-core concurrency — under real parallelism (GOMAXPROCS>1,
+          # the default = visible host cores) this surfaced as genuine memory-safety
+          # crashes: `panic: concurrent map writes` and separately `panic: runtime
+          # error: growslice: len out of range`, non-deterministic and different each
+          # crash (the classic signature of an emulation-induced data race, not an
+          # application bug) — core/jobservice crashlooped indefinitely (hundreds of
+          # restarts across sessions) while every other Harbor component (nginx,
+          # portal, redis, registry, database — also x86_64-emulated, but far less
+          # concurrent) stayed stable. GOMAXPROCS=1 forces the Go scheduler onto a
+          # single OS thread, eliminating true parallelism and therefore the race
+          # window, at the cost of some throughput this lab doesn't need. Verified
+          # live 2026-08-10: core and jobservice both went from perpetual
+          # CrashLoopBackOff to stable 1/1 within seconds of setting this.
+          extraEnvVars:
+            - name: GOMAXPROCS
+              value: "1"
         jobservice:
           resources:
             requests:
@@ -171,6 +193,11 @@ spec:
             timeoutSeconds: 5
           readinessProbe:
             timeoutSeconds: 5
+          # GOMAXPROCS=1 — see core's identical comment above (same emulated-host
+          # root cause, same fix, same live verification).
+          extraEnvVars:
+            - name: GOMAXPROCS
+              value: "1"
         portal:
           resources:
             requests:

@@ -377,3 +377,28 @@ setup() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"timeoutSeconds: 5"* ]]
 }
+
+# 2026-08-10: this host is arm64 (Apple Silicon); goharbor/harbor-core and
+# harbor-jobservice publish amd64-only images, so both run under QEMU x86_64
+# emulation. Under real multi-core parallelism (the chart's default GOMAXPROCS,
+# unset -> visible host cores) this repeatedly produced genuine Go runtime
+# memory-safety panics (`concurrent map writes`, `growslice: len out of range`,
+# a different one each crash -- the signature of an emulation-induced data
+# race, not app logic) that crashlooped both components indefinitely across
+# multiple sessions, while every other Harbor component (also emulated, but
+# far less concurrent) stayed stable. GOMAXPROCS=1 forces single-threaded Go
+# scheduling, eliminating the race window -- verified live: both went from
+# perpetual CrashLoopBackOff to stable within seconds of setting this.
+@test "harbor core sets GOMAXPROCS=1 (arm64 host runs amd64 image under QEMU emulation)" {
+  run grep -A40 '^        core:' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"GOMAXPROCS"* ]]
+  [[ "$output" == *'value: "1"'* ]]
+}
+
+@test "harbor jobservice sets GOMAXPROCS=1 (same emulated-host root cause as core)" {
+  run grep -A30 '^        jobservice:' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"GOMAXPROCS"* ]]
+  [[ "$output" == *'value: "1"'* ]]
+}
