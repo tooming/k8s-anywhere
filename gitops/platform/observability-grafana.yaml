@@ -262,6 +262,144 @@ spec:
               gnetId: 17781
               revision: 1
               datasource: Mimir
+        # Unified Alerting, file-based provisioning (RFC #1084 — Grafana Unified
+        # Alerting querying Mimir, NOT Mimir's own ruler; visual-only, no external
+        # notification receiver — see the RFC for the full decision). Each rule uses
+        # the "threshold" expression type (refId B) over an instant Mimir query
+        # (refId A) — a common, well-documented Grafana Unified Alerting shape, not
+        # the older "classic_conditions" style. No `contactPoints`/`policies` key is
+        # set anywhere in this file — deliberately: that is what would wire a
+        # notification receiver, and per the RFC this stays visual-only (Grafana's
+        # own Alerting UI shows firing state). Do not add one without a fresh RFC.
+        alerting:
+          rules.yaml:
+            apiVersion: 1
+            groups:
+              - orgId: 1
+                name: lab-alerts
+                folder: Lab Alerts
+                interval: 1m
+                rules:
+                  - uid: argocd-app-unhealthy
+                    title: ArgoCDAppUnhealthy
+                    condition: B
+                    for: 10m
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: An ArgoCD-managed Application has been unhealthy for 10+ minutes.
+                    data:
+                      - refId: A
+                        relativeTimeRange:
+                          from: 600
+                          to: 0
+                        datasourceUid: mimir
+                        model:
+                          expr: argocd_app_info{health_status!="Healthy"} == 1
+                          instant: true
+                          refId: A
+                      - refId: B
+                        datasourceUid: __expr__
+                        model:
+                          type: threshold
+                          expression: A
+                          conditions:
+                            - evaluator:
+                                type: gt
+                                params: [0]
+                          refId: B
+                    noDataState: NoData
+                    execErrState: Error
+                  - uid: argocd-app-out-of-sync
+                    title: ArgoCDAppOutOfSync
+                    condition: B
+                    for: 30m
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: An ArgoCD-managed Application has been OutOfSync for 30+ minutes.
+                    data:
+                      - refId: A
+                        relativeTimeRange:
+                          from: 1800
+                          to: 0
+                        datasourceUid: mimir
+                        model:
+                          expr: argocd_app_info{sync_status="OutOfSync"} == 1
+                          instant: true
+                          refId: A
+                      - refId: B
+                        datasourceUid: __expr__
+                        model:
+                          type: threshold
+                          expression: A
+                          conditions:
+                            - evaluator:
+                                type: gt
+                                params: [0]
+                          refId: B
+                    noDataState: NoData
+                    execErrState: Error
+                  - uid: deployment-replicas-unavailable
+                    title: DeploymentReplicasUnavailable
+                    condition: B
+                    for: 10m
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: A Deployment has run with fewer available replicas than its spec for 10+ minutes.
+                    data:
+                      - refId: A
+                        relativeTimeRange:
+                          from: 600
+                          to: 0
+                        datasourceUid: mimir
+                        model:
+                          expr: kube_deployment_status_replicas_available < kube_deployment_spec_replicas
+                          instant: true
+                          refId: A
+                      - refId: B
+                        datasourceUid: __expr__
+                        model:
+                          type: threshold
+                          expression: A
+                          conditions:
+                            - evaluator:
+                                type: gt
+                                params: [0]
+                          refId: B
+                    noDataState: NoData
+                    execErrState: Error
+                  - uid: pvc-stuck-pending-or-lost
+                    title: PVCStuckPendingOrLost
+                    condition: B
+                    for: 10m
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: A PersistentVolumeClaim has been Pending or Lost for 10+ minutes.
+                    data:
+                      - refId: A
+                        relativeTimeRange:
+                          from: 600
+                          to: 0
+                        datasourceUid: mimir
+                        model:
+                          expr: kube_persistentvolumeclaim_status_phase{phase=~"Pending|Lost"} == 1
+                          instant: true
+                          refId: A
+                      - refId: B
+                        datasourceUid: __expr__
+                        model:
+                          type: threshold
+                          expression: A
+                          conditions:
+                            - evaluator:
+                                type: gt
+                                params: [0]
+                          refId: B
+                    noDataState: NoData
+                    execErrState: Error
         # No k8s-configmap-watcher: lab dashboards now sync from GitLab via native Git Sync
         # (ADR-0006). The community dashboards above (gnetId) use a separate file
         # provider and are unaffected.

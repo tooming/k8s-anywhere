@@ -95,20 +95,30 @@ duplicated.
   automated paging/escalation — that residual gap is unchanged, see Q7.
 
 **Q7. Is there a defined detection → escalation → resolution path?**
-- **Answer:** Detection is manual (`make status`, Grafana dashboards, `make dr-verify`)
-  — nothing pages or alerts automatically. Resolution paths exist per-symptom (the
-  cookbook), but there's no escalation concept since there's no one to escalate to.
-  One real, automated signal now exists at the CI layer: `make dora-metrics`'s "time to
-  restore service" row measures the wall-clock gap between a CI run going red and the
-  next going green, from the real GitHub Actions API — a genuine MTTR-shaped metric,
-  just scoped to CI health, not live-cluster incidents.
+- **Answer:** Detection is now partly automated: Grafana Unified Alerting (RFC #1084,
+  `gitops/platform/observability-grafana.yaml` `valuesObject.alerting`) evaluates four
+  rules against Mimir every minute — an ArgoCD Application unhealthy for 10m+, an
+  ArgoCD Application OutOfSync for 30m+, a Deployment running below its desired
+  replica count for 10m+, and a PVC stuck `Pending`/`Lost` for 10m+ — surfaced visually
+  in Grafana's own Alerting UI. There is still no escalation concept (no external
+  notification receiver is configured — an **explicit non-goal**, not a silent
+  absence: this is a solo-operator lab with no pager/Slack/email channel to wire one
+  to, per the RFC's own reasoning). Resolution paths exist per-symptom (the cookbook).
+  One real, automated signal also exists at the CI layer: `make dora-metrics`'s "time
+  to restore service" row measures the wall-clock gap between a CI run going red and
+  the next going green, from the real GitHub Actions API — a genuine MTTR-shaped
+  metric, just scoped to CI health, not live-cluster incidents.
 - **Evidence:** [docs/DR.md](DR.md#recovery-cookbook-single-component); `make status`
-  target; [docs/dora-metrics.md](dora-metrics.md) "Time to restore service" row.
-- **Gap:** no alerting (Grafana has dashboards, not alert rules, as far as this repo's
-  gitops/ shows); no escalation path (N/A for a solo operator, but worth naming as an
-  explicit non-goal rather than a silent absence); the CI-health metric doesn't cover a
-  live-cluster incident (e.g., Vault sealed, Garage unreachable) — those still have no
-  automated detection-to-resolution timer.
+  target; [docs/dora-metrics.md](dora-metrics.md) "Time to restore service" row;
+  `gitops/platform/observability-grafana.yaml` `valuesObject.alerting`; RFC #1084.
+- **Gap:** the "no alerting" half of this gap is closed for the four conditions above
+  — narrower gaps remain: the rule set doesn't cover every known failure mode yet
+  (e.g. Vault sealed has no metric to alert on at all, since Vault isn't currently
+  scraped by Alloy — confirmed directly, no `vault` scrape block exists in
+  `gitops/platform/observability-alloy.yaml`); escalation stays a permanent non-goal
+  for this solo-operator lab; the CI-health metric still doesn't cover a live-cluster
+  incident. A future item could add a Vault-health scrape job + alert rule if that gap
+  is worth closing.
 
 **Q8. Are incidents logged with root cause and a corrective action, after the fact?**
 - **Answer:** Yes, as of [`docs/incident-log.md`](incident-log.md)'s "Real incident

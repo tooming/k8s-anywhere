@@ -3406,7 +3406,7 @@ You review and merge plan PRs, same as implementation PRs.
   by a chart-version revert). `docs/done/` entry required.
   (auto/pyroscope-chart-2-2-1)
 
-- [ ] 🟢 **Grafana Unified Alerting — four rules for known failure conditions** (RFC
+- [x] 🟢 **Grafana Unified Alerting — four rules for known failure conditions** (RFC
   #1084 — architect decision 2026-08-10; closes `docs/dora-audit-readiness.md` Q7's
   "no alerting" gap; planner-groomed 2026-08-10 — the RFC's own Acceptance criteria
   is the spec below, no further sizing needed. **No prerequisites — executor may
