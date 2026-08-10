@@ -10,18 +10,20 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/lib/hook-payload.sh"
 fp="$(hook_file_path)"
 
-# React only to the dashboard itself, or a gitops file that declares an HTTPRoute.
+# React only to the dashboard itself, README.md, or a gitops file that declares
+# an HTTPRoute.
 case "$fp" in
   *stack-health.json) ;;
+  */README.md) ;;
   */gitops/*.yaml) grep -q 'kind: HTTPRoute' "$fp" 2>/dev/null || exit 0 ;;
   *) exit 0 ;;
 esac
 
 if ! out="$(bash "$ROOT/scripts/lab-ui-check.sh" 2>&1)"; then
   {
-    echo "Lab UIs panel looks stale after editing ${fp##*/} — update the Lab UIs table (panel 10) in stack-health.json; host UIs use the :8000 front door:"
+    echo "Lab UIs panel or README.md's Endpoints table looks stale after editing ${fp##*/} — host UIs use the :8000 front door:"
     echo "$out"
-    echo "(re-check: make lab-ui-check; the panel is in grafana/dashboards/stack-health.json)"
+    echo "(re-check: make lab-ui-check; the panel is in grafana/dashboards/stack-health.json, the table is README.md's ## Endpoints section)"
   } >&2
   exit 2
 fi

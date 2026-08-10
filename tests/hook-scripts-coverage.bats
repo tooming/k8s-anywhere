@@ -246,6 +246,11 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [ "$status" -eq 0 ]
 }
 
+@test "lab-ui-sync-hook: README.md (currently in sync) exits 0" {
+  run bash "$REPO/scripts/lab-ui-sync-hook.sh" <<<"$(mk_payload "$REPO/README.md")"
+  [ "$status" -eq 0 ]
+}
+
 # --- mimir-readonly-root-sync-hook.sh ------------------------------------------
 
 @test "mimir-readonly-root-sync-hook: empty payload exits 0" {

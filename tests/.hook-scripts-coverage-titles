@@ -29,6 +29,7 @@
 @test "helm-chart-pin-sync-hook: a real chart-pinned Application exits 0 (valid pin, or network-tolerant skip)"
 @test "helm-chart-pin-sync-hook: empty payload exits 0"
 @test "helm-chart-pin-sync-hook: non-Application yaml exits 0 (filtered out)"
+@test "lab-ui-sync-hook: README.md (currently in sync) exits 0"
 @test "lab-ui-sync-hook: a real HTTPRoute manifest (currently in sync) exits 0"
 @test "lab-ui-sync-hook: empty payload exits 0"
 @test "lab-ui-sync-hook: stack-health.json dashboard (currently in sync) exits 0"
