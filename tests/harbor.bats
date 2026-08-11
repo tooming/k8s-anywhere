@@ -370,12 +370,29 @@ setup() {
 # The chart's own default timeoutSeconds: 1 (every component) is too tight for a
 # resource-constrained host under any real load — exec healthchecks routinely took
 # longer than 1s here, causing a self-inflicted crashloop-on-every-recreation with
-# nothing to do with actual component health. Every component gets a 5s override.
-@test "harbor Application overrides database.internal probe timeoutSeconds to 5s" {
-  run grep -A1 'internal:' "$REPO/gitops/platform/harbor.yaml"
+# nothing to do with actual component health. Every component gets at least a 5s
+# override (database.internal specifically needs more — see the next test).
+@test "harbor Application overrides component probe timeoutSeconds to >= 5s" {
   run grep -c 'timeoutSeconds: 5' "$REPO/gitops/platform/harbor.yaml"
   [ "$status" -eq 0 ]
   [ "$output" -ge 6 ]
+}
+
+# Found live 2026-08-11: even 5s wasn't enough for database.internal under sustained
+# host latency — killing the exec'd healthcheck mid-script produced a SIGPIPE the
+# postgres supervisor treated as a fatal crash, triggering a full crash-recovery
+# cycle roughly every minute. That's what was actually root-causing harbor-core's
+# endless connection failures this whole investigation, not a DNS or core bug.
+# Bumped to 15s (matching the convention already used for Kyverno/ArgoCD) — verified
+# live this let the database run stable for 7+ minutes straight, versus under a
+# minute before.
+@test "harbor Application overrides database.internal probe timeoutSeconds to 15s (5s wasn't enough)" {
+  run grep -A40 '^        database:' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"timeoutSeconds: 15"* ]]
+  local count
+  count=$(grep -c 'timeoutSeconds: 15' <<<"$output")
+  [ "$count" -ge 2 ]
 }
 
 @test "harbor Application overrides core probe timeouts (startup/liveness/readiness)" {

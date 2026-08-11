@@ -169,6 +169,20 @@ controller:
 repoServer:
   metrics:
     enabled: true
+  # Found live 2026-08-11 (same investigation as the controller/server repo-server
+  # call timeouts above): ARGOCD_EXEC_TIMEOUT governs how long repo-server gives any
+  # single external CLI invocation (helm pull, git fetch, kustomize build, ...)
+  # before killing it — defaults to 90s, a separate, lower ceiling than the 180s
+  # gRPC-level deadline this file already bumps. Under this host's cold-cache
+  # backlog, `helm pull` against even a same-host chart source repeatedly hit this
+  # 90s wall and got killed mid-transfer — confirmed live: repo-server logs showed
+  # `failed running helm: \`helm pull ... \` failed timeout after 1m30s` on every
+  # attempt, independent of chart size or reachability. Bumped to 300s so a helm
+  # pull actually gets to finish under sustained host latency instead of being
+  # killed by an internal timeout tighter than the outer one already relaxed above.
+  env:
+    - name: ARGOCD_EXEC_TIMEOUT
+      value: "300s"
   resources:
     requests:
       cpu: 250m
