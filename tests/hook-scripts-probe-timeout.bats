@@ -37,12 +37,14 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [ "$status" -eq 0 ]
 }
 
-@test "probe-timeout-sync-hook: a real gitops-tree copy with a too-tight probe exits 2 (nudge)" {
+@test "probe-timeout-sync-hook: a scratch gitops-tree copy with a too-tight probe exits 2 (nudge)" {
+  # No git fixture needed here (probe-timeout-check.sh only walks YAML under
+  # PROBETIMEOUTCHECK_ROOT, no git operations) — a plain tmp dir is enough, and
+  # sidesteps the GIT_DIR-leak footgun scripts/git-fixture-isolation-check.sh
+  # guards against.
   tmp="$(mktemp -d)"
   mkdir -p "$tmp/gitops"
   cp "$REPO/tests/fixtures/probe-timeout-check/drift-tight/gitops/bad.yaml" "$tmp/gitops/bad.yaml"
-  cd "$tmp"
-  git init -q .
   run env PROBETIMEOUTCHECK_ROOT="$tmp" PROBETIMEOUTCHECK_REQUIRED="" \
           bash "$REPO/scripts/probe-timeout-sync-hook.sh" <<<"$(mk_payload "$tmp/gitops/bad.yaml")"
   rm -rf "$tmp"
