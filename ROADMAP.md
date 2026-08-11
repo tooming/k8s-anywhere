@@ -5307,6 +5307,78 @@ there is no point where the lab loses a working git source or CI path.
   session actually runs one of the four scripts. `docs/done/` entry
   required. (auto/dr-results-log)
 
+- [ ] 🟢 **Vault internal telemetry — `sys/metrics` scrape + dashboard depth**
+  (CHARTER **Goals** §"operational-resilience discipline" + **Objective O5** "every
+  always-on component has a real-metric dashboard"; planner gap analysis 2026-08-11,
+  reached via `executor.prompt.md` STEP 6b PLANNER role after all six standing
+  Now/next items were re-confirmed gated (the three GitLab→Forgejo migration items
+  need live verification; the `verifyImages` Enforce flip / O4 CI gate / capstone
+  `Deployment` removal are all gated on unconfirmed maintainer-confirmation issues
+  #631/#633, re-checked this run — both still open, no new confirmation comment),
+  no open GitHub issue needed grooming, and `docs/roadmap/incoming/` held nothing
+  pending. **No prerequisites — executor may pick up immediately.**)
+  `docs/dora-audit-readiness.md` Q7's own gap line names this exact hole, left open
+  by the earlier `auto/vault-pod-readiness-alert` item (which added a pod-readiness
+  alert rule from the already-scraped KSM job, not a Vault-internals scrape): "Vault's
+  own internal metrics — seal state, token/lease counts, storage backend health —
+  still have no Alloy scrape job at all... A future item could add a full Vault
+  telemetry scrape job (`telemetry` stanza + `unauthenticated_metrics_access`) if
+  finer-grained Vault metrics are worth the added config surface." Verified directly
+  (not assumed, ADR-0004): `gitops/platform/vault.yaml`'s `server.standalone.config`
+  HCL block has no top-level `telemetry` stanza and its `listener "tcp"` block has no
+  nested `telemetry { unauthenticated_metrics_access = true }` (grepped both strings
+  directly — neither appears anywhere in the file); `grafana/dashboards/lab-vault.json`'s
+  panels (`Vault Pod Running`, `Vault Memory (MiB)`, `Vault Restarts`, `Vault ArgoCD
+  Synced`, plus the shared ESO/secrets-layer panels) are all KSM/cAdvisor-derived
+  proxies — none reads a metric Vault itself emits.
+
+  Add to `gitops/platform/vault.yaml`'s `server.standalone.config` HCL: a top-level
+  `telemetry { prometheus_retention_time = "24h", disable_hostname = true }` stanza
+  (enables Vault's built-in Prometheus-format metrics sink) and
+  `unauthenticated_metrics_access = true` nested inside the existing
+  `listener "tcp" { ... }` block (Vault's documented mechanism for exposing
+  `GET /v1/sys/metrics?format=prometheus` without a token — cheaper than an
+  ESO-managed scrape token for a lab whose TLS is already disabled and whose UI is
+  already open cluster-internally). Add a `prometheus.scrape "vault"` block to
+  `gitops/platform/observability-alloy.yaml` (mirrors the static-target
+  `kyverno`/`velero`/`trivy_operator` blocks' shape): target
+  `vault.vault.svc.cluster.local:8200`, `metrics_path = "/v1/sys/metrics"`,
+  `params = {format = ["prometheus"]}`, `scrape_interval = "30s"`,
+  `forward_to = [prometheus.remote_write.mimir.receiver]`. Add
+  `gitops/vault/networkpolicy/allow-vault-metrics-from-observability.yaml` (mirrors
+  `gitops/velero/networkpolicy/allow-velero-metrics-from-observability.yaml`'s exact
+  shape): ingress TCP 8200 from `namespaceSelector: kubernetes.io/metadata.name:
+  observability`, `podSelector: app.kubernetes.io/name: alloy`; add it to
+  `gitops/vault/networkpolicy/kustomization.yaml`'s `resources:` list.
+
+  Extend `grafana/dashboards/lab-vault.json` with a new row of real-metric panels
+  sourced from Vault's own documented telemetry (verify exact metric names against
+  HashiCorp's telemetry reference before committing the panel queries, not assumed
+  from memory): seal status (`vault_core_unsealed`), active-vs-standby
+  (`vault_core_active`), in-flight request count (`vault_core_in_flight_requests`),
+  and lease count (`vault_expire_num_leases`) — each panel real Mimir data with
+  `X-Scope-OrgID: lab` (ADR-0004: this remote clusterless session cannot confirm
+  which of these actually emit a series without a live scrape target; any that don't
+  show "No data" naturally, never a fabricated value — state this explicitly in the
+  PR body rather than silently dropping a panel that turns out to read nothing). New
+  `tests/observability-vault.bats` (`tests/observability.bats` is frozen — new scopes
+  go in their own file, same convention `observability-alerting.bats`/
+  `observability-loki.bats`/etc. already follow): scrape block `"vault"` exists in
+  `observability-alloy.yaml` with the `/v1/sys/metrics` path and
+  `unauthenticated_metrics_access = true` is present in `vault.yaml`; the new
+  NetworkPolicy allow-rule exists on port 8200 and is wired into the kustomization;
+  `lab-vault.json` references at least one of the four new metric names; no
+  fabricated data. Update `docs/dependency-tree.md`'s Vault sub-graph noting the new
+  scrape target. Update `docs/dora-audit-readiness.md` Q7's Gap paragraph to reflect
+  this closing (the escalation non-goal and the CI-scoped-only MTTR caveat both
+  remain, unchanged). `make ci` must pass. PR body must document the ADR-0004
+  caveat above and the rollback path (revert the `telemetry`/
+  `unauthenticated_metrics_access` config, the scrape block, and the NetworkPolicy
+  rule; ArgoCD syncs the revert within 30s same as any other `vault.yaml` edit —
+  note the StatefulSet also needs a pod restart to drop the removed listener
+  stanza, the same operational cost the 2026-08-05 Vault image-tag bump already
+  carried). `docs/done/` entry required. (auto/vault-telemetry-scrape)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
