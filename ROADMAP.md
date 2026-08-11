@@ -5249,6 +5249,64 @@ there is no point where the lab loses a working git source or CI path.
   must pass. `docs/done/` entry required. Closes #917.
   (auto/cilium-1-18-12-bump)
 
+- [ ] 🟢 **DR/capstone-demo results-history log — track pass/fail + elapsed
+  time per run over time** (CHARTER **Goals** §"operational-resilience
+  discipline" — DORA Pillar 3 concept, testing-results tracking;
+  planner-fallback gap analysis 2026-08-11, reached via
+  `executor.prompt.md` STEP 6b PLANNER role after all six standing Now/next
+  items were re-confirmed gated (the three GitLab→Forgejo migration items
+  need live verification; the `verifyImages` Enforce flip / O4 CI gate /
+  capstone `Deployment` removal are all gated on unconfirmed
+  maintainer-confirmation issues #631/#633, re-checked this run — both still
+  open, no new confirmation comment), the architect lane held no un-RFC'd 🟡
+  item, and this run's own external chart-currency sweep (Vault, KEDA,
+  TiDB Operator, kube-state-metrics, Envoy Gateway all confirmed already at
+  latest stable via direct upstream release checks) and a janitor-style
+  dead-code/duplication sweep (no orphaned scripts — every `scripts/*.sh` is
+  referenced by the Makefile/CI/tests; every script has bats coverage) both
+  came up clean. **No prerequisites — executor may pick up immediately.**)
+
+  Verified directly (not assumed, ADR-0004): `docs/dora-audit-readiness.md`'s
+  Q13 ("Are test results tracked with remediation deadlines?") answers
+  "Pass/fail is enforced by exit codes... but there's no historical log of
+  *past* run results over time — only the current pass/fail, not a trend"
+  and names the exact gap this item closes: "a results log would let you see
+  if the 10-minute RTO is trending up as the lab grows, not just whether it
+  passed today." Grepping ROADMAP.md and `docs/` for "results log"/"RTO
+  trend" finds nothing already tracking this.
+
+  Add `scripts/lib/dr-results-log.sh` (new shared lib, mirrors the existing
+  `budget-check.sh` extraction precedent — same header-comment convention
+  crediting why it's shared): one function
+  `dr_log_result <script_name> <status> <elapsed_s> <budget_s> <objective_tag>`
+  that appends one row to `docs/dr-results-log.md` — creating the file with
+  a header (`| Date (UTC) | Script | Status | Elapsed (s) | Budget (s) |
+  Objective |`) on first write if it doesn't exist yet. `status` is the
+  literal string `PASS` or `FAIL`; the date is `date -u
+  +%Y-%m-%dT%H:%M:%SZ`. Wire the call into every DR/capstone script's pass
+  AND fail exit path — `scripts/dr-restore.sh` (Objective O3),
+  `scripts/dr-bluegreen.sh` (blue/green), `scripts/dr-chaos.sh` (chaos),
+  `scripts/capstone-demo.sh` (Objective O6) — so a real invocation (this
+  remote session cannot trigger one, ADR-0004) appends exactly one row per
+  run, pass or fail; never fabricate a row.
+
+  Update `docs/DR.md` linking to the new log; update
+  `docs/dora-audit-readiness.md` Q13's Gap line to note the mechanism now
+  exists (pending real data — an empty/near-empty log is truthful, not a
+  placeholder). New `tests/dr-results-log.bats` (clusterless, structural):
+  the lib file exists and defines `dr_log_result`; each of the four scripts
+  sources the lib and calls `dr_log_result` on both its pass and fail paths
+  (grep-based assertions, mirroring `tests/hook-scripts-*.bats`'s style); a
+  scratch-dir integration test that sources the lib, calls it twice, and
+  asserts the file grows by exactly two well-formed rows under a single
+  header (recurrence guard: the header must not be re-written on subsequent
+  appends). `make ci` must pass. PR body must document the ADR-0004 caveat:
+  this remote clusterless session cannot generate a real logged run (no
+  cluster), so `docs/dr-results-log.md` ships as an empty table (header
+  only) — real rows only accumulate once a maintainer or a live-cluster
+  session actually runs one of the four scripts. `docs/done/` entry
+  required. (auto/dr-results-log)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
