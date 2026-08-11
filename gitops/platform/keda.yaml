@@ -59,6 +59,37 @@ spec:
             requests:
               memory: 50Mi
               cpu: 50m
+        # Found 2026-08-11 (systemic probe-timeout audit): all three KEDA components'
+        # livenessProbe/readinessProbe default to timeoutSeconds: 1 (verified against
+        # the pinned chart's values.yaml, keda-2.20.2) -- the same chart-default-too-
+        # tight footgun already found and fixed for Harbor (PR #1040/#1102), ArgoCD's
+        # repo-server/server (PR #1103/#1121), Kyverno's admissionController (PR
+        # #1115), and cert-manager's webhook (this PR). `webhooks` is a fail-closed
+        # admission webhook for ScaledObject/ScaledJob CRDs (same risk class as
+        # Kyverno's), so a crashloop there can block those CRDs cluster-wide.
+        # `operator`/`metricServer` sit on the same probe-timeout-1s footgun even
+        # though they're not fail-closed. Bumped all three to 15s, matching the
+        # convention already used for other admission-webhook/control-plane
+        # components in this repo -- note this is a *separate* top-level key
+        # (`operator:`/`metricServer:`/`webhooks:`) from the `resources.operator`/
+        # `resources.metricServer`/`resources.webhooks` blocks above; the chart
+        # nests resources under one shared key but probes under each component's
+        # own top-level key.
+        operator:
+          livenessProbe:
+            timeoutSeconds: 15
+          readinessProbe:
+            timeoutSeconds: 15
+        metricsServer:
+          livenessProbe:
+            timeoutSeconds: 15
+          readinessProbe:
+            timeoutSeconds: 15
+        webhooks:
+          livenessProbe:
+            timeoutSeconds: 15
+          readinessProbe:
+            timeoutSeconds: 15
   destination:
     server: https://kubernetes.default.svc
     namespace: keda

@@ -99,6 +99,15 @@ dex:
 notifications:
   enabled: false
 
+# Found 2026-08-11 (systemic probe-timeout audit): both applicationSet and server
+# below default to the chart's own timeoutSeconds: 1 on liveness/readiness (verified
+# against the pinned chart's values.yaml, argo-cd-10.3.2) -- the same
+# chart-default-too-tight footgun already found and fixed this repo for controller's
+# readinessProbe and repoServer's liveness/readinessProbe just above (2026-08-07,
+# #632/PR #1103), and for Harbor (PR #1040/#1102) and Kyverno's admissionController
+# (PR #1115). Neither of these two components had been audited in that earlier pass.
+# Bumped both to 15s, matching the convention already used for controller/repoServer
+# in this same file.
 applicationSet:
   enabled: true
   metrics:
@@ -107,6 +116,10 @@ applicationSet:
     requests:
       cpu: 25m
       memory: 64Mi
+  livenessProbe:
+    timeoutSeconds: 15
+  readinessProbe:
+    timeoutSeconds: 15
 
 # The cold-start of `make up` is a sync storm: ArgoCD renders + reconciles ~50
 # Applications (many Helm/Kustomize) at once — far above steady-state load. With
@@ -177,6 +190,11 @@ server:
     requests:
       cpu: 50m
       memory: 128Mi
+  # See the comment above `applicationSet:` -- same chart-default-1s finding.
+  livenessProbe:
+    timeoutSeconds: 15
+  readinessProbe:
+    timeoutSeconds: 15
 
 redis:
   resources:

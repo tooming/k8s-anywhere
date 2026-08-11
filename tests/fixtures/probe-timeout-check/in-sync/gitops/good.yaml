@@ -1,0 +1,36 @@
+# Fixture: every probe sets timeoutSeconds >= 5 -- must pass.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: widget
+spec:
+  template:
+    spec:
+      containers:
+        - name: widget
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["true"]
+            timeoutSeconds: 15
+---
+# An ArgoCD Application sourcing a Helm chart: its valuesObject override may
+# legitimately set only timeoutSeconds, relying on the chart's own hardcoded
+# template for the handler (the shape of most of this repo's real fixes) -- must
+# still pass, and must still be checked despite having no httpGet/exec/etc key.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: widget-chart
+spec:
+  source:
+    chart: widget
+    helm:
+      valuesObject:
+        webhook:
+          readinessProbe:
+            timeoutSeconds: 15

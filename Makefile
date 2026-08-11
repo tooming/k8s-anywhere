@@ -147,6 +147,10 @@ analysistemplate-step-count-check: ## Check step-gating AnalysisTemplates set co
 mimir-readonly-root-check: ## Check every Mimir write path lands on a writable volume, not the read-only root (drift detector)
 	@bash scripts/mimir-readonly-root-check.sh
 
+.PHONY: probe-timeout-check
+probe-timeout-check: ## Check every explicit livenessProbe/readinessProbe/startupProbe has timeoutSeconds >= 5 (drift detector)
+	@bash scripts/probe-timeout-check.sh
+
 .PHONY: adr-followup-check
 adr-followup-check: ## Check no ADR/CHARTER.md/WAYS-OF-WORKING.md carries a stale unchecked "Follow-up:" promise (drift detector)
 	@bash scripts/adr-followup-check.sh
@@ -234,6 +238,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/rollouts-plugin-list-check.sh
 	@bash scripts/analysistemplate-step-count-check.sh
 	@bash scripts/mimir-readonly-root-check.sh
+	@bash scripts/probe-timeout-check.sh
 	@bash scripts/adr-followup-check.sh
 	@bash scripts/adr-chart-version-sync-check.sh
 	@bash scripts/adr-image-pin-sync-check.sh

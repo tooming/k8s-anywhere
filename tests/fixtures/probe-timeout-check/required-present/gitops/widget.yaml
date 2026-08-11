@@ -1,0 +1,13 @@
+# Fixture: the registered override is present and compliant -- must pass.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: widget-chart
+spec:
+  source:
+    chart: widget
+    helm:
+      valuesObject:
+        webhook:
+          livenessProbe:
+            timeoutSeconds: 15

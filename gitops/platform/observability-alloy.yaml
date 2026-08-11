@@ -50,6 +50,20 @@ spec:
               - name: alloy-storage
                 emptyDir: {}
         alloy:
+          # Found 2026-08-11 (systemic probe-timeout audit): the chart's own
+          # readinessProbe.timeoutSeconds default is 1 (verified against the pinned
+          # chart's values.yaml, alloy-1.11.1; the value lives at the flat key
+          # `alloy.timeoutSeconds`, not nested under a `readinessProbe:` block --
+          # confirmed against templates/containers/_agent.yaml) -- the same
+          # chart-default-too-tight footgun already found and fixed for Harbor
+          # (PR #1040/#1102), ArgoCD (PR #1103/#1121), Kyverno (PR #1115), and others
+          # in this same sweep. Alloy has no livenessProbe configured by default (the
+          # chart's `alloy.livenessProbe: {}` renders nothing), so only readiness is
+          # at risk here. Bumped to 15s, matching the convention used for other
+          # heavier always-on data-plane components in this repo (this collector
+          # tails every pod's logs and remote-writes metrics -- not a trivial
+          # exporter, unlike node-exporter's 5s treatment elsewhere in this sweep).
+          timeoutSeconds: 15
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false

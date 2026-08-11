@@ -1,0 +1,13 @@
+# Fixture: a Helm-chart Application whose pin ("1.0.0") is only listed in its repo's
+# index with a "v" prefix ("v1.0.0") -- e.g. jetstack/cert-manager's real chart repo.
+# Exercises resolve_builtin's real jq-based version comparison (via the fake-helm
+# fixture below), not the CHARTPIN_RESOLVER stub seam the other fixtures use.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: v-prefixed-chart
+spec:
+  source:
+    repoURL: https://example.test/v-prefix-charts
+    chart: widget
+    targetRevision: 1.0.0

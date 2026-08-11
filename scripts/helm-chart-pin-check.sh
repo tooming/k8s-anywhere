@@ -88,8 +88,17 @@ resolve_builtin() {
   fi
   [ "${REPO_STATE[$repo]}" = ready ] || { echo UNREACHABLE; return; }
   out="$("$HELM_BIN" search repo "$al/$chart" --version "$ver" -o json 2>/dev/null)"
+  # `helm search repo --version` already does semver-aware matching of $ver against
+  # the index (e.g. "1.21.1" resolves fine against an index entry "v1.21.1" — some
+  # repos, like jetstack/cert-manager, publish v-prefixed chart versions). But the
+  # matched entry's `.version` field in the JSON echoes the index's own string back
+  # ("v1.21.1"), not our query string ("1.21.1") — so a bare `.version == $v` string
+  # compare false-positives MISSING on every v-prefixed repo regardless of whether
+  # the pin is actually valid (found 2026-08-11: cert-manager's real, resolvable
+  # "1.21.1" pin was failing this check). Strip a leading v/V from both sides before
+  # comparing so this matches what helm/ArgoCD's repo-server itself actually resolves.
   if printf '%s' "$out" | jq -e --arg n "$al/$chart" --arg v "$ver" \
-       'any(.[]?; .name == $n and .version == $v)' >/dev/null 2>&1; then
+       'any(.[]?; .name == $n and ((.version | sub("^[vV]"; "")) == ($v | sub("^[vV]"; ""))))' >/dev/null 2>&1; then
     echo OK
   else
     echo MISSING   # repo is reachable but this exact version isn't in the index

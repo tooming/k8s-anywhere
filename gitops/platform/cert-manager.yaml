@@ -34,6 +34,20 @@ spec:
           resources:
             limits:
               memory: 64Mi
+          # Found 2026-08-11 (systemic probe-timeout audit): the chart's own
+          # webhook.livenessProbe/readinessProbe default to timeoutSeconds: 1 (verified
+          # against the pinned chart's values.yaml, cert-manager-1.21.1) — the same
+          # chart-default-too-tight footgun already found and fixed for Harbor
+          # (PR #1040/#1102), ArgoCD's repo-server/server (PR #1103/#1121), and
+          # Kyverno's admissionController (PR #1115). cert-manager's webhook is a
+          # fail-closed admission webhook for Certificate/Issuer CRDs (same class of
+          # risk as Kyverno's), so a probe-timeout crashloop here can block cluster-wide
+          # cert issuance, not just this component. Bumped to 15s, matching the
+          # convention already used for other admission-webhook components in this repo.
+          livenessProbe:
+            timeoutSeconds: 15
+          readinessProbe:
+            timeoutSeconds: 15
         cainjector:
           resources:
             limits:

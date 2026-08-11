@@ -168,6 +168,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/probe-timeout-sync-hook.sh",
+            "timeout": 30,
+            "statusMessage": "Checking probe timeoutSeconds aren't too tight"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/adr-followup-sync-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking ADR follow-up notes"
