@@ -232,8 +232,9 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-**GitLab → Forgejo migration (ADR-0035, 2026-08-11, superseding ADR-0033) — six items,
-work top-to-bottom, each its own PR.** GitLab keeps running unmodified until item 6;
+**GitLab → Forgejo migration (ADR-0035, 2026-08-11, superseding ADR-0033) — seven items
+(originally six; item 4 split in two on 2026-08-11 per rule #9 below), work
+top-to-bottom, each its own PR.** GitLab keeps running unmodified until the last item;
 there is no point where the lab loses a working git source or CI path.
 
 - [x] 🟢 **Forgejo compose stack, additive alongside GitLab** — `forgejo/docker-compose.yml`
@@ -251,15 +252,45 @@ there is no point where the lab loses a working git source or CI path.
   build → `cosign sign` → push-to-Harbor job (ADR-0011/ADR-0024). Verify live (ADR-0004):
   a real pipeline run must push a genuinely signed image to Harbor, not just parse.
   Prerequisite: previous item. (auto/forgejo-ci-workflow)
-- [ ] 🟢 **Re-point ArgoCD's repo-credential Secret + `Application`s at the Forgejo
-  remote** — verify a real sync, not just a config change. Prerequisite: previous item.
+- [x] 🟢 **Wire ArgoCD's repo-credential Secret for the Forgejo remote (prep slice)** —
+  split from this list's original single item via ROADMAP rule #9's split-the-gate
+  judgment (2026-08-11, reached via `executor.prompt.md` STEP 3 — this was the
+  topmost unchecked item and no open PR claimed it): repointing `Application`
+  `repoURL`s (including `root-app.yaml`, the always-on-synced app-of-apps entrypoint)
+  is exactly the live-reconcile-affecting "flip" rule #9 says must stay gated for a
+  clusterless session — ArgoCD would attempt to re-sync every Application from
+  Forgejo on the next live reconcile, and neither the Forgejo repo's content (no
+  `forgejo-push` mechanism exists yet — that's item 5, below) nor its CI/runner
+  (item 3's own docs/done record: unverified) are confirmed live-working. Building
+  that flip anyway would risk the same fleet-wide blast radius the cosign
+  `enforce-flip` slice was split out to avoid (RFC #214 precedent, cited by this
+  list's own item 3). What *is* safe and additive: `infra/modules/forgejo-config`'s
+  `kubernetes_secret.argocd_repo` resource (SSH-keyed, named `repo-forgejo-gitops` —
+  distinct from the still-used `repo-gitlab-gitops`) plus the `repo_url_in_cluster`/
+  `argocd_namespace` variables and both live Terragrunt units' `kubernetes` provider
+  wiring, all parallel to the predecessor module's own resource shape. No
+  `gitops/**/*.yaml` Application references the new URL yet, so this is inert until
+  the next item flips it — `make ci` (kubeconform, kustomize, terraform fmt/validate,
+  bats) confirms the module is well-formed without needing a live cluster.
+  (auto/forgejo-argocd-repo-secret)
+- [ ] 🟢 **Flip `Application` `repoURL`s (including `root-app.yaml`) to the Forgejo
+  remote, verify a real sync** — the gated slice split out of the item above. Needs,
+  in order: (1) Forgejo's actual repo content pushed (no automated mechanism yet —
+  can be done with a manual `git remote add`/`git push` even before item 5's renamed
+  script exists), (2) `infra/modules/forgejo-config` `terraform apply`'d so the
+  `repo-forgejo-gitops` Secret exists in-cluster, (3) `.forgejo/workflows/
+  build-sign-push.yml` (item 3) confirmed running for real. Only a live-cluster
+  session can do all three and then verify ArgoCD's actual sync status — a
+  clusterless remote session must not flip this and merely hope. Prerequisite:
+  previous item (this one) and, functionally, item 3's live verification.
 - [ ] 🟢 **Rename `scripts/gitlab-*.sh` → `scripts/forgejo-*.sh` + matching `Makefile`
   targets** (bootstrap, TLS bootstrap, push, force-push, `rebase-prs`' GitLab leg);
   `tests/gitlab-compose.bats`/`tests/gitlab-push.bats` → `forgejo-*` bats files with
   equivalent coverage (mechanical-guard parity, not a regression). Prerequisite: previous
-  item — don't rename the scripts the still-live pipeline depends on before item 3/4 land.
+  item — don't rename the scripts the still-live pipeline depends on before the CI-workflow
+  and repoURL-flip items above land and are verified live.
 - [ ] 🟢 **Decommission `gitlab/docker-compose.yml` + `infra/modules/gitlab-config`** —
-  only once items 1–5 are verified live and stable for a real work cycle, matching how
+  only once every item above is verified live and stable for a real work cycle, matching how
   Artifactory's decommission followed (not preceded) Harbor's proven-live cutover
   (`docs/done/2026-07-29-harbor-artifactory-decommission.md`). Update
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live, running

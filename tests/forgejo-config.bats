@@ -46,8 +46,29 @@ setup() {
   [[ "$output" == *"private     = true"* ]]
 }
 
-@test "forgejo-config does not manage a kubernetes_secret (out of scope for this item)" {
-  ! grep -q 'kubernetes_secret' "$MAIN"
+@test "forgejo-config declares the kubernetes provider and the ArgoCD repo-credential Secret" {
+  grep -q 'source  = "hashicorp/kubernetes"' "$MAIN"
+  grep -q 'resource "kubernetes_secret" "argocd_repo"' "$MAIN"
+}
+
+@test "forgejo-config repo-credential Secret is SSH-keyed, additive, and does not touch any live Application" {
+  run sed -n '/^resource "kubernetes_secret" "argocd_repo" {/,/^}/p' "$MAIN"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'name      = "repo-forgejo-gitops"'* ]]
+  [[ "$output" == *'"argocd.argoproj.io/secret-type" = "repository"'* ]]
+  [[ "$output" == *"sshPrivateKey"* ]]
+  # Not the predecessor's Secret name — this is additive, never a replacement.
+  [[ "$output" != *"repo-gitlab-gitops"* ]]
+  # No gitops/**/*.yaml Application repoURL references the new SSH host yet — the
+  # repoURL flip is a separate, later, live-verified ROADMAP item (see main.tf's
+  # comment on this resource).
+  ! grep -rq "host.k3d.internal:2223" "$REPO/gitops/"
+}
+
+@test "forgejo-config variables declare argocd_namespace and repo_url_in_cluster" {
+  grep -q 'variable "argocd_namespace"' "$VARS"
+  grep -q 'variable "repo_url_in_cluster"' "$VARS"
+  grep -q 'default     = "ssh://git@host.k3d.internal:2223/lab/k8s-lab.git"' "$VARS"
 }
 
 @test "forgejo-config main.tf does not name the rejected git host (ADR-0035 guard parity)" {
@@ -67,4 +88,11 @@ setup() {
 @test "forgejo terragrunt units include the shared root config" {
   grep -q 'find_in_parent_folders("root.hcl")' "$LOCAL_TG"
   grep -q 'find_in_parent_folders("root.hcl")' "$ORACLE_TG"
+}
+
+@test "forgejo terragrunt units declare a cluster dependency and the kubernetes provider" {
+  grep -q 'dependency "cluster"' "$LOCAL_TG"
+  grep -q 'dependency "cluster"' "$ORACLE_TG"
+  grep -q 'provider "kubernetes"' "$LOCAL_TG"
+  grep -q 'provider "kubernetes"' "$ORACLE_TG"
 }
