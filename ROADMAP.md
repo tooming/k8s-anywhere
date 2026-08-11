@@ -296,7 +296,7 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live, running
   component" pending this) to a Forgejo row once this lands.
 
-- [ ] 🟢 **Vault pod-readiness alert rule — extend Grafana Unified Alerting (RFC #1084)**
+- [x] 🟢 **Vault pod-readiness alert rule — extend Grafana Unified Alerting (RFC #1084)**
   (CHARTER **Core Values** §"operational-resilience discipline"; planner-fallback gap
   analysis 2026-08-11, reached via `executor.prompt.md` STEP 6b, PLANNER role — the
   three standing Now/next migration items above remain gated on unconfirmed

@@ -96,11 +96,18 @@ duplicated.
 
 **Q7. Is there a defined detection → escalation → resolution path?**
 - **Answer:** Detection is now partly automated: Grafana Unified Alerting (RFC #1084,
-  `gitops/platform/observability-grafana.yaml` `valuesObject.alerting`) evaluates four
+  `gitops/platform/observability-grafana.yaml` `valuesObject.alerting`) evaluates five
   rules against Mimir every minute — an ArgoCD Application unhealthy for 10m+, an
   ArgoCD Application OutOfSync for 30m+, a Deployment running below its desired
-  replica count for 10m+, and a PVC stuck `Pending`/`Lost` for 10m+ — surfaced visually
-  in Grafana's own Alerting UI. There is still no escalation concept (no external
+  replica count for 10m+, a PVC stuck `Pending`/`Lost` for 10m+, and (ROADMAP
+  `auto/vault-pod-readiness-alert`) the Vault server pod not Ready for 10m+ — surfaced
+  visually in Grafana's own Alerting UI. The Vault rule closes this section's own
+  previously-named gap (a real 2026-07-29 incident, documented in
+  `gitops/vault/unsealer.yaml`'s header comment, where Vault stayed sealed for 4+ days
+  with nothing surfacing anywhere visible) using `kube_pod_status_ready` from the
+  already-scraped `ksm` job, not a new Vault-specific scrape target — Vault's own
+  metrics still aren't scraped by Alloy, only its pod-readiness signal (see the
+  narrower gap below). There is still no escalation concept (no external
   notification receiver is configured — an **explicit non-goal**, not a silent
   absence: this is a solo-operator lab with no pager/Slack/email channel to wire one
   to, per the RFC's own reasoning). Resolution paths exist per-symptom (the cookbook).
@@ -111,14 +118,16 @@ duplicated.
 - **Evidence:** [docs/DR.md](DR.md#recovery-cookbook-single-component); `make status`
   target; [docs/dora-metrics.md](dora-metrics.md) "Time to restore service" row;
   `gitops/platform/observability-grafana.yaml` `valuesObject.alerting`; RFC #1084.
-- **Gap:** the "no alerting" half of this gap is closed for the four conditions above
+- **Gap:** the "no alerting" half of this gap is closed for the five conditions above
   — narrower gaps remain: the rule set doesn't cover every known failure mode yet
-  (e.g. Vault sealed has no metric to alert on at all, since Vault isn't currently
-  scraped by Alloy — confirmed directly, no `vault` scrape block exists in
-  `gitops/platform/observability-alloy.yaml`); escalation stays a permanent non-goal
-  for this solo-operator lab; the CI-health metric still doesn't cover a live-cluster
-  incident. A future item could add a Vault-health scrape job + alert rule if that gap
-  is worth closing.
+  (Vault's own internal metrics — seal state, token/lease counts, storage backend
+  health — still have no Alloy scrape job at all; the new `VaultPodNotReady` rule only
+  catches failures severe enough to fail the pod's readiness probe, e.g. sealed,
+  crashed, or unreachable, not a degraded-but-Ready state); escalation stays a
+  permanent non-goal for this solo-operator lab; the CI-health metric still doesn't
+  cover a live-cluster incident. A future item could add a full Vault telemetry scrape
+  job (`telemetry` stanza + `unauthenticated_metrics_access`) if finer-grained Vault
+  metrics are worth the added config surface.
 
 **Q8. Are incidents logged with root cause and a corrective action, after the fact?**
 - **Answer:** Yes, as of [`docs/incident-log.md`](incident-log.md)'s "Real incident

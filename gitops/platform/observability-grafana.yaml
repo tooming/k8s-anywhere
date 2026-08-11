@@ -406,6 +406,36 @@ spec:
                           refId: B
                     noDataState: NoData
                     execErrState: Error
+                  - uid: vault-pod-not-ready
+                    title: VaultPodNotReady
+                    condition: B
+                    for: 10m
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: The Vault server pod has not been Ready for 10+ minutes (sealed, crashed, or otherwise unreachable).
+                    data:
+                      - refId: A
+                        relativeTimeRange:
+                          from: 600
+                          to: 0
+                        datasourceUid: mimir
+                        model:
+                          expr: kube_pod_status_ready{namespace="vault", pod=~"vault-[0-9]+", condition="true"} == 0
+                          instant: true
+                          refId: A
+                      - refId: B
+                        datasourceUid: __expr__
+                        model:
+                          type: threshold
+                          expression: A
+                          conditions:
+                            - evaluator:
+                                type: gt
+                                params: [0]
+                          refId: B
+                    noDataState: NoData
+                    execErrState: Error
         # No k8s-configmap-watcher: lab dashboards now sync from GitLab via native Git Sync
         # (ADR-0006). The community dashboards above (gnetId) use a separate file
         # provider and are unaffected.
