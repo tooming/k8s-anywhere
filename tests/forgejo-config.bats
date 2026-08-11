@@ -30,7 +30,14 @@ setup() {
   grep -q 'resource "forgejo_organization" "lab"' "$MAIN"
   grep -q 'resource "forgejo_repository" "gitops"' "$MAIN"
   grep -q 'resource "forgejo_branch_protection" "main"' "$MAIN"
-  grep -q 'resource "forgejo_personal_access_token" "argocd"' "$MAIN"
+  grep -q 'resource "forgejo_deploy_key" "argocd"' "$MAIN"
+}
+
+@test "forgejo-config deploy key is read-only and repository-scoped" {
+  run sed -n '/^resource "forgejo_deploy_key" "argocd" {/,/^}/p' "$MAIN"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"repository_id = forgejo_repository.gitops.id"* ]]
+  [[ "$output" == *"read_only     = true"* ]]
 }
 
 @test "forgejo-config repository is private" {
