@@ -158,3 +158,31 @@ digest-write contract (the first resumption entry was
 hold: this file exists because this run's fourth cycle reached the ARCHITECT fallback
 role, and that role's own contract requires writing/refreshing this file
 unconditionally, not because anyone remembered to do it by hand.
+
+---
+
+## 2026-08-11 refresh (same ISO week, fourth cycle of a later run)
+
+Reached the ARCHITECT fallback role again — Now/next's three standing items were
+re-checked and found still gated (unchanged) on #631/#633 (both last updated
+2026-08-07); no un-RFC'd 🟡 item and no unpromoted 🟢 item anywhere else in
+ROADMAP.md (the planner-fallback cycle immediately before this one confirmed the
+same); no open `adr-audit` issues. Per STEP 1c, refreshing this same-week file in
+place rather than writing a second one.
+
+Given the exhaustive 20+-component sweep above is under 24 hours old, this pass
+spot-checked only the two highest release-velocity pins rather than re-fetching
+everything:
+
+- **k3s** (`k3s-io/k3s`) — `v1.36.3+k3s1` (published 2026-08-04 19:42 UTC) remains
+  the newest tag on the `1.36.x` line this lab tracks; a parallel `v1.35.7+k3s1`
+  release exists on the older `1.35.x` line (also 2026-08-04) but is not newer —
+  confirmed directly against the real releases page, not assumed from a search
+  summary (an initial web-search summary mis-read the page and claimed `v1.35.7`
+  was "the latest release" outright; re-fetching the actual page corrected this
+  before it went anywhere near a ROADMAP claim, per ADR-0004). No action.
+- **ArgoCD** (`argoproj/argo-cd`) — `v3.5.0` (published 2026-08-04) remains newest;
+  matches this lab's already-pinned binary version exactly. No action.
+
+No new RFCs opened, no ADR audits opened or closed this pass — nothing found that
+meets STEP 2b's "meaningfully changes the tradeoff" bar.
