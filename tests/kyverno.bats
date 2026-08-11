@@ -54,7 +54,7 @@ setup() {
 # Because this webhook is fail-closed and kyverno has selfHeal:true, a live-only
 # kubectl patch gets reverted on the next reconcile — must be fixed in git to hold.
 @test "kyverno admissionController probes are generous enough for this host's latency (>=10s, not the 1s chart default)" {
-  run grep -A45 '^          replicas: 2' "$REPO/gitops/platform/kyverno.yaml"
+  run grep -A60 '^          replicas: 2' "$REPO/gitops/platform/kyverno.yaml"
   [ "$status" -eq 0 ]
   [[ "$output" == *"startupProbe:"* ]]
   [[ "$output" == *"livenessProbe:"* ]]
@@ -63,6 +63,18 @@ setup() {
   local count
   count=$(grep -c 'timeoutSeconds: 1[0-9]' <<<"$output")
   [ "$count" -ge 3 ]
+}
+
+# Found live 2026-08-11: even with the 15s probe timeouts above, admissionController
+# kept missing its startup window under host contention — the chart's default
+# requests.cpu (100m) left it CPU-starved, so the process itself was slow to come up,
+# not just slow to answer a probe. Bumped live first, then here (kyverno has
+# selfHeal:true, same live-patch-gets-reverted risk as the probes above).
+@test "kyverno admissionController requests more CPU than the 100m chart default (host-contention starvation)" {
+  run grep -A15 '^          replicas: 2' "$REPO/gitops/platform/kyverno.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"requests:"* ]]
+  [[ "$output" == *"cpu: 500m"* ]]
 }
 
 @test "kyverno Application syncs with ServerSideApply (its policy CRDs exceed the client-side-apply cap)" {
