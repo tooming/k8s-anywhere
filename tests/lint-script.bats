@@ -84,8 +84,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "lint.sh only yamllints directories that actually exist (gitops/infra/.github)" {
-  run grep -q 'for d in gitops infra \.github; do \[ -e "\$d" \] && targets+=("\$d"); done' "$LINT"
+@test "lint.sh only yamllints directories that actually exist (gitops/infra/.github/.forgejo)" {
+  run grep -q 'for d in gitops infra \.github \.forgejo; do \[ -e "\$d" \] && targets+=("\$d"); done' "$LINT"
   [ "$status" -eq 0 ]
 }
 

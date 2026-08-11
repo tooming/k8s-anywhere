@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# PostToolUse hook: after editing a .github/workflows/*.yml file, check whether
-# every job still sets an explicit timeout-minutes and, if not, surface a
-# reminder so it's fixed in the same change (the local companion to the CI
+# PostToolUse hook: after editing a .github/workflows/*.yml or .forgejo/workflows/*.yml
+# file, check whether every job still sets an explicit timeout-minutes and, if not,
+# surface a reminder so it's fixed in the same change (the local companion to the CI
 # workflow-timeout-check 'drift' gate). Reads the Claude Code hook payload on
 # stdin; non-blocking. Mirrors envoy-egress-allowlist-sync-hook.sh's shape.
 #   exit 0 = nothing to say   |   exit 2 = stderr shown to Claude as a reminder
@@ -13,6 +13,7 @@ fp="$(hook_file_path)"
 
 case "$fp" in
   */.github/workflows/*.yml|*/.github/workflows/*.yaml) ;;
+  */.forgejo/workflows/*.yml|*/.forgejo/workflows/*.yaml) ;;
   *) exit 0 ;;
 esac
 

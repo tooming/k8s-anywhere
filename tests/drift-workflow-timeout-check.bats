@@ -27,3 +27,15 @@ setup() {
   run bash "$REPO/scripts/workflow-timeout-check.sh"
   [ "$status" -eq 0 ]
 }
+
+@test "workflow-timeout-check: also scans .forgejo/workflows/ when present, no .github/workflows/" {
+  run env WORKFLOWTIMEOUTCHECK_ROOT="$FIX/forgejo-only-in-sync" bash "$REPO/scripts/workflow-timeout-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *".forgejo/workflows"* ]]
+}
+
+@test "workflow-timeout-check: fails on a .forgejo/workflows/ job missing timeout-minutes" {
+  run env WORKFLOWTIMEOUTCHECK_ROOT="$FIX/forgejo-only-drift" bash "$REPO/scripts/workflow-timeout-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"'foo' has no timeout-minutes"* ]]
+}

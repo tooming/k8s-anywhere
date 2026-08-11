@@ -1,0 +1,144 @@
+# Capstone CI pipeline: builds the hello demo image, pushes it to the in-lab
+# Harbor Docker registry, and cosign-signs the pushed image.
+# Runs on the Forgejo instance (ADR-0035 migration stage 3 of 6) — a straight port
+# of the CI pipeline file at the repo root this migration supersedes, translated to
+# Forgejo Actions syntax. The prior pipeline keeps running unmodified until
+# migration item 6; this file is additive and not yet what actually builds/pushes
+# capstone images (that switchover, and its own live verification, is a later
+# migration item once ArgoCD/CI are actually re-pointed at this Forgejo instance).
+#
+# Credential prerequisites (no plaintext stored here — all values live in Vault,
+# same as the predecessor pipeline's prerequisites, just a different UI to paste
+# them into):
+#   1. make vault-bootstrap          seeds secret/harbor/registry in Vault
+#   2. Retrieve the generated password:
+#        vault kv get secret/harbor/registry
+#   3. In Forgejo → repo Settings → Actions → Secrets, add:
+#        HARBOR_USER          ← username field from step 2
+#        HARBOR_PASSWORD      ← password field from step 2
+#      (these Forgejo Actions secrets are not GitOps-managed, so the maintainer
+#      must set them outside this repo, exactly like the predecessor pipeline's
+#      CI/CD variables)
+#
+# Cosign signing prerequisites (RFC #214 — Objective O4):
+#   4. make cosign-bootstrap         generates infra/secrets/cosign/cosign.key + cosign.pub
+#   5. In Forgejo → repo Settings → Actions → Secrets, add:
+#        COSIGN_KEY           ← contents of infra/secrets/cosign/cosign.key
+#      Forgejo Actions secrets have no "File type" variant the way the predecessor
+#      pipeline's platform did — every secret is a plain string, so the sign-image
+#      job below writes it to a temp file itself (see its first step) instead of
+#      relying on a platform-provided temp path.
+#
+# Component prerequisites:
+#   make harbor-up                   Harbor must be running before first push
+#   Images push to the "library" project — Harbor's built-in default project,
+#   no manual repository creation needed.
+#
+# The in-cluster ESO ExternalSecret (gitops/secrets/harbor-registry-externalsecret.yaml)
+# makes the same credentials available to pods as an imagePullSecret in namespace capstone.
+# The Kyverno verifyImages ClusterPolicy (gitops/kyverno/policies/verify-image-signatures.yaml)
+# enforces that only cosign-signed images are admitted once $COSIGN_KEY is set here.
+#
+# ADR-0004 caveat (this item's own "verify live" requirement — see ROADMAP.md): this
+# file was authored and structurally validated (YAML shape, tests/forgejo-ci.bats)
+# from a clusterless remote session with no live Forgejo/forgejo-runner instance to
+# actually execute it against. Three specific mechanics below need a real run to
+# confirm, each called out at its own step:
+#   (a) `container.options: --privileged` is permitted by forgejo-runner's config.yml
+#       (gitignored, not yet committed — see forgejo/docker-compose.yml's comment).
+#   (b) `actions/checkout@v4` resolves the way Forgejo's default actions-proxy expects.
+#   (c) manually starting dockerd with --insecure-registry inside the job container
+#       works the same way the predecessor pipeline's Docker-in-Docker *service*
+#       command-override did (Forgejo/GitHub Actions' `services:` schema has no
+#       command-override field, which is why this uses a privileged single-container
+#       Docker-in-Docker pattern instead of a companion service container — a
+#       deliberate structural difference from the predecessor pipeline, not an
+#       oversight).
+
+name: build-sign-push
+
+on:
+  push:
+    branches: [main]
+
+env:
+  # :8080 is required — the k3d gateway's published host port; the bare hostname
+  # without it resolves to the wrong network path from a job container (same
+  # failure mode the predecessor pipeline's identical REGISTRY comment documents).
+  REGISTRY: harbor.127.0.0.1.nip.io:8080
+  IMAGE_NAME: library/hello
+
+jobs:
+  build-and-push:
+    runs-on: docker
+    timeout-minutes: 20
+    container:
+      image: docker:29
+      # Privileged so dockerd can run inside this same container (Docker-in-Docker)
+      # instead of a companion service container — see ADR-0004 caveat (c) above.
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start dockerd (insecure registry for the in-lab Harbor route)
+        run: |
+          dockerd --insecure-registry="$REGISTRY" &
+          for i in $(seq 1 30); do
+            docker info >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker info >/dev/null 2>&1 || { echo "dockerd did not come up in time"; exit 1; }
+
+      - name: Login to Harbor
+        run: echo "${{ secrets.HARBOR_PASSWORD }}" | docker login "$REGISTRY" -u "${{ secrets.HARBOR_USER }}" --password-stdin
+
+      - name: Build, tag, and push
+        run: |
+          sha="${GITHUB_SHA:0:8}"
+          docker build -t "$REGISTRY/$IMAGE_NAME:$sha" gitops/apps/demo/
+          docker push "$REGISTRY/$IMAGE_NAME:$sha"
+          docker tag "$REGISTRY/$IMAGE_NAME:$sha" "$REGISTRY/$IMAGE_NAME:latest"
+          docker push "$REGISTRY/$IMAGE_NAME:latest"
+
+      - name: Logout
+        if: always()
+        run: docker logout "$REGISTRY" || true
+
+  sign-image:
+    needs: build-and-push
+    runs-on: docker
+    timeout-minutes: 10
+    # Digest-pinned, same rationale and same digest as the predecessor pipeline's
+    # sign-image job (bitnami/cosign no longer publishes semver tags — see that
+    # job's comment for the full explanation). Keep these two pins moving together.
+    container:
+      image: bitnami/cosign@sha256:db4d480f96235bca0433be791ea156cf51c3c7b62874618d8fcacecc86555aee
+    env:
+      COSIGN_PASSWORD: ""
+      # Disable Rekor transparency-log upload — no outbound internet in the lab.
+      COSIGN_EXPERIMENTAL: "0"
+    steps:
+      - name: Write cosign key from the Forgejo Actions secret
+        run: |
+          mkdir -p /tmp/cosign
+          printf '%s' "${{ secrets.COSIGN_KEY }}" > /tmp/cosign/cosign.key
+
+      # Only the short-SHA tag is signed here, even though build-and-push also
+      # pushes :latest — same reasoning as the predecessor pipeline's sign-image
+      # job: `docker tag` makes :latest an alias for the exact same digest as the
+      # short-SHA tag, so cosign's digest-based signature covers both tags from one
+      # signing call. Don't "fix" this into signing both tags — it would be
+      # redundant.
+      - name: Sign the pushed image
+        run: |
+          sha="${GITHUB_SHA:0:8}"
+          cosign sign \
+            --key /tmp/cosign/cosign.key \
+            --allow-insecure-registry \
+            --registry-username "${{ secrets.HARBOR_USER }}" \
+            --registry-password "${{ secrets.HARBOR_PASSWORD }}" \
+            "$REGISTRY/$IMAGE_NAME:$sha"
+
+      - name: Clean up
+        if: always()
+        run: rm -rf /tmp/cosign
