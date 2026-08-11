@@ -96,3 +96,20 @@ mem_mi() {
   run grep -q 'Phase 1 warn/audit labels' "$REPO/gitops/platform/argocd-extras.yaml"
   [ "$status" -ne 0 ]
 }
+
+# Found live 2026-08-11: with reposerver.parallelism.limit capped at 2 (above) and
+# the manifest cache invalidated (argocd-redis pod recreated after a node restart —
+# happened twice in one session), ~90+ Applications all need fresh generation at
+# once and queue behind just 2 concurrent slots. The controller's default 60s
+# deadline per GenerateManifest call is fine for a warm cache, but under a
+# cold-cache backlog on this host individual requests — especially Harbor's
+# unusually large chart — routinely lost the race and errored `DeadlineExceeded`
+# even though repo-server was actively working (confirmed live: steady cache-hit/
+# miss throughput in its logs the whole time, not stuck). >=120s gives a cold
+# cache-rebuild genuine room to finish instead of erroring out mid-queue.
+@test "controller/server repo-server call timeouts are bumped past the 60s default (cold-cache backlog headroom)" {
+  run yqs '.configs.params."controller.repo.server.timeout.seconds"' "$VALS"
+  [ "$output" -ge 120 ]
+  run yqs '.configs.params."server.repo.server.timeout.seconds"' "$VALS"
+  [ "$output" -ge 120 ]
+}
