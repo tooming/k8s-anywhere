@@ -25,6 +25,7 @@ BUDGET_S=600   # CHARTER Objective O3: < 10 min total wall-clock
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/budget-check.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/dr-results-log.sh"
 
 START=$SECONDS
 FAILED=0
@@ -93,8 +94,10 @@ echo ""
 if [ "$FAILED" -eq 0 ]; then
   printf '%s✅ DR RESTORE PASSED — all namespaces restored in %ds (< %ds budget).%s\n' \
     "$G$B" "$TOTAL_ELAPSED" "$BUDGET_S" "$Z"
+  dr_log_result "dr-restore.sh" "PASS" "$TOTAL_ELAPSED" "$BUDGET_S" "O3"
   exit 0
 else
   printf '%s✗ DR RESTORE FAILED — see details above.%s\n' "$R$B" "$Z"
+  dr_log_result "dr-restore.sh" "FAIL" "$TOTAL_ELAPSED" "$BUDGET_S" "O3"
   exit 1
 fi

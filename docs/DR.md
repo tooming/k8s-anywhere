@@ -233,6 +233,20 @@ The drill only *observes and times* that existing guarantee — its only
 real-world side effect is one capstone pod restarting, the same event a node
 drain or an OOM-kill would already cause routinely.
 
+## Results history log ([`docs/dr-results-log.md`](dr-results-log.md))
+
+Each of the four drills above (`dr-restore`, `dr-bluegreen`, `dr-chaos`,
+`capstone-demo`) appends one row — date, status (`PASS`/`FAIL`), elapsed
+seconds, budget seconds, objective tag — to
+[`docs/dr-results-log.md`](dr-results-log.md) on **every** run, pass or fail
+(`scripts/lib/dr-results-log.sh`'s `dr_log_result`, called from each script's
+exit path). This closes the gap `docs/dora-audit-readiness.md` Q13 named:
+pass/fail was already enforced by exit codes, but there was no historical
+trend — no way to see if, say, the restore is creeping toward its 600 s
+budget as the lab grows, only whether today's run passed. The log is
+append-only and never hand-edited or backfilled (ADR-0004) — it ships with
+just the header until a real run happens.
+
 ## Single points of failure (and why true HA isn't possible here)
 
 Once you cut over to green and retire blue, two SPOFs remain — in **different paths**:

@@ -25,6 +25,7 @@ START=$SECONDS
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/budget-check.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/dr-results-log.sh"
 
 declare -a STEP_NAMES
 declare -a STEP_ELAPSED
@@ -172,8 +173,10 @@ echo ""
 if [ "$FAILED" -eq 0 ]; then
   printf '%s✅ CAPSTONE DEMO PASSED — all steps completed in %ds (< %ds budget).%s\n' \
     "$G$B" "$TOTAL_ELAPSED" "$BUDGET_S" "$Z"
+  dr_log_result "capstone-demo.sh" "PASS" "$TOTAL_ELAPSED" "$BUDGET_S" "O6"
   exit 0
 else
   printf '%s✗ CAPSTONE DEMO FAILED — see details above.%s\n' "$R$B" "$Z"
+  dr_log_result "capstone-demo.sh" "FAIL" "$TOTAL_ELAPSED" "$BUDGET_S" "O6"
   exit 1
 fi
