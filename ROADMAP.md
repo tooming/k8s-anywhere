@@ -5307,7 +5307,7 @@ there is no point where the lab loses a working git source or CI path.
   session actually runs one of the four scripts. `docs/done/` entry
   required. (auto/dr-results-log)
 
-- [ ] 🟢 **Vault internal telemetry — `sys/metrics` scrape + dashboard depth**
+- [x] 🟢 **Vault internal telemetry — `sys/metrics` scrape + dashboard depth**
   (CHARTER **Goals** §"operational-resilience discipline" + **Objective O5** "every
   always-on component has a real-metric dashboard"; planner gap analysis 2026-08-11,
   reached via `executor.prompt.md` STEP 6b PLANNER role after all six standing

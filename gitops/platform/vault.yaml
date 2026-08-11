@@ -92,9 +92,27 @@ spec:
               listener "tcp" {
                 address     = "[::]:8200"
                 tls_disable = 1
+                telemetry {
+                  unauthenticated_metrics_access = true
+                }
               }
               storage "file" {
                 path = "/vault/data"
+              }
+              # ROADMAP "Vault internal telemetry — sys/metrics scrape + dashboard
+              # depth": enables Vault's built-in Prometheus-format metrics sink at
+              # GET /v1/sys/metrics?format=prometheus. unauthenticated_metrics_access
+              # above (nested in the listener block, not here) is what makes that
+              # endpoint scrapable without a token — cheaper than an ESO-managed
+              # scrape token for a lab whose TLS is already disabled and whose UI is
+              # already open cluster-internally. Real metrics this newly exposes:
+              # vault_core_unsealed, vault_core_active, vault_core_in_flight_requests,
+              # vault_expire_num_leases (verified against hashicorp/vault's own
+              # source — vault/core.go, vault/core_metrics.go, vault/expiration.go —
+              # not assumed from docs prose, ADR-0004).
+              telemetry {
+                prometheus_retention_time = "24h"
+                disable_hostname          = true
               }
           dataStorage:
             enabled: true
