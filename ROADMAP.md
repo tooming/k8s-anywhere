@@ -236,11 +236,11 @@ You review and merge plan PRs, same as implementation PRs.
 work top-to-bottom, each its own PR.** GitLab keeps running unmodified until item 6;
 there is no point where the lab loses a working git source or CI path.
 
-- [ ] 🟢 **Forgejo compose stack, additive alongside GitLab** — `forgejo/docker-compose.yml`
+- [x] 🟢 **Forgejo compose stack, additive alongside GitLab** — `forgejo/docker-compose.yml`
   (`forgejo` + `forgejo-runner` services, reuse the existing `nginx` TLS-terminator
   pattern from `gitlab/docker-compose.yml`), `make forgejo-up`/`forgejo-down` targets,
   `tests/forgejo-compose.bats`. Zero risk to the current CI path — GitLab is untouched.
-  No prerequisites, executor may pick up immediately.
+  No prerequisites, executor may pick up immediately. (feat/forgejo-compose-stage1, #1105)
 - [ ] 🟢 **`infra/modules/forgejo-config` Terraform module** — org/repo/branch-protection/
   deploy-token resources via `svalabs/terraform-provider-forgejo` (or
   `adyxax/terraform-provider-forgejo` if its resource coverage fits better — check both
