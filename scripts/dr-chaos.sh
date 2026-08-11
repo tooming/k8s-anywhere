@@ -27,6 +27,7 @@ BUDGET_S=120
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/budget-check.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/dr-results-log.sh"
 
 confirm_or_abort "$(printf '%sThis DELETES a live pod in the %s namespace to test self-heal.%s\n' "$R$B" "$NAMESPACE" "$Z")" \
   "chaos"
@@ -71,9 +72,11 @@ if [ "$HEALED" -eq 1 ]; then
   printf '%s✓ SELF-HEAL CONFIRMED — replacement pod Running in %ds (< %ds budget).%s\n' \
     "$G$B" "$ELAPSED" "$BUDGET_S" "$Z"
   budget_final_line "$ELAPSED" "$BUDGET_S" "chaos"
+  dr_log_result "dr-chaos.sh" "PASS" "$ELAPSED" "$BUDGET_S" "chaos"
   exit 0
 else
   printf '%s✗ SELF-HEAL NOT CONFIRMED within budget — see pod status above.%s\n' "$R$B" "$Z"
   budget_final_line "$ELAPSED" "$BUDGET_S" "chaos" || true
+  dr_log_result "dr-chaos.sh" "FAIL" "$ELAPSED" "$BUDGET_S" "chaos"
   exit 1
 fi

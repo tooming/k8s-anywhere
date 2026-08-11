@@ -191,11 +191,19 @@ duplicated.
   real cluster (ADR-0004 caveat, same as every other DR-script addition here).
 
 **Q13. Are test results tracked with remediation deadlines?**
-- **Answer:** Pass/fail is enforced by exit codes (CI-style), but there's no historical
-  log of *past* run results over time — only the current pass/fail, not a trend.
-- **Evidence:** `scripts/dr-restore.sh`, `scripts/capstone-demo.sh` exit-code behavior.
-- **Gap:** minor — a results log would let you see if the 10-minute RTO is trending up
-  as the lab grows, not just whether it passed today.
+- **Answer:** Pass/fail is enforced by exit codes (CI-style), and every DR/capstone-demo
+  script now also appends a row (date, status, elapsed, budget, objective) to
+  [`docs/dr-results-log.md`](dr-results-log.md) on each real run, pass or fail
+  (`scripts/lib/dr-results-log.sh`), so a history of *past* run results over time now
+  exists, not just today's pass/fail.
+- **Evidence:** `scripts/dr-restore.sh`, `scripts/dr-bluegreen.sh`, `scripts/dr-chaos.sh`,
+  `scripts/capstone-demo.sh` each source `scripts/lib/dr-results-log.sh` and call
+  `dr_log_result` on both their pass and fail exit paths; `docs/dr-results-log.md`.
+- **Gap:** narrower now — the mechanism exists, but this remote clusterless session
+  cannot generate a real logged run (ADR-0004), so the log ships with just its header;
+  rows only accumulate once a maintainer or a live-cluster session actually runs one of
+  the four scripts. No remediation-deadline tracking yet (out of scope here) — only a
+  pass/fail/elapsed trend.
 
 ---
 

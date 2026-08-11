@@ -5249,7 +5249,7 @@ there is no point where the lab loses a working git source or CI path.
   must pass. `docs/done/` entry required. Closes #917.
   (auto/cilium-1-18-12-bump)
 
-- [ ] 🟢 **DR/capstone-demo results-history log — track pass/fail + elapsed
+- [x] 🟢 **DR/capstone-demo results-history log — track pass/fail + elapsed
   time per run over time** (CHARTER **Goals** §"operational-resilience
   discipline" — DORA Pillar 3 concept, testing-results tracking;
   planner-fallback gap analysis 2026-08-11, reached via

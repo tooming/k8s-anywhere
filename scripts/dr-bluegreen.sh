@@ -27,10 +27,22 @@ MAX_OUTAGE="${MAX_OUTAGE:-2.0}"    # PASS threshold (seconds)
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/canary-probe.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/dr-results-log.sh"
+
+# Unlike dr-restore.sh/capstone-demo.sh, this drill's pass/fail comes from
+# continuous-availability uptime%/outage-seconds thresholds, not a wall-clock
+# deadline — there's no BUDGET_S to enforce (so it does NOT source
+# lib/budget-check.sh — that lib's own recurrence guard,
+# tests/budget-check-lib.bats, only requires it for scripts that *do* define
+# BUDGET_S). NOMINAL_BUDGET_S is log-only, feeding dr_log_result's Budget
+# column for trend-watching, matching dr-restore.sh's O3 restore budget as a
+# rough "how long should a cutover reasonably take" — deliberately not named
+# BUDGET_S so it isn't mistaken for an enforced one.
+NOMINAL_BUDGET_S=300
 
 START=$SECONDS
 PROBE_PID=""
-fail(){ stop_probe; printf '\n%s%sBLUE/GREEN DR FAILED%s at: %s  (elapsed %ds)\n' "$B" "$R" "$Z" "$1" "$((SECONDS-START))"; exit 1; }
+fail(){ stop_probe; printf '\n%s%sBLUE/GREEN DR FAILED%s at: %s  (elapsed %ds)\n' "$B" "$R" "$Z" "$1" "$((SECONDS-START))"; dr_log_result "dr-bluegreen.sh" "FAIL" "$((SECONDS-START))" "$NOMINAL_BUDGET_S" "bluegreen"; exit 1; }
 
 printf '%s== BLUE/GREEN DR DRILL ==%s  stable endpoint :%s, canary Host %s\n' "$B" "$Z" "$FRONTDOOR_PORT" "$CANARY_HOST"
 
@@ -77,9 +89,11 @@ if [ "$ok_up" = 1 ] && [ "$ok_out" = 1 ]; then
   printf '%s%s✅ BLUE/GREEN DR PASSED%s — cut blue->green in %ds; uptime %s%%, longest outage ~%ss.\n' "$B" "$G" "$Z" "$ELAPSED" "$uptime" "$outage"
   printf '   The whole system kept working during the drill. Front door :%s now serves GREEN; blue still runs for rollback.\n' "$FRONTDOOR_PORT"
   printf '   Reclaim RAM with: make dr-bluegreen-down\n'
+  dr_log_result "dr-bluegreen.sh" "PASS" "$ELAPSED" "$NOMINAL_BUDGET_S" "bluegreen"
   exit 0
 else
   printf '%s%s❌ BLUE/GREEN DR FAILED%s — uptime %s%% (need >=%s%%), outage ~%ss (need <=%ss). See %s\n' \
     "$B" "$R" "$Z" "$uptime" "$MIN_UPTIME" "$outage" "$MAX_OUTAGE" "$PROBE_LOG"
+  dr_log_result "dr-bluegreen.sh" "FAIL" "$ELAPSED" "$NOMINAL_BUDGET_S" "bluegreen"
   exit 1
 fi
