@@ -84,9 +84,23 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# `extraEnvVarsSecret` is NOT a real field in goharbor/harbor 1.19.2 — checked directly
+# against the chart's own templates (grep -rn extraEnvVarsSecret templates/registry/
+# on `helm pull goharbor/harbor --version 1.19.2` finds zero matches). A prior version
+# of harbor.yaml used that field and Helm silently ignored it, so the registry
+# container never actually received S3 credentials — the real root cause of #631's
+# push failures (`s3aws: NoCredentialProviders`), found live 2026-08-11. The chart only
+# wires `registry.registry.extraEnvVars` (a literal list); this asserts the two S3 key
+# env vars are present there via `valueFrom.secretKeyRef` against harbor-s3-creds, and
+# that the broken field name doesn't silently creep back in.
 @test "harbor Application references harbor-s3-creds secret for S3 credentials (never inline)" {
-  run grep -q 'extraEnvVarsSecret: harbor-s3-creds' "$REPO/gitops/platform/harbor.yaml"
+  run grep -q '^\s*extraEnvVarsSecret:' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 1 ]
+  run grep -A40 '^        registry:' "$REPO/gitops/platform/harbor.yaml"
   [ "$status" -eq 0 ]
+  [[ "$output" == *"name: REGISTRY_STORAGE_S3_ACCESSKEY"* ]]
+  [[ "$output" == *"name: REGISTRY_STORAGE_S3_SECRETKEY"* ]]
+  [[ "$output" == *"name: harbor-s3-creds"* ]]
 }
 
 # --- Namespace PSA labels (ADR-0017: restricted target) ----------------------
