@@ -79,10 +79,14 @@ resource "forgejo_deploy_key" "argocd" {
 # a username/password (HTTP basic-auth) data pair; this one uses sshPrivateKey (SSH),
 # matching the SSH-only deploy credential this module actually has (see
 # forgejo_deploy_key's comment above).
-# `insecure = "true"` skips ArgoCD's SSH known-hosts check for this repo, matching
-# this lab's existing risk tolerance for other in-cluster-only endpoints (e.g.
+# `insecure = "true"` is intended to skip ArgoCD's SSH known-hosts check for this repo,
+# matching this lab's existing risk tolerance for other in-cluster-only endpoints (e.g.
 # Harbor's TLS-disabled minimal profile, ADR-0024) — host.k3d.internal never leaves
-# the Colima VM.
+# the Colima VM. UNVERIFIED (ADR-0004): this field name is this session's best-effort
+# match against ArgoCD's documented repository-Secret schema from memory, not
+# confirmed against a live ArgoCD repo-server — the next live-cluster session applying
+# this module should verify ArgoCD actually accepts/uses this key (vs. e.g. a stale
+# `insecureIgnoreHostKey` alias) before relying on it, and fix it here if wrong.
 #
 # Deliberately NOT wired up yet: no live Application repoURL points at
 # var.repo_url_in_cluster, so ArgoCD keeps syncing from the still-live predecessor git

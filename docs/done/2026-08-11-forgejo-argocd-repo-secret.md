@@ -86,9 +86,12 @@ treats that as a skip, not a failure, per its own documented behavior — but `f
 the HCL's static shape are checked), all 2618 bats tests pass, kustomize/kubeconform
 builds are unaffected (this PR touches no `gitops/` manifest). What is **not** verified,
 and cannot be from here: that `terraform apply` actually succeeds against a live
-Forgejo + cluster, or that the resulting Secret is one ArgoCD actually accepts (schema
-matches ArgoCD's documented SSH repository-credential Secret shape, but has not been
-exercised against a real ArgoCD `repo-server`).
+Forgejo + cluster, or that the resulting Secret is one ArgoCD actually accepts. In
+particular, flagged inline in `main.tf`'s own comment: the Secret's `insecure = "true"`
+field (intended to skip ArgoCD's SSH known-hosts check) is this session's best-effort
+match against ArgoCD's documented repository-Secret schema from memory, not confirmed
+against a live ArgoCD `repo-server` — the next live-cluster session applying this
+module should verify ArgoCD actually accepts/uses this key before relying on it.
 
 Rollback path: revert this PR — every change here is additive (a new Terraform resource
 + two new variables + two `generate` blocks), and nothing in the live cluster or the
