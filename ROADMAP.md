@@ -296,6 +296,68 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live, running
   component" pending this) to a Forgejo row once this lands.
 
+- [ ] 🟢 **Vault pod-readiness alert rule — extend Grafana Unified Alerting (RFC #1084)**
+  (CHARTER **Core Values** §"operational-resilience discipline"; planner-fallback gap
+  analysis 2026-08-11, reached via `executor.prompt.md` STEP 6b, PLANNER role — the
+  three standing Now/next migration items above remain gated on unconfirmed
+  maintainer-confirmation issues #631/#633, and this run's own sweep found no
+  un-RFC'd 🟡 item and no other lane holding an unpromoted item. **No prerequisites —
+  executor may pick up immediately.**) `docs/dora-audit-readiness.md` Q7's own gap
+  line names this exact hole: "Vault sealed has no metric to alert on at all, since
+  Vault isn't currently scraped by Alloy... A future item could add a Vault-health
+  scrape job + alert rule if that gap is worth closing." Verified directly (not
+  assumed, ADR-0004): `gitops/platform/observability-alloy.yaml` has no
+  `prometheus.scrape "vault"` block (grepped every `prometheus.scrape` name in the
+  file — 25 jobs, none named vault); RFC #1084's four rules
+  (`gitops/platform/observability-grafana.yaml` `valuesObject.alerting`) cover
+  ArgoCD health/sync, `kube_deployment_*` replica availability, and PVC phase — none
+  scoped to Vault, and Vault runs as a `StatefulSet` (`server.statefulSet` in
+  `gitops/platform/vault.yaml`), which `DeploymentReplicasUnavailable`'s
+  `kube_deployment_*` metric family structurally cannot match regardless of label
+  selectors. This is a real, previously-lived incident, not speculative: the
+  `vault-unsealer`'s own header comment (`gitops/vault/unsealer.yaml`) documents
+  Vault staying sealed for 4+ days after a 2026-07-29 outage, "silently breaking
+  every ExternalSecret refresh cluster-wide... but nothing surfaced that anywhere
+  visible" — exactly the detection gap this item closes, using a metric already
+  scraped today (no new scrape job needed, unlike the audit doc's own suggested
+  shape): `kube_state_metrics` already emits `kube_pod_status_ready` for every pod
+  via the existing `ksm` scrape job (`observability-alloy.yaml`).
+
+  Add a fifth rule to `gitops/platform/observability-grafana.yaml`'s existing
+  `alerting.rules.yaml.groups[0].rules` list (same `lab-alerts` group, same
+  threshold-over-instant-Mimir-query shape as the other four — refId A queries
+  Mimir, refId B is a `threshold` expression `gt 0`, `noDataState: NoData`,
+  `execErrState: Error`, `datasourceUid: mimir`): `uid: vault-pod-not-ready`,
+  `title: VaultPodNotReady`, `for: 10m` (matches the other three non-OutOfSync
+  rules' cadence), `expr: kube_pod_status_ready{namespace="vault",
+  pod=~"vault-[0-9]+", condition="true"} == 0` — the `pod=~"vault-[0-9]+"` regex
+  scopes the rule to the Vault server StatefulSet pod (`vault-0`) specifically,
+  excluding the separate `vault-unsealer` Deployment pod in the same namespace
+  (label `app: vault-unsealer`, pod name prefix `vault-unsealer-`, which the regex
+  does not match) — alerting on the unsealer's own liveness would be a different,
+  narrower signal than "is Vault itself serving," and conflating the two would
+  misattribute which component actually failed. `annotations.summary`: "The Vault
+  server pod has not been Ready for 10+ minutes (sealed, crashed, or otherwise
+  unreachable)." No `contactPoints`/notification receiver — stays visual-only per
+  RFC #1084's own decision, unchanged by this item.
+
+  Extend `tests/observability-alerting.bats` (the per-scope alerting file, not the
+  frozen `observability.bats` monolith): new assertion for
+  `title: VaultPodNotReady` + its exact `expr:`; bump the existing `'for: 10m'`
+  count assertion from `3` to `4` (this rule adds a fourth 10m-duration rule) and
+  the existing `'datasourceUid: mimir'` count assertion from `4` to `5` — both
+  existing count-based tests, not new ones, so this is a real regression risk if
+  left unbumped (`make ci` would fail red on the count mismatch, catching it).
+  Update `docs/dependency-tree.md`'s Vault sub-graph with a one-line note that
+  Vault's pod-readiness is now alerted on via the existing KSM scrape (no new
+  scrape target). `make ci` must pass — this is a structural YAML + bats change,
+  no live cluster needed to confirm the rule's shape matches the other four.
+  PR body must document the ADR-0004 caveat that this remote clusterless session
+  cannot verify the rule actually fires against a live sealed Vault, and note the
+  rollback path (delete the `vault-pod-not-ready` rule block; ArgoCD syncs the
+  removal within 30s, same as any other alerting.yaml edit, per RFC #1084's own
+  rollback precedent). `docs/done/` entry required. (auto/vault-pod-readiness-alert)
+
 - [x] 🟢 **k3d containerd registry mirror — resolve `harbor.127.0.0.1.nip.io` in-cluster**
   (CHARTER **Core Values** §"Recreate-from-code" (`make up` should let the capstone demo
   actually run) + §"Images are signed and verified" (O4's admission-signing chain needs a
