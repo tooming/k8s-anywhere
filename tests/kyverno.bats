@@ -46,6 +46,25 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# Found live 2026-08-11: the chart's startupProbe default omits timeoutSeconds
+# entirely (falls back to Kubernetes' own 1s default) — same chart-default-too-tight
+# footgun already fixed for Harbor's database/core/registry (PR #1040/#1102) and
+# ArgoCD's repo-server (PR #1103). Observed both admissionController replicas'
+# startup probes failing with "connection refused" hundreds of times over 3+ days.
+# Because this webhook is fail-closed and kyverno has selfHeal:true, a live-only
+# kubectl patch gets reverted on the next reconcile — must be fixed in git to hold.
+@test "kyverno admissionController probes are generous enough for this host's latency (>=10s, not the 1s chart default)" {
+  run grep -A45 '^          replicas: 2' "$REPO/gitops/platform/kyverno.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"startupProbe:"* ]]
+  [[ "$output" == *"livenessProbe:"* ]]
+  [[ "$output" == *"readinessProbe:"* ]]
+  # exactly three timeoutSeconds occurrences (startup/liveness/readiness), all >= 10
+  local count
+  count=$(grep -c 'timeoutSeconds: 1[0-9]' <<<"$output")
+  [ "$count" -ge 3 ]
+}
+
 @test "kyverno Application syncs with ServerSideApply (its policy CRDs exceed the client-side-apply cap)" {
   # clusterpolicies.kyverno.io / policies.kyverno.io are ~650 KB each, over the
   # 262144-byte client-side-apply annotation limit; without SSA repo-server can't
