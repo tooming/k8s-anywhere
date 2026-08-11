@@ -241,11 +241,12 @@ there is no point where the lab loses a working git source or CI path.
   pattern from `gitlab/docker-compose.yml`), `make forgejo-up`/`forgejo-down` targets,
   `tests/forgejo-compose.bats`. Zero risk to the current CI path — GitLab is untouched.
   No prerequisites, executor may pick up immediately. (feat/forgejo-compose-stage1, #1105)
-- [ ] 🟢 **`infra/modules/forgejo-config` Terraform module** — org/repo/branch-protection/
+- [x] 🟢 **`infra/modules/forgejo-config` Terraform module** — org/repo/branch-protection/
   deploy-token resources via `svalabs/terraform-provider-forgejo` (or
   `adyxax/terraform-provider-forgejo` if its resource coverage fits better — check both
   before committing), `infra/live/{local,oracle}/forgejo/`. Parallels `gitlab-config`.
   Prerequisite: previous item (needs a live Forgejo instance to point Terraform at).
+  (auto/forgejo-config-terraform-module)
 - [ ] 🟢 **Port `.gitlab-ci.yml` → `.forgejo/workflows/build-sign-push.yml`** — same
   build → `cosign sign` → push-to-Harbor job (ADR-0011/ADR-0024). Verify live (ADR-0004):
   a real pipeline run must push a genuinely signed image to Harbor, not just parse.
