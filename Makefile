@@ -603,6 +603,10 @@ endef
 ondemand-budget-check: ## Report which on-demand units (Harbor/Istio/Kiali/Longhorn/Kargo/TiDB/Inkless) are live + flag orphaned namespaces
 	@bash scripts/ondemand-budget-check.sh
 
+.PHONY: k3s-datastore-health-check
+k3s-datastore-health-check: ## Report k3s embedded datastore (SQLite/kine) health: size, compaction gap, Slow SQL volume (2026-08-11 incident, docs/incident-log.md)
+	@bash scripts/k3s-datastore-health-check.sh
+
 # --- Cilium CNI (always-on once enabled; run before ArgoCD on fresh clusters) ----
 # Cilium replaces k3s-bundled Flannel (disable_default_cni=true — ADR-0014).
 # Bootstrap order: make cluster-up → make cilium-up → make argocd → rest of make up.

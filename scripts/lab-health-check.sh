@@ -123,6 +123,14 @@ fi
 echo
 bash "$(dirname "${BASH_SOURCE[0]}")/ondemand-budget-check.sh" 2>/dev/null || true
 
+# Also informational only, and independent of kubectl entirely (docker logs against the
+# k3d container directly) — a degraded embedded datastore is a plausible ROOT CAUSE of
+# apiserver-wide symptoms this scan's pod/workload/UI checks would otherwise just report
+# as generic unreadiness (2026-08-11 incident — see scripts/k3s-datastore-health-check.sh's
+# header for the story). Skipped quietly if docker isn't available (e.g. a remote/CI run).
+echo
+bash "$(dirname "${BASH_SOURCE[0]}")/k3s-datastore-health-check.sh" 2>/dev/null || true
+
 echo
 if [ "$fail" -eq 0 ]; then printf '%s%sLAB HEALTH: PASS%s — the always-on stack is fully up.\n' "$B" "$G" "$Z"
 else printf '%s%sLAB HEALTH: FAIL%s — an always-on workload is down (see ✗).\n' "$B" "$R" "$Z"; fi
