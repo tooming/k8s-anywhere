@@ -9,6 +9,10 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.30"
+    }
   }
 }
 
@@ -45,9 +49,8 @@ resource "forgejo_branch_protection" "main" {
   branch_name   = "main"
 }
 
-# Read-only deploy credential ArgoCD will use to clone this repo (a later ROADMAP
-# item wires it into ArgoCD's actual repository-credential Secret — this module does
-# not touch the cluster). svalabs/terraform-provider-forgejo v1.5.2 (the latest
+# Read-only deploy credential ArgoCD will use to clone this repo (wired into ArgoCD's
+# actual repository-credential Secret below). svalabs/terraform-provider-forgejo v1.5.2 (the latest
 # actually published version — verified against its real release tags, not assumed)
 # has no HTTP-token-based deploy credential resource; `forgejo_deploy_key` (SSH,
 # repository-scoped) is what it actually ships, so this uses that instead of the
@@ -65,4 +68,42 @@ resource "forgejo_deploy_key" "argocd" {
   title         = "argocd-read"
   key           = trimspace(tls_private_key.argocd_deploy.public_key_openssh)
   read_only     = true
+}
+
+# Register the repo + creds with ArgoCD, parallel to the module ADR-0035 supersedes'
+# own kubernetes_secret.argocd_repo resource — but under a DIFFERENT Secret name
+# ("repo-forgejo-gitops", not that predecessor's "repo-<host>-gitops") so this is
+# purely additive: no existing repository Secret is replaced, and no
+# gitops/**/*.yaml Application's repoURL is touched by this module (grep confirms
+# none currently reference this host/port). That predecessor's kubernetes_secret used
+# a username/password (HTTP basic-auth) data pair; this one uses sshPrivateKey (SSH),
+# matching the SSH-only deploy credential this module actually has (see
+# forgejo_deploy_key's comment above).
+# `insecure = "true"` skips ArgoCD's SSH known-hosts check for this repo, matching
+# this lab's existing risk tolerance for other in-cluster-only endpoints (e.g.
+# Harbor's TLS-disabled minimal profile, ADR-0024) — host.k3d.internal never leaves
+# the Colima VM.
+#
+# Deliberately NOT wired up yet: no live Application repoURL points at
+# var.repo_url_in_cluster, so ArgoCD keeps syncing from the still-live predecessor git
+# host exactly as before this resource exists. Flipping Applications' repoURL (and
+# root-app.yaml's) to actually use this credential is a separate, later ROADMAP item —
+# that flip needs a live cluster to verify a real sync (ADR-0004), which this remote
+# clusterless session cannot do, so it stays split out (mirrors RFC #214's cosign
+# make-up-wiring/ci-sign-step/enforce-flip split — this resource is the "wiring"
+# slice, the repoURL flip is the later "enforce" slice).
+resource "kubernetes_secret" "argocd_repo" {
+  metadata {
+    name      = "repo-forgejo-gitops"
+    namespace = var.argocd_namespace
+    labels = {
+      "argocd.argoproj.io/secret-type" = "repository"
+    }
+  }
+  data = {
+    type          = "git"
+    url           = var.repo_url_in_cluster
+    sshPrivateKey = tls_private_key.argocd_deploy.private_key_openssh
+    insecure      = "true"
+  }
 }
