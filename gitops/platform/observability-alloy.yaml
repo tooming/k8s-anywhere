@@ -430,6 +430,27 @@ spec:
                 scrape_interval = "30s"
               }
 
+              // ---- Vault internal telemetry -> Mimir ----
+              // Vault's own built-in Prometheus sink (telemetry stanza + the listener's
+              // unauthenticated_metrics_access, both in vault.yaml) exposes real internal
+              // metrics at GET /v1/sys/metrics?format=prometheus — distinct from the
+              // pod-readiness-only signal the VaultPodNotReady alert rule
+              // (observability-grafana.yaml) already reads from KSM. Feeds the "Lab —
+              // Vault" dashboard with real vault_core_unsealed, vault_core_active,
+              // vault_core_in_flight_requests, vault_expire_num_leases series (verified
+              // against hashicorp/vault's own source, not docs prose, ADR-0004).
+              // NetworkPolicy allow (port 8200, ingress from observability) is in
+              // gitops/vault/networkpolicy/allow-vault-metrics-from-observability.yaml.
+              prometheus.scrape "vault" {
+                targets = [
+                  {"__address__" = "vault.vault.svc.cluster.local:8200", "job" = "vault"},
+                ]
+                metrics_path    = "/v1/sys/metrics"
+                params          = {format = ["prometheus"]}
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
               // ---- Harbor (OCI registry) metrics -> Mimir ----
               // Harbor exposes Prometheus metrics via its built-in exporter when
               // metrics.enabled=true (harbor.yaml). The harbor-metrics Service exposes

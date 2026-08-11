@@ -100,3 +100,30 @@ setup() {
   run grep -q 'allow-vault-from-unsealer.yaml' "$VAULT_NP/kustomization.yaml"
   [ "$status" -eq 0 ]
 }
+
+# ROADMAP "Vault internal telemetry — sys/metrics scrape + dashboard depth":
+# Alloy in observability needs ingress to scrape Vault's own /v1/sys/metrics.
+@test "allow-vault-metrics-from-observability.yaml exists in vault/networkpolicy/" {
+  [ -f "$VAULT_NP/allow-vault-metrics-from-observability.yaml" ]
+}
+
+@test "allow-vault-metrics-from-observability allows port 8200 from Alloy in observability" {
+  run grep -q 'port: 8200' "$VAULT_NP/allow-vault-metrics-from-observability.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'kubernetes.io/metadata.name: observability' "$VAULT_NP/allow-vault-metrics-from-observability.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'app.kubernetes.io/name: alloy' "$VAULT_NP/allow-vault-metrics-from-observability.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-vault-metrics-from-observability targets Vault server pods" {
+  run grep -q 'app.kubernetes.io/name: vault' "$VAULT_NP/allow-vault-metrics-from-observability.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'component: server' "$VAULT_NP/allow-vault-metrics-from-observability.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "vault kustomization references allow-vault-metrics-from-observability.yaml" {
+  run grep -q 'allow-vault-metrics-from-observability.yaml' "$VAULT_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}

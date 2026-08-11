@@ -163,6 +163,62 @@
         { "id": "organize", "options": { "excludeByName": { "Time": true, "Value": true, "__name__": true, "job": true, "instance": true, "dest_server": true, "dest_namespace": true, "namespace": true, "project": true, "repo": true, "operation": true, "autosync_enabled": true }, "renameByName": { "name": "Application", "health_status": "Health", "sync_status": "Sync" } } }
       ],
       "options": { "showHeader": true }
+    },
+    {
+      "id": 12, "type": "stat", "title": "Vault Seal Status",
+      "description": "Vault's own internal metric (not a KSM/cAdvisor proxy), scraped from GET /v1/sys/metrics. 1 = unsealed, 0 = sealed.",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "max(vault_core_unsealed{job=\"vault\"})", "instant": true } ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+          "mappings": [ { "type": "value", "options": { "0": { "text": "SEALED" }, "1": { "text": "UNSEALED" } } } ],
+          "noValue": "no data"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 13, "type": "stat", "title": "Vault Active Node",
+      "description": "1 = this node is the active Vault leader, 0 = standby. This lab runs Vault standalone (file storage, no HA/Raft), so this metric may read \"no data\" rather than 1 — Vault's active/standby gauge is emitted from its HA leader-election path, which a non-HA deployment may never exercise (ADR-0004: not confirmed live from this clusterless session).",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "max(vault_core_active{job=\"vault\"})", "instant": true } ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "type": "value", "options": { "0": { "text": "STANDBY" }, "1": { "text": "ACTIVE" } } } ],
+          "noValue": "no data (expected on standalone, non-HA Vault)"
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
+    },
+    {
+      "id": 14, "type": "stat", "title": "Vault In-Flight Requests",
+      "description": "Vault's own internal metric (not a KSM/cAdvisor proxy), scraped from GET /v1/sys/metrics.",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "max(vault_core_in_flight_requests{job=\"vault\"})", "instant": true } ],
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "noValue": "no data" },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
+    },
+    {
+      "id": 15, "type": "stat", "title": "Vault Lease Count",
+      "description": "Vault's own internal metric (not a KSM/cAdvisor proxy), scraped from GET /v1/sys/metrics — total active leases tracked by the expiration manager.",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "max(vault_expire_num_leases{job=\"vault\"})", "instant": true } ],
+      "fieldConfig": {
+        "defaults": { "decimals": 0, "noValue": "no data" },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
     }
   ]
 }
