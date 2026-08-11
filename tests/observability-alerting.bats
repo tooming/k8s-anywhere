@@ -41,22 +41,30 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "grafana alerting: all four rules use the 'for' durations named in RFC #1084" {
-  # ArgoCDAppUnhealthy, DeploymentReplicasUnavailable, PVCStuckPendingOrLost: 10m.
-  # ArgoCDAppOutOfSync: 30m. Count occurrences rather than assert line adjacency,
-  # since bats/grep has no easy YAML-block-scoped assertion here.
+@test "grafana alerting: VaultPodNotReady rule present with correct expr (ROADMAP auto/vault-pod-readiness-alert)" {
+  run grep -q 'title: VaultPodNotReady' "$APP"
+  [ "$status" -eq 0 ]
+  run grep -q 'expr: kube_pod_status_ready{namespace="vault", pod=~"vault-\[0-9\]+", condition="true"} == 0' "$APP"
+  [ "$status" -eq 0 ]
+}
+
+@test "grafana alerting: all five rules use the 'for' durations named in RFC #1084 / ROADMAP auto/vault-pod-readiness-alert" {
+  # ArgoCDAppUnhealthy, DeploymentReplicasUnavailable, PVCStuckPendingOrLost,
+  # VaultPodNotReady: 10m. ArgoCDAppOutOfSync: 30m. Count occurrences rather than
+  # assert line adjacency, since bats/grep has no easy YAML-block-scoped assertion
+  # here.
   run grep -c 'for: 10m' "$APP"
   [ "$status" -eq 0 ]
-  [ "$output" -eq 3 ]
+  [ "$output" -eq 4 ]
   run grep -c 'for: 30m' "$APP"
   [ "$status" -eq 0 ]
   [ "$output" -eq 1 ]
 }
 
-@test "grafana alerting: all four rules query the mimir datasource, not a new one" {
+@test "grafana alerting: all five rules query the mimir datasource, not a new one" {
   run grep -c 'datasourceUid: mimir' "$APP"
   [ "$status" -eq 0 ]
-  [ "$output" -eq 4 ]
+  [ "$output" -eq 5 ]
 }
 
 @test "grafana alerting: no notification receiver/contact-point config exists (RFC #1084 — visual-only)" {

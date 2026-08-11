@@ -349,7 +349,7 @@ make up
 | ESO → tidb-demo-creds *(on-demand)* | `← vault:tidb/demo` (username + password) | `gitops/tidb-demo/externalsecret.yaml` |
 | Mimir/Loki/Tempo/Pyroscope → Garage | S3 backend `garage.storage.svc:3900` | each component's config |
 | Alloy → Mimir/Loki/Pyroscope | remote_write / push | `gitops/platform/observability-alloy.yaml` |
-| Grafana Unified Alerting → Mimir (RFC #1084) | four rules (`ArgoCDAppUnhealthy`, `ArgoCDAppOutOfSync`, `DeploymentReplicasUnavailable`, `PVCStuckPendingOrLost`) query the existing `mimir` datasource on a 1m interval; visual-only — no external notification receiver configured | `gitops/platform/observability-grafana.yaml` `valuesObject.alerting` |
+| Grafana Unified Alerting → Mimir (RFC #1084) | five rules (`ArgoCDAppUnhealthy`, `ArgoCDAppOutOfSync`, `DeploymentReplicasUnavailable`, `PVCStuckPendingOrLost`, `VaultPodNotReady`) query the existing `mimir` datasource on a 1m interval; visual-only — no external notification receiver configured. `VaultPodNotReady` (ROADMAP `auto/vault-pod-readiness-alert`) reads `kube_pod_status_ready` from the already-scraped `ksm` job — no new Alloy scrape target — scoped to the `vault-N` StatefulSet pod, excluding the separate `vault-unsealer` Deployment pod | `gitops/platform/observability-grafana.yaml` `valuesObject.alerting` |
 | hello (HotROD) → Tempo | OTLP HTTP `:4318` (`OTEL_EXPORTER_OTLP_ENDPOINT`) | `gitops/apps/demo/deployment.yaml` |
 | ACK → moto | S3 API `moto.moto.svc:5000` | `gitops/ack`, ACK chart values |
 | KRO → ACK | `S3BucketClaim` RGD composes a `Bucket` | `gitops/kro` |
