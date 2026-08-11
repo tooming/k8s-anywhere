@@ -64,7 +64,19 @@ spec:
           # webhook while the first restarts, closing the gap — genuine
           # resilience, not the SPOF theatre ADR-0005 warns against.
           replicas: 2
+          # Found live 2026-08-11: the chart's own default requests.cpu (100m) left
+          # admissionController CPU-starved under this host's sustained contention
+          # (load average 20-125+ on 6 cores over the course of tonight's #631/#633
+          # investigation) — the process was slow enough starting up that it kept
+          # missing even the relaxed 15s startup-probe window above (comment on that
+          # block), producing hundreds of restarts unrelated to any app bug. Bumped
+          # live first (kubectl patch), verified it helped land at least one ready
+          # replica sooner during the worst of the contention, now committed here —
+          # kyverno has `syncPolicy.automated.selfHeal: true`, so a live-only patch
+          # gets reverted by the next reconcile if it isn't also in git.
           resources:
+            requests:
+              cpu: 500m
             limits:
               memory: 256Mi
           # Found live 2026-08-11: the chart's own startupProbe default omits
