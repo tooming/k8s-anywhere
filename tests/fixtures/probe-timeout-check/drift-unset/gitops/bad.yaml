@@ -1,0 +1,16 @@
+# Fixture: a raw manifest's readinessProbe has no timeoutSeconds at all -- must FAIL
+# (falls back to Kubernetes' own 1s default).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: widget
+spec:
+  template:
+    spec:
+      containers:
+        - name: widget
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5

@@ -1,0 +1,14 @@
+# Fixture: an ArgoCD Application's chart valuesObject sets timeoutSeconds too
+# tight (the chart-default-1s footgun this check exists to catch) -- must FAIL.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: widget-chart
+spec:
+  source:
+    chart: widget
+    helm:
+      valuesObject:
+        webhook:
+          livenessProbe:
+            timeoutSeconds: 1

@@ -49,6 +49,36 @@ spec:
           enabled: false         # Hubble deferred: ~250-400 MB; not in 12 GB budget
         operator:
           replicas: 1            # single-node lab (ADR-0005)
+          # Found live 2026-08-11 (systemic probe-timeout audit): cilium-operator was
+          # crashlooping (556 restarts over 4d14h) with the exact same "connection
+          # refused" / "context deadline exceeded" signature already found and fixed
+          # for Harbor (PR #1040/#1102), ArgoCD's repo-server (PR #1103), and Kyverno's
+          # admissionController (PR #1115) -- but this component's fix mechanism is
+          # different from those three. Verified against the pinned chart's source
+          # (templates/cilium-operator/deployment.yaml, cilium-1.18.12): the
+          # operator's livenessProbe/readinessProbe timeoutSeconds (3s) is hardcoded
+          # in the template with NO `.Values` reference at all -- there is no values
+          # knob to loosen here, matching the same chart-provides-no-override-hook
+          # finding already documented for Envoy Gateway above this file's sibling
+          # (gitops/platform/envoy-gateway.yaml's leaderElection.disable comment).
+          # The real, values-driven lever this chart DOES expose is `operator.extraArgs`
+          # (verified: deployment.yaml's `{{- with .Values.operator.extraArgs }}`),
+          # which lets us pass extra CLI flags straight to the operator binary.
+          # Live logs showed the operator's own startup ("Start hook executed ...
+          # duration=10.505903672s") already flirting with its own default
+          # --leader-election-renew-deadline=10s under this host's real CPU
+          # contention (confirmed live: k3d-agent/server containers running at
+          # 126-167% CPU during this investigation) -- with a single operator replica
+          # (no HA to arbitrate), losing that lease under a latency spike stalls the
+          # control loop and starves the (hardcoded, un-widenable) 3s liveness/
+          # readiness probes, which is what actually restarts the container. Widened
+          # the leader-election timers themselves (the same "give the real bottleneck
+          # more room" fix family as the other three, just applied to the lever this
+          # chart actually exposes instead of a probe timeoutSeconds).
+          extraArgs:
+            - --leader-election-lease-duration=60s
+            - --leader-election-renew-deadline=30s
+            - --leader-election-retry-period=5s
           resources:
             requests:
               cpu: 50m

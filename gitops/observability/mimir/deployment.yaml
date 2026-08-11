@@ -56,12 +56,20 @@ spec:
             capabilities:
               drop:
                 - ALL
+          # Found 2026-08-11 (systemic probe-timeout audit): no timeoutSeconds at all,
+          # which falls back to Kubernetes' own 1s default -- the same chart-default-
+          # too-tight footgun already found and fixed for Harbor (PR #1040/#1102),
+          # ArgoCD (PR #1103/#1121), Kyverno (PR #1115), and others in this same
+          # sweep. Mimir has no livenessProbe (only readiness), so this can't trigger
+          # a restart -- but it can flap readiness under this host's real CPU
+          # contention, breaking Alloy's remote_write and the dashboards it feeds.
           readinessProbe:
             httpGet:
               path: /ready
               port: 9009
             initialDelaySeconds: 20
             periodSeconds: 10
+            timeoutSeconds: 5
             failureThreshold: 12
           resources:
             requests:

@@ -57,6 +57,18 @@ spec:
           limits:
             cpu: 250m
             memory: 64Mi
+        # Found 2026-08-11 (systemic probe-timeout audit): the chart's own
+        # livenessProbe/readinessProbe default to timeoutSeconds: 1 (verified against
+        # the pinned chart's values.yaml, prometheus-node-exporter-4.56.1) -- the same
+        # chart-default-too-tight footgun already found and fixed for Harbor
+        # (PR #1040/#1102), ArgoCD (PR #1103/#1121), Kyverno (PR #1115), and others in
+        # this same sweep. 5s (not 15s) matches the convention used for Harbor's
+        # equally lightweight components (PR #1040) -- this is a static-binary metrics
+        # exporter, not a heavier control-plane process.
+        livenessProbe:
+          timeoutSeconds: 5
+        readinessProbe:
+          timeoutSeconds: 5
   destination:
     server: https://kubernetes.default.svc
     # Dedicated PSA-privileged namespace (ADR-0017): node-exporter mounts /proc and

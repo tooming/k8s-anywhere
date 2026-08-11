@@ -1,0 +1,15 @@
+# Fixture: simulates a values-only probe-timeout fix being silently reverted --
+# the registered path (webhook.livenessProbe) is entirely absent.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: widget-chart
+spec:
+  source:
+    chart: widget
+    helm:
+      valuesObject:
+        webhook:
+          resources:
+            limits:
+              memory: 64Mi

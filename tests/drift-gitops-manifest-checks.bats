@@ -43,6 +43,21 @@ setup() {
   [[ "$output" == *"skipped"* ]]
 }
 
+# Found 2026-08-11: cert-manager's real "1.21.1" pin (a chart whose repo index lists
+# versions with a "v" prefix, e.g. "v1.21.1") was failing this check even though
+# `helm search repo --version 1.21.1` resolves it fine -- the bug was in
+# resolve_builtin's own jq comparison, which echoed the index's "v"-prefixed string
+# back and string-compared it against the un-prefixed query. This exercises that real
+# comparison path (HELM_BIN fake, no CHARTPIN_RESOLVER stub) so the fix can't regress.
+@test "helm-chart-pin-check: resolves a pin against a repo whose index is v-prefixed" {
+  run env CHARTPINCHECK_ROOT="$FIX/helm-chart-pin/v-prefix" \
+          HELM_BIN="$FIX/helm-chart-pin/fake-helm-v-prefix.sh" \
+          bash "$REPO/scripts/helm-chart-pin-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"v-prefixed-chart"* ]]
+  [[ "$output" == *"exists in"* ]]
+}
+
 # --- argocd-crd-ssa-check ---------------------------------------------------------
 # Rendered offline via a stub renderer (CRDSSA_RENDERER) so the suite never pulls a
 # real chart; the stub emits an oversized CRD for "big-crd-chart" and a tiny one for

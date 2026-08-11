@@ -143,6 +143,7 @@ jobs:
       - run: bash scripts/rollouts-plugin-list-check.sh
       - run: bash scripts/analysistemplate-step-count-check.sh
       - run: bash scripts/mimir-readonly-root-check.sh
+      - run: bash scripts/probe-timeout-check.sh
       - run: bash scripts/adr-followup-check.sh
       - run: bash scripts/adr-chart-version-sync-check.sh
       - run: bash scripts/adr-image-pin-sync-check.sh
