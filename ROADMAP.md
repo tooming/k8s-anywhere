@@ -247,10 +247,10 @@ there is no point where the lab loses a working git source or CI path.
   before committing), `infra/live/{local,oracle}/forgejo/`. Parallels `gitlab-config`.
   Prerequisite: previous item (needs a live Forgejo instance to point Terraform at).
   (auto/forgejo-config-terraform-module)
-- [ ] 🟢 **Port `.gitlab-ci.yml` → `.forgejo/workflows/build-sign-push.yml`** — same
+- [x] 🟢 **Port `.gitlab-ci.yml` → `.forgejo/workflows/build-sign-push.yml`** — same
   build → `cosign sign` → push-to-Harbor job (ADR-0011/ADR-0024). Verify live (ADR-0004):
   a real pipeline run must push a genuinely signed image to Harbor, not just parse.
-  Prerequisite: previous item.
+  Prerequisite: previous item. (auto/forgejo-ci-workflow)
 - [ ] 🟢 **Re-point ArgoCD's repo-credential Secret + `Application`s at the Forgejo
   remote** — verify a real sync, not just a config change. Prerequisite: previous item.
 - [ ] 🟢 **Rename `scripts/gitlab-*.sh` → `scripts/forgejo-*.sh` + matching `Makefile`

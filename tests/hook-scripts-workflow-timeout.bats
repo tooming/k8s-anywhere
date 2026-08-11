@@ -26,3 +26,8 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   run bash "$REPO/scripts/workflow-timeout-sync-hook.sh" <<<"$(mk_payload "$REPO/.github/workflows/ci.yml")"
   [ "$status" -eq 0 ]
 }
+
+@test "workflow-timeout-sync-hook: a real .forgejo/workflows file (currently in sync) exits 0" {
+  run bash "$REPO/scripts/workflow-timeout-sync-hook.sh" <<<"$(mk_payload "$REPO/.forgejo/workflows/build-sign-push.yml")"
+  [ "$status" -eq 0 ]
+}

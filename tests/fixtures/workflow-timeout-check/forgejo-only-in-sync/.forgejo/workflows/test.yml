@@ -1,0 +1,8 @@
+name: test
+on: [push]
+jobs:
+  foo:
+    runs-on: docker
+    timeout-minutes: 10
+    steps:
+      - run: echo hi

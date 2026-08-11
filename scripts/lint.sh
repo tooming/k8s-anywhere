@@ -36,7 +36,10 @@ fi
 # --- yamllint over manifests + IaC ------------------------------------------
 if need yamllint; then
   targets=()
-  for d in gitops infra .github; do [ -e "$d" ] && targets+=("$d"); done
+  # .forgejo joined the scope once ADR-0035's migration added workflow YAML there
+  # (.forgejo/workflows/) -- same reasoning as .github: it's real CI config, not a
+  # docker-compose file, so it should be linted like .github/workflows already is.
+  for d in gitops infra .github .forgejo; do [ -e "$d" ] && targets+=("$d"); done
   if yamllint -c .yamllint.yml "${targets[@]}"; then
     ok "yamllint clean across ${targets[*]}"
   else
