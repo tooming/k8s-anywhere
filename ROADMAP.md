@@ -5379,6 +5379,82 @@ there is no point where the lab loses a working git source or CI path.
   stanza, the same operational cost the 2026-08-05 Vault image-tag bump already
   carried). `docs/done/` entry required. (auto/vault-telemetry-scrape)
 
+- [ ] 🟢 **Loki / Tempo / Pyroscope operational-health dashboards — O5 gap**
+  (CHARTER **Objective O5** "every Application in `gitops/bootstrap/root-app.yaml`'s
+  auto-synced set has a matching `grafana/dashboards/lab-<name>.json` with at least
+  one panel backed by a real (auto-discovered) data source"; planner gap analysis
+  2026-08-11, reached via `executor.prompt.md` STEP 6b PLANNER role, this session's
+  6th cycle, after cycles 4 and 5 each independently confirmed the standing
+  Now/next lane and CHARTER Objective O2 both fully exhausted/met, per STEP 8's
+  "widen the lens" guidance. **No prerequisites — executor may pick up
+  immediately.**) Verified directly (not assumed, ADR-0004): `gitops/platform/
+  observability-alloy.yaml`'s `prometheus.scrape "lgtmp"` block already scrapes
+  `loki.observability.svc.cluster.local:3100`, `tempo.observability.svc.cluster.
+  local:3200`, and `pyroscope.observability.svc.cluster.local:4040` with
+  `job="loki"`/`job="tempo"`/`job="pyroscope"` labels (same block that already
+  feeds `lab-mimir.json` and `lab-grafana.json` for their sibling components) —
+  but grepping every `grafana/dashboards/*.json` file for any `loki_`/`tempo_`/
+  `pyroscope_`-prefixed Prometheus expression, or any panel selecting
+  `deployment=~"loki.*"`/`"tempo.*"`/`"pyroscope.*"`, found zero hits anywhere.
+  `lab-logs.json`/`lab-traces.json`/`lab-profiles.json` exist, but they're
+  **data-browsing** dashboards (a log-search panel, a TraceQL search + trace
+  view, a profile flamegraph) — none has a single pod-running/ArgoCD-sync/
+  component-health panel, unlike every sibling LGTMP-stack dashboard (`lab-
+  mimir.json`, `lab-alloy.json`, `lab-ksm.json`, `lab-node-exporter.json`,
+  `lab-grafana.json`, all of which pair KSM/cAdvisor health panels with
+  component-specific metrics). This is the one remaining O5 gap: the scrape
+  infrastructure already exists, only the dashboards are missing.
+
+  Real metric names verified directly against each project's own Go source
+  (shallow-cloned `grafana/loki`, `grafana/tempo`, `grafana/pyroscope` and
+  grepped each `promauto`/`prometheus.New*` metric declaration's `Namespace`
+  + `Name` fields — not assumed from memory or community dashboards):
+  - **Loki** (`pkg/ingester/metrics.go`, `pkg/distributor/distributor.go`):
+    `loki_ingester_memory_chunks` (gauge, total chunks held in memory) and
+    `loki_distributor_ingester_appends_total` (counter, ingester append calls —
+    rate this for a write-throughput panel).
+  - **Tempo** (`modules/distributor/distributor.go`):
+    `tempo_distributor_spans_received_total` (counter, labeled `tenant`) and
+    `tempo_distributor_bytes_received_total` (counter, labeled `tenant` — rate
+    both for ingest-throughput panels).
+  - **Pyroscope** (`pkg/distributor/metrics.go`):
+    `pyroscope_distributor_profiles_received_total` (counter, labeled
+    `tenant`/`scope_name`/`scope_version` — rate for an ingest-throughput panel).
+  - All three: the standard Prometheus self-instrumentation gauge
+    `up{job="loki"}` / `up{job="tempo"}` / `up{job="pyroscope"}` for a "component
+    up" stat panel — mirrors `lab-mimir.json`'s own "Mimir up" panel
+    (`max(up{job="mimir"})`) exactly, same scrape block, same pattern.
+
+  Add three new dashboard files (mirror `lab-mimir.json`'s exact panel shape —
+  stat row: up / a gauge metric / a throughput metric; a timeseries row for
+  the throughput metric over time; `uid`/`tags`/`refresh`/`time` fields
+  identical to `lab-mimir.json`'s): `grafana/dashboards/lab-loki.json` ("Lab —
+  Loki"), `grafana/dashboards/lab-tempo.json` ("Lab — Tempo"),
+  `grafana/dashboards/lab-pyroscope.json` ("Lab — Pyroscope"). These are
+  **additive**, distinct from the existing `lab-logs.json`/`lab-traces.json`/
+  `lab-profiles.json` data-browsing dashboards — do not merge or remove those,
+  they serve a different purpose (exploring the log/trace/profile data itself,
+  not monitoring the store's own health). All panels real Mimir data with
+  `X-Scope-OrgID: lab` (ADR-0004 caveat: this remote clusterless session cannot
+  confirm live which metrics actually emit a series without a real scrape
+  target — any that don't will show "No data" naturally, never a fabricated
+  value; state this explicitly in the PR body).
+
+  Extend the existing per-component bats files (do **not** create new
+  `tests/observability-<scope>.bats` files — `tests/observability-loki.bats`,
+  `tests/observability-tempo.bats`, and `tests/observability-pyroscope.bats`
+  already exist, currently covering only each component's image-tag pin; add
+  assertions there instead, matching this repo's "extend the existing per-scope
+  file" convention): each new dashboard is valid JSON, references its real
+  metric name(s), and has no fabricated/placeholder data. Update
+  `docs/dependency-tree.md`'s observability sub-section noting the three new
+  dashboards (no scrape-job change needed — the `lgtmp` block already covers
+  all three). `make ci` must pass. PR body must document the ADR-0004 caveat
+  above and the rollback path (delete the three new dashboard files; Grafana's
+  native Git Sync — ADR-0006 — picks up the removal on its next sync, no other
+  component affected since nothing else reads these files). `docs/done/` entry
+  required. (auto/lgtmp-health-dashboards)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
