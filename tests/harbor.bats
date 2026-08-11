@@ -421,10 +421,25 @@ setup() {
 # scheduling, eliminating the race window -- verified live: both went from
 # perpetual CrashLoopBackOff to stable within seconds of setting this.
 @test "harbor core sets GOMAXPROCS=1 (arm64 host runs amd64 image under QEMU emulation)" {
-  run grep -A40 '^        core:' "$REPO/gitops/platform/harbor.yaml"
+  run grep -A60 '^        core:' "$REPO/gitops/platform/harbor.yaml"
   [ "$status" -eq 0 ]
   [[ "$output" == *"GOMAXPROCS"* ]]
   [[ "$output" == *'value: "1"'* ]]
+}
+
+# 2026-08-11: GOMAXPROCS=1 reduced but did not eliminate the QEMU-emulation crash
+# class -- core kept segfaulting (`fatal error: fault` / SIGSEGV) inside
+# encoding/gob while decoding the embedded OpenAPI spec at startup, same fault
+# address every time. That's single-threaded work, so not a data race between
+# goroutines -- it's Go's async-preemption signal landing mid-instruction while
+# QEMU's x86_64 emulation is mid-translation, corrupting in-flight state.
+# GODEBUG=asyncpreemptoff=1 disables that signal-based preemption entirely.
+# Verified live: core went from crashing every 1-5 min to stable 3h45m+ straight.
+@test "harbor core sets GODEBUG=asyncpreemptoff=1 (QEMU async-preemption SIGSEGV)" {
+  run grep -A60 '^        core:' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"GODEBUG"* ]]
+  [[ "$output" == *'value: "asyncpreemptoff=1"'* ]]
 }
 
 @test "harbor jobservice sets GOMAXPROCS=1 (same emulated-host root cause as core)" {

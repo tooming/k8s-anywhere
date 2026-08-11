@@ -219,9 +219,28 @@ spec:
           # window, at the cost of some throughput this lab doesn't need. Verified
           # live 2026-08-10: core and jobservice both went from perpetual
           # CrashLoopBackOff to stable 1/1 within seconds of setting this.
+          #
+          # Found live 2026-08-11: GOMAXPROCS=1 reduces but does NOT eliminate this
+          # crash class — core kept hitting `fatal error: fault` / `SIGSEGV` deep in
+          # `encoding/gob` while decoding the embedded go-openapi/spec Swagger blob at
+          # startup (main.main -> RegisterRoutes -> gob.Decode), same fault address
+          # every crash. That's still single-threaded work, so it isn't a data race
+          # between goroutines — it's Go's *asynchronous preemption* signal (sent to a
+          # goroutine mid-instruction to force a scheduling point) landing while QEMU's
+          # user-mode x86_64 emulation is mid-translation, corrupting in-flight
+          # register/memory state well enough to produce a garbage pointer (decoded
+          # fault address 0x636f446c616e72 is literal ASCII "rnalDoc" — a fragment of a
+          # struct field name from the spec being decoded, not a real address: a
+          # classic sign of a string header's data pointer getting overwritten with the
+          # string's own bytes). GODEBUG=asyncpreemptoff=1 disables the Go runtime's
+          # signal-based async preemption entirely, removing the exact mechanism this
+          # QEMU version mishandles. Verified live: core went stable after setting
+          # this, no repeat of the gob-decode fault.
           extraEnvVars:
             - name: GOMAXPROCS
               value: "1"
+            - name: GODEBUG
+              value: "asyncpreemptoff=1"
         jobservice:
           resources:
             requests:
