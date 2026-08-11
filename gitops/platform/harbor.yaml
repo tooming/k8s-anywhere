@@ -96,10 +96,25 @@ spec:
             # longer than 1s here, causing a self-inflicted crashloop-on-every-recreation
             # that has nothing to do with database health. Bumped to 5s (matches the
             # convention already used for argocd's own probes elsewhere in this repo).
+            #
+            # Bumped again 2026-08-11: even 5s wasn't enough under this session's sustained
+            # host latency, and the failure mode here is worse than a simple pod restart —
+            # killing the exec'd `/docker-healthcheck.sh` mid-script produced "untracked
+            # child process ... exited with exit code 141" (SIGPIPE) in the postgres
+            # container's own logs, which postgres's supervisor treats as a fatal crash:
+            # "terminating any other active server processes" / full crash-recovery cycle,
+            # repeating roughly every minute. That's what was actually root-causing harbor-
+            # core's endless "failed to migrate the database" / DNS-lookup-flavored errors
+            # this whole investigation — core was reconnecting to a database that kept
+            # restarting out from under it, not a DNS or core bug. Verified live: bumping
+            # to 15s (matching the convention already used for Kyverno/ArgoCD tonight) let
+            # the database run stable for 7+ minutes straight, versus under a minute before.
             livenessProbe:
-              timeoutSeconds: 5
+              timeoutSeconds: 15
+              failureThreshold: 6
             readinessProbe:
-              timeoutSeconds: 5
+              timeoutSeconds: 15
+              failureThreshold: 6
         # `redis` is the Harbor chart's API key name for its cache dependency. See the
         # ADR-0018 exception note above the Application header: type=internal (bundled
         # redis-photon), not the platform Valkey, because Valkey reuse via
