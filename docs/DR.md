@@ -328,6 +328,58 @@ backups; not in scope).
   Grafana if needed), then `make grafana-gitsync-bootstrap` (re-creates the Repository in
   unified storage). Both are idempotent. After `make up` these steps are automatic.
 
+### k3s embedded datastore (SQLite/kine) health
+
+**2026-08-11 incident** (see `docs/incident-log.md`): after 25 days of continuous
+uptime on `k3d-k8s-lab-server-0`, `docker logs` showed "Slow SQL" warnings for basic
+kine-table queries (`SELECT MAX(id)`, `compact_rev_key` lookups) taking **1-48
+seconds** instead of sub-millisecond, alongside apiserver TLS handshake timeouts,
+`FinishRequest ... context deadline exceeded`, and `apiserver was unable to write a
+JSON response: http: Handler timeout` — genuine control-plane-wide degradation, not
+pod-level churn. `kubectl get nodes` itself failed with a TLS handshake timeout while
+this was happening.
+
+**Root cause, confirmed live:** k3s's kine layer runs a background compactor roughly
+every 5 minutes (visible as `"COMPACT compacted from X to Y"` log lines). On this node
+it went **completely silent — zero COMPACT lines, success or failure — for 16 straight
+days** after a burst of `"Compact failed: failed to record compact revision: sql:
+transaction has already been committed or rolled back"` errors on 2026-07-25.
+`state.db` had grown to 505MB with an 82MB uncheckpointed WAL. Notably, an earlier k3s
+server restart that same day had only bought ~6 hours of healthy compaction before the
+compactor silently died again — **a restart is not a durable fix by itself**, only a
+way to buy time until the same failure mode recurs. Sustained resource-reconciliation
+churn (Kyverno's own multi-day restart-loop history, dozens of continuously-reconciling
+ArgoCD Applications) is the plausible write-pressure driver, but the proximate cause is
+the compactor thread dying and never restarting itself, not datastore size in isolation.
+
+**Detect it:** `make k3s-datastore-health-check` (also runs as an informational,
+non-blocking section of `make health`) — checks `state.db`/WAL size, the gap since the
+last successful compaction, and recent "Slow SQL" warning volume, entirely via `docker
+logs`/`docker exec` against the k3d container (no `kubectl` — the whole point is to
+still work when the apiserver itself is the thing timing out).
+
+**Recover it, cheapest/lowest-risk first:**
+1. **Restart the k3s server container** (`docker restart k3d-k8s-lab-server-0`) — cheap,
+   resumes the compactor immediately, no data loss. **Not durable on its own** per the
+   incident above; re-run the health check afterward and periodically, don't assume one
+   restart is the end of it.
+2. **If it recurs quickly:** stop k3s, `sqlite3 state.db 'VACUUM;'` to reclaim bloat the
+   incremental compactor already left behind (VACUUM needs k3s stopped — it takes an
+   exclusive lock), then restart. Higher risk (direct file-level surgery on the
+   datastore) — treat as a deliberate interactive-session action, verify a backup/
+   snapshot posture first, never something an autonomous routine does unprompted per
+   ADR-0004.
+3. **Last resort — recreate the cluster:** `make down && make up` gives a fresh
+   `state.db` outright. This is the lab's standing recreate-from-code answer (ADR-0005)
+   and is always safe to reach for, but it's whole-cluster, not targeted, and workload
+   state not covered by Velero (`make dr-restore`) is lost — prefer options 1-2 first.
+
+No k3s flag exists to *tune* the sqlite/kine compaction interval or force a manual
+compaction (unlike embedded etcd, which exposes `--etcd-arg`); the interval is
+internal to kine and not currently k3s-CLI-configurable. The mechanical guard here is
+therefore detection (the health check above), not prevention — there is no dial to turn
+that would structurally rule this class of failure out.
+
 For severity triage when something breaks, see [`docs/incident-log.md`](incident-log.md)'s
 severity scheme (P0–P3) and its log of real incidents this lab has actually hit.
 

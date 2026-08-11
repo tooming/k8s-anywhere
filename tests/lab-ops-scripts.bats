@@ -16,6 +16,7 @@ setup() {
   HEALTHCHECK="$REPO/scripts/lab-health-check.sh"
   TFSTATE="$REPO/scripts/tfstate-bootstrap.sh"
   BUDGET="$REPO/scripts/ondemand-budget-check.sh"
+  DATASTORE="$REPO/scripts/k3s-datastore-health-check.sh"
   MAKEFILE="$REPO/Makefile"
 }
 
@@ -331,5 +332,61 @@ setup() {
 
 @test "lab-health-check.sh reports the on-demand budget informationally (never flips PASS/FAIL)" {
   run grep -q "ondemand-budget-check.sh" "$HEALTHCHECK"
+  [ "$status" -eq 0 ]
+}
+
+# --- scripts/k3s-datastore-health-check.sh -------------------------------------
+# 2026-08-11 incident: k3s's kine background compactor on k3d-k8s-lab-server-0 went
+# silent for 16 straight days after a burst of "Compact failed" errors, letting
+# state.db balloon to 505MB and turning routine kine queries into multi-second full
+# table scans — degrading the apiserver cluster-wide (TLS handshake timeouts,
+# Handler timeouts), not just one pod. See docs/incident-log.md and docs/DR.md's
+# "k3s embedded datastore" recovery cookbook. This script is the mechanical guard.
+@test "k3s-datastore-health-check.sh exists" {
+  [ -f "$DATASTORE" ]
+}
+
+@test "k3s-datastore-health-check.sh is executable" {
+  [ -x "$DATASTORE" ]
+}
+
+@test "k3s-datastore-health-check.sh checks state.db size, compaction gap, and Slow SQL volume" {
+  run grep -q "state.db" "$DATASTORE"
+  [ "$status" -eq 0 ]
+  run grep -q "COMPACT compacted from" "$DATASTORE"
+  [ "$status" -eq 0 ]
+  run grep -q "Slow SQL" "$DATASTORE"
+  [ "$status" -eq 0 ]
+}
+
+# The whole point: this must diagnose datastore degradation even when it's itself the
+# reason kubectl/apiserver calls are timing out — so it must never depend on kubectl.
+# (Excludes comment lines: the header explains *why* it avoids kubectl, which itself
+# mentions the word — only actual code lines matter here.)
+@test "k3s-datastore-health-check.sh never shells out to kubectl (docker logs/exec only)" {
+  run bash -c "grep -vE '^\s*#' '$DATASTORE' | grep -q kubectl"
+  [ "$status" -eq 1 ]
+}
+
+@test "k3s-datastore-health-check.sh derives the container name from CLUSTER (blue/green support)" {
+  run grep -q 'CLUSTER="\${CLUSTER:-k8s-lab}"' "$DATASTORE"
+  [ "$status" -eq 0 ]
+  run grep -q 'CONTAINER="k3d-\${CLUSTER}-server-0"' "$DATASTORE"
+  [ "$status" -eq 0 ]
+}
+
+@test "k3s-datastore-health-check.sh exits non-zero when the target container isn't running" {
+  run env CLUSTER=nonexistent-cluster-$$ bash "$DATASTORE"
+  [ "$status" -ne 0 ]
+}
+
+@test "Makefile k3s-datastore-health-check target invokes k3s-datastore-health-check.sh" {
+  run grep -A1 '^k3s-datastore-health-check:' "$MAKEFILE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"k3s-datastore-health-check.sh"* ]]
+}
+
+@test "lab-health-check.sh reports k3s datastore health informationally (never flips PASS/FAIL)" {
+  run grep -q "k3s-datastore-health-check.sh" "$HEALTHCHECK"
   [ "$status" -eq 0 ]
 }
