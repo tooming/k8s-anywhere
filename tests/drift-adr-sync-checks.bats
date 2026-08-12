@@ -68,6 +68,25 @@ setup() {
   [[ "$output" == *"adr-0023"* ]]
 }
 
+@test "adr-chart-version-sync-check: passes when a self-tracking table-row ADR matches its live gitops pin" {
+  run env ADRCHARTVERSIONCHECK_ROOT="$FIX/adr-chart-version-sync/table-in-sync" bash "$REPO/scripts/adr-chart-version-sync-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"table row"* ]]
+}
+
+@test "adr-chart-version-sync-check: fails when a self-tracking table-row ADR's chart version no longer matches the live gitops pin" {
+  run env ADRCHARTVERSIONCHECK_ROOT="$FIX/adr-chart-version-sync/table-drift" bash "$REPO/scripts/adr-chart-version-sync-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"table row says"* ]]
+}
+
+@test "adr-chart-version-sync-check: passes on the real repo's ADR-0034 table rows (Pyroscope/Alloy/KSM/node-exporter match their live pins)" {
+  run bash "$REPO/scripts/adr-chart-version-sync-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"adr-0034"* ]]
+  [[ "$output" == *"table row"* ]]
+}
+
 # --- adr-image-pin-sync-check -------------------------------------------------------
 @test "adr-image-pin-sync-check: passes when a self-tracking ADR matches its live manifest image tag" {
   run env ADRIMAGEPINCHECK_ROOT="$FIX/adr-image-pin-sync/in-sync" bash "$REPO/scripts/adr-image-pin-sync-check.sh"
