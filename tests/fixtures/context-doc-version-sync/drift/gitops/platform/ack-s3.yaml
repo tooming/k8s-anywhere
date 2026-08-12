@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ack-s3
+spec:
+  source:
+    repoURL: https://example.test/charts
+    chart: s3-chart
+    targetRevision: 1.9.0

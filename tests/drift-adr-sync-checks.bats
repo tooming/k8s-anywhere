@@ -105,7 +105,8 @@ setup() {
   [[ "$output" == *"context.md says"* ]]
 }
 
-@test "context-doc-version-sync-check: passes on the real repo's context.md (Grafana/Pyroscope/KRO all match their live pins)" {
+@test "context-doc-version-sync-check: passes on the real repo's context.md (Grafana/Pyroscope/KRO/ACK all match their live pins)" {
   run bash "$REPO/scripts/context-doc-version-sync-check.sh"
   [ "$status" -eq 0 ]
+  [[ "$output" == *"ACK s3-controller"* ]]
 }
