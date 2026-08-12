@@ -186,3 +186,48 @@ everything:
 
 No new RFCs opened, no ADR audits opened or closed this pass — nothing found that
 meets STEP 2b's "meaningfully changes the tradeoff" bar.
+
+---
+
+## 2026-08-12 refresh (same ISO week, fourth cycle of a later run)
+
+Reached the ARCHITECT fallback role again — Now/next's six standing items (the
+Forgejo-migration list grew from three items to six since the last refresh, split per
+ROADMAP rule #9; the underlying gate is unchanged) remain gated on unconfirmed
+standing issues #631/#633 (both re-checked directly: `updated_at` and comment count
+unchanged since 2026-08-11). No un-RFC'd 🟡 item anywhere in ROADMAP.md (zero
+`- [ ] 🟡` lines) and no open `adr-audit`/`rfc`-labeled issue. Per STEP 1c, refreshing
+this same-week file in place rather than writing a second one.
+
+This run's own preceding cycles independently re-verified upstream currency for six
+components not already covered by the 2026-08-10 sweep or its 2026-08-11 refresh
+above, all reconfirmed already at latest stable — no action for any:
+
+- **Envoy Gateway** (`envoyproxy/gateway`) — `v1.8.3` remains newest stable; `v1.9.0`
+  exists only as an `-rc.1` prerelease.
+- **External Secrets** (`external-secrets/external-secrets`) — chart `2.9.0` matches
+  the newest `helm-chart-2.9.0`/`v2.9.0` tags (already bumped and covered in this same
+  digest's 2026-08-10 entry above; re-confirmed still current).
+- **Vault Helm chart** (`hashicorp/vault-helm`) — `0.34.0` matches the newest `v0.34.0`
+  tag.
+- **Trivy Operator** (`aquasecurity/trivy-operator`) — chart `0.35.0`/appVersion
+  `0.33.0` matches the newest `v0.33.0` release.
+- **kro** (`kro-run/kro`) — `0.9.3` matches the newest `v0.9.3` tag.
+- **Kargo** (`akuity/kargo`) — `1.11.1` matches the newest `v1.11.1` tag (chart bumped
+  from `1.11.0`, the version this digest's own 2026-08-10 entry recorded, on
+  2026-08-11 per `docs/dependency-register.md`'s Kargo row — already merged, PR #1101,
+  unrelated to this cycle).
+
+**TiDB Operator** (`pingcap/tidb-operator`) was independently bumped `1.6.5` → `1.6.6`
+earlier today by a separate cycle of this same run (real RBAC least-privilege
+hardening, within ADR-0031's own in-scope patch-bump carve-out) — noted here for
+completeness, not re-verified by this cycle.
+
+**Network note for future cycles**: this session's egress proxy blocked
+`argoproj.github.io` and `artifacthub.io` outright (`EGRESS_BLOCKED`) and
+rate-limited unauthenticated `api.github.com` `WebFetch` calls after roughly a dozen
+requests in quick succession this run — a future currency sweep should space fetches
+out or prefer sources not already known-blocked, rather than retrying the same ones.
+
+No new RFCs opened, no ADR audits opened or closed this pass — nothing found that
+meets STEP 2b's "meaningfully changes the tradeoff" bar.
