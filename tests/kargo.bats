@@ -422,6 +422,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "lab-kargo.json has no panel targeting a nonexistent freight controller (2026-08-12: Kargo v1.11.1 has no dedicated Freight controller — Freight objects are produced by warehouse; the redundant former 'Freight creation rate' panel was removed, keeping the one real Stage + Warehouse reconcile-rate panel pair)" {
+  run grep -q 'controller=~\\"freight' "$REPO/grafana/dashboards/lab-kargo.json"
+  [ "$status" -eq 1 ]
+  run grep -q 'controller=~\\"warehouse.\*\\"' "$REPO/grafana/dashboards/lab-kargo.json"
+  [ "$status" -eq 0 ]
+}
+
 @test "lab-kargo.json has no fabricated/placeholder data (ADR-0004)" {
   run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-kargo.json"
   [ "$status" -eq 1 ]

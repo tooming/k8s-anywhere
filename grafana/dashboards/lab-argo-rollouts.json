@@ -144,23 +144,6 @@
         "overrides": []
       },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
-    },
-    {
-      "id": 10, "type": "gauge", "title": "Active Canary Weight (%)",
-      "description": "Traffic weight currently routed to the canary revision (0–100%). Emits data only when a canary Rollout step is in progress (ADR-0004 — no placeholder).",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
-      "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rollout_canary_weight", "instant": true } ],
-      "fieldConfig": {
-        "defaults": {
-          "min": 0, "max": 100, "unit": "percent",
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 10 }, { "color": "orange", "value": 50 }, { "color": "red", "value": 100 } ] },
-          "noValue": "no active canary"
-        },
-        "overrides": []
-      },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
     }
   ]
 }

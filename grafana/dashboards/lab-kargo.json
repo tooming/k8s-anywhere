@@ -79,7 +79,7 @@
     },
     {
       "id": 6, "type": "timeseries", "title": "Stage reconcile rate /s",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 7 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (result) (rate(controller_runtime_reconcile_total{job=\"kargo\",controller=~\"stage.*\"}[5m]))", "legendFormat": "stage · {{result}}", "range": true }
@@ -91,20 +91,7 @@
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
     },
     {
-      "id": 7, "type": "timeseries", "title": "Freight creation rate /s",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
-      "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (result) (rate(controller_runtime_reconcile_total{job=\"kargo\",controller=~\"freight.*\"}[5m]))", "legendFormat": "freight · {{result}}", "range": true }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "ops", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
-        "overrides": []
-      },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
-    },
-    {
-      "id": 8, "type": "timeseries", "title": "Warehouse reconcile rate /s",
+      "id": 8, "type": "timeseries", "title": "Warehouse reconcile rate /s (produces Freight — Kargo has no dedicated Freight controller)",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
