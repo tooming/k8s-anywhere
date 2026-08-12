@@ -49,8 +49,10 @@ what they will encounter in cloud-managed services.
 
 ## Plain manifests over a Helm chart
 
-Same reasoning as ADR-0009 and ADR-0010: a pinned `valkey/valkey:8.0-alpine` image in a
-plain `StatefulSet` is fully reproducible, transparent, and validated by `kubeconform`.
+Same reasoning as ADR-0009 and ADR-0010: a pinned official `valkey/valkey:8.0.10-alpine`
+image in a plain `StatefulSet` is fully reproducible, transparent, and validated by
+`kubeconform` (see [§Re-evaluation log](#re-evaluation-log) for the CVE-driven bump
+history from the original `8.0-alpine` pin).
 
 ## Single node — the ADR-0005 trade-off
 

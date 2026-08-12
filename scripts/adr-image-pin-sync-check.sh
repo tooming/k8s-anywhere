@@ -15,6 +15,15 @@
 # locates the StatefulSet/Deployment manifest from the ADR's own "## Files"
 # table, and asserts the two tags match.
 #
+# ADR-0018 (Valkey) is the second example, and it went stale exactly the way
+# this guard exists to prevent: a CVE-driven bump (8.0-alpine -> 8.0.10-alpine,
+# PR #658) was correctly recorded in ADR-0018's own Re-evaluation log but left
+# the "Plain manifests over a Helm chart" section's inline mention on the old
+# tag — caught by a 2026-08-12 executor sweep and fixed by adding "official" to
+# match this script's phrasing (accurate: valkey/valkey is the project's real
+# official image), so this guard now covers it too (self-maintaining, no code
+# change needed here).
+#
 # Run by `make adr-image-pin-sync-check`, the CI 'drift' gate, and the
 # PostToolUse hook. Exit 0 = every self-tracking image-pin ADR matches its
 # live manifest; 1 = drift found.
