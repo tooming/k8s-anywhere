@@ -3,6 +3,21 @@
 # auto-deploy it. Bring up with: make tidb-operator-up
 # Tear down with:               make tidb-operator-down
 # Do NOT add automated: here — the 12 GB VM cannot hold TiDB alongside always-on.
+#
+# Bumped 1.6.5 -> 1.6.6 (JANITOR-fallback currency sweep, 2026-08-12): a same-line
+# 1.6.x patch release, explicitly in scope per ADR-0031's own "Consequences" section
+# ("future currency sweeps that find a newer 1.6.x patch release ... remain in scope
+# for a routine executor bump") -- ADR-0031's hold only governs the v1->v2 major-line
+# question, unaffected by this. Real security-relevant diff (verified via a full
+# clone diff of the pinned chart, tag v1.6.5..v1.6.6): every ClusterRole/Role this
+# chart renders replaces a wildcard `resources: ["*"]` / `verbs: ["*"]` grant with an
+# explicit least-privilege list (e.g. controller-manager-rbac.yaml's `pingcap.com`
+# apiGroup rule narrows from "all resources, all verbs" to the exact CRD kinds this
+# operator actually manages). Also adds an opt-in `automountServiceAccountToken`
+# toggle (default `true`, matching prior behavior -- not exercised here). No breaking
+# values.yaml schema change; this Application's own `valuesObject` overrides
+# (resources, scheduler, admissionWebhook.create: false) are all still valid keys at
+# the new pin.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,7 +30,7 @@ spec:
   source:
     repoURL: https://charts.pingcap.org
     chart: tidb-operator
-    targetRevision: 1.6.5
+    targetRevision: 1.6.6
     helm:
       releaseName: tidb-operator
       valuesObject:
