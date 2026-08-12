@@ -233,7 +233,7 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "count(longhorn_volume_robustness{robustness=\"Healthy\"}) or vector(0)",
+          "expr": "count(longhorn_volume_robustness{robustness=\"healthy\"}) or vector(0)",
           "instant": true
         }
       ],

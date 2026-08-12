@@ -59,3 +59,22 @@ setup() {
   run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$DASH"
   [ "$status" -eq 1 ]
 }
+
+# --- metric-value drift guard (2026-08-12) ------------------------------------
+# "Healthy Volumes" queried robustness="Healthy" (Title-Case) -- the real
+# longhorn_volume_robustness label value is lowercase "healthy" (verified
+# against longhorn-manager v1.11.3 source, k8s/pkg/apis/longhorn/v1beta2/
+# volume.go's VolumeRobustnessHealthy = VolumeRobustness("healthy"), emitted
+# verbatim via string(r) with no case transform). Same case-mismatch class of
+# bug as PR #1155's Trivy severity-label fix -- the panel could never match a
+# real series. Real, negative-but-honest result on every other panel: the
+# "attached" volume-state label value is already correctly lowercase.
+@test "lab-longhorn.json queries the real lowercase robustness=\"healthy\" label value" {
+  run grep -q 'robustness=\\"healthy\\"' "$DASH"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-longhorn.json does not query the nonexistent Title-Case robustness=\"Healthy\" label value" {
+  run grep -q 'robustness=\\"Healthy\\"' "$DASH"
+  [ "$status" -eq 1 ]
+}
