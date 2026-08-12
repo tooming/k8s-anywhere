@@ -39,9 +39,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "lab-argocd.json queries argocd_app_reconcile_duration_seconds_bucket for reconcile heatmap" {
-  run grep -q 'argocd_app_reconcile_duration_seconds_bucket' "$REPO/grafana/dashboards/lab-argocd.json"
+@test "lab-argocd.json queries the real argocd_app_reconcile_bucket for reconcile heatmap, not the nonexistent argocd_app_reconcile_duration_seconds_bucket" {
+  run grep -q 'argocd_app_reconcile_bucket' "$REPO/grafana/dashboards/lab-argocd.json"
   [ "$status" -eq 0 ]
+  run grep -q 'argocd_app_reconcile_duration_seconds_bucket' "$REPO/grafana/dashboards/lab-argocd.json"
+  [ "$status" -eq 1 ]
 }
 
 @test "lab-argocd.json queries argocd_git_request_duration_seconds_bucket for repo-server latency" {

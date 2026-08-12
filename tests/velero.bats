@@ -256,6 +256,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "lab-velero.json's restore-failed panel references the real velero_restore_failed_total metric, not the nonexistent velero_restore_failure_total (2026-08-12, appVersion v1.18.1)" {
+  run grep -q 'velero_restore_failed_total' "$REPO/grafana/dashboards/lab-velero.json"
+  [ "$status" -eq 0 ]
+  run grep -q 'velero_restore_failure_total' "$REPO/grafana/dashboards/lab-velero.json"
+  [ "$status" -eq 1 ]
+}
+
 # --- Schedules (ADR-0021 §"Schedule set"; one per stateful namespace) ---------
 @test "velero-schedules Application exists" {
   [ -f "$REPO/gitops/platform/velero-schedules.yaml" ]

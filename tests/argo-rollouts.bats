@@ -307,9 +307,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "lab-argo-rollouts.json references rollout_canary_weight (real metric, ADR-0004)" {
+@test "lab-argo-rollouts.json does not reference the nonexistent rollout_canary_weight metric (2026-08-12: no such metric exists at pinned appVersion v1.9.1; panel removed rather than left permanently broken)" {
   run grep -q 'rollout_canary_weight' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
 }
 
 @test "lab-argo-rollouts.json uses mimir datasource uid (X-Scope-OrgID via datasource config)" {

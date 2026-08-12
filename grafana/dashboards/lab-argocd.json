@@ -154,11 +154,11 @@
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
     },
     {
-      "id": 12, "type": "heatmap", "title": "Reconcile duration heatmap (argocd_app_reconcile_duration_seconds_bucket)",
+      "id": 12, "type": "heatmap", "title": "Reconcile duration heatmap (argocd_app_reconcile_bucket)",
       "gridPos": { "h": 9, "w": 12, "x": 12, "y": 21 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(argocd_app_reconcile_duration_seconds_bucket[5m])) by (le)", "format": "heatmap", "legendFormat": "{{le}}" }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(argocd_app_reconcile_bucket[5m])) by (le)", "format": "heatmap", "legendFormat": "{{le}}" }
       ],
       "fieldConfig": { "defaults": {}, "overrides": [] },
       "options": {
