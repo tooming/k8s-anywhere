@@ -59,9 +59,22 @@ build-and-push:
   image: docker:29
   services:
     # Allow HTTP pushes to the in-lab registry (no TLS on the nip.io route).
+    # --registry-mirror=mirror.gcr.io (added 2026-08-12, #631 investigation): base-image
+    # pulls straight from docker.io were failing intermittently but persistently —
+    # `i/o timeout` on the blob/manifest fetch, every failing attempt's destination IP
+    # in the 100.64.0.0/10 CGNAT range (Colima's VM networking maps some of Docker
+    # Hub's CDN edges there; large/sustained transfers through it are unreliable on
+    # this host, small requests mostly aren't). Confirmed live: direct
+    # `docker.io/jaegertracing/example-hotrod` pulls in the `gitlab_default` network
+    # timed out across 4 consecutive pipeline runs (#58, #59, #60, #61), while
+    # `mirror.gcr.io` (Google's public Docker Hub read-through cache) answered the
+    # same network in ~4s. Routes pulls through a different edge/path, sidestepping
+    # the flaky one — doesn't touch the Harbor push/sign path, which was independently
+    # confirmed working (pipeline #58 got a full build + Harbor login + blob push,
+    # failing only on a transient 502 from Harbor itself, not this).
     - name: docker:29-dind
       alias: docker
-      command: ["--insecure-registry=harbor.127.0.0.1.nip.io:8080"]
+      command: ["--insecure-registry=harbor.127.0.0.1.nip.io:8080", "--registry-mirror=https://mirror.gcr.io"]
   variables:
     DOCKER_HOST: "tcp://docker:2375"
     DOCKER_TLS_CERTDIR: ""
