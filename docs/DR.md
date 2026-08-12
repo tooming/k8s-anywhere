@@ -394,6 +394,87 @@ internal to kine and not currently k3s-CLI-configurable. The mechanical guard he
 therefore detection (the health check above), not prevention — there is no dial to turn
 that would structurally rule this class of failure out.
 
+### Harbor signed-image-pipeline verification (issues #631 / #633)
+
+**Why this exists:** since 2026-07-20, standing issues
+[#631](https://github.com/tooming/k8s-anywhere/issues/631) (confirm a CI run pushes a
+cosign-signed image to Harbor) and
+[#633](https://github.com/tooming/k8s-anywhere/issues/633) (confirm a Kargo canary
+promotion completes end-to-end) have had roughly a dozen live-cluster session
+attempts. Every attempt found and durably fixed a real, distinct bug — but none has
+yet completed one full pipeline run start to finish, because the *next* live session
+kept re-discovering the prior fixes from scratch by re-reading issue-comment history.
+This entry exists so that stops here: read this once, don't re-derive it.
+
+**Already fixed and durably in git (do NOT re-diagnose these — verify they're still
+applied, then move past them):**
+1. Cilium apiserver-connectivity drift after a k3d node IP reshuffle — fixed live via
+   `make cilium-up` (2026-07-29, non-persistent; re-check if it recurs).
+2. `artifactory` namespace's default-deny NetworkPolicy had no intra-namespace allow
+   (PR #884, 2026-07-29) — superseded by the Harbor cutover, kept for history.
+3. `envoy-gateway-system`'s egress NetworkPolicy never allowlisted the `harbor`
+   namespace (PR #968, 2026-08-04) — every Envoy→Harbor request timed out until this
+   merged.
+4. Stale Harbor admin credentials in Vault (`secret/harbor/registry`) and the GitLab
+   `HARBOR_USER`/`HARBOR_PASSWORD` CI variables — fixed live 2026-08-04 (not
+   GitOps-managed, no PR; re-verify these are still correct if `docker login` fails
+   again).
+5. No GitLab Runner was ever registered against this lab's GitLab instance, so no
+   pipeline had ever executed at all (PR #1026, 2026-08-04/05).
+6. `k3d-k8s-lab-server-0` node disk pressure caused Harbor pods to crashloop — found
+   2026-08-05, **tracked separately and still open**, see issue
+   [#1034](https://github.com/tooming/k8s-anywhere/issues/1034); check its status
+   before assuming host headroom is fine.
+7. Vault sealed for 9+ hours, silently breaking ExternalSecrets cluster-wide,
+   including Harbor's (PR #1038, 2026-08-06).
+8. Harbor chart's default 1-second probe timeouts self-inflicted crashloops under
+   real host load — bumped to 5s (PR #1040, 2026-08-06).
+9. `allow-harbor-ingress.yaml`'s NetworkPolicy listed the Harbor **Service** port
+   (`80`) instead of the destination **pod's** real `containerPort` (`8080`) —
+   NetworkPolicy `ports:` always match the pod's port, never the Service's; this
+   silently blocked every cross-namespace request to Harbor for as long as the policy
+   existed (PR #1054, 2026-08-07).
+10. The `capstone-pipeline` namespace was stuck `Terminating` for 20 days — a
+    chicken-and-egg deadlock where Kargo's own controller (needed to clear the
+    finalizer) wasn't running because the `kargo` on-demand unit was down — fixed
+    live by bringing `kargo`'s controller stack up (2026-08-07, structural, no PR).
+11. Kargo 1.11.0's admission webhook rejects a `Warehouse` with
+    `imageSelectionStrategy: Digest` and no `constraint` field — added
+    `constraint: latest` (PR #1055, 2026-08-07).
+12. In-cluster pulls of `harbor.127.0.0.1.nip.io` resolved to the pulling pod's own
+    loopback, not Harbor's real Service (`nip.io` is host-only DNS) — fixed with a k3d
+    containerd registry mirror (`docs/done/2026-08-07-k3d-registry-mirror-harbor.md`,
+    ROADMAP item already checked off).
+13. `gitops/platform/harbor.yaml` used `registry.registry.extraEnvVarsSecret`, a field
+    that doesn't exist in the `goharbor/harbor` chart — Harbor's registry component
+    never actually received its S3 credentials, so every push failed with
+    `s3aws: NoCredentialProviders` (PR #1114, 2026-08-11). Switched to the chart's real
+    `extraEnvVars`/`valueFrom.secretKeyRef` mechanism.
+14. Kyverno's admission-controller webhook was crashlooping on a too-tight
+    chart-default startup-probe timeout, intermittently blocking ArgoCD from applying
+    the fix above (PR #1115, 2026-08-11).
+
+**What's genuinely still needed — not a code fix, a live verification window:** every
+fix above is durable and in git. What has never yet happened is one session with
+*sustained* host headroom to keep Harbor's full stack (7 components + Postgres)
+stable through a complete `docker login && push && cosign sign` cycle without the
+host's load average climbing past 100 mid-attempt. Per the accumulated findings
+across every attempt above:
+1. Check issue [#1034](https://github.com/tooming/k8s-anywhere/issues/1034)'s status
+   first — don't attempt this if node disk pressure is still open/unresolved.
+2. Bring up Harbor **alone** — no Kargo, no other on-demand component running
+   concurrently — and give it a few minutes to fully stabilize before triggering
+   anything. Every prior attempt that hit a host-capacity ceiling did so with Harbor
+   and at least one other heavy on-demand unit running together.
+3. Trigger a pipeline run, confirm `sign-image` completes, and verify a
+   `<digest>.sig` tag lands in Harbor's `library/hello` repository. Comment the result
+   on #631.
+4. Only then bring `kargo` up against the now-signed image and watch for a Warehouse
+   discovery → Freight → Promotion cycle to complete. Comment the result on #633.
+5. Once both are confirmed, the ROADMAP items gated on these issues
+   (`verifyImages` Enforce-flip, the O4 CI rejection-gate job, and capstone
+   `Deployment` removal) unblock in the same session or the next executor run.
+
 For severity triage when something breaks, see [`docs/incident-log.md`](incident-log.md)'s
 severity scheme (P0–P3) and its log of real incidents this lab has actually hit.
 
