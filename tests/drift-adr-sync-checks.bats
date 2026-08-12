@@ -86,10 +86,11 @@ setup() {
   [[ "$output" == *"no ADR uses the self-tracking"* ]]
 }
 
-@test "adr-image-pin-sync-check: passes on the real repo's ADRs (ADR-0009 matches its live RabbitMQ tag)" {
+@test "adr-image-pin-sync-check: passes on the real repo's ADRs (ADR-0009/0018 match their live image tags)" {
   run bash "$REPO/scripts/adr-image-pin-sync-check.sh"
   [ "$status" -eq 0 ]
   [[ "$output" == *"adr-0009"* ]]
+  [[ "$output" == *"adr-0018"* ]]
 }
 
 # --- context-doc-version-sync-check -------------------------------------------------
