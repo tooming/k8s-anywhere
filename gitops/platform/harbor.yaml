@@ -166,21 +166,34 @@ spec:
               timeoutSeconds: 5
             readinessProbe:
               timeoutSeconds: 5
-          # Found live 2026-08-12 (#631): a real `docker push` of the capstone image
-          # OOMKilled this container mid-blob-upload (`lastState.terminated.reason:
-          # OOMKilled, exitCode: 137`, timestamp exact match against the CI job's
-          # failed HEAD request). registry2's S3 storage driver buffers upload chunks
-          # in memory before flushing to Garage; 512Mi was sized for idle/health-check
-          # traffic, not a real push. 512Mi -> 1Gi (request 128Mi -> 256Mi
-          # proportionally) — verified live: a subsequent push completed without a
-          # repeat OOMKill.
-          resources:
-            requests:
-              cpu: 50m
-              memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 1Gi
+            # Found live 2026-08-12 (#631): a real `docker push` of the capstone image
+            # OOMKilled this container mid-blob-upload (`lastState.terminated.reason:
+            # OOMKilled, exitCode: 137`, timestamp exact match against the CI job's
+            # failed HEAD request). registry2's S3 storage driver buffers upload chunks
+            # in memory before flushing to Garage.
+            #
+            # Also found live the same session: this `resources:` key sat one indent
+            # level too shallow (`registry.resources`, a sibling of the `registry:` /
+            # `controller:` sub-blocks) instead of nested inside `registry.registry`
+            # (this chart's real path for the registry *container's* resources, same
+            # shape as `registry.controller.resources` two blocks below for
+            # registryctl) — silently ignored by Helm the whole time, same failure
+            # class as the `extraEnvVarsSecret` bug fixed above: `kubectl get deploy
+            # harbor-registry -o jsonpath='{...containers[?(@.name=="registry")].
+            # resources}'` on the live Deployment showed `{}`, confirming this
+            # container has never actually had a memory limit applied, so the OOMKill
+            # above came from the node running out of memory outright, not a
+            # container-cgroup limit being hit. Fixed the nesting AND bumped
+            # 512Mi -> 1Gi (request 128Mi -> 256Mi proportionally) — verified live
+            # against the corrected Deployment: a subsequent push completed without a
+            # repeat OOMKill.
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 1Gi
           controller:
             resources:
               requests:
