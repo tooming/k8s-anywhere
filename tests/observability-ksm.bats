@@ -12,7 +12,8 @@
 # kube-state-metrics chart 8.2.0 source (templates/service.yaml, templates/
 # deployment.yaml) — same class of bug as PR #1155/#1156's dashboard
 # metric-name-drift fixes, this time a missing scrape target rather than a wrong
-# metric name.
+# metric name. Re-confirmed unchanged against chart 8.3.0's identical
+# service.yaml/deployment.yaml templates (packaging-only bump, see docs/done/).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
