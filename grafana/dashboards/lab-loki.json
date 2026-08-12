@@ -1,0 +1,48 @@
+{
+  "uid": "lab-loki",
+  "title": "Lab — Loki",
+  "tags": ["lab"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Loki up",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "max(up{job=\"loki\"})", "instant": true } ],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } } ] } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
+    },
+    {
+      "id": 2, "type": "stat", "title": "In-memory chunks",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(loki_ingester_memory_chunks{job=\"loki\"})", "instant": true } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 3, "type": "stat", "title": "Ingester appends/s",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(loki_distributor_ingester_appends_total{job=\"loki\"}[5m]))", "instant": true } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Ingester append rate (appends/s)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(loki_distributor_ingester_appends_total{job=\"loki\"}[5m]))", "legendFormat": "appends/s", "range": true } ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 15 } } }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "In-memory chunks over time",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(loki_ingester_memory_chunks{job=\"loki\"})", "legendFormat": "memory chunks", "range": true } ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 15 } } }
+    }
+  ]
+}

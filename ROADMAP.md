@@ -5379,7 +5379,7 @@ there is no point where the lab loses a working git source or CI path.
   stanza, the same operational cost the 2026-08-05 Vault image-tag bump already
   carried). `docs/done/` entry required. (auto/vault-telemetry-scrape)
 
-- [ ] 🟢 **Loki / Tempo / Pyroscope operational-health dashboards — O5 gap**
+- [x] 🟢 **Loki / Tempo / Pyroscope operational-health dashboards — O5 gap**
   (CHARTER **Objective O5** "every Application in `gitops/bootstrap/root-app.yaml`'s
   auto-synced set has a matching `grafana/dashboards/lab-<name>.json` with at least
   one panel backed by a real (auto-discovered) data source"; planner gap analysis
