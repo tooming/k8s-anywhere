@@ -71,7 +71,7 @@ bootstrapped, formally recorded here for the first time.
 | **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.7` directly | `2.10.7` (tracked in ADR-0006's Re-evaluation log per this run's earlier correction) |
 | **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.1` | `2.2.1` |
 | **Alloy** | Helm chart | `gitops/platform/observability-alloy.yaml`, `targetRevision: 1.11.1` | `1.11.1` |
-| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.2.0` | `8.2.0` |
+| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.3.0` | `8.3.0` |
 | **node-exporter** | Helm chart, `prometheus-community/helm-charts` (`prometheus-node-exporter`) | `gitops/platform/observability-node-exporter.yaml`, `targetRevision: 4.56.1`; dedicated `node-exporter` namespace (not `observability`) because it needs `hostPID`/`hostNetwork`/`hostRootFsMount` semantics [ADR-0017](adr-0017-pod-security-standards-restricted.md)'s `restricted` profile forbids | `4.56.1` |
 
 Mimir and Loki are deliberately **not** Helm charts (Mimir has no chart this lab
@@ -112,6 +112,23 @@ shape (Alloy as sole collector feeding all four Grafana-authored stores).
 ---
 
 ## Re-evaluation log
+
+**2026-08-12** — kube-state-metrics chart bumped `8.2.0` → `8.3.0` (executor-fallback
+currency sweep, UPGRADE-DRAFTER role). Verified directly (ADR-0004): `git ls-remote
+--tags prometheus-community/helm-charts` shows `kube-state-metrics-8.3.0` as the
+newest tag on the `8.x` line (no major bump); `Chart.yaml`'s `appVersion` is unchanged
+(`2.19.1` → `2.19.1`). A full diff of `values.yaml` (fetched both tags' raw content —
+this session had no reachable Helm-repo/git-clone path for `prometheus-community/
+helm-charts`, only `raw.githubusercontent.com` per-file fetches) shows exactly one
+addition: a new `rbac.customResourceState.createClusterRoleRules` key, defaulting to
+`true` (the chart's existing implicit behavior) — this repo's `valuesObject` sets no
+`rbac:` override at all, so the default applies and behavior is unchanged.
+`templates/service.yaml`, `templates/deployment.yaml`, `templates/clusterrole.yaml`,
+and `README.md` are byte-identical between the two tags — the existing
+`securityContext`/`containerSecurityContext` hardening and the `selfMonitor`
+:8081-port wiring this ADR's table and `tests/observability-ksm.bats` document carry
+forward unchanged. **Keep** — no reason to reconsider the component itself, this is a
+routine packaging-only bump.
 
 **2026-08-10** — kube-state-metrics chart bumped `8.1.3` → `8.2.0` (upgrade-drafter
 fallback, PR #1098; this entry added by a separate janitor cleanup since chart-pin
