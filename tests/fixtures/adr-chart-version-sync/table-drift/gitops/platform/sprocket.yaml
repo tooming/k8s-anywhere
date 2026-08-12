@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sprocket
+spec:
+  source:
+    repoURL: https://example.test/charts
+    chart: sprocket
+    targetRevision: 3.5.0

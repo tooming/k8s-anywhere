@@ -23,6 +23,18 @@
 # section to the self-tracking phrasing, so this guard now covers it too
 # (self-maintaining, no code change needed here).
 #
+# A SECOND self-tracking shape exists too: ADR-0034's per-component Markdown
+# TABLE (one row per observability tool) cites `gitops/platform/<x>.yaml`,
+# `targetRevision: VERSION` inline in a single table-row cell, rather than the
+# two-line "- **Chart:**" bullet above. This shape had zero mechanical
+# coverage until this check gained a second scan for it (found live: a
+# 2026-08-12 kube-state-metrics 8.2.0 -> 8.3.0 bump had to hand-edit this exact
+# table row with nothing catching it if it had been missed — the same
+# "self-tracking note can silently drift" failure mode ADR-0020/0021/0023
+# already proved happens, just in a table instead of a bullet). No hardcoded
+# component list here either — self-maintaining as new table rows adopt the
+# same `` `gitops/....yaml`, `targetRevision: X` `` cell shape.
+#
 # Run by `make adr-chart-version-sync-check`, the CI 'drift' gates, and the
 # PostToolUse hook. Exit 0 = every self-tracking ADR matches its live pin;
 # 1 = drift found.
@@ -49,39 +61,60 @@ fi
 
 drift=0
 found=0
+
+# Shared comparator for both self-tracking shapes below: given the ADR's
+# stated version + the gitops file it claims to mirror, assert they match the
+# file's real live targetRevision. bad() (lib/colors.sh) sets $drift itself.
+check_pin() {
+  local name="$1" label="$2" adr_version="$3" gitops_file="$4"
+
+  if [ -z "$adr_version" ] || [ -z "$gitops_file" ]; then
+    bad "$name: $label phrasing found but couldn't parse chart version / gitops path — check the section's format"
+    return
+  fi
+
+  local gitops_path="$ROOT/$gitops_file"
+  if [ ! -f "$gitops_path" ]; then
+    bad "$name: references missing gitops file $gitops_file"
+    return
+  fi
+
+  local live_version
+  live_version="$(yqs '.spec.source.targetRevision' "$gitops_path")"
+  if [ "$live_version" = "$adr_version" ]; then
+    ok "$name: $label ($adr_version) matches $gitops_file's targetRevision"
+  else
+    bad "$name: $label says \"$adr_version\" but $gitops_file's targetRevision is \"$live_version\" — update the ADR's $label note (and Re-evaluation log) to match the live pin"
+  fi
+}
+
 printf '%s== ADR chart-version sync ==%s\n' "$B" "$Z"
 for adr in "$ADR_DIR"/adr-*.md; do
   [ -f "$adr" ] || continue
+  name="$(basename "$adr")"
 
-  # Match the self-tracking "Chart + version" phrasing, joined across its two
+  # Shape 1: the self-tracking "Chart + version" bullet, joined across its two
   # lines: "- **Chart:** `repo/chart` `VERSION` (`appVersion: X`; pin lives in"
   # followed by "  `gitops/path.yaml`'s `targetRevision` ...".
   combined="$(awk '/\*\*Chart:\*\*.*pin lives in/ { line=$0; if ((getline nl) > 0) { print line " " nl } }' "$adr")"
-  [ -n "$combined" ] || continue
-  found=1
-
-  mapfile -t tokens < <(printf '%s' "$combined" | grep -oE '`[^`]+`' | tr -d '`')
-  adr_version="${tokens[1]:-}"
-  gitops_file="${tokens[3]:-}"
-  name="$(basename "$adr")"
-
-  if [ -z "$adr_version" ] || [ -z "$gitops_file" ]; then
-    bad "$name: 'pin lives in ... targetRevision' phrasing found but couldn't parse chart version / gitops path — check the Chart + version section's format"
-    continue
+  if [ -n "$combined" ]; then
+    found=1
+    mapfile -t tokens < <(printf '%s' "$combined" | grep -oE '`[^`]+`' | tr -d '`')
+    check_pin "$name" "Chart + version" "${tokens[1]:-}" "${tokens[3]:-}"
   fi
 
-  gitops_path="$ROOT/$gitops_file"
-  if [ ! -f "$gitops_path" ]; then
-    bad "$name: references missing gitops file $gitops_file"
-    continue
-  fi
-
-  live_version="$(yqs '.spec.source.targetRevision' "$gitops_path")"
-  if [ "$live_version" = "$adr_version" ]; then
-    ok "$name: Chart + version ($adr_version) matches $gitops_file's targetRevision"
-  else
-    bad "$name: Chart + version says \"$adr_version\" but $gitops_file's targetRevision is \"$live_version\" — update the ADR's Chart + version note (and Re-evaluation log) to match the live pin"
-  fi
+  # Shape 2: a self-tracking table-row cell citing the gitops file and its
+  # targetRevision inline on one line, e.g. ADR-0034's per-component table:
+  # "| **kube-state-metrics** | ... | `gitops/platform/observability-ksm.yaml`,
+  # `targetRevision: 8.3.0` | `8.3.0` |". One line can hold at most one such
+  # cell in this repo's tables, so no getline join is needed here.
+  while IFS= read -r row; do
+    [ -n "$row" ] || continue
+    found=1
+    row_gitops_file="$(printf '%s' "$row" | grep -oE '`gitops/[^`]+\.yaml`' | head -1 | tr -d '`')"
+    row_version="$(printf '%s' "$row" | grep -oE '`targetRevision: [^`]+`' | head -1 | sed -E 's/`targetRevision: ([^`]+)`/\1/')"
+    check_pin "$name" "table row" "$row_version" "$row_gitops_file"
+  done < <(grep -E '`gitops/[^`]+\.yaml`, `targetRevision: [^`]+`' "$adr")
 done
 
 if [ "$found" -eq 0 ]; then
