@@ -40,3 +40,20 @@ setup() {
   run grep -q 'no equivalent criticality tiering for the \*stateless\* surface' "$DOC"
   [ "$status" -ne 0 ]
 }
+
+@test "dependency-concentration.md exists (Q16 concentration-risk rollup)" {
+  [ -f "$REPO/docs/dependency-concentration.md" ]
+}
+
+@test "dependency-concentration.md names github.com/grafana as the largest concentration (6 tools)" {
+  CONC="$REPO/docs/dependency-concentration.md"
+  run grep -q 'github.com/grafana` — 6 tools' "$CONC"
+  [ "$status" -eq 0 ]
+}
+
+@test "Q16's Gap line points at the new file instead of stating the gap as open" {
+  run grep -q 'docs/dependency-concentration.md' "$DOC"
+  [ "$status" -eq 0 ]
+  run grep -q 'never rolled up into a single' "$DOC"
+  [ "$status" -ne 0 ]
+}

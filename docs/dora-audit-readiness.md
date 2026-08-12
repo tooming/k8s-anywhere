@@ -274,14 +274,23 @@ concentration)?**
   still maintained) after initial adoption.
 
 **Q16. Is concentration risk assessed (reliance on a single upstream provider)?**
-- **Answer:** Assessed per-decision (each ADR names rejected alternatives, which is
-  itself an anti-concentration exercise) but never rolled up into a single
-  cross-cutting view of "which single upstream repo, registry, or chart source, if it
-  disappeared, would break the most components at once."
-- **Evidence:** ADR set (per-decision only).
-- **Gap:** real; a genuinely new artifact, not just re-indexing — lowest priority of the
-  gaps in this document since the lab's answer to any single-provider disappearing is
-  already "fork or replace the chart, GitOps handles the rest" (ADR-0001's design).
+- **Answer:** Yes, as of [`docs/dependency-concentration.md`](dependency-concentration.md)
+  — a cross-cutting rollup of `docs/dependency-register.md`'s 32 tools by upstream
+  GitHub org. `github.com/grafana` backs six always-on-core rows at once (Grafana,
+  Mimir, Loki, Tempo, Pyroscope, Alloy) — the entire observability pane sharing one
+  upstream governance/maintenance entity, the largest single concentration in the
+  table. `github.com/argoproj` backs two (ArgoCD, Argo Rollouts); `github.com/pingcap`
+  backs two (TiDB Operator, TiDB, both heavy-on-demand only). Every other row is a
+  distinct org. The lab's mitigation is structural, not new: every workload is a
+  GitOps `Application` pointing at a pinned chart/image ref (ADR-0001), so a
+  disappeared upstream is a fork-and-repoint operation, not a rebuild — demonstrated
+  for real by the ADR-0011→ADR-0024 Artifactory→Harbor migration.
+- **Evidence:** [docs/dependency-concentration.md](dependency-concentration.md);
+  [docs/dependency-register.md](dependency-register.md); ADR-0001.
+- **Gap:** none in rollup *existence* — the cross-cutting view this question asked for
+  now exists. The `github.com/grafana` concentration itself is not closed (it's a real
+  fact about upstream maintainership, not a bug this lab's code can fix); it's simply
+  now visible instead of implicit.
 
 **Q17. Is there an exit strategy per critical third-party dependency?**
 - **Answer:** Implicit in ADR-0001 (GitOps + Terraform-only-bootstraps means every
