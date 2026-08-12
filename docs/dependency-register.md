@@ -116,3 +116,9 @@ nothing currently fails `make ci` if it drifts. A future item could add a mechan
 check (e.g. flag when an ADR's Re-evaluation log has a newer entry than this file's
 corresponding row) if staleness here proves to be a real recurring problem —
 premature to build before it's shown to actually drift.
+
+[`docs/dependency-concentration.md`](dependency-concentration.md) is a downstream
+consumer of the table above (grouped by upstream GitHub org, closing
+[`docs/dora-audit-readiness.md`](dora-audit-readiness.md) Q16's gap) — a future row
+add/remove/rename here should prompt a look there too, same manual-sync caveat as
+above.

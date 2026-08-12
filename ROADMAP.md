@@ -5511,7 +5511,7 @@ there is no point where the lab loses a working git source or CI path.
   of unjustified tier labels would itself be a form of fabricated/unverified
   content). (auto/stateless-criticality-tiers)
 
-- [ ] 🟢 **Third-party dependency concentration-risk rollup — closes DORA audit Q16's
+- [x] 🟢 **Third-party dependency concentration-risk rollup — closes DORA audit Q16's
   named gap** (CHARTER **Core Values** §"Everything as code; GitOps deploys it" /
   operational-resilience discipline; planner-fallback gap analysis 2026-08-12, reached
   via `executor.prompt.md` STEP 6b PLANNER role after this run's Now/next lane was
