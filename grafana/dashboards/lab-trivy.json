@@ -58,7 +58,7 @@
       "description": "Total Critical CVEs across all scanned workloads. Shows 'No data' naturally until the first VulnerabilityReport scan completes (ADR-0004).",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(trivy_image_vulnerabilities{severity=\"CRITICAL\"})", "instant": true } ],
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(trivy_image_vulnerabilities{severity=\"Critical\"})", "instant": true } ],
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -74,7 +74,7 @@
       "description": "Total High CVEs across all scanned workloads (ADR-0004 — no placeholder).",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(trivy_image_vulnerabilities{severity=\"HIGH\"})", "instant": true } ],
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(trivy_image_vulnerabilities{severity=\"High\"})", "instant": true } ],
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -90,7 +90,7 @@
       "description": "Total Medium CVEs across all scanned workloads (ADR-0004 — no placeholder).",
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(trivy_image_vulnerabilities{severity=\"MEDIUM\"})", "instant": true } ],
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(trivy_image_vulnerabilities{severity=\"Medium\"})", "instant": true } ],
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -106,7 +106,7 @@
       "description": "Total Low CVEs across all scanned workloads (ADR-0004 — no placeholder).",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(trivy_image_vulnerabilities{severity=\"LOW\"})", "instant": true } ],
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(trivy_image_vulnerabilities{severity=\"Low\"})", "instant": true } ],
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -118,24 +118,8 @@
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
     },
     {
-      "id": 8, "type": "stat", "title": "SBOM Reports (total)",
-      "description": "Count of SbomReport CRs across all scanned namespaces — direct CHARTER supply-chain goal. Shows 'No data' naturally until sbomGeneration scans complete (ADR-0004).",
-      "gridPos": { "h": 4, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(trivy_sbom_reports_total)", "instant": true } ],
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "yellow", "value": null }, { "color": "green", "value": 1 } ] },
-          "noValue": "no scans yet"
-        },
-        "overrides": []
-      },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
-    },
-    {
       "id": 9, "type": "stat", "title": "Restarts (max)",
-      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 8 },
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "max(kube_pod_container_status_restarts_total{namespace=\"trivy-system\", container!=\"\"})", "instant": true } ],
       "fieldConfig": {
@@ -174,7 +158,7 @@
       "description": "Distribution of config audit findings by severity. Emits data only after ConfigAuditReport scans complete (ADR-0004 — no placeholder).",
       "gridPos": { "h": 10, "w": 12, "x": 12, "y": 12 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (severity) (trivy_config_audit_checks_total)", "legendFormat": "{{severity}}", "instant": true } ],
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by (severity) (trivy_resource_configaudits)", "legendFormat": "{{severity}}", "instant": true } ],
       "fieldConfig": {
         "defaults": { "noValue": "no scans yet" },
         "overrides": []

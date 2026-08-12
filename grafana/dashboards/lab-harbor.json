@@ -96,7 +96,7 @@
       "id": 7, "type": "stat", "title": "Total Artifacts",
       "gridPos": { "h": 4, "w": 8, "x": 16, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(harbor_artifact_total)", "instant": true } ],
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(harbor_project_artifact_total)", "instant": true } ],
       "fieldConfig": {
         "defaults": { "decimals": 0, "noValue": "not deployed" },
         "overrides": []
@@ -108,7 +108,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "harbor_artifact_total", "legendFormat": "project={{project_name}}", "range": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "harbor_project_artifact_total", "legendFormat": "project={{project_name}}", "range": true }
       ],
       "fieldConfig": {
         "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10 } },

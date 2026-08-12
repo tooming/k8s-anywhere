@@ -57,7 +57,7 @@
       "id": 4, "type": "stat", "title": "Network Policy Count",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "cilium_policy_count", "instant": true } ],
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "cilium_policy", "instant": true } ],
       "fieldConfig": {
         "defaults": { "decimals": 0, "noValue": "n/a" },
         "overrides": []
