@@ -60,11 +60,12 @@ setup() {
   [[ "$output" == *"no ADR uses the self-tracking"* ]]
 }
 
-@test "adr-chart-version-sync-check: passes on the real repo's ADRs (ADR-0020/0021 match their live pins)" {
+@test "adr-chart-version-sync-check: passes on the real repo's ADRs (ADR-0020/0021/0023 match their live pins)" {
   run bash "$REPO/scripts/adr-chart-version-sync-check.sh"
   [ "$status" -eq 0 ]
   [[ "$output" == *"adr-0020"* ]]
   [[ "$output" == *"adr-0021"* ]]
+  [[ "$output" == *"adr-0023"* ]]
 }
 
 # --- adr-image-pin-sync-check -------------------------------------------------------

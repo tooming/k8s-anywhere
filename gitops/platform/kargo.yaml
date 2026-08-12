@@ -77,6 +77,22 @@
 # workloads/dataPlane install switches all defaulting to the prior behavior)
 # plus doc/comment rewording. No CVE is cited in the 1.11.0 release itself;
 # this bump is routine version currency, not a security fix.
+#
+# Bumped 1.11.0 -> 1.11.1 (2026-08-11, #1101): highest stable release, no major
+# bump, no pinning ADR flip condition triggered. Verified directly against the
+# real OCI registry (ghcr.io/akuity/kargo-charts/kargo) via the registry's own
+# tags/list and manifest APIs -- not assumed from the GitHub release page
+# alone: tag 1.11.1 exists, manifest annotation
+# org.opencontainers.image.created is 2026-08-10T19:57:48Z (real), image.version
+# is 1.11.1. Kargo ships app+chart together from one Chart.yaml per release tag
+# (no separate chart-only versioning line), so this is a same-tag app+chart
+# bump. Upstream changelog (v1.11.1, published 2026-08-10): nine backported
+# fixes -- UI (ArgoCD link handling, YAML editor spacing, chart cloning),
+# controller (network connection management, git rename detection), server
+# (REST API error handling, HTTP request context propagation), response body
+# leak prevention. No CVE mentioned. Nothing touches the Digest-strategy
+# admission-webhook behavior tests/kargo.bats documents (#633) -- unaffected.
+# Release: https://github.com/akuity/kargo/releases/tag/v1.11.1
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
