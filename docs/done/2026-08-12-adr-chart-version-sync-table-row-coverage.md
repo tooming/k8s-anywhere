@@ -65,4 +65,4 @@ installed in this session per CLAUDE.md, they run in GitHub Actions on this PR).
 
 ## PR
 
-<!-- filled in after PR creation -->
+https://github.com/tooming/k8s-anywhere/pull/1172
