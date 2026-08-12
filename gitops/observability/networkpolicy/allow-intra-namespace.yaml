@@ -4,7 +4,7 @@
 # `observability` row, for the binding rationale and flip condition. The LGTMP stack
 # has many intra-namespace flows:
 #   Alloy → Mimir/Loki/Pyroscope (remote_write / push);
-#   Alloy ← KSM / LGTMP self-metric scrapes (ports 9009, 3100, 3200, 4040, 8080, 80);
+#   Alloy ← KSM / LGTMP self-metric scrapes (ports 9009, 3100, 3200, 4040, 8080, 8081, 80);
 #   Grafana → Mimir / Loki / Tempo / Pyroscope (datasource reads);
 #   pprof scrapes between Pyroscope and co-located services.
 # A single broad intra-namespace allow is correct here — every component is an

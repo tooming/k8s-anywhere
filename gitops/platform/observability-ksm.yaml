@@ -17,6 +17,21 @@ spec:
       releaseName: kube-state-metrics
       valuesObject:
         fullnameOverride: kube-state-metrics
+        # Self-monitoring (KSM's own build_info/watch_total metrics, distinct
+        # from the kube_* cluster-object metrics KSM exposes on the main
+        # :8080 port) is chart-default OFF (`selfMonitor.enabled: false`).
+        # With it off the chart's own service.yaml never adds a Service port
+        # for the telemetry listener at all -- lab-ksm.json's "KSM Version"
+        # (kube_state_metrics_build_info) and "KSM Watch Total by Resource"
+        # (kube_state_metrics_watch_total) panels were structurally
+        # guaranteed to never show data as a result (found auditing the
+        # dashboard's real metric names, same class of bug as PR #1155/#1156).
+        # Enabling it opens a real :8081 Service port (paired scrape target
+        # in observability-alloy.yaml's "ksm_self" block) so those panels
+        # show real, auto-discovered state (ADR-0004) instead of "No data"
+        # forever.
+        selfMonitor:
+          enabled: true
         # Pod-level securityContext is set via the `securityContext` key, NOT
         # `podSecurityContext` -- this chart's own values.yaml/templates read
         # `.Values.securityContext` (with an `enabled` flag) for the pod spec;

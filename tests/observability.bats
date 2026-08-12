@@ -148,29 +148,34 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "lab-garage.json queries garage_bucket_count for bucket stats" {
-  run grep -q 'garage_bucket_count' "$REPO/grafana/dashboards/lab-garage.json"
+@test "lab-garage.json queries the real block_resync_queue_length/counter/error_counter metrics" {
+  run grep -q 'block_resync_queue_length' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 0 ]
+  run grep -q 'block_resync_counter' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 0 ]
+  run grep -q 'block_resync_error_counter' "$REPO/grafana/dashboards/lab-garage.json"
   [ "$status" -eq 0 ]
 }
 
-@test "lab-garage.json queries garage_object_count for object stats" {
-  run grep -q 'garage_object_count' "$REPO/grafana/dashboards/lab-garage.json"
+@test "lab-garage.json queries the real api_s3_request_counter/api_s3_error_counter metrics" {
+  run grep -q 'api_s3_request_counter' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 0 ]
+  run grep -q 'api_s3_error_counter' "$REPO/grafana/dashboards/lab-garage.json"
   [ "$status" -eq 0 ]
 }
 
-@test "lab-garage.json queries garage_block_resync for replication lag" {
-  run grep -q 'garage_block_resync' "$REPO/grafana/dashboards/lab-garage.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-garage.json queries garage_storage_bytes for disk usage" {
-  run grep -q 'garage_storage_bytes' "$REPO/grafana/dashboards/lab-garage.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-garage.json queries garage_s3_api for API request rate" {
-  run grep -q 'garage_s3_api' "$REPO/grafana/dashboards/lab-garage.json"
-  [ "$status" -eq 0 ]
+@test "lab-garage.json does not query the nonexistent garage_* bucket/object/storage/s3-api/resync metrics" {
+  # Regression guard (same class of bug as PR #1155/#1156): Garage has no
+  # Prometheus metric named garage_bucket_count, garage_object_count,
+  # garage_storage_bytes, garage_s3_api_request_total, garage_s3_api_error_total,
+  # garage_block_resync_total, or garage_block_resync_queue_length at all —
+  # verified against Garage v2.3.0's own documented metrics list
+  # (doc/book/reference-manual/monitoring.md). Bucket/object/storage usage has
+  # no Prometheus equivalent (Admin API only); the rest are real metrics under
+  # different names (api_s3_request_counter, block_resync_queue_length, etc.)
+  # with no "garage_" prefix.
+  run grep -qE 'garage_(bucket_count|object_count|storage_bytes|s3_api_(request|error)_total|block_resync_(total|queue_length))' "$REPO/grafana/dashboards/lab-garage.json"
+  [ "$status" -eq 1 ]
 }
 
 @test "lab-garage.json has no fabricated/placeholder data (ADR-0004)" {

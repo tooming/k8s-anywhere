@@ -15,7 +15,7 @@
       "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
       "options": {
         "mode": "markdown",
-        "content": "**Lab — Garage S3 (Object Storage)** — real metrics from Garage v2 (ADR-0002, ADR-0004). Alloy scrapes the Garage admin port (`:3903/metrics`) → Mimir. Covers the S3-compatible-storage CHARTER learning objective. Garage is the shared backend for Mimir, Loki, Tempo, and Pyroscope."
+        "content": "**Lab — Garage S3 (Object Storage)** — real metrics from Garage v2 (ADR-0002, ADR-0004). Alloy scrapes the Garage admin port (`:3903/metrics`) → Mimir. Covers the S3-compatible-storage CHARTER learning objective. Garage is the shared backend for Mimir, Loki, Tempo, and Pyroscope. Garage has no Prometheus metric for bucket count, object count, or total storage bytes used (verified against its own documented metrics list, `doc/book/reference-manual/monitoring.md` at the pinned `v2.3.0` tag) — that usage data is only available via its Admin API (JSON, not Prometheus), so no panel here claims it."
       }
     },
     {
@@ -46,19 +46,8 @@
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
     },
     {
-      "id": 4, "type": "stat", "title": "Bucket Count",
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 3 },
-      "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(garage_bucket_count{job=\"garage\"})", "instant": true } ],
-      "fieldConfig": {
-        "defaults": { "decimals": 0, "noValue": "n/a" },
-        "overrides": []
-      },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
-    },
-    {
       "id": 5, "type": "stat", "title": "Garage ArgoCD Synced",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 3 },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 3 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "argocd_app_info{name=\"garage\", sync_status=\"Synced\"}", "instant": true } ],
       "fieldConfig": {
@@ -73,32 +62,10 @@
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
     },
     {
-      "id": 6, "type": "stat", "title": "Total Objects",
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 7 },
-      "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(garage_object_count{job=\"garage\"})", "instant": true } ],
-      "fieldConfig": {
-        "defaults": { "decimals": 0, "noValue": "n/a" },
-        "overrides": []
-      },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
-    },
-    {
-      "id": 7, "type": "stat", "title": "Storage Used (GiB)",
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 7 },
-      "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(garage_storage_bytes{job=\"garage\"}) / 1024 / 1024 / 1024", "instant": true } ],
-      "fieldConfig": {
-        "defaults": { "decimals": 2, "noValue": "n/a" },
-        "overrides": []
-      },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none", "textMode": "auto" }
-    },
-    {
       "id": 8, "type": "stat", "title": "Block Resync Queue",
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 7 },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 3 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(garage_block_resync_queue_length{job=\"garage\"})", "instant": true } ],
+      "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(block_resync_queue_length{job=\"garage\"})", "instant": true } ],
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -111,7 +78,7 @@
     },
     {
       "id": 9, "type": "stat", "title": "Garage Restarts",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 7 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 7 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [ { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "max(kube_pod_container_status_restarts_total{namespace=\"storage\", container=\"garage\"})", "instant": true } ],
       "fieldConfig": {
@@ -125,11 +92,11 @@
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" }
     },
     {
-      "id": 10, "type": "timeseries", "title": "S3 API Request Rate (by handler)",
+      "id": 10, "type": "timeseries", "title": "S3 API Request Rate (by endpoint)",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 11 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by(handler) (rate(garage_s3_api_request_total{job=\"garage\"}[5m]))", "legendFormat": "{{handler}}", "range": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by(api_endpoint) (rate(api_s3_request_counter{job=\"garage\"}[5m]))", "legendFormat": "{{api_endpoint}}", "range": true }
       ],
       "fieldConfig": {
         "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
@@ -142,7 +109,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(garage_s3_api_error_total{job=\"garage\"}[5m]))", "legendFormat": "errors/s", "range": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(api_s3_error_counter{job=\"garage\"}[5m]))", "legendFormat": "errors/s", "range": true }
       ],
       "fieldConfig": {
         "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
@@ -151,27 +118,15 @@
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
     },
     {
-      "id": 12, "type": "timeseries", "title": "Block Resync Rate (by status)",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "id": 12, "type": "timeseries", "title": "Block Resync Rate (attempts vs errors)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 19 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum by(status) (rate(garage_block_resync_total{job=\"garage\"}[5m]))", "legendFormat": "{{status}}", "range": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(block_resync_counter{job=\"garage\"}[5m]))", "legendFormat": "attempts/s", "range": true },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(rate(block_resync_error_counter{job=\"garage\"}[5m]))", "legendFormat": "errors/s", "range": true }
       ],
       "fieldConfig": {
         "defaults": { "unit": "ops", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
-        "overrides": []
-      },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
-    },
-    {
-      "id": 13, "type": "timeseries", "title": "Storage Bytes Over Time",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
-      "datasource": { "type": "prometheus", "uid": "mimir" },
-      "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "sum(garage_storage_bytes{job=\"garage\"})", "legendFormat": "total bytes", "range": true }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
         "overrides": []
       },
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }

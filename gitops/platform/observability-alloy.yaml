@@ -102,6 +102,21 @@ spec:
                 scrape_interval = "30s"
               }
 
+              // KSM's OWN build_info/watch_total self-metrics live on a separate
+              // :8081 telemetry port (observability-ksm.yaml's `selfMonitor.enabled`),
+              // not on the :8080 port above (which only serves kube_* cluster-object
+              // metrics) -- lab-ksm.json's "KSM Version"/"KSM Watch Total by Resource"
+              // panels queried kube_state_metrics_build_info/watch_total against a
+              // scrape target that structurally never carried them (same class of bug
+              // as PR #1155/#1156's dashboard metric-name drift fixes).
+              prometheus.scrape "ksm_self" {
+                targets = [
+                  {"__address__" = "kube-state-metrics.observability.svc.cluster.local:8081", "job" = "kube-state-metrics-self"},
+                ]
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+                scrape_interval = "30s"
+              }
+
               prometheus.scrape "argocd" {
                 targets = [
                   // job names follow ArgoCD's official Prometheus convention so the
