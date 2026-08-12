@@ -307,8 +307,8 @@ at tag `v0.33.0` (raw source, not a rendered doc site — ADR-0004).
 panel.** Wiring up a real SbomReport-count metric (a `kube-state-metrics`
 `CustomResourceState` config for the `SbomReport` CRD, or an equivalent) is a
 separate, larger feature-add outside a bugfix's scope — flagged as a follow-up in
-`docs/backlog/2026-08-12-action-needed-cycle25-dashboard-metric-drift-fix.md`
-rather than silently dropped.
+`docs/done/2026-08-12-dashboard-metric-drift-fix-cilium-harbor-trivy.md` rather
+than silently dropped.
 
 **Flip condition:** re-add an SBOM-count panel once a real metric backs it (either
 trivy-operator ships one upstream, or a `kube-state-metrics` custom-resource-state
