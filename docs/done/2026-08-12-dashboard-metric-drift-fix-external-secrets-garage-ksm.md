@@ -173,4 +173,4 @@ revert within 30s like any other gitops change.
 
 ## PR
 
-(filled in after `gh pr create`)
+https://github.com/tooming/k8s-anywhere/pull/1157
