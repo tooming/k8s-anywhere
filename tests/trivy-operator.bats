@@ -176,14 +176,23 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "lab-trivy.json references trivy_sbom_reports_total (CHARTER supply-chain goal)" {
+@test "lab-trivy.json does not reference the nonexistent trivy_sbom_reports_total metric (ADR-0022 2026-08-12: no real metric backs an SBOM-count panel; panel removed rather than left permanently broken)" {
   run grep -q 'trivy_sbom_reports_total' "$REPO/grafana/dashboards/lab-trivy.json"
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
 }
 
-@test "lab-trivy.json references trivy_config_audit_checks_total (configAudit panel)" {
-  run grep -q 'trivy_config_audit_checks_total' "$REPO/grafana/dashboards/lab-trivy.json"
+@test "lab-trivy.json references the real trivy_resource_configaudits metric, not the nonexistent trivy_config_audit_checks_total (configAudit panel)" {
+  run grep -q 'trivy_resource_configaudits' "$REPO/grafana/dashboards/lab-trivy.json"
   [ "$status" -eq 0 ]
+  run grep -q 'trivy_config_audit_checks_total' "$REPO/grafana/dashboards/lab-trivy.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "lab-trivy.json's CVE-by-severity panels use Title-Case severity label values (Critical/High/Medium/Low), matching trivy-operator's real label values, not uppercase" {
+  run grep -q 'severity=\\"Critical\\"' "$REPO/grafana/dashboards/lab-trivy.json"
+  [ "$status" -eq 0 ]
+  run grep -q 'severity=\\"CRITICAL\\"' "$REPO/grafana/dashboards/lab-trivy.json"
+  [ "$status" -eq 1 ]
 }
 
 @test "lab-trivy.json has no fabricated/placeholder data (ADR-0004)" {

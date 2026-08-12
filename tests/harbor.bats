@@ -356,8 +356,8 @@ setup() {
   [ -f "$REPO/grafana/dashboards/lab-harbor.json" ]
 }
 
-@test "lab-harbor.json references harbor_artifact_total (real metric, ADR-0004)" {
-  run grep -q 'harbor_artifact_total' "$REPO/grafana/dashboards/lab-harbor.json"
+@test "lab-harbor.json references the real harbor_project_artifact_total metric, not the nonexistent harbor_artifact_total (ADR-0004)" {
+  run grep -q 'harbor_project_artifact_total' "$REPO/grafana/dashboards/lab-harbor.json"
   [ "$status" -eq 0 ]
 }
 

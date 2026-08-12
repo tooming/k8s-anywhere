@@ -103,9 +103,13 @@ Trivy Operator exposes Prometheus metrics on `:8080/metrics`. Add Alloy
 `prometheus.scrape "trivy-operator"`. Dashboard
 `grafana/dashboards/lab-trivy.json`: CVE-by-severity counts per namespace
 (real `trivy_image_vulnerabilities` gauge), top-10 vulnerable workloads,
-config-audit pass/fail per workload, scan-job duration p95, operator
-reconcile rate. SBOMs are CR-shaped, not metric-shaped — a separate panel
-shows SbomReport count per namespace as a stat.
+config-audit findings by severity (real `trivy_resource_configaudits` gauge),
+operator reconcile rate. SBOMs are CR-shaped, not metric-shaped — no
+SbomReport-count panel exists yet, since no metric or `kube-state-metrics`
+custom-resource-state config currently exposes that count (see
+[§Re-evaluation log](#re-evaluation-log) 2026-08-12 — a prior version of this
+dashboard queried a nonexistent metric for this; removed rather than left
+permanently broken).
 
 ### NetworkPolicy + PSS
 
@@ -265,3 +269,47 @@ by many releases) — noted here only because the pin this entry's own citation
 references moved. **Flip condition (unchanged):** re-evaluate on the next
 Trivy supply-chain advisory, or when a future chart bump changes a
 `valuesObject` key shape.
+
+### 2026-08-12 — `lab-trivy.json` metric-name drift fixed; SBOM panel removed as never-real (executor sweep)
+
+**Trigger.** Executor STEP 6b JANITOR sweep (this run's 25th cycle) cross-checked
+`grafana/dashboards/lab-trivy.json`'s PromQL queries against the real metric names
+trivy-operator exposes at the pinned `appVersion` `0.33.0`, verified directly
+against `docs/tutorials/integrations/metrics.md` and `pkg/metrics/collector_test.go`
+at tag `v0.33.0` (raw source, not a rendered doc site — ADR-0004).
+
+**Findings.** Two real bugs, both present since the dashboard's original authoring
+(not a recent regression):
+- The "ConfigAudit Checks by Severity" panel queried `trivy_config_audit_checks_total`
+  — this metric name does not exist anywhere in trivy-operator. The real metric is
+  `trivy_resource_configaudits` (confirmed with its `severity` label present,
+  Title-Case values).
+- The four CVE-count panels (Critical/High/Medium/Low) queried
+  `trivy_image_vulnerabilities{severity="CRITICAL"}` etc. — uppercase. The real
+  `severity` label values on this metric are Title Case (`Critical`, `High`,
+  `Medium`, `Low`), confirmed against the metrics doc's own examples. Uppercase
+  never matches, so these four panels also silently showed "No data" forever, not
+  the legitimate "no scans yet" state their `noValue` text implied.
+- The "SBOM Reports (total)" panel queried `trivy_sbom_reports_total` — this
+  metric does not exist at all; trivy-operator's real metric surface at this
+  version covers vulnerabilities/configaudits/rbacassessments/exposedsecrets/
+  infraassessments/cluster-compliance only, nothing SBOM-shaped. This ADR's own
+  "Observability" section (above) says "SBOMs are CR-shaped, not metric-shaped —
+  a separate panel shows SbomReport count per namespace as a stat" — but no
+  `kube-state-metrics` `CustomResourceState` config exposing that CR count was
+  ever actually wired up (checked `gitops/platform/observability-ksm.yaml`
+  directly — no such config exists), so the panel was structurally guaranteed to
+  never show real data, not merely pending a first scan. Removed the panel rather
+  than leave a permanently-broken query (ADR-0004: never present a query that can
+  never reflect real state as if it were a legitimate "not yet" wait).
+
+**Decision: fix the two real metric-name/label-casing bugs; remove the SBOM
+panel.** Wiring up a real SbomReport-count metric (a `kube-state-metrics`
+`CustomResourceState` config for the `SbomReport` CRD, or an equivalent) is a
+separate, larger feature-add outside a bugfix's scope — flagged as a follow-up in
+`docs/backlog/2026-08-12-action-needed-cycle25-dashboard-metric-drift-fix.md`
+rather than silently dropped.
+
+**Flip condition:** re-add an SBOM-count panel once a real metric backs it (either
+trivy-operator ships one upstream, or a `kube-state-metrics` custom-resource-state
+config is added for `SbomReport`).

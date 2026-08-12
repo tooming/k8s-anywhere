@@ -121,9 +121,11 @@ setup() {
   [ -f "$REPO/grafana/dashboards/lab-cilium.json" ]
 }
 
-@test "lab-cilium.json references cilium_policy_count" {
-  run grep -q 'cilium_policy_count' "$REPO/grafana/dashboards/lab-cilium.json"
+@test "lab-cilium.json references the real cilium_policy metric (not the nonexistent cilium_policy_count)" {
+  run grep -q '"cilium_policy"' "$REPO/grafana/dashboards/lab-cilium.json"
   [ "$status" -eq 0 ]
+  run grep -q 'cilium_policy_count' "$REPO/grafana/dashboards/lab-cilium.json"
+  [ "$status" -eq 1 ]
 }
 
 @test "lab-cilium.json references cilium_drop_count_total" {
