@@ -166,13 +166,21 @@ spec:
               timeoutSeconds: 5
             readinessProbe:
               timeoutSeconds: 5
+          # Found live 2026-08-12 (#631): a real `docker push` of the capstone image
+          # OOMKilled this container mid-blob-upload (`lastState.terminated.reason:
+          # OOMKilled, exitCode: 137`, timestamp exact match against the CI job's
+          # failed HEAD request). registry2's S3 storage driver buffers upload chunks
+          # in memory before flushing to Garage; 512Mi was sized for idle/health-check
+          # traffic, not a real push. 512Mi -> 1Gi (request 128Mi -> 256Mi
+          # proportionally) — verified live: a subsequent push completed without a
+          # repeat OOMKill.
           resources:
             requests:
               cpu: 50m
-              memory: 128Mi
+              memory: 256Mi
             limits:
               cpu: 500m
-              memory: 512Mi
+              memory: 1Gi
           controller:
             resources:
               requests:
