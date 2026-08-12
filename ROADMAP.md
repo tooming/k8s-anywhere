@@ -5455,6 +5455,62 @@ there is no point where the lab loses a working git source or CI path.
   component affected since nothing else reads these files). `docs/done/` entry
   required. (auto/lgtmp-health-dashboards)
 
+- [ ] 🟢 **Stateless-surface criticality tiering — closes DORA audit Q2's named gap**
+  (CHARTER **Core Values** §"Everything as code" / operational-resilience discipline;
+  planner-fallback gap analysis 2026-08-12, reached via `executor.prompt.md` STEP 6b
+  PLANNER role after this run's Now/next lane was found fully gated — all six
+  remaining items are either an explicit live-cluster-only flip (`auto/
+  forgejo-argocd-repo-secret`'s successor) or gated on the still-unconfirmed standing
+  `[Action required]` issues #631/#633 (re-checked this cycle: both still open, most
+  recent comments 2026-08-11, neither confirms the gate). A currency sweep this same
+  cycle (ArgoCD, Trivy Operator, Grafana, Loki/Tempo/Pyroscope, Kargo, RabbitMQ,
+  Cilium, cert-manager, Velero, KEDA all checked directly against upstream tags —
+  Longhorn deliberately held at `1.11.3` per ADR-0013's own binding flip condition,
+  re-confirmed unfired) found nothing stale enough to bump. **No prerequisites —
+  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004):
+  `docs/dora-audit-readiness.md` Q2 ("Are critical functions/assets identified and
+  mapped to supporting ICT systems?") answers yes for the *stateful* surface only —
+  CHARTER Objective O3 names the six stateful namespaces (`data`, `tidb`, `capstone`,
+  `vault`, `observability`, `inkless`) as critical — and its own "Gap" line states
+  plainly: "no equivalent criticality tiering for the *stateless* surface (e.g., is
+  Envoy Gateway more critical than Kiali? Implicit from always-on/on-demand split,
+  never stated as a tier)." `docs/incident-log.md` already has a binding P0–P3
+  severity scheme (whole-lab-down/data-loss; single always-on component down/
+  security gap; on-demand component broken; cosmetic) used for every real incident
+  logged there — grepped directly, confirmed no existing doc maps each *component*
+  to which tier its own outage would trigger, only individual past incidents.
+
+  Add a new "Stateless component criticality tiers" section to
+  `docs/dora-audit-readiness.md` directly under Q2 (or a new `docs/criticality-
+  tiers.md` if the table grows unwieldy inline — executor's call, cite whichever in
+  Q2's Evidence line), reusing `docs/incident-log.md`'s existing P0–P3 scheme rather
+  than inventing a new one (avoids two competing severity taxonomies). One row per
+  always-on stateless component from CHARTER's "Target end-state" section (Envoy
+  Gateway, Cilium, ArgoCD, Vault, External Secrets, GitLab, Garage, the LGTMP stack
+  components individually — Alloy/Grafana/Mimir/Loki/Tempo/Pyroscope/KSM/
+  node-exporter, moto/ACK/KRO, RabbitMQ, Valkey, Kyverno, Argo Rollouts, Velero,
+  Trivy Operator, cert-manager, KEDA — cross-reference `docs/dependency-tree.md` for
+  the authoritative list, don't hand-enumerate from memory) plus a one-line
+  justification per row grounded in what the component's outage actually breaks
+  (e.g. Cilium → P0, cites the real 2026-07-29 `docs/incident-log.md` entry where a
+  Cilium apiserver-connectivity loss was cluster-wide; Vault/External Secrets → P0,
+  cites the real repeated "ExternalSecrets break cluster-wide" incidents already in
+  that same log; Kiali/on-demand components are explicitly out of scope for this
+  table — they're already covered by O3's on-demand P2 tier, this item is additive
+  for the always-on set only). Update Q2's "Gap" line to point at the new
+  section/file instead of stating the gap as open. New `tests/dora-audit-
+  readiness.bats` (verified directly: no file by this name exists yet — only the
+  unrelated `tests/dora-metrics.bats`, which covers CHARTER O7's `make dora-metrics`
+  delivery-metrics feature, a different doc — do not append there) asserting the new
+  section/file exists and names at minimum Envoy Gateway, Cilium,
+  ArgoCD, and Vault (the four components with a real documented P0 incident already
+  in `docs/incident-log.md`, so this is a recurrence guard against the tiering
+  silently omitting a component that has already caused a real outage). `make ci`
+  must pass. `docs/done/` entry required. PR body must document which components got
+  which tier and why, per-row, not just assert the table exists (ADR-0004 — a table
+  of unjustified tier labels would itself be a form of fabricated/unverified
+  content). (auto/stateless-criticality-tiers)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
