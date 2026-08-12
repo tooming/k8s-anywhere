@@ -67,4 +67,4 @@ guard-script/bats changes are additive and independently revertible.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1144
