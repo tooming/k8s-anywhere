@@ -5511,6 +5511,61 @@ there is no point where the lab loses a working git source or CI path.
   of unjustified tier labels would itself be a form of fabricated/unverified
   content). (auto/stateless-criticality-tiers)
 
+- [ ] 🟢 **Third-party dependency concentration-risk rollup — closes DORA audit Q16's
+  named gap** (CHARTER **Core Values** §"Everything as code; GitOps deploys it" /
+  operational-resilience discipline; planner-fallback gap analysis 2026-08-12, reached
+  via `executor.prompt.md` STEP 6b PLANNER role after this run's Now/next lane was
+  re-confirmed fully gated — the same six standing items (three sequential Forgejo-
+  migration items; `verifyImages` Enforce-flip + O4 CI gate on unconfirmed issue #631;
+  capstone `Deployment` removal on unconfirmed issue #633, both re-checked this cycle,
+  most recent comment 2026-08-11 on each, neither confirms the gate) — and this
+  cycle's own sweep found no groomable intake (the only two open issues are those same
+  standing `[Action required]` trackers), no un-RFC'd 🟡 item anywhere in ROADMAP.md
+  (zero `- [ ] 🟡` lines), and no `docs/roadmap/incoming/` file to absorb. **No
+  prerequisites — executor may pick up immediately.**) Verified directly (not assumed,
+  ADR-0004): `docs/dora-audit-readiness.md` Q16 ("Is concentration risk assessed —
+  reliance on a single upstream provider?") answers that concentration is "assessed
+  per-decision... but never rolled up into a single cross-cutting view of *which*
+  single upstream repo, registry, or chart source, if it disappeared, would break the
+  most components at once," and its own Gap line calls this "real; a genuinely new
+  artifact, not just re-indexing" (distinct from Q14's `docs/dependency-register.md`,
+  which the register's own header explicitly scopes as pure re-indexing with "no new
+  dependency-risk judgment"). Grepping `docs/` for "concentration" turns up only this
+  Q16 answer itself — nothing already tracks this.
+
+  Add `docs/dependency-concentration.md`: group every row of
+  `docs/dependency-register.md`'s 32-tool table by **upstream GitHub org** (the
+  register's own "Upstream source" column — reuse those exact org strings, don't
+  re-derive from memory) and surface any org backing more than one tool as a
+  concentration point, one short paragraph each, worst-first. Verify the count
+  directly against the live register table before writing it (the table has grown
+  since Q14 first answered "24 ADRs" — re-count from the file, don't reuse a stale
+  number). At minimum, `github.com/grafana` backs six always-on-core rows at once
+  (Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy) — the entire observability pane
+  shares one upstream governance/maintenance entity, the largest single concentration
+  in the table; `github.com/argoproj` backs two (ArgoCD, Argo Rollouts); `github.com/
+  pingcap` backs two (TiDB Operator, TiDB, both heavy-on-demand only, so lower blast
+  radius than the always-on Grafana-org cluster). Every other row is a distinct org —
+  state that plainly rather than padding the doc with single-tool "groups." Close by
+  naming the lab's actual mitigation, already true today per ADR-0001's own design
+  (don't invent a new one): every workload is a GitOps `Application` pointing at a
+  pinned chart/image ref, so a disappeared upstream is a fork-the-source-and-repoint
+  operation, not a rebuild — cite the real, already-executed ADR-0011→ADR-0024
+  Artifactory→Harbor migration as the existence proof (same precedent Q17 already
+  cites). Update Q16's "Gap" line in `docs/dora-audit-readiness.md` to point at the
+  new file instead of stating the gap as open, and add the file to the "Evidence" line
+  of both Q16 and Q14 (Q14's own "Keeping this in sync" section should note this new
+  file is a downstream consumer of its table, so a future register edit that removes
+  or renames a row should prompt a look here too). New assertions in a `dora-audit-
+  readiness.bats`-style file (extend the existing one if `auto/stateless-criticality-
+  tiers` already created `tests/dora-audit-readiness.bats` — check first, don't create
+  a second file for the same doc, matching this section's own `tests/observability.bats`
+  frozen-file precedent) asserting the new file exists and names at minimum
+  `github.com/grafana` with a count. `make ci` must pass. `docs/done/` entry required.
+  PR body must state the actual computed per-org counts, not just assert the file
+  exists (ADR-0004 — an unverified rollup would itself be a form of fabricated
+  content). (auto/dependency-concentration-rollup)
+
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
 > ambient, #60 Longhorn) and have been groomed into 🟢 ADR + manifest pairs in
