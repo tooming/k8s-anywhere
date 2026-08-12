@@ -422,9 +422,13 @@ applied, then move past them):**
 5. No GitLab Runner was ever registered against this lab's GitLab instance, so no
    pipeline had ever executed at all (PR #1026, 2026-08-04/05).
 6. `k3d-k8s-lab-server-0` node disk pressure caused Harbor pods to crashloop — found
-   2026-08-05, **tracked separately and still open**, see issue
-   [#1034](https://github.com/tooming/k8s-anywhere/issues/1034); check its status
-   before assuming host headroom is fine.
+   2026-08-05 (root cause: a stopped-but-not-deleted DR green cluster,
+   `k8s-lab-green`, holding ~10GB of container volumes), fixed live 2026-08-06
+   (`k3d cluster delete k8s-lab-green`), and **confirmed resolved 2026-08-10**
+   (`DiskPressure: False`, 74% usage, issue
+   [#1034](https://github.com/tooming/k8s-anywhere/issues/1034) closed). Worth a
+   quick `df -h`/`kubectl describe node` sanity check given time has passed since,
+   but this is not a standing blocker.
 7. Vault sealed for 9+ hours, silently breaking ExternalSecrets cluster-wide,
    including Harbor's (PR #1038, 2026-08-06).
 8. Harbor chart's default 1-second probe timeouts self-inflicted crashloops under
@@ -460,8 +464,9 @@ fix above is durable and in git. What has never yet happened is one session with
 stable through a complete `docker login && push && cosign sign` cycle without the
 host's load average climbing past 100 mid-attempt. Per the accumulated findings
 across every attempt above:
-1. Check issue [#1034](https://github.com/tooming/k8s-anywhere/issues/1034)'s status
-   first — don't attempt this if node disk pressure is still open/unresolved.
+1. Disk pressure (issue #1034) is already confirmed resolved as of 2026-08-10 — a
+   quick `df -h`/`DiskPressure` sanity check is still worth doing given time has
+   passed, but this is no longer a standing gate to check first.
 2. Bring up Harbor **alone** — no Kargo, no other on-demand component running
    concurrently — and give it a few minutes to fully stabilize before triggering
    anything. Every prior attempt that hit a host-capacity ceiling did so with Harbor
