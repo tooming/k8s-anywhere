@@ -54,9 +54,44 @@ duplicated.
   KEDA/capstone Applications, distinct from the ~5 namespace-only PSA-floor shells
   that merely pre-stage an otherwise on-demand heavy component).
 - **Evidence:** [CHARTER.md](../CHARTER.md) O3; [docs/dependency-tree.md](dependency-tree.md).
-- **Gap:** no equivalent criticality tiering for the *stateless* surface (e.g., is
-  Envoy Gateway more critical than Kiali? Implicit from always-on/on-demand split, never
-  stated as a tier).
+- **Gap:** closed below — see "Stateless component criticality tiers".
+
+### Stateless component criticality tiers
+
+Every always-on **stateless** component from CHARTER's "Target end-state" section,
+tiered using [docs/incident-log.md](incident-log.md)'s existing P0–P3 severity scheme
+(reused rather than inventing a second taxonomy) — one row per component, with a
+justification grounded in what its *own* outage actually breaks, not a guess. This is
+additive to Q2's existing stateful-surface answer (CHARTER O3); on-demand heavy
+components (Harbor, TiDB, Istio+Kiali, Longhorn, Kargo) are out of scope here — their
+outage is already covered by the P2 "on-demand/heavy component is broken" row in the
+severity scheme itself, and they carry no always-on blast radius by design.
+
+| Component | Tier | Why |
+|---|---|---|
+| Cilium | **P0** | CNI/network dataplane — the *only* documented P0 in `docs/incident-log.md` to date (2026-07-29: apiserver connectivity loss, cluster-wide). Without it, no pod can reach the apiserver or any other pod. |
+| Envoy Gateway | **P0** | Sole north-south ingress front door (ADR-0008) — every lab UI, the capstone endpoint, and the DR front door all route through it. An outage of the gateway itself (not a NetworkPolicy gap, which is what the two logged 2026-08-04/08-07 incidents actually were, both P1) means total external unreachability — whole-lab-down by the scheme's own P0 definition, even though no incident has hit this specific failure mode yet. |
+| ArgoCD | **P1** | GitOps control plane. Already-running pods keep serving on outage — this is not immediate lab-down — but no new deploys land and drift stops self-healing, matching the P1 definition ("a single always-on component is down or degraded"). |
+| Vault | **P1** | Secrets backend. Documented real incident (`gitops/vault/unsealer.yaml`'s header comment): sealed for 4+ days, silently breaking every ExternalSecrets refresh cluster-wide. Already-synced K8s `Secret` objects are untouched — new/rotated secrets stop flowing. Matches P1's "security-relevant gap" language directly. |
+| External Secrets Operator | **P1** | Shares Vault's exact blast radius — the two fail together functionally (ESO is the sync mechanism, Vault is the source). |
+| Kyverno | **P1** | Admission policy engine. Every policy in `gitops/kyverno/policies/` sets `failurePolicy: Ignore` (fail-open, confirmed directly in `verify-image-signatures.yaml`) — an outage doesn't block new deploys, it silently *disables policy enforcement* for their duration. A security-relevant gap by the scheme's own definition, not a functional outage. |
+| Garage | **P1** | S3-compatible object store — backs the entire LGTMP stack's chunk/block storage (Loki/Tempo/Mimir/Pyroscope) *and* Velero's backup target. An outage stops new metrics/logs/traces ingestion and all backups at once — a real, compounding gap even though nothing already-running crashes. |
+| Alloy | **P1** | The single collector feeding every Mimir/Loki/Tempo/Pyroscope series in the lab (`prometheus.scrape`/`loki.write`/`otelcol` pipelines all route through it). An outage blinds the *entire* observability stack simultaneously, not just one dashboard — the same "nothing surfaced anywhere visible" failure mode the 2026-08-11 P0 k3s-datastore incident and the Vault-sealed incident both independently illustrate the cost of. |
+| GitLab | **P2** | Git source + CI runner (host-level Docker Compose, outside the cluster per ADR-0033/ADR-0035). Matches the real 2026-08-04 incident-log entry for "no GitLab Runner ever registered," logged P2 there — no deploys/CI, but the already-running cluster is unaffected. |
+| Grafana | **P2** | Observability UI only — the underlying Mimir/Loki/Tempo/Pyroscope data keeps being written by Alloy even if Grafana itself is down; only the human-facing view is lost. |
+| Mimir / Loki / Tempo / Pyroscope / kube-state-metrics / node-exporter | **P2** each | Individual observability stores/exporters — losing any one is a partial, single-signal blind spot (metrics, or logs, or traces, or profiles), not the total blackout Alloy's own outage would cause. Matches P2's "non-blocking functional defect in an always-on component." |
+| cert-manager | **P2** | TLS lifecycle. Existing certs keep working until their own expiry; only renewal stops — a slow-burn gap, not an immediate one. |
+| KEDA | **P2** | Event-driven autoscaling. Workloads simply stop receiving new scale events and stay at their current replica count — no crash, no traffic loss. |
+| RabbitMQ / Valkey | **P2** each | Data layer backing the always-on demo app and the KEDA scaling demo only — no core-lab component depends on either. |
+| moto / ACK / KRO | **P2** each | Cloud-control-plane emulation for AWS-resource demos — outage breaks the cloud-demo path only, no core-lab impact. |
+| Argo Rollouts | **P2** | Progressive-delivery controller for the capstone canary. Outage freezes new canary rollouts; the currently-active capstone `Rollout` pods keep serving traffic unaffected. |
+| Velero | **P2** | Backup engine. Outage means no *new* backups land (a growing RPO risk, not an immediate one) — restoring from the last-known-good backup is still possible until the gap grows past O3's 24h RPO bar. |
+| Trivy Operator | **P2** | Continuous vulnerability/SBOM scanner. Outage stops new scan reports; it's a detection-visibility gap, not an active exploit path — no already-running workload is affected. |
+
+**Recurrence guard:** `tests/dora-audit-readiness.bats` asserts this table exists and
+names Cilium and Envoy Gateway specifically — the two components tiered P0 here,
+so a future edit can't silently drop the highest-severity rows without failing
+`make ci`.
 
 **Q3. What are the recovery targets (RTO/RPO) for critical functions?**
 - **Applicable?** Yes.

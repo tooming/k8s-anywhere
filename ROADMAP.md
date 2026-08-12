@@ -5455,7 +5455,7 @@ there is no point where the lab loses a working git source or CI path.
   component affected since nothing else reads these files). `docs/done/` entry
   required. (auto/lgtmp-health-dashboards)
 
-- [ ] 🟢 **Stateless-surface criticality tiering — closes DORA audit Q2's named gap**
+- [x] 🟢 **Stateless-surface criticality tiering — closes DORA audit Q2's named gap**
   (CHARTER **Core Values** §"Everything as code" / operational-resilience discipline;
   planner-fallback gap analysis 2026-08-12, reached via `executor.prompt.md` STEP 6b
   PLANNER role after this run's Now/next lane was found fully gated — all six
