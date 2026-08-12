@@ -1138,7 +1138,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
+          "unit": "short",
           "custom": {
             "drawStyle": "line",
             "fillOpacity": 10
@@ -1162,8 +1162,8 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "sum by (username) (rate(grafana_authenticated_user_requests{job=\"grafana\"}[5m]))",
-          "legendFormat": "{{username}}"
+          "expr": "grafana_stat_active_users{job=\"grafana\"}",
+          "legendFormat": "active users"
         }
       ]
     },
@@ -1207,8 +1207,8 @@
             "type": "prometheus",
             "uid": "mimir"
           },
-          "expr": "sum by (handler) (rate(grafana_api_login_post_total{job=\"grafana\"}[5m]))",
-          "legendFormat": "{{handler}}"
+          "expr": "sum(rate(grafana_api_login_post_total{job=\"grafana\"}[5m]))",
+          "legendFormat": "logins/s"
         }
       ]
     }

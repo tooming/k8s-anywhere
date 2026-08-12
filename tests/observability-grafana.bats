@@ -37,3 +37,27 @@ setup() {
 @test "observability-grafana.yaml pins grafana chart to 12.10.4" {
   [ "$(yqs '.spec.source.targetRevision' "$GRAFANA")" = "12.10.4" ]
 }
+
+# --- lab-grafana.json dashboard metric-drift fix (2026-08-12, 5th audit batch) ---
+# "Active users" queried grafana_authenticated_user_requests, a metric that does not
+# exist anywhere in grafana/grafana (verified against the real v13.0.5 source, exhaustive
+# grep found zero hits) -- the panel could never show data. The real gauge for this is
+# grafana_stat_active_users (pkg/infra/metrics/metrics.go, Namespace=grafana,
+# Name=stat_active_users). Separately, "Login rate" grouped `by (handler)` on
+# grafana_api_login_post_total, a real metric but a bare unlabeled Counter (no `handler`
+# label exists) -- misleading, not "no data", but still an inaccurate per-handler claim.
+
+@test "lab-grafana.json references the real grafana_stat_active_users metric" {
+  run grep -q 'grafana_stat_active_users' "$REPO/grafana/dashboards/lab-grafana.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "lab-grafana.json does not reference the fabricated grafana_authenticated_user_requests metric" {
+  run grep -q 'grafana_authenticated_user_requests' "$REPO/grafana/dashboards/lab-grafana.json"
+  [ "$status" -eq 1 ]
+}
+
+@test "lab-grafana.json login-rate panel does not group by the nonexistent handler label" {
+  run grep -q 'by (handler) (rate(grafana_api_login_post_total' "$REPO/grafana/dashboards/lab-grafana.json"
+  [ "$status" -eq 1 ]
+}

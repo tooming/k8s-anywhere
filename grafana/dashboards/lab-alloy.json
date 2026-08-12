@@ -75,7 +75,7 @@
       "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(prometheus_remote_storage_sent_bytes_total{job=\"alloy\"}[5m])", "legendFormat": "bytes/s", "range": true }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "mimir" }, "expr": "rate(prometheus_remote_storage_bytes_total{job=\"alloy\"}[5m])", "legendFormat": "bytes/s", "range": true }
       ],
       "fieldConfig": {
         "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
