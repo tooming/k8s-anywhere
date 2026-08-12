@@ -14,9 +14,14 @@
 # targetRevision pin.
 #
 # Deliberately does NOT flag ADRs using the "vX.Y.x (latest stable at executor
-# pickup time)" phrasing (e.g. ADR-0019, 0022, 0023, 0028, 0029) — that's an
+# pickup time)" phrasing (e.g. ADR-0019, 0022, 0028, 0029) — that's an
 # intentional point-in-time record, not a live mirror, so a later patch bump
-# leaving it unchanged is not drift.
+# leaving it unchanged is not drift. ADR-0023 used to be in this list too, but
+# went stale exactly the way ADR-0020/0021 previously did (chart bumped
+# 1.11.0 -> 1.11.1, PR #1101, without the ADR prose following) — caught by a
+# 2026-08-12 executor sweep and fixed by migrating its "Chart + version"
+# section to the self-tracking phrasing, so this guard now covers it too
+# (self-maintaining, no code change needed here).
 #
 # Run by `make adr-chart-version-sync-check`, the CI 'drift' gates, and the
 # PostToolUse hook. Exit 0 = every self-tracking ADR matches its live pin;

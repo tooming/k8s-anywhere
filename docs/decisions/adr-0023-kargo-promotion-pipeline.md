@@ -34,10 +34,12 @@ Adopt **Kargo** as the lab's promotion-orchestration layer.
 - **Helm repo:** `ghcr.io/akuity/kargo-charts` (OCI; the original
   `https://charts.kargo.io` HTTPS index was retired upstream — see
   `gitops/platform/kargo.yaml`'s header comment)
-- **Chart:** `kargo`
-- **Version:** `1.11.0` (pin; see [§Re-evaluation log](#re-evaluation-log) for the bump
-  history — CVE-driven bumps get their own dated entry there and in
-  `gitops/platform/kargo.yaml`'s header comment)
+- **Chart:** `kargo` `1.11.1` (`appVersion: 1.11.1`; pin lives in
+  `gitops/platform/kargo.yaml`'s `targetRevision` — Kargo ships app+chart together
+  from one `Chart.yaml` per release tag, so chart version and appVersion are always
+  identical; see [§Re-evaluation log](#re-evaluation-log) for the bump history —
+  CVE-driven bumps get their own dated entry there and in `gitops/platform/kargo.yaml`'s
+  header comment)
 - **Namespace:** `kargo` (new; PSA `restricted` — Kargo pods run as uid 65532)
 
 ### Footprint controls (ON-DEMAND)
@@ -245,6 +247,31 @@ ADR-0005 budget), so this pin only takes effect on the next `make kargo-up`.
 release above `1.11.0`, or a security advisory is filed against `1.11.0` (check
 `github.com/akuity/kargo/security/advisories` — GitHub API access for arbitrary repos
 is proxy-blocked in this sandbox; check manually or via the maintainer).
+
+### 2026-08-11 — Chart bumped `1.11.0` → `1.11.1` (routine currency, #1101)
+
+**Trigger.** Routine version-currency sweep found `gitops/platform/kargo.yaml`'s
+`1.11.0` pin one patch release behind the OCI registry's real newest stable tag.
+
+**Verification (ADR-0004).** Confirmed directly against the real OCI registry
+(`ghcr.io/akuity/kargo-charts/kargo`) via the registry's own tags/list and manifest
+APIs — not assumed from the GitHub release page alone: tag `1.11.1` exists, manifest
+annotation `org.opencontainers.image.created` is `2026-08-10T19:57:48Z` (real),
+`org.opencontainers.image.version` is `1.11.1`. Kargo ships app+chart together from
+one `Chart.yaml` per release tag, so this is a same-tag app+chart bump.
+
+**Decision: bump.** Upstream changelog (v1.11.1, published 2026-08-10): nine
+backported fixes — UI (ArgoCD link handling, YAML editor spacing, chart cloning),
+controller (network connection management, git rename detection), server (REST API
+error handling, HTTP request context propagation), response body leak prevention. No
+CVE cited. Nothing in the changelog touches the Digest-strategy admission-webhook
+behavior `tests/kargo.bats` already documents (#633) — that assertion is unaffected.
+No blast radius either way — Kargo is ON-DEMAND (ADR-0005 budget), so this pin only
+takes effect on the next `make kargo-up`.
+
+**Flip conditions:** revisit when the OCI registry's tag list shows a newer stable
+release above `1.11.1`, or a security advisory is filed against `1.11.1` (check
+`github.com/akuity/kargo/security/advisories` manually or via the maintainer).
 
 ---
 
