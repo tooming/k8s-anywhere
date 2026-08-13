@@ -76,5 +76,4 @@ risk from rolling back).
 
 ## PR
 
-TBD — will be updated with the real PR link/number in a follow-up commit on the
-same branch once `create_pull_request` returns it, before self-review/merge.
+https://github.com/tooming/k8s-anywhere/pull/1187
