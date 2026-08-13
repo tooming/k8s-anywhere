@@ -298,3 +298,60 @@ new advisory names a version at or above `13.0.5` as affected. Tempo's own
 flip condition (revisit when a new advisory/fix range names a version at or
 above `2.10.7`) is unchanged in substance, only its log citation is now
 accurate.
+
+### 2026-08-13 — Tempo security fix found, pin bumped `2.10.7` → `2.10.8`
+
+**Trigger.** Planner-fallback currency sweep (`executor.prompt.md` STEP 6b,
+Now/next's six standing items all still gated — three sequential
+GitLab→Forgejo migration items need a live-cluster session; the
+`verifyImages` Enforce flip, the O4 CI-rejection-gate, and the legacy
+capstone `Deployment` removal are all gated on unconfirmed
+maintainer-confirmation issues #631/#633, both re-checked this cycle, no new
+comment since 2026-08-13 05:57 UTC). A batch `git ls-remote --tags` currency
+check across observability-stack components not yet re-checked this run
+(Istio, Harbor chart, Grafana/Loki/Mimir/Tempo chart+image lines, KEDA,
+Kiali, Trivy Operator, TiDB Operator, External Secrets) found Tempo one
+patch behind, satisfying this ADR's own flip condition above.
+
+**Verified directly (not assumed, ADR-0004):** `git ls-remote --tags
+grafana/tempo` shows `v2.10.8` as the newest tag on the `2.10.x` line pinned
+here (no major/minor jump). A real clone's `git log v2.10.7..v2.10.8`
+contains a real security fix, not just routine chores: `chore: update Go to
+1.26.5 to fix stdlib CVEs (#7725)` — fixing CVE-2026-39822, CVE-2026-27145,
+CVE-2026-42504, CVE-2026-42505, and CVE-2026-42507 in the Go standard
+library — plus five further `[security]`-tagged dependency bumps:
+`google.golang.org/grpc` → `v1.82.1` (High severity), `golang.org/x/net` →
+`v0.56.0`, `golang.org/x/text` → `v0.39.0`, `go.opentelemetry.io/otel` →
+`v1.44.0`, and `github.com/klauspost/compress` → `v1.18.7`. Docker Hub's
+tags API confirms the `grafana/tempo:2.10.8` multi-arch image is published
+(pushed 2026-08-13T17:14 UTC — the same day as this bump). This satisfies
+this ADR's own flip condition standard ("advisory/fix range names a version
+at or above the current pin") the same "ships with a real fix" way the
+2026-08-06 Grafana/Loki entries above used. `git diff v2.10.7 v2.10.8 --
+cmd/tempo/Dockerfile packaging/` is **empty** — no packaging/entrypoint
+change, so the existing `readOnlyRootFilesystem`/securityContext analysis on
+this file's `deployment.yaml` carries forward unchanged.
+
+**Decision: bump `tempo:2.10.7` → `2.10.8`** (the newest `2.10.x` patch,
+smallest safe delta carrying every fix above).
+`gitops/observability/tempo/deployment.yaml`'s `image:` field updated;
+`tests/observability-tempo.bats` updated to assert `2.10.8` present and
+`2.10.7` absent (recurrence guard, same pattern as this ADR's Loki entries).
+Grafana, Loki, and Mimir were not re-checked this cycle (out of scope — this
+was a targeted re-check of Tempo specifically, not a full stack sweep);
+their own flip conditions from the prior entries remain unmet as of their
+last audit.
+
+**ADR-0004 caveat.** This remote, clusterless session verified the
+commit-range and published-image facts directly, but cannot verify Tempo
+starts cleanly and continues ingesting/querying traces post-bump on a live
+cluster. Rollback is a one-line revert of the `image:` tag; Tempo is a plain
+`Deployment`, not an ArgoCD-templated Helm release, so a revert takes effect
+on the next manual apply/GitOps sync of `gitops/observability/`; no data
+loss either way since Tempo's trace storage lives in Garage S3, untouched by
+an image-tag change.
+
+**Flip condition (next re-evaluation).** Revisit Tempo's pin again when a
+new advisory/fix range names a version at or above `2.10.8` as affected.
+Grafana's own flip condition (revisit when a new advisory names a version at
+or above `13.0.5`) is unchanged.

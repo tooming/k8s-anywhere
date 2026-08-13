@@ -10,9 +10,14 @@ setup() {
   DASHBOARD="$REPO/grafana/dashboards/lab-tempo.json"
 }
 
-@test "tempo deployment pins image tag 2.10.7" {
-  run grep -q 'image: grafana/tempo:2.10.7' "$DEPLOYMENT"
+@test "tempo deployment pins image tag 2.10.8" {
+  run grep -q 'image: grafana/tempo:2.10.8' "$DEPLOYMENT"
   [ "$status" -eq 0 ]
+}
+
+@test "tempo deployment does not pin the superseded 2.10.7 tag" {
+  run grep -q 'image: grafana/tempo:2.10.7' "$DEPLOYMENT"
+  [ "$status" -eq 1 ]
 }
 
 # ROADMAP "Loki / Tempo / Pyroscope operational-health dashboards — O5 gap":
