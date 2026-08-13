@@ -111,6 +111,24 @@ services:
     # different host — re-check with the same command if this ever needs to move.
     group_add:
       - "991"
+    environment:
+      # Found live 2026-08-13, first real Actions run: the runner's OWN internal
+      # `git rev-parse` against its cached copy of the `actions/checkout` action
+      # source (bind-mounted at /data/.cache/act/cc/<hash>, owned 1000:1000 same
+      # as the runner process's own uid) failed with "detected dubious ownership
+      # in repository" and aborted the job before any user step ran. `stat` and
+      # `id` inside the container agree the UID matches (1000==1000) — this is
+      # Colima's virtiofs volume layer occasionally reporting ownership
+      # inconsistently to git's stricter (CVE-2022-24765-era) ownership check,
+      # same family of VM/emulation flakiness as the QEMU issues elsewhere in
+      # this stack, not an actual permissions problem. This is a single-tenant,
+      # fully-trusted CI cache (not a shared multi-user host), so a blanket
+      # safe.directory exception is the correct fix, not a workaround to later
+      # remove. `GIT_CONFIG_COUNT`/`KEY`/`VALUE` are git's own env-var config
+      # mechanism (no ~/.gitconfig file needed, no HOME-write required).
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: "safe.directory"
+      GIT_CONFIG_VALUE_0: "*"
     volumes:
       - ./runner-config:/data
       - /var/run/docker.sock:/var/run/docker.sock
