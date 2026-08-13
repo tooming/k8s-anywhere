@@ -525,7 +525,7 @@ there is no point where the lab loses a working git source or CI path.
   either way since Tempo's trace storage lives in Garage S3, untouched by an
   image-tag change). `docs/done/` entry required. (auto/tempo-2-10-8)
 
-- [ ] 🟢 **Pin `gitlab/docker-compose.yml`'s `gitlab-tls` sidecar to `nginx:1.27.5-alpine`
+- [x] 🟢 **Pin `gitlab/docker-compose.yml`'s `gitlab-tls` sidecar to `nginx:1.27.5-alpine`
   (currently the floating `1.27-alpine` tag)** (CHARTER **Core Values** §"Everything as
   code" + general hardening; planner-fallback currency/hardening sweep 2026-08-13,
   reached via `executor.prompt.md` STEP 6b — every Now/next item is still gated (the
