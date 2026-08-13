@@ -1,0 +1,40 @@
+# Allow the kube-apiserver to reach KEDA's metrics-apiserver aggregation
+# endpoint on TCP 6443 (ADR-0016). KEDA registers the
+# v1beta1.external.metrics.k8s.io APIService, backed by
+# keda-operator-metrics-apiserver's :6443 (Service port 443 -> containerPort
+# 6443, confirmed via `kubectl get svc -n keda keda-operator-metrics-apiserver
+# -o jsonpath='{.spec.ports}'`); the API server's aggregation layer calls this
+# port directly for every external.metrics.k8s.io discovery/read, the same
+# callback pattern as the existing admission-webhook allows in this directory.
+#
+# Found live 2026-08-13: this allow was simply never written — only
+# allow-keda-metrics-from-observability.yaml (Alloy's scrape of :8080) and
+# allow-keda-webhook-from-apiserver.yaml (:9443 admission callbacks) existed,
+# leaving the default-deny-all floor blocking :6443 outright. Confirmed via
+# `kubectl get apiservice v1beta1.external.metrics.k8s.io`: stuck
+# `False (FailedDiscoveryCheck)` — "net/http: request canceled while waiting
+# for connection" reaching the pod's real IP:6443 directly, for 6+ days.
+# A stuck-Unavailable APIService blocks more than metrics: it makes the
+# apiserver's own namespace-deletion discovery pass fail cluster-wide
+# ("Discovery failed for some groups... external.metrics.k8s.io/v1beta1"),
+# which was actively stalling the `harbor` namespace's termination this
+# session — a namespace that had otherwise finished deleting all content.
+#
+# Same CiliumNetworkPolicy + `fromEntities: remote-node` shape as this
+# directory's existing apiserver-callback allow (see
+# allow-keda-webhook-from-apiserver.yaml's comment for why a plain
+# NetworkPolicy ipBlock rule doesn't work for this traffic pattern).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-keda-metrics-apiserver-from-apiserver
+  namespace: keda
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEntities:
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
