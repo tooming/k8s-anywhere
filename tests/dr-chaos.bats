@@ -57,6 +57,29 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
+# --- Self-heal check correctness (2026-08-13 bugfix recurrence guards) --------
+# The original self-heal poll counted the just-deleted pod as still healthy
+# (status.phase stays Running throughout a pod's termination grace period —
+# "Terminating" is a kubectl display-only label, not a real phase value), and
+# only checked phase=Running rather than actual container readiness — both let
+# the drill report instant false-positive "self-heal confirmed" results. These
+# guard the fix without needing a live cluster.
+
+@test "dr-chaos.sh excludes the deleted pod's own name from the self-heal field-selector" {
+  run grep -q 'metadata.name!=\${OLD_NAME}' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "dr-chaos.sh captures the deleted pod's bare name before deleting it" {
+  run grep -q 'OLD_NAME="\${TARGET#pod/}"' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "dr-chaos.sh checks actual container readiness, not just pod phase" {
+  run grep -q 'status.containerStatuses\[0\].ready' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
 # --- Makefile wiring -------------------------------------------------------
 
 @test "Makefile declares a dr-chaos target" {
