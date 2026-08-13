@@ -471,6 +471,60 @@ there is no point where the lab loses a working git source or CI path.
   cluster, untouched by a chart-version revert in the bootstrap module).
   `docs/done/` entry required. (auto/argocd-chart-10-3-3)
 
+- [ ] 🟢 **Bump Tempo's pinned image `2.10.7` → `2.10.8` (real Go-stdlib + gRPC/otel
+  security fixes)** (CHARTER **Core Values** §"Everything as code" + general
+  hardening; planner-fallback currency sweep 2026-08-13, reached via
+  `executor.prompt.md` STEP 6b — every Now/next item is still gated (the three
+  standing GitLab→Forgejo migration items, plus the `verifyImages` Enforce flip,
+  the O4 CI-rejection-gate, and the legacy capstone `Deployment` removal, all
+  gated on unconfirmed maintainer-confirmation issues #631/#633 — both re-checked
+  this cycle, no new comment since 2026-08-13 05:57 UTC). This cycle's fresh
+  angle: a batch `git ls-remote --tags` currency check across observability-stack
+  components not yet re-checked this run (Istio, Harbor chart, the Grafana/Loki/
+  Mimir/Tempo chart+image lines, KEDA, Kiali, Trivy Operator, TiDB Operator,
+  External Secrets) found Tempo's pin one patch behind — every other component
+  checked matched its newest upstream tag exactly. **No prerequisites — executor
+  may pick up immediately.**) Verified directly (not assumed, ADR-0004): `git
+  ls-remote --tags grafana/tempo` shows `v2.10.8` as the newest tag on the
+  `2.10.x` line pinned in `gitops/observability/tempo/deployment.yaml` (no major/
+  minor jump). A real clone's `git log v2.10.7..v2.10.8` contains a real security
+  fix, not just routine chores: `chore: update Go to 1.26.5 to fix stdlib CVEs
+  (#7725)` — fixing CVE-2026-39822, CVE-2026-27145, CVE-2026-42504,
+  CVE-2026-42505, and CVE-2026-42507 in the Go standard library — plus five
+  further `[security]`-tagged dependency bumps landed the same release:
+  `google.golang.org/grpc` → `v1.82.1` (High severity), `golang.org/x/net` →
+  `v0.56.0`, `golang.org/x/text` → `v0.39.0`, `go.opentelemetry.io/otel` →
+  `v1.44.0`, and `github.com/klauspost/compress` → `v1.18.7`. Docker Hub's tags
+  API confirms the `grafana/tempo:2.10.8` multi-arch image is published (pushed
+  2026-08-13T17:14 UTC, the same day as this sweep). This satisfies the "ships
+  with a real fix" bar this repo's other non-CVE currency bumps use — and is
+  stronger than most (actual CVE fixes, not just a dependency-version nudge).
+  `git diff v2.10.7 v2.10.8 -- cmd/tempo/Dockerfile packaging/` is **empty** — no
+  packaging/entrypoint change, so `deployment.yaml`'s existing
+  `readOnlyRootFilesystem`/securityContext analysis carries forward unchanged.
+
+  Bump `gitops/observability/tempo/deployment.yaml`'s `image: grafana/tempo:2.10.7`
+  → `:2.10.8`. Update `tests/observability-tempo.bats`'s pin assertion (currently
+  titled `"tempo deployment pins image tag 2.10.7"`) to assert `2.10.8` and
+  retitle it to describe this bump; add a paired "does not pin the superseded
+  2.10.7 tag" negative assertion, mirroring this repo's other exact-version-pin
+  recurrence-guard pairs (e.g. `tests/inkless.bats`'s postgres pin pair,
+  `tests/observability-loki.bats`'s own present/absent pair from its prior
+  bumps). Add a dated entry to
+  [ADR-0006](docs/decisions/adr-0006-grafana-native-git-sync.md)'s Re-evaluation
+  log documenting the CVE findings and packaging-diff check above (this ADR is
+  Tempo's closest documented home per its own log's note: "No dedicated ADR
+  exists for Loki/Tempo individually"). Update
+  `docs/dependency-register.md`'s Grafana row "Last reviewed" cell to cite this
+  bump. `make ci` must pass. PR body must document the CVE findings above and the
+  ADR-0004 caveat that this remote clusterless session cannot verify Tempo starts
+  cleanly and continues ingesting/querying traces post-bump on a live cluster —
+  call out the rollback path (revert the `image:` tag; Tempo is a plain
+  `Deployment`, not an ArgoCD-templated Helm release, so a revert takes effect on
+  the next manual apply/GitOps sync of `gitops/observability/`; no data loss
+  either way since Tempo's trace storage lives in Garage S3, untouched by an
+  image-tag change). `docs/done/` entry required. (auto/tempo-2-10-8)
+
 - [x] 🟢 **Vault pod-readiness alert rule — extend Grafana Unified Alerting (RFC #1084)**
   (CHARTER **Core Values** §"operational-resilience discipline"; planner-fallback gap
   analysis 2026-08-11, reached via `executor.prompt.md` STEP 6b, PLANNER role — the
