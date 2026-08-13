@@ -125,6 +125,7 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       - run: bash scripts/readme-check.sh
       - run: bash scripts/lab-ui-check.sh
+      - run: bash scripts/o5-dashboard-coverage-check.sh
       - run: bash scripts/envoy-egress-allowlist-check.sh
       - run: bash scripts/appset-list-coverage-check.sh
       - run: bash scripts/workflow-timeout-check.sh
