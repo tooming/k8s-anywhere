@@ -23,6 +23,20 @@ spec:
         - path:
             type: PathPrefix
             value: /
+      # Found live 2026-08-13 (#631): every `docker push` blob-upload session
+      # consistently 504'd on its very first POST to /v2/<repo>/blobs/uploads/ —
+      # not intermittent flakiness like the base-image-pull issue, a *structural*
+      # timeout. Envoy Gateway's default request timeout (no `timeouts:` set here
+      # previously) is ~15s; under this host's real load (harbor-core proxying to
+      # a cold registry connection, itself proxying to Garage S3) that's tight
+      # enough to fail nearly every real push, not just a rare slow one — same
+      # class of "chart/gateway default too tight for this host" issue already
+      # fixed via probe timeoutSeconds bumps across Harbor, Kyverno, ArgoCD, etc.
+      # 60s matches the convention used elsewhere in this repo for the same
+      # failure mode.
+      timeouts:
+        request: 60s
+        backendRequest: 60s
       backendRefs:
         - name: harbor
           port: 80
