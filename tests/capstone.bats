@@ -57,6 +57,37 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- retry_cmd wrapper (found live 2026-08-13, #631) --------------------------
+# ~15 distinct pipeline failures this session were all transient network/Harbor
+# errors (Docker Hub base-image i/o timeouts, occasional 502/504 from Harbor,
+# `docker login` hitting the same "context deadline exceeded" class reaching
+# Harbor's token endpoint) that cleared on a subsequent attempt. `retry_cmd`
+# wraps each network-facing step in-job before GitLab's own `retry: 2` whole-job
+# fallback kicks in. These fixes landed as direct live-verified commits (no PR,
+# no bats coverage) — recurrence guard so a future edit can't silently drop the
+# wrapper (or move its definition back to `script:`, which broke login coverage
+# the first time this fix was written) with nothing catching it.
+@test "build-and-push defines retry_cmd in before_script (not script, so login is covered too)" {
+  run bash -c "awk '/^build-and-push:/{flag=1} flag && /^[a-z_-]+:$/ && !/^build-and-push:/{exit} flag' '$REPO/.gitlab-ci.yml' | grep -q 'before_script:'"
+  [ "$status" -eq 0 ]
+  run bash -c "awk '/^build-and-push:/{flag=1} /^  before_script:/{bs=1} /^  script:/{bs=0} bs' '$REPO/.gitlab-ci.yml' | grep -q 'retry_cmd()'"
+  [ "$status" -eq 0 ]
+}
+
+@test "build-and-push wraps docker login, build, and both push commands in retry_cmd" {
+  run bash -c "awk '/^build-and-push:/{flag=1} flag' '$REPO/.gitlab-ci.yml' | grep -c 'retry_cmd '"
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 4 ]
+  run bash -c "awk '/^build-and-push:/{flag=1} flag' '$REPO/.gitlab-ci.yml' | grep -q 'retry_cmd sh -c .*docker login'"
+  [ "$status" -eq 0 ]
+}
+
+@test "build-and-push and sign-image both set retry: 2 as a whole-job fallback" {
+  run bash -c "grep -c '^  retry: 2$' '$REPO/.gitlab-ci.yml'"
+  [ "$status" -eq 0 ]
+  [ "$output" -eq 2 ]
+}
+
 # --- Dockerfile for the pipeline build --------------------------------------
 @test "demo app Dockerfile exists for the capstone CI build" {
   [ -f "$REPO/gitops/apps/demo/Dockerfile" ]
