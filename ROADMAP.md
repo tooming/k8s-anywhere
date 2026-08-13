@@ -525,6 +525,62 @@ there is no point where the lab loses a working git source or CI path.
   either way since Tempo's trace storage lives in Garage S3, untouched by an
   image-tag change). `docs/done/` entry required. (auto/tempo-2-10-8)
 
+- [ ] 🟢 **Pin `gitlab/docker-compose.yml`'s `gitlab-tls` sidecar to `nginx:1.27.5-alpine`
+  (currently the floating `1.27-alpine` tag)** (CHARTER **Core Values** §"Everything as
+  code" + general hardening; planner-fallback currency/hardening sweep 2026-08-13,
+  reached via `executor.prompt.md` STEP 6b — every Now/next item is still gated (the
+  three standing GitLab→Forgejo migration items, plus the `verifyImages` Enforce flip,
+  the O4 CI-rejection-gate, and the legacy capstone `Deployment` removal, all gated on
+  unconfirmed maintainer-confirmation issues #631/#633 — both re-checked this cycle, no
+  new comment since 2026-08-13 05:57 UTC). This cycle's fresh angle: the last two
+  currency sweeps this run covered `gitops/**/*.yaml` image lines and the
+  Terraform-bootstrap seam; this cycle instead swept the two out-of-cluster
+  `docker-compose.yml` stacks (`gitlab/`, `forgejo/`) — a third, genuinely distinct
+  enumeration surface neither prior sweep touched. **No prerequisites — executor may
+  pick up immediately.**) Verified directly (not assumed, ADR-0004):
+  `tests/gitlab-compose.bats`'s own docstring documents the exact bug class this repo
+  already fixed once for this same file — `gitlab`/`gitlab-runner` used to float on
+  `:latest` until pinned to `19.2.1-ce.0`/`v19.2.1` — but the `gitlab-tls` nginx
+  sidecar (added later, for ADR-0006's Grafana Git Sync HTTPS requirement) was missed:
+  it still floats on `nginx:1.27-alpine` (a minor-version tag, not an exact patch),
+  unlike every other image in this file. Docker Hub's tags API confirms
+  `nginx:1.27-alpine`'s current digest (`sha256:65645c7b...`) is byte-identical to the
+  exact-patch tag `nginx:1.27.5-alpine`'s digest (checked against `1.27.5`/`1.27.4`/
+  `1.27.3`/`1.27.2`/`1.27.1`/`1.27.0`-alpine individually — only `1.27.5-alpine`
+  matches). `forgejo/docker-compose.yml` was checked too and has no equivalent gap —
+  both its `forgejo` and `forgejo-runner` images are already exact-pinned. This is a
+  **pin-what's-already-running** change, not a version bump — the floating tag already
+  resolves to `1.27.5-alpine` on any fresh pull today; explicit pinning only makes that
+  fact durable and inspectable, mirroring this run's own `tidb-demo` nginx pin
+  precedent (`docs/done/2026-08-13-tidb-demo-nginx-explicit-pin.md`) and the Inkless
+  Postgres precedent it in turn followed.
+
+  Bump `gitlab/docker-compose.yml`'s `gitlab-tls` service `image: nginx:1.27-alpine` →
+  `image: nginx:1.27.5-alpine`. Add a short header comment above the `image:` line
+  (this service currently has none for its own pin, unlike the `gitlab` service two
+  blocks above it in the same file) documenting the digest-match finding above,
+  mirroring the `gitlab` service's own adjacent comment style. Extend
+  `tests/gitlab-compose.bats` with two new assertions (same file — this is exactly the
+  bug class its own docstring names, not a new scope needing a new file): `gitlab-tls`
+  service is pinned to `nginx:1.27.5-alpine`; the bare floating `nginx:1.27-alpine`
+  (no patch suffix) is NOT present — same present/absent recurrence-guard shape as
+  this run's own `tidb-demo`/`tests/tidb-cluster.bats` pair from earlier this run. No
+  `docs/dependency-tree.md`/`docs/dependency-register.md`/ADR-0033 update needed —
+  none of the three tracks this specific sidecar's pinned patch version (checked
+  directly; ADR-0033's own "Specifics" section is a point-in-time description that
+  already doesn't track the `gitlab`/`gitlab-runner` pin bumps either, an existing,
+  accepted pattern for this superseded ADR — not something this item's scope should
+  fix). `make ci` must pass. PR body must document the digest-comparison finding above
+  and the ADR-0004 caveat that this remote clusterless session cannot verify the
+  `gitlab-tls` container starts cleanly and Grafana's Git Sync HTTPS path keeps working
+  post-pin on a live cluster (or rather, on the maintainer's Colima host — this
+  service runs outside the cluster entirely) — call out the rollback path (revert the
+  `image:` tag; `docker compose --profile tls up -d` on the next
+  `gitlab-tls-bootstrap.sh` run picks up the change; zero data-loss risk either way
+  since `nginx:1.27-alpine` and `1.27.5-alpine` are the same actual image content
+  today, and this container is stateless TLS termination with no volumes).
+  `docs/done/` entry required. (auto/gitlab-tls-nginx-explicit-pin)
+
 - [x] 🟢 **Vault pod-readiness alert rule — extend Grafana Unified Alerting (RFC #1084)**
   (CHARTER **Core Values** §"operational-resilience discipline"; planner-fallback gap
   analysis 2026-08-11, reached via `executor.prompt.md` STEP 6b, PLANNER role — the
