@@ -42,7 +42,10 @@ setup() {
 }
 
 @test "forgejo service defines a healthcheck (image ships none of its own)" {
-  run grep -A40 '^  forgejo:' "$COMPOSE"
+  # -A60, not -A40: the environment: block grew past 40 lines once the
+  # INSTALL_LOCK and GOMAXPROCS/GODEBUG fixes landed (both found live
+  # 2026-08-13 — see docker-compose.yml's own comments on each).
+  run grep -A60 '^  forgejo:' "$COMPOSE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"healthcheck:"* ]]
 }

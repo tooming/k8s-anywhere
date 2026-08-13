@@ -16,7 +16,25 @@ if [ -z "$pw" ]; then
   exit 1
 fi
 
-if docker exec forgejo forgejo admin user create \
+# `docker exec` connects as the image's raw default user (root) — it does not
+# inherit the entrypoint's own privilege-drop to USER_UID/USER_GID (that only
+# happens for the container's PID 1 process, via the s6-init supervisor exec'ing
+# forgejo as the unprivileged user after root-only setup steps). Forgejo's own CLI
+# refuses to run as root ("Forgejo is not supposed to be run as root" — found live
+# 2026-08-13, first `make forgejo-up`). Force the exec onto the same UID/GID the
+# compose file's USER_UID/USER_GID env vars configure (1000:1000), the documented
+# fix for this exact class of Gitea/Forgejo `docker exec` issue.
+#
+# Also found live: without an explicit --config, the CLI can't locate app.ini from
+# a bare `docker exec` (it isn't run through the entrypoint that normally sets
+# GITEA_WORK_DIR) and fails with "Unable to load config file for a installed
+# Forgejo instance". Confirmed the real in-container path directly
+# (`docker exec forgejo find / -iname app.ini`): /data/gitea/conf/app.ini.
+# --config is an `admin`-level flag (`forgejo admin --help`), not a `user
+# create`-level one — it must come before the `user` subcommand or the CLI parses
+# it as an unrecognized flag to `user create` and silently falls back to no config.
+if docker exec -u 1000:1000 forgejo forgejo admin --config /data/gitea/conf/app.ini \
+     user create \
      --admin --username lab-admin --email lab-admin@localhost \
      --password "$pw" --must-change-password=false >/tmp/forgejo-admin-ensure.out 2>&1; then
   echo "  ok  created Forgejo admin user 'lab-admin'"

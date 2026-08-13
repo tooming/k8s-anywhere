@@ -396,6 +396,11 @@ forgejo-up: ## Start Forgejo + runner and wait until healthy (migration stage 1,
 	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' forgejo 2>/dev/null)" = "healthy" ]; do sleep 5; done
 	@echo "Forgejo healthy."
 	@bash scripts/forgejo-admin-ensure.sh
+	@$(MAKE) forgejo-runner-up
+
+.PHONY: forgejo-runner-up
+forgejo-runner-up: ## Register (if needed) and (re)start the Forgejo Actions runner
+	@bash scripts/forgejo-runner-ensure.sh
 
 .PHONY: forgejo-down
 forgejo-down: ## Stop Forgejo + runner (keeps volumes)
