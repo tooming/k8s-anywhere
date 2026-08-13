@@ -471,7 +471,7 @@ there is no point where the lab loses a working git source or CI path.
   cluster, untouched by a chart-version revert in the bootstrap module).
   `docs/done/` entry required. (auto/argocd-chart-10-3-3)
 
-- [ ] 🟢 **Bump Tempo's pinned image `2.10.7` → `2.10.8` (real Go-stdlib + gRPC/otel
+- [x] 🟢 **Bump Tempo's pinned image `2.10.7` → `2.10.8` (real Go-stdlib + gRPC/otel
   security fixes)** (CHARTER **Core Values** §"Everything as code" + general
   hardening; planner-fallback currency sweep 2026-08-13, reached via
   `executor.prompt.md` STEP 6b — every Now/next item is still gated (the three
