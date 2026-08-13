@@ -30,8 +30,13 @@ setup() {
 @test "grafana alerting: DeploymentReplicasUnavailable rule present with correct expr" {
   run grep -q 'title: DeploymentReplicasUnavailable' "$APP"
   [ "$status" -eq 0 ]
-  run grep -q 'expr: kube_deployment_status_replicas_available < kube_deployment_spec_replicas' "$APP"
+  run grep -q 'expr: kube_deployment_spec_replicas - kube_deployment_status_replicas_available' "$APP"
   [ "$status" -eq 0 ]
+}
+
+@test "grafana alerting: DeploymentReplicasUnavailable no longer uses the dead '<' comparison (2026-08-13 fix: never fires at available==0, ROADMAP auto/alerting-threshold-bool-fix)" {
+  run grep -q 'expr: kube_deployment_status_replicas_available < kube_deployment_spec_replicas' "$APP"
+  [ "$status" -ne 0 ]
 }
 
 @test "grafana alerting: PVCStuckPendingOrLost rule present with correct expr" {
@@ -44,7 +49,17 @@ setup() {
 @test "grafana alerting: VaultPodNotReady rule present with correct expr (ROADMAP auto/vault-pod-readiness-alert)" {
   run grep -q 'title: VaultPodNotReady' "$APP"
   [ "$status" -eq 0 ]
-  run grep -q 'expr: kube_pod_status_ready{namespace="vault", pod=~"vault-\[0-9\]+", condition="true"} == 0' "$APP"
+  run grep -q 'expr: kube_pod_status_ready{namespace="vault", pod=~"vault-\[0-9\]+", condition="true"} == bool 0' "$APP"
+  [ "$status" -eq 0 ]
+}
+
+@test "grafana alerting: VaultPodNotReady no longer uses the bare '== 0' filter (2026-08-13 fix: kube_pod_status_ready is a stateSet metric, so the filtered value IS 0 in the firing case — 'gt 0' on that can never be true; ROADMAP auto/alerting-threshold-bool-fix)" {
+  run grep -q 'expr: kube_pod_status_ready{namespace="vault", pod=~"vault-\[0-9\]+", condition="true"} == 0$' "$APP"
+  [ "$status" -ne 0 ]
+}
+
+@test "grafana alerting: rules block documents the stateSet-metric/threshold-gt-0 gotcha (recurrence guard for future rule authors)" {
+  run grep -q 'GOTCHA (found + fixed 2026-08-13' "$APP"
   [ "$status" -eq 0 ]
 }
 

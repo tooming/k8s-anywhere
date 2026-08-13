@@ -277,6 +277,29 @@ spec:
         # set anywhere in this file — deliberately: that is what would wire a
         # notification receiver, and per the RFC this stays visual-only (Grafana's
         # own Alerting UI shows firing state). Do not add one without a fresh RFC.
+        #
+        # GOTCHA (found + fixed 2026-08-13, ROADMAP auto/alerting-threshold-bool-fix):
+        # refId B's "threshold" expression applies its evaluator (e.g. `gt 0`)
+        # directly to refId A's OWN returned numeric value — it does NOT coerce a
+        # PromQL filter match into a boolean 1. That's harmless for an "info" metric
+        # (argocd_app_info is always literally 1, so filtering it and checking
+        # `gt 0` works), but kube-state-metrics' *stateSet*-shaped metrics
+        # (kube_pod_status_ready, kube_pod_status_phase,
+        # kube_persistentvolumeclaim_status_phase, …) emit a series PER enum value
+        # every scrape, each 0 or 1 — so filtering to the "bad" label and comparing
+        # `== 0` returns exactly the value 0, and `gt 0` on 0 is always false: the
+        # rule can never fire. Compare with the PromQL `bool` modifier instead
+        # (`== bool 0`), which always returns 1/0 for every matched series
+        # regardless of the raw metric's own value — that's what VaultPodNotReady
+        # uses below. Two-metric comparisons (A < B) have the same trap in reverse:
+        # `available < desired` returns *available*'s value where true, so the
+        # worst case (available == 0, i.e. total outage) evaluates `0 gt 0` =
+        # false and never fires — DeploymentReplicasUnavailable below instead
+        # computes the deficit directly (`desired - available`), whose value is
+        # exactly what "greater than zero" should mean. A rule that only ever
+        # matches on `== 1` against a stateSet metric's *true* value (e.g.
+        # PVCStuckPendingOrLost's `phase=~"Pending|Lost" == 1`) doesn't need this —
+        # the returned value already is 1 in the firing case.
         alerting:
           rules.yaml:
             apiVersion: 1
@@ -361,7 +384,7 @@ spec:
                           to: 0
                         datasourceUid: mimir
                         model:
-                          expr: kube_deployment_status_replicas_available < kube_deployment_spec_replicas
+                          expr: kube_deployment_spec_replicas - kube_deployment_status_replicas_available
                           instant: true
                           refId: A
                       - refId: B
@@ -421,7 +444,7 @@ spec:
                           to: 0
                         datasourceUid: mimir
                         model:
-                          expr: kube_pod_status_ready{namespace="vault", pod=~"vault-[0-9]+", condition="true"} == 0
+                          expr: kube_pod_status_ready{namespace="vault", pod=~"vault-[0-9]+", condition="true"} == bool 0
                           instant: true
                           refId: A
                       - refId: B
