@@ -406,7 +406,7 @@ there is no point where the lab loses a working git source or CI path.
   same actual image content today). `docs/done/` entry required.
   (auto/tidb-demo-nginx-explicit-pin)
 
-- [ ] 🟢 **Bump Terraform-bootstrapped `argo-cd` chart `10.3.2` → `10.3.3` (appVersion
+- [x] 🟢 **Bump Terraform-bootstrapped `argo-cd` chart `10.3.2` → `10.3.3` (appVersion
   `v3.5.0` → `v3.5.1`, real ArgoCD security/reliability fixes)** (CHARTER **Core
   Values** §"Everything as code" + general hardening; planner-fallback currency
   sweep 2026-08-13, third pass this run, reached via `executor.prompt.md` STEP 6b
