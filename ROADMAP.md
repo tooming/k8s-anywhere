@@ -352,7 +352,7 @@ there is no point where the lab loses a working git source or CI path.
   rollback recovers immediately with no data loss). `docs/done/` entry required.
   (auto/redis-exporter-1-89-0)
 
-- [ ] 🟢 **Pin the TiDB demo's floating `nginx:alpine` tag to `nginx:1.31.3-alpine`**
+- [x] 🟢 **Pin the TiDB demo's floating `nginx:alpine` tag to `nginx:1.31.3-alpine`**
   (CHARTER **Core Values** §"Everything as code" + general hardening; planner-fallback
   currency sweep 2026-08-13, second pass this run, reached via `executor.prompt.md`
   STEP 6b — every Now/next item is still gated (the three standing GitLab→Forgejo

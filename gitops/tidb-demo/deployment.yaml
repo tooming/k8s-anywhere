@@ -1,6 +1,15 @@
 # Demo workload: nginx serving a static page, with TiDB credentials injected via
 # the tidb-demo-creds Secret (rendered by ESO from Vault secret/tidb/demo).
 # optional:true lets the pod start even when the ExternalSecret hasn't synced yet.
+#
+# image pinned explicitly 2026-08-13 (planner-fallback currency sweep): was the
+# floating tag `nginx:alpine`, unlike every other version-sensitive pin in this
+# repo. Verified directly via Docker Hub's tags API: `nginx:alpine`'s content
+# digest is byte-identical to `nginx:mainline-alpine`, which matches the exact
+# tag `1.31.3-alpine` -- nginx's mainline line, NOT the stable line
+# (`1.30.4-alpine`, a distinct digest). This is a pin-what's-already-running
+# change, not a version bump -- the floating tag already resolved to this exact
+# content; explicit pinning only makes that fact durable and inspectable.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,7 +29,7 @@ spec:
     spec:
       containers:
         - name: demo
-          image: nginx:alpine
+          image: nginx:1.31.3-alpine
           ports:
             - containerPort: 80
           env:
