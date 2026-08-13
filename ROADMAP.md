@@ -406,6 +406,71 @@ there is no point where the lab loses a working git source or CI path.
   same actual image content today). `docs/done/` entry required.
   (auto/tidb-demo-nginx-explicit-pin)
 
+- [ ] 🟢 **Bump Terraform-bootstrapped `argo-cd` chart `10.3.2` → `10.3.3` (appVersion
+  `v3.5.0` → `v3.5.1`, real ArgoCD security/reliability fixes)** (CHARTER **Core
+  Values** §"Everything as code" + general hardening; planner-fallback currency
+  sweep 2026-08-13, third pass this run, reached via `executor.prompt.md` STEP 6b
+  — every Now/next item is still gated (the three standing GitLab→Forgejo migration
+  items plus the three items gated on maintainer-confirmation issues #631/#633,
+  re-checked, unchanged) and this run's prior two PLANNER-fallback passes (sidecar
+  version currency, then floating-tag sweep) already claimed the gaps those angles
+  found. This cycle's fresh angle, per STEP 8's "widen the lens" guidance (a third,
+  distinct pass): checked `infra/modules/**/*.tf` + `infra/live/**/*.hcl` — the
+  Terraform-bootstrap seam (ADR-0001) — which is a genuinely separate enumeration
+  surface from `gitops/**/*.yaml` (per `routines/upgrade-drafter.prompt.md` STEP 2's
+  own explicit note: a source pinned only under `infra/` is invisible to a
+  `gitops/`-only sweep and can go stale across multiple cycles undetected — this is
+  exactly the same file this repo's own history already caught drifting once
+  before, `docs/done/2026-07-23-argocd-chart-bump-9-5-20-to-9-7-1.md`). **No
+  prerequisites — executor may pick up immediately.**) Verified directly (not
+  assumed, ADR-0004): a real clone's `git ls-remote --tags argoproj/argo-helm`
+  shows `argo-cd-10.3.3` one release ahead of
+  `infra/modules/argocd/variables.tf`'s pinned `chart_version` default `"10.3.2"`
+  (the bump this same file's `auto/argocd-chart-10-3-2` item landed 2026-08-10). A
+  full clone diff (`git diff argo-cd-10.3.2 argo-cd-10.3.3 -- charts/argo-cd/`)
+  touches **only** `Chart.yaml`'s `version`/`appVersion` fields (`10.3.2`→`10.3.3`,
+  `appVersion` `v3.5.0`→`v3.5.1`) and its `artifacthub.io/changes` annotation — zero
+  `values.yaml`/template changes, so RFC #785's `global.networkPolicy.create: false`
+  companion override (`infra/modules/argocd/values.yaml`) needs no re-verification
+  beyond confirming the diff doesn't touch it (confirmed: it doesn't). Unlike the
+  prior 10.2.3→10.3.0 chart-only repackage, this bump **does** move ArgoCD's real
+  `appVersion` — a real clone's `git log v3.5.0..v3.5.1` (9 commits, ArgoCD's own
+  repo, not the chart repo) shows real security- and reliability-relevant fixes:
+  `fix(server): prevent SSD CLI secret mask spoofing` and `fix(ssd): hide secret in
+  last-applied-configuration annotation` (both close a real Secret-data-exposure
+  gap in ArgoCD's server-side-diff masking path), plus `fix(appset): stop
+  progressive sync reconciling in a tight loop` (a real reliability fix) and four
+  more real bugfixes (diff-cache reconciliation-timeout handling, terminating-
+  Application verification, manifest-generate-paths cache-key consistency). This
+  satisfies the "ships with a real fix" bar this repo's other non-CVE currency
+  bumps use — not a blind patch assumption, and stronger than most (an actual
+  upstream security fix, not just a dependency-CVE suppression).
+
+  Bump `infra/modules/argocd/variables.tf`'s `chart_version` default `"10.3.2"` →
+  `"10.3.3"` (update the inline comment's chart-version half only, matching the
+  existing `"10.3.2 => ArgoCD v3.5.0"` → `"10.3.3 => ArgoCD v3.5.1"` shape — this
+  time appVersion DOES move, unlike the 10.3.0/10.3.2 chart-only repackages).
+  Update both `infra/live/local/argocd/terragrunt.hcl` and
+  `infra/live/oracle/argocd/terragrunt.hcl`'s `chart_version = "10.3.2"` input to
+  `"10.3.3"` (both must move together with the module default — RFC #785's own
+  recurrence-guard rationale). Update `tests/argocd-chart-pin.bats`'s three
+  assertions (`chart_version` default, both terragrunt.hcl inputs) from `10.3.2` to
+  `10.3.3`. No `docs/dependency-tree.md`/`context.md` update needed — neither cites
+  this chart's specific version (checked directly). Update
+  `docs/dependency-register.md`'s ArgoCD row "Last reviewed" cell citing this bump
+  and the real appVersion move (distinct from the two prior chart-only-repackage
+  entries it currently cites). `make ci` (specifically `terraform validate`/`fmt`,
+  clusterless — this Terraform-bootstrap seam needs no live OCI/cloud credentials
+  per ADR-0001) must pass. PR body must document the real-appVersion-move finding
+  and the security-fix commits above (name which ones, not just "security commits
+  exist") and the ADR-0004 caveat that this remote clusterless session cannot
+  verify a real `terraform apply` against this pin succeeds end-to-end — call out
+  the rollback path (revert the three pins; the next `terraform apply` re-installs
+  the prior chart/appVersion; ArgoCD's own state — Applications, RBAC, repo
+  credentials — lives in the `argocd` namespace's Secrets/ConfigMaps on the
+  cluster, untouched by a chart-version revert in the bootstrap module).
+  `docs/done/` entry required. (auto/argocd-chart-10-3-3)
+
 - [x] 🟢 **Vault pod-readiness alert rule — extend Grafana Unified Alerting (RFC #1084)**
   (CHARTER **Core Values** §"operational-resilience discipline"; planner-fallback gap
   analysis 2026-08-11, reached via `executor.prompt.md` STEP 6b, PLANNER role — the
