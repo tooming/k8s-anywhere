@@ -43,7 +43,16 @@ services:
   # URLs (ADR-0006). Terminates TLS on :8930 (mkcert cert from gitlab-tls-bootstrap.sh)
   # and proxies git to GitLab's http :8929. Additive — GitLab/ArgoCD/CLI still use http.
   gitlab-tls:
-    image: nginx:1.27-alpine
+    # Pinned explicit version (not the floating `1.27-alpine` minor tag) — same
+    # rationale as the omnibus service two blocks above: an unpinned tag can
+    # silently jump patches on a routine `docker compose pull`, with no PR, no
+    # changelog review, and no rollback record. `1.27.5-alpine` is what
+    # `1.27-alpine` itself resolves to as of 2026-08-13 (confirmed via the
+    # Docker Hub tags API: the two tags' image digests are byte-identical) —
+    # pinning to it changes nothing about what's actually running, it only
+    # removes the floating-tag footgun. Bump deliberately via a future PR, not
+    # an automatic `docker compose pull`.
+    image: nginx:1.27.5-alpine
     container_name: gitlab-tls
     restart: unless-stopped
     # Opt-in profile: only starts with `docker compose --profile tls up` (which
