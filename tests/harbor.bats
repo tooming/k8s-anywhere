@@ -158,6 +158,22 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# Found live 2026-08-13 (#631): every `docker push` blob-upload session
+# consistently 504'd on its first POST to /v2/<repo>/blobs/uploads/ — Envoy
+# Gateway's ~15s default request timeout is too tight for harbor-core proxying
+# to a cold registry connection under this host's real load. Recurrence guard
+# for a fix that landed as a direct live-verified commit (no PR) — without this
+# assertion, a future edit could silently drop the `timeouts:` block and
+# reintroduce the near-100%-failure-rate push timeout with no gate catching it.
+@test "harbor HTTPRoute sets a 60s request/backendRequest timeout (chart default too tight under load)" {
+  run grep -q 'timeouts:' "$REPO/gitops/harbor/route.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'request: 60s' "$REPO/gitops/harbor/route.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'backendRequest: 60s' "$REPO/gitops/harbor/route.yaml"
+  [ "$status" -eq 0 ]
+}
+
 # --- ExternalSecret for S3 credentials (ESO Vault→K8s pattern) ---------------
 @test "harbor-s3 ExternalSecret exists" {
   [ -f "$REPO/gitops/secrets/harbor-s3-externalsecret.yaml" ]
