@@ -18,12 +18,17 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 34 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0034), two are **Superseded** and excluded per the index's own
+Of the 35 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0035), two are **Superseded** and fully excluded per the index's own
 convention (only their replacement is listed): ADR-0010 (Redis, superseded by
-ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor).
+ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor). A third,
+ADR-0033 (GitLab, superseded by ADR-0035/Forgejo, 2026-08-11), is **not** excluded
+the same way: unlike the other two's fully-decommissioned predecessors, the
+superseded tool (GitLab) is still the live, running component, so the table below
+keeps citing ADR-0033 until the migration completes (see the GitLab row's own note).
+ADR-0035 doesn't get a separate row of its own for the same reason.
 
-Of the remaining 30, **eight decide a policy or architectural posture rather than a
+Of the remaining 33, **eight decide a policy or architectural posture rather than a
 single third-party product** — they're excluded from the table below because there's
 no one upstream project to attach a criticality/upstream-source/last-reviewed row to:
 ADR-0003 (decoupled/no-SPOF design principle), ADR-0004 (no-fabricated-content
@@ -33,12 +38,17 @@ Standards — a built-in Kubernetes admission feature, not a third-party depende
 ADR-0025 (free/OSS-tier governance rule), ADR-0026 (cloud-agnostic architecture
 policy), and ADR-0030 (k3s version-pinning governance — enforced via k3s, whose
 backend choice ADR-0027 already covers in the table, the same "policy enforced via
-an already-listed tool" shape as ADR-0016/Cilium). The remaining 22 ADRs name 24
-distinct third-party tools (two ADRs — ADR-0001 and ADR-0012 — each decide on two
-tools at once; one tool, Garage, is named by two ADRs for two different roles and
-gets one merged row; ADR-0031/ADR-0032 each name one — TiDB Operator and TiDB itself
-are distinct products with distinct version lines, so they get separate rows, same
-shape as Istio/Kiali under ADR-0012).
+an already-listed tool" shape as ADR-0016/Cilium). Of the remaining 25, 24 have a row
+below — ADR-0035 is the transitional exception above, with no row of its own yet —
+collectively naming the table's 32 distinct third-party-tool rows: three ADRs each
+decide on more than one tool at once (ADR-0001: Terraform/Terragrunt + ArgoCD;
+ADR-0012: Istio + Kiali; ADR-0027: Oracle Cloud Infrastructure + k3s) and ADR-0034
+alone names seven (the LGTMP observability internals — Mimir, Loki, Tempo, Pyroscope,
+Alloy, kube-state-metrics, node-exporter); one tool, Garage, is named by two ADRs
+(ADR-0002, ADR-0007) for two different roles and gets one merged row; ADR-0031/
+ADR-0032 each name one — TiDB Operator and TiDB itself are distinct products with
+distinct version lines, so they get separate rows, same shape as Istio/Kiali under
+ADR-0012.
 
 **Gap closed 2026-08-07 (was: "Real gap, distinct from the policy-ADR exclusions
 above").** This register's construction rule (every row cites the ADR that decided
