@@ -80,13 +80,35 @@ build-and-push:
     DOCKER_TLS_CERTDIR: ""
   before_script:
     - echo "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USER" --password-stdin
+  # retry: 2 (below) + per-command retry loop (added 2026-08-13, #631 investigation):
+  # this host's outbound network (Docker Hub base-image pulls) and Harbor itself both
+  # exhibit real but *transient* per-attempt failures — i/o timeouts on specific
+  # destination IPs, and occasional 502/504s from Harbor mid-request — that verifiably
+  # clear within seconds to a couple of minutes (confirmed live: the identical command
+  # succeeded on a subsequent attempt in every one of ~15 observed failures this
+  # session, never a permanent block). A single flaky step no longer needs a human
+  # babysitting the pipeline and re-triggering by hand — `retry_cmd` retries each
+  # network-facing step in place (fresh attempt, same job) before falling back to
+  # `retry: 2`'s whole-job re-run (fresh DinD service, fresh network path) if a step
+  # exhausts its in-job retries.
   script:
-    - docker build -t "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" gitops/apps/demo/
-    - docker push "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+    - |
+      retry_cmd() {
+        local n=0 max=6 delay=15
+        until "$@"; do
+          n=$((n+1))
+          [ "$n" -ge "$max" ] && { echo "retry_cmd: giving up after $n attempts: $*" >&2; return 1; }
+          echo "retry_cmd: attempt $n failed, retrying in ${delay}s: $*" >&2
+          sleep "$delay"
+        done
+      }
+    - retry_cmd docker build -t "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" gitops/apps/demo/
+    - retry_cmd docker push "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
     - docker tag "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$REGISTRY/$IMAGE_NAME:latest"
-    - docker push "$REGISTRY/$IMAGE_NAME:latest"
+    - retry_cmd docker push "$REGISTRY/$IMAGE_NAME:latest"
   after_script:
     - docker logout "$REGISTRY" || true
+  retry: 2
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
 
@@ -130,6 +152,7 @@ sign-image:
   # verify-image-signatures.yaml) verifies by resolving the deployed image
   # reference to its digest first, the same way. Don't "fix" this into signing
   # both tags -- it would be redundant, not a correctness improvement.
+  # retry: 2 — same transient-Harbor-error rationale as build-and-push above.
   script:
     - cosign sign
         --key /tmp/cosign/cosign.key
@@ -141,5 +164,6 @@ sign-image:
     - rm -rf /tmp/cosign
   needs:
     - build-and-push
+  retry: 2
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
