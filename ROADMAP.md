@@ -296,7 +296,7 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live, running
   component" pending this) to a Forgejo row once this lands.
 
-- [ ] 🟢 **Bump Valkey's `redis_exporter` sidecar `v1.88.0-alpine` → `v1.89.0-alpine`**
+- [x] 🟢 **Bump Valkey's `redis_exporter` sidecar `v1.88.0-alpine` → `v1.89.0-alpine`**
   (CHARTER **Core Values** §"Everything as code" + general hardening; planner-fallback
   currency sweep 2026-08-13, reached via `executor.prompt.md` STEP 6b — every unchecked
   ROADMAP item (the three standing Now/next GitLab→Forgejo migration items plus the

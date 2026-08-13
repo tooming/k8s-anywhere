@@ -4,10 +4,15 @@
 # shown on the "Lab — Valkey" dashboard. ADR-0005: single replica recovers in place;
 # production uses Valkey Cluster (ADR-0018).
 #
-# redis_exporter bumped v1.87.0 -> v1.88.0 (2026-07-25, upgrade-drafter sweep): confirmed
-# newest stable tag via the source repo's own git tags (github.com/oliver006/redis_exporter)
-# and cross-checked the exact `v1.88.0-alpine` variant exists on Docker Hub. Release adds one
-# new metric (`stream_entries_added_total`) only -- no flag/env-var changes, no CVE involved.
+# redis_exporter bumped v1.88.0 -> v1.89.0 (2026-08-13, planner-fallback currency sweep):
+# confirmed newest stable tag via the source repo's own git tags (github.com/oliver006/
+# redis_exporter) and cross-checked the exact `v1.89.0-alpine` variant exists on Docker Hub.
+# `git log v1.88.0..v1.89.0` (3 commits): a fix directly relevant to this lab -- "avoid
+# COMMANDLOG error spam on targets without COMMANDLOG support" (#1156) -- Valkey doesn't
+# implement the newer COMMANDLOG command this exporter started probing for, so the prior
+# pin was almost certainly logging spurious errors on every scrape; a metric-correctness
+# fix ("ensure a change in label keys doesn't vanish the metric", #1151); and a routine
+# prometheus/client_golang dependency bump. No CVE involved.
 # This container sets no custom command/flags beyond REDIS_ADDR/REDIS_PASSWORD env vars
 # (both long-stable), so the upgrade surface is minimal.
 apiVersion: apps/v1
@@ -102,7 +107,7 @@ spec:
             - name: tmp
               mountPath: /tmp
         - name: exporter
-          image: oliver006/redis_exporter:v1.88.0-alpine
+          image: oliver006/redis_exporter:v1.89.0-alpine
           ports:
             - name: metrics
               containerPort: 9121
