@@ -218,7 +218,12 @@ make dr-chaos   # kill a random capstone pod, assert a replacement reaches Runni
 
 What it does: pick one running capstone pod at random (`scripts/dr-chaos.sh`,
 bash `$RANDOM`, no external random-picker dependency), delete it, then poll until
-the pod count is back to its pre-injection value or the budget is exceeded. The
+a genuinely new, Ready replacement pod count is back to its pre-injection value
+or the budget is exceeded — the poll explicitly excludes the deleted pod's own
+name and checks actual container readiness, not just pod phase (fixed 2026-08-13:
+a pod stays `phase=Running` throughout its termination grace period, so an
+earlier version of this check could count the pod being deleted as still
+"healthy" and report a false-positive instant pass). The
 capstone Rollout runs a **single replica** (no HA — ADR-0005), so this is an
 honest test of *recreate*, not of masking an outage behind a spare replica: there
 *is* a brief gap while Kubernetes reschedules. The 120 s budget is 4x the ~30 s a

@@ -48,16 +48,32 @@ fi
 PRE_COUNT=$(wc -l <<<"$PODS" | tr -d ' ')
 PICK_LINE=$(( (RANDOM % PRE_COUNT) + 1 ))
 TARGET=$(sed -n "${PICK_LINE}p" <<<"$PODS")
+OLD_NAME="${TARGET#pod/}"
 
 printf '  → target: %s\n' "$TARGET"
 printf '  → deleting...\n'
 kubectl delete "$TARGET" -n "$NAMESPACE" --wait=false
 
+# Self-heal check, found buggy 2026-08-13 (this file's own currency-sweep
+# fallback cycle): a pod being deleted keeps status.phase=Running throughout
+# its terminationGracePeriodSeconds window — `kubectl get pods` only *renders*
+# "Terminating" client-side from deletionTimestamp, the underlying phase field
+# never changes. The original check here (`--field-selector=status.phase=Running`
+# with no exclusion) therefore counted the just-deleted pod as "still healthy,"
+# so READY_COUNT >= PRE_COUNT went true on the very first loop iteration
+# (elapsed ~0s) regardless of whether a real replacement pod had even been
+# scheduled yet — the drill always reported instant "self-heal confirmed"
+# without ever observing one. Fixed by excluding the deleted pod's own name
+# from the field-selector AND requiring the (single, per rollout.yaml)
+# container's actual readiness — not just phase=Running, which a pod reaches
+# before its readiness probe (if any) has passed.
 START=$SECONDS
 HEALED=0
 while [ "$(( SECONDS - START ))" -lt "$BUDGET_S" ]; do
   READY_COUNT=$(kubectl get pods -n "$NAMESPACE" -l "$LABEL_SELECTOR" \
-    --field-selector=status.phase=Running -o name 2>/dev/null | wc -l | tr -d ' ')
+    --field-selector="status.phase=Running,metadata.name!=${OLD_NAME}" \
+    -o jsonpath='{range .items[*]}{.status.containerStatuses[0].ready}{"\n"}{end}' 2>/dev/null \
+    | grep -c '^true$' || true)
   if [ "${READY_COUNT:-0}" -ge "$PRE_COUNT" ]; then
     HEALED=1
     break
