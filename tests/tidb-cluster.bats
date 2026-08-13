@@ -15,6 +15,7 @@ setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   TIDB_CLUSTER="$REPO/gitops/tidb/tidb-cluster.yaml"
   TIDB_DEMO_DASHBOARD="$REPO/grafana/dashboards/tidb-demo.json"
+  TIDB_DEMO_DEPLOYMENT="$REPO/gitops/tidb-demo/deployment.yaml"
 }
 
 @test "tidb-cluster.yaml exists" {
@@ -29,6 +30,18 @@ setup() {
 @test "TidbCluster version pin is at least v8.5.7 (2026-07-23 currency bump)" {
   run grep -q 'version: "v8.5.7"' "$TIDB_CLUSTER"
   [ "$status" -eq 0 ]
+}
+
+# --- tidb-demo Deployment image pin (2026-08-13 explicit-pin sweep) -----------
+
+@test "tidb-demo Deployment is pinned to nginx:1.31.3-alpine (patch-explicit, not floating)" {
+  run grep -q 'image: nginx:1\.31\.3-alpine' "$TIDB_DEMO_DEPLOYMENT"
+  [ "$status" -eq 0 ]
+}
+
+@test "tidb-demo Deployment does not use the floating nginx:alpine tag" {
+  run grep -q 'image: nginx:alpine$' "$TIDB_DEMO_DEPLOYMENT"
+  [ "$status" -ne 0 ]
 }
 
 # --- tidb-demo.json dashboard (learning-path step 4) --------------------------
