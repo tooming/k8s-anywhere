@@ -232,6 +232,60 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **`scripts/forgejo-runner-ensure.sh` has no bats coverage at all — its two
+  sibling bootstrap scripts do** (CHARTER **Core Values** §"Everything as code" +
+  ROADMAP rule #9's own named filler example, "a script with no bats coverage";
+  planner-fallback coverage/hardening sweep 2026-08-17, fourth pass this run, reached
+  via `executor.prompt.md` STEP 6b — every Now/next item is still gated (the three
+  standing GitLab→Forgejo migration items plus the `verifyImages` Enforce flip, the O4
+  CI-rejection-gate, and the legacy capstone `Deployment` removal, all still gated on
+  unconfirmed maintainer-confirmation issues #631/#633, re-checked this cycle — no new
+  comment since 2026-08-13 05:57 UTC — and this run's first three PLANNER-fallback
+  passes already claimed the gaps their sweeps found: Valkey, GitLab, and the
+  `docker:29` CI-image pin). This cycle's fresh angle, per STEP 8's "widen the lens"
+  guidance: rather than a fourth currency sweep, checked every `scripts/*.sh` file
+  against `tests/*.bats` for basic coverage — a different class of gap than the prior
+  three passes found. **No prerequisites — executor may pick up immediately.**
+
+  Verified directly (not assumed, ADR-0004): grepped every `scripts/*.sh` basename
+  against every `tests/*.bats` file's content. `scripts/forgejo-runner-ensure.sh` is
+  the only script repo-wide with zero references anywhere under `tests/` — its two
+  sibling Forgejo bootstrap scripts, `scripts/forgejo-env-ensure.sh` and
+  `scripts/forgejo-admin-ensure.sh`, each already have an `"<script> exists and is
+  executable"` assertion in `tests/forgejo-compose.bats` (lines 64–70 as of this
+  writing); `forgejo-runner-ensure.sh` — called from the same `make forgejo-up`
+  target (`Makefile` line 403), added in the same PR family — was simply missed. This
+  matches ROADMAP rule #9's own named filler example verbatim ("a script with no bats
+  coverage") and CLAUDE.md's "every bugfix must prevent recurrence" mechanical-guard
+  principle, applied here as closing a coverage gap before it hides a real regression
+  (this script writes/reads a `.runner` state file and calls a live Forgejo Admin API
+  with no structural check that it still does either safely).
+
+  Add to `tests/forgejo-compose.bats` (same file as its two sibling scripts' coverage,
+  not a new file — this is exactly the established pattern, not a new scope):
+  1. `"forgejo-runner-ensure.sh exists and is executable"` — mirrors the sibling
+     scripts' exact assertion shape.
+  2. A structural assertion that the script reads `FORGEJO_ADMIN_PASSWORD` from
+     `forgejo/.env` (not a hardcoded credential) — mirrors this repo's existing
+     no-hardcoded-credential assertions elsewhere (e.g. `tests/forgejo-ci.bats`'s
+     `"build-sign-push.yml contains no hardcoded credential values"`).
+  3. A structural assertion that the registration-token fetch uses `-X GET` (the
+     script's own inline comment documents a live-discovered `405 Method Not
+     Allowed` on `POST` — a recurrence guard for that exact discovered bug, matching
+     CLAUDE.md's bugfix-prevention principle even though the original fix already
+     shipped, since nothing currently guards against it silently regressing back to
+     POST in a future edit).
+  Clusterless scope only — no live Docker/Forgejo-instance test is added (this remote
+  session cannot run one, and the script's actual runtime behavior — registration
+  token exchange, `.runner` file creation — needs a live Forgejo instance to verify,
+  same ADR-0004 ceiling as every other `make forgejo-up`-family script in this repo's
+  test suite). `make ci` must pass. PR body must document the "only unreferenced
+  script" finding above and the ADR-0004 caveat that this remote clusterless session
+  cannot verify the script itself still functions against a live Forgejo instance —
+  this item adds structural coverage only, it does not change the script's behavior
+  (zero-diff to `scripts/forgejo-runner-ensure.sh` itself). `docs/done/` entry
+  required. (auto/forgejo-runner-ensure-bats-coverage)
+
 - [x] 🟢 **Pin the floating `docker:29`/`docker:29-dind` CI-build images to the exact
   patch `docker:29.7.2`/`docker:29.7.2-dind` in both `.gitlab-ci.yml` and
   `.forgejo/workflows/build-sign-push.yml`** (CHARTER **Core Values** §"Everything as
