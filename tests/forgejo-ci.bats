@@ -115,7 +115,10 @@ setup() {
 
 @test "build-and-push wraps every network-facing docker command in retry_cmd (login, build, both pushes) — found live 2026-08-18, the port to Forgejo Actions had silently dropped this from the predecessor pipeline" {
   grep -q 'retry_cmd sh -c .echo "\$HARBOR_PASSWORD"' "$WF"
-  grep -q 'retry_cmd docker build -t "\$REGISTRY/\$IMAGE_NAME:\$sha"' "$WF"
+  # --build-arg "REGISTRY=$REGISTRY" (2026-08-18): gitops/apps/demo/Dockerfile's
+  # FROM now pulls its base image from Harbor's own mirror instead of docker.io
+  # directly — see that Dockerfile's own comment for the full story.
+  grep -q 'retry_cmd docker build --build-arg "REGISTRY=\$REGISTRY" -t "\$REGISTRY/\$IMAGE_NAME:\$sha"' "$WF"
   grep -q 'retry_cmd docker push "\$REGISTRY/\$IMAGE_NAME:\$sha"' "$WF"
   grep -q 'retry_cmd docker push "\$REGISTRY/\$IMAGE_NAME:latest"' "$WF"
 }
@@ -124,4 +127,20 @@ setup() {
   run grep -q 'retry_cmd docker tag' "$WF"
   [ "$status" -eq 1 ]
   grep -q '^          docker tag "\$REGISTRY/\$IMAGE_NAME:\$sha" "\$REGISTRY/\$IMAGE_NAME:latest"$' "$WF"
+}
+
+# 2026-08-18: docker.io's auth-token endpoint was the one consistently-unreachable
+# hop in the whole pipeline — retry_cmd's 6 attempts never once got through it,
+# while every other step (including Login to Harbor a few lines earlier in the
+# same job) was solid. Mirrored the base image into Harbor once instead
+# (`crane copy docker.io/... harbor.../library/example-hotrod:2.20.0`) and
+# repointed the Dockerfile's FROM there — see gitops/apps/demo/Dockerfile's own
+# comment for the full story.
+@test "gitops/apps/demo/Dockerfile pulls its base image from Harbor's own mirror, not docker.io directly" {
+  DOCKERFILE="$REPO/gitops/apps/demo/Dockerfile"
+  [ -f "$DOCKERFILE" ]
+  run grep -q '^FROM jaegertracing/example-hotrod:2.20.0$' "$DOCKERFILE"
+  [ "$status" -eq 1 ]
+  grep -q '^ARG REGISTRY=harbor.127.0.0.1.nip.io:8080$' "$DOCKERFILE"
+  grep -q '^FROM \${REGISTRY}/library/example-hotrod:2.20.0$' "$DOCKERFILE"
 }

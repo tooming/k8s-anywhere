@@ -191,7 +191,13 @@ jobs:
             done
           }
           sha="${GITHUB_SHA:0:8}"
-          retry_cmd docker build -t "$REGISTRY/$IMAGE_NAME:$sha" gitops/apps/demo/
+          # --build-arg REGISTRY: gitops/apps/demo/Dockerfile's FROM now pulls the
+          # base image from Harbor's own mirror (found live 2026-08-18: docker.io's
+          # auth-token endpoint was the one consistently-unreachable hop in this whole
+          # pipeline, unlike the Login to Harbor step a few lines above, which was
+          # solid) — see that Dockerfile's own comment for the full story. Passing
+          # REGISTRY here keeps the two in sync instead of hardcoding it twice.
+          retry_cmd docker build --build-arg "REGISTRY=$REGISTRY" -t "$REGISTRY/$IMAGE_NAME:$sha" gitops/apps/demo/
           retry_cmd docker push "$REGISTRY/$IMAGE_NAME:$sha"
           docker tag "$REGISTRY/$IMAGE_NAME:$sha" "$REGISTRY/$IMAGE_NAME:latest"
           retry_cmd docker push "$REGISTRY/$IMAGE_NAME:latest"

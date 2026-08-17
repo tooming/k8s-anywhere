@@ -1,0 +1,35 @@
+# Allow ingress to Garage pods from the harbor namespace (ADR-0016).
+#
+# Found live 2026-08-18: Harbor's own allow-harbor-garage-egress rule
+# (gitops/harbor/networkpolicy/) lets the harbor namespace's egress side reach
+# storage:3900, but NetworkPolicy in a default-deny namespace is enforced on BOTH
+# ends — this storage-side ingress half was never added, so every packet from
+# harbor-registry to garage was silently dropped the whole time. Symptom looked
+# exactly like generic Colima-VM network flakiness (`dial tcp
+# 10.43.49.142:3900: i/o timeout` from harbor-registry, `s3aws: RequestError:
+# send request failed`) and was mistaken for that at first — a plain connection
+# timeout with no RST is indistinguishable from a NetworkPolicy drop without
+# checking both namespaces' policies. Confirmed via `kubectl logs -n harbor
+# -l component=registry`; storage's own default-deny-all plus the missing
+# counterpart made this the actual cause of every Harbor blob-upload failure
+# this session (build-and-push CI runs and this fix's own `crane copy` mirror
+# attempt), not the retry_cmd egress flakiness those failures were chased as.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-garage-s3-from-harbor
+  namespace: storage
+spec:
+  podSelector:
+    matchLabels:
+      app: garage
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 3900
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: harbor

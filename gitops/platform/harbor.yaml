@@ -67,6 +67,22 @@ spec:
         persistence:
           resourcePolicy: keep
           imageChartStorage:
+            # Found live 2026-08-18: registry2's s3-aws storage driver redirects blob
+            # GET/HEAD requests (307, or a bare signed URL for cross-repo blob mounts)
+            # straight to regionendpoint by default — fine for a client running inside
+            # the cluster, but every real client here (Forgejo Actions job containers,
+            # `crane`/`docker` on the Mac host) reaches Harbor from OUTSIDE the
+            # cluster, through the harbor.127.0.0.1.nip.io gateway route, and cannot
+            # resolve garage.storage.svc.cluster.local at all (`dial tcp: lookup
+            # garage.storage.svc.cluster.local: no such host` — a plain DNS failure,
+            # not a network/NetworkPolicy issue like the ingress-rule gap fixed
+            # earlier the same session). disableredirect makes registry2 proxy blob
+            # data through itself instead of redirecting, so every client only ever
+            # needs to reach Harbor's own externally-routable address. Never surfaced
+            # before now because no blob upload had ever actually reached Garage
+            # (see storage/networkpolicy/allow-garage-s3-from-harbor.yaml's comment)
+            # to have a blob worth redirecting to in the first place.
+            disableredirect: true
             type: s3
             s3:
               region: garage
@@ -161,6 +177,22 @@ spec:
                   secretKeyRef:
                     name: harbor-s3-creds
                     key: REGISTRY_STORAGE_S3_SECRETKEY
+              # GOMAXPROCS=1 + GODEBUG=asyncpreemptoff=1 — same QEMU-emulation SIGSEGV
+              # class core/jobservice already carry the mitigation for (see core's
+              # identical comment below). Found live 2026-08-18: registry-photon
+              # crashed the same way (Go runtime panic in a background goroutine,
+              # exit code 2) the first time it did real, sustained S3 blob-upload I/O
+              # to Garage — which had never actually happened before this session's
+              # storage/networkpolicy fix (gitops/storage/networkpolicy/
+              # allow-garage-s3-from-harbor.yaml): every prior upload attempt was
+              # silently dropped before reaching Garage, so this crash path in the
+              # registry container specifically was never exercised or discovered
+              # until now, unlike core/jobservice which crashed on startup and so
+              # were caught and mitigated earlier (2026-08-11).
+              - name: GOMAXPROCS
+                value: "1"
+              - name: GODEBUG
+                value: "asyncpreemptoff=1"
             # See database.internal's probe comment above — same host-timeout fix.
             livenessProbe:
               timeoutSeconds: 5
