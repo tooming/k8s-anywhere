@@ -17,7 +17,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+    repoURL: ssh://git@host.k3d.internal:2223/lab/k8s-lab.git
     targetRevision: main
     path: gitops/argocd
   destination:

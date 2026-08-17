@@ -42,10 +42,13 @@ setup() {
 }
 
 @test "forgejo service defines a healthcheck (image ships none of its own)" {
-  # -A60, not -A40: the environment: block grew past 40 lines once the
-  # INSTALL_LOCK and GOMAXPROCS/GODEBUG fixes landed (both found live
-  # 2026-08-13 — see docker-compose.yml's own comments on each).
-  run grep -A60 '^  forgejo:' "$COMPOSE"
+  # -A70, not -A60: the environment: block grew past 60 lines once the
+  # GITEA__server__SSH_LISTEN_PORT fix landed (found live 2026-08-17, the
+  # GitLab -> Forgejo cutover session — see docker-compose.yml's own comment
+  # on it). Same reason as the -A40 -> -A60 bump before it: keep bumping this
+  # window whenever a new env var + explanatory comment lands above
+  # healthcheck:, rather than switching to a less brittle match.
+  run grep -A70 '^  forgejo:' "$COMPOSE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"healthcheck:"* ]]
 }

@@ -59,10 +59,14 @@ setup() {
   [[ "$output" == *"sshPrivateKey"* ]]
   # Not the predecessor's Secret name — this is additive, never a replacement.
   [[ "$output" != *"repo-gitlab-gitops"* ]]
-  # No gitops/**/*.yaml Application repoURL references the new SSH host yet — the
-  # repoURL flip is a separate, later, live-verified ROADMAP item (see main.tf's
-  # comment on this resource).
-  ! grep -rq "host.k3d.internal:2223" "$REPO/gitops/"
+}
+
+@test "forgejo-config: every gitops/**/*.yaml Application repoURL points at Forgejo" {
+  # The repoURL flip landed 2026-08-17 (ROADMAP "GitLab -> Forgejo migration" item 4,
+  # PR #1205) — this now asserts the opposite of what it did pre-flip: no gitops
+  # manifest should still reference the old GitLab HTTP repoURL.
+  ! grep -rq "host.k3d.internal:8929" "$REPO/gitops/"
+  grep -rq "host.k3d.internal:2223" "$REPO/gitops/"
 }
 
 @test "forgejo-config variables declare argocd_namespace and repo_url_in_cluster" {

@@ -22,5 +22,5 @@ resources:
   - allow-argocd-from-alloy.yaml
   - allow-argocd-intra-namespace.yaml
   - allow-argocd-service-frontends.yaml
-  - allow-argocd-repo-server-egress-gitlab.yaml
+  - allow-argocd-repo-server-egress-forgejo.yaml
   - allow-argocd-repo-server-egress-charts.yaml

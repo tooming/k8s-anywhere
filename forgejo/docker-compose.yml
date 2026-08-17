@@ -32,6 +32,15 @@ services:
       GITEA__server__ROOT_URL: http://localhost:3300/
       GITEA__server__HTTP_PORT: "3000"
       GITEA__server__SSH_PORT: "2223"
+      # SSH_PORT alone only sets the *advertised* port used in generated clone URLs —
+      # it does not change what port the sshd inside the container actually binds to.
+      # Found live 2026-08-17 (the git-source cutover session, ADR-0035): without
+      # this, the container's sshd listens on the image's default port 22 regardless
+      # of SSH_PORT, so the "2223:2223" mapping below pointed at nothing and every SSH
+      # clone/fetch (including ArgoCD's repo-server) failed with "Connection closed"
+      # before the SSH handshake even started. Confirmed via `docker exec forgejo ss
+      # -tlnp` showing `LISTEN 0.0.0.0:22`, not 2223.
+      GITEA__server__SSH_LISTEN_PORT: "22"
       GITEA__service__DISABLE_REGISTRATION: "true"
       GITEA__actions__ENABLED: "true"
       # Found live 2026-08-13, first `make forgejo-up`: the GITEA__* env vars above
@@ -60,7 +69,7 @@ services:
       GODEBUG: "asyncpreemptoff=1"
     ports:
       - "3300:3000"
-      - "2223:2223"
+      - "2223:22"
     # Named volume (NOT a Mac bind mount): GitLab's omnibus image hit a Colima
     # virtiofs setgid bug on bind-mounted repo storage (see gitlab/docker-compose.yml's
     # comment) — using a named volume here from the start avoids needing to rediscover

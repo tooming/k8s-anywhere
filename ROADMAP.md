@@ -631,28 +631,45 @@ there is no point where the lab loses a working git source or CI path.
   the next item flips it — `make ci` (kubeconform, kustomize, terraform fmt/validate,
   bats) confirms the module is well-formed without needing a live cluster.
   (auto/forgejo-argocd-repo-secret)
-- [ ] 🟢 **Flip `Application` `repoURL`s (including `root-app.yaml`) to the Forgejo
-  remote, verify a real sync** — the gated slice split out of the item above. Needs,
-  in order: (1) Forgejo's actual repo content pushed (no automated mechanism yet —
-  can be done with a manual `git remote add`/`git push` even before item 5's renamed
-  script exists), (2) `infra/modules/forgejo-config` `terraform apply`'d so the
-  `repo-forgejo-gitops` Secret exists in-cluster, (3) `.forgejo/workflows/
-  build-sign-push.yml` (item 3) confirmed running for real. Only a live-cluster
-  session can do all three and then verify ArgoCD's actual sync status — a
-  clusterless remote session must not flip this and merely hope. Prerequisite:
-  previous item (this one) and, functionally, item 3's live verification.
+- [x] 🟢 **Flip `Application` `repoURL`s (including `root-app.yaml`) to the Forgejo
+  remote, verify a real sync** — done 2026-08-17, accelerated per explicit user
+  direction ("get rid of GitLab already... fix-forward") rather than waiting for
+  item 3's still-outstanding live signed-push confirmation. Live-cluster session:
+  flipped all 59 `repoURL:` occurrences across 58 `gitops/**/*.yaml` files plus
+  `root-app.yaml` and the `argocd-repo-server` egress `NetworkPolicy` (renamed
+  `allow-argocd-repo-server-egress-gitlab.yaml` →
+  `-egress-forgejo.yaml`, port 8929→2223). Found and fixed a real bug blocking the
+  whole cutover along the way: Forgejo's `GITEA__server__SSH_PORT` only sets the
+  *advertised* clone-URL port, not what the container's sshd actually binds to —
+  it was listening on 22 the whole time, so the `"2223:2223"` compose port mapping
+  pointed at nothing. Fixed with an explicit `GITEA__server__SSH_LISTEN_PORT: "22"`
+  + `"2223:22"` mapping; verified live via `git ls-remote` over SSH succeeding.
+  Also found the Terraform-managed ArgoCD deploy key was missing from Forgejo's
+  live DB (state/reality drift) and registered it directly via Forgejo's API as a
+  stopgap — a `terraform plan`/`apply` for `infra/modules/forgejo-config` is still
+  owed once its remote-state backend's credential issue (hit, not debugged, this
+  session) is resolved. Applied live via `kubectl apply -f gitops/bootstrap/
+  root-app.yaml` + `kubectl apply -f gitops/platform/ --server-side
+  --force-conflicts` (ArgoCD's own sync operation stalled mid-flight under host
+  load; the direct apply achieved the same end state deterministically). Verified:
+  all 121 Applications' live `spec.source.repoURL` point at Forgejo; cluster health
+  held at 106-107/121 Healthy throughout. (PR #1205)
 - [ ] 🟢 **Rename `scripts/gitlab-*.sh` → `scripts/forgejo-*.sh` + matching `Makefile`
   targets** (bootstrap, TLS bootstrap, push, force-push, `rebase-prs`' GitLab leg);
   `tests/gitlab-compose.bats`/`tests/gitlab-push.bats` → `forgejo-*` bats files with
-  equivalent coverage (mechanical-guard parity, not a regression). Prerequisite: previous
-  item — don't rename the scripts the still-live pipeline depends on before the CI-workflow
-  and repoURL-flip items above land and are verified live.
+  equivalent coverage (mechanical-guard parity, not a regression). Prerequisite item
+  (repoURL flip) is now done and GitLab itself is stopped (2026-08-17, `make
+  gitlab-down`) — these scripts are dead code pointing at a stopped service, so this
+  is now safe/overdue, not merely unblocked.
 - [ ] 🟢 **Decommission `gitlab/docker-compose.yml` + `infra/modules/gitlab-config`** —
-  only once every item above is verified live and stable for a real work cycle, matching how
-  Artifactory's decommission followed (not preceded) Harbor's proven-live cutover
+  GitLab is **stopped** as of 2026-08-17 (`make gitlab-down`, volumes kept for
+  rollback) but not yet removed from the repo — deliberately kept a beat longer than
+  the accelerated cutover above so there's a fast rollback path if Forgejo proves
+  unstable over a real work cycle, matching how Artifactory's decommission followed
+  (not preceded) Harbor's proven-live cutover
   (`docs/done/2026-07-29-harbor-artifactory-decommission.md`). Update
-  `docs/dependency-register.md`'s GitLab row (currently flagged "still the live, running
-  component" pending this) to a Forgejo row once this lands.
+  `docs/dependency-register.md`'s GitLab row (currently flagged "still the live,
+  running component") to a Forgejo row once this lands.
 
 - [x] 🟢 **Bump Valkey's `redis_exporter` sidecar `v1.88.0-alpine` → `v1.89.0-alpine`**
   (CHARTER **Core Values** §"Everything as code" + general hardening; planner-fallback

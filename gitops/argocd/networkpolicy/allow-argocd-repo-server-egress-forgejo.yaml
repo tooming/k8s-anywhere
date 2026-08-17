@@ -1,15 +1,18 @@
-# Allow argocd-repo-server to reach the GitLab instance on the Docker host for git
-# clone/fetch (ADR-0016). ArgoCD Application sources point to
-# http://host.k3d.internal:8929/lab/k8s-lab.git; the repo-server is the component
+# Allow argocd-repo-server to reach the Forgejo instance on the Docker host for git
+# clone/fetch (ADR-0016, ADR-0035). ArgoCD Application sources point to
+# ssh://git@host.k3d.internal:2223/lab/k8s-lab.git; the repo-server is the component
 # that performs the actual git operations. host.k3d.internal resolves to the Docker
 # bridge gateway (address assigned at cluster creation time, not predetermined in
-# manifests). Using 0.0.0.0/0 restricted to port 8929 follows the same pragmatic
+# manifests). Using 0.0.0.0/0 restricted to port 2223 follows the same pragmatic
 # pattern as the Alloy kubelet CIDR in the observability NetworkPolicy.
 # The allow-dns-and-apiserver baseline covers k8s API calls for all pods.
+#
+# 2026-08-17: repointed from the previous git source's port 8929 (HTTP) to Forgejo's
+# port 2223 (SSH) per ADR-0035. Renamed from the predecessor policy file.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-argocd-repo-server-egress-gitlab
+  name: allow-argocd-repo-server-egress-forgejo
   namespace: argocd
 spec:
   podSelector:
@@ -19,7 +22,7 @@ spec:
     - Egress
   egress:
     - ports:
-        - port: 8929
+        - port: 2223
           protocol: TCP
       to:
         - ipBlock:

@@ -92,7 +92,7 @@ spec:
               - name: capstone
                 namespace: argocd
                 sources:
-                  - repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+                  - repoURL: ssh://git@host.k3d.internal:2223/lab/k8s-lab.git
                     kustomize:
                       images:
                         - repoURL: harbor.127.0.0.1.nip.io/library/hello
@@ -126,7 +126,7 @@ spec:
               - name: capstone
                 namespace: argocd
                 sources:
-                  - repoURL: http://host.k3d.internal:8929/lab/k8s-lab.git
+                  - repoURL: ssh://git@host.k3d.internal:2223/lab/k8s-lab.git
                     kustomize:
                       images:
                         - repoURL: harbor.127.0.0.1.nip.io/library/hello
