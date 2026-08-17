@@ -73,7 +73,11 @@ jobs:
     runs-on: docker
     timeout-minutes: 20
     container:
-      image: docker:29
+      # Pinned the floating `29` tag to the exact patch `29.7.2` (2026-08-17,
+      # planner-fallback gap analysis): Docker Hub's tags API confirms `docker:29`'s
+      # amd64-layer digest is byte-identical to `docker:29.7.2`'s digest -- a
+      # pin-what's-already-running change, not a version bump.
+      image: docker:29.7.2
       # Privileged so dockerd can run inside this same container (Docker-in-Docker)
       # instead of a companion service container — see ADR-0004 caveat (c) above.
       options: --privileged

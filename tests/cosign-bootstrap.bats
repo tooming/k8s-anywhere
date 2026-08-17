@@ -111,12 +111,20 @@ setup_ci() {
   [ "$status" -eq 0 ]
 }
 
-@test "build-and-push job and its dind service use the actively-maintained docker:29 line (2026-07-28: docker:24 confirmed 2yr stale)" {
+@test "build-and-push job and its dind service are pinned to the exact patch docker:29.7.2 (2026-08-17: pin-what's-running, docker:29 floating tag closed)" {
+  setup_ci
+  run grep -q '^\s*image: docker:29\.7\.2$' "$CI_FILE"
+  [ "$status" -eq 0 ]
+  run grep -q 'name: docker:29\.7\.2-dind' "$CI_FILE"
+  [ "$status" -eq 0 ]
+}
+
+@test "build-and-push job does not pin the superseded floating docker:29 tag" {
   setup_ci
   run grep -q '^\s*image: docker:29$' "$CI_FILE"
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
   run grep -q 'name: docker:29-dind' "$CI_FILE"
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
 }
 
 @test "sign-image job disables Rekor (COSIGN_EXPERIMENTAL: \"0\")" {

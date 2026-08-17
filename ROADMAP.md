@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Pin the floating `docker:29`/`docker:29-dind` CI-build images to the exact
+- [x] 🟢 **Pin the floating `docker:29`/`docker:29-dind` CI-build images to the exact
   patch `docker:29.7.2`/`docker:29.7.2-dind` in both `.gitlab-ci.yml` and
   `.forgejo/workflows/build-sign-push.yml`** (CHARTER **Core Values** §"Everything as
   code" + general hardening; planner-fallback gap analysis 2026-08-17, third pass this
