@@ -42,4 +42,4 @@ stop/rollback state), not a fresh live check against the actual cluster.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1209
