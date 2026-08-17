@@ -399,6 +399,15 @@ internal to kine and not currently k3s-CLI-configurable. The mechanical guard he
 therefore detection (the health check above), not prevention — there is no dial to turn
 that would structurally rule this class of failure out.
 
+**A restart's symptom relief is not proof the compactor thread itself resumed.**
+Confirmed 2026-08-17 (second real occurrence of this incident, `docs/incident-log.md`):
+apiserver responsiveness and cluster-wide pod health recovered within minutes of
+`docker restart k3d-k8s-lab-server-0`, but no fresh `"COMPACT compacted from X to Y"`
+line appeared in the 20 minutes that followed — the restart clears the immediate
+symptom (flushes the WAL, restores query latency) without necessarily restarting the
+compactor goroutine itself. Re-run `make k3s-datastore-health-check` a while after any
+restart, not just immediately after, before trusting the incident is actually closed.
+
 ### Harbor signed-image-pipeline verification (issues #631 / #633)
 
 **Why this exists:** since 2026-07-20, standing issues
