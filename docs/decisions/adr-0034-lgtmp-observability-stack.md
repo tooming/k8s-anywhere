@@ -71,7 +71,7 @@ bootstrapped, formally recorded here for the first time.
 | **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.7` directly | `2.10.7` (tracked in ADR-0006's Re-evaluation log per this run's earlier correction) |
 | **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.1` | `2.2.1` |
 | **Alloy** | Helm chart | `gitops/platform/observability-alloy.yaml`, `targetRevision: 1.11.1` | `1.11.1` |
-| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.3.0` | `8.3.0` |
+| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.3.1` | `8.3.1` |
 | **node-exporter** | Helm chart, `prometheus-community/helm-charts` (`prometheus-node-exporter`) | `gitops/platform/observability-node-exporter.yaml`, `targetRevision: 4.56.1`; dedicated `node-exporter` namespace (not `observability`) because it needs `hostPID`/`hostNetwork`/`hostRootFsMount` semantics [ADR-0017](adr-0017-pod-security-standards-restricted.md)'s `restricted` profile forbids | `4.56.1` |
 
 Mimir and Loki are deliberately **not** Helm charts (Mimir has no chart this lab
@@ -112,6 +112,32 @@ shape (Alloy as sole collector feeding all four Grafana-authored stores).
 ---
 
 ## Re-evaluation log
+
+**2026-08-17** — kube-state-metrics chart bumped `8.3.0` → `8.3.1` (executor-fallback
+upstream-currency gap analysis, `executor.prompt.md` STEP 6b, this run's second pass —
+the "Now / next" lane was still fully gated after the first pass's ACK bump). Verified
+directly (ADR-0004): the tagged `Chart.yaml` at `kube-state-metrics-8.3.1` shows
+`version: "8.3.1"`, `appVersion: "2.19.1"` (unchanged from `8.3.0`) — a packaging-only
+patch release, not a major bump. The upstream release note names exactly one change:
+"Fix autosharding configuration service" (PR prometheus-community/helm-charts#7176,
+merged/tagged 2026-08-17, same day). A byte-level diff of `templates/service.yaml`
+between the two tags confirms the fix's full scope: `spec.type`, the NodePort
+conditionals, and the `loadBalancerIP`/`loadBalancerSourceRanges` blocks each gain a
+`(not .Values.autosharding.enabled)` / `{{- if .Values.autosharding.enabled }}...{{-
+else }}` guard so a sharded (`StatefulSet`, headless-Service) deployment renders a
+correct Service instead of the prior chart line's Service shape (plus one unrelated
+whitespace-control fix, `{{ if .Values.selfMonitor.enabled }}` → `{{- if
+.Values.selfMonitor.enabled }}`). This repo's `valuesObject` sets no `autosharding:`
+key at all — the chart default (`autosharding.enabled: false`) applies, so every
+changed conditional evaluates identically before and after the bump; the rendered
+Service for this Application is unaffected by the fix itself. `templates/
+deployment.yaml`/`clusterrole.yaml`/`values.yaml` are unchanged for the
+`kube-state-metrics` subchart specifically (the wider `prometheus-community/
+helm-charts` monorepo's compare view lists 7 commits across the tag range, but the
+other 6 touch unrelated sibling charts — `nginx-prometheus-exporter`,
+`memcached_exporter`, `alertmanager`, CI workflows — not this one). **Keep** — no
+reason to reconsider the component itself, this is a routine packaging-only bump with
+zero effective change to this lab's rendered manifest.
 
 **2026-08-12** — kube-state-metrics chart bumped `8.2.0` → `8.3.0` (executor-fallback
 currency sweep, UPGRADE-DRAFTER role). Verified directly (ADR-0004): `git ls-remote
