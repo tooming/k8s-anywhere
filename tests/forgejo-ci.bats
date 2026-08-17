@@ -112,3 +112,16 @@ setup() {
   count2="$(grep -c 'harbor\.127\.0\.0\.1\.nip\.io" >> /etc/hosts' "$WF")"
   [ "$count2" -eq 2 ]
 }
+
+@test "build-and-push wraps every network-facing docker command in retry_cmd (login, build, both pushes) — found live 2026-08-18, the port to Forgejo Actions had silently dropped this from the predecessor pipeline" {
+  grep -q 'retry_cmd sh -c .echo "\$HARBOR_PASSWORD"' "$WF"
+  grep -q 'retry_cmd docker build -t "\$REGISTRY/\$IMAGE_NAME:\$sha"' "$WF"
+  grep -q 'retry_cmd docker push "\$REGISTRY/\$IMAGE_NAME:\$sha"' "$WF"
+  grep -q 'retry_cmd docker push "\$REGISTRY/\$IMAGE_NAME:latest"' "$WF"
+}
+
+@test "build-and-push does not wrap the plain 'docker tag' call in retry_cmd (local operation, no network involved — same as the predecessor pipeline)" {
+  run grep -q 'retry_cmd docker tag' "$WF"
+  [ "$status" -eq 1 ]
+  grep -q '^          docker tag "\$REGISTRY/\$IMAGE_NAME:\$sha" "\$REGISTRY/\$IMAGE_NAME:latest"$' "$WF"
+}

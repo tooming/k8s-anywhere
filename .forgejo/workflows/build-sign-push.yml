@@ -153,16 +153,48 @@ jobs:
           done
           docker info >/dev/null 2>&1 || { echo "dockerd did not come up in time"; exit 1; }
 
+      # retry_cmd ported from the predecessor pipeline's identical before_script
+      # function (6 attempts, 15s backoff) — found live 2026-08-18 that this
+      # workflow had dropped it entirely during the port to Forgejo Actions syntax,
+      # so every network-facing step (login, base-image pull during build, push)
+      # had zero retry coverage. Confirmed missing the hard way: a real run failed
+      # outright on `docker build`'s base-image pull hitting the documented
+      # Colima-VM egress flakiness against auth.docker.io (same class this repo has
+      # hit against quay.io, mirror.gcr.io, data.forgejo.org — see this file's other
+      # comments for the fuller history) — a transient blip that a bare retry
+      # would have absorbed.
       - name: Login to Harbor
-        run: echo "${{ secrets.HARBOR_PASSWORD }}" | docker login "$REGISTRY" -u "${{ secrets.HARBOR_USER }}" --password-stdin
+        run: |
+          retry_cmd() {
+            local n=0 max=6 delay=15
+            until "$@"; do
+              n=$((n+1))
+              [ "$n" -ge "$max" ] && { echo "retry_cmd: giving up after $n attempts: $*" >&2; return 1; }
+              echo "retry_cmd: attempt $n failed, retrying in ${delay}s: $*" >&2
+              sleep "$delay"
+            done
+          }
+          retry_cmd sh -c 'echo "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USER" --password-stdin'
+        env:
+          HARBOR_USER: ${{ secrets.HARBOR_USER }}
+          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
 
       - name: Build, tag, and push
         run: |
+          retry_cmd() {
+            local n=0 max=6 delay=15
+            until "$@"; do
+              n=$((n+1))
+              [ "$n" -ge "$max" ] && { echo "retry_cmd: giving up after $n attempts: $*" >&2; return 1; }
+              echo "retry_cmd: attempt $n failed, retrying in ${delay}s: $*" >&2
+              sleep "$delay"
+            done
+          }
           sha="${GITHUB_SHA:0:8}"
-          docker build -t "$REGISTRY/$IMAGE_NAME:$sha" gitops/apps/demo/
-          docker push "$REGISTRY/$IMAGE_NAME:$sha"
+          retry_cmd docker build -t "$REGISTRY/$IMAGE_NAME:$sha" gitops/apps/demo/
+          retry_cmd docker push "$REGISTRY/$IMAGE_NAME:$sha"
           docker tag "$REGISTRY/$IMAGE_NAME:$sha" "$REGISTRY/$IMAGE_NAME:latest"
-          docker push "$REGISTRY/$IMAGE_NAME:latest"
+          retry_cmd docker push "$REGISTRY/$IMAGE_NAME:latest"
 
       - name: Logout
         if: always()
