@@ -26,14 +26,24 @@ setup() {
   [[ "$output" != *':latest'* ]]
 }
 
-@test "gitlab service is pinned to 19.2.1-ce.0" {
-  run grep -F 'image: gitlab/gitlab-ce:19.2.1-ce.0' "$COMPOSE"
+@test "gitlab service is pinned to 19.2.2-ce.0 (15 real security fixes over 19.2.1)" {
+  run grep -F 'image: gitlab/gitlab-ce:19.2.2-ce.0' "$COMPOSE"
   [ "$status" -eq 0 ]
 }
 
-@test "gitlab-runner service is pinned to v19.2.1" {
-  run grep -F 'image: gitlab/gitlab-runner:v19.2.1' "$COMPOSE"
+@test "gitlab service is not pinned to the superseded 19.2.1-ce.0 tag" {
+  run grep -F 'image: gitlab/gitlab-ce:19.2.1-ce.0' "$COMPOSE"
+  [ "$status" -eq 1 ]
+}
+
+@test "gitlab-runner service is pinned to v19.2.2 (version parity with the gitlab-ce pin)" {
+  run grep -F 'image: gitlab/gitlab-runner:v19.2.2' "$COMPOSE"
   [ "$status" -eq 0 ]
+}
+
+@test "gitlab-runner service is not pinned to the superseded v19.2.1 tag" {
+  run grep -F 'image: gitlab/gitlab-runner:v19.2.1' "$COMPOSE"
+  [ "$status" -eq 1 ]
 }
 
 @test "gitlab-tls service is pinned to nginx:1.27.5-alpine" {

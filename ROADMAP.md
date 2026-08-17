@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump GitLab CE `19.2.1-ce.0` → `19.2.2-ce.0` + `gitlab-runner` `v19.2.1` →
+- [x] 🟢 **Bump GitLab CE `19.2.1-ce.0` → `19.2.2-ce.0` + `gitlab-runner` `v19.2.1` →
   `v19.2.2` (15 real security fixes)** (CHARTER **Core Values** §"Everything as code" +
   general hardening; planner-fallback gap analysis 2026-08-17, second pass this run,
   reached via `executor.prompt.md` STEP 6b — every Now/next item is still gated (the

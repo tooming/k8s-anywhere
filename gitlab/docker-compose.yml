@@ -13,7 +13,18 @@ services:
     # to it changes nothing about what's actually running, it only removes
     # the floating-tag footgun. Bump deliberately via a future PR, not an
     # automatic `docker compose pull`.
-    image: gitlab/gitlab-ce:19.2.1-ce.0
+    #
+    # Bumped 19.2.1-ce.0 -> 19.2.2-ce.0 (2026-08-17, planner-fallback gap
+    # analysis): confirmed via Docker Hub's tags API that 19.2.2-ce.0 is a
+    # real, published tag (pushed 2026-08-12). The real CHANGELOG.md at tag
+    # v19.2.2-ee (gitlab.com/gitlab-org/gitlab) shows a "Security (15
+    # changes)" section with real, non-cosmetic fixes: "Fix
+    # authorize_admin_project! being skipped on project update" (an
+    # authorization-bypass fix), "Re-validate upload path traversal before
+    # store", and "Filter unauthorized merge requests from global API
+    # endpoint" among the fifteen -- clears this repo's own "ships with a
+    # real fix" bar for a non-CVE-numbered currency bump.
+    image: gitlab/gitlab-ce:19.2.2-ce.0
     container_name: gitlab
     hostname: gitlab.local
     restart: unless-stopped
@@ -80,7 +91,15 @@ services:
     # service above. v19.2.1 is the newest stable tag on Docker Hub as of
     # 2026-08-07 (confirmed via the Docker Hub tags API), aligned with the
     # gitlab-ce pin above.
-    image: gitlab/gitlab-runner:v19.2.1
+    #
+    # Bumped v19.2.1 -> v19.2.2 (2026-08-17, planner-fallback gap analysis):
+    # confirmed via Docker Hub's tags API that v19.2.2 is a real, published
+    # tag (pushed 2026-08-12), aligned with the server pin above. The
+    # runner's own release is maintenance-only (its CHANGELOG.md has a
+    # single entry: "Verify resources: authenticate Docker Hub image
+    # checks") -- bumped for version parity with the server, not for a
+    # runner-specific fix.
+    image: gitlab/gitlab-runner:v19.2.2
     container_name: gitlab-runner
     restart: unless-stopped
     depends_on:
