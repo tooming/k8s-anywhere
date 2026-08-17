@@ -81,10 +81,20 @@ on:
     branches: [main]
 
 env:
-  # :8080 is required — the k3d gateway's published host port; the bare hostname
-  # without it resolves to the wrong network path from a job container (same
-  # failure mode the predecessor pipeline's identical REGISTRY comment documents).
-  REGISTRY: harbor.127.0.0.1.nip.io:8080
+  # :8080 is required — the k3d gateway's published host port.
+  #
+  # host.docker.internal, not harbor.127.0.0.1.nip.io (found live 2026-08-17):
+  # nip.io's 127.0.0.1 resolution is only correct from the *host's* perspective —
+  # k3d's gateway container publishes 8080 on the Colima VM's own interfaces, and
+  # from inside this job's own container 127.0.0.1 means the job container itself,
+  # not the VM host ("connection refused", nothing listens there). host.docker.internal
+  # isn't auto-populated by this Docker/network combination either (Docker's
+  # `--add-host=host.docker.internal:host-gateway` special value didn't resolve in
+  # this Colima setup) — the "Resolve host bridge" step below adds a real /etc/hosts
+  # entry for it at run time, using this container's own default-route gateway IP
+  # rather than a hardcoded address (the forgejo_default network's gateway is
+  # deterministic per compose project but not worth pinning in source).
+  REGISTRY: host.docker.internal:8080
   IMAGE_NAME: library/hello
 
 jobs:
@@ -112,6 +122,17 @@ jobs:
         run: |
           git clone --no-checkout "http://lab-admin:${{ secrets.CHECKOUT_TOKEN }}@forgejo:3000/${GITHUB_REPOSITORY}.git" .
           git checkout "$GITHUB_SHA"
+
+      - name: Resolve host bridge (host.docker.internal -> this container's default gateway)
+        # Parses /proc/net/route directly instead of shelling out to `ip route` —
+        # portable across both job containers in this workflow (docker:29.7.2 has
+        # `ip`; the sign-image job's bitnami/cosign image, a minimal Photon OS
+        # image, does not) without needing two different implementations.
+        run: |
+          gw_hex="$(awk '$2 == "00000000" {print $3; exit}' /proc/net/route)"
+          [ -n "$gw_hex" ] || { echo "could not determine default gateway"; exit 1; }
+          gw="$(printf '%d.%d.%d.%d' 0x${gw_hex:6:2} 0x${gw_hex:4:2} 0x${gw_hex:2:2} 0x${gw_hex:0:2})"
+          echo "$gw host.docker.internal" >> /etc/hosts
 
       - name: Start dockerd (insecure registry for the in-lab Harbor route)
         run: |
@@ -155,6 +176,17 @@ jobs:
         run: |
           mkdir -p /tmp/cosign
           printf '%s' "${{ secrets.COSIGN_KEY }}" > /tmp/cosign/cosign.key
+
+      # Same fix, same reason as build-and-push's identically-named step — a
+      # separate job runs in a separate container, so REGISTRY's host.docker.internal
+      # needs resolving here too. bitnami/cosign's minimal Photon OS base has no `ip`
+      # command, which is exactly why this parses /proc/net/route instead.
+      - name: Resolve host bridge (host.docker.internal -> this container's default gateway)
+        run: |
+          gw_hex="$(awk '$2 == "00000000" {print $3; exit}' /proc/net/route)"
+          [ -n "$gw_hex" ] || { echo "could not determine default gateway"; exit 1; }
+          gw="$(printf '%d.%d.%d.%d' 0x${gw_hex:6:2} 0x${gw_hex:4:2} 0x${gw_hex:2:2} 0x${gw_hex:0:2})"
+          echo "$gw host.docker.internal" >> /etc/hosts
 
       # Only the short-SHA tag is signed here, even though build-and-push also
       # pushes :latest — same reasoning as the predecessor pipeline's sign-image

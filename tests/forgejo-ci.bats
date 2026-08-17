@@ -99,3 +99,14 @@ setup() {
 @test "build-sign-push.yml references the CHECKOUT_TOKEN secret (no plaintext)" {
   grep -q 'secrets.CHECKOUT_TOKEN' "$WF"
 }
+
+@test "REGISTRY uses host.docker.internal, not the nip.io host trick (127.0.0.1 means the job container itself, not the VM host)" {
+  grep -q 'REGISTRY: host.docker.internal:8080' "$WF"
+  run grep -q 'REGISTRY:.*nip\.io' "$WF"
+  [ "$status" -eq 1 ]
+}
+
+@test "both jobs resolve host.docker.internal via /proc/net/route (portable — sign-image's Photon OS base has no ip command)" {
+  count="$(grep -c "awk '\\\$2 == \"00000000\"" "$WF")"
+  [ "$count" -eq 2 ]
+}
