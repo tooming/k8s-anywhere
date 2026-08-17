@@ -49,14 +49,24 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "valkey image is pinned to 8.0.10-alpine (CVE-2026-56684, CVE-2026-63639 fix, ADR-0018)" {
-  run grep -q 'image: valkey/valkey:8\.0\.10-alpine' "$REPO/gitops/data/valkey/statefulset.yaml"
+@test "valkey image is pinned to 8.1.9-alpine (CVE-2026-56684/CVE-2026-63639 RCE-severity fix on the 8.1.x line, ADR-0018)" {
+  run grep -q 'image: valkey/valkey:8\.1\.9-alpine' "$REPO/gitops/data/valkey/statefulset.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "valkey-load image is pinned to 8.0.10-alpine (matches the valkey StatefulSet pin)" {
-  run grep -q 'image: valkey/valkey:8\.0\.10-alpine' "$REPO/gitops/data/demo/valkey-load.yaml"
+@test "valkey image does not pin the superseded 8.0.10-alpine tag" {
+  run grep -q 'image: valkey/valkey:8\.0\.10-alpine' "$REPO/gitops/data/valkey/statefulset.yaml"
+  [ "$status" -eq 1 ]
+}
+
+@test "valkey-load image is pinned to 8.1.9-alpine (matches the valkey StatefulSet pin)" {
+  run grep -q 'image: valkey/valkey:8\.1\.9-alpine' "$REPO/gitops/data/demo/valkey-load.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "valkey-load image does not pin the superseded 8.0.10-alpine tag" {
+  run grep -q 'image: valkey/valkey:8\.0\.10-alpine' "$REPO/gitops/data/demo/valkey-load.yaml"
+  [ "$status" -eq 1 ]
 }
 
 # --- Vault -> ESO secret chain ----------------------------------------------
