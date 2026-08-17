@@ -26,11 +26,19 @@ drift=0
 
 # Strip inline `#` comments first (so prose mentioning git/GIT_DIR doesn't trip the
 # match), then classify each .bats file: does it BUILD a git fixture, and if so
-# does it UNSET GIT_DIR? A fixture build is a real `git init`/`git clone` command.
+# does it UNSET GIT_DIR? A fixture build is a real `git init`/`git clone` command —
+# NOT a `grep` line that merely searches a file's content for that string (found
+# live 2026-08-17: tests/forgejo-ci.bats's `grep -q 'git clone --no-checkout' "$WF"`
+# asserts a *workflow YAML file* contains that shell command as text; it never runs
+# git itself, so it needs no GIT_DIR isolation — the prior version of this check had
+# no way to tell "runs git clone" apart from "greps for the string git clone" and
+# flagged this as a false positive). Any line also containing `grep` is a content
+# search, not a fixture build, and is excluded from the match.
 for f in "$TESTS_DIR"/*.bats; do
   [ -e "$f" ] || continue
   stripped="$(sed 's/#.*//' "$f")"
-  printf '%s\n' "$stripped" | grep -qE 'git[[:space:]]+(init|clone)([[:space:]]|$)' || continue
+  fixture_lines="$(printf '%s\n' "$stripped" | grep -E 'git[[:space:]]+(init|clone)([[:space:]]|$)' | grep -v 'grep')"
+  [ -n "$fixture_lines" ] || continue
   if ! printf '%s\n' "$stripped" | grep -qE 'unset[[:space:]].*\bGIT_DIR\b'; then
     bad "$(basename "$f") builds a git fixture but never unsets GIT_DIR in setup()"
   fi
