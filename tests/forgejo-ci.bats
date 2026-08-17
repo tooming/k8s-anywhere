@@ -100,13 +100,15 @@ setup() {
   grep -q 'secrets.CHECKOUT_TOKEN' "$WF"
 }
 
-@test "REGISTRY uses host.docker.internal, not the nip.io host trick (127.0.0.1 means the job container itself, not the VM host)" {
-  grep -q 'REGISTRY: host.docker.internal:8080' "$WF"
-  run grep -q 'REGISTRY:.*nip\.io' "$WF"
+@test "REGISTRY keeps the real harbor.127.0.0.1.nip.io hostname (Envoy Gateway's HTTPRoute matches on the Host header — swapping the hostname breaks routing even if the TCP connection itself succeeds, found live 2026-08-18)" {
+  grep -q 'REGISTRY: harbor.127.0.0.1.nip.io:8080' "$WF"
+  run grep -q 'REGISTRY:.*host\.docker\.internal' "$WF"
   [ "$status" -eq 1 ]
 }
 
-@test "both jobs resolve host.docker.internal via /proc/net/route (portable — sign-image's Photon OS base has no ip command)" {
+@test "both jobs override harbor.127.0.0.1.nip.io's own resolution via /proc/net/route (portable — sign-image's Photon OS base has no ip command), not a second host.docker.internal hostname" {
   count="$(grep -c "awk '\\\$2 == \"00000000\"" "$WF")"
   [ "$count" -eq 2 ]
+  count2="$(grep -c 'harbor\.127\.0\.0\.1\.nip\.io" >> /etc/hosts' "$WF")"
+  [ "$count2" -eq 2 ]
 }

@@ -83,18 +83,22 @@ on:
 env:
   # :8080 is required — the k3d gateway's published host port.
   #
-  # host.docker.internal, not harbor.127.0.0.1.nip.io (found live 2026-08-17):
-  # nip.io's 127.0.0.1 resolution is only correct from the *host's* perspective —
-  # k3d's gateway container publishes 8080 on the Colima VM's own interfaces, and
-  # from inside this job's own container 127.0.0.1 means the job container itself,
-  # not the VM host ("connection refused", nothing listens there). host.docker.internal
-  # isn't auto-populated by this Docker/network combination either (Docker's
-  # `--add-host=host.docker.internal:host-gateway` special value didn't resolve in
-  # this Colima setup) — the "Resolve host bridge" step below adds a real /etc/hosts
-  # entry for it at run time, using this container's own default-route gateway IP
-  # rather than a hardcoded address (the forgejo_default network's gateway is
-  # deterministic per compose project but not worth pinning in source).
-  REGISTRY: host.docker.internal:8080
+  # Kept as harbor.127.0.0.1.nip.io, NOT switched to host.docker.internal — found
+  # live 2026-08-17-18, the hard way: nip.io's 127.0.0.1 resolution is only correct
+  # from the *host's* perspective (from inside this job's own container, 127.0.0.1
+  # means the job container itself — "connection refused", nothing listens there),
+  # so a first attempt renamed REGISTRY to host.docker.internal. That built and
+  # "pushed" without error, but the artifact silently never landed in Harbor:
+  # Envoy Gateway's HTTPRoute for Harbor matches on the `Host` header
+  # (harbor.127.0.0.1.nip.io), and swapping the hostname changed that header too —
+  # every push request fell through to Envoy's wildcard/default route (Grafana, as
+  # it happened) instead, which happily 302-redirected the PUTs and made docker
+  # push exit 0 with nothing ever reaching Harbor. The `Host` header the client
+  # sends and the address it dials are two different things — this only needed
+  # fixing the *second* one. See "Resolve host bridge" below: it now overrides
+  # harbor.127.0.0.1.nip.io's own resolution in /etc/hosts to point at this
+  # container's default-route gateway IP, instead of introducing a second hostname.
+  REGISTRY: harbor.127.0.0.1.nip.io:8080
   IMAGE_NAME: library/hello
 
 jobs:
@@ -123,16 +127,22 @@ jobs:
           git clone --no-checkout "http://lab-admin:${{ secrets.CHECKOUT_TOKEN }}@forgejo:3000/${GITHUB_REPOSITORY}.git" .
           git checkout "$GITHUB_SHA"
 
-      - name: Resolve host bridge (host.docker.internal -> this container's default gateway)
-        # Parses /proc/net/route directly instead of shelling out to `ip route` —
-        # portable across both job containers in this workflow (docker:29.7.2 has
-        # `ip`; the sign-image job's bitnami/cosign image, a minimal Photon OS
-        # image, does not) without needing two different implementations.
+      - name: Resolve $REGISTRY's host to this container's default gateway
+        # /etc/hosts entries win over nip.io's own DNS answer, so this overrides
+        # harbor.127.0.0.1.nip.io's resolution *without* changing the hostname
+        # itself — the Host header docker/cosign send has to stay
+        # harbor.127.0.0.1.nip.io for Envoy Gateway's HTTPRoute to match it (see
+        # the REGISTRY env var's own comment for the full story of getting this
+        # wrong the first time). Parses /proc/net/route directly instead of
+        # shelling out to `ip route` — portable across both job containers in this
+        # workflow (docker:29.7.2 has `ip`; the sign-image job's bitnami/cosign
+        # image, a minimal Photon OS image, does not) without needing two
+        # different implementations.
         run: |
           gw_hex="$(awk '$2 == "00000000" {print $3; exit}' /proc/net/route)"
           [ -n "$gw_hex" ] || { echo "could not determine default gateway"; exit 1; }
           gw="$(printf '%d.%d.%d.%d' 0x${gw_hex:6:2} 0x${gw_hex:4:2} 0x${gw_hex:2:2} 0x${gw_hex:0:2})"
-          echo "$gw host.docker.internal" >> /etc/hosts
+          echo "$gw harbor.127.0.0.1.nip.io" >> /etc/hosts
 
       - name: Start dockerd (insecure registry for the in-lab Harbor route)
         run: |
@@ -178,15 +188,15 @@ jobs:
           printf '%s' "${{ secrets.COSIGN_KEY }}" > /tmp/cosign/cosign.key
 
       # Same fix, same reason as build-and-push's identically-named step — a
-      # separate job runs in a separate container, so REGISTRY's host.docker.internal
-      # needs resolving here too. bitnami/cosign's minimal Photon OS base has no `ip`
+      # separate job runs in a separate container, so REGISTRY's host needs
+      # resolving here too. bitnami/cosign's minimal Photon OS base has no `ip`
       # command, which is exactly why this parses /proc/net/route instead.
-      - name: Resolve host bridge (host.docker.internal -> this container's default gateway)
+      - name: Resolve $REGISTRY's host to this container's default gateway
         run: |
           gw_hex="$(awk '$2 == "00000000" {print $3; exit}' /proc/net/route)"
           [ -n "$gw_hex" ] || { echo "could not determine default gateway"; exit 1; }
           gw="$(printf '%d.%d.%d.%d' 0x${gw_hex:6:2} 0x${gw_hex:4:2} 0x${gw_hex:2:2} 0x${gw_hex:0:2})"
-          echo "$gw host.docker.internal" >> /etc/hosts
+          echo "$gw harbor.127.0.0.1.nip.io" >> /etc/hosts
 
       # Only the short-SHA tag is signed here, even though build-and-push also
       # pushes :latest — same reasoning as the predecessor pipeline's sign-image
