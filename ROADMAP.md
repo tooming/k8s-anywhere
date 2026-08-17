@@ -232,6 +232,78 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump Valkey `8.0.10-alpine` → `8.1.9-alpine` — ADR-0018's own flip condition is
+  now met (two RCE-severity CVEs)** (CHARTER **Core Values** §"Everything as code" +
+  general hardening; planner-fallback gap analysis 2026-08-17, reached via
+  `executor.prompt.md` STEP 6b — every Now/next item is still gated (the three
+  standing GitLab→Forgejo migration items plus the `verifyImages` Enforce flip, the O4
+  CI-rejection-gate, and the legacy capstone `Deployment` removal, all still gated on
+  unconfirmed maintainer-confirmation issues #631/#633, both re-checked this run — no
+  new comment since 2026-08-13 05:57 UTC). **No prerequisites — executor may pick up
+  immediately.**
+
+  [ADR-0018](docs/decisions/adr-0018-valkey-not-redis.md)'s own `## Re-evaluation log`
+  (2026-07-20 audit #627) explicitly kept the pin at the `8.0-alpine` line and recorded
+  a concrete flip condition: *"A CVE or critical-bug advisory is disclosed against the
+  `8.0.x` line that `8.1.x` (or later) fixes... bump the pins to the fixed/needed
+  version, update this ADR's Re-evaluation log documenting the flip."* That condition is
+  now met. Verified directly (not assumed, ADR-0004): both
+  `raw.githubusercontent.com/valkey-io/valkey/8.0.10/00-RELEASENOTES` and
+  `.../8.1.9/00-RELEASENOTES` were fetched directly. Both `8.0.10` (this repo's current
+  pin) and `8.1.9` were released the same day (Tue 21 July 2026) and cite the same two
+  CVE IDs — but with materially different severity language for the identical IDs:
+  - `8.0.10`'s notes: *"CVE-2026-56684: Fix a use-after-free in TLS connection handling
+    that could allow an authenticated client to **crash the server** using CLIENT
+    KILL"* and *"CVE-2026-63639: Reject corrupt stream RDB files containing a shared
+    NACK across consumers"* (no RCE mentioned).
+  - `8.1.9`'s notes for the **same two CVE IDs**: *"could allow an authenticated client
+    to achieve **remote code execution** using CLIENT KILL"* and *"...which could allow
+    remote code execution"*.
+
+  A real `git ls-remote --tags valkey-io/valkey` confirms `8.1.9` is the newest `8.1.x`
+  tag and no `8.0.11` (or later `8.0.x`) tag exists — the `8.0.x` line stopped at
+  `8.0.10` the same day `8.1.9` shipped, so there is no same-line patch available; the
+  only fixed/current pin is on the `8.1.x` line. This is a **minor** version bump
+  (`8.0.x` → `8.1.x`, not `8.x` → `9.0.0`) — in scope for direct executor action per
+  `routines/upgrade-drafter.prompt.md`'s "skip major bumps only" rule, not an
+  architect-gated major jump — and `8.1.0` GA's own release notes (also fetched
+  directly) state it is *"fully compatible with all previous Valkey releases as well as
+  Redis OSS 7.2.4"*, i.e. no breaking behavior change for this lab's plain
+  `--requirepass`/`--save`/`--appendonly no` single-node usage. Docker Hub's tags API
+  confirms `valkey/valkey:8.1.9-alpine` is a real, published multi-arch image (pushed
+  2026-07-22). Whether the RCE/crash-only wording gap reflects a genuinely deeper fix
+  landed only on the `8.1.x` branch or an inconsistency in upstream's own per-branch
+  release-note wording, this repo's own ADR-0004 stance is to not assume the more
+  reassuring reading when a more authoritative, actively-patched line (`8.1.x`, which
+  has continued shipping — `8.1.9` is its 10th release since `8.1.0` GA — while `8.0.x`
+  has not shipped since `8.0.10`) describes the same two CVE IDs as RCE-capable.
+
+  Bump `gitops/data/valkey/statefulset.yaml` and
+  `gitops/data/demo/valkey-load.yaml`'s `image: valkey/valkey:8.0.10-alpine` →
+  `image: valkey/valkey:8.1.9-alpine` (both must move together, matching ADR-0018's own
+  prior-bump precedent). Update `statefulset.yaml`'s existing header comment block to
+  describe this bump: the flip-condition-met finding, the RCE-vs-crash severity
+  discrepancy for the identical CVE IDs across the two branches, and that `8.1.0` GA is
+  documented as fully backward-compatible. Update `tests/data-layer.bats`'s two pin
+  assertions (`"valkey image is pinned to 8.0.10-alpine..."` /
+  `"valkey-load image is pinned to 8.0.10-alpine..."`) to assert `8.1.9-alpine` and
+  retitle them to name the CVE IDs and the RCE finding. Add a new dated entry to
+  [ADR-0018](docs/decisions/adr-0018-valkey-not-redis.md)'s `## Re-evaluation log`
+  documenting the flip (superseding the 2026-07-20 "kept" entry's own stated
+  condition — do not delete the prior entry, append after it) and its own new flip
+  condition (e.g. a further CVE against `8.1.x`). No
+  `docs/dependency-tree.md`/`docs/dependency-register.md` version-string update needed
+  beyond the register's existing Valkey row "Last reviewed" cell, which must cite this
+  bump. `make ci` must pass. PR body must document the CVE findings and severity-wording
+  discrepancy above and the ADR-0004 caveat that this remote clusterless session cannot
+  verify the Valkey pod restarts cleanly and the "Lab — Valkey" dashboard keeps
+  populating post-bump on a live cluster — call out the rollback path (revert both
+  `image:` tags; Valkey is a plain `StatefulSet`, not an ArgoCD-templated Helm release,
+  so a revert takes effect on the next GitOps sync; the AOF-off/RDB-snapshot-every-60s
+  config means at most 60s of writes could be lost on an actual server crash during the
+  window, unrelated to this image-tag change itself). `docs/done/` entry required.
+  (auto/valkey-8-1-9-security-bump)
+
 **GitLab → Forgejo migration (ADR-0035, 2026-08-11, superseding ADR-0033) — seven items
 (originally six; item 4 split in two on 2026-08-11 per rule #9 below), work
 top-to-bottom, each its own PR.** GitLab keeps running unmodified until the last item;
