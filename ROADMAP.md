@@ -232,6 +232,70 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump GitLab CE `19.2.1-ce.0` → `19.2.2-ce.0` + `gitlab-runner` `v19.2.1` →
+  `v19.2.2` (15 real security fixes)** (CHARTER **Core Values** §"Everything as code" +
+  general hardening; planner-fallback gap analysis 2026-08-17, second pass this run,
+  reached via `executor.prompt.md` STEP 6b — every Now/next item is still gated (the
+  three standing GitLab→Forgejo migration items plus the `verifyImages` Enforce flip,
+  the O4 CI-rejection-gate, and the legacy capstone `Deployment` removal, all still
+  gated on unconfirmed maintainer-confirmation issues #631/#633, re-checked this
+  cycle — no new comment since 2026-08-13 05:57 UTC — and this run's first
+  PLANNER-fallback pass, `auto/valkey-8-1-9-security-bump`, already claimed the
+  data-layer gap that sweep found). This cycle's fresh angle, per STEP 8's "widen the
+  lens" guidance: swept the two out-of-cluster `docker-compose.yml` stacks
+  (`gitlab/`, `forgejo/`) for image currency — a distinct enumeration surface from the
+  `gitops/**/*.yaml` sweep the prior pass used. **No prerequisites — executor may pick
+  up immediately.**
+
+  Verified directly (not assumed, ADR-0004): Docker Hub's tags API confirms
+  `gitlab/gitlab-ce:19.2.2-ce.0` (pushed 2026-08-12) and
+  `gitlab/gitlab-runner:v19.2.2` (pushed 2026-08-12) both exist as real, published
+  tags — one patch ahead of this repo's current `19.2.1-ce.0`/`v19.2.1` pins. A real
+  clone's `gitlab.com/gitlab-org/gitlab` `CHANGELOG.md` at tag `v19.2.2-ee` (GitLab's
+  server and CE/EE package versions track together; the CE image is built from the
+  same release) shows a **substantial security release**: a `### Security (15
+  changes)` section including real, non-cosmetic fixes — `Fix authorize_admin_project!
+  being skipped on project update` (an authorization-bypass fix), `Re-validate upload
+  path traversal before store`, `Filter unauthorized merge requests from global API
+  endpoint`, `Enforce namespace containment in aiToolRules resolver`, `Enforce package
+  protection rules on npm dist-tags`, `Prevent pipeline creation for spoofed merge
+  request refs`, and nine more. This clears this repo's own "ships with a real fix"
+  bar for a non-CVE-numbered currency bump by a wide margin — GitLab's security
+  releases are typically not assigned individual CVE IDs but are still real,
+  merge-request-linked fixes (each entry above links a real
+  `gitlab-org/security/gitlab` commit + merge request, not a placeholder). The
+  `gitlab-runner` `v19.2.2` release itself is maintenance-only (one entry: "Verify
+  resources: authenticate Docker Hub image checks") — bumped alongside the server pin
+  for version parity, matching this file's own existing rationale for why the two
+  pins move together (`gitlab/docker-compose.yml`'s `gitlab-runner` service comment:
+  "aligned with the gitlab-ce pin above").
+
+  Bump `gitlab/docker-compose.yml`'s `image: gitlab/gitlab-ce:19.2.1-ce.0` →
+  `image: gitlab/gitlab-ce:19.2.2-ce.0` and `image: gitlab/gitlab-runner:v19.2.1` →
+  `image: gitlab/gitlab-runner:v19.2.2` (both services, matching the file's own
+  existing paired-pin precedent). Update both services' existing header comments to
+  cite the new tags and the security-release finding (name at least three of the
+  fifteen security fixes, not just "security fixes exist" — matching this repo's own
+  citation-specificity bar). Update `tests/gitlab-compose.bats`'s two pin assertions
+  (`"gitlab service is pinned to 19.2.1-ce.0"` / `"gitlab-runner service is pinned to
+  v19.2.1"`) to assert the new tags and retitle them. No
+  `docs/dependency-tree.md`/`docs/dependency-register.md` version-string update needed
+  beyond the register's existing GitLab row, which must cite this bump (the row's own
+  existing note already flags it as "still the live, running component" pending the
+  Forgejo cutover — this bump doesn't change that framing). `make ci` must pass. PR
+  body must document at least three of the fifteen named security fixes above and the
+  ADR-0004 caveat that this remote clusterless session cannot verify GitLab's own
+  omnibus migration/upgrade path completes cleanly on the maintainer's actual running
+  container (GitLab's own upgrade docs require sequential patch-release upgrades, no
+  version skipping — a single patch bump like this one is within the always-safe
+  window) — call out the rollback path (revert both `image:` tags; both services are
+  plain Docker Compose, not GitOps-managed, so a revert takes effect on the next
+  `docker compose up -d`/`gitlab-tls-bootstrap.sh` run on the maintainer's host; GitLab
+  omnibus stores its data in named volumes untouched by an image-tag change, though a
+  downgrade after a real omnibus DB migration ran would need the maintainer's own
+  backup/restore, same caveat any GitLab patch bump carries). `docs/done/` entry
+  required. (auto/gitlab-19-2-2-security-bump)
+
 - [x] 🟢 **Bump Valkey `8.0.10-alpine` → `8.1.9-alpine` — ADR-0018's own flip condition is
   now met (two RCE-severity CVEs)** (CHARTER **Core Values** §"Everything as code" +
   general hardening; planner-fallback gap analysis 2026-08-17, reached via
