@@ -69,6 +69,24 @@ setup() {
   [ -x "$REPO/scripts/forgejo-admin-ensure.sh" ]
 }
 
+@test "forgejo-runner-ensure.sh exists and is executable" {
+  [ -x "$REPO/scripts/forgejo-runner-ensure.sh" ]
+}
+
+@test "forgejo-runner-ensure.sh reads FORGEJO_ADMIN_PASSWORD from forgejo/.env, not a hardcoded credential" {
+  run grep -q "forgejo/.env" "$REPO/scripts/forgejo-runner-ensure.sh"
+  [ "$status" -eq 0 ]
+  run grep -q "FORGEJO_ADMIN_PASSWORD" "$REPO/scripts/forgejo-runner-ensure.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "forgejo-runner-ensure.sh fetches the registration token with GET, not POST (405 Method Not Allowed regression guard, found live 2026-08-13)" {
+  run grep -q -- '-X GET' "$REPO/scripts/forgejo-runner-ensure.sh"
+  [ "$status" -eq 0 ]
+  run grep -q -- '-X POST.*registration-token' "$REPO/scripts/forgejo-runner-ensure.sh"
+  [ "$status" -eq 1 ]
+}
+
 @test "Makefile has forgejo-up and forgejo-down targets" {
   run grep -q '^forgejo-up:' "$REPO/Makefile"
   [ "$status" -eq 0 ]

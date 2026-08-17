@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **`scripts/forgejo-runner-ensure.sh` has no bats coverage at all — its two
+- [x] 🟢 **`scripts/forgejo-runner-ensure.sh` has no bats coverage at all — its two
   sibling bootstrap scripts do** (CHARTER **Core Values** §"Everything as code" +
   ROADMAP rule #9's own named filler example, "a script with no bats coverage";
   planner-fallback coverage/hardening sweep 2026-08-17, fourth pass this run, reached
