@@ -76,3 +76,26 @@ setup() {
 @test "build-sign-push.yml does not name the rejected git host (ADR-0035 guard parity)" {
   ! grep -qi 'gitlab' "$WF"
 }
+
+@test "build-and-push checks out via a plain git clone, not actions/checkout@v4" {
+  # Found live 2026-08-17: Forgejo's default actions-proxy resolves marketplace
+  # actions (including actions/checkout) by git-cloning them from data.forgejo.org
+  # at run time, and that host was consistently unreachable from this lab's job
+  # containers — every run failed at "Set up job" before any real logic executed.
+  # See the checkout step's own comment for the full story.
+  run grep -q 'uses: actions/checkout@v4' "$WF"
+  [ "$status" -eq 1 ]
+  grep -q 'git clone --no-checkout' "$WF"
+}
+
+@test "build-and-push's plain-git-clone checkout targets Forgejo's internal HTTP endpoint" {
+  grep -q '@forgejo:3000/\${GITHUB_REPOSITORY}\.git' "$WF"
+}
+
+@test "build-and-push's checkout step checks out the exact triggering commit" {
+  grep -q 'git checkout "\$GITHUB_SHA"' "$WF"
+}
+
+@test "build-sign-push.yml references the CHECKOUT_TOKEN secret (no plaintext)" {
+  grep -q 'secrets.CHECKOUT_TOKEN' "$WF"
+}

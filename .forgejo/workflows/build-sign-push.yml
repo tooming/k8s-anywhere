@@ -29,6 +29,13 @@
 #      job below writes it to a temp file itself (see its first step) instead of
 #      relying on a platform-provided temp path.
 #
+# Checkout prerequisite (found live 2026-08-17 — see the checkout step's own
+# comment for the full "why not actions/checkout@v4" story):
+#   6. In Forgejo, generate a personal access token for the repo's admin account
+#      (Settings → Applications → Generate New Token, write:repository scope is
+#      enough) and add it as a repo Actions secret:
+#        CHECKOUT_TOKEN       ← the generated token value
+#
 # Component prerequisites:
 #   make harbor-up                   Harbor must be running before first push
 #   Images push to the "library" project — Harbor's built-in default project,
@@ -42,18 +49,30 @@
 # ADR-0004 caveat (this item's own "verify live" requirement — see ROADMAP.md): this
 # file was authored and structurally validated (YAML shape, tests/forgejo-ci.bats)
 # from a clusterless remote session with no live Forgejo/forgejo-runner instance to
-# actually execute it against. Three specific mechanics below need a real run to
-# confirm, each called out at its own step:
+# actually execute it against. Mechanics needing a real run to confirm, each called
+# out at its own step:
 #   (a) `container.options: --privileged` is permitted by forgejo-runner's config.yml
 #       (gitignored, not yet committed — see forgejo/docker-compose.yml's comment).
-#   (b) `actions/checkout@v4` resolves the way Forgejo's default actions-proxy expects.
-#   (c) manually starting dockerd with --insecure-registry inside the job container
+#   (b) manually starting dockerd with --insecure-registry inside the job container
 #       works the same way the predecessor pipeline's Docker-in-Docker *service*
 #       command-override did (Forgejo/GitHub Actions' `services:` schema has no
 #       command-override field, which is why this uses a privileged single-container
 #       Docker-in-Docker pattern instead of a companion service container — a
 #       deliberate structural difference from the predecessor pipeline, not an
 #       oversight).
+#
+# `actions/checkout@v4` deliberately NOT used (found live 2026-08-17, the same
+# session that completed the git-source cutover): Forgejo's default actions-proxy
+# resolves marketplace actions by git-cloning them from data.forgejo.org at run
+# time, and that host was consistently unreachable from this lab's job containers
+# (`docker run --rm curlimages/curl ... https://data.forgejo.org` timed out
+# repeatedly, alongside github.com — the same class of Colima-VM egress flakiness
+# documented elsewhere in this repo, while the exact same host was reachable in
+# under 150ms from the Mac host directly. Every run through #13 failed at the "Set up job" step trying to
+# fetch this one marketplace action, before any of the job's own logic ever ran.
+# Replaced with a plain `git clone` against Forgejo's own internal HTTP endpoint
+# (no external network hop at all) using a repo-scoped access token — see the
+# checkout step below and its own CHECKOUT_TOKEN prerequisite note.
 
 name: build-sign-push
 
@@ -82,7 +101,17 @@ jobs:
       # instead of a companion service container — see ADR-0004 caveat (c) above.
       options: --privileged
     steps:
-      - uses: actions/checkout@v4
+      # Plain git clone against Forgejo's own internal HTTP endpoint, not
+      # actions/checkout@v4 — see the file-header comment above for why.
+      # CHECKOUT_TOKEN prerequisite: a Forgejo access token (write:repository scope
+      # is enough — checkout only needs read, but that's the narrowest scope the
+      # token API groups it under) added as a repo Actions secret. Generated via
+      # POST /api/v1/users/{user}/tokens with the admin account, scoped to this
+      # single purpose — distinct from HARBOR_USER/HARBOR_PASSWORD and COSIGN_KEY.
+      - name: Checkout
+        run: |
+          git clone --no-checkout "http://lab-admin:${{ secrets.CHECKOUT_TOKEN }}@forgejo:3000/${GITHUB_REPOSITORY}.git" .
+          git checkout "$GITHUB_SHA"
 
       - name: Start dockerd (insecure registry for the in-lab Harbor route)
         run: |
