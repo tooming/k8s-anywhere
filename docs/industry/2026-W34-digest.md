@@ -17,12 +17,14 @@ re-checked and found still gated on #631/#633)._
   field, #1203) and kube-state-metrics chart `8.3.0`→`8.3.1` (packaging-only
   autosharding-Service fix this lab doesn't exercise, #1204).
 - **A major live event this week, not this routine's own action**: a concurrent
-  interactive session opened [PR #1205](https://github.com/tooming/k8s-anywhere/pull/1205)
-  doing the actual GitLab→Forgejo `repoURL` cutover live, per explicit maintainer
-  direction — GitLab is now stopped, Forgejo is the live git source. Still open
-  (unmerged) as of this digest. Once it lands it satisfies ROADMAP Now/next item 1
-  of the Forgejo-migration list; items 2/3 (script rename, GitLab decommission)
-  remain explicit follow-up per that PR's own body.
+  interactive session opened, and the maintainer merged,
+  [PR #1205](https://github.com/tooming/k8s-anywhere/pull/1205) doing the actual
+  GitLab→Forgejo `repoURL` cutover live, per explicit maintainer direction —
+  GitLab is now stopped, Forgejo is the live git source. Merged 2026-08-17
+  20:00:59 UTC, during this same digest-writing cycle. This satisfies ROADMAP
+  Now/next item 1 of the Forgejo-migration list; items 2/3 (script rename,
+  GitLab decommission) remain explicit follow-up per that PR's own body — a
+  future cycle should mark item 1 `[x]` in ROADMAP.md and pick up items 2/3.
 - **A full STEP 1 sweep against every ADR'd component this week** found no new
   release meeting the "meaningfully changes the tradeoff" bar (STEP 2b) — see
   "Lab stack" below for the per-component findings, most reconfirmed current from
@@ -107,15 +109,14 @@ ADR-0004, never re-assert a fact not actually checked this run).
   material upstream event but is a *currency* question for upgrade-drafter/
   executor to verify live, not an *architecture* question (ADR-0008's choice of
   Envoy Gateway itself is unaffected).
-- **Worth a future architect's attention, not opened as a formal audit this
-  cycle** (no upstream release triggered it — this is a repo-internal
-  observation, outside STEP 2b's own trigger criteria): PR #1205's live GitLab→
-  Forgejo cutover this week means `docs/dependency-register.md`'s GitLab row
-  (still describing GitLab as "the live, running component") and ADR-0033's
-  posture will both go stale once that PR merges — flagging for whichever role
-  picks up the ROADMAP migration-list follow-up items (rename scripts, GitLab
-  decommission) to also refresh those docs in the same pass, not a separate
-  architect action.
+- **Worth a future cycle's attention, not opened as a formal audit this cycle**
+  (no upstream release triggered it — this is a repo-internal observation,
+  outside STEP 2b's own trigger criteria): PR #1205's now-merged GitLab→Forgejo
+  cutover means `docs/dependency-register.md`'s GitLab row (still describing
+  GitLab as "the live, running component") and ADR-0033's posture are now
+  stale, ROADMAP Now/next item 1 needs marking `[x]`, and items 2/3 (script
+  rename, GitLab decommission) are now unblocked — flagging for whichever role
+  picks up that follow-up, not a separate architect action.
 
 No new RFCs opened, no ADR audits opened or closed this cycle — nothing found that
 meets STEP 2b's "meaningfully changes the tradeoff" bar.
