@@ -19,6 +19,16 @@ setup() {
   grep -q '^  sign-image:' "$WF"
 }
 
+@test "build-and-push job is pinned to the exact patch docker:29.7.2 (2026-08-17: pin-what's-running, docker:29 floating tag closed)" {
+  run grep -q 'image: docker:29\.7\.2$' "$WF"
+  [ "$status" -eq 0 ]
+}
+
+@test "build-and-push job does not pin the superseded floating docker:29 tag" {
+  run grep -q 'image: docker:29$' "$WF"
+  [ "$status" -eq 1 ]
+}
+
 @test "sign-image needs build-and-push (job ordering, mirrors the predecessor pipeline's stages)" {
   run sed -n '/^  sign-image:/,/^  [a-zA-Z]/p' "$WF"
   [ "$status" -eq 0 ]

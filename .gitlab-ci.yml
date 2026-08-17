@@ -56,7 +56,14 @@ build-and-push:
   # structural bats coverage is the verification ceiling here, same as every other
   # .gitlab-ci.yml change in this repo's history. Flip condition for the next audit:
   # revisit when `docker`'s `29` tag itself goes stale (no update in the last year).
-  image: docker:29
+  #
+  # Pinned the floating `29` tag to the exact patch `29.7.2` (2026-08-17,
+  # planner-fallback gap analysis): Docker Hub's tags API confirms `docker:29`'s
+  # amd64-layer digest is byte-identical to `docker:29.7.2`'s digest (distinct
+  # from `29.7.1`/`29.7.0`) -- a pin-what's-already-running change, not a version
+  # bump. This doesn't touch the major-line-abandonment reasoning above; it only
+  # closes the separate silent-patch-drift risk ADR-0030 exists to prevent.
+  image: docker:29.7.2
   services:
     # Allow HTTP pushes to the in-lab registry (no TLS on the nip.io route).
     # --registry-mirror=mirror.gcr.io (added 2026-08-12, #631 investigation): base-image
@@ -72,7 +79,7 @@ build-and-push:
     # the flaky one — doesn't touch the Harbor push/sign path, which was independently
     # confirmed working (pipeline #58 got a full build + Harbor login + blob push,
     # failing only on a transient 502 from Harbor itself, not this).
-    - name: docker:29-dind
+    - name: docker:29.7.2-dind
       alias: docker
       command: ["--insecure-registry=harbor.127.0.0.1.nip.io:8080", "--registry-mirror=https://mirror.gcr.io"]
   variables:
