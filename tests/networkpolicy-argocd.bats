@@ -97,22 +97,22 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-argocd-repo-server-egress-gitlab.yaml exists in argocd/networkpolicy/" {
-  [ -f "$ARGOCD_NP/allow-argocd-repo-server-egress-gitlab.yaml" ]
+@test "allow-argocd-repo-server-egress-forgejo.yaml exists in argocd/networkpolicy/" {
+  [ -f "$ARGOCD_NP/allow-argocd-repo-server-egress-forgejo.yaml" ]
 }
 
-@test "allow-argocd-repo-server-egress-gitlab allows port 8929 (GitLab HTTP)" {
-  run grep -q 'port: 8929' "$ARGOCD_NP/allow-argocd-repo-server-egress-gitlab.yaml"
+@test "allow-argocd-repo-server-egress-forgejo allows port 2223 (Forgejo SSH)" {
+  run grep -q 'port: 2223' "$ARGOCD_NP/allow-argocd-repo-server-egress-forgejo.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "allow-argocd-repo-server-egress-gitlab targets argocd-repo-server pods" {
-  run grep -q 'app.kubernetes.io/name: argocd-repo-server' "$ARGOCD_NP/allow-argocd-repo-server-egress-gitlab.yaml"
+@test "allow-argocd-repo-server-egress-forgejo targets argocd-repo-server pods" {
+  run grep -q 'app.kubernetes.io/name: argocd-repo-server' "$ARGOCD_NP/allow-argocd-repo-server-egress-forgejo.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "allow-argocd-repo-server-egress-gitlab uses an ipBlock for the host CIDR" {
-  run grep -q 'ipBlock:' "$ARGOCD_NP/allow-argocd-repo-server-egress-gitlab.yaml"
+@test "allow-argocd-repo-server-egress-forgejo uses an ipBlock for the host CIDR" {
+  run grep -q 'ipBlock:' "$ARGOCD_NP/allow-argocd-repo-server-egress-forgejo.yaml"
   [ "$status" -eq 0 ]
 }
 
