@@ -232,6 +232,71 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Pin the floating `docker:29`/`docker:29-dind` CI-build images to the exact
+  patch `docker:29.7.2`/`docker:29.7.2-dind` in both `.gitlab-ci.yml` and
+  `.forgejo/workflows/build-sign-push.yml`** (CHARTER **Core Values** §"Everything as
+  code" + general hardening; planner-fallback gap analysis 2026-08-17, third pass this
+  run, reached via `executor.prompt.md` STEP 6b — every Now/next item is still gated
+  (the three standing GitLab→Forgejo migration items plus the `verifyImages` Enforce
+  flip, the O4 CI-rejection-gate, and the legacy capstone `Deployment` removal, all
+  still gated on unconfirmed maintainer-confirmation issues #631/#633, re-checked this
+  cycle — no new comment since 2026-08-13 05:57 UTC — and this run's first two
+  PLANNER-fallback passes, `auto/valkey-8-1-9-security-bump` and
+  `auto/gitlab-19-2-2-security-bump`, already claimed the gaps those sweeps found).
+  This cycle's fresh angle: swept the CI pipeline definitions themselves
+  (`.gitlab-ci.yml` and `.forgejo/workflows/*.yml`) for image currency — a distinct
+  enumeration surface from the `gitops/**/*.yaml` and `docker-compose.yml` sweeps the
+  prior two passes used. **No prerequisites — executor may pick up immediately.**
+
+  Verified directly (not assumed, ADR-0004): `.gitlab-ci.yml`'s `build-and-push` job
+  (and its `docker:29-dind` service) and `.forgejo/workflows/build-sign-push.yml`'s
+  `build-and-push` job all pin the bare major-version tag `docker:29`/`docker:29-dind`,
+  not an exact patch — unlike every other version-sensitive pin in this repo (Vault,
+  Grafana, Argo Rollouts, Envoy Gateway, Kiali, k3s, Inkless's Postgres, and this run's
+  own Valkey/GitLab bumps), all of which pin an exact patch explicitly. This is the
+  same bug class ADR-0030's own risk description names and this repo has fixed
+  repeatedly for other files (`nginx:alpine` → `nginx:1.31.3-alpine` for the TiDB demo,
+  `nginx:1.27-alpine` → `nginx:1.27.5-alpine` for `gitlab-tls`): "an unpinned tag can
+  silently jump versions on a routine pull, with no PR, no changelog review, and no
+  rollback record." Docker Hub's tags API confirms the floating `docker:29` tag's
+  amd64-layer digest (`sha256:ab772b0e...`) is byte-identical to the exact-patch tag
+  `docker:29.7.2`'s digest — a **pin-what's-already-running** change, not a version
+  bump: the floating tag already resolves to `29.7.2` on any fresh pull today; explicit
+  pinning only makes that fact durable and inspectable. (`docker:29.7.1` and
+  `docker:29.7.0` have distinct, older digests — confirmed separately, so this is
+  genuinely the newest patch on the line, not a guess.) `.gitlab-ci.yml`'s own header
+  comment on this image already documents *why* the `29` major line was chosen over
+  the abandoned `24` line (2026-07-28 currency check) and names a flip condition for
+  when the whole `29` line itself goes stale — that reasoning is about major-line
+  abandonment risk and is unaffected by adding an exact-patch pin underneath it; the
+  two concerns (line abandonment vs. silent patch drift) are independent, and this
+  item closes only the second one.
+
+  Bump `.gitlab-ci.yml`'s `image: docker:29` → `image: docker:29.7.2` and
+  `name: docker:29-dind` → `name: docker:29.7.2-dind` (`build-and-push` job).
+  Bump `.forgejo/workflows/build-sign-push.yml`'s `image: docker:29` →
+  `image: docker:29.7.2` (`build-and-push` job — this file has no separate `-dind`
+  service; it runs dockerd in-container per its own ADR-0004 caveat comment). Add a
+  short note to each file's existing header comment near the image line documenting
+  the digest-match finding above, preserving the existing major-line-abandonment
+  reasoning and flip condition unchanged (do not delete or rewrite it — append).
+  Update `tests/cosign-bootstrap.bats`'s existing assertion (currently titled
+  `"build-and-push job and its dind service use the actively-maintained docker:29
+  line..."`) to assert the exact `docker:29.7.2`/`docker:29.7.2-dind` tags and retitle
+  it; check `tests/forgejo-ci.bats` for an equivalent assertion and update it the same
+  way. No `docs/dependency-tree.md`/`docs/dependency-register.md` update needed — CI
+  build tooling images aren't tracked rows there (checked directly; neither file's
+  existing rows cover ephemeral build-job images, only deployed/running components).
+  `make ci` must pass. PR body must document the digest-comparison finding above and
+  the ADR-0004 caveat that this remote clusterless session cannot verify a real
+  pipeline run still builds/pushes/signs successfully post-pin on either GitLab's live
+  runner or a future live Forgejo instance — call out the rollback path (revert both
+  `image:`/`name:` lines in both files; both are plain CI-pipeline YAML, not
+  GitOps-managed, so a revert takes effect on the very next pipeline run with zero
+  cluster or data-loss risk either way, since `docker:29` and `docker:29.7.2` are the
+  same actual image content today). `docs/done/` entry required.
+  (auto/docker-ci-image-explicit-pin)
+
 - [x] 🟢 **Bump GitLab CE `19.2.1-ce.0` → `19.2.2-ce.0` + `gitlab-runner` `v19.2.1` →
   `v19.2.2` (15 real security fixes)** (CHARTER **Core Values** §"Everything as code" +
   general hardening; planner-fallback gap analysis 2026-08-17, second pass this run,
