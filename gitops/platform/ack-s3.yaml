@@ -8,6 +8,16 @@
 #   endpoint_use_path_style -> reach buckets as moto.../<bucket>, NOT
 #                              <bucket>.moto... (virtual-host style has no DNS here)
 # Credentials come from Vault via ESO (ack-aws-creds Secret, INI format).
+#
+# Chart bumped 1.9.0 -> 1.10.0 (2026-08-17, upstream-currency gap-analysis finding,
+# executor.prompt.md STEP 6b/rule #9 filler after every Now/next item was
+# re-confirmed gated on #631/#633). Verified directly (not assumed, ADR-0004): the
+# upstream repo's Chart.yaml at tag v1.10.0 shows version/appVersion 1.10.0 (one
+# minor release ahead of the prior 1.9.0 pin, not a major bump); the tag's only
+# functional change is "feat: add ABAC field to Bucket" (#241) plus a routine ACK
+# runtime/code-generator bump (v0.62.0 -> v0.62.1, #244) — no change to any key this
+# Application's valuesObject sets (aws.*, installScope, podSecurityContext.*,
+# securityContext.*, resources.*).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -20,7 +30,7 @@ spec:
   source:
     repoURL: public.ecr.aws/aws-controllers-k8s
     chart: s3-chart
-    targetRevision: 1.9.0
+    targetRevision: 1.10.0
     helm:
       releaseName: ack-s3
       valuesObject:
