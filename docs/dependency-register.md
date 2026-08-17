@@ -22,11 +22,18 @@ Of the 35 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
 (ADR-0001–ADR-0035), two are **Superseded** and fully excluded per the index's own
 convention (only their replacement is listed): ADR-0010 (Redis, superseded by
 ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor). A third,
-ADR-0033 (GitLab, superseded by ADR-0035/Forgejo, 2026-08-11), is **not** excluded
-the same way: unlike the other two's fully-decommissioned predecessors, the
-superseded tool (GitLab) is still the live, running component, so the table below
-keeps citing ADR-0033 until the migration completes (see the GitLab row's own note).
-ADR-0035 doesn't get a separate row of its own for the same reason.
+ADR-0033 (GitLab, superseded by ADR-0035/Forgejo), was **not** excluded the same way
+for most of its life: unlike the other two's fully-decommissioned predecessors,
+GitLab stayed the live, running component through most of the migration. That
+changed 2026-08-17 — an accelerated, live-cluster cutover (PR #1205) flipped every
+`repoURL` to Forgejo and stopped GitLab (`make gitlab-down`) ahead of the two
+remaining ROADMAP migration steps (script/Makefile rename, full decommission), so
+the table below now rows **Forgejo** (citing ADR-0035) as the live component,
+matching the Redis/Artifactory pattern one step early — GitLab's own row is retired
+even though `gitlab/docker-compose.yml` and `infra/modules/gitlab-config` are still
+in the repo (kept for rollback until the decommission item lands; see ADR-0035's own
+migration-execution list, items 5–6, and ROADMAP.md's Now/next Forgejo-migration
+list for the current status of that follow-up).
 
 Of the remaining 33, **eight decide a policy or architectural posture rather than a
 single third-party product** — they're excluded from the table below because there's
@@ -38,9 +45,11 @@ Standards — a built-in Kubernetes admission feature, not a third-party depende
 ADR-0025 (free/OSS-tier governance rule), ADR-0026 (cloud-agnostic architecture
 policy), and ADR-0030 (k3s version-pinning governance — enforced via k3s, whose
 backend choice ADR-0027 already covers in the table, the same "policy enforced via
-an already-listed tool" shape as ADR-0016/Cilium). Of the remaining 25, 24 have a row
-below — ADR-0035 is the transitional exception above, with no row of its own yet —
-collectively naming the table's 32 distinct third-party-tool rows: three ADRs each
+an already-listed tool" shape as ADR-0016/Cilium). Of the remaining 25, all 25 now
+have a row below — ADR-0035 (Forgejo) gained its own row 2026-08-17 once the live
+cutover (PR #1205) made Forgejo, not GitLab, the actual live component the row
+should describe (see the note above) — collectively naming the table's 32 distinct
+third-party-tool rows: three ADRs each
 decide on more than one tool at once (ADR-0001: Terraform/Terragrunt + ArgoCD;
 ADR-0012: Istio + Kiali; ADR-0027: Oracle Cloud Infrastructure + k3s) and ADR-0034
 alone names seven (the LGTMP observability internals — Mimir, Loki, Tempo, Pyroscope,
@@ -103,7 +112,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | k3s | cloud-backend (opt-in) | github.com/k3s-io/k3s | [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md) | not dated in ADR (no Re-evaluation log; decision date 2026-07-13) |
 | cert-manager | always-on-core | github.com/cert-manager/cert-manager | [ADR-0028](decisions/adr-0028-cert-manager-tls-lifecycle.md) | 2026-07-31 (chart bumped `1.21.0` → `1.21.1`, audit #931/RFC #933) |
 | KEDA | always-on-core | github.com/kedacore/keda | [ADR-0029](decisions/adr-0029-keda-event-driven-autoscaling.md) | 2026-08-03 (chart bumped `2.20.1` → `2.20.2`) |
-| GitLab | always-on-core (self-hosted git source + CI runner, host-level Docker Compose, outside the cluster) — **still the live, running component**; [ADR-0035](decisions/adr-0035-forgejo-not-gitlab.md) authorizes migrating this row to Forgejo but the cutover steps (compose stack, Terraform module, CI pipeline port, decommission) are separate, not-yet-executed ROADMAP items — do not treat this row as stale until GitLab is actually torn down | about.gitlab.com, gitlab.com/gitlab-org/gitlab | [ADR-0033](decisions/adr-0033-gitlab-git-source-and-ci.md) (superseded by [ADR-0035](decisions/adr-0035-forgejo-not-gitlab.md), migration pending) | 2026-08-17 (bumped `19.2.1-ce.0` → `19.2.2-ce.0` + runner `v19.2.1` → `v19.2.2`, 15 real security fixes including an authorization-bypass fix and a path-traversal re-validation) |
+| Forgejo | always-on-core (self-hosted git source + CI runner, host-level Docker Compose, outside the cluster) — **the live, running component as of 2026-08-17** (PR #1205's accelerated cutover); supersedes GitLab, whose `docker-compose.yml`/`infra/modules/gitlab-config` are still in the repo, stopped but kept for rollback until ROADMAP's remaining migration items (script/Makefile rename, full decommission) land | codeberg.org/forgejo/forgejo, code.forgejo.org/forgejo/runner | [ADR-0035](decisions/adr-0035-forgejo-not-gitlab.md) (supersedes [ADR-0033](decisions/adr-0033-gitlab-git-source-and-ci.md)) | 2026-08-17 (live cutover, PR #1205; image pins — `forgejo:16.0.2`, `runner:13.0.0` — independently reconfirmed current the same day, this run's own earlier currency check) |
 | Mimir | always-on-core (observability — metrics store) | github.com/grafana/mimir | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
 | Loki | always-on-core (observability — log store) | github.com/grafana/loki | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
 | Tempo | always-on-core (observability — trace store) | github.com/grafana/tempo | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-07 (ADR-0034 authored) |
