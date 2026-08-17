@@ -49,7 +49,7 @@ what they will encounter in cloud-managed services.
 
 ## Plain manifests over a Helm chart
 
-Same reasoning as ADR-0009 and ADR-0010: a pinned official `valkey/valkey:8.0.10-alpine`
+Same reasoning as ADR-0009 and ADR-0010: a pinned official `valkey/valkey:8.1.9-alpine`
 image in a plain `StatefulSet` is fully reproducible, transparent, and validated by
 `kubeconform` (see [§Re-evaluation log](#re-evaluation-log) for the CVE-driven bump
 history from the original `8.0-alpine` pin).
@@ -215,3 +215,39 @@ across its whole codebase (matching or exceeding BSD-3-Clause's permissiveness),
 OR Redis Inc. cedes governance to a vendor-neutral foundation, OR a concrete
 lab-teaching need emerges that only Redis (not Valkey) can fill — revisit this
 ADR and record the new decision here. Closes #829.
+
+### 2026-08-17 — Valkey `8.0.10` → `8.1.9`; the "smallest safe delta" call reversed (planner-fallback gap analysis)
+
+**Trigger.** The 2026-07-22 entry above (RFC #655, audit #654) deliberately chose the
+`8.0.x` line's own `8.0.10` patch over jumping to `8.1.x`, reading `8.0.10`'s GitHub
+release page as describing CVE-2026-56684/CVE-2026-63639 as an **authenticated-client
+DoS** — a "smallest safe delta" call, not a severity miss at the time. Re-fetching both
+release-notes files directly this cycle
+(`raw.githubusercontent.com/valkey-io/valkey/8.0.10/00-RELEASENOTES` and
+`.../8.1.9/00-RELEASENOTES`, not inferred) found upstream's own wording is **not
+consistent across the two branches for the identical CVE IDs**: `8.0.10`'s notes read
+"could allow an authenticated client to crash the server using CLIENT KILL"; `8.1.9`'s
+notes for the *same two CVE IDs* read "could allow an authenticated client to achieve
+remote code execution using CLIENT KILL" (and equivalently for CVE-2026-63639). Also
+confirmed: no `8.0.11`(+) tag exists — the `8.0.x` line stopped at `8.0.10` the same day
+(`8.1.9` has continued, now its 10th release since `8.1.0` GA).
+
+**Decision: bump the pin to `8.1.9-alpine`.** `gitops/data/valkey/statefulset.yaml` and
+`gitops/data/demo/valkey-load.yaml`'s `valkey/valkey:8.0.10-alpine` image references are
+updated to `valkey/valkey:8.1.9-alpine`. This supersedes the 2026-07-22 entry's
+"smallest safe delta" reasoning: that call assumed `8.0.10` and `8.1.9` carried
+equivalent fixes for the same CVE IDs, and the identical-ID/different-severity wording
+found this cycle removes that assumption — whether it reflects a genuinely deeper fix on
+the `8.1.x` branch or an upstream release-notes inconsistency, ADR-0004 (verify before
+asserting) means this repo should not lean on the more reassuring reading once a
+currently-shipping line describes the same IDs as worse. `8.1.0` GA's own release notes
+(fetched directly, unchanged finding from the 2026-07-20 entry) remain "fully compatible
+with all previous Valkey releases" — no breaking-change risk added by the wider jump.
+
+**Flip condition.** A CVE or critical-bug advisory is disclosed against the `8.1.x` line
+(from `8.1.9` onward) that a later patch fixes, OR upstream clarifies the `8.0.10`/`8.1.9`
+severity-wording gap was a release-notes error with no actual behavioral difference (in
+which case the "smallest safe delta" preference from the 2026-07-22 entry should be
+restored as the default going forward), OR a concrete lab-teaching need emerges for a
+version this line does not carry — bump the pins to the fixed/needed version and add a
+new dated log entry here.

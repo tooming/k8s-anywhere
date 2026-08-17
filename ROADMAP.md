@@ -232,7 +232,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump Valkey `8.0.10-alpine` → `8.1.9-alpine` — ADR-0018's own flip condition is
+- [x] 🟢 **Bump Valkey `8.0.10-alpine` → `8.1.9-alpine` — ADR-0018's own flip condition is
   now met (two RCE-severity CVEs)** (CHARTER **Core Values** §"Everything as code" +
   general hardening; planner-fallback gap analysis 2026-08-17, reached via
   `executor.prompt.md` STEP 6b — every Now/next item is still gated (the three
