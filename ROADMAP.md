@@ -225,8 +225,9 @@ You review and merge plan PRs, same as implementation PRs.
 > carry an ADR-0004 caveat this remote clusterless session cannot resolve: a
 > live Forgejo Actions run has not yet executed either job end-to-end (the
 > rejection-gate job also needs a `KUBECONFIG` secret the maintainer hasn't set
-> up yet) — a live-cluster/interactive session verifying that closes the loop,
-> but no further executor-buildable work remains for O4 itself.
+> up yet, tracked as a standing `[Action required]` issue, #1229) — a
+> live-cluster/interactive session verifying that closes the loop, but no
+> further executor-buildable work remains for O4 itself.
 >
 > The remaining unchecked items in this section are now the two sequentially-
 > blocked GitLab→Forgejo migration items (script/Makefile rename, full
