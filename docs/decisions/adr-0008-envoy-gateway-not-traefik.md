@@ -189,6 +189,42 @@ process exits, not probe-triggered kills.
 must be re-enabled), or if a future gateway-helm release changes where this
 knob lives.
 
+### 2026-08-18 — `v1.9.0` release found, kept — architect-fallback pass (recording an
+executor-fallback finding already made in an earlier run)
+
+**Trigger.** A routine upstream-release sweep (executor-fallback ARCHITECT pass,
+`executor.prompt.md` STEP 6b) found `v1.9.0` — a real, stable release, GA'd
+2026-08-15, published ahead of the exact chart tag this ADR's own `## Files`
+table cites (`v1.8.3`). This is a **retroactive log entry**: a cycle in an
+earlier run, the same day this release went GA (`auto/ksm-chart-8-3-1`, PR
+#1204/its docs/done record), had already investigated this exact bump and
+deliberately deferred it, but only recorded that decision in
+`docs/done/2026-08-17-ksm-chart-8-3-1.md`, not in this ADR's own
+self-tracking Re-evaluation log — the convention every other kept audit on
+this page (and Longhorn's ADR-0013, TiDB's ADR-0032) follows. Re-verified
+independently this cycle (not just re-stating the prior finding, ADR-0004):
+the upstream changelog between `v1.8.3` and `v1.9.0` still names multiple
+breaking changes, including a Gateway API CRD version bump requirement —
+`gitops/platform/envoy-gateway.yaml`'s `targetRevision` is still `v1.8.3`,
+unchanged since that earlier check.
+
+**Decision: keep chart pin `v1.8.3`.** This is this lab's sync-wave-0,
+always-on-core north-south ingress control plane — every `HTTPRoute` in the
+cluster routes through it. A breaking CRD-version bump on a component this
+critical needs `helm template`/`kubeconform`-against-live-CRDs verification
+(or a live ArgoCD sync a human/live-cluster session watches) before landing;
+this remote clusterless session has neither. Same judgment call this ADR's
+own `v1.8.2`→`v1.8.3` Convert entry above used in reverse, and the same
+convention ADR-0013's Longhorn hold and ADR-0032's TiDB hold already
+establish: a real upstream release existing is not by itself groundable
+without a way to verify the bump renders cleanly.
+
+**Flip condition.** Revisit when a live-cluster or better-tooled session can
+run `helm template envoyproxy/gateway-helm --version v1.9.0` against this
+lab's actual Gateway API CRD versions and confirm no breaking change applies,
+or when a security bulletin names a version above `v1.8.3` as affected
+(shortening the timeline regardless of tooling availability).
+
 ---
 
 ## Files
