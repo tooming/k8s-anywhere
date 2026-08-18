@@ -249,12 +249,26 @@ jobs:
       # short-SHA tag, so cosign's digest-based signature covers both tags from one
       # signing call. Don't "fix" this into signing both tags — it would be
       # redundant.
+      # --tlog-upload=false and --use-signing-config=false: found live 2026-08-18
+      # (run #27, the first attempt to ever reach this step — see this file's other
+      # comments for the chain of prerequisite bugs that blocked every earlier
+      # attempt). cosign's default behavior tries to fetch a TUF-provided signing
+      # config from the public Sigstore infra (tuf-repo-cdn.sigstore.dev) even for
+      # pure local-key signing with no Fulcio/Rekor involved — irrelevant to this
+      # flow and unreachable from this lab (`dial tcp ...:443: i/o timeout`, no
+      # outbound internet by design). Both flags are cosign's own documented way to
+      # opt out (`cosign sign --help`'s own example line is literally `cosign sign
+      # --key cosign.key --tlog-upload=false <IMAGE DIGEST>`); --allow-insecure-
+      # registry below was already sufficient to skip TLS verification, this is a
+      # separate, unrelated network dependency.
       - name: Sign the pushed image
         run: |
           sha="${GITHUB_SHA:0:8}"
           cosign sign \
             --key /tmp/cosign/cosign.key \
             --allow-insecure-registry \
+            --tlog-upload=false \
+            --use-signing-config=false \
             --registry-username "${{ secrets.HARBOR_USER }}" \
             --registry-password "${{ secrets.HARBOR_PASSWORD }}" \
             "$REGISTRY/$IMAGE_NAME:$sha"

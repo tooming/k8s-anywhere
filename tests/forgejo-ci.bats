@@ -157,3 +157,16 @@ setup() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"options: --user root"* ]]
 }
+
+# 2026-08-18, run #27: with the /etc/hosts fix above landed, sign-image reached
+# its actual signing step for the first time — and cosign's default behavior
+# tried (and failed) to fetch a TUF-provided signing config from the public
+# Sigstore infra (tuf-repo-cdn.sigstore.dev), irrelevant to pure local-key
+# signing and unreachable from this no-outbound-internet lab. Both flags are
+# cosign's own documented opt-out.
+@test "sign-image's cosign sign disables TUF signing-config fetch and Rekor tlog upload (no outbound internet to public Sigstore infra in this lab)" {
+  run sed -n '/^  sign-image:/,$p' "$WF"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"--tlog-upload=false"* ]]
+  [[ "$output" == *"--use-signing-config=false"* ]]
+}
