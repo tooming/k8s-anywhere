@@ -27,21 +27,17 @@
 # redis, repo-server, server) runs `quay.io/argoproj/argocd:v3.5.0`, confirmed via
 # `kubectl get pods -n argocd -o jsonpath='{.items[*].spec.containers[*].image}'`.
 #
-# inkless carve-out (found 2026-07-28, structural sweep for the same conflict class
-# as issue #498/the argocd carve-out above): gitops/inkless/inkless-statefulset.yaml
-# hardcodes `ghcr.io/aiven/inkless:latest`. Unlike the demo/s3manager fix landed the
-# same day (which pinned real tags), Aiven Inkless publishes no stable named release —
-# only rotating `edge-<commit>` builds (confirmed live against the package's own
-# GitHub Packages page) — so there is no real tag to pin to without committing to a
-# manual re-pin on every bump, the same "intentional follow-the-stream" situation this
-# repo already accepts for Garage's `main` tag. Per ADR-0004/issue #498's own
-# precedent, guessing a specific `edge-<hash>` tag to hardcode would be fabricating
-# state this remote session cannot verify against the live registry. inkless is
-# on-demand (`gitops/platform/inkless.yaml` carries no `syncPolicy.automated`), so
-# this exclusion only matters when a user runs `make inkless-up` — without it, that
-# command would fail admission entirely on every attempt, not just on recreation.
-# Flip condition: remove the exclusion once ghcr.io/aiven/inkless ships a stable,
-# pinnable named release tag.
+# inkless carve-out — REMOVED 2026-08-18. History: added 2026-07-28 (structural
+# sweep for the same conflict class as issue #498/the argocd carve-out above) because
+# gitops/inkless/inkless-statefulset.yaml hardcoded `ghcr.io/aiven/inkless:latest`
+# and, at the time, Aiven Inkless published no stable named release — only rotating
+# `edge-<commit>` builds. This cycle's ghcr.io/v2/aiven/inkless/tags/list fetch (673
+# tags) found the project now ships a real `<kafka-version>-<inkless-build>` numbered
+# line (e.g. `4.2.1-0.46`, alongside the still-present `edge-<hash>` builds) — this
+# carve-out's own flip condition. `gitops/inkless/inkless-statefulset.yaml` now pins
+# that tag; see its own header comment and docs/decisions/adr-0015-inkless-diskless-
+# kafka.md's Re-evaluation log for the full finding (including why this isn't a
+# pin-what's-running no-op like the demo/s3manager fixes were).
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -63,7 +59,7 @@ spec:
     exclude:
       any:
       - resources:
-          namespaces: [capstone, inkless]
+          namespaces: [capstone]
     validate:
       message: "Image tag is required and must not be ':latest'."
       foreach:

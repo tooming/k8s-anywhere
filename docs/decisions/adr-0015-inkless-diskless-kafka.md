@@ -43,7 +43,7 @@ JVM Kafka broker (~1 GB) on top of the always-on stack without explicit user int
 
 | Component | Image / Source | Notes |
 |-----------|---------------|-------|
-| Inkless broker | `ghcr.io/aiven/inkless:latest` | Single-node KRaft (broker+controller combined); diskless mode |
+| Inkless broker | `ghcr.io/aiven/inkless:4.2.1-0.46` (pinned 2026-08-18; was `:latest` — see Re-evaluation log) | Single-node KRaft (broker+controller combined); diskless mode |
 | PostgreSQL | `postgres:17` | Batch coordinator (control plane); single-node per ADR-0005 |
 | S3 storage | Garage (ADR-0002) | `inkless` bucket; new `inkless-key` S3 credential pair |
 
@@ -136,6 +136,53 @@ ADR audits (the architect routine's STEP 2) record their outcome here when the
 decision changes but the underlying technology choice does not. A version bump
 (or a deliberate decision to hold one) still leaves a dated trail so the
 reasoning is never lost.
+
+### 2026-08-18 — pinned Inkless broker `ghcr.io/aiven/inkless:latest` → `:4.2.1-0.46`, removed the Kyverno `disallow-latest-tag` carve-out
+
+**Trigger.** Executor run, STEP 6b JANITOR-fallback pass over
+`gitops/kyverno/policies/disallow-latest-tag.yaml`'s own header comment, which
+named its exact flip condition for the `inkless` namespace carve-out (added
+2026-07-28): "remove the exclusion once ghcr.io/aiven/inkless ships a stable,
+pinnable named release tag."
+
+**Verified directly (not assumed, ADR-0004).** Fetched
+`https://ghcr.io/v2/aiven/inkless/tags/list?n=1000` (anonymous pull token,
+reachable this session even though most Helm-chart-repo hosts are not) — 673
+tags, no pagination `Link` header (the full list). Alongside the rotating
+`edge`/`edge-<commit>` builds this ADR's Context section already described,
+the project now publishes a clear `<kafka-version>-<inkless-build>` numbered
+line (e.g. `4.0.0-0.33` through `4.2.1-0.46`, the newest). This satisfies the
+carve-out's flip condition — a real, stable, pinnable named release now
+exists.
+
+**Not a pin-what's-running no-op.** Checked `latest`'s manifest digest
+(`sha256:8796d83f...`) against every candidate numbered tag's digest,
+including the newest (`4.2.1-0.46`, `sha256:b44697ca...`) and `edge`
+(`sha256:d82e90e6...`) — none matched. Rather than guess why (repositories
+can rebuild `latest` for reasons that change its digest without a
+corresponding numbered release, e.g. metadata/attestation regeneration) or
+assert an unverifiable equivalence, this is recorded honestly as a real
+version change, not a same-content re-pin. Inkless is on-demand
+(`gitops/platform/inkless.yaml` carries no `syncPolicy.automated`), so this
+carries zero live-cluster blast radius until a user next runs `make
+inkless-up`; rollback is a one-line image-tag revert.
+
+**Action.** Bumped `gitops/inkless/inkless-statefulset.yaml`'s broker image to
+`ghcr.io/aiven/inkless:4.2.1-0.46`. Removed `inkless` from
+`disallow-latest-tag.yaml`'s `exclude.any[].resources.namespaces` list
+(`[capstone, inkless]` → `[capstone]`), closing this component's `disallow-
+latest-tag` (Objective O4 pre-requisite, ADR-0019) admission-policy gap.
+Updated `tests/kyverno.bats` (replaced the "excludes the inkless namespace"
+assertion with a "no longer excludes" regression guard, mirroring the
+existing argocd-carve-out-removal pattern; updated the exclude-list-length
+assertion `2` → `1`) and `tests/inkless.bats` (added a pinned-tag assertion +
+a no-floating-tag guard, mirroring this repo's other per-component pin
+pairs).
+
+**Flip condition (if this needs revisiting).** None expected — this closes
+the carve-out permanently unless Aiven Inkless stops publishing numbered
+releases and reverts to `edge`-only, which would be a genuine downstream
+regression worth its own fresh audit.
 
 ### 2026-08-05 — held `postgres` batch-coordinator image at the `17.x` line (issue #1013)
 
