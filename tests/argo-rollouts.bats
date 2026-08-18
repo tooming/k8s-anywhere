@@ -54,6 +54,9 @@ setup() {
   # A "|" block scalar double-encodes into the ConfigMap and the controller dies with
   # "cannot unmarshal string into Go value of type []types.PluginItem". Guard: it must
   # be a sequence. See scripts/rollouts-plugin-list-check.sh.
+  # `| tag` is a mikefarah-only operator (no jq/python-yq equivalent) — real CI
+  # always has mikefarah/yq; a local run without it skips rather than false-failing.
+  require_mikefarah_yq_or_skip
   [ "$(yqs '.spec.source.helm.valuesObject.controller.trafficRouterPlugins | tag' "$REPO/gitops/platform/argo-rollouts.yaml")" = "!!seq" ]
 }
 
