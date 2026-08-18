@@ -798,6 +798,83 @@ there is no point where the lab loses a working git source or CI path.
   load; the direct apply achieved the same end state deterministically). Verified:
   all 121 Applications' live `spec.source.repoURL` point at Forgejo; cluster health
   held at 106-107/121 Healthy throughout. (PR #1205)
+- [ ] 🟢 **Simulate Garage unavailability — third DR fault-injection drill
+  (`make dr-garage-failure`)** (CHARTER **Goals** §"operational-resilience
+  discipline" + **Objective O3**'s stateful-DR framing; DORA Pillar 3 TLPT
+  concept; planner-fallback gap analysis 2026-08-18, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was found fully
+  gated on unconfirmed maintainer-confirmation issues #631/#633 — both
+  standing GitLab-migration items above need live-cluster design work this
+  clusterless session already investigated and correctly declined to guess
+  at, and the capstone-Deployment-removal item below is still gated on #633.
+  **No prerequisites — executor may pick up immediately.**) Verified directly
+  (not assumed, ADR-0004): `docs/dora-audit-readiness.md` Q12 names this exact
+  gap — after `dr-chaos.sh` (pod-kill self-heal) and `dr-network-partition.sh`
+  (NetworkPolicy-delete self-heal) both shipped, Q12's own Gap line says
+  "Simulating Garage unavailability, as this question's original framing also
+  suggested, remains a real, separately-scoped future drill if wanted — a
+  different failure domain (storage-layer availability) from either drill
+  here." `gitops/storage/garage/statefulset.yaml` confirms Garage runs as a
+  single-replica (`replicas: 1`) `StatefulSet` (`app: garage`, namespace
+  `storage`) — the same "one pod, assert Kubernetes self-heals it" shape
+  `dr-chaos.sh` already exercises for capstone, just against a different
+  component and namespace, so this is a mechanical adaptation of a proven
+  pattern, not a new design.
+
+  Add `scripts/dr-garage-failure.sh`, copying `dr-chaos.sh`'s structure
+  exactly (source `lib/colors.sh` + `lib/budget-check.sh` + `lib/confirm.sh`
+  + `lib/dr-results-log.sh`; `confirm_or_abort` gate with a
+  `DR_ASSUME_YES`-compatible bypass; a `BUDGET_S` constant — justify it in
+  the PR body against Garage's actual startup profile, not a guessed value,
+  the same way `dr-chaos.sh`'s own header comment reasons about capstone's):
+  target `NAMESPACE="storage"`, `LABEL_SELECTOR="app=garage"`; delete the
+  single running Garage pod (`kubectl delete ... --wait=false`, mirroring
+  `dr-chaos.sh`'s pattern — a pod delete has a
+  `terminationGracePeriodSeconds` window, unlike the NetworkPolicy delete in
+  `dr-network-partition.sh`, which correctly does NOT use `--wait=false`;
+  keep this distinction straight, don't copy the wrong drill's flag); poll
+  until a replacement pod's single container reports `ready=true` (excluding
+  the deleted pod's own name by field-selector, exactly as `dr-chaos.sh`'s
+  own self-review-caught fix does — reuse that fixed logic, don't
+  reintroduce the phase=Running-without-readiness bug it found) within
+  budget, or fail. Call `dr_log_result "dr-garage-failure.sh" "PASS"/"FAIL"`
+  on both exit paths. Add `dr-garage-failure: ## Chaos drill: kill the
+  single-replica Garage pod, assert self-heal within budget (DORA Pillar 3
+  TLPT concept)` to the Makefile's DR section, on-demand only — do NOT wire
+  into `make up`, `make ci`, or `make dr-test`, same as `dr-chaos`/
+  `dr-network-partition`. New `tests/dr-garage-failure.bats` mirroring
+  `tests/dr-network-partition.bats`'s shape exactly (clusterless structural,
+  no live cluster required): script exists + is executable; sources all four
+  shared libs; uses `confirm_or_abort`; declares `BUDGET_S`; targets
+  `NAMESPACE="storage"` and `LABEL_SELECTOR="app=garage"` (and assert
+  `gitops/storage/garage/statefulset.yaml` actually carries `app: garage` +
+  `replicas: 1`, the same real-manifest recurrence guard
+  `dr-network-partition.bats` uses for its NetworkPolicy name); calls
+  `dr_log_result "dr-garage-failure.sh"` on both exit paths; uses
+  `--wait=false` on the pod delete (recurrence guard the *other* direction
+  from `dr-network-partition.bats`'s check — this drill deletes a pod, so
+  `--wait=false` is correct here, not a bug); Makefile declares the
+  `dr-garage-failure` target and it is NOT invoked from `up`, `ci`, or
+  `dr-test`'s own block. Update `docs/DR.md` with a new "Garage-failure drill
+  (`make dr-garage-failure`)" subsection immediately after the existing
+  "Network-partition drill" section, matching its structure (what it does,
+  budget + reasoning, exit codes, real-world side effect). Update
+  `docs/dora-audit-readiness.md` Q12's Gap line: the Garage-unavailability
+  drill it named as a future candidate now exists — state plainly that all
+  three fault-injection scenarios this lab's TLPT concept covers are pod-kill
+  (capstone), NetworkPolicy-delete (capstone/ArgoCD selfHeal), and now
+  pod-kill (Garage/storage) — and note what's still *not* covered (e.g. a
+  multi-pod/quorum-loss scenario, N/A here since Garage runs single-replica
+  in this lab; a full node-loss scenario) so the gap stays honestly scoped,
+  not overclaimed. `make ci` must pass. PR body must document the
+  single-replica-StatefulSet finding and cite the exact `dr-chaos.sh`
+  self-review fix being reused, plus the ADR-0004 caveat that this remote
+  clusterless session authored and structurally verified the script but has
+  not executed it against a real cluster — call out the rollback path (this
+  is a read-only-to-the-repo, on-demand script; a failed drill run leaves no
+  cluster-state change beyond the one pod delete Kubernetes itself already
+  guarantees to recover from). `docs/done/` entry required.
+  (auto/dr-garage-failure-drill)
 - [ ] 🟢 **Rename `scripts/gitlab-*.sh` → `scripts/forgejo-*.sh` + matching `Makefile`
   targets** (bootstrap, TLS bootstrap, push, force-push, `rebase-prs`' GitLab leg);
   `tests/gitlab-compose.bats`/`tests/gitlab-push.bats` → `forgejo-*` bats files with
