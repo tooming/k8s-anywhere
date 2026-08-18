@@ -65,4 +65,4 @@ session), including the rewritten and new `tests/forgejo-ci.bats` assertions (26
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1233
