@@ -561,6 +561,10 @@ dr-chaos: ## Chaos drill: kill a random capstone pod, assert self-heal within bu
 dr-network-partition: ## Network-partition drill: delete capstone's ingress NetworkPolicy, assert ArgoCD self-heal within budget (DORA Pillar 3 TLPT concept)
 	bash scripts/dr-network-partition.sh
 
+.PHONY: dr-garage-failure
+dr-garage-failure: ## Chaos drill: kill the single-replica Garage pod, assert self-heal within budget (DORA Pillar 3 TLPT concept)
+	bash scripts/dr-garage-failure.sh
+
 .PHONY: dr-bluegreen
 dr-bluegreen: ## Zero-downtime blue/green DR: stand up a green cluster + cut over, prove no outage
 	bash scripts/dr-bluegreen.sh

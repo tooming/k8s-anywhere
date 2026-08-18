@@ -268,10 +268,43 @@ The drill only *observes and times* that existing guarantee — its only
 real-world side effect is capstone's ingress route being briefly unreachable,
 the same outcome a maintainer's own `kubectl delete` typo would already cause.
 
+## Garage-failure drill (`make dr-garage-failure`)
+
+A third, distinct injected-failure scenario (same DORA Pillar 3 / TLPT concept
+as the two drills above) — `docs/dora-audit-readiness.md` Q12 named this as
+the last of its own follow-ups once the pod-kill and NetworkPolicy-delete
+drills existed: "Simulating Garage unavailability... a different failure
+domain (storage-layer availability)." Where `dr-chaos` and
+`dr-network-partition` both exercise capstone's recovery paths, this one
+targets Garage (`gitops/storage/garage/statefulset.yaml`, the lab's
+S3-compatible storage backend, ADR-0002) — the same Kubernetes
+ReplicaSet/StatefulSet self-heal mechanism `dr-chaos` proves out, just for a
+previously-uncovered component.
+
+```sh
+make dr-garage-failure   # kill the single-replica Garage pod, assert Kubernetes restores it within 120s
+```
+
+What it does: deletes the single running Garage pod live in the `storage`
+namespace (`scripts/dr-garage-failure.sh`) — Garage runs as a single-replica
+`StatefulSet` (no HA, per ADR-0005 — recreate over pretend-HA on one host),
+so this briefly interrupts S3 API availability for any in-flight request —
+then polls until a replacement pod's container reports ready (excluding the
+deleted pod's own name, the same self-heal-detection fix `dr-chaos.sh`'s own
+self-review found and fixed, reused here rather than reintroduced) or the
+120 s budget is exceeded.
+
+This introduces no new failure mode: pod-delete-then-recreate is a guarantee
+Kubernetes already provides for any StatefulSet-managed pod. The drill only
+*observes and times* that existing guarantee. Not covered by this drill: a
+multi-pod/quorum-loss scenario (not applicable — Garage runs single-replica
+in this lab) or a full node-loss scenario, both real, separately-scoped
+future gaps if ever worth closing.
+
 ## Results history log ([`docs/dr-results-log.md`](dr-results-log.md))
 
-Each of the five drills above (`dr-restore`, `dr-bluegreen`, `dr-chaos`,
-`dr-network-partition`, `capstone-demo`) appends one row — date, status (`PASS`/`FAIL`), elapsed
+Each of the six drills above (`dr-restore`, `dr-bluegreen`, `dr-chaos`,
+`dr-network-partition`, `dr-garage-failure`, `capstone-demo`) appends one row — date, status (`PASS`/`FAIL`), elapsed
 seconds, budget seconds, objective tag — to
 [`docs/dr-results-log.md`](dr-results-log.md) on **every** run, pass or fail
 (`scripts/lib/dr-results-log.sh`'s `dr_log_result`, called from each script's

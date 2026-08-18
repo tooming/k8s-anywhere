@@ -798,7 +798,7 @@ there is no point where the lab loses a working git source or CI path.
   load; the direct apply achieved the same end state deterministically). Verified:
   all 121 Applications' live `spec.source.repoURL` point at Forgejo; cluster health
   held at 106-107/121 Healthy throughout. (PR #1205)
-- [ ] 🟢 **Simulate Garage unavailability — third DR fault-injection drill
+- [x] 🟢 **Simulate Garage unavailability — third DR fault-injection drill
   (`make dr-garage-failure`)** (CHARTER **Goals** §"operational-resilience
   discipline" + **Objective O3**'s stateful-DR framing; DORA Pillar 3 TLPT
   concept; planner-fallback gap analysis 2026-08-18, reached via
