@@ -215,6 +215,13 @@ jobs:
     # job's comment for the full explanation). Keep these two pins moving together.
     container:
       image: bitnami/cosign@sha256:db4d480f96235bca0433be791ea156cf51c3c7b62874618d8fcacecc86555aee
+      # Found live 2026-08-17 (run #26): bitnami images default to a non-root UID
+      # (1001), unlike build-and-push's docker:29.7.2 (root by default) — the
+      # identically-named "Resolve $REGISTRY's host" step below failed outright
+      # with `/etc/hosts: Permission denied` since that file is root-owned.
+      # --user root matches this job to build-and-push's effective privilege
+      # level for the one step that needs to write to it.
+      options: --user root
     env:
       COSIGN_PASSWORD: ""
       # Disable Rekor transparency-log upload — no outbound internet in the lab.

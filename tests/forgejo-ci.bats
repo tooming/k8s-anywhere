@@ -144,3 +144,16 @@ setup() {
   grep -q '^ARG REGISTRY=harbor.127.0.0.1.nip.io:8080$' "$DOCKERFILE"
   grep -q '^FROM \${REGISTRY}/library/example-hotrod:2.20.0$' "$DOCKERFILE"
 }
+
+# 2026-08-17, run #26: sign-image's "Resolve $REGISTRY's host" step (identical to
+# build-and-push's own, which works fine there) failed with `/etc/hosts:
+# Permission denied` — bitnami/cosign defaults to a non-root UID (1001), unlike
+# build-and-push's docker:29.7.2 (root by default). This was the *first* time
+# sign-image ever actually ran (every prior run failed inside build-and-push
+# before sign-image's `needs:` dependency let it start), so this bug had never
+# been reachable until now.
+@test "sign-image's container runs as root (bitnami/cosign defaults to non-root, breaks writing /etc/hosts)" {
+  run sed -n '/^  sign-image:/,/^    steps:/p' "$WF"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"options: --user root"* ]]
+}
