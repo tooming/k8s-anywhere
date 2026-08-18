@@ -50,4 +50,4 @@ effect on the next GitOps sync with zero live-cluster blast radius until the nex
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1217
