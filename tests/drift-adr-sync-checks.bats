@@ -112,6 +112,25 @@ setup() {
   [[ "$output" == *"adr-0018"* ]]
 }
 
+@test "adr-image-pin-sync-check: passes when a self-tracking table-row ADR matches its live image tag" {
+  run env ADRIMAGEPINCHECK_ROOT="$FIX/adr-image-pin-sync/table-in-sync" bash "$REPO/scripts/adr-image-pin-sync-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"table row"* ]]
+}
+
+@test "adr-image-pin-sync-check: fails when a self-tracking table-row ADR's image tag no longer matches the live manifest" {
+  run env ADRIMAGEPINCHECK_ROOT="$FIX/adr-image-pin-sync/table-drift" bash "$REPO/scripts/adr-image-pin-sync-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"image-pin table row says"* ]]
+}
+
+@test "adr-image-pin-sync-check: passes on the real repo's ADR-0034 Tempo table row (matches its live image tag)" {
+  run bash "$REPO/scripts/adr-image-pin-sync-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"adr-0034"* ]]
+  [[ "$output" == *"table row"* ]]
+}
+
 # --- context-doc-version-sync-check -------------------------------------------------
 @test "context-doc-version-sync-check: passes when context.md's citations match the live gitops pins" {
   run env CONTEXTDOCCHECK_ROOT="$FIX/context-doc-version-sync/in-sync" bash "$REPO/scripts/context-doc-version-sync-check.sh"
