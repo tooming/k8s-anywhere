@@ -6,15 +6,21 @@
 # by scripts/cosign-bootstrap.sh into the Secret cosign-public-key in
 # namespace kyverno.
 #
-# Audit mode + failurePolicy: Ignore. The cosign signing step (sign-image stage) is
-# already wired in .gitlab-ci.yml — this policy stays Audit/Ignore pending the
-# separate auto/cosign-enforce-flip ROADMAP item, which requires a maintainer to
-# confirm on a live cluster that at least one CI run actually pushed a signed
-# `.sig` tag to Harbor before flipping to Enforce + failurePolicy: Fail (a
-# remote clusterless session cannot verify that condition itself). background:
-# false because image verification requires the live registry manifest during
-# admission; background scans cannot verify signatures without a running
-# registry connection.
+# Enforce mode + failurePolicy: Fail (flipped from Audit/Ignore 2026-08-18,
+# `auto/cosign-enforce-flip`, RFC #214 Item 3). The cosign signing step
+# (sign-image job, now in .forgejo/workflows/build-sign-push.yml per ADR-0035's
+# CI-source migration) was already wired and merged; this flip was gated on a
+# maintainer confirming on a live cluster that a real CI run pushed a signed
+# image to Harbor — confirmed in issue #631 (2026-08-18): the Forgejo Actions
+# run #29 attempt 2 (commit b388df5c) completed sign-image green, and Harbor's
+# own artifact API independently showed a real `type: signature.cosign`
+# accessory attached to harbor.127.0.0.1.nip.io/library/hello (digest
+# sha256:2f9ca51a..., subject sha256:91d52ea9..., created
+# 2026-08-18T05:30:10Z) — not just the workflow's own success status
+# (ADR-0004: verify before asserting). background: false because image
+# verification requires the live registry manifest during admission;
+# background scans cannot verify signatures without a running registry
+# connection.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -24,10 +30,11 @@ metadata:
     policies.kyverno.io/category: Supply Chain Security
     policies.kyverno.io/description: >-
       Verifies cosign signatures on Harbor images (ADR-0019, Objective O4).
-      Audit + failurePolicy Ignore until the cosign CI signing pipeline lands.
+      Enforce + failurePolicy Fail since 2026-08-18 — a real signed image was
+      confirmed landing in Harbor via the cosign CI signing pipeline (issue #631).
 spec:
-  validationFailureAction: Audit
-  failurePolicy: Ignore
+  validationFailureAction: Enforce
+  failurePolicy: Fail
   background: false
   rules:
   - name: verify-harbor-signatures

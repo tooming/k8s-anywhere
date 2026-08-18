@@ -347,14 +347,24 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "verify-image-signatures is in Audit mode until cosign CI is wired" {
-  run grep -q 'validationFailureAction: Audit' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
+@test "verify-image-signatures is in Enforce mode (flipped 2026-08-18, RFC #214 Item 3)" {
+  run grep -q 'validationFailureAction: Enforce' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "verify-image-signatures has failurePolicy: Ignore (lab functional before cosign CI lands)" {
-  run grep -q 'failurePolicy: Ignore' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
+@test "verify-image-signatures does not pin the stale Audit mode" {
+  run grep -q 'validationFailureAction: Audit' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
+  [ "$status" -eq 1 ]
+}
+
+@test "verify-image-signatures has failurePolicy: Fail (a real signed image was confirmed in Harbor, issue #631)" {
+  run grep -q 'failurePolicy: Fail' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "verify-image-signatures does not pin the stale failurePolicy: Ignore" {
+  run grep -q 'failurePolicy: Ignore' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"
+  [ "$status" -eq 1 ]
 }
 
 @test "verify-image-signatures references the cosign-public-key Secret in kyverno namespace" {
