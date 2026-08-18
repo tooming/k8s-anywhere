@@ -258,15 +258,24 @@ jobs:
       # flow and unreachable from this lab (`dial tcp ...:443: i/o timeout`, no
       # outbound internet by design). Both flags are cosign's own documented way to
       # opt out (`cosign sign --help`'s own example line is literally `cosign sign
-      # --key cosign.key --tlog-upload=false <IMAGE DIGEST>`); --allow-insecure-
-      # registry below was already sufficient to skip TLS verification, this is a
-      # separate, unrelated network dependency.
+      # --key cosign.key --tlog-upload=false <IMAGE DIGEST>`).
+      #
+      # --allow-http-registry: found live 2026-08-18 (run #28, one step further
+      # again): --allow-insecure-registry alone was NOT enough — per cosign's own
+      # --help text, that flag only relaxes TLS *certificate* validation (expired/
+      # self-signed certs), it doesn't switch the scheme from HTTPS to HTTP. cosign
+      # still tried `https://harbor.127.0.0.1.nip.io:8080/v2/` and got `server gave
+      # HTTP response to HTTPS client`. --allow-http-registry is the distinct flag
+      # that actually speaks plain HTTP, matching how docker login/build/push
+      # already talk to this same plain-HTTP-behind-Envoy-Gateway route elsewhere
+      # in this workflow.
       - name: Sign the pushed image
         run: |
           sha="${GITHUB_SHA:0:8}"
           cosign sign \
             --key /tmp/cosign/cosign.key \
             --allow-insecure-registry \
+            --allow-http-registry \
             --tlog-upload=false \
             --use-signing-config=false \
             --registry-username "${{ secrets.HARBOR_USER }}" \

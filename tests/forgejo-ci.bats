@@ -170,3 +170,15 @@ setup() {
   [[ "$output" == *"--tlog-upload=false"* ]]
   [[ "$output" == *"--use-signing-config=false"* ]]
 }
+
+# 2026-08-18, run #28: --allow-insecure-registry only relaxes TLS *certificate*
+# validation per cosign's own --help text — it does NOT switch the scheme from
+# HTTPS to HTTP. cosign still tried https:// against this plain-HTTP-behind-
+# Envoy-Gateway registry and failed with 'server gave HTTP response to HTTPS
+# client'. --allow-http-registry is the distinct flag that actually speaks HTTP.
+@test "sign-image's cosign sign passes --allow-http-registry (allow-insecure-registry alone only relaxes TLS cert checks, not HTTPS->HTTP)" {
+  run sed -n '/^  sign-image:/,$p' "$WF"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"--allow-http-registry"* ]]
+  [[ "$output" == *"--allow-insecure-registry"* ]]
+}
