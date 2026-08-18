@@ -93,15 +93,22 @@ setup() {
   [ -f "$REPO/gitops/apps/demo/Dockerfile" ]
 }
 
+# 2026-08-18: FROM now points at Harbor's own mirror of this image
+# (${REGISTRY}/library/example-hotrod), not docker.io directly — see the
+# Dockerfile's own comment and tests/forgejo-ci.bats' dedicated assertion for
+# the full story (docker.io's auth-token endpoint was the one consistently-
+# unreachable hop in the whole CI pipeline). These two tests just check the
+# image identity survived the rehost, not the exact FROM line shape — that
+# belongs to forgejo-ci.bats, which owns the CI-pipeline-specific assertion.
 @test "demo Dockerfile is based on the hotrod image" {
-  run grep -q 'FROM jaegertracing/example-hotrod' "$REPO/gitops/apps/demo/Dockerfile"
+  run grep -q 'example-hotrod' "$REPO/gitops/apps/demo/Dockerfile"
   [ "$status" -eq 0 ]
 }
 
 @test "demo Dockerfile pins hotrod to 2.20.0, not a floating :latest tag (2026-07-28)" {
-  run grep -q 'FROM jaegertracing/example-hotrod:2.20.0' "$REPO/gitops/apps/demo/Dockerfile"
+  run grep -q 'example-hotrod:2.20.0' "$REPO/gitops/apps/demo/Dockerfile"
   [ "$status" -eq 0 ]
-  ! grep -q 'FROM jaegertracing/example-hotrod:latest' "$REPO/gitops/apps/demo/Dockerfile"
+  ! grep -q 'example-hotrod:latest' "$REPO/gitops/apps/demo/Dockerfile"
 }
 
 # --- Step 2: ArgoCD Application for the capstone app ---------------------------

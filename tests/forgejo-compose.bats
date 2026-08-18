@@ -42,13 +42,14 @@ setup() {
 }
 
 @test "forgejo service defines a healthcheck (image ships none of its own)" {
-  # -A70, not -A60: the environment: block grew past 60 lines once the
-  # GITEA__server__SSH_LISTEN_PORT fix landed (found live 2026-08-17, the
-  # GitLab -> Forgejo cutover session — see docker-compose.yml's own comment
-  # on it). Same reason as the -A40 -> -A60 bump before it: keep bumping this
-  # window whenever a new env var + explanatory comment lands above
-  # healthcheck:, rather than switching to a less brittle match.
-  run grep -A70 '^  forgejo:' "$COMPOSE"
+  # -A80, not -A70: the environment: block grew past 70 lines once the
+  # 2026-08-18 arm64-image-swap comment landed (found live that session — see
+  # docker-compose.yml's own comment on it, replacing the GOMAXPROCS/GODEBUG
+  # QEMU-mitigation env vars with an explanation of why they're gone). Same
+  # reason as the -A60 -> -A70 bump before it: keep bumping this window
+  # whenever a new env var + explanatory comment lands above healthcheck:,
+  # rather than switching to a less brittle match.
+  run grep -A80 '^  forgejo:' "$COMPOSE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"healthcheck:"* ]]
 }

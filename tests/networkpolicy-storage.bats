@@ -80,6 +80,37 @@ setup() {
 # 2026-08-05: found live that the storage namespace had NO ingress policy at all
 # covering s3manager (only Garage had allow rules) — under the default-deny floor
 # the s3.127.0.0.1.nip.io front-door route had never actually worked.
+# 2026-08-18: found live that harbor's own allow-harbor-garage-egress rule
+# (gitops/harbor/networkpolicy/) had no storage-side ingress counterpart — same
+# failure class as the s3manager gap above (default-deny with a one-sided rule),
+# except this one silently dropped every real Harbor blob upload the whole time
+# (`s3aws: RequestError: send request failed ... i/o timeout` from harbor-registry,
+# easily mistaken for generic network flakiness since a NetworkPolicy drop and a
+# genuine timeout look identical from the client side).
+@test "allow-garage-s3-from-harbor.yaml exists in storage/networkpolicy/" {
+  [ -f "$STORAGE_NP/allow-garage-s3-from-harbor.yaml" ]
+}
+
+@test "allow-garage-s3-from-harbor allows port 3900 (Garage S3 API)" {
+  run grep -q 'port: 3900' "$STORAGE_NP/allow-garage-s3-from-harbor.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-garage-s3-from-harbor targets Garage pods (app: garage)" {
+  run grep -q 'app: garage' "$STORAGE_NP/allow-garage-s3-from-harbor.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "allow-garage-s3-from-harbor allows ingress from harbor namespace" {
+  run grep -q 'kubernetes.io/metadata.name: harbor' "$STORAGE_NP/allow-garage-s3-from-harbor.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "storage kustomization references allow-garage-s3-from-harbor.yaml" {
+  run grep -q 'allow-garage-s3-from-harbor.yaml' "$STORAGE_NP/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
 @test "allow-s3manager-ingress.yaml exists in storage/networkpolicy/" {
   [ -f "$STORAGE_NP/allow-s3manager-ingress.yaml" ]
 }
