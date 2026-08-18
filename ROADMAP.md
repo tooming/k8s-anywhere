@@ -4486,27 +4486,39 @@ there is no point where the lab loses a working git source or CI path.
   reconciliation; no other component depends on these rules existing). Closes
   #1084. `docs/done/` entry required. (auto/grafana-alerting-rules)
 
-- [ ] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
-  RFC #214 Item 3; **only pick up after `auto/cosign-ci-sign-step` has merged AND the
-  maintainer confirms at least one CI run pushed a signed image to the registry** — the
-  registry moved from Artifactory to Harbor (`auto/harbor-capstone-rewire` /
-  `auto/harbor-artifactory-decommission`, ADR-0024, 2026-07-29) after this item's original
-  Artifactory-specific verification command was written; check for a `<digest>.sig` tag in
-  Harbor's `library/hello` repository (e.g. `crane ls harbor.127.0.0.1.nip.io/library/hello`
-  or the Harbor UI/API), confirming the `sign-image` CI job actually ran and pushed a
-  signature — do not reuse the old `artifactory.../docker-local/hello/.sig` path, that host
-  no longer exists). Edit `gitops/kyverno/policies/verify-image-signatures.yaml`:
-  `validationFailureAction: Audit` → `validationFailureAction: Enforce`;
-  `failurePolicy: Ignore` → `failurePolicy: Fail`. Extend `tests/kyverno-policies.bats`
-  (or `tests/kyverno.bats`) asserting `Enforce` and `Fail` values are present in the
-  policy file. PR body must document the flip condition and the rollback path (revert
-  both fields to `Audit` + `Ignore`, push → ArgoCD syncs within 30 s, no cluster
-  downtime per RFC #214 §"Rollback path"). `make ci` must pass. **Executor note:** this
-  item has a maintainer-confirmation prerequisite, tracked as a **standing**
-  `[Action required]` issue (#631, stays open until confirmed — unlike the self-merging
-  `[Action needed]` PR fallback) — check it for a confirmation comment before treating
-  this as satisfied; skip to the next item if unconfirmed this run; close #631 in this
-  item's PR once it merges. (auto/cosign-enforce-flip)
+- [x] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
+  RFC #214 Item 3; executor pickup 2026-08-18, third cycle this run — reached via
+  `executor.prompt.md` STEP 6b after UPGRADE-DRAFTER (PR #1221) and JANITOR (PR #1222)
+  fallback deliverables, when STEP 1's fresh open-issues check found the gating
+  `[Action required]` issue #631 had just received its confirmation comment mid-run.
+  **Prerequisites satisfied:** `auto/cosign-ci-sign-step` was already merged (the
+  `sign-image` job exists in `.forgejo/workflows/build-sign-push.yml`, carried over from
+  the ADR-0035 CI-source migration) and the maintainer's live-cluster confirmation landed
+  in issue #631 at 2026-08-18T05:32:37Z: a Forgejo Actions run (#29 attempt 2, commit
+  `b388df5c`) completed the `sign-image` job green, independently verified (not just the
+  workflow's own status, ADR-0004) via Harbor's own artifact API showing a real
+  `type: signature.cosign` accessory attached to `harbor.127.0.0.1.nip.io/library/hello`
+  (digest `sha256:2f9ca51a...`, subject `sha256:91d52ea9...`, created
+  `2026-08-18T05:30:10Z`). This is a genuinely different verification path than the
+  item's original `crane ls`/curl suggestion, but satisfies the same underlying ask (a
+  real signed image confirmed in Harbor) — the confirming comment is the maintainer's own
+  interactive-session finding, not this executor's own live-cluster check (this remote
+  session remains clusterless).
+
+  Edited `gitops/kyverno/policies/verify-image-signatures.yaml`:
+  `validationFailureAction: Audit` → `Enforce`; `failurePolicy: Ignore` → `Fail`; updated
+  the file's header comment and the `policies.kyverno.io/description` annotation to
+  describe the new Enforce state and cite the confirming evidence. Extended
+  `tests/kyverno.bats` (this repo's existing convention keeps `verify-image-signatures`
+  coverage there, not a separate `kyverno-policies.bats`): retitled the Audit/Ignore
+  assertions to assert `Enforce`/`Fail`, and added two "does not pin the stale
+  Audit/Ignore" recurrence guards (mirroring this repo's own bump-guard convention).
+  `make ci` must pass. PR body documents the flip condition, the confirming evidence
+  chain, and the rollback path (revert both fields to `Audit` + `Ignore`, push → ArgoCD
+  syncs within 30s, no cluster downtime per RFC #214 §"Rollback path") — this remote
+  clusterless session cannot verify a live admission-controller reload behaves as
+  expected post-flip (ADR-0004 caveat). Closes #631 in this item's PR. `docs/done/` entry
+  required. (auto/cosign-enforce-flip)
 
 - [x] 🟢 **Lab — Grafana Alloy self-monitoring dashboard + self-scrape** (CHARTER
   **Objective O5**, due **2026-09-30**; O5 gap — `observability-alloy` is
