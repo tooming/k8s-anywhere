@@ -33,6 +33,7 @@
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+  load lib/yq
 }
 
 mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
@@ -193,6 +194,11 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   # editing the deliberately-broken fixtures doesn't self-nag) — so the drift fixture
   # is copied outside that tree before invoking the hook, otherwise this test would
   # pass even if the drift-detection logic were broken.
+  # argocd-crd-ssa-sync-hook.sh delegates to argocd-crd-ssa-check.sh, which is
+  # gated by require_mikefarah_yq() — under the wrong variant it exits 0
+  # ("skipping") instead of 2, which would false-fail this assertion. Real CI
+  # always has mikefarah/yq.
+  require_mikefarah_yq_or_skip
   cp "$REPO/tests/fixtures/argocd-crd-ssa/drift/big-app.yaml" "$BATS_TEST_TMPDIR/big-app.yaml"
   run env CRDSSA_RENDERER="$REPO/tests/fixtures/argocd-crd-ssa/renderer-stub.sh" \
       bash "$REPO/scripts/argocd-crd-ssa-sync-hook.sh" <<<"$(mk_payload "$BATS_TEST_TMPDIR/big-app.yaml")"
@@ -218,6 +224,9 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
 }
 
 @test "helm-chart-pin-sync-hook: a chart pin missing from a reachable repo exits 2 (drift)" {
+  # Same require_mikefarah_yq()-skip-masking concern as the argocd-crd-ssa-sync-hook
+  # drift test above.
+  require_mikefarah_yq_or_skip
   run env CHARTPIN_RESOLVER="$REPO/tests/fixtures/helm-chart-pin/resolver-stub.sh" \
       bash "$REPO/scripts/helm-chart-pin-sync-hook.sh" <<<"$(mk_payload "$REPO/tests/fixtures/helm-chart-pin/drift/gitops/apps.yaml")"
   [ "$status" -eq 2 ]
@@ -388,6 +397,8 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
 }
 
 @test "rollouts-plugin-list-sync-hook: a block-scalar (string) plugin value exits 2" {
+  # Same require_mikefarah_yq()-skip-masking concern as the two drift tests above.
+  require_mikefarah_yq_or_skip
   cat >"$BATS_TEST_TMPDIR/bad-rollout-app.yaml" <<'YAML'
 apiVersion: argoproj.io/v1alpha1
 kind: Application

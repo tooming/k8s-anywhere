@@ -11,6 +11,16 @@
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   FIX="$REPO/tests/fixtures"
+  # Every test in this file runs one of helm-chart-pin-check.sh /
+  # argocd-crd-ssa-check.sh / rollouts-plugin-list-check.sh directly — each is
+  # gated by require_mikefarah_yq() (scripts/lib/yq-variant.sh), which itself
+  # exits 0 ("skipping") under the wrong yq variant. A bats assertion that only
+  # checks `[ "$status" -eq 0 ]` can't tell that skip apart from a real pass, and
+  # an assertion expecting `-eq 1`/specific drift output fails loud instead of
+  # skipping. Real CI always installs mikefarah/yq (.github/workflows/ci.yml);
+  # this only makes a local run without it say "skipped", not lie or fail.
+  load lib/yq
+  require_mikefarah_yq_or_skip
 }
 
 # --- helm-chart-pin-check --------------------------------------------------------

@@ -70,6 +70,10 @@ setup() {
 
 @test "kargo Application does not use the dead selfSignedCert.generate key" {
   P="$REPO/gitops/platform/kargo.yaml"
+  # selfSignedCert is a boolean (see the test above) — indexing .generate past it is
+  # a type error under python-yq (jq semantics), not the null the `//` default
+  # expects; mikefarah/yq tolerates it. Real CI always has mikefarah/yq.
+  require_mikefarah_yq_or_skip
   [ "$(yqs '.spec.source.helm.valuesObject.api.tls.selfSignedCert.generate // "absent"' "$P")" = "absent" ]
 }
 
@@ -326,6 +330,12 @@ setup() {
 # back to the dead shape fails these tests instead of a bare grep passing.
 @test "dev Stage argocd-update step nests the image override under kustomize.images" {
   P="$REPO/gitops/kargo-project/project.yaml"
+  # The digest value has literal embedded double quotes (imageFrom("...")) —
+  # python-yq JSON-escapes them (\"), which yqs()'s leading/trailing-quote strip
+  # doesn't unescape, so the comparison below mismatches under that variant even
+  # though the query itself succeeds. Real CI always has mikefarah/yq (raw output,
+  # no escaping to undo).
+  require_mikefarah_yq_or_skip
   [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "dev") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].repoURL' "$P")" = "harbor.127.0.0.1.nip.io/library/hello" ]
   [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "dev") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].digest' "$P")" = '${{ imageFrom("harbor.127.0.0.1.nip.io/library/hello").Digest }}' ]
 }
@@ -337,6 +347,8 @@ setup() {
 
 @test "prod Stage argocd-update step nests the image override under kustomize.images" {
   P="$REPO/gitops/kargo-project/project.yaml"
+  # Same embedded-quote escaping mismatch as the dev Stage test above.
+  require_mikefarah_yq_or_skip
   [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "prod") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].repoURL' "$P")" = "harbor.127.0.0.1.nip.io/library/hello" ]
   [ "$(yqs 'select(.kind == "Stage" and .metadata.name == "prod") | .spec.promotionTemplate.spec.steps[0].config.apps[0].sources[0].kustomize.images[0].digest' "$P")" = '${{ imageFrom("harbor.127.0.0.1.nip.io/library/hello").Digest }}' ]
 }

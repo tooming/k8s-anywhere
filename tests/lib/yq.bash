@@ -20,3 +20,26 @@ yqs() {
   out="${out#\"}"   # strip leading quote, if any
   printf '%s\n' "$out"
 }
+
+# require_mikefarah_yq_or_skip(): bats-flavored counterpart to
+# scripts/lib/yq-variant.sh's require_mikefarah_yq() — for tests whose yqs() call
+# uses syntax/semantics yqs()'s quote-stripping can't normalise across variants
+# (mikefarah-only operators like `| tag`; chained field access through a scalar,
+# which python-yq treats as a type error instead of null; a scalar containing
+# literal double quotes, which python-yq JSON-escapes and yqs() doesn't unescape).
+# Call it inside the specific @test body (or a file's setup(), if every test in
+# that file exercises a script gated by require_mikefarah_yq()) that needs it —
+# never blanket-applied, so a test whose yqs() call IS variant-safe still runs
+# and still catches a real regression under any yq.
+#
+# Without this, the wrong yq variant doesn't just fail these tests loud — for a
+# script wrapped by require_mikefarah_yq() (helm-chart-pin-check.sh,
+# argocd-crd-ssa-check.sh, rollouts-plugin-list-check.sh), its own "skip, don't
+# fail" exit 0 makes a bats assertion checking only `[ "$status" -eq 0 ]` report a
+# false pass — the test looks green without the check's logic having run at all.
+# CI always installs real mikefarah/yq (.github/workflows/ci.yml), so neither
+# failure mode fires there; this only helps a local run tell "skipped, install
+# mikefarah/yq" apart from "failed" or a silent false-pass.
+require_mikefarah_yq_or_skip() {
+  yq --version 2>&1 | grep -qi mikefarah || skip "requires mikefarah/yq on PATH (see scripts/lib/yq-variant.sh)"
+}
