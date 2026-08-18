@@ -68,3 +68,8 @@ register edit that adds, removes, or renames a row (a new ADR naming a new tool,
 existing tool's ADR being superseded) should prompt a look here too — no mechanical
 drift guard connects the two files today, matching the register's own honestly-stated
 "no mechanical drift guard yet" limitation ([Q14](dora-audit-readiness.md)).
+
+[`docs/dependency-exit-runbooks.md`](dependency-exit-runbooks.md) (Q17) is in turn a
+downstream consumer of *this* file's three named concentration groups — a new group
+appearing here (an upstream org crossing from one to two-or-more rows) should prompt
+a new runbook section there too, same "no mechanical guard, keep by hand" caveat.
