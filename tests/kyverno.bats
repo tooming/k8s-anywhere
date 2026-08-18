@@ -266,15 +266,13 @@ setup() {
 # argocd carve-out REMOVED 2026-08-06 (issue #999 confirmed: live terraform apply
 # picked up the v3.5.0 pin, every ArgoCD Pod verified running v3.5.0, not :latest).
 
-# --- inkless carve-out (found 2026-07-28, structural sweep) --------------------
-@test "disallow-latest-tag excludes the inkless namespace (no stable release tag upstream)" {
-  P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
-  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces[1]' "$P")" = "inkless" ]
-}
+# inkless carve-out REMOVED 2026-08-18 (added 2026-07-28, structural sweep) — Aiven
+# Inkless now ships a real `<kafka-version>-<inkless-build>` numbered release line;
+# gitops/inkless/inkless-statefulset.yaml pins `4.2.1-0.46`, its own flip condition.
 
 @test "disallow-latest-tag exclude block is scoped to named namespaces only (not a blanket exclusion)" {
   P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
-  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces | length' "$P")" = "2" ]
+  [ "$(yqs '.spec.rules[0].exclude.any[0].resources.namespaces | length' "$P")" = "1" ]
 }
 
 # Regression: issue #999 confirmed live and the carve-out was removed 2026-08-06 —
@@ -282,6 +280,15 @@ setup() {
 @test "disallow-latest-tag no longer excludes the argocd namespace (issue #999 resolved)" {
   P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
   run grep -q 'argocd' <(yqs '.spec.rules[0].exclude.any[0].resources.namespaces' "$P")
+  [ "$status" -eq 1 ]
+}
+
+# Regression: this cycle confirmed a real stable release tag exists and removed the
+# carve-out — pin this so a future edit can't silently reintroduce it without a
+# matching new gate (mirrors the argocd regression guard above).
+@test "disallow-latest-tag no longer excludes the inkless namespace (stable tag now pinned)" {
+  P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
+  run grep -q 'inkless' <(yqs '.spec.rules[0].exclude.any[0].resources.namespaces' "$P")
   [ "$status" -eq 1 ]
 }
 

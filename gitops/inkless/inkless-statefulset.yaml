@@ -29,7 +29,21 @@ spec:
     spec:
       containers:
         - name: inkless
-          image: ghcr.io/aiven/inkless:latest
+          # Pinned 2026-08-18 (was ghcr.io/aiven/inkless:latest since this
+          # component's introduction — see docs/decisions/adr-0015-inkless-
+          # diskless-kafka.md's Re-evaluation log for the full finding).
+          # aiven/inkless now publishes real, stable, pinnable named release
+          # tags (<kafka-version>-<inkless-build>, e.g. this one — verified
+          # directly via ghcr.io/v2/aiven/inkless/tags/list: 673 tags, a clear
+          # X.Y.Z-B.BB numbering line alongside the rotating edge-<hash>
+          # builds, `4.2.1-0.46` newest), closing the flip condition
+          # gitops/kyverno/policies/disallow-latest-tag.yaml's own header
+          # comment named for removing this component's admission-policy
+          # carve-out. NOT a pin-what's-running no-op — `latest`'s digest at
+          # verification time didn't match this (or any other numbered) tag,
+          # so this is a real version pin, called out honestly rather than
+          # asserted equivalent (ADR-0004).
+          image: ghcr.io/aiven/inkless:4.2.1-0.46
           ports:
             - name: kafka
               containerPort: 9092
