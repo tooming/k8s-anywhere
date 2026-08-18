@@ -875,6 +875,61 @@ there is no point where the lab loses a working git source or CI path.
   cluster-state change beyond the one pod delete Kubernetes itself already
   guarantees to recover from). `docs/done/` entry required.
   (auto/dr-garage-failure-drill)
+- [ ] 🟢 **Dependency exit runbooks for the lab's top concentration risks — closes
+  DORA audit Q17's named gap** (CHARTER **Core Values** §"Everything as code; GitOps
+  deploys it" + operational-resilience discipline; planner-fallback gap analysis
+  2026-08-18, reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated this cycle — the same three standing items above (two
+  sequential GitLab-migration items needing live-cluster design work already
+  investigated and declined; the capstone `Deployment` removal gated on unconfirmed
+  issue #633, re-checked this cycle: still no confirmation comment as of its last
+  2026-08-17 update) — and no un-RFC'd 🟡 item, ungroomable open issue, or
+  `docs/roadmap/incoming/` file exists to promote instead. **No prerequisites —
+  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004):
+  `docs/dora-audit-readiness.md` Q17 names this exact gap — exit strategy is
+  "implicit" (ADR-0001's GitOps-repointing design) and "demonstrated" (the real,
+  executed ADR-0011→ADR-0024 Artifactory→Harbor migration), but "no dependency has a
+  *written* exit runbook in advance of needing one." Grepping `docs/` for "exit
+  runbook"/"exit strategy" turns up only this Q17 answer itself — nothing already
+  tracks this, distinct from `docs/dependency-concentration.md` (Q16, names *which*
+  orgs concentrate risk, not *how* to exit any of them) and `docs/dependency-
+  register.md` (Q14, pure re-indexing, explicitly "no new dependency-risk judgment").
+
+  Add `docs/dependency-exit-runbooks.md`: for each of `docs/dependency-
+  concentration.md`'s three named concentration groups (`github.com/grafana` — 6
+  tools, `github.com/argoproj` — 2 tools, `github.com/pingcap` — 2 tools) plus any
+  single-tool row the register's own criticality column marks `always-on-core` that
+  isn't already covered by one of those three groups, write one short runbook
+  section: what a real exit looks like *mechanically* in this repo (which
+  `gitops/platform/*.yaml` `Application`(s) and `targetRevision`/chart repo values
+  would change, whether a straight fork-and-repoint suffices or a schema/API
+  migration is also needed, and — reusing the real Artifactory→Harbor precedent's
+  actual shape, not an invented one — cite `docs/done/2026-07-29-harbor-artifactory-
+  decommission.md` and ADR-0024 as the worked example of what "done" looks like for
+  a tool exit). Do not invent urgency or a rejected-alternative list from scratch for
+  tools that have never needed one — where no real fork/alternative research has
+  been done for a given tool, say so plainly (e.g. "no alternative evaluated yet;
+  first step of any real exit would be the same ADR-writing process ADR-0002/
+  ADR-0018/ADR-0024 already used to pick this tool") rather than fabricating a
+  synthetic decision (ADR-0004). Update Q17's Answer/Evidence/Gap in `docs/dora-
+  audit-readiness.md` to point at the new file and state plainly that these are
+  *pre-planned* runbooks now, not just the reactive-migration precedent, while
+  keeping the Gap honest about what's still true (a written runbook existing in
+  advance doesn't mean the effort of an actual exit is smaller — it only means the
+  first-response steps are already identified). Add a cross-reference from `docs/
+  dependency-concentration.md`'s "Keeping this in sync" section noting the new file
+  is a downstream consumer of both its own concentration groups and the register's
+  criticality column. New structural assertions (extend `tests/dora-audit-
+  readiness.bats` if `auto/stateless-criticality-tiers`/`auto/dependency-
+  concentration-rollup` already created one — check first, don't create a second
+  file for the same doc family) asserting the new file exists and names at minimum
+  `github.com/grafana`, `github.com/argoproj`, and `github.com/pingcap`. `make ci`
+  must pass. PR body must state which tools got a runbook section and why those and
+  not others (ADR-0004 — an unscoped "covers everything" claim would itself be a
+  form of fabricated completeness), and must not assert any of these exits has
+  actually been rehearsed — only that the first-response steps are now written down
+  in advance, matching Q17's own "written, not yet exercised" framing. `docs/done/`
+  entry required. (auto/dependency-exit-runbooks)
 - [ ] 🟢 **Rename `scripts/gitlab-*.sh` → `scripts/forgejo-*.sh` + matching `Makefile`
   targets** (bootstrap, TLS bootstrap, push, force-push, `rebase-prs`' GitLab leg);
   `tests/gitlab-compose.bats`/`tests/gitlab-push.bats` → `forgejo-*` bats files with
