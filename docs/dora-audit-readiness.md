@@ -218,28 +218,38 @@ so a future edit can't silently drop the highest-severity rows without failing
   run; they're just not on a calendar.
 
 **Q12. Is there an adversarial/penetration-style test (DORA's TLPT concept)?**
-- **Answer:** Yes, in two scoped forms testing two different recovery paths.
-  `make dr-chaos` (`scripts/dr-chaos.sh`) kills a random capstone pod and
-  asserts a replacement reaches Running within a 120s budget, exercising
-  Kubernetes' own ReplicaSet/Rollout self-heal. `make dr-network-partition`
-  (`scripts/dr-network-partition.sh`, added 2026-08-18) deletes capstone's
-  ingress `NetworkPolicy` and asserts ArgoCD's `selfHeal` reconciliation
-  restores it within a 300s budget, exercising a distinct recovery path —
-  GitOps drift-correction rather than the Kubernetes controller layer. Both
-  are *injected* failures, distinct from blue/green's *planned* cutover.
+- **Answer:** Yes, in three scoped forms testing three different recovery
+  paths/failure domains. `make dr-chaos` (`scripts/dr-chaos.sh`) kills a
+  random capstone pod and asserts a replacement reaches Running within a
+  120s budget, exercising Kubernetes' own ReplicaSet/Rollout self-heal.
+  `make dr-network-partition` (`scripts/dr-network-partition.sh`, added
+  2026-08-18) deletes capstone's ingress `NetworkPolicy` and asserts
+  ArgoCD's `selfHeal` reconciliation restores it within a 300s budget,
+  exercising a distinct recovery path — GitOps drift-correction rather than
+  the Kubernetes controller layer. `make dr-garage-failure`
+  (`scripts/dr-garage-failure.sh`, added 2026-08-18) kills the single-replica
+  Garage pod (the lab's S3-compatible storage backend, ADR-0002) and asserts
+  a replacement reaches Ready within a 120s budget — the same Kubernetes
+  self-heal mechanism `dr-chaos` exercises, applied to the storage-layer
+  failure domain this question's original framing named as still open. All
+  three are *injected* failures, distinct from blue/green's *planned*
+  cutover.
 - **Evidence:** [docs/DR.md](DR.md#chaos--fault-injection-drill-make-dr-chaos);
   [docs/DR.md](DR.md#network-partition-drill-make-dr-network-partition);
-  `scripts/dr-chaos.sh`; `scripts/dr-network-partition.sh`.
-- **Gap:** narrower again — two fault types now covered (a pod kill and a
-  NetworkPolicy deletion) against one component (capstone), exercising two of
-  the lab's distinct self-heal mechanisms (Kubernetes controllers, ArgoCD
-  reconciliation). Simulating Garage unavailability, as this question's
-  original framing also suggested, remains a real, separately-scoped future
-  drill if wanted — a different failure domain (storage-layer availability)
-  from either drill here. This remote clusterless session authored and
-  structurally verified both scripts but has not executed either against a
-  real cluster (ADR-0004 caveat, same as every other DR-script addition
-  here).
+  [docs/DR.md](DR.md#garage-failure-drill-make-dr-garage-failure);
+  `scripts/dr-chaos.sh`; `scripts/dr-network-partition.sh`;
+  `scripts/dr-garage-failure.sh`.
+- **Gap:** narrower now — three fault types covered (a pod kill against
+  capstone, a NetworkPolicy deletion against capstone, and a pod kill
+  against Garage) exercising two of the lab's distinct self-heal mechanisms
+  (Kubernetes controllers, ArgoCD reconciliation) across two components
+  (capstone, Garage). What's still not covered: a multi-pod/quorum-loss
+  scenario (not applicable today — every stateful component in this lab
+  runs single-replica, per ADR-0005) and a full node-loss scenario (a
+  different, larger-blast-radius failure class none of the three drills
+  here attempt). This remote clusterless session authored and structurally
+  verified all three scripts but has not executed any against a real
+  cluster (ADR-0004 caveat, same as every other DR-script addition here).
 
 **Q13. Are test results tracked with remediation deadlines?**
 - **Answer:** Pass/fail is enforced by exit codes (CI-style), and every DR/capstone-demo
