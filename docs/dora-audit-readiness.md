@@ -314,14 +314,28 @@ concentration)?**
   now visible instead of implicit.
 
 **Q17. Is there an exit strategy per critical third-party dependency?**
-- **Answer:** Implicit in ADR-0001 (GitOps + Terraform-only-bootstraps means every
-  workload is redeployable by changing one `Application` source) and demonstrated by
-  the ADR-0011→ADR-0024 Artifactory→Harbor migration itself (a real, executed exit from
-  one provider to another). No dependency has a *written* exit runbook in advance of
-  needing one.
-- **Evidence:** ADR-0024 (executed migration); ADR-0001 (structural exit-ability).
-- **Gap:** minor — exits happen reactively (via a new ADR) rather than being
-  pre-planned per critical dependency.
+- **Answer:** Yes, now pre-planned (not just implicit) for the lab's top three
+  concentration risks: [`docs/dependency-exit-runbooks.md`](dependency-exit-runbooks.md)
+  writes down, per group, what a real exit changes mechanically in `gitops/`, whether
+  it's a fork-and-repoint or a real schema/data migration, and whether any
+  alternative has actually been evaluated (honestly: no, for all three today — the
+  first step of any real exit is the same ADR-writing process this lab already uses
+  to pick a tool). Still grounded in ADR-0001 (GitOps + Terraform-only-bootstraps
+  means every workload is redeployable by changing one `Application` source) and
+  demonstrated once by the real, executed ADR-0011→ADR-0024 Artifactory→Harbor
+  migration — the runbooks make the *first-response steps* explicit in advance,
+  they don't replace that structural exit-ability or invent a smaller true cost.
+- **Evidence:** [docs/dependency-exit-runbooks.md](dependency-exit-runbooks.md);
+  ADR-0024 (executed migration); ADR-0001 (structural exit-ability).
+- **Gap:** narrower now — the lab's three named concentration groups (Q16) each have
+  a written runbook; the remaining `always-on-core` single-tool rows in
+  `docs/dependency-register.md` not part of any concentration group (Terraform/
+  Terragrunt, Garage, Envoy Gateway, RabbitMQ, Cilium, Valkey, cert-manager, KEDA,
+  Forgejo, kube-state-metrics, node-exporter) don't have one yet — a real,
+  separately-scoped future item if wanted. A written runbook existing in advance
+  also doesn't mean the effort of an actual exit is smaller, only that the
+  first-response steps are already identified — exits still happen reactively via a
+  new ADR when actually triggered.
 
 ---
 

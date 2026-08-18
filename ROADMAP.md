@@ -875,7 +875,7 @@ there is no point where the lab loses a working git source or CI path.
   cluster-state change beyond the one pod delete Kubernetes itself already
   guarantees to recover from). `docs/done/` entry required.
   (auto/dr-garage-failure-drill)
-- [ ] 🟢 **Dependency exit runbooks for the lab's top concentration risks — closes
+- [x] 🟢 **Dependency exit runbooks for the lab's top concentration risks — closes
   DORA audit Q17's named gap** (CHARTER **Core Values** §"Everything as code; GitOps
   deploys it" + operational-resilience discipline; planner-fallback gap analysis
   2026-08-18, reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was

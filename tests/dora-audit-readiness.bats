@@ -57,3 +57,24 @@ setup() {
   run grep -q 'never rolled up into a single' "$DOC"
   [ "$status" -ne 0 ]
 }
+
+@test "dependency-exit-runbooks.md exists (Q17 exit-strategy runbooks)" {
+  [ -f "$REPO/docs/dependency-exit-runbooks.md" ]
+}
+
+@test "dependency-exit-runbooks.md names all three concentration groups" {
+  RUNBOOKS="$REPO/docs/dependency-exit-runbooks.md"
+  run grep -q 'github.com/grafana' "$RUNBOOKS"
+  [ "$status" -eq 0 ]
+  run grep -q 'github.com/argoproj' "$RUNBOOKS"
+  [ "$status" -eq 0 ]
+  run grep -q 'github.com/pingcap' "$RUNBOOKS"
+  [ "$status" -eq 0 ]
+}
+
+@test "Q17's Gap line points at the new file instead of stating the gap as purely reactive" {
+  run grep -q 'docs/dependency-exit-runbooks.md' "$DOC"
+  [ "$status" -eq 0 ]
+  run grep -q 'exits happen reactively (via a new ADR) rather than being' "$DOC"
+  [ "$status" -ne 0 ]
+}
