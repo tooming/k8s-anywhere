@@ -93,6 +93,29 @@
 # leak prevention. No CVE mentioned. Nothing touches the Digest-strategy
 # admission-webhook behavior tests/kargo.bats documents (#633) -- unaffected.
 # Release: https://github.com/akuity/kargo/releases/tag/v1.11.1
+#
+# Bumped 1.11.1 -> 1.11.2 (2026-08-18, upgrade-drafter fallback): highest
+# stable release, no major bump. Verified directly (not assumed): the
+# packaged chart's GitHub Packages page (github.com/akuity/kargo/pkgs/
+# container/kargo-charts%2Fkargo) lists 1.11.2 published ~7h before this
+# check, digest sha256:e5347cd11308d7260326cb98a30c5a272941c847b1ba4d3655
+# 589dca897430b1 -- a real, already-published chart, not just a git tag.
+# Kargo ships app+chart together from one Chart.yaml per release tag, so
+# this is a same-tag app+chart bump. Six backport commits into release-1.11
+# (github.com/akuity/kargo/compare/v1.11.1...v1.11.2): an SSO post-login
+# redirect fix, a GitHub bypass-rule regression fix, a UI promotion-steps
+# wizard fix, "fix: dropped origins when aborting queued promotions", and
+# "fix(health): Fixes pointless status write for argocd health" -- no CVE
+# cited (github.com/akuity/kargo/security/advisories' newest entry is still
+# April 2026, already closed at 1.10.2+). values.yaml schema re-verified
+# unchanged at both tags for every path this Application sets
+# (global.securityContext, api.{replicas,resources,tls.selfSignedCert,secret},
+# controller.resources, webhooksServer.{replicas,resources}). The two
+# promotion/health fixes are notable given #633's still-open Kargo-
+# promotion investigation, but this remote clusterless session cannot
+# verify they change that issue's outcome -- noted honestly, not claimed as
+# a fix for #633.
+# Release: https://github.com/akuity/kargo/releases/tag/v1.11.2
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -105,7 +128,7 @@ spec:
   source:
     repoURL: ghcr.io/akuity/kargo-charts
     chart: kargo
-    targetRevision: 1.11.1
+    targetRevision: 1.11.2
     helm:
       releaseName: kargo
       valuesObject:

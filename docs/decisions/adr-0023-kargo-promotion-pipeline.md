@@ -34,7 +34,7 @@ Adopt **Kargo** as the lab's promotion-orchestration layer.
 - **Helm repo:** `ghcr.io/akuity/kargo-charts` (OCI; the original
   `https://charts.kargo.io` HTTPS index was retired upstream — see
   `gitops/platform/kargo.yaml`'s header comment)
-- **Chart:** `kargo` `1.11.1` (`appVersion: 1.11.1`; pin lives in
+- **Chart:** `kargo` `1.11.2` (`appVersion: 1.11.2`; pin lives in
   `gitops/platform/kargo.yaml`'s `targetRevision` — Kargo ships app+chart together
   from one `Chart.yaml` per release tag, so chart version and appVersion are always
   identical; see [§Re-evaluation log](#re-evaluation-log) for the bump history —
@@ -272,6 +272,51 @@ takes effect on the next `make kargo-up`.
 **Flip conditions:** revisit when the OCI registry's tag list shows a newer stable
 release above `1.11.1`, or a security advisory is filed against `1.11.1` (check
 `github.com/akuity/kargo/security/advisories` manually or via the maintainer).
+
+### 2026-08-18 — Chart bumped `1.11.1` → `1.11.2` (upgrade-drafter fallback, no CVE)
+
+**Trigger.** Executor STEP 6b fallback chain, this run's second cycle: the
+"Now / next" lane remained fully gated (unchanged from cycle 1) and
+PLANNER/ARCHITECT fallback passes again found nothing. UPGRADE-DRAFTER's
+sweep re-checked every observability/data/platform pin not yet re-verified
+this run; Kargo's chart was one patch behind.
+
+**Verification (ADR-0004).** Confirmed directly against the real published
+package (`github.com/akuity/kargo/pkgs/container/kargo-charts%2Fkargo`,
+since the OCI registry's own `tags/list` endpoint needs registry-auth this
+sandbox can't complete): `1.11.2` is listed, published ~7 hours before this
+check, real digest
+`sha256:e5347cd11308d7260326cb98a30c5a272941c847b1ba4d3655589dca897430b1`.
+Kargo ships app+chart together from one `Chart.yaml` per release tag, so
+this is a same-tag app+chart bump, same as every prior entry here.
+
+**Decision: bump.** Six backport commits into the `release-1.11` branch
+(`github.com/akuity/kargo/compare/v1.11.1...v1.11.2`): an SSO post-login
+redirect fix, a GitHub bypass-rule regression fix, a UI promotion-steps
+wizard-registry fix, "fix: dropped origins when aborting queued
+promotions", and "fix(health): Fixes pointless status write for argocd
+health" (plus one no-op "remove accidentally committed file" chore). No CVE
+cited; `github.com/akuity/kargo/security/advisories`' newest entry is still
+the April 2026 OIDC open-redirect one, already closed at `1.10.2`+ per the
+prior entries above — re-checked, nothing new. `values.yaml` schema
+re-verified unchanged at both tags for every path this Application sets
+(`global.securityContext`, `api.{replicas,resources,tls.selfSignedCert,secret}`,
+`controller.resources`, `webhooksServer.{replicas,resources}`). No blast
+radius either way — Kargo is ON-DEMAND (ADR-0005 budget), so this pin only
+takes effect on the next `make kargo-up`.
+
+**Honest note on relevance to #633.** The "dropped origins when aborting
+queued promotions" and "pointless status write for argocd health" fixes
+touch the same promotion/health-reporting machinery #633's own
+investigation has been debugging for weeks. This remote clusterless
+session cannot verify either fix actually changes #633's outcome — noting
+the overlap honestly as a reason a live-cluster session picking up #633
+next might want this pin already in place, not claiming it as a fix.
+
+**Flip conditions:** revisit when the OCI registry's tag list shows a newer
+stable release above `1.11.2`, or a security advisory is filed against
+`1.11.2` (check `github.com/akuity/kargo/security/advisories` manually or
+via the maintainer).
 
 ---
 
