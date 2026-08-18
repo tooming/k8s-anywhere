@@ -4955,26 +4955,51 @@ there is no point where the lab loses a working git source or CI path.
   `kustomization.yaml`. `make ci` must pass. `docs/done/` entry required.
   (auto/kiali-np-istio-system)
 
-- [ ] 🟢 **O4 CI gate — `verify-image-rejection` job in GitLab CI** (CHARTER **Objective
-  O4**, due **2026-12-31**; RFC #289 — architect decision 2026-06-27; **pick up ONLY after
-  `auto/cosign-enforce-flip` merges** — check `grep -q "validationFailureAction: Enforce"
-  gitops/kyverno/policies/verify-image-signatures.yaml` returns 0 before starting). Add
-  `verify-rejection` to `stages:` list in `.gitlab-ci.yml` (after `sign`). New
-  `verify-image-rejection` job: `image: docker:24` + `docker:24-dind` service with
-  `--insecure-registry=artifactory.127.0.0.1.nip.io`; `before_script` logs in to
-  Artifactory + exports `KUBECONFIG` (GitLab CI File variable, same pattern as `COSIGN_KEY`
-  — add comment documenting masked, protected, type File requirement) + installs `kubectl`
-  via `apk`; `script` pulls `busybox:1.37.0`, retags to
-  `$REGISTRY/docker-local/test-unsigned:rejection-test`, pushes unsigned (no cosign sign
-  step), runs `kubectl run test-rejection-pod --image=... --restart=Never -n capstone`,
-  asserts Kyverno blocks admission (grep output for
-  `denied|policy|verify|signature|admission webhook` keywords); `after_script` deletes
-  the Pod + docker logout; `needs: [sign-image]`; `rules: if: $CI_COMMIT_BRANCH == "main"`.
-  New `tests/gitlab-ci.bats` (clusterless structural): `verify-rejection` appears in
-  `stages:` list; job references `test-unsigned:rejection-test`; `needs: [sign-image]`
-  present; `after_script` has `kubectl delete` cleanup; `KUBECONFIG` comment present.
-  `make ci` must pass. `docs/done/` entry required. **CI change is RFC #289-approved per
-  WAYS-OF-WORKING.md §2.** (auto/o4-ci-rejection-gate)
+- [x] 🟢 **O4 CI gate — `verify-image-rejection` job** (CHARTER **Objective O4**, due
+  **2026-12-31**; RFC #289 — architect decision 2026-06-27; executor pickup 2026-08-18,
+  fourth cycle this run, immediately after `auto/cosign-enforce-flip` (PR #1223) merged
+  in the prior cycle — the prerequisite check `grep -q "validationFailureAction: Enforce"
+  gitops/kyverno/policies/verify-image-signatures.yaml` returns 0. **Retargeted from this
+  item's original spec**, which named the prior CI pipeline file and registry host this
+  repo has since moved off of (ADR-0024/ADR-0035) — building that text verbatim would add
+  dead config that never runs against the actual live pipeline, an ADR-0004 violation.
+  Added the `verify-rejection` job directly to `.forgejo/workflows/build-sign-push.yml`
+  (the real live pipeline) after `sign-image`, using Harbor (not the retired registry
+  host) throughout.
+
+  **PSS-restricted interaction found live while authoring this job** (not present in the
+  original spec): the `capstone` namespace enforces Pod Security `restricted`
+  (`gitops/apps/capstone/namespace.yaml`) — a bare `kubectl run` without a compliant
+  `securityContext` would be rejected by Kubernetes' own admission *before* Kyverno's
+  `verifyImages` rule ever evaluates the image, silently making the test pass for the
+  wrong reason. The test Pod mirrors `gitops/apps/capstone/rollout.yaml`'s own
+  PSS-restricted `securityContext` exactly (`runAsNonRoot`, `runAsUser: 10001`,
+  `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`,
+  `capabilities.drop: [ALL]`) plus its `harbor-registry` `imagePullSecret`, so the *only*
+  thing that can block admission is the missing signature. Used a full `kubectl apply -f
+  -` Pod manifest (not `kubectl run --overrides`) for a clear, unambiguous spec. The
+  Pod's `image:` field intentionally omits the `:8080` port the CI job's own `docker
+  push` needs (matches `rollout.yaml`'s own no-port image reference — the cluster
+  resolves the registry host directly, unlike the CI job's own network position).
+
+  New maintainer prerequisite (documented in the workflow file's own header comment,
+  same pattern as the existing `HARBOR_USER`/`HARBOR_PASSWORD`/`COSIGN_KEY`/
+  `CHECKOUT_TOKEN` secrets): a `KUBECONFIG` Forgejo Actions secret (a service-account
+  kubeconfig scoped to at least create/delete Pod in `capstone`) — generating and
+  verifying this is a live-cluster action this remote session cannot perform (ADR-0004);
+  left as an explicit, undone prerequisite, not asserted as already configured.
+
+  Extended `tests/forgejo-ci.bats` (this repo's existing convention already covers
+  `build-sign-push.yml` there — no separate `gitlab-ci.bats`, that file name itself would
+  have named the retired CI host): 9 new assertions covering the job's existence/
+  ordering, timeout, the distinct unsigned test-image tag, the PSS-compliant
+  securityContext, the `harbor-registry` imagePullSecret, the rejection-reason grep, the
+  wrongly-admitted failure path, the `KUBECONFIG` secret reference, and cleanup-on-
+  failure. `make ci` must pass. PR body must document the retargeting rationale, the PSS
+  finding, and the ADR-0004 caveat that this remote clusterless session cannot execute a
+  real Forgejo Actions run to confirm the job behaves correctly end-to-end (same caveat
+  this file's own header comment already carries for `build-and-push`/`sign-image`).
+  `docs/done/` entry required. (auto/o4-ci-rejection-gate)
 
 - [x] 🟢 **Platform Governance appset — `gitops/governance/` structure +
   ApplicationSet** (CHARTER **Core Values** §"Everything as code; GitOps deploys
