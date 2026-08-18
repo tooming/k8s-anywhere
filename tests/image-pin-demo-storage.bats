@@ -31,3 +31,13 @@ setup() {
   run grep -q 'image: cloudlena/s3manager@sha256:' "$REPO/gitops/storage/s3manager/deployment.yaml"
   [ "$status" -eq 0 ]
 }
+
+@test "s3manager Deployment pins the current digest (v0.8.0-equivalent, bumped 2026-08-18)" {
+  run grep -q 'image: cloudlena/s3manager@sha256:9ed3a8ecf10381031b19afa4e5ff863efddb81aeac2f84b142a2190d7973e68b' "$REPO/gitops/storage/s3manager/deployment.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "s3manager Deployment does not pin the stale pre-2026-08-18 digest" {
+  run grep -q 'image: cloudlena/s3manager@sha256:f666e6fca127ec07b90c3c207eeb6730817b6ad0807356db6eb63fbda6bdacb2' "$REPO/gitops/storage/s3manager/deployment.yaml"
+  [ "$status" -ne 0 ]
+}
