@@ -355,3 +355,63 @@ an image-tag change.
 new advisory/fix range names a version at or above `2.10.8` as affected.
 Grafana's own flip condition (revisit when a new advisory names a version at
 or above `13.0.5`) is unchanged.
+
+### 2026-08-18 — Grafana routine currency bump, pin bumped `13.0.5` → `13.0.6` (no CVE)
+
+**Trigger.** Executor STEP 6b fallback chain, this run: the three standing
+"Now / next" items (GitLab→Forgejo rename/decommission, legacy capstone
+`Deployment` removal) all remained gated (the rename item needs a live-cluster
+session per its own 2026-08-17 investigation note; the capstone removal is
+still gated on unconfirmed issue #633 — re-checked this run, latest comment
+2026-08-17 18:50 UTC, still not confirmed) and PLANNER/ARCHITECT fallback
+passes found no ungroomed issues, no un-RFC'd 🟡 items, and every CHARTER
+Objective (O1–O7) already built/measured. Fell through to UPGRADE-DRAFTER
+(`routines/upgrade-drafter.prompt.md`), which walks `gitops/**/*.yaml` for
+upgradeable sources — this ADR's own flip condition (`13.0.5`) hadn't
+actually fired (no new advisory names `13.0.5`), but the routine's own STEP 2
+enumeration/STEP 3 upstream check is unconditional, not flip-condition-gated,
+so it re-checked Grafana's pin regardless.
+
+**Verified directly (not assumed, ADR-0004):** GitHub's releases listing for
+`grafana/grafana` shows `v13.0.6` (published 2026-08-07) as the newest tag on
+the `13.0.x` line — no minor/major jump (the `13.1.x` line exists but a
+version-line jump needs its own deeper diligence per this ADR's established
+bar, unchanged from the 2026-08-06 entry's reasoning). Docker Hub's tags API
+confirms the `grafana/grafana:13.0.6` image is published (pushed
+2026-08-07T02:35 UTC). A real diff between the `v13.0.5` and `v13.0.6` tags
+(71 changed files, 4 commits) contains **no `Security:`-tagged commit** —
+this is a routine patch, not a CVE fix, unlike the two prior entries above.
+The four commits: a `BarChart` tooltip fix for a circular-dataframe edge
+case, a `SplashScreen` feature-toggle default flip (a toggle this
+deployment's `feature_toggles` block never references — only `provisioning`
+and `kubernetesDashboards` are set), and a snapshot-deletekey backport (this
+lab creates no dashboard snapshots). None of the 71 changed files touch
+`packaging/docker/` — the Dockerfile/`run.sh` are byte-identical across the
+range, so the existing `readOnlyRootFilesystem`/securityContext analysis in
+`observability-grafana.yaml`'s comments carries forward unchanged, re-verified
+rather than assumed.
+
+**Decision: bump `grafana:13.0.5` → `13.0.6`** (the newest `13.0.x` patch,
+smallest safe delta, honestly not a security-driven bump — a plain currency
+catch-up, same category as this repo's other non-CVE chart/image bumps, e.g.
+kube-state-metrics `8.3.0`→`8.3.1` the same day).
+`gitops/platform/observability-grafana.yaml`'s `valuesObject.image.tag` and
+the `ca-bundle` `extraInitContainers` image both updated in lockstep (same
+pin, same analysis); `tests/observability-grafana.bats` updated to assert
+`13.0.6` present and add a new "no stray `13.0.5`" guard (mirroring the
+existing `13.0.1`/`13.0.3` stale-pin guards); `docs/decisions/context.md`'s
+"Grafana 13.0.5" prose citation updated to `13.0.6` (mechanically enforced by
+`make context-doc-version-sync-check`, which caught the drift live via its
+`PostToolUse` hook while authoring this entry).
+
+**ADR-0004 caveat.** This remote, clusterless session verified the
+commit-range, changed-file-list, and published-image facts directly, but
+cannot verify Grafana starts cleanly and Git Sync/dashboard provisioning
+continues working post-bump on a live cluster. Rollback is a one-line revert
+of both `image:` references; Grafana's chart Application syncs via ArgoCD, so
+a revert takes effect on the next automated sync; Grafana's session/dashboard
+state lives on its PVC, untouched by an image-tag change.
+
+**Flip condition (next re-evaluation).** Revisit Grafana's pin again when a
+new advisory names a version at or above `13.0.6` as affected, or when the
+next scheduled currency sweep finds a newer `13.0.x` patch.
