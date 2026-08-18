@@ -125,17 +125,33 @@ setup() {
   # Namespace enforces Pod Security restricted (gitops/apps/capstone/namespace.yaml)
   # — a non-compliant Pod would be rejected by Kubernetes' own admission before
   # Kyverno's verifyImages rule ever runs, making the test meaningless. Mirrors
-  # gitops/apps/capstone/rollout.yaml's own securityContext exactly.
+  # gitops/apps/capstone/rollout.yaml's own securityContext exactly. The Pod is
+  # sent as a single-line JSON payload (see the recurrence-guard test below), not
+  # YAML, so these assertions match the JSON key/value form.
   run sed -n '/^  verify-rejection:/,$p' "$WF"
-  [[ "$output" == *"runAsNonRoot: true"* ]]
-  [[ "$output" == *"allowPrivilegeEscalation: false"* ]]
-  [[ "$output" == *"readOnlyRootFilesystem: true"* ]]
-  [[ "$output" == *"drop: [ALL]"* ]]
+  [[ "$output" == *'"runAsNonRoot": true'* ]]
+  [[ "$output" == *'"allowPrivilegeEscalation": false'* ]]
+  [[ "$output" == *'"readOnlyRootFilesystem": true'* ]]
+  [[ "$output" == *'"drop": ["ALL"]'* ]]
 }
 
 @test "verify-rejection's test Pod uses the harbor-registry imagePullSecret (matches the real capstone workload)" {
   run sed -n '/^  verify-rejection:/,$p' "$WF"
-  [[ "$output" == *"name: harbor-registry"* ]]
+  [[ "$output" == *'"name": "harbor-registry"'* ]]
+}
+
+@test "verify-rejection's test Pod is applied via a single-line JSON payload, not a heredoc (recurrence guard, found in self-review 2026-08-18)" {
+  # A quoted heredoc's (<<'WORD') closing delimiter must sit at column zero to
+  # match, but this step's own YAML run: block-literal scalar indents every
+  # line, including any would-be terminator -- a less-indented line would end
+  # the YAML scalar early instead of closing the heredoc, so the heredoc could
+  # never actually close. Broke the entire step, never exercised live (no
+  # Forgejo Actions run had run this job yet), caught in review before it was.
+  # JSON is a YAML/kubectl-apply-accepted superset, so a single echo '{...}' |
+  # kubectl apply -f - line sidesteps the incompatibility entirely.
+  run sed -n '/Assert Kyverno rejects the unsigned image at admission/,/^      - name: Clean up/p' "$WF"
+  [[ "$output" != *"<<'"* ]]
+  [[ "$output" == *"kubectl apply -f -"* ]]
 }
 
 @test "verify-rejection asserts a real rejection reason, not just a non-zero exit" {
