@@ -207,21 +207,35 @@ You review and merge plan PRs, same as implementation PRs.
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
 > through to the next.
 >
-> **Status (updated 2026-07-16): O1 and O2 are both done.** All four Tier 1
-> next-wave components (Kyverno, Argo Rollouts, Velero, Trivy Operator) are
-> long since auto-synced with their own ADR, dashboard, and bats coverage —
-> CHARTER.md records O1 as met ahead of its 2026-12-31 date. The O2 tail this
-> section used to track (PSS-restricted for `moto`/`ack-system`/`lab-gateway`,
-> NP for `tidb`/`tidb-admin`, both coverage-loop recurrence guards) is fully
-> checked off below; O2's own `argocd` PSS and `envoy-gateway-system` NP gaps
-> closed earlier still. The cloud-control-plane dashboard (O5) shipped too
-> (`lab-cloud-control-plane.json`, covering kro+moto+ack-s3). The remaining
-> unchecked items in this section are almost entirely **Objective O4** (image
-> signing/verification enforcement) plus the ADR-0024 Harbor/Artifactory
-> migration and its dependents — see each item's own prerequisite note for
-> what it's gated on. When every item here is gated, use rule #9's
-> split-the-gate judgment before falling back to coverage/hardening filler —
-> don't assume there's nothing left just because the checkboxes are gated.
+> **Status (updated 2026-08-18): O1, O2, and now O4 are all substantially done.**
+> All four Tier 1 next-wave components (Kyverno, Argo Rollouts, Velero, Trivy
+> Operator) are long since auto-synced with their own ADR, dashboard, and bats
+> coverage — CHARTER.md records O1 as met ahead of its 2026-12-31 date. The O2
+> tail this section used to track (PSS-restricted for `moto`/`ack-system`/
+> `lab-gateway`, NP for `tidb`/`tidb-admin`, both coverage-loop recurrence
+> guards) is fully checked off below; O2's own `argocd` PSS and
+> `envoy-gateway-system` NP gaps closed earlier still. The cloud-control-plane
+> dashboard (O5) shipped too (`lab-cloud-control-plane.json`, covering
+> kro+moto+ack-s3). **Objective O4** (due 2026-12-31, "every image is signed
+> and verified") landed both of its measurement criteria 2026-08-18: the
+> `verifyImages` ClusterPolicy flipped Audit → Enforce (`auto/cosign-enforce-flip`,
+> PR #1223, gated on issue #631's maintainer confirmation — a real signed image
+> observed landing in Harbor) and the CI step that proves an *unsigned* image
+> gets rejected (`auto/o4-ci-rejection-gate`, PR #1224) both merged. Both still
+> carry an ADR-0004 caveat this remote clusterless session cannot resolve: a
+> live Forgejo Actions run has not yet executed either job end-to-end (the
+> rejection-gate job also needs a `KUBECONFIG` secret the maintainer hasn't set
+> up yet) — a live-cluster/interactive session verifying that closes the loop,
+> but no further executor-buildable work remains for O4 itself.
+>
+> The remaining unchecked items in this section are now the two sequentially-
+> blocked GitLab→Forgejo migration items (script/Makefile rename, full
+> decommission — both deliberately deferred pending live verification per their
+> own investigation notes) and the legacy capstone `Deployment` removal, gated
+> on issue #633 (still unconfirmed as of this update). When every item here is
+> gated, use rule #9's split-the-gate judgment before falling back to
+> coverage/hardening filler — don't assume there's nothing left just because
+> the checkboxes are gated.
 >
 > **WIP / size discipline reminder.** Per WAYS-OF-WORKING.md §3, target ≤ 400
 > changed lines per PR. Items below that risk crossing the cap carry a
