@@ -464,3 +464,28 @@ setup() {
   [[ "$output" == *"GOMAXPROCS"* ]]
   [[ "$output" == *'value: "1"'* ]]
 }
+
+# 2026-08-18: registry-photon (also amd64-only, same QEMU-emulation host as core/
+# jobservice) never got this mitigation because it never crashed under startup —
+# it crashed the first time it did real, sustained S3 blob-upload I/O to Garage,
+# which had never actually happened before this session's storage/networkpolicy
+# fix (gitops/storage/networkpolicy/allow-garage-s3-from-harbor.yaml: the
+# ingress-side rule allowing harbor -> garage traffic was missing, silently
+# dropping every upload). Once that NetworkPolicy gap was fixed and blob uploads
+# actually reached Garage, registry hit the identical Go-runtime-panic-under-
+# emulation class core/jobservice were fixed for on 2026-08-10/11.
+@test "harbor registry sets GOMAXPROCS=1 (same emulated-host root cause as core/jobservice, exposed once NetworkPolicy let it do real S3 I/O)" {
+  # -A50: the pre-existing extraEnvVars comment block (explaining the
+  # extraEnvVarsSecret / S3 credential fix) runs long before GOMAXPROCS appears.
+  run grep -A50 '^          registry:' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"GOMAXPROCS"* ]]
+  [[ "$output" == *'value: "1"'* ]]
+}
+
+@test "harbor registry sets GODEBUG=asyncpreemptoff=1 (same QEMU async-preemption class as core)" {
+  run grep -A50 '^          registry:' "$REPO/gitops/platform/harbor.yaml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"GODEBUG"* ]]
+  [[ "$output" == *'value: "asyncpreemptoff=1"'* ]]
+}

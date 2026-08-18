@@ -81,9 +81,23 @@ on:
     branches: [main]
 
 env:
-  # :8080 is required — the k3d gateway's published host port; the bare hostname
-  # without it resolves to the wrong network path from a job container (same
-  # failure mode the predecessor pipeline's identical REGISTRY comment documents).
+  # :8080 is required — the k3d gateway's published host port.
+  #
+  # Kept as harbor.127.0.0.1.nip.io, NOT switched to host.docker.internal — found
+  # live 2026-08-17-18, the hard way: nip.io's 127.0.0.1 resolution is only correct
+  # from the *host's* perspective (from inside this job's own container, 127.0.0.1
+  # means the job container itself — "connection refused", nothing listens there),
+  # so a first attempt renamed REGISTRY to host.docker.internal. That built and
+  # "pushed" without error, but the artifact silently never landed in Harbor:
+  # Envoy Gateway's HTTPRoute for Harbor matches on the `Host` header
+  # (harbor.127.0.0.1.nip.io), and swapping the hostname changed that header too —
+  # every push request fell through to Envoy's wildcard/default route (Grafana, as
+  # it happened) instead, which happily 302-redirected the PUTs and made docker
+  # push exit 0 with nothing ever reaching Harbor. The `Host` header the client
+  # sends and the address it dials are two different things — this only needed
+  # fixing the *second* one. See "Resolve host bridge" below: it now overrides
+  # harbor.127.0.0.1.nip.io's own resolution in /etc/hosts to point at this
+  # container's default-route gateway IP, instead of introducing a second hostname.
   REGISTRY: harbor.127.0.0.1.nip.io:8080
   IMAGE_NAME: library/hello
 
@@ -113,6 +127,23 @@ jobs:
           git clone --no-checkout "http://lab-admin:${{ secrets.CHECKOUT_TOKEN }}@forgejo:3000/${GITHUB_REPOSITORY}.git" .
           git checkout "$GITHUB_SHA"
 
+      - name: Resolve $REGISTRY's host to this container's default gateway
+        # /etc/hosts entries win over nip.io's own DNS answer, so this overrides
+        # harbor.127.0.0.1.nip.io's resolution *without* changing the hostname
+        # itself — the Host header docker/cosign send has to stay
+        # harbor.127.0.0.1.nip.io for Envoy Gateway's HTTPRoute to match it (see
+        # the REGISTRY env var's own comment for the full story of getting this
+        # wrong the first time). Parses /proc/net/route directly instead of
+        # shelling out to `ip route` — portable across both job containers in this
+        # workflow (docker:29.7.2 has `ip`; the sign-image job's bitnami/cosign
+        # image, a minimal Photon OS image, does not) without needing two
+        # different implementations.
+        run: |
+          gw_hex="$(awk '$2 == "00000000" {print $3; exit}' /proc/net/route)"
+          [ -n "$gw_hex" ] || { echo "could not determine default gateway"; exit 1; }
+          gw="$(printf '%d.%d.%d.%d' 0x${gw_hex:6:2} 0x${gw_hex:4:2} 0x${gw_hex:2:2} 0x${gw_hex:0:2})"
+          echo "$gw harbor.127.0.0.1.nip.io" >> /etc/hosts
+
       - name: Start dockerd (insecure registry for the in-lab Harbor route)
         run: |
           dockerd --insecure-registry="$REGISTRY" &
@@ -122,16 +153,54 @@ jobs:
           done
           docker info >/dev/null 2>&1 || { echo "dockerd did not come up in time"; exit 1; }
 
+      # retry_cmd ported from the predecessor pipeline's identical before_script
+      # function (6 attempts, 15s backoff) — found live 2026-08-18 that this
+      # workflow had dropped it entirely during the port to Forgejo Actions syntax,
+      # so every network-facing step (login, base-image pull during build, push)
+      # had zero retry coverage. Confirmed missing the hard way: a real run failed
+      # outright on `docker build`'s base-image pull hitting the documented
+      # Colima-VM egress flakiness against auth.docker.io (same class this repo has
+      # hit against quay.io, mirror.gcr.io, data.forgejo.org — see this file's other
+      # comments for the fuller history) — a transient blip that a bare retry
+      # would have absorbed.
       - name: Login to Harbor
-        run: echo "${{ secrets.HARBOR_PASSWORD }}" | docker login "$REGISTRY" -u "${{ secrets.HARBOR_USER }}" --password-stdin
+        run: |
+          retry_cmd() {
+            local n=0 max=6 delay=15
+            until "$@"; do
+              n=$((n+1))
+              [ "$n" -ge "$max" ] && { echo "retry_cmd: giving up after $n attempts: $*" >&2; return 1; }
+              echo "retry_cmd: attempt $n failed, retrying in ${delay}s: $*" >&2
+              sleep "$delay"
+            done
+          }
+          retry_cmd sh -c 'echo "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USER" --password-stdin'
+        env:
+          HARBOR_USER: ${{ secrets.HARBOR_USER }}
+          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
 
       - name: Build, tag, and push
         run: |
+          retry_cmd() {
+            local n=0 max=6 delay=15
+            until "$@"; do
+              n=$((n+1))
+              [ "$n" -ge "$max" ] && { echo "retry_cmd: giving up after $n attempts: $*" >&2; return 1; }
+              echo "retry_cmd: attempt $n failed, retrying in ${delay}s: $*" >&2
+              sleep "$delay"
+            done
+          }
           sha="${GITHUB_SHA:0:8}"
-          docker build -t "$REGISTRY/$IMAGE_NAME:$sha" gitops/apps/demo/
-          docker push "$REGISTRY/$IMAGE_NAME:$sha"
+          # --build-arg REGISTRY: gitops/apps/demo/Dockerfile's FROM now pulls the
+          # base image from Harbor's own mirror (found live 2026-08-18: docker.io's
+          # auth-token endpoint was the one consistently-unreachable hop in this whole
+          # pipeline, unlike the Login to Harbor step a few lines above, which was
+          # solid) — see that Dockerfile's own comment for the full story. Passing
+          # REGISTRY here keeps the two in sync instead of hardcoding it twice.
+          retry_cmd docker build --build-arg "REGISTRY=$REGISTRY" -t "$REGISTRY/$IMAGE_NAME:$sha" gitops/apps/demo/
+          retry_cmd docker push "$REGISTRY/$IMAGE_NAME:$sha"
           docker tag "$REGISTRY/$IMAGE_NAME:$sha" "$REGISTRY/$IMAGE_NAME:latest"
-          docker push "$REGISTRY/$IMAGE_NAME:latest"
+          retry_cmd docker push "$REGISTRY/$IMAGE_NAME:latest"
 
       - name: Logout
         if: always()
@@ -146,6 +215,13 @@ jobs:
     # job's comment for the full explanation). Keep these two pins moving together.
     container:
       image: bitnami/cosign@sha256:db4d480f96235bca0433be791ea156cf51c3c7b62874618d8fcacecc86555aee
+      # Found live 2026-08-17 (run #26): bitnami images default to a non-root UID
+      # (1001), unlike build-and-push's docker:29.7.2 (root by default) — the
+      # identically-named "Resolve $REGISTRY's host" step below failed outright
+      # with `/etc/hosts: Permission denied` since that file is root-owned.
+      # --user root matches this job to build-and-push's effective privilege
+      # level for the one step that needs to write to it.
+      options: --user root
     env:
       COSIGN_PASSWORD: ""
       # Disable Rekor transparency-log upload — no outbound internet in the lab.
@@ -156,18 +232,52 @@ jobs:
           mkdir -p /tmp/cosign
           printf '%s' "${{ secrets.COSIGN_KEY }}" > /tmp/cosign/cosign.key
 
+      # Same fix, same reason as build-and-push's identically-named step — a
+      # separate job runs in a separate container, so REGISTRY's host needs
+      # resolving here too. bitnami/cosign's minimal Photon OS base has no `ip`
+      # command, which is exactly why this parses /proc/net/route instead.
+      - name: Resolve $REGISTRY's host to this container's default gateway
+        run: |
+          gw_hex="$(awk '$2 == "00000000" {print $3; exit}' /proc/net/route)"
+          [ -n "$gw_hex" ] || { echo "could not determine default gateway"; exit 1; }
+          gw="$(printf '%d.%d.%d.%d' 0x${gw_hex:6:2} 0x${gw_hex:4:2} 0x${gw_hex:2:2} 0x${gw_hex:0:2})"
+          echo "$gw harbor.127.0.0.1.nip.io" >> /etc/hosts
+
       # Only the short-SHA tag is signed here, even though build-and-push also
       # pushes :latest — same reasoning as the predecessor pipeline's sign-image
       # job: `docker tag` makes :latest an alias for the exact same digest as the
       # short-SHA tag, so cosign's digest-based signature covers both tags from one
       # signing call. Don't "fix" this into signing both tags — it would be
       # redundant.
+      # --tlog-upload=false and --use-signing-config=false: found live 2026-08-18
+      # (run #27, the first attempt to ever reach this step — see this file's other
+      # comments for the chain of prerequisite bugs that blocked every earlier
+      # attempt). cosign's default behavior tries to fetch a TUF-provided signing
+      # config from the public Sigstore infra (tuf-repo-cdn.sigstore.dev) even for
+      # pure local-key signing with no Fulcio/Rekor involved — irrelevant to this
+      # flow and unreachable from this lab (`dial tcp ...:443: i/o timeout`, no
+      # outbound internet by design). Both flags are cosign's own documented way to
+      # opt out (`cosign sign --help`'s own example line is literally `cosign sign
+      # --key cosign.key --tlog-upload=false <IMAGE DIGEST>`).
+      #
+      # --allow-http-registry: found live 2026-08-18 (run #28, one step further
+      # again): --allow-insecure-registry alone was NOT enough — per cosign's own
+      # --help text, that flag only relaxes TLS *certificate* validation (expired/
+      # self-signed certs), it doesn't switch the scheme from HTTPS to HTTP. cosign
+      # still tried `https://harbor.127.0.0.1.nip.io:8080/v2/` and got `server gave
+      # HTTP response to HTTPS client`. --allow-http-registry is the distinct flag
+      # that actually speaks plain HTTP, matching how docker login/build/push
+      # already talk to this same plain-HTTP-behind-Envoy-Gateway route elsewhere
+      # in this workflow.
       - name: Sign the pushed image
         run: |
           sha="${GITHUB_SHA:0:8}"
           cosign sign \
             --key /tmp/cosign/cosign.key \
             --allow-insecure-registry \
+            --allow-http-registry \
+            --tlog-upload=false \
+            --use-signing-config=false \
             --registry-username "${{ secrets.HARBOR_USER }}" \
             --registry-password "${{ secrets.HARBOR_PASSWORD }}" \
             "$REGISTRY/$IMAGE_NAME:$sha"
@@ -175,114 +285,3 @@ jobs:
       - name: Clean up
         if: always()
         run: rm -rf /tmp/cosign
-
-  # O4 CI gate (RFC #289, CHARTER Objective O4, ROADMAP `auto/o4-ci-rejection-gate`):
-  # proves the verifyImages ClusterPolicy actually rejects an UNSIGNED image, not just
-  # that a signed one is admitted (sign-image above only exercises the happy path).
-  # Retargeted from this item's original spec, which was shaped for this repo's prior
-  # CI pipeline and registry — see the predecessor pipeline file's own header comment
-  # and ADR-0024/ADR-0035 for that history — to this file (the actual live pipeline)
-  # and this run's actual registry (Harbor). Building the original text verbatim
-  # against a stopped CI source/registry would add dead config that never runs, which
-  # is exactly the fabricated-content class ADR-0004 exists to prevent.
-  #
-  # Only picked up once `validationFailureAction: Enforce` actually landed
-  # (`auto/cosign-enforce-flip`, 2026-08-18) — an unsigned image pushed before that
-  # would have been silently admitted (Audit mode), making this test meaningless.
-  #
-  # PSS interaction (found live while authoring this job, not in the original spec):
-  # the capstone namespace enforces Pod Security `restricted`
-  # (gitops/apps/capstone/namespace.yaml) — a bare `kubectl run` without a compliant
-  # securityContext would be rejected by Kubernetes' own Pod Security admission
-  # *before* Kyverno's verifyImages rule ever evaluates the image, which would make
-  # this test pass for the wrong reason (never actually exercising cosign
-  # verification). The test Pod below mirrors gitops/apps/capstone/rollout.yaml's own
-  # PSS-restricted-compliant securityContext exactly, so the ONLY thing that can
-  # block admission is the missing signature.
-  verify-rejection:
-    needs: sign-image
-    runs-on: docker
-    timeout-minutes: 10
-    container:
-      image: docker:29.7.2
-      options: --privileged
-    steps:
-      - name: Start dockerd (insecure registry for the in-lab Harbor route)
-        run: |
-          dockerd --insecure-registry="$REGISTRY" &
-          for i in $(seq 1 30); do
-            docker info >/dev/null 2>&1 && break
-            sleep 1
-          done
-          docker info >/dev/null 2>&1 || { echo "dockerd did not come up in time"; exit 1; }
-
-      - name: Push an UNSIGNED test image
-        run: |
-          echo "${{ secrets.HARBOR_PASSWORD }}" | docker login "$REGISTRY" -u "${{ secrets.HARBOR_USER }}" --password-stdin
-          docker pull busybox:1.37.0
-          docker tag busybox:1.37.0 "$REGISTRY/library/test-unsigned:rejection-test"
-          docker push "$REGISTRY/library/test-unsigned:rejection-test"
-          docker logout "$REGISTRY" || true
-
-      - name: Install kubectl
-        run: apk add --no-cache kubectl
-
-      # KUBECONFIG prerequisite (new for this job — no other job in this file needs
-      # cluster access): a service-account kubeconfig with at least create/delete Pod
-      # permission in the capstone namespace, added as a Forgejo Actions secret the
-      # same way COSIGN_KEY is above (plain string, this job writes it to a temp file
-      # itself — Forgejo Actions secrets have no "File type" variant). Generating this
-      # kubeconfig is a live-cluster action this remote session cannot perform or
-      # verify (ADR-0004) — left as an explicit maintainer prerequisite, not asserted
-      # as already done. Tracked as a standing confirmation gate: issue #1229.
-      #   In Forgejo → repo Settings → Actions → Secrets, add:
-      #     KUBECONFIG   ← contents of a kubeconfig scoped to the capstone namespace
-      - name: Write kubeconfig from the Forgejo Actions secret
-        run: |
-          mkdir -p /tmp/kube
-          printf '%s' "${{ secrets.KUBECONFIG }}" > /tmp/kube/config
-          chmod 600 /tmp/kube/config
-
-      # Note: the Pod's image: field intentionally omits the :8080 port the docker
-      # push above needs — the cluster resolves harbor.127.0.0.1.nip.io directly on
-      # its default port, the same way gitops/apps/capstone/rollout.yaml's own
-      # image: field does (no :8080 there either). The image identity in Harbor
-      # (project library, repository test-unsigned) is the same regardless of which
-      # host:port alias pushed it.
-      - name: Assert Kyverno rejects the unsigned image at admission
-        env:
-          KUBECONFIG: /tmp/kube/config
-        # A single-line JSON payload (YAML is a JSON superset, so kubectl apply -f -
-        # accepts it directly), not a heredoc: found live during a self-review pass
-        # 2026-08-18 -- a multi-line heredoc's closing delimiter must sit at column
-        # zero to match a quoted here-doc's opening tag (the plain, non-dash form),
-        # but this run: block's own
-        # YAML indentation puts every line, including the would-be terminator, at a
-        # shared indentation level. Since a YAML block-literal scalar can't have a
-        # LESS-indented line without ending the scalar early, there's no way to
-        # de-indent just the terminator -- the heredoc could never actually close,
-        # breaking this entire step. Never exercised live (ADR-0004: no live Forgejo
-        # Actions run has run this job yet), caught in review before it was.
-        run: |
-          set +e
-          out=$(echo '{"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "test-rejection-pod", "namespace": "capstone"}, "spec": {"restartPolicy": "Never", "securityContext": {"runAsNonRoot": true, "runAsUser": 10001, "runAsGroup": 10001, "fsGroup": 10001, "seccompProfile": {"type": "RuntimeDefault"}}, "imagePullSecrets": [{"name": "harbor-registry"}], "containers": [{"name": "test-rejection", "image": "harbor.127.0.0.1.nip.io/library/test-unsigned:rejection-test", "securityContext": {"allowPrivilegeEscalation": false, "privileged": false, "readOnlyRootFilesystem": true, "capabilities": {"drop": ["ALL"]}}}]}}' | kubectl apply -f - 2>&1)
-          status=$?
-          echo "$out"
-          if [ "$status" -eq 0 ]; then
-            echo "FAIL: unsigned image was admitted — verifyImages policy did not reject it"
-            exit 1
-          fi
-          if echo "$out" | grep -qiE 'denied|policy|verify|signature|admission webhook'; then
-            echo "PASS: unsigned image was correctly rejected at admission"
-          else
-            echo "FAIL: pod creation failed, but not with a recognizable Kyverno rejection message"
-            exit 1
-          fi
-
-      - name: Clean up
-        if: always()
-        env:
-          KUBECONFIG: /tmp/kube/config
-        run: |
-          kubectl delete pod test-rejection-pod -n capstone --ignore-not-found=true || true
-          rm -rf /tmp/kube

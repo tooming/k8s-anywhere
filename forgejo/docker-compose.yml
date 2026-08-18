@@ -53,20 +53,33 @@ services:
       # unattended-install switch; setting it makes the container's first boot run
       # migrations and start serving normally instead of waiting on the wizard.
       GITEA__security__INSTALL_LOCK: "true"
-      # GOMAXPROCS=1 + GODEBUG=asyncpreemptoff=1 — same QEMU-emulation root cause and
-      # fix as Harbor's core/jobservice (gitops/platform/harbor.yaml's identical
-      # comment): this host is Apple Silicon (arm64), Forgejo's image is amd64-only
-      # ("requested image's platform (linux/amd64) does not match the detected host
-      # platform (linux/arm64/v8)" — logged on every `docker compose up`), so the
-      # binary runs under QEMU user-mode x86_64 emulation the whole time it's up.
       # Found live 2026-08-13, first real `make forgejo-up` after fixing INSTALL_LOCK:
-      # a genuine Go runtime crash inside the GC's background mark workers on
-      # startup (`goroutine ... [GC worker (active/idle)]`, gcBgMarkWorker /
-      # gcBgMarkStartWorkers) — the same async-preemption-under-emulation memory-
-      # corruption class Harbor hit, not an application bug. Same fix, same live
-      # verification requirement before assuming it's actually resolved.
-      GOMAXPROCS: "1"
-      GODEBUG: "asyncpreemptoff=1"
+      # a genuine Go runtime crash inside the GC's background mark workers on startup
+      # (`goroutine ... [GC worker (active/idle)]`, gcBgMarkWorker /
+      # gcBgMarkStartWorkers) — same QEMU async-preemption-under-emulation memory-
+      # corruption class Harbor's core/jobservice hit (gitops/platform/harbor.yaml's
+      # identical comment), because the image that first got pulled here was amd64
+      # and this host is Apple Silicon (arm64). GOMAXPROCS=1 + GODEBUG=asyncpreemptoff=1
+      # mitigated it at the time.
+      #
+      # Found live 2026-08-18: unlike Harbor (genuinely amd64-only), Forgejo *does*
+      # publish a native linux/arm64 image for this exact tag (`docker manifest
+      # inspect codeberg.org/forgejo/forgejo:16.0.2` lists linux/arm64 alongside
+      # amd64/arm) — the amd64-only claim above was simply never re-checked. The
+      # amd64 image had been running under QEMU the whole time as a result (visible
+      # live as `qemu-x86_64 /usr/local/bin/gitea web` in `colima ssh -- ps aux`,
+      # burning real CPU and very plausibly contributing to this session's chronic
+      # crash-on-push / runner-poller-hangs pattern). Swapped to the native arm64
+      # image (pulled via `crane` on the Mac host, whose network path reaches
+      # codeberg.org over IPv6, then `docker load`ed into Colima's docker — the VM
+      # itself is IPv4-only via NAT and hit a sustained, ~40min timeout to
+      # codeberg.org's IPv4 endpoint at the time) and removed the GOMAXPROCS/GODEBUG
+      # env vars that used to follow this comment: native execution doesn't need the
+      # emulation mitigation, and GOMAXPROCS=1
+      # would now just needlessly cap Forgejo to one core. forgejo-runner (same
+      # image family, code.forgejo.org/forgejo/runner:13.0.0) got the identical
+      # treatment — it also has a native arm64 manifest and was found running under
+      # the same emulation.
     ports:
       - "3300:3000"
       - "2223:22"

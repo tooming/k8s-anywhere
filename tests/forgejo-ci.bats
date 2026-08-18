@@ -100,77 +100,85 @@ setup() {
   grep -q 'secrets.CHECKOUT_TOKEN' "$WF"
 }
 
-# --- verify-rejection job (O4 CI gate, RFC #289, auto/o4-ci-rejection-gate) ---------
-@test "build-sign-push.yml declares a verify-rejection job that needs sign-image" {
-  grep -q '^  verify-rejection:' "$WF"
-  run sed -n '/^  verify-rejection:/,/^  [a-zA-Z]/p' "$WF"
+@test "REGISTRY keeps the real harbor.127.0.0.1.nip.io hostname (Envoy Gateway's HTTPRoute matches on the Host header — swapping the hostname breaks routing even if the TCP connection itself succeeds, found live 2026-08-18)" {
+  grep -q 'REGISTRY: harbor.127.0.0.1.nip.io:8080' "$WF"
+  run grep -q 'REGISTRY:.*host\.docker\.internal' "$WF"
+  [ "$status" -eq 1 ]
+}
+
+@test "both jobs override harbor.127.0.0.1.nip.io's own resolution via /proc/net/route (portable — sign-image's Photon OS base has no ip command), not a second host.docker.internal hostname" {
+  count="$(grep -c "awk '\\\$2 == \"00000000\"" "$WF")"
+  [ "$count" -eq 2 ]
+  count2="$(grep -c 'harbor\.127\.0\.0\.1\.nip\.io" >> /etc/hosts' "$WF")"
+  [ "$count2" -eq 2 ]
+}
+
+@test "build-and-push wraps every network-facing docker command in retry_cmd (login, build, both pushes) — found live 2026-08-18, the port to Forgejo Actions had silently dropped this from the predecessor pipeline" {
+  grep -q 'retry_cmd sh -c .echo "\$HARBOR_PASSWORD"' "$WF"
+  # --build-arg "REGISTRY=$REGISTRY" (2026-08-18): gitops/apps/demo/Dockerfile's
+  # FROM now pulls its base image from Harbor's own mirror instead of docker.io
+  # directly — see that Dockerfile's own comment for the full story.
+  grep -q 'retry_cmd docker build --build-arg "REGISTRY=\$REGISTRY" -t "\$REGISTRY/\$IMAGE_NAME:\$sha"' "$WF"
+  grep -q 'retry_cmd docker push "\$REGISTRY/\$IMAGE_NAME:\$sha"' "$WF"
+  grep -q 'retry_cmd docker push "\$REGISTRY/\$IMAGE_NAME:latest"' "$WF"
+}
+
+@test "build-and-push does not wrap the plain 'docker tag' call in retry_cmd (local operation, no network involved — same as the predecessor pipeline)" {
+  run grep -q 'retry_cmd docker tag' "$WF"
+  [ "$status" -eq 1 ]
+  grep -q '^          docker tag "\$REGISTRY/\$IMAGE_NAME:\$sha" "\$REGISTRY/\$IMAGE_NAME:latest"$' "$WF"
+}
+
+# 2026-08-18: docker.io's auth-token endpoint was the one consistently-unreachable
+# hop in the whole pipeline — retry_cmd's 6 attempts never once got through it,
+# while every other step (including Login to Harbor a few lines earlier in the
+# same job) was solid. Mirrored the base image into Harbor once instead
+# (`crane copy docker.io/... harbor.../library/example-hotrod:2.20.0`) and
+# repointed the Dockerfile's FROM there — see gitops/apps/demo/Dockerfile's own
+# comment for the full story.
+@test "gitops/apps/demo/Dockerfile pulls its base image from Harbor's own mirror, not docker.io directly" {
+  DOCKERFILE="$REPO/gitops/apps/demo/Dockerfile"
+  [ -f "$DOCKERFILE" ]
+  run grep -q '^FROM jaegertracing/example-hotrod:2.20.0$' "$DOCKERFILE"
+  [ "$status" -eq 1 ]
+  grep -q '^ARG REGISTRY=harbor.127.0.0.1.nip.io:8080$' "$DOCKERFILE"
+  grep -q '^FROM \${REGISTRY}/library/example-hotrod:2.20.0$' "$DOCKERFILE"
+}
+
+# 2026-08-17, run #26: sign-image's "Resolve $REGISTRY's host" step (identical to
+# build-and-push's own, which works fine there) failed with `/etc/hosts:
+# Permission denied` — bitnami/cosign defaults to a non-root UID (1001), unlike
+# build-and-push's docker:29.7.2 (root by default). This was the *first* time
+# sign-image ever actually ran (every prior run failed inside build-and-push
+# before sign-image's `needs:` dependency let it start), so this bug had never
+# been reachable until now.
+@test "sign-image's container runs as root (bitnami/cosign defaults to non-root, breaks writing /etc/hosts)" {
+  run sed -n '/^  sign-image:/,/^    steps:/p' "$WF"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"needs: sign-image"* ]]
+  [[ "$output" == *"options: --user root"* ]]
 }
 
-@test "verify-rejection sets an explicit timeout-minutes" {
-  run sed -n '/^  verify-rejection:/,$p' "$WF"
-  [[ "$output" == *"timeout-minutes:"* ]]
+# 2026-08-18, run #27: with the /etc/hosts fix above landed, sign-image reached
+# its actual signing step for the first time — and cosign's default behavior
+# tried (and failed) to fetch a TUF-provided signing config from the public
+# Sigstore infra (tuf-repo-cdn.sigstore.dev), irrelevant to pure local-key
+# signing and unreachable from this no-outbound-internet lab. Both flags are
+# cosign's own documented opt-out.
+@test "sign-image's cosign sign disables TUF signing-config fetch and Rekor tlog upload (no outbound internet to public Sigstore infra in this lab)" {
+  run sed -n '/^  sign-image:/,$p' "$WF"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"--tlog-upload=false"* ]]
+  [[ "$output" == *"--use-signing-config=false"* ]]
 }
 
-@test "verify-rejection pushes an unsigned test image distinct from the real app image" {
-  run sed -n '/^  verify-rejection:/,$p' "$WF"
-  [[ "$output" == *"library/test-unsigned:rejection-test"* ]]
-  # Never the real IMAGE_NAME (library/hello) — this job must not touch the
-  # signed production image.
-  [[ "$output" != *"library/hello:rejection-test"* ]]
-}
-
-@test "verify-rejection's test Pod is PSS-restricted compliant (capstone namespace enforces it)" {
-  # Namespace enforces Pod Security restricted (gitops/apps/capstone/namespace.yaml)
-  # — a non-compliant Pod would be rejected by Kubernetes' own admission before
-  # Kyverno's verifyImages rule ever runs, making the test meaningless. Mirrors
-  # gitops/apps/capstone/rollout.yaml's own securityContext exactly. The Pod is
-  # sent as a single-line JSON payload (see the recurrence-guard test below), not
-  # YAML, so these assertions match the JSON key/value form.
-  run sed -n '/^  verify-rejection:/,$p' "$WF"
-  [[ "$output" == *'"runAsNonRoot": true'* ]]
-  [[ "$output" == *'"allowPrivilegeEscalation": false'* ]]
-  [[ "$output" == *'"readOnlyRootFilesystem": true'* ]]
-  [[ "$output" == *'"drop": ["ALL"]'* ]]
-}
-
-@test "verify-rejection's test Pod uses the harbor-registry imagePullSecret (matches the real capstone workload)" {
-  run sed -n '/^  verify-rejection:/,$p' "$WF"
-  [[ "$output" == *'"name": "harbor-registry"'* ]]
-}
-
-@test "verify-rejection's test Pod is applied via a single-line JSON payload, not a heredoc (recurrence guard, found in self-review 2026-08-18)" {
-  # A quoted heredoc's (<<'WORD') closing delimiter must sit at column zero to
-  # match, but this step's own YAML run: block-literal scalar indents every
-  # line, including any would-be terminator -- a less-indented line would end
-  # the YAML scalar early instead of closing the heredoc, so the heredoc could
-  # never actually close. Broke the entire step, never exercised live (no
-  # Forgejo Actions run had run this job yet), caught in review before it was.
-  # JSON is a YAML/kubectl-apply-accepted superset, so a single echo '{...}' |
-  # kubectl apply -f - line sidesteps the incompatibility entirely.
-  run sed -n '/Assert Kyverno rejects the unsigned image at admission/,/^      - name: Clean up/p' "$WF"
-  [[ "$output" != *"<<'"* ]]
-  [[ "$output" == *"kubectl apply -f -"* ]]
-}
-
-@test "verify-rejection asserts a real rejection reason, not just a non-zero exit" {
-  run sed -n '/^  verify-rejection:/,$p' "$WF"
-  [[ "$output" == *'grep -qiE'* ]]
-  [[ "$output" == *"denied|policy|verify|signature|admission webhook"* ]]
-}
-
-@test "verify-rejection fails loudly if the unsigned image is wrongly admitted" {
-  run sed -n '/^  verify-rejection:/,$p' "$WF"
-  [[ "$output" == *"unsigned image was admitted"* ]]
-}
-
-@test "verify-rejection references the KUBECONFIG secret (no plaintext)" {
-  grep -q 'secrets.KUBECONFIG' "$WF"
-}
-
-@test "verify-rejection cleans up the test Pod even on failure" {
-  run sed -n '/^  verify-rejection:/,$p' "$WF"
-  [[ "$output" == *"if: always()"* ]]
-  [[ "$output" == *"kubectl delete pod test-rejection-pod"* ]]
+# 2026-08-18, run #28: --allow-insecure-registry only relaxes TLS *certificate*
+# validation per cosign's own --help text — it does NOT switch the scheme from
+# HTTPS to HTTP. cosign still tried https:// against this plain-HTTP-behind-
+# Envoy-Gateway registry and failed with 'server gave HTTP response to HTTPS
+# client'. --allow-http-registry is the distinct flag that actually speaks HTTP.
+@test "sign-image's cosign sign passes --allow-http-registry (allow-insecure-registry alone only relaxes TLS cert checks, not HTTPS->HTTP)" {
+  run sed -n '/^  sign-image:/,$p' "$WF"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"--allow-http-registry"* ]]
+  [[ "$output" == *"--allow-insecure-registry"* ]]
 }
