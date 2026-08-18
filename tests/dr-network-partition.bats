@@ -74,14 +74,21 @@ setup() {
 
 # --- Self-heal check targets the object, not just delete success -------------
 
-@test "dr-network-partition.sh polls for the NetworkPolicy's re-existence, not just the delete command's own exit code" {
-  # The delete step uses --wait=false (fire-and-forget); the actual self-heal
-  # assertion must come from a separate poll loop re-checking the object,
-  # mirroring dr-chaos.sh's separate self-heal poll after its own delete.
-  run grep -q -- '--wait=false' "$SCRIPT"
-  [ "$status" -eq 0 ]
+@test "dr-network-partition.sh polls for the NetworkPolicy's re-existence via a separate poll loop after the delete" {
   poll_block="$(sed -n '/^START=\$SECONDS/,/^ELAPSED=/p' "$SCRIPT")"
   [[ "$poll_block" == *"kubectl get networkpolicy \"\$POLICY\""* ]]
+}
+
+@test "dr-network-partition.sh does NOT use --wait=false on the NetworkPolicy delete (recurrence guard, found in self-review 2026-08-18)" {
+  # --wait=false returns as soon as the delete request is *accepted*, not
+  # *completed* -- the self-heal poll's first iteration could then still see
+  # the not-yet-deleted object and report a false-positive instant pass.
+  # Unlike dr-chaos.sh's pod delete (which legitimately uses --wait=false to
+  # avoid blocking for terminationGracePeriodSeconds), a NetworkPolicy has no
+  # grace period, so the default --wait=true (confirmed-gone before
+  # returning) is both correct and effectively instant here.
+  delete_block="$(sed -n '/kubectl delete networkpolicy/,/^START=\$SECONDS/p' "$SCRIPT")"
+  [[ "$delete_block" != *"--wait=false"* ]]
 }
 
 # --- Makefile wiring -------------------------------------------------------

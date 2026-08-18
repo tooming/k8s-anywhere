@@ -57,7 +57,24 @@ if ! kubectl get networkpolicy "$POLICY" -n "$NAMESPACE" >/dev/null 2>&1; then
 fi
 
 printf '  → deleting NetworkPolicy/%s...\n' "$POLICY"
-kubectl delete networkpolicy "$POLICY" -n "$NAMESPACE" --wait=false
+# Deliberately NOT --wait=false (unlike dr-chaos.sh's pod delete, which uses it
+# to avoid blocking for a pod's terminationGracePeriodSeconds). A NetworkPolicy
+# has no grace period -- it's a plain API object, not a pod -- so the default
+# --wait=true blocks only until the object is actually confirmed gone, which is
+# effectively instant here. Found live during a self-review pass 2026-08-18:
+# --wait=false returns as soon as the delete request is *accepted*, not
+# *completed* -- the very first self-heal poll iteration below could then
+# still see the not-yet-deleted object and report a false-positive instant
+# "self-heal confirmed" without the drill ever actually observing a real
+# delete-then-restore cycle. Same failure-mode *class* dr-chaos.sh's own
+# recurrence-guard comments describe (a command returning doesn't mean the
+# underlying state change is actually done yet), different root cause --
+# this script mechanically copied --wait=false from dr-chaos.sh's pod-kill
+# pattern without checking whether the reason it's needed there (avoiding a
+# block for terminationGracePeriodSeconds) applies to a NetworkPolicy too (it
+# doesn't). Found and fixed in this same PR's own self-review, before this
+# script had ever run against a live cluster.
+kubectl delete networkpolicy "$POLICY" -n "$NAMESPACE"
 
 START=$SECONDS
 HEALED=0
