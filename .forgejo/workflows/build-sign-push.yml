@@ -175,3 +175,130 @@ jobs:
       - name: Clean up
         if: always()
         run: rm -rf /tmp/cosign
+
+  # O4 CI gate (RFC #289, CHARTER Objective O4, ROADMAP `auto/o4-ci-rejection-gate`):
+  # proves the verifyImages ClusterPolicy actually rejects an UNSIGNED image, not just
+  # that a signed one is admitted (sign-image above only exercises the happy path).
+  # Retargeted from this item's original spec, which was shaped for this repo's prior
+  # CI pipeline and registry — see the predecessor pipeline file's own header comment
+  # and ADR-0024/ADR-0035 for that history — to this file (the actual live pipeline)
+  # and this run's actual registry (Harbor). Building the original text verbatim
+  # against a stopped CI source/registry would add dead config that never runs, which
+  # is exactly the fabricated-content class ADR-0004 exists to prevent.
+  #
+  # Only picked up once `validationFailureAction: Enforce` actually landed
+  # (`auto/cosign-enforce-flip`, 2026-08-18) — an unsigned image pushed before that
+  # would have been silently admitted (Audit mode), making this test meaningless.
+  #
+  # PSS interaction (found live while authoring this job, not in the original spec):
+  # the capstone namespace enforces Pod Security `restricted`
+  # (gitops/apps/capstone/namespace.yaml) — a bare `kubectl run` without a compliant
+  # securityContext would be rejected by Kubernetes' own Pod Security admission
+  # *before* Kyverno's verifyImages rule ever evaluates the image, which would make
+  # this test pass for the wrong reason (never actually exercising cosign
+  # verification). The test Pod below mirrors gitops/apps/capstone/rollout.yaml's own
+  # PSS-restricted-compliant securityContext exactly, so the ONLY thing that can
+  # block admission is the missing signature.
+  verify-rejection:
+    needs: sign-image
+    runs-on: docker
+    timeout-minutes: 10
+    container:
+      image: docker:29.7.2
+      options: --privileged
+    steps:
+      - name: Start dockerd (insecure registry for the in-lab Harbor route)
+        run: |
+          dockerd --insecure-registry="$REGISTRY" &
+          for i in $(seq 1 30); do
+            docker info >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker info >/dev/null 2>&1 || { echo "dockerd did not come up in time"; exit 1; }
+
+      - name: Push an UNSIGNED test image
+        run: |
+          echo "${{ secrets.HARBOR_PASSWORD }}" | docker login "$REGISTRY" -u "${{ secrets.HARBOR_USER }}" --password-stdin
+          docker pull busybox:1.37.0
+          docker tag busybox:1.37.0 "$REGISTRY/library/test-unsigned:rejection-test"
+          docker push "$REGISTRY/library/test-unsigned:rejection-test"
+          docker logout "$REGISTRY" || true
+
+      - name: Install kubectl
+        run: apk add --no-cache kubectl
+
+      # KUBECONFIG prerequisite (new for this job — no other job in this file needs
+      # cluster access): a service-account kubeconfig with at least create/delete Pod
+      # permission in the capstone namespace, added as a Forgejo Actions secret the
+      # same way COSIGN_KEY is above (plain string, this job writes it to a temp file
+      # itself — Forgejo Actions secrets have no "File type" variant). Generating this
+      # kubeconfig is a live-cluster action this remote session cannot perform or
+      # verify (ADR-0004) — left as an explicit maintainer prerequisite, not asserted
+      # as already done.
+      #   In Forgejo → repo Settings → Actions → Secrets, add:
+      #     KUBECONFIG   ← contents of a kubeconfig scoped to the capstone namespace
+      - name: Write kubeconfig from the Forgejo Actions secret
+        run: |
+          mkdir -p /tmp/kube
+          printf '%s' "${{ secrets.KUBECONFIG }}" > /tmp/kube/config
+          chmod 600 /tmp/kube/config
+
+      # Note: the Pod's image: field intentionally omits the :8080 port the docker
+      # push above needs — the cluster resolves harbor.127.0.0.1.nip.io directly on
+      # its default port, the same way gitops/apps/capstone/rollout.yaml's own
+      # image: field does (no :8080 there either). The image identity in Harbor
+      # (project library, repository test-unsigned) is the same regardless of which
+      # host:port alias pushed it.
+      - name: Assert Kyverno rejects the unsigned image at admission
+        env:
+          KUBECONFIG: /tmp/kube/config
+        run: |
+          set +e
+          out=$(cat <<'PODYAML' | kubectl apply -f - 2>&1
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: test-rejection-pod
+            namespace: capstone
+          spec:
+            restartPolicy: Never
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 10001
+              runAsGroup: 10001
+              fsGroup: 10001
+              seccompProfile:
+                type: RuntimeDefault
+            imagePullSecrets:
+              - name: harbor-registry
+            containers:
+              - name: test-rejection
+                image: harbor.127.0.0.1.nip.io/library/test-unsigned:rejection-test
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  privileged: false
+                  readOnlyRootFilesystem: true
+                  capabilities:
+                    drop: [ALL]
+          PODYAML
+          )
+          status=$?
+          echo "$out"
+          if [ "$status" -eq 0 ]; then
+            echo "FAIL: unsigned image was admitted — verifyImages policy did not reject it"
+            exit 1
+          fi
+          if echo "$out" | grep -qiE 'denied|policy|verify|signature|admission webhook'; then
+            echo "PASS: unsigned image was correctly rejected at admission"
+          else
+            echo "FAIL: pod creation failed, but not with a recognizable Kyverno rejection message"
+            exit 1
+          fi
+
+      - name: Clean up
+        if: always()
+        env:
+          KUBECONFIG: /tmp/kube/config
+        run: |
+          kubectl delete pod test-rejection-pod -n capstone --ignore-not-found=true || true
+          rm -rf /tmp/kube

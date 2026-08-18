@@ -99,3 +99,62 @@ setup() {
 @test "build-sign-push.yml references the CHECKOUT_TOKEN secret (no plaintext)" {
   grep -q 'secrets.CHECKOUT_TOKEN' "$WF"
 }
+
+# --- verify-rejection job (O4 CI gate, RFC #289, auto/o4-ci-rejection-gate) ---------
+@test "build-sign-push.yml declares a verify-rejection job that needs sign-image" {
+  grep -q '^  verify-rejection:' "$WF"
+  run sed -n '/^  verify-rejection:/,/^  [a-zA-Z]/p' "$WF"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"needs: sign-image"* ]]
+}
+
+@test "verify-rejection sets an explicit timeout-minutes" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *"timeout-minutes:"* ]]
+}
+
+@test "verify-rejection pushes an unsigned test image distinct from the real app image" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *"library/test-unsigned:rejection-test"* ]]
+  # Never the real IMAGE_NAME (library/hello) — this job must not touch the
+  # signed production image.
+  [[ "$output" != *"library/hello:rejection-test"* ]]
+}
+
+@test "verify-rejection's test Pod is PSS-restricted compliant (capstone namespace enforces it)" {
+  # Namespace enforces Pod Security restricted (gitops/apps/capstone/namespace.yaml)
+  # — a non-compliant Pod would be rejected by Kubernetes' own admission before
+  # Kyverno's verifyImages rule ever runs, making the test meaningless. Mirrors
+  # gitops/apps/capstone/rollout.yaml's own securityContext exactly.
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *"runAsNonRoot: true"* ]]
+  [[ "$output" == *"allowPrivilegeEscalation: false"* ]]
+  [[ "$output" == *"readOnlyRootFilesystem: true"* ]]
+  [[ "$output" == *"drop: [ALL]"* ]]
+}
+
+@test "verify-rejection's test Pod uses the harbor-registry imagePullSecret (matches the real capstone workload)" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *"name: harbor-registry"* ]]
+}
+
+@test "verify-rejection asserts a real rejection reason, not just a non-zero exit" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *'grep -qiE'* ]]
+  [[ "$output" == *"denied|policy|verify|signature|admission webhook"* ]]
+}
+
+@test "verify-rejection fails loudly if the unsigned image is wrongly admitted" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *"unsigned image was admitted"* ]]
+}
+
+@test "verify-rejection references the KUBECONFIG secret (no plaintext)" {
+  grep -q 'secrets.KUBECONFIG' "$WF"
+}
+
+@test "verify-rejection cleans up the test Pod even on failure" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *"if: always()"* ]]
+  [[ "$output" == *"kubectl delete pod test-rejection-pod"* ]]
+}
