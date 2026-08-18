@@ -238,10 +238,40 @@ The drill only *observes and times* that existing guarantee — its only
 real-world side effect is one capstone pod restarting, the same event a node
 drain or an OOM-kill would already cause routinely.
 
+## Network-partition drill (`make dr-network-partition`)
+
+A second, distinct injected-failure scenario (same DORA Pillar 3 / TLPT concept
+as `dr-chaos` above) — `docs/dora-audit-readiness.md` Q12 named this as a real,
+separately-scoped follow-up once the pod-kill drill existed: "cutting a
+NetworkPolicy... still real, separately-scoped future drills if wanted." Where
+`dr-chaos` tests Kubernetes' own ReplicaSet/Rollout self-heal, this one tests
+**ArgoCD's** self-heal — a different recovery mechanism, a different failure
+domain.
+
+```sh
+make dr-network-partition   # delete capstone's ingress NetworkPolicy, assert ArgoCD restores it within 300s
+```
+
+What it does: deletes the `allow-capstone-ingress-from-gateway` NetworkPolicy
+live in the `capstone` namespace (`scripts/dr-network-partition.sh`) — since
+capstone's default-deny floor (ADR-0016) then has no matching allow left,
+every Envoy-Gateway-routed request to the app is dropped for the duration of
+the drill — then polls until the object reappears (ArgoCD's `selfHeal: true`
+on `gitops/platform/networkpolicy-appset.yaml`'s `syncPolicy.automated`
+reconciling the live drift back to git's declared state) or the 300 s budget
+is exceeded.
+
+This introduces no new failure mode: ArgoCD re-applying a manifest that
+drifted from git is the same guarantee `selfHeal: true` already provides for
+*any* live edit or deletion under its management, accidental or otherwise.
+The drill only *observes and times* that existing guarantee — its only
+real-world side effect is capstone's ingress route being briefly unreachable,
+the same outcome a maintainer's own `kubectl delete` typo would already cause.
+
 ## Results history log ([`docs/dr-results-log.md`](dr-results-log.md))
 
-Each of the four drills above (`dr-restore`, `dr-bluegreen`, `dr-chaos`,
-`capstone-demo`) appends one row — date, status (`PASS`/`FAIL`), elapsed
+Each of the five drills above (`dr-restore`, `dr-bluegreen`, `dr-chaos`,
+`dr-network-partition`, `capstone-demo`) appends one row — date, status (`PASS`/`FAIL`), elapsed
 seconds, budget seconds, objective tag — to
 [`docs/dr-results-log.md`](dr-results-log.md) on **every** run, pass or fail
 (`scripts/lib/dr-results-log.sh`'s `dr_log_result`, called from each script's

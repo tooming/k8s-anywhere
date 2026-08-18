@@ -557,6 +557,10 @@ dr-restore: ## Restore every stateful namespace from latest Velero backup (Objec
 dr-chaos: ## Chaos drill: kill a random capstone pod, assert self-heal within budget (DORA Pillar 3 TLPT concept)
 	bash scripts/dr-chaos.sh
 
+.PHONY: dr-network-partition
+dr-network-partition: ## Network-partition drill: delete capstone's ingress NetworkPolicy, assert ArgoCD self-heal within budget (DORA Pillar 3 TLPT concept)
+	bash scripts/dr-network-partition.sh
+
 .PHONY: dr-bluegreen
 dr-bluegreen: ## Zero-downtime blue/green DR: stand up a green cluster + cut over, prove no outage
 	bash scripts/dr-bluegreen.sh
