@@ -68,7 +68,7 @@ bootstrapped, formally recorded here for the first time.
 |---|---|---|---|
 | **Mimir** | Raw manifests (`gitops/observability/mimir`), single-binary `-target=all`, filesystem storage | ArgoCD `Application` `mimir`, `targetRevision: main` (kustomize path, not a Helm chart — Mimir has no official chart this lab tracks) | Image tag tracked via `context.md` (currently `3.1.4` per this run's earlier currency sweep) |
 | **Loki** | Raw manifests (`gitops/observability/loki`), single-binary, Garage S3-backed | ArgoCD `Application` `loki`, `targetRevision: main` | Image tag tracked via ADR-0006 (currently `3.7.6`) |
-| **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.7` directly | `2.10.7` (tracked in ADR-0006's Re-evaluation log per this run's earlier correction) |
+| **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.8` directly | `2.10.8` (tracked in ADR-0006's Re-evaluation log, 2026-08-13 security bump) |
 | **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.1` | `2.2.1` |
 | **Alloy** | Helm chart | `gitops/platform/observability-alloy.yaml`, `targetRevision: 1.11.1` | `1.11.1` |
 | **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.3.1` | `8.3.1` |
@@ -112,6 +112,29 @@ shape (Alloy as sole collector feeding all four Grafana-authored stores).
 ---
 
 ## Re-evaluation log
+
+**2026-08-18** — table-row correction (Tempo): this ADR's own "What's actually
+running" table (above) still cited Tempo's image tag as `2.10.7`, but the live pin
+in `gitops/observability/tempo/deployment.yaml` has been `2.10.8` since 2026-08-13
+(a real security fix — Go 1.26.5 stdlib CVEs plus grpc/otel/x-net/x-text/compress
+`[security]` dependency bumps — already correctly recorded in
+[ADR-0006](adr-0006-grafana-native-git-sync.md)'s own Re-evaluation log the same
+day). This table's cell simply wasn't updated when that bump landed — the same
+self-tracking-note-can-silently-drift failure mode this ADR's other rows already
+guard against via `scripts/adr-chart-version-sync-check.sh`'s table-row shape, just
+in this row's `image:`-pin phrasing, which that check didn't parse. Corrected the
+table cell to `2.10.8` (janitor-fallback cleanup, `executor.prompt.md` STEP 6b,
+found live while investigating a fresh doc-consistency lens after the "Now / next"
+lane came up fully gated and PLANNER/ARCHITECT/UPGRADE-DRAFTER found nothing
+further this run). **Mechanical guard added** (CLAUDE.md's "every bugfix must
+prevent recurrence"): extended `scripts/adr-image-pin-sync-check.sh` with a second
+self-tracking shape — a table row citing a `gitops/<dir>` raw-manifest directory
+alongside the `image: <name>:<tag>` it pins directly (mirrors
+`adr-chart-version-sync-check.sh`'s existing table-row shape for `targetRevision`,
+just for a raw image pin instead of a chart version) — so this specific row, and
+any future row using the same convention, can never silently drift again; `make
+adr-image-pin-sync-check` now fails loudly if it does. No component reconsidered —
+this is a doc-only correction, not a new finding about Tempo itself.
 
 **2026-08-17** — kube-state-metrics chart bumped `8.3.0` → `8.3.1` (executor-fallback
 upstream-currency gap analysis, `executor.prompt.md` STEP 6b, this run's second pass —
