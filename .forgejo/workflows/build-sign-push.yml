@@ -234,7 +234,7 @@ jobs:
       # itself — Forgejo Actions secrets have no "File type" variant). Generating this
       # kubeconfig is a live-cluster action this remote session cannot perform or
       # verify (ADR-0004) — left as an explicit maintainer prerequisite, not asserted
-      # as already done.
+      # as already done. Tracked as a standing confirmation gate: issue #1229.
       #   In Forgejo → repo Settings → Actions → Secrets, add:
       #     KUBECONFIG   ← contents of a kubeconfig scoped to the capstone namespace
       - name: Write kubeconfig from the Forgejo Actions secret
