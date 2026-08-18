@@ -63,7 +63,7 @@ Two correctness details carried over deliberately rather than re-derived:
    guard in the other — so a future copy-paste between the two drills can't
    silently flip either one.
 
-`tests/dr-garage-failure.bats` — 15 clusterless structural assertions
+`tests/dr-garage-failure.bats` — 17 clusterless structural assertions
 (existence/executability, all four shared libs sourced, `confirm_or_abort`
 present, `BUDGET_S` declared, the namespace + label selector matching the
 **live** `gitops/storage/garage/statefulset.yaml` including its `replicas: 1`,
