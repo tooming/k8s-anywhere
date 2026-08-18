@@ -114,4 +114,4 @@ outcome, from "wrong/misleading" to "honest skip".
 
 ## PR
 
-auto-linked once merged (see the PR this file ships with).
+https://github.com/tooming/k8s-anywhere/pull/1215
