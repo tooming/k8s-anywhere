@@ -1,42 +1,64 @@
 # Industry digest — week 2026-W34
 
-_Period: 2026-08-17 – 2026-08-23. Fetched and written 2026-08-17 (architect-fallback
-cycle, `executor.prompt.md` STEP 6b, fourth cycle this run — after three prior
-cycles already shipped `auto/ack-s3-chart-1-10-0` (PR #1203), `auto/ksm-chart-8-3-1`
-(PR #1204), and an `[Action needed]` record (PR #1206) documenting an exhaustive
-currency sweep across ~30 pinned sources; the six standing Now/next items were
-re-checked and found still gated on #631/#633)._
+_Period: 2026-08-17 – 2026-08-23. Originally fetched and written 2026-08-17
+(architect-fallback cycle, fourth cycle of that run). **Refreshed 2026-08-18**
+(architect-fallback cycle, `executor.prompt.md` STEP 6b, sixth cycle of a new run —
+per STEP 1c, refreshed in place rather than creating a second file for the same ISO
+week) after this run's own major finding: CHARTER **Objective O4** ("every image is
+signed and verified") landed both of its measurement criteria — see "At-a-glance"._
 
 ---
 
 ## At-a-glance
 
-- **Two real currency gaps found and shipped earlier this run** (not ADR'd
+- **CHARTER Objective O4 substantially complete, 2026-08-18 (this run, not a
+  digest-fetch finding — recorded here for continuity).** Issue #631's
+  maintainer-confirmation gate (a real signed image observed landing in Harbor,
+  independently verified via Harbor's own artifact API) finally landed after
+  weeks of live-cluster investigation across many prior sessions. This run built
+  and merged both of O4's remaining gated items the same cycle the confirmation
+  arrived: the `verifyImages` ClusterPolicy `Audit`→`Enforce` flip
+  (`auto/cosign-enforce-flip`, PR #1223, closed #631) and the CI step proving an
+  unsigned image is rejected (`auto/o4-ci-rejection-gate`, PR #1224). Both still
+  carry an ADR-0004 caveat: no live Forgejo Actions run has executed either job
+  end-to-end yet (the rejection-gate job also needs a `KUBECONFIG` secret the
+  maintainer hasn't set up). ROADMAP.md's Now/next status note updated to match
+  (`plan/o4-status-update`, PR #1225).
+- **Two real currency gaps found and shipped the prior run** (not ADR'd
   components, so out of this routine's STEP 1 fetch list, but worth recording here
   for continuity): ACK s3-controller chart `1.9.0`→`1.10.0` (adds a Bucket ABAC
   field, #1203) and kube-state-metrics chart `8.3.0`→`8.3.1` (packaging-only
-  autosharding-Service fix this lab doesn't exercise, #1204).
-- **A major live event this week, not this routine's own action**: a concurrent
-  interactive session opened, and the maintainer merged,
+  autosharding-Service fix this lab doesn't exercise, #1204). This run added a
+  third: the Terraform-bootstrapped `argo-cd` chart `10.3.3`→`10.4.0`
+  (`upgrade/argocd-10.3.3-to-10.4.0`, PR #1221 — a distinct enumeration pass,
+  `infra/`-pinned rather than `gitops/`-pinned, that prior currency sweeps this
+  run's history hadn't covered).
+- **A major live event the prior week, not this routine's own action**: a
+  concurrent interactive session opened, and the maintainer merged,
   [PR #1205](https://github.com/tooming/k8s-anywhere/pull/1205) doing the actual
-  GitLab→Forgejo `repoURL` cutover live, per explicit maintainer direction —
-  GitLab is now stopped, Forgejo is the live git source. Merged 2026-08-17
-  20:00:59 UTC, during this same digest-writing cycle. This satisfies ROADMAP
-  Now/next item 1 of the Forgejo-migration list; items 2/3 (script rename,
-  GitLab decommission) remain explicit follow-up per that PR's own body — a
-  future cycle should mark item 1 `[x]` in ROADMAP.md and pick up items 2/3.
-- **A full STEP 1 sweep against every ADR'd component this week** found no new
-  release meeting the "meaningfully changes the tradeoff" bar (STEP 2b) — see
-  "Lab stack" below for the per-component findings, most reconfirmed current from
-  this run's own earlier currency-sweep cycles rather than re-fetched cold.
-- **One real, non-major upstream release found but deliberately not chased this
-  cycle**: Envoy Gateway `v1.8.3`→`v1.9.0` went stable 2026-08-15 (two days before
-  this run). Real breaking changes in the fetched changelog, including a Gateway
-  API CRD version requirement — this lab's sync-wave-0, always-on-core ingress
-  control plane (ADR-0008) — deferred as a finding for a live-cluster or
-  `helm`-equipped session rather than blind-bumped. See `docs/backlog/
-  2026-08-17-action-needed-currency-sweep-exhausted-cycle3.md` for the full
-  reasoning (already filed this run, PR #1206, merged).
+  GitLab→Forgejo `repoURL` cutover live. GitLab is now stopped, Forgejo is the
+  live git source — confirmed durably still true this run (the O4 confirmation
+  evidence itself traced to a live Forgejo Actions run). ROADMAP Now/next's two
+  remaining GitLab→Forgejo items (script/Makefile rename, full decommission)
+  were investigated this run's history and correctly found **not** a simple
+  "now unblocked" mechanical follow-up as an earlier digest pass assumed — the
+  rename needs a genuinely different auth mechanism (SSH deploy keys, not
+  HTTPS+PAT) that needs live verification this remote session can't perform;
+  both items remain deliberately deferred with findings recorded inline in
+  ROADMAP.md, not silently stalled.
+- **Envoy Gateway `v1.8.3`→`v1.9.0`** (stable since 2026-08-15): re-verified this
+  cycle, still correctly kept — see "Lab stack" below. **Now formally recorded**
+  in [ADR-0008](../decisions/adr-0008-envoy-gateway-not-traefik.md)'s own
+  Re-evaluation log (it previously only lived in a `docs/done/` record, the
+  prior digest pass, and this file — this cycle closed that self-tracking-log
+  gap, matching the convention every other kept audit on that page follows).
+- **New this cycle: RabbitMQ `4.3.5`** — a real GitHub release
+  (`rabbitmq/rabbitmq-server`, tagged 2026-08-17) exists, but **not groundable
+  yet**: `docker.io/rabbitmq/rabbitmq:4.3.5` and `:4.3.5-management` both 404 on
+  Docker Hub as of this check — no pinnable image published. Per this repo's own
+  convention (a version with no deployable artifact isn't groundable, ADR-0004),
+  not bumped. Flip condition: revisit once the `4.3.5-management` tag actually
+  resolves.
 - **Grafana `13.0.5`→`13.0.6`** (real tag, 2026-08-07) — already investigated and
   correctly left unbumped in the 2026-W33 digest (a dashboard-snapshot
   `deletekey` backport this lab doesn't use, not a security fix); re-confirmed
@@ -55,9 +77,14 @@ ADR-0004, never re-assert a fact not actually checked this run).
 
 ### Re-fetched directly this cycle
 
-- **Envoy Gateway** (`envoyproxy/gateway`) — `v1.9.0` now stable (released
-  2026-08-15), superseding the `v1.9.0-rc.1` the 2026-08-12 digest refresh saw.
-  Real breaking changes exist upstream. **Not bumped** — see "At-a-glance" above.
+- **Envoy Gateway** (`envoyproxy/gateway`) — `v1.9.0` re-confirmed still the
+  newest stable tag (no newer release since the 2026-08-17 check). Real
+  breaking changes exist upstream, still unaddressed by this lab's tooling.
+  **Not bumped** — see "At-a-glance" above; now recorded in ADR-0008's own
+  Re-evaluation log with a concrete flip condition.
+- **RabbitMQ** (`rabbitmq/rabbitmq-server`) — new `4.3.5` GitHub release found
+  this cycle, not yet groundable (no Docker Hub image published). See
+  "At-a-glance" above.
 - **Grafana** (`grafana/grafana`) — `v13.0.6` confirmed as a real tag (2026-08-07),
   same conclusion as the 2026-W33 digest: single non-security backport, not
   chased.
@@ -89,15 +116,23 @@ ADR-0004, never re-assert a fact not actually checked this run).
 
 ### Reconfirmed from this run's earlier cycles (not re-fetched cold this pass)
 
-- **k3s** (`v1.36.3+k3s1`), **Vault Helm chart** (`0.34.0`), **RabbitMQ**
-  (`4.3.4-management`, kept — CVE-2026-57221 already fixed at this pin), **Cilium**
-  (`1.18.12`), **Kyverno** (`3.8.2`, only `-rc` releases exist beyond it on the
-  `3.9.0` line), **Istio** + **Kiali** (`1.30.3` / `2.30.0`), **Argo Rollouts**
-  (`2.41.1`), **Velero** (`velero-12.1.0`), **Trivy Operator** (chart `0.35.0`,
-  appVersion `0.33.0`), **cert-manager** (`1.21.1`), **KEDA** (`2.20.2`), **Harbor**
-  (`1.19.2`), **external-secrets** (`2.9.0`), **kro** (`0.9.3`) — every one
-  reconfirmed at the newest stable release this run's cycle 3 sweep already
-  verified, no new information this pass.
+- **k3s** (`v1.36.3+k3s1`, independently re-verified this cycle against
+  `k3s-io/k3s`'s own `channel.yaml` stable pointer), **Vault Helm chart**
+  (`0.34.0`), **Cilium** (`1.18.12` stable; `1.21.0-pre.0` is pre-release only,
+  no action), **Kyverno** (`3.8.2`; only `-rc` releases exist beyond it on the
+  `3.9.0` line), **Istio** + **Kiali** (`1.30.3` / `2.30.0`; `1.31.0-beta.1` is
+  pre-release only), **Argo Rollouts** (`2.41.1`), **Velero** (`velero-12.1.0`),
+  **Trivy Operator** (chart `0.35.0`, appVersion `0.33.0` — a distinct repo from
+  the `aquasecurity/trivy` scanner binary's own `v0.74.0` release this cycle
+  checked; no evidence of trivy-operator-specific drift, flagged as a scope gap
+  rather than asserted stale), **cert-manager** (`1.21.1`), **KEDA** (`2.20.2`),
+  **Harbor** (`1.19.2` chart, bundling appVersion `v2.15.2` — matches the
+  `goharbor/harbor` release re-checked this cycle), **external-secrets**
+  (`2.9.0`), **kro** (`0.9.3`), **ArgoCD** (chart already bumped
+  `10.3.3`→`10.4.0` this run, PR #1221; `appVersion v3.5.1` matches
+  `argoproj/argo-cd`'s own newest release, re-checked this cycle) — every one
+  reconfirmed at the newest stable release, no new information beyond what's
+  detailed in "At-a-glance"/"Re-fetched directly this cycle" above.
 
 ---
 
@@ -108,18 +143,24 @@ ADR-0004, never re-assert a fact not actually checked this run).
   above — every ADR'd choice remains sound. Envoy Gateway's `v1.9.0` is a real,
   material upstream event but is a *currency* question for upgrade-drafter/
   executor to verify live, not an *architecture* question (ADR-0008's choice of
-  Envoy Gateway itself is unaffected).
-- **Worth a future cycle's attention, not opened as a formal audit this cycle**
-  (no upstream release triggered it — this is a repo-internal observation,
-  outside STEP 2b's own trigger criteria): PR #1205's now-merged GitLab→Forgejo
-  cutover means `docs/dependency-register.md`'s GitLab row (still describing
-  GitLab as "the live, running component") and ADR-0033's posture are now
-  stale, ROADMAP Now/next item 1 needs marking `[x]`, and items 2/3 (script
-  rename, GitLab decommission) are now unblocked — flagging for whichever role
-  picks up that follow-up, not a separate architect action.
+  Envoy Gateway itself is unaffected) — and it's now durably recorded in that
+  ADR's own Re-evaluation log, closing the gap this section flagged in the
+  2026-08-17 pass (it had only lived in a `docs/done/` record and this digest).
+- **Resolved since the 2026-08-17 pass**: `docs/dependency-register.md`'s
+  GitLab row was corrected to a Forgejo row
+  (`auto/dependency-register-gitlab-to-forgejo`, PR #1209) and ROADMAP Now/next
+  item 1 was marked `[x]` — both already landed before this digest refresh.
+  Items 2/3 (script rename, full decommission) were investigated this run's
+  history (not this digest cycle) and found genuinely **not** a simple
+  mechanical follow-up — see the ROADMAP items' own inline investigation notes
+  for the auth-model finding (SSH deploy keys vs. HTTPS+PAT) that makes a blind
+  rename unsafe. No architect action needed; this is executor-lane
+  live-verification work, correctly left deferred rather than forced.
 
 No new RFCs opened, no ADR audits opened or closed this cycle — nothing found that
-meets STEP 2b's "meaningfully changes the tradeoff" bar.
+meets STEP 2b's "meaningfully changes the tradeoff" bar. This cycle's real
+architect-lane deliverable was closing the ADR-0008 self-tracking-log gap (above),
+not a new RFC/audit.
 
 ---
 
@@ -127,7 +168,9 @@ meets STEP 2b's "meaningfully changes the tradeoff" bar.
 
 This is the third entry produced under `architect.prompt.md` STEP 1c's now-mandatory
 digest-write contract, after [2026-W32](2026-W32-digest.md) (the cadence-resumption
-entry) and [2026-W33](2026-W33-digest.md). The mechanism continues to hold: this file
-exists because this run's fourth cycle reached the ARCHITECT fallback role, and that
+entry) and [2026-W33](2026-W33-digest.md) — refreshed in place twice within the same
+ISO week (2026-08-17, then 2026-08-18) rather than forking a second file, per STEP
+1c's own instruction. The mechanism continues to hold: this file was touched again
+because a later run's sixth cycle reached the ARCHITECT fallback role, and that
 role's own contract requires writing/refreshing this file unconditionally, not
 because anyone remembered to do it by hand.
