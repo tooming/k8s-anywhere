@@ -104,4 +104,4 @@ per STEP 8 — this is not a stopping point.
 
 ## PR
 
-(filled in once the PR is opened)
+https://github.com/tooming/k8s-anywhere/pull/1274
