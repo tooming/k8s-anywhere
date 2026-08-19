@@ -210,3 +210,47 @@ prior tag on next reconciliation (always-on, auto-synced, so this reaches the
 live cluster on next sync, not just on manual trigger).
 
 **Flip condition (next re-evaluation).** Unchanged from above.
+
+### 2026-08-19 — correction: `4.3.5` actually fixes 10 CVEs disclosed the same day, not zero
+
+**Trigger.** The entry above states "No CVE/GHSA found against `4.3.4`
+specifically" — that was checked against `rabbitmq-server`'s release notes
+and Docker Hub tag metadata only, not its GitHub Security Advisories page.
+A follow-up sweep of `github.com/rabbitmq/rabbitmq-server/security/advisories`
+(same run, later cycle) found **ten GHSAs published 2026-08-18** — the exact
+day `v4.3.5` was cut — all fixed at `4.3.5`/`4.2.10`/`4.1.15`/`4.0.24`/
+`3.13.19` (a coordinated multi-line disclosure, not specific to this lab's
+line): one **High** (GHSA-cfqc-c682-93mm, CVSS v4 8.2 — Web STOMP:
+unauthenticated clients can exhaust broker memory via compressed
+pre-authentication messages, ~64 MiB retained per ~90 KB of wire data,
+"a handful of concurrent connections can exceed broker memory limits"),
+four **Moderate** (GHSA-6gmw-wxch-cvvc — shovel URI credentials disclosed to
+read-only monitoring users; GHSA-6xpg-rfmh-grhq — unauthenticated STOMP
+pre-auth frame-size limit unenforced, 4 MiB instead of the intended 64 KiB;
+GHSA-3526-xvv4-q9mr — administrator RCE via reflected Erlang distribution
+authentication; GHSA-6chv-gv3h-cvcj — direct reply-to forged-suffix fanout
+causes quadratic mailbox memory (DoS)), and five **Low**
+(GHSA-27gv-h5q6-cpwg — policymaker-role RCE via the same
+Erlang-distribution-reflection chain as the administrator RCE above;
+GHSA-pj8f-mw2q-3xjj — consistent-hash exchange empty-array crash;
+GHSA-4826-gphh-vw3x — MQTT 5 `Receive Maximum: 0` bypasses delivery-credit
+limits; GHSA-jv99-v328-mvmm — MQTT 5 malformed `PUBLISH` property disconnects
+subscribers; GHSA-86fm-44m9-rqjx — OAuth credential refresh retains a revoked
+`impersonator` tag on existing connections). (1 High + 4 Moderate + 5 Low = 10.)
+
+**This lab's `4.3.5` pin (landed earlier this same run, PR #1250) already
+carries the fix for all ten** — verified directly against each advisory's
+own "Patched versions" list, every one of which names `4.3.5` on the `4.3.x`
+line. No further bump is needed; this is a correction to the record, not a
+new action item.
+
+**Why this matters going forward:** this ADR's own CVE-check convention
+(checking release notes + registry tag metadata) missed a same-day-disclosed
+advisory batch that a routine version bump happened to already fix. Future
+audits on this ADR should check
+`github.com/rabbitmq/rabbitmq-server/security/advisories` directly, not only
+release notes — the two sources don't always publish on the same schedule,
+and a "no CVE found" claim from release notes alone can understate real risk
+even when, as here, the outcome (already patched) turns out the same.
+
+**Flip condition (next re-evaluation).** Unchanged from above.
