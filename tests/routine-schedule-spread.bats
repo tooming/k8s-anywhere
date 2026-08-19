@@ -36,9 +36,9 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-@test "routines.yaml still fires exactly 5 times a day (free-quota cap)" {
+@test "routines.yaml fires at most 4 times a day (account-wide free-quota cap, 1 slot shared out to easysportstream 2026-08-18)" {
   cron_line="$(grep -oE 'cron: "[^"]+"' "$ROUTINES_YAML" | head -1)"
   hours="$(echo "$cron_line" | sed -E 's/cron: "0 ([0-9,]+) \* \* \*"/\1/')"
   count="$(echo "$hours" | tr ',' '\n' | grep -c .)"
-  [ "$count" -eq 5 ]
+  [ "$count" -eq 4 ]
 }

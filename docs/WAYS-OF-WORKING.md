@@ -63,7 +63,7 @@ way around; if they disagree, trust the YAML and fix this table.
 
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch |
 |---|---|---|---|---|---|
-| Executor | `trig_01XxtSdkPdRNjBfAidUXTwos` | @tooming | implements ROADMAP items back-to-back for as long as the run continues (one PR per item, STEP 8 loop — no longer one-and-done); empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no cycle is wasted | 00:00/05:00/10:00/14:00/19:00 UTC, every day (5/day) · Sonnet 5 | `auto/*` (fallback roles keep their own prefixes) |
+| Executor | `trig_01XxtSdkPdRNjBfAidUXTwos` | @tooming | implements ROADMAP items back-to-back for as long as the run continues (one PR per item, STEP 8 loop — no longer one-and-done); empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no cycle is wasted | 00:00/05:00/10:00/14:00 UTC, every day (4/day) · Sonnet 5 | `auto/*` (fallback roles keep their own prefixes) |
 
 **One trigger, not eight.** Planner, architect, triager, upgrade-drafter, doc-drift-author,
 industry-news-writer, and the old "executor 4th slot" each *used to* have their own
@@ -181,8 +181,9 @@ _Process:_
 
 ## 5. Cost & kill-switch
 
-- **Free quota: 5 routine runs per rolling 24h.** Beyond that, runs use usage credits *only
-  if* the "additional runs" toggle is on (otherwise they're skipped — a hard free cap).
+- **Free quota: 5 routine runs per rolling 24h, shared across the whole account, not
+  per-repo.** Beyond that, runs use usage credits *only if* the "additional runs" toggle is
+  on (otherwise they're skipped — a hard free cap).
   [`routines/routines.yaml`](../routines/routines.yaml) is the **single source of truth**
   for the exact cron and slot count — don't restate the schedule here. (A day-by-day slot
   table — "Mon: executor(4)+planner(1)", etc. — lived in this section until 2026-07-14 and
@@ -191,19 +192,25 @@ _Process:_
   the schedule in prose is exactly what let it drift undetected; this section now only
   describes the *policy*, not the literal times.) One trigger, one cron, every slot runs
   the same executor prompt, which escalates through the in-repo fallback chain (§1,
-  `executor.prompt.md` STEP 6b) whenever its own ROADMAP lane is empty — so all 5 daily
-  slots stay productive without a second trigger or a per-day rotation to keep in sync by
-  hand. No headroom — adding any new routine trigger or raising cadence requires enabling
-  the paid "additional runs" toggle. (The local verifier and operator are invoked by hand
-  on the maintainer's machine; they have no cron and no quota cost.)
-- **Spread-across-the-day schedule + rolling-24h credit safety.** All 5 daily runs fire at
-  fixed clock-times (see `routines.yaml`'s `cron` for the exact values — currently
-  `0 0,5,10,14,19 * * *` UTC, evenly spaced across the full day rather than clustered in
-  one nightly window). The times are *fixed* deliberately: the free cap is per **rolling**
-  24h, not per calendar day, so because the set of fire-times is identical every day, every
-  rolling 24h window holds exactly 5 runs and the schedule can never spill into paid
-  "additional runs" credits — that invariant only needs fixed clock-times, not a particular
-  time-of-day, which is why spreading them across the day is safe. This was originally an
+  `executor.prompt.md` STEP 6b) whenever its own ROADMAP lane is empty — so every one of
+  this trigger's daily slots stays productive without a second trigger or a per-day
+  rotation to keep in sync by hand. **2026-08-18: this trigger dropped from 5→4 runs/day**
+  to free one account-wide slot for a new PR-only executor trigger on
+  [`tooming/easysportstream`](https://github.com/tooming/easysportstream) (see that repo's
+  `routines/routines.yaml` and `docs/AGENT_WAYS_OF_WORKING.md` §5 for the other half of this
+  split) — the account-wide 5-runs/rolling-24h total is unchanged, just redistributed. No
+  headroom beyond that combined total — adding any further routine trigger or raising either
+  repo's cadence requires enabling the paid "additional runs" toggle. (The local verifier and
+  operator are invoked by hand on the maintainer's machine; they have no cron and no quota
+  cost.)
+- **Spread-across-the-day schedule + rolling-24h credit safety.** This trigger's daily runs
+  fire at fixed clock-times (see `routines.yaml`'s `cron` for the exact current values,
+  evenly spaced across the full day rather than clustered in one nightly window). The times
+  are *fixed* deliberately: the free cap is per **rolling** 24h, not per calendar day, so
+  because the set of fire-times is identical every day, every rolling 24h window holds the
+  same fixed count of runs and the schedule can never spill into paid "additional runs"
+  credits — that invariant only needs fixed clock-times, not a particular time-of-day, which
+  is why spreading them across the day is safe. This was originally an
   all-night 21/22/23/0/1 UTC clustering; the maintainer asked (2026-07-16) to spread it
   across the day instead, and the `routines.yaml` cron edit landed and was applied to the
   live trigger the same day (PR #453) — `.routines-applied` records the applied hash and
@@ -218,7 +225,7 @@ _Process:_
   point**: not an empty backlog, not an exhausted fallback chain, not even a cycle whose
   honest outcome was the idle issue. The *only* thing that ends a run is the run itself
   being cut off by its own resource limits. This does not change the **number** of runs
-  (still 5/day, the free-quota unit), but it can
+  (still fixed at whatever `routines.yaml`'s cron says, the free-quota unit), but it can
   substantially change **spend per run** and, more importantly, **PR volume per run** —
   potentially many self-merged PRs landing back-to-back with no run-boundary between
   them. This is in direct tension with §0.3's "review capacity is the constraint, not
