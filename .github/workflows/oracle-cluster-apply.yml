@@ -55,7 +55,11 @@ jobs:
           # `terraform` job has already run 1.15.8 against these same modules
           # repeatedly since that bump, so this is a previously-verified version, not
           # a fresh unknown.
-          terraform_version: "1.15.8"
+          # Bumped 1.15.8 -> 1.15.9 (2026-08-19, upgrade-drafter fallback):
+          # CVE-2026-14978 fix (go-slug .terraformignore bypass) -- matches
+          # ci.yml's own same-day bump, keeping this file's stated
+          # keep-in-sync intent true.
+          terraform_version: "1.15.9"
           terraform_wrapper: false
 
       - name: Install terragrunt

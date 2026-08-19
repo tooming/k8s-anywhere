@@ -45,7 +45,10 @@ jobs:
           # drifted out of sync with ci.yml/oracle-cluster-apply.yml despite this
           # comment's own stated intent -- see oracle-cluster-apply.yml's matching
           # comment for the full verification trail.
-          terraform_version: "1.15.8" # keep in sync with oracle-cluster-apply.yml / ci.yml
+          # Bumped 1.15.8 -> 1.15.9 (2026-08-19, upgrade-drafter fallback):
+          # CVE-2026-14978 fix (go-slug .terraformignore bypass) -- matches
+          # ci.yml's own same-day bump.
+          terraform_version: "1.15.9" # keep in sync with oracle-cluster-apply.yml / ci.yml
           terraform_wrapper: false
 
       - name: Install terragrunt

@@ -43,12 +43,16 @@ setup() {
   ! grep -q 'kustomize%2Fv5.4.3' "$CI_YML"
 }
 
-@test "terraform is pinned to 1.15.8 via hashicorp/setup-terraform (upgrade-drafter, 2026-07-21)" {
-  grep -q 'terraform_version: "1.15.8"' "$CI_YML"
+@test "terraform is pinned to 1.15.9 via hashicorp/setup-terraform (upgrade-drafter, 2026-08-19, CVE-2026-14978)" {
+  grep -q 'terraform_version: "1.15.9"' "$CI_YML"
 }
 
 @test "no workflow references the pre-bump terraform 1.9.8 pin" {
   ! grep -rq 'terraform_version: "1.9.8"' "$WORKFLOWS"/*.yml
+}
+
+@test "no workflow references the pre-bump terraform 1.15.8 pin" {
+  ! grep -rq 'terraform_version: "1.15.8"' "$WORKFLOWS"/*.yml
 }
 
 @test "every infra/ terraform module's required_version floor still admits the pinned CI terraform version" {
@@ -61,9 +65,9 @@ setup() {
 
 # --- oracle-cluster-apply.yml / oracle-cluster-apply-retry.yml tool pins ------
 
-@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terraform_version 1.15.8 (2026-07-28, in sync with ci.yml)" {
-  grep -q 'terraform_version: "1.15.8"' "$ORACLE_APPLY"
-  grep -q 'terraform_version: "1.15.8"' "$ORACLE_RETRY"
+@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terraform_version 1.15.9 (2026-08-19, in sync with ci.yml)" {
+  grep -q 'terraform_version: "1.15.9"' "$ORACLE_APPLY"
+  grep -q 'terraform_version: "1.15.9"' "$ORACLE_RETRY"
 }
 
 @test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terragrunt v1.1.1 (2026-07-28)" {

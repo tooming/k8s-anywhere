@@ -90,7 +90,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
-          terraform_version: "1.15.8"
+          # Bumped 1.15.8 -> 1.15.9 (2026-08-19, upgrade-drafter fallback):
+          # CVE-2026-14978 — go-slug bumped to v0.18.3 to fix a Unicode-
+          # normalization issue that could let a file meant to be excluded via
+          # .terraformignore slip through during an upload to Terraform
+          # Enterprise/HCP Terraform. This repo's own `make apply`/CI flow
+          # never uploads to TFE/HCP Terraform (state lives in Garage S3 per
+          # ADR-0007), so this pin isn't itself exposed to the vulnerable
+          # path, but staying current on the CI tool matches this repo's
+          # standing convention (kubeconform/kustomize pins above). Keep in
+          # sync with oracle-cluster-apply.yml / oracle-cluster-apply-retry.yml.
+          terraform_version: "1.15.9"
       - name: Install tflint
         run: curl -fsSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
       - run: bash scripts/validate-terraform.sh
