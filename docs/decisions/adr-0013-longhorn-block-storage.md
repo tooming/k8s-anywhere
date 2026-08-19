@@ -214,3 +214,19 @@ change than a routine currency bump warrants) still holds; overriding it without
 either flip condition firing would silently contradict a binding, reasoned
 architect decision rather than superseding it. No repo change this cycle.
 Flip condition unchanged from the 2026-07-18 entry above.
+
+### 2026-08-19 — GHSA sweep, no new advisory (executor security check, cycle 12)
+
+**Trigger.** This run's direct-GHSA-advisory-page security sweep (the method
+that found real gaps elsewhere this run, e.g. RabbitMQ/Cilium) reached Longhorn.
+
+**Checked directly against `github.com/longhorn/longhorn/security/advisories`
+(ADR-0004):** only two advisories exist for the entire project —
+GHSA-27q8-g55w-83p9 and GHSA-g358-m2wp-mhhx, both High severity, both
+published 2021-12-17. Neither has a version range that could plausibly reach
+the current `1.11.3` pin (four-plus years and multiple major lines newer).
+
+**Decision: kept at `1.11.3`, no CVE-driven action.** Confirms the
+2026-07-28 currency check from a different angle (security advisories rather
+than release-tag currency) rather than superseding it. Flip condition
+unchanged from the 2026-07-18 entry above.

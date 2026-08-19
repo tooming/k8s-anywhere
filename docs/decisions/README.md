@@ -43,3 +43,4 @@ rationale travels with the code.
   - [ADR-0033](adr-0033-gitlab-git-source-and-ci.md) — GitLab (self-hosted) as the lab's git source of truth + CI runner — **Superseded by ADR-0035**
   - [ADR-0034](adr-0034-lgtmp-observability-stack.md) — Grafana LGTM(P) stack internals + kube-state-metrics/node-exporter for observability
   - [ADR-0035](adr-0035-forgejo-not-gitlab.md) — Forgejo (self-hosted) as the lab's git source of truth + CI runner (supersedes ADR-0033)
+  - [ADR-0036](adr-0036-external-secrets-vault-sync.md) — External Secrets Operator for Vault-backed secret sync (retroactive governance record)
