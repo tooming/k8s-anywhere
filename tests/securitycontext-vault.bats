@@ -59,9 +59,14 @@ setup() {
 
 # --- vault Application: chart bump + disable_mlock ---------------------------
 
-@test "vault Application chart bumped to 0.34.0" {
-  run grep -q 'targetRevision: 0.34.0' "$APP"
+@test "vault Application chart bumped to 0.34.1" {
+  run grep -q 'targetRevision: 0.34.1' "$APP"
   [ "$status" -eq 0 ]
+}
+
+@test "vault Application does not pin the stale 0.34.0 chart" {
+  run grep -q 'targetRevision: 0.34.0' "$APP"
+  [ "$status" -ne 0 ]
 }
 
 @test "vault Application server image pinned to 2.0.4" {
