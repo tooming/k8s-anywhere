@@ -129,6 +129,13 @@ setup() {
   grep -q '^          docker tag "\$REGISTRY/\$IMAGE_NAME:\$sha" "\$REGISTRY/\$IMAGE_NAME:latest"$' "$WF"
 }
 
+@test "retry_cmd gives Harbor at least several minutes of retry budget, not the old 75s (found live 2026-08-19: Harbor's core/registry crash under real push load and take 2-4+ minutes to recover, routinely outlasting a 6-attempt/15s budget)" {
+  count="$(grep -c 'local n=0 max=14 delay=30' "$WF")"
+  [ "$count" -eq 2 ]
+  run grep -q 'max=6 delay=15' "$WF"
+  [ "$status" -eq 1 ]
+}
+
 # 2026-08-18: docker.io's auth-token endpoint was the one consistently-unreachable
 # hop in the whole pipeline — retry_cmd's 6 attempts never once got through it,
 # while every other step (including Login to Harbor a few lines earlier in the
