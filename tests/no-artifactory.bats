@@ -43,3 +43,18 @@ setup() {
   run grep -i 'artifactory' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -ne 0 ]
 }
+
+@test "the architect routine's weekly upstream-release check tracks Harbor, not the decommissioned Artifactory (ADR-0024, 2026-08-19)" {
+  # routines/architect.prompt.md STEP 1 hardcodes a fixed list of repos to
+  # check for new releases each week. It still named jfrog/charts
+  # (Artifactory) months after ADR-0024 fully decommissioned it in favor of
+  # Harbor — the architect routine was checking a technology this lab no
+  # longer runs at all, instead of the one it does. Unlike gitops/ + Makefile
+  # above, this file is live operating instruction (not historical decision
+  # record), so it's held to the same "no legacy-registry reference" bar.
+  prompt="$REPO/routines/architect.prompt.md"
+  run grep -qi 'jfrog\|artifactory' "$prompt"
+  [ "$status" -ne 0 ]
+  run grep -qF 'goharbor/harbor-helm' "$prompt"
+  [ "$status" -eq 0 ]
+}

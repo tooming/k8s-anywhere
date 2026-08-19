@@ -15,7 +15,7 @@ Next, directly check upstream for releases in the past 7 days for each ADR'd com
   - TiDB: `pingcap/tidb`
   - Istio: `istio/istio`
   - Garage: `deuxfleurs-org/garage`
-  - Artifactory / JFrog: `jfrog/charts`
+  - Harbor: `goharbor/harbor-helm`
   - Kyverno: `kyverno/kyverno`
   - Argo Rollouts: `argoproj/argo-rollouts`
   - Trivy: `aquasecurity/trivy`
