@@ -45,7 +45,22 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install shellcheck + yamllint
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck yamllint
+        # Retry with a bounded per-attempt timeout instead of one unbounded
+        # apt-get call: a hung mirror fetch has silently eaten this job's
+        # entire timeout-minutes budget three times in one 2026-08-19 run
+        # (see the timeout-minutes comment at the top of this file, PR #648)
+        # -- this fails an individual attempt fast and retries in-job.
+        run: |
+          for i in 1 2 3; do
+            if sudo DEBIAN_FRONTEND=noninteractive timeout 90 apt-get update -qq \
+              && sudo DEBIAN_FRONTEND=noninteractive timeout 90 apt-get install -y -qq shellcheck yamllint; then
+              exit 0
+            fi
+            echo "attempt $i failed or timed out, retrying..." >&2
+            sleep 5
+          done
+          echo "all attempts failed" >&2
+          exit 1
       - run: bash scripts/lint.sh
 
   manifests:
@@ -99,7 +114,20 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install bats
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq bats
+        # Same bounded-retry rationale as the lint job's install step above
+        # -- this exact install hung and ate the full job timeout once in
+        # the same 2026-08-19 run that motivated it.
+        run: |
+          for i in 1 2 3; do
+            if sudo DEBIAN_FRONTEND=noninteractive timeout 90 apt-get update -qq \
+              && sudo DEBIAN_FRONTEND=noninteractive timeout 90 apt-get install -y -qq bats; then
+              exit 0
+            fi
+            echo "attempt $i failed or timed out, retrying..." >&2
+            sleep 5
+          done
+          echo "all attempts failed" >&2
+          exit 1
       - run: bash scripts/test.sh
 
   drift:
