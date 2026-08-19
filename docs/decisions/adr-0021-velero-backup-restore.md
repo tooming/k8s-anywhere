@@ -223,6 +223,24 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 
 ## Re-evaluation log
 
+- **2026-08-19 (executor security sweep — same-day GHSA, already patched).**
+  Direct GHSA-page audit (ADR-0004: checked
+  `github.com/vmware-tanzu/velero/security/advisories` directly, not
+  release notes) found **GHSA-j2g6-362q-6qc6** — Moderate severity, path
+  traversal when extracting a backup's tarball — published the *same day*
+  as this audit, affecting `<1.18.1`. This lab's pin (chart `12.1.0`,
+  appVersion `1.18.1`, landed 2026-07-20 via RFC #617 above) is exactly the
+  first fixed version. The advisory's own structured "Patched versions"
+  field said "None" (drafted before `v1.18.1` shipped, per its prose: "We
+  are working on the main branch, then cherry-pick to the release-1.18 for
+  v1.18.1 patch") — cross-checked directly against `v1.18.1`'s real
+  changelog to confirm the fix actually landed there ("Add check for file
+  extraction from tarball", PR #9661) rather than trusting the advisory's
+  stale patched-version field. **Decision: kept at `12.1.0`/`1.18.1` — no
+  action needed**, the RFC #617 chart-major-jump (decided a month before
+  this CVE existed) happened to already be ahead of it. **Flip condition:**
+  revisit if a new GHSA is filed against a version above `1.18.1`.
+
 - **2026-07-29 (executor follow-up).** Closed the smaller gap the same-day
   architect gap audit (entry directly below) left open: `inkless` has real
   PVCs (Aiven Inkless broker + Postgres catalog, 2Gi each) but, unlike
