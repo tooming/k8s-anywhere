@@ -7,6 +7,7 @@ setup() {
   REPO="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
   DOC="$REPO/docs/dependency-register.md"
   AUDIT="$REPO/docs/dora-audit-readiness.md"
+  ARCHITECT_PROMPT="$REPO/routines/architect.prompt.md"
 }
 
 @test "docs/dependency-register.md exists" {
@@ -55,6 +56,23 @@ setup() {
 
 @test "dependency-register.md has no fabricated/placeholder content (ADR-0004)" {
   run grep -iE '"(fake|mock|placeholder|dummy)"' "$DOC"
+  [ "$status" -ne 0 ]
+}
+
+@test "Garage's upstream org slug is deuxfleurs-org, not the dead Deuxfleurs/deuxfleurs (ADR-0002 2026-08-19)" {
+  # github.com/Deuxfleurs/garage (and github.com/deuxfleurs/garage, missing the
+  # -org suffix) both 404 — the real org is deuxfleurs-org. This bug was
+  # invisible to markdown-links-check (bare external URLs, not [text](path)
+  # links) and silently broke the architect routine's own weekly upstream
+  # release check for Garage. Pin the correct slug in both files that name it.
+  run grep -qF 'github.com/deuxfleurs-org/garage' "$DOC"
+  [ "$status" -eq 0 ]
+  run grep -qiE 'github\.com/deuxfleurs/garage|github\.com/Deuxfleurs/garage' "$DOC"
+  [ "$status" -ne 0 ]
+
+  run grep -qF 'deuxfleurs-org/garage' "$ARCHITECT_PROMPT"
+  [ "$status" -eq 0 ]
+  run grep -qiE '\bdeuxfleurs/garage\b' "$ARCHITECT_PROMPT"
   [ "$status" -ne 0 ]
 }
 

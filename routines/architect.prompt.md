@@ -14,7 +14,7 @@ Next, directly check upstream for releases in the past 7 days for each ADR'd com
   - RabbitMQ: `rabbitmq/rabbitmq-server`
   - TiDB: `pingcap/tidb`
   - Istio: `istio/istio`
-  - Garage: `deuxfleurs/garage`
+  - Garage: `deuxfleurs-org/garage`
   - Artifactory / JFrog: `jfrog/charts`
   - Kyverno: `kyverno/kyverno`
   - Argo Rollouts: `argoproj/argo-rollouts`
