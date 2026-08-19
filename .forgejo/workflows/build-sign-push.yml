@@ -165,8 +165,17 @@ jobs:
       # would have absorbed.
       - name: Login to Harbor
         run: |
+          # Found live 2026-08-19 (#633 verification): max=6/delay=15s gives only
+          # ~75s of total retry budget. Harbor's core/registry containers run under
+          # QEMU x86_64 emulation on this arm64 host (see harbor.yaml's own
+          # GOMAXPROCS/GODEBUG comments) and crash under real sustained I/O load;
+          # observed live recovery time from a crash back to genuinely stable is
+          # routinely 2-4+ minutes, not seconds -- so the old budget reliably ran
+          # out mid-recovery, failing the whole job even though Harbor came back up
+          # moments later. Bumped to max=14/delay=30s (~6.5 minutes of budget),
+          # comfortably outlasting the observed recovery window.
           retry_cmd() {
-            local n=0 max=6 delay=15
+            local n=0 max=14 delay=30
             until "$@"; do
               n=$((n+1))
               [ "$n" -ge "$max" ] && { echo "retry_cmd: giving up after $n attempts: $*" >&2; return 1; }
@@ -181,8 +190,10 @@ jobs:
 
       - name: Build, tag, and push
         run: |
+          # See "Login to Harbor" step's comment: same host-recovery-time-vs-budget
+          # mismatch, same fix (max=14/delay=30s).
           retry_cmd() {
-            local n=0 max=6 delay=15
+            local n=0 max=14 delay=30
             until "$@"; do
               n=$((n+1))
               [ "$n" -ge "$max" ] && { echo "retry_cmd: giving up after $n attempts: $*" >&2; return 1; }
