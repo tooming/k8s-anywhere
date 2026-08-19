@@ -6,6 +6,11 @@ _Period: 2026-08-17 – 2026-08-23. Originally fetched and written 2026-08-17
 per STEP 1c, refreshed in place rather than creating a second file for the same ISO
 week) after this run's own major finding: CHARTER **Objective O4** ("every image is
 signed and verified") landed both of its measurement criteria — see "At-a-glance"._
+**Refreshed again 2026-08-19** (architect-fallback cycle, `executor.prompt.md`
+STEP 6b, a later run — two of the 2026-08-18 pass's own open items resolved
+since then: Cilium's `1.18.13` patch shipped and was pinned same-day, and
+RabbitMQ's `4.3.5-management` image (reported "not groundable yet" in the
+2026-08-18 pass) now resolves and was pinned. See "At-a-glance" for both.
 
 ---
 
@@ -52,13 +57,35 @@ signed and verified") landed both of its measurement criteria — see "At-a-glan
   Re-evaluation log (it previously only lived in a `docs/done/` record, the
   prior digest pass, and this file — this cycle closed that self-tracking-log
   gap, matching the convention every other kept audit on that page follows).
-- **New this cycle: RabbitMQ `4.3.5`** — a real GitHub release
-  (`rabbitmq/rabbitmq-server`, tagged 2026-08-17) exists, but **not groundable
-  yet**: `docker.io/rabbitmq/rabbitmq:4.3.5` and `:4.3.5-management` both 404 on
-  Docker Hub as of this check — no pinnable image published. Per this repo's own
-  convention (a version with no deployable artifact isn't groundable, ADR-0004),
-  not bumped. Flip condition: revisit once the `4.3.5-management` tag actually
-  resolves.
+- **RESOLVED since 2026-08-18: RabbitMQ `4.3.5` is now groundable and
+  pinned.** The 2026-08-18 pass reported `4.3.5`/`4.3.5-management` both
+  404ing on Docker Hub; a later cycle re-checked and found the image now
+  resolves, and the bump landed same-run — pinned to
+  `rabbitmq:4.3.5-management` (`gitops/data/rabbitmq/statefulset.yaml`,
+  confirmed live in this checkout). Per `docs/dependency-register.md`'s
+  RabbitMQ row, the bump also turned out to fix 10 real GHSAs disclosed
+  2026-08-18 (1 High / 4 Moderate / 5 Low) — corrected same run from an
+  initial "no CVE" read. Flip condition closed; no further action.
+- **RESOLVED since 2026-08-18: Cilium bumped `1.18.12`→`1.18.13`.** A later
+  cycle found `v1.18.13` (released 2026-08-18, one day after this digest's
+  prior pass) — patched three High-severity GHSAs
+  (GHSA-33qq-jq9c-6gcc/GHSA-xqhm-7xhv-6ppj/GHSA-vh48-r624-p8v7) that this
+  lab's prior pin already sat past the fix floor for regardless, so this is
+  a routine patch-currency bump, not a CVE-driven one — `git ls-remote
+  --tags` confirmed `v1.18.13` is the newest `1.18.x` tag, and a
+  `values.yaml` byte-diff confirmed image-tag-only changes, no schema
+  churn. Now live at `gitops/platform/cilium.yaml`'s `targetRevision:
+  1.18.13` — confirmed directly in this checkout, matching
+  `docs/dependency-register.md`'s Cilium row.
+- **New this cycle: Vault Helm chart `0.34.0`→`0.34.1`** — a real upstream
+  tag (`hashicorp/vault-helm`, 2026-08-13), found by this cycle's own
+  UPGRADE-DRAFTER-fallback pass (Vault isn't on this routine's STEP 1
+  fetch list — no dedicated ADR — so it wasn't covered by an earlier
+  architect cycle). `values.yaml` diff shows only default-image-tag bumps
+  this lab's own explicit `server.image.tag` pin already overrides, plus
+  an irrelevant license-secret-volume fix — zero rendered-manifest impact.
+  Opened as `auto/vault-chart-0-34-0-to-0-34-1` (PR #1269), self-review/
+  merge pending as of this digest refresh.
 - **Grafana `13.0.5`→`13.0.6`** (real tag, 2026-08-07) — already investigated and
   correctly left unbumped in the 2026-W33 digest (a dashboard-snapshot
   `deletekey` backport this lab doesn't use, not a security fix); re-confirmed
@@ -82,9 +109,10 @@ ADR-0004, never re-assert a fact not actually checked this run).
   breaking changes exist upstream, still unaddressed by this lab's tooling.
   **Not bumped** — see "At-a-glance" above; now recorded in ADR-0008's own
   Re-evaluation log with a concrete flip condition.
-- **RabbitMQ** (`rabbitmq/rabbitmq-server`) — new `4.3.5` GitHub release found
-  this cycle, not yet groundable (no Docker Hub image published). See
-  "At-a-glance" above.
+- **RabbitMQ** (`rabbitmq/rabbitmq-server`) — `4.3.5` GitHub release,
+  reported not-yet-groundable in the 2026-08-18 pass, now groundable and
+  pinned (`rabbitmq:4.3.5-management`, confirmed live in this checkout).
+  See "At-a-glance" above.
 - **Grafana** (`grafana/grafana`) — `v13.0.6` confirmed as a real tag (2026-08-07),
   same conclusion as the 2026-W33 digest: single non-security backport, not
   chased.
@@ -118,8 +146,10 @@ ADR-0004, never re-assert a fact not actually checked this run).
 
 - **k3s** (`v1.36.3+k3s1`, independently re-verified this cycle against
   `k3s-io/k3s`'s own `channel.yaml` stable pointer), **Vault Helm chart**
-  (`0.34.0`), **Cilium** (`1.18.12` stable; `1.21.0-pre.0` is pre-release only,
-  no action), **Kyverno** (`3.8.2`; only `-rc` releases exist beyond it on the
+  (bumped `0.34.0`→`0.34.1` this cycle — see "At-a-glance" above), **Cilium**
+  (bumped `1.18.12`→`1.18.13` a later cycle since this row was last written
+  — see "At-a-glance" above; `1.21.0-pre.0` is still pre-release only, no
+  action), **Kyverno** (`3.8.2`; only `-rc` releases exist beyond it on the
   `3.9.0` line), **Istio** + **Kiali** (`1.30.3` / `2.30.0`; `1.31.0-beta.1` is
   pre-release only), **Argo Rollouts** (`2.41.1`), **Velero** (`velero-12.1.0`),
   **Trivy Operator** (chart `0.35.0`, appVersion `0.33.0` — a distinct repo from
@@ -162,15 +192,25 @@ meets STEP 2b's "meaningfully changes the tradeoff" bar. This cycle's real
 architect-lane deliverable was closing the ADR-0008 self-tracking-log gap (above),
 not a new RFC/audit.
 
+**2026-08-19 refresh — still no new RFC/audit work.** Two claims in the
+2026-08-18 pass had gone stale within a day (RabbitMQ's groundability,
+Cilium's pinned version) — both corrected above, plus the new Vault chart
+finding. No open `adr-audit` issue, no un-RFC'd 🟡 item, no new
+audit-worthy finding this pass either — every existing ADR'd choice
+remains sound.
+
 ---
 
 ## Cadence
 
-This is the third entry produced under `architect.prompt.md` STEP 1c's now-mandatory
+This is the fourth entry produced under `architect.prompt.md` STEP 1c's now-mandatory
 digest-write contract, after [2026-W32](2026-W32-digest.md) (the cadence-resumption
-entry) and [2026-W33](2026-W33-digest.md) — refreshed in place twice within the same
-ISO week (2026-08-17, then 2026-08-18) rather than forking a second file, per STEP
-1c's own instruction. The mechanism continues to hold: this file was touched again
-because a later run's sixth cycle reached the ARCHITECT fallback role, and that
+entry) and [2026-W33](2026-W33-digest.md) — refreshed in place three times within the
+same ISO week (2026-08-17, 2026-08-18, then 2026-08-19) rather than forking a second
+file, per STEP 1c's own instruction. The mechanism continues to hold: this file was
+touched again because a later run reached the ARCHITECT fallback role, and that
 role's own contract requires writing/refreshing this file unconditionally, not
-because anyone remembered to do it by hand.
+because anyone remembered to do it by hand. It also continues to catch real drift —
+two of the 2026-08-18 pass's own claims (RabbitMQ groundability, Cilium's pinned
+version) were already stale by the next day, exactly the kind of staleness a
+refresh-on-every-cycle contract exists to catch rather than let compound.
