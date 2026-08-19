@@ -154,26 +154,28 @@ jobs:
           docker info >/dev/null 2>&1 || { echo "dockerd did not come up in time"; exit 1; }
 
       # retry_cmd ported from the predecessor pipeline's identical before_script
-      # function (6 attempts, 15s backoff) — found live 2026-08-18 that this
-      # workflow had dropped it entirely during the port to Forgejo Actions syntax,
-      # so every network-facing step (login, base-image pull during build, push)
-      # had zero retry coverage. Confirmed missing the hard way: a real run failed
+      # function — found live 2026-08-18 that this workflow had dropped it
+      # entirely during the port to Forgejo Actions syntax, so every
+      # network-facing step (login, base-image pull during build, push) had
+      # zero retry coverage. Confirmed missing the hard way: a real run failed
       # outright on `docker build`'s base-image pull hitting the documented
       # Colima-VM egress flakiness against auth.docker.io (same class this repo has
       # hit against quay.io, mirror.gcr.io, data.forgejo.org — see this file's other
       # comments for the fuller history) — a transient blip that a bare retry
       # would have absorbed.
+      #
+      # Found live 2026-08-19 (#633 verification): the original 6-attempt/15s
+      # backoff (~75s total budget) reliably ran out mid-recovery -- Harbor's
+      # core/registry containers run under QEMU x86_64 emulation on this arm64
+      # host and crash under real sustained push I/O (see harbor.yaml's own
+      # GOMAXPROCS/GODEBUG comments), and observed live recovery time from a
+      # crash back to genuinely stable was routinely 2-4+ minutes, not seconds.
+      # Bumped to 14 attempts/30s delay (~6.5 minutes of budget) -- verified
+      # live: a run that needed the extra headroom (build-and-push took 10m38s
+      # total, ~9m55s of that inside retry_cmd's build+push retries) went on to
+      # succeed instead of failing at the old budget's ~75s mark.
       - name: Login to Harbor
         run: |
-          # Found live 2026-08-19 (#633 verification): max=6/delay=15s gives only
-          # ~75s of total retry budget. Harbor's core/registry containers run under
-          # QEMU x86_64 emulation on this arm64 host (see harbor.yaml's own
-          # GOMAXPROCS/GODEBUG comments) and crash under real sustained I/O load;
-          # observed live recovery time from a crash back to genuinely stable is
-          # routinely 2-4+ minutes, not seconds -- so the old budget reliably ran
-          # out mid-recovery, failing the whole job even though Harbor came back up
-          # moments later. Bumped to max=14/delay=30s (~6.5 minutes of budget),
-          # comfortably outlasting the observed recovery window.
           retry_cmd() {
             local n=0 max=14 delay=30
             until "$@"; do
@@ -282,8 +284,25 @@ jobs:
       # in this workflow.
       - name: Sign the pushed image
         run: |
+          # Found live 2026-08-19 (#633 verification): unlike build-and-push's
+          # docker commands, this step had zero retry coverage -- cosign sign
+          # failed outright on a single Harbor 502 (accessing the just-pushed
+          # manifest, same QEMU-emulation crash class documented in
+          # gitops/platform/harbor.yaml) even though a plain re-run of the job a
+          # few minutes later succeeded once Harbor had recovered. Same
+          # retry_cmd wrapper build-and-push already uses (max=14/delay=30s, see
+          # that job's own comment for the full root-cause writeup).
+          retry_cmd() {
+            local n=0 max=14 delay=30
+            until "$@"; do
+              n=$((n+1))
+              [ "$n" -ge "$max" ] && { echo "retry_cmd: giving up after $n attempts: $*" >&2; return 1; }
+              echo "retry_cmd: attempt $n failed, retrying in ${delay}s: $*" >&2
+              sleep "$delay"
+            done
+          }
           sha="${GITHUB_SHA:0:8}"
-          cosign sign \
+          retry_cmd cosign sign \
             --key /tmp/cosign/cosign.key \
             --allow-insecure-registry \
             --allow-http-registry \
