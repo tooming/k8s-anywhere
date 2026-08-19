@@ -35,10 +35,11 @@ well-known `guest/guest` default.
 
 - The two common charts (Bitnami) have been subject to image-distribution and licensing
   churn that breaks reproducibility — antithetical to the lab's "rebuild with one
-  command" charter bar. A pinned official `rabbitmq:4.3.4-management` image (bumped
+  command" charter bar. A pinned official `rabbitmq:4.3.5-management` image (bumped
   from the original `3.13-management` pin 2026-07-18, patched to `4.3.3` 2026-07-21,
-  then `4.3.4` 2026-07-24 — see [§Re-evaluation log](#re-evaluation-log)) in a plain
-  `StatefulSet` is fully reproducible and transparent (no chart indirection).
+  then `4.3.4` 2026-07-24, then `4.3.5` 2026-08-19 — see [§Re-evaluation
+  log](#re-evaluation-log)) in a plain `StatefulSet` is fully reproducible and
+  transparent (no chart indirection).
 - The **RabbitMQ Cluster Operator** is the production-correct choice for HA, but adds CRDs
   and an operator pod for no teaching gain at single-node lab scale.
 - Plain manifests keep the whole definition reviewable in-repo and validated by
@@ -176,5 +177,36 @@ client secret, CVSS 8.7 — introduced in `3.13.0`, fixed in
 floors (`4.1.2`/`4.0.13` for 44839; `4.3.0` for 57219 on the `4.3.x` line) sit
 at or below the current pin `4.3.4`. No bump needed; recorded so this flip
 condition has an on-record answer instead of silently going unaddressed.
+
+**Flip condition (next re-evaluation).** Unchanged from above.
+
+### 2026-08-19 — patch bump `4.3.4-management` → `4.3.5-management` (upgrade-drafter)
+
+**Trigger.** `rabbitmq/rabbitmq-server` cut `v4.3.5` (verified directly against
+the real release notes at both `raw.githubusercontent.com/rabbitmq/rabbitmq-
+server/v4.3.5/release-notes/4.3.5.md` and the `main`-branch path — unlike the
+`4.3.4` entry above, the tag-pinned path resolves fine this time, both return
+identical content — and the `rabbitmq:4.3.5-management` Docker Hub tag,
+`tag_status: active`, `last_updated: 2026-08-18T23:53:42.912558Z`, digest
+`sha256:b6a1a446c10038cbe65cfe0a1015141411da3a2731282a21cf1583d235da2ca8`). Same
+`4.3.x` minor series as the current pin — a maintenance release (a direct
+reply-to duplicate-delivery fix, a quorum-queue recovery-checkpoint
+partial-initialization fix, a mixed-`4.2.x`/`4.3.x`-cluster quorum-queue query
+fallback fix, AMQP 1.0 framing/parser hardening for malformed frames, a topic
+exchange fix capping multi-segment `#` wildcards to one per binding key, and an
+OAuth 2 token-refresh user-tag fix), not a metadata-store or config-format
+change. No CVE/GHSA found against `4.3.4` specifically (checked the same way
+as every prior entry on this ADR).
+
+**Decision: bump to `4.3.5-management`.** Same-series patch bump, no
+Khepri/Mnesia migration risk beyond what the 2026-07-18 entry above already
+accepted. No `rabbitmq.conf` change needed. Rollback path unchanged from the
+entries above.
+
+**ADR-0004 caveat:** this remote, clusterless session cannot verify RabbitMQ
+still starts cleanly and the demo load generator still connects post-bump on a
+real cluster — rollback is a one-line `image:` revert; ArgoCD re-syncs the
+prior tag on next reconciliation (always-on, auto-synced, so this reaches the
+live cluster on next sync, not just on manual trigger).
 
 **Flip condition (next re-evaluation).** Unchanged from above.
