@@ -29,9 +29,14 @@ setup() {
 }
 
 # --- Chart pin (RFC #917, ADR-0014 audit #916 — 1.17.x reached end-of-support) --
-@test "cilium Application pins chart version 1.18.12 (off the EOL 1.17.x line)" {
-  run grep -q 'targetRevision: 1.18.12' "$REPO/gitops/platform/cilium.yaml"
+@test "cilium Application pins chart version 1.18.13 (patch bump from 1.18.12)" {
+  run grep -q 'targetRevision: 1.18.13' "$REPO/gitops/platform/cilium.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "cilium Application does not pin the stale 1.18.12 patch release" {
+  run grep -q 'targetRevision: 1.18.12' "$REPO/gitops/platform/cilium.yaml"
+  [ "$status" -ne 0 ]
 }
 
 @test "cilium Application does not pin the EOL 1.17.18 version" {

@@ -16,10 +16,20 @@
 # marks every version < 1.18.0 as unsupported (v1.20.0 released 2026-07-29) —
 # ADR-0014 audit #916. 1.18.12 is the latest 1.18.x patch, chosen as one
 # sequential minor-line step (Cilium's upgrade path is minor-by-minor; not a
-# jump straight to 1.20.0). Rollback: revert targetRevision — ArgoCD self-heals;
-# Cilium is a DaemonSet so a revert re-rolls the same way the bump did.
-# (ADR-0004 caveat: this remote clusterless session cannot verify pod
-# networking stays healthy post-bump on a live cluster.)
+# jump straight to 1.20.0).
+#
+# Bumped to 1.18.13 (planner-fallback finding, 2026-08-19): three new
+# High-severity GHSAs published 2026-08-12 (GHSA-33qq-jq9c-6gcc,
+# GHSA-xqhm-7xhv-6ppj, GHSA-vh48-r624-p8v7) were already fixed by the prior
+# 1.18.12 pin — not the trigger for this bump. v1.18.13 (released 2026-08-18)
+# is a routine same-line patch: a security-relevant gRPC dependency bump plus
+# bugfixes, no chart values.yaml schema change. See ADR-0014's Re-evaluation
+# log for the full finding.
+#
+# Rollback: revert targetRevision — ArgoCD self-heals; Cilium is a DaemonSet
+# so a revert re-rolls the same way the bump did. (ADR-0004 caveat: this
+# remote clusterless session cannot verify pod networking stays healthy
+# post-bump on a live cluster.)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -30,7 +40,7 @@ spec:
   source:
     repoURL: https://helm.cilium.io
     chart: cilium
-    targetRevision: 1.18.12
+    targetRevision: 1.18.13
     helm:
       releaseName: cilium
       valuesObject:

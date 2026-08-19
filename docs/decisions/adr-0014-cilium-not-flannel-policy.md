@@ -212,3 +212,47 @@ and diffed against the `v1.17.18` tag's copy — no schema change). **Flip
 condition:** revisit when `1.18.x` itself reaches end-of-support (per
 Cilium's `SECURITY.md` support table), or a CVE lands against `1.18.12`
 specifically.
+
+### 2026-08-19 — three High GHSAs audited (already past fix floor), patch bump `1.18.12` → `1.18.13`
+
+**Trigger.** Routine security-advisory sweep found three new **High**-severity
+GHSAs published 2026-08-12 against `github.com/cilium/cilium`:
+- **GHSA-33qq-jq9c-6gcc** — mutual-authentication identity spoofing via
+  cert-chain substitution, CVSS 7.6, affects `1.18.0`–`1.18.11`, patched
+  `1.18.12`.
+- **GHSA-xqhm-7xhv-6ppj** — SDS secret-sync name collision enabling
+  cross-namespace L7 policy bypass, CVSS 7.3, affects `1.18.0`–`1.18.11`,
+  patched `1.18.12`.
+- **GHSA-vh48-r624-p8v7** — VLAN-interface ingress/L7 policy bypass, CVSS
+  7.2, affects `1.18.0`–`1.18.8`, patched `1.18.9` (older finding, predates
+  this lab's `1.18.12` pin).
+
+**Decision: Keep pin, no CVE-driven bump needed.** This lab's pin (`1.18.12`)
+already sat at or past every one of these three fix floors — none of them
+actually affects the running pin. This is the same "pin already past the fix
+floor" shape as the 2026-07-28 entry above, on a different CVE set.
+
+**Separately, a routine patch-currency check found `v1.18.13`** (released
+2026-08-18, the day before this audit) is now the newest `1.18.x` tag. Its
+release notes cite a security-relevant dependency bump (gRPC → `v1.82.1`,
+"to address security vulnerabilities") plus routine bugfixes (host-firewall
+unknown-CT-protocol tolerance, netlink hang fix, CIDR refcount fix, IP-
+allocation fix). Cilium's `SECURITY.md` support table still lists `1.18.x`
+as supported.
+
+**Decision: Convert (bump) to `1.18.13`.** Re-verified directly, same method
+as the 2026-07-30 entry: a byte-level diff of the `v1.18.12` vs `v1.18.13`
+chart `values.yaml`
+(`raw.githubusercontent.com/cilium/cilium/v1.18.1{2,3}/install/kubernetes/cilium/values.yaml`)
+shows only image tag/digest changes — zero new, removed, or restructured
+keys, so this Application's `valuesObject` needs no changes.
+`gitops/platform/cilium.yaml`'s `targetRevision` bumped `1.18.12` → `1.18.13`.
+
+**ADR-0004 caveat:** this remote, clusterless session cannot verify pod
+networking/policy enforcement survives this bump on the live cluster.
+Rollback: revert `targetRevision` — ArgoCD self-heals; Cilium is a DaemonSet
+so a revert re-rolls the same way the bump did.
+
+**Flip condition (next re-evaluation).** Unchanged from above: revisit when
+`1.18.x` itself reaches end-of-support, or a CVE lands against `1.18.13`
+specifically.
