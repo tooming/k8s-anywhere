@@ -20,6 +20,18 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
+# Found live 2026-08-19 (cluster-load reduction sweep): readOnlyRootFilesystem:
+# true (ADR-0017) plus the compactor-worker module's own scratch-dir write to
+# /tmp (uncovered by either PVC mount) crashed the pod on every single boot --
+# 1132 restarts over 8+ days before this was ever caught. Pin the emptyDir fix
+# so it can't silently regress.
+@test "pyroscope mounts a writable emptyDir at /tmp (compactor-worker needs scratch space; readOnlyRootFilesystem + no /tmp volume crashed every boot for 8+ days, 1132 restarts)" {
+  run grep -q 'mountPath: /tmp' "$APP"
+  [ "$status" -eq 0 ]
+  run grep -A2 'extraVolumes:' "$APP"
+  [[ "$output" == *"emptyDir: {}"* ]]
+}
+
 # ROADMAP "Loki / Tempo / Pyroscope operational-health dashboards — O5 gap":
 # real metric name verified directly against grafana/pyroscope's own Go source.
 @test "lab-pyroscope.json exists and is valid JSON" {

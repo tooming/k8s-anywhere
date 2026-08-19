@@ -44,7 +44,24 @@ spec:
           # /data (no subPath) and at /data-metastore (subPath ".metastore", the
           # chart default) — the metastore raft/db files the process writes always
           # land under one of those two paths, and the S3 backend (Garage, below)
-          # holds the actual profile blocks. No other write path exists.
+          # holds the actual profile blocks.
+          #
+          # That "no other write path exists" claim above was wrong: found live
+          # 2026-08-19 (cluster-load reduction sweep) — the compactor-worker module
+          # also needs its own scratch directory (`mkdir /tmp/pyroscope-compactor:
+          # read-only file system`), which isn't under either PVC mount and isn't
+          # covered by readOnlyRootFilesystem. This crashed on every single boot —
+          # 1132 restarts accumulated over 8+ days, each one a full container
+          # init/probe/log cycle contributing real, avoidable churn on an
+          # already-contended host. Added an emptyDir at /tmp below (chart-supported
+          # via extraVolumes/extraVolumeMounts) to give the compactor somewhere
+          # writable; PVC-backed durability isn't needed for pure scratch space.
+          extraVolumes:
+            - name: tmp
+              emptyDir: {}
+          extraVolumeMounts:
+            - name: tmp
+              mountPath: /tmp
           # Container-level fields live under `securityContext` (the chart's real key,
           # verified against operations/pyroscope/helm/pyroscope/templates/
           # deployments-statefulsets.yaml: `.Values.pyroscope.securityContext` renders
