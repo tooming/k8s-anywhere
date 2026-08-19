@@ -291,6 +291,44 @@ You review and merge plan PRs, same as implementation PRs.
   meaningful rollback risk). `docs/done/` entry required.
   (auto/vault-chart-0-34-0-to-0-34-1)
 
+- [x] 🟢 **Bump Oracle-workflow-pinned Terragrunt `v1.1.1` → `v1.1.3`** (CHARTER
+  **Core Values** §"Everything as code" + general hardening;
+  UPGRADE-DRAFTER-fallback finding 2026-08-19, reached via
+  `executor.prompt.md` STEP 6b — found alongside this run's Terraform
+  CVE-2026-14978 currency check (same `hashicorp`/IaC-tooling sweep angle).
+  **No prerequisites — executor may pick up immediately.**
+
+  Verified directly (not assumed, ADR-0004): `gruntwork-io/terragrunt`'s
+  real release notes for both intermediate versions (`v1.1.2`, `v1.1.3`)
+  fetched and read in full — neither documents a breaking change. `v1.1.2`
+  is bug fixes (a role-assumption regression fix, unnecessary
+  re-initialization fix, log-truncation fix) plus four new opt-in
+  experiments (`oci`, `otel-logs`, `profiling`, `azure-backend` — none
+  enabled by this repo's usage) and a `find_in_parent_folders()`
+  performance win. `v1.1.3` is bug fixes (`autoinclude` `values.*` handling,
+  `generate`-block no-trailing-newline handling, `mock_outputs` timing,
+  provider-cache race, filter-negation logic) plus four more opt-in
+  experiments (`block-iteration`, `bounded-discovery`, `browse-tui`,
+  `optional-dependency-outputs` — none enabled here) and a Go toolchain
+  bump. No CVE — a routine currency bump, same category as this repo's
+  other non-CVE tool-pin bumps.
+
+  Bumped the `terragrunt/releases/download/v1.1.1/` → `v1.1.3` download URL
+  in both `.github/workflows/oracle-cluster-apply.yml` and
+  `.github/workflows/oracle-cluster-apply-retry.yml` (kept in lockstep per
+  their existing convention). Updated `tests/ci-tool-pins.bats`'s pin
+  assertion (retitled to `v1.1.3`) and added a new "no workflow references
+  the pre-bump terragrunt v1.1.1 pin" recurrence guard mirroring the
+  existing `v0.67.0` guard. `make ci-parity-check` / `make
+  workflow-timeout-check` / `make routines-author-check` all pass. PR body
+  must document the release-notes verification above and the ADR-0004
+  caveat that this remote clusterless session has no OCI cloud credentials
+  reachable, so it cannot run a real `terragrunt apply` against Oracle
+  Cloud to verify this bump end-to-end — the workflow's own next real
+  `workflow_dispatch`/scheduled run is the actual verification, matching
+  the same caveat this file's own `v1.1.1` bump entry already established.
+  `docs/done/` entry required. (auto/terragrunt-1-1-1-to-1-1-3)
+
 - [x] 🟢 **Bump CI's pinned Terraform `1.15.8` → `1.15.9` (CVE-2026-14978)**
   (CHARTER **Core Values** §"Everything as code" + security hardening;
   UPGRADE-DRAFTER-fallback finding 2026-08-19, reached via

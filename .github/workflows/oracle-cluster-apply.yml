@@ -77,8 +77,20 @@ jobs:
           # run a real `terragrunt apply` against OCI regardless (no cloud credentials
           # reachable from here), so this workflow's own next real run is the actual
           # verification; flip condition: revisit if a v2.x line ships.
+          # Bumped v1.1.1 -> v1.1.3 (2026-08-19, upgrade-drafter fallback): routine
+          # currency bump, no CVE. Checked both intermediate releases' real notes
+          # directly (v1.1.2, v1.1.3) -- neither documents any breaking change; v1.1.2
+          # is bug fixes + new opt-in experiments (oci/otel-logs/profiling/
+          # azure-backend, none enabled here) + a find_in_parent_folders() perf win;
+          # v1.1.3 is bug fixes (autoinclude values.* handling, generate-block
+          # no-trailing-newline handling, mock_outputs timing, provider-cache race,
+          # filter-negation logic) + four new opt-in experiments (block-iteration/
+          # bounded-discovery/browse-tui/optional-dependency-outputs, none enabled
+          # here) + a Go toolchain bump. Same "no cloud credentials reachable from
+          # this sandbox" caveat as the v1.1.1 entry above -- this workflow's own
+          # next real run is the actual verification.
           curl -fsSL -o /usr/local/bin/terragrunt \
-            https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.1/terragrunt_linux_amd64
+            https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.3/terragrunt_linux_amd64
           chmod +x /usr/local/bin/terragrunt
 
       - name: Render OCI + SSH credential files from secrets
