@@ -247,6 +247,54 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
+- [ ] 🟢 **Bump Cilium chart `1.18.12` → `1.18.13`** (CHARTER **Core Values**
+  §"Everything as code" + general hardening; planner-fallback finding
+  2026-08-19, reached via `executor.prompt.md` STEP 6b after the run's
+  UPGRADE-DRAFTER one-PR-per-run cap was already spent this run
+  (`upgrade/rabbitmq-4.3.4-to-4.3.5`, PR #1250) — filed as a Now/next item so
+  a later cycle this same run can pick it up as a normal executor
+  implementation (`auto/*`, not gated by that cap). **No prerequisites —
+  executor may pick up immediately.**
+
+  Verified directly (not assumed, ADR-0004): `github.com/cilium/cilium`'s
+  security-advisories page lists three new **High**-severity GHSAs published
+  2026-08-12 — GHSA-33qq-jq9c-6gcc (mutual-authentication identity spoofing,
+  CVSS 7.6, affects `1.18.0`–`1.18.11`, patched `1.18.12`),
+  GHSA-xqhm-7xhv-6ppj (SDS secret-sync name collision / cross-namespace L7
+  policy bypass, CVSS 7.3, affects `1.18.0`–`1.18.11`, patched `1.18.12`),
+  and GHSA-vh48-r624-p8v7 (VLAN-interface ingress/L7 policy bypass, CVSS 7.2,
+  affects `1.18.0`–`1.18.8`, patched `1.18.9`, older finding predating this
+  lab's `1.18.12` pin). **This lab's current pin (`1.18.12`,
+  `gitops/platform/cilium.yaml`) already sits at or past every one of these
+  fix floors — none of the three affects the running pin.** So this is not a
+  CVE-driven bump; it's a routine patch-currency finding on top: `git
+  ls-remote --tags` shows `v1.18.13` (released 2026-08-18, one day before
+  this finding) is now the newest `1.18.x` tag, and its own release notes
+  cite a security-relevant dependency bump (gRPC → `v1.82.1`, "to address
+  security vulnerabilities") alongside routine bugfixes (host-firewall
+  unknown-CT-protocol tolerance, netlink hang fix, CIDR refcount fix). A
+  byte-level diff of the `v1.18.12` vs `v1.18.13` chart `values.yaml`
+  (`raw.githubusercontent.com/cilium/cilium/v1.18.1{2,3}/install/kubernetes/
+  cilium/values.yaml`) shows **only image tag/digest changes — zero new,
+  removed, or restructured keys** — matching the same no-schema-change
+  verification this ADR's own 2026-07-30 entry established before its last
+  bump. Cilium's `SECURITY.md` support table still lists `1.18.x` as
+  supported (not end-of-life), so this is a same-line patch bump, not the
+  kind of cross-minor jump that previously needed a full RFC (#917).
+
+  Bump `gitops/platform/cilium.yaml`'s `targetRevision: 1.18.12` → `1.18.13`.
+  Update `docs/decisions/adr-0014-cilium-not-flannel-policy.md`'s
+  Re-evaluation log with a new dated entry documenting the three GHSAs
+  checked (and that the current pin already sat past their fix floors) plus
+  the `1.18.13` bump itself, mirroring the existing entries' style. Update
+  `docs/dependency-register.md`'s Cilium row "Last reviewed" cell. `make ci`
+  must pass. PR body must carry the ADR-0004 caveat that this remote
+  clusterless session cannot verify pod networking/policy enforcement
+  survives this bump on the live cluster — call out the rollback path
+  (revert `targetRevision`; ArgoCD re-syncs the prior chart version on next
+  reconciliation; always-on/auto-synced, so this reaches the live cluster on
+  next sync). `docs/done/` entry required. (auto/cilium-1-18-12-to-1-18-13)
+
 - [x] 🟢 **Pin Aiven Inkless broker `ghcr.io/aiven/inkless:latest` → `:4.2.1-0.46`,
   remove the Kyverno `disallow-latest-tag` `inkless` carve-out** (CHARTER **Objective
   O4** admission-policy pre-requisite + **Core Values** §"Everything as code";
