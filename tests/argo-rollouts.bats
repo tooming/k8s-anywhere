@@ -75,6 +75,21 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- Dashboard PSA restricted compliance (ADR-0017) --------------------------
+# Found live 2026-08-19 (#633 verification): the chart's top-level
+# containerSecurityContext default (restricted-compliant) is NOT inherited by
+# dashboard.* -- that sub-block has its own empty {} default -- so the
+# dashboard Deployment was rejected by PSA admission for 26 days straight
+# (0/1 available since the Application was first created 2026-07-24) until
+# this was set explicitly. See gitops/platform/argo-rollouts.yaml's comment.
+@test "argo-rollouts dashboard sets its own containerSecurityContext (chart does not inherit the top-level default)" {
+  [ "$(yqs '.spec.source.helm.valuesObject.dashboard.containerSecurityContext.allowPrivilegeEscalation' "$REPO/gitops/platform/argo-rollouts.yaml")" = "false" ]
+}
+
+@test "argo-rollouts dashboard containerSecurityContext drops all capabilities" {
+  [ "$(yqs '.spec.source.helm.valuesObject.dashboard.containerSecurityContext.capabilities.drop[0]' "$REPO/gitops/platform/argo-rollouts.yaml")" = "ALL" ]
+}
+
 # --- Image tag (CVE-2026-35469, RFC #552 -> chart bump, ADR-0020 Re-evaluation log) ---
 # RFC #552 (2026-07-19) pinned controller/dashboard image.tag to "v1.9.1"
 # explicitly, as a stopgap while argo-helm hadn't yet published a chart release
