@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://helm.releases.hashicorp.com
     chart: vault
-    targetRevision: 0.34.0
+    targetRevision: 0.34.1
     helm:
       releaseName: vault
       valuesObject:
@@ -35,6 +35,22 @@ spec:
           # field a bats test or a future ADR-audit sweep could check.
           #
           # Re-evaluation log:
+          # - 2026-08-19: bumped chart `targetRevision` `0.34.0` -> `0.34.1`
+          #   (upstream tagged 2026-08-13, `hashicorp/vault-helm`). A direct
+          #   `values.yaml` diff between the two tags (fetched both raw, not
+          #   assumed) shows only default-image-tag bumps
+          #   (`vault-k8s` 1.7.5->1.7.6, `vault-csi-provider` 1.7.3->1.7.4,
+          #   `server.image.tag`/injector image default `2.0.3`->`2.0.4`) plus
+          #   one bug fix (a license-secret-volume `defaultMode` octal/decimal
+          #   rendering fix for `python-yq` compatibility) — this lab already
+          #   pins `server.image.tag` explicitly above (already `2.0.4`,
+          #   unaffected by the chart default) and doesn't use the injector,
+          #   CSI provider, or a license secret, so the rendered manifest for
+          #   this Application is unaffected; this is a pure chart-currency
+          #   bump, not a behavior change. Flip condition unchanged: revisit
+          #   the image pin when a bulletin names a version above `2.0.4` as
+          #   affected; revisit the chart pin when a newer `vault-helm` tag
+          #   ships past `0.34.1`.
           # - 2026-08-05: bumped `2.0.3` -> `2.0.4`. HashiCorp's published
           #   CHANGELOG.md has no `2.0.x` section at either tag (a gap in
           #   their own changelog publishing for this release line, not
