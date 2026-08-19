@@ -3,24 +3,46 @@
 # open PR, so the fleet stays small and `make rebase-prs` only ever deals with
 # real, open work.
 #
-# Two provably-safe classes are deleted:
+# Three classes are deleted:
 #   1. MERGED   — the branch tip is an ancestor of <remote>/main, i.e. all its
 #                 commits are already in main (its PR was merged). Work is preserved.
 #   2. UNRELATED— the branch has NO common ancestor with main (orphan history).
 #                 A normal PR is cut from main and always shares history, so an
 #                 unrelated branch cannot be a valid mergeable open PR.
-# Anything that shares history with main AND has commits not yet in main is a
-# plausible OPEN PR and is ALWAYS kept — never deleted.
+#   3. ORPHANED — shares history with main and has commits not yet in main (so
+#                 classes 1/2 above always kept it as "plausible open PR"), but
+#                 no open PR actually references it AND its tip commit is older
+#                 than $ORPHAN_AGE_S. Found live 2026-08-19: auto/pr-creation-
+#                 diagnostic-test (pushed 2026-07-24) and auto/action-needed-
+#                 cycle13-doc-precision-lane-slowing (pushed 2026-08-07) both
+#                 sat on the remote for weeks — a session pushed the branch, PR
+#                 creation itself then failed or was skipped, and nothing ever
+#                 caught it because "shares history + has unique commits" is
+#                 necessary but not sufficient for "is a live open PR". This
+#                 class is best-effort — it needs `gh`, authenticated, same as
+#                 stale-prs-check.sh — and time-gated so a branch pushed moments
+#                 before its PR is created (the normal push-then-create-PR gap
+#                 in every producing routine's own STEP 6) is never misclassified.
+# Anything else — shares history with main, has unique commits, AND either gh
+# is unavailable or an open PR (or a too-recent tip) covers it — is kept.
 #
 # Usage:
 #   bash scripts/prune-stale-branches.sh          # dry-run: list what would be deleted
 #   bash scripts/prune-stale-branches.sh --push   # actually delete them on the remote
 #
 # Env: PRUNE_ROOT=<dir> runs against a fixture repo (used by the bats guard).
+#      ORPHAN_AGE_S=<seconds> overrides the class-3 age gate (default 86400 = 24h).
 #
 # NOT `set -e`: like rebase-open-prs.sh, this must process the whole fleet without
 # one branch aborting the run.
 set -uo pipefail
+
+# Every agent/PR prefix in docs/WAYS-OF-WORKING.md's "Branch prefix signals
+# origin" list. Shared by the branch-discovery regex and (when gh is
+# available) the open-PR search below — one list, so a missing prefix can
+# never make one query see a branch the other doesn't (recurrence guard,
+# see tests/prune-stale-branches.bats).
+PREFIXES=(auto arch chore claude copilot plan upgrade sync digest)
 
 PUSH=false
 [[ "${1:-}" == "--push" ]] && PUSH=true
@@ -38,13 +60,13 @@ MAIN=$(git rev-parse "$REMOTE/main") || { echo "$REMOTE/main not found" >&2; exi
 echo "$REMOTE/main HEAD: ${MAIN:0:12}"
 
 # Only branches under the bot/PR prefixes are ever candidates. main is excluded.
-# Keep this list in sync with rebase-open-prs.sh's identical fallback regex — every
-# agent/PR prefix in docs/WAYS-OF-WORKING.md's "Branch prefix signals origin" list
-# (auto/ plan/ arch/ upgrade/ sync/ digest/ chore/) plus claude/ copilot/. A missing
-# prefix here means that role's merged/orphaned branches never get pruned.
+# Keep this in sync with rebase-open-prs.sh's identical fallback regex. A missing
+# prefix in PREFIXES above means that role's merged/orphaned branches never get
+# pruned — and, now, never get open-PR-checked for class 3 either.
+prefix_alt=$(IFS='|'; echo "${PREFIXES[*]}")
 mapfile -t BRANCHES < <(
   git branch -r \
-    | grep -E "${REMOTE}/(auto|arch|chore|claude|copilot|plan|upgrade|sync|digest)/" \
+    | grep -E "${REMOTE}/(${prefix_alt})/" \
     | sed "s|.*${REMOTE}/||" \
     | sort
 )
@@ -60,6 +82,35 @@ for b in "${BRANCHES[@]}"; do
     KEEP+=("$b")    # shares history + has unique commits → plausible open PR
   fi
 done
+
+# Class 3 — ORPHANED: reclassify any KEEP branch that gh confirms has no open
+# PR AND whose tip is old enough that this isn't the normal push-then-create-PR
+# gap. Best-effort: skipped entirely (KEEP unchanged) when gh is unavailable or
+# unauthenticated — never treat "gh has nothing to say" as "no open PR exists".
+ORPHAN_AGE_S="${ORPHAN_AGE_S:-86400}"
+if command -v gh &>/dev/null && gh auth status &>/dev/null; then
+  search_terms=""
+  for p in "${PREFIXES[@]}"; do search_terms+="head:${p}/ "; done
+  declare -A OPEN_PR_BRANCHES=()
+  while IFS= read -r ref; do
+    [[ -n "$ref" ]] && OPEN_PR_BRANCHES["$ref"]=1
+  done < <(gh pr list --state open --search "${search_terms}" --json headRefName --jq '.[].headRefName' 2>/dev/null)
+
+  now=$(date +%s)
+  STILL_KEEP=()
+  for b in "${KEEP[@]}"; do
+    if [[ -z "${OPEN_PR_BRANCHES[$b]:-}" ]]; then
+      tip_ts=$(git log -1 --format=%ct "$REMOTE/$b" 2>/dev/null || echo "$now")
+      age=$(( now - tip_ts ))
+      if [[ "$age" -ge "$ORPHAN_AGE_S" ]]; then
+        DELETE+=("$b"); echo "[stale:orphaned]  $b (no open PR, ${age}s old)"
+        continue
+      fi
+    fi
+    STILL_KEEP+=("$b")
+  done
+  KEEP=("${STILL_KEEP[@]}")
+fi
 
 echo ""
 echo "─────────────────────────────────────────────"
