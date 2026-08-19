@@ -50,6 +50,28 @@ spec:
           resources:
             limits:
               memory: 64Mi
+          # Found live 2026-08-19 (#633 verification): the chart's top-level
+          # `containerSecurityContext` default (allowPrivilegeEscalation: false,
+          # capabilities.drop: [ALL], readOnlyRootFilesystem: true) applies to the
+          # controller container but is NOT inherited by `dashboard.*` — that block
+          # has its own `containerSecurityContext: {}` (empty) default, verified
+          # against `helm show values argo/argo-rollouts --version 2.41.1`. Every
+          # namespace runs PSA restricted (ADR-0017), so the dashboard Deployment's
+          # pod template was rejected outright ("violates PodSecurity
+          # \"restricted:latest\": allowPrivilegeEscalation != false, unrestricted
+          # capabilities") from the day this Application was first created
+          # (2026-07-24) — 0/1 available, ReplicaFailure, for 26 days straight,
+          # invisible unless something actually checked the Application's health
+          # (nothing had, until this verification pass). Mirrors the same
+          # top-level default explicitly since this sub-block doesn't fall back to it.
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
   destination:
     server: https://kubernetes.default.svc
     namespace: argo-rollouts
