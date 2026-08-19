@@ -43,4 +43,4 @@ which repo the architect routine's own weekly currency sweep looks at.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1265
