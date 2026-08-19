@@ -26,7 +26,7 @@ spec:
     helm:
       releaseName: grafana
       valuesObject:
-        # Pin Grafana 13.0.6 — keeps the Pure-Git Git Sync provider from ADR-0006 and
+        # Pin Grafana 13.0.7 — keeps the Pure-Git Git Sync provider from ADR-0006 and
         # avoids the 13.0.0 unified-storage migration bug for Git Sync users. Bumped
         # from 13.0.1 (CVE-2026-9029, CVE-2026-33382, CVE-2026-42127, CVE-2026-42129,
         # CVE-2026-10601, CVE-2026-8609, CVE-2026-8595 — all fixed in 13.0.2; RFC #563),
@@ -36,9 +36,20 @@ spec:
         # routine currency bump, no CVE: the four commits between the tags are a
         # BarChart tooltip fix, a SplashScreen feature-toggle default flip, and a
         # snapshot deletekey backport, none touching packaging/docker/ or this
-        # deployment's config surface). 13.0.6 is the newest 13.0.x patch.
+        # deployment's config surface), then from 13.0.6 (2026-08-19,
+        # upgrade-drafter fallback — CVE-2026-17183, a real, currently-active
+        # security release: the v13.0.7/v13.1.4/v12.4.9 GitHub release notes all
+        # cite the same CVE ID + patch, matching Grafana's usual coordinated
+        # simultaneous-release-line security-patch pattern; CVE detail pages
+        # (nvd.nist.gov, api.osv.dev, grafana.com/security) were unreachable from
+        # this sandbox's egress proxy, so severity/description are not
+        # independently confirmed beyond the release notes themselves — flagged
+        # per ADR-0004 rather than asserted with more confidence than verified.
+        # `packaging/docker/run.sh` diffed byte-identical between the v13.0.6 and
+        # v13.0.7 tags — no entrypoint/packaging change, pure security patch).
+        # 13.0.7 is the newest 13.0.x patch.
         image:
-          tag: "13.0.6"
+          tag: "13.0.7"
         # admin login comes from Vault via the grafana-admin ExternalSecret
         # (gitops/secrets/grafana-admin-externalsecret.yaml): no plaintext default,
         # and a non-"admin" password means Grafana stops nagging to change it.
@@ -151,7 +162,7 @@ spec:
             mountPath: /etc/ssl-custom
         extraInitContainers:
           - name: ca-bundle
-            image: docker.io/grafana/grafana:13.0.6
+            image: docker.io/grafana/grafana:13.0.7
             securityContext:
               runAsNonRoot: true
               runAsUser: 472

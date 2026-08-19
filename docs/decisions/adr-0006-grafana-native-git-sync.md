@@ -415,3 +415,52 @@ state lives on its PVC, untouched by an image-tag change.
 **Flip condition (next re-evaluation).** Revisit Grafana's pin again when a
 new advisory names a version at or above `13.0.6` as affected, or when the
 next scheduled currency sweep finds a newer `13.0.x` patch.
+
+### 2026-08-19 — Grafana security bump, pin bumped `13.0.6` → `13.0.7` (CVE-2026-17183)
+
+**Trigger.** This entry's own flip condition fired: the 2026-08-18 entry's
+condition was "revisit when a new advisory names a version at or above
+`13.0.6` as affected" — Executor STEP 6b fallback chain (UPGRADE-DRAFTER)
+found `v13.0.7` published (GitHub releases, tagged 2026-08-18) citing
+`CVE-2026-17183` under a `Security:` heading.
+
+**Verified directly (not assumed, ADR-0004):** GitHub's release notes pages
+for `v13.0.7` and the sibling `v13.1.4` release (a different maintained line
+— Grafana backports security fixes across every actively-maintained minor
+simultaneously) both independently list the identical `Security: CVE-2026-17183`
+line plus the identical Enterprise-only reporting bug fix — matching
+Grafana's usual coordinated-release-line security-patch shape, not a
+one-off. **Honesty caveat:** the CVE detail pages this repo would normally
+cross-check for severity/description (`nvd.nist.gov`, `api.osv.dev`,
+`grafana.com/security`) were all unreachable from this sandbox's egress
+proxy (`EGRESS_BLOCKED`) — a WebSearch aggregation independently estimated
+"HIGH" severity but that is not a primary source, so severity here is
+reported as "a real, cited CVE fix" without asserting a specific CVSS score
+this session couldn't independently confirm. `packaging/docker/run.sh`
+diffed byte-identical between the `v13.0.6` and `v13.0.7` tags — no
+entrypoint/packaging change, consistent with a pure security patch.
+
+**Decision: bump `grafana:13.0.6` → `13.0.7`** (the newest `13.0.x` patch,
+smallest safe delta, security-driven per the release notes).
+`gitops/platform/observability-grafana.yaml`'s `valuesObject.image.tag` and
+the `ca-bundle` `extraInitContainers` image both updated in lockstep (same
+pin, same analysis); `tests/observability-grafana.bats` updated to assert
+`13.0.7` present and add a new "no stray `13.0.6`" guard;
+`docs/decisions/context.md`'s "Grafana 13.0.6" prose citation updated to
+`13.0.7` (mechanically enforced by `make context-doc-version-sync-check`,
+which caught the drift live via its `PostToolUse` hook while authoring this
+entry, same as the 2026-08-18 entry).
+
+**ADR-0004 caveat.** This remote, clusterless session verified the release
+notes and packaging-diff facts directly, but cannot verify Grafana starts
+cleanly and Git Sync/dashboard provisioning continues working post-bump on a
+live cluster, and could not independently confirm CVE-2026-17183's severity
+or technical description beyond the release notes' own citation (egress
+proxy blocked every CVE-database domain tried). Rollback is a one-line
+revert of both `image:` references; Grafana's chart Application syncs via
+ArgoCD, so a revert takes effect on the next automated sync; Grafana's
+session/dashboard state lives on its PVC, untouched by an image-tag change.
+
+**Flip condition (next re-evaluation).** Revisit Grafana's pin again when a
+new advisory names a version at or above `13.0.7` as affected, or when the
+next scheduled currency sweep finds a newer `13.0.x` patch.

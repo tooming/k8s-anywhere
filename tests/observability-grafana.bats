@@ -10,12 +10,12 @@ setup() {
   GRAFANA="$REPO/gitops/platform/observability-grafana.yaml"
 }
 
-@test "observability-grafana.yaml pins image.tag to 13.0.6" {
-  [ "$(yqs '.spec.source.helm.valuesObject.image.tag' "$GRAFANA")" = "13.0.6" ]
+@test "observability-grafana.yaml pins image.tag to 13.0.7" {
+  [ "$(yqs '.spec.source.helm.valuesObject.image.tag' "$GRAFANA")" = "13.0.7" ]
 }
 
-@test "observability-grafana.yaml ca-bundle init container matches the same 13.0.6 pin" {
-  run grep -q 'image: docker.io/grafana/grafana:13.0.6' "$GRAFANA"
+@test "observability-grafana.yaml ca-bundle init container matches the same 13.0.7 pin" {
+  run grep -q 'image: docker.io/grafana/grafana:13.0.7' "$GRAFANA"
   [ "$status" -eq 0 ]
 }
 
@@ -37,6 +37,13 @@ setup() {
   run grep -q 'tag: "13.0.5"' "$GRAFANA"
   [ "$status" -ne 0 ]
   run grep -q 'image: docker.io/grafana/grafana:13.0.5' "$GRAFANA"
+  [ "$status" -ne 0 ]
+}
+
+@test "observability-grafana.yaml has no stray 13.0.6 image-tag reference left" {
+  run grep -q 'tag: "13.0.6"' "$GRAFANA"
+  [ "$status" -ne 0 ]
+  run grep -q 'image: docker.io/grafana/grafana:13.0.6' "$GRAFANA"
   [ "$status" -ne 0 ]
 }
 
