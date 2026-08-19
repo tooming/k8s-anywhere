@@ -70,11 +70,15 @@ setup() {
   grep -q 'terraform_version: "1.15.9"' "$ORACLE_RETRY"
 }
 
-@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terragrunt v1.1.1 (2026-07-28)" {
-  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.1/terragrunt_linux_amd64' "$ORACLE_APPLY"
-  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.1/terragrunt_linux_amd64' "$ORACLE_RETRY"
+@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terragrunt v1.1.3 (2026-08-19)" {
+  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.3/terragrunt_linux_amd64' "$ORACLE_APPLY"
+  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.3/terragrunt_linux_amd64' "$ORACLE_RETRY"
 }
 
 @test "no workflow references the pre-bump terragrunt v0.67.0 pin" {
   ! grep -rq 'terragrunt/releases/download/v0.67.0' "$WORKFLOWS"/*.yml
+}
+
+@test "no workflow references the pre-bump terragrunt v1.1.1 pin" {
+  ! grep -rq 'terragrunt/releases/download/v1.1.1' "$WORKFLOWS"/*.yml
 }
