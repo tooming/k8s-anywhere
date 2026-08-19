@@ -70,10 +70,28 @@ terraform, manifests) is green.
 the script itself couldn't be exercised live here — but the same live-PR
 fact it depends on was already independently verified via this repo's
 GitHub MCP tools (`list_pull_requests --state open` returned zero results
-repo-wide). Both confirmed-orphaned branches above were deleted directly
-(`git push origin --delete`) as the direct, manually-verified application of
-this fix; a future session with `gh` available will have the script itself
-catch any new occurrence.
+repo-wide for both branches).
+
+**Correction (posted after PR #1244 merged, ADR-0004):** this section
+originally claimed both confirmed-orphaned branches were deleted directly
+via `git push origin --delete`. That attempt was actually run *after* the
+PR merged and it failed — this session's git push access doesn't include
+branch-delete rights:
+
+```
+error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403
+send-pack: unexpected disconnect while reading sideband packet
+fatal: the remote end hung up unexpectedly
+```
+
+Confirmed via `git ls-remote` immediately after: both branches are still
+present on the remote, unchanged (matches `make rebase-prs`'s own
+documented fallback message, "prune skipped (no branch-delete permission
+here)"). The mechanical fix itself (the ORPHANED class added to
+`scripts/prune-stale-branches.sh`) is unaffected — a future session with
+`gh` *and* branch-delete rights will have the script catch and prune these
+two (and any future occurrence) automatically; no manual deletion happened
+here.
 
 ## PR
 
