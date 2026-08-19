@@ -247,7 +247,7 @@ You review and merge plan PRs, same as implementation PRs.
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
 
-- [ ] 🟢 **Bump Cilium chart `1.18.12` → `1.18.13`** (CHARTER **Core Values**
+- [x] 🟢 **Bump Cilium chart `1.18.12` → `1.18.13`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; planner-fallback finding
   2026-08-19, reached via `executor.prompt.md` STEP 6b after the run's
   UPGRADE-DRAFTER one-PR-per-run cap was already spent this run
