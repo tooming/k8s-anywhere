@@ -30,7 +30,18 @@ spec:
           type: RuntimeDefault
       containers:
         - name: mimir
-          image: grafana/mimir:3.1.4
+          # Pinned image tag — see ADR-0034's Re-evaluation log for the
+          # currency-check history. 3.1.5 (2026-08-20): Go 1.26.6 stdlib CVE
+          # bump (CVE-2026-33818, CVE-2026-39821, CVE-2026-46600,
+          # CVE-2026-56853, CVE-2026-56858, CVE-2026-56859, CVE-2026-56860,
+          # CVE-2026-56862), zero config/flag changes — same 3.1.x line as
+          # the prior pin. The newer `3.2.0` minor carries a long list of
+          # `[CHANGE]` entries (query-frontend default-behavior flips,
+          # alertmanager UI removal, opaque-gRPC-type querier/store-gateway
+          # coupling requiring both sides on 3.1 first) deliberately not
+          # picked up here — those need live-cluster upgrade verification
+          # this clusterless session cannot do (ADR-0004).
+          image: grafana/mimir:3.1.5
           args:
             - -config.file=/etc/mimir/mimir.yaml
             - -config.expand-env=true
