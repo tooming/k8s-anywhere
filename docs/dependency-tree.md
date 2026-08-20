@@ -341,7 +341,7 @@ make up
 | — | longhorn *(on-demand)* | CNCF distributed block storage + CSI driver (chart `longhorn/longhorn` v1.11.3 from `https://charts.longhorn.io`, namespace `longhorn-system`; replica count 1 for single-node lab); manual-sync only — use `make longhorn-up` |
 | — | longhorn-extras *(auto-synced, wave 0)* | Pre-creates the `longhorn-system` namespace with PSA `privileged` labels + Envoy HTTPRoute for `longhorn.127.0.0.1.nip.io`; always-on so the PSA floor is present before `make longhorn-up` admits pods — the longhorn Application itself remains on-demand |
 | — | inkless *(on-demand)* | Aiven Inkless (KIP-1150 diskless Kafka) + PostgreSQL batch coordinator; manual-sync only — use `make inkless-up`; S3 backend is Garage (bucket `inkless`, key `inkless-key`) |
-| — | kargo *(on-demand)* | GitOps promotion pipeline controller (chart `kargo` v1.11.0 from `ghcr.io/akuity/kargo-charts`, namespace `kargo`, ADR-0023); manual-sync only — use `make kargo-up` |
+| — | kargo *(on-demand)* | GitOps promotion pipeline controller (chart `kargo` `1.11.2` from `ghcr.io/akuity/kargo-charts`, namespace `kargo`, ADR-0023); manual-sync only — use `make kargo-up` |
 | — | kargo-extras *(auto-synced, wave 0)* | Pre-creates the `kargo` namespace with PSA `restricted` labels + Envoy HTTPRoute `kargo.127.0.0.1.nip.io`; always-on so the PSA floor is present before `make kargo-up` admits pods — the kargo Application itself remains on-demand |
 | — | kargo-project *(on-demand, wave 6)* | Kargo `Project`/`Warehouse`/`Stage` resources defining the capstone promotion pipeline (ADR-0023); creates the `capstone-pipeline` namespace; pairs with the kargo Application — no auto-sync block |
 

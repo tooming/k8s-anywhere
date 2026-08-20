@@ -456,3 +456,13 @@ setup() {
   run grep -q '| — | kargo-project \*(on-demand, wave 6)\* |' "$REPO/docs/dependency-tree.md"
   [ "$status" -eq 0 ]
 }
+
+@test "docs/dependency-tree.md's kargo chart-version citation matches the live Application pin (found stale 2026-08-20: doc said v1.11.0, live pin was already 1.11.2)" {
+  live_version="$(yqs '.spec.source.targetRevision' "$REPO/gitops/platform/kargo.yaml")"
+  run grep -q "chart \`kargo\` \`${live_version}\` from" "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 0 ]
+  # The stale citation used a "v"-prefixed, unquoted style — guard against both
+  # the specific stale value and the wrong format coming back.
+  run grep -qE 'chart `kargo` v[0-9]' "$REPO/docs/dependency-tree.md"
+  [ "$status" -eq 1 ]
+}
