@@ -46,4 +46,4 @@ is a documentation-accuracy fix, not a live-cluster claim.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1291
