@@ -117,7 +117,7 @@ Rows are grouped by layer, matching the README stack table.
 | **Loki** | Log aggregation. Alloy ships pod stdout/stderr logs here. |
 | **Tempo** | Distributed tracing. OTLP-compatible ingest. |
 | **Pyroscope** | Continuous profiling. |
-| **Grafana** | Single pane of glass over Mimir, Loki, Tempo, and Pyroscope. Dashboards are managed via native Git Sync (ADR-0006) — no sidecar required. 29 lab dashboards (`grafana/dashboards/*.json`) cover every always-on component and the capstone pipeline — 36 dashboard files total, minus the 7 tied to on-demand/heavy components (Harbor, Inkless, Istio, Kargo, Longhorn, TiDB ×2). |
+| **Grafana** | Single pane of glass over Mimir, Loki, Tempo, and Pyroscope. Dashboards are managed via native Git Sync (ADR-0006) — no sidecar required. 32 lab dashboards (`grafana/dashboards/*.json`) cover every always-on component and the capstone pipeline — 39 dashboard files total, minus the 7 tied to on-demand/heavy components (Harbor, Inkless, Istio, Kargo, Longhorn, TiDB ×2). |
 | **kube-state-metrics** | Exports Kubernetes resource state (pod phase, deployment replicas, PVC status, node readiness) as Prometheus metrics. |
 | **node-exporter** | Exports host-level metrics (CPU, memory, disk, network) from the Colima VM. |
 
