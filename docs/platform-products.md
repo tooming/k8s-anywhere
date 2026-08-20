@@ -44,6 +44,15 @@ You build (and recover) bottom-up; nothing in a higher tier works until its tier
 This is the priority order: **Tier 0 is most critical** — without it there is no
 platform at all — and criticality decreases as you go up.
 
+> **GitLab vs. Forgejo, as of 2026-08-17.** Tier 0's "SCM: GitLab" node below (and the
+> table row after it) describe `make up`'s literal, current bootstrap — a fresh
+> bootstrap still provisions GitLab as the git source of truth (ADR-0033/ADR-0035). The
+> currently-running lab's ArgoCD, however, was separately re-pointed at Forgejo
+> directly on the live cluster (PR #1205), so today's steady-state SCM is Forgejo, not
+> GitLab. See [docs/dependency-tree.md](dependency-tree.md)'s own "Known gap, not yet
+> reconciled" note for the same caveat in the bootstrap-order diagram this file is the
+> product-view companion to.
+
 ```mermaid
 graph TD
   classDef sub fill:#ffe0ef,stroke:#b3598a,color:#000
