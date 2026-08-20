@@ -71,7 +71,7 @@ bootstrapped, formally recorded here for the first time.
 | **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.8` directly | `2.10.8` (tracked in ADR-0006's Re-evaluation log, 2026-08-13 security bump) |
 | **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.1` | `2.2.1` |
 | **Alloy** | Helm chart | `gitops/platform/observability-alloy.yaml`, `targetRevision: 1.11.1` | `1.11.1` |
-| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.3.1` | `8.3.1` |
+| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.4.0` | `8.4.0` (tracked in this ADR's own Re-evaluation log, 2026-08-20 currency bump) |
 | **node-exporter** | Helm chart, `prometheus-community/helm-charts` (`prometheus-node-exporter`) | `gitops/platform/observability-node-exporter.yaml`, `targetRevision: 4.56.1`; dedicated `node-exporter` namespace (not `observability`) because it needs `hostPID`/`hostNetwork`/`hostRootFsMount` semantics [ADR-0017](adr-0017-pod-security-standards-restricted.md)'s `restricted` profile forbids | `4.56.1` |
 
 Mimir and Loki are deliberately **not** Helm charts (Mimir has no chart this lab
@@ -112,6 +112,36 @@ shape (Alloy as sole collector feeding all four Grafana-authored stores).
 ---
 
 ## Re-evaluation log
+
+**2026-08-20** — kube-state-metrics chart bumped `8.3.1` → `8.4.0` (executor-fallback
+upstream-currency sweep, `executor.prompt.md` STEP 6b — the "Now / next" lane was
+still fully gated on issues #633/#1229, re-checked with no new confirmation; a
+Kyverno/Trivy Operator/cert-manager/External Secrets/KEDA/Velero/Cilium currency
+sweep this same cycle found each already at the newest stable release, and Envoy
+Gateway's `v1.9.0` bump remains correctly deferred per this ADR's sibling ADR-0008's
+own 2026-08-18 Re-evaluation-log entry — not repeated here). Verified directly
+(ADR-0004): the tagged `Chart.yaml` at `kube-state-metrics-8.4.0` shows
+`version: "8.4.0"`, `appVersion: "2.20.0"` (up from `8.3.1`'s `2.19.1`) — a real
+appVersion bump, not packaging-only this time. The upstream `kube-state-metrics`
+`v2.20.0` release notes name, among additive metrics (pod-disruption tracking,
+admission-policy object metrics, HPA scale-behavior-tolerance metrics, a new
+`kube_node_spec_pod_cidrs` metric, DRA `kube_pod_resourceclaim_info`, init-container
+state/exit-code tracking, ephemeral-volume label generation, PV access-mode
+metrics, allowlist wildcard support, and a watch-sharding performance change) one
+security fix explicitly: a Go toolchain bump (Go 1.26.6) remediating `GO-2026-5038`,
+plus a `client-go` bump to `v0.36.3`. The only breaking change named — "Custom
+Resource State (CRS) metrics are now feature-frozen" — does not apply here: this
+repo's `valuesObject` in `gitops/platform/observability-ksm.yaml` sets no
+`customResourceState:` key at all. A byte-level diff of the chart's `values.yaml`
+between the two tags confirms every key this repo's `valuesObject` actually sets
+(`fullnameOverride`, `selfMonitor.enabled`, `securityContext.{enabled,runAsNonRoot,
+runAsUser,runAsGroup,seccompProfile.type}`, `containerSecurityContext.
+{allowPrivilegeEscalation,privileged,readOnlyRootFilesystem,capabilities.drop}`,
+`resources.{requests,limits}`) keeps the identical shape and chart defaults — no
+schema change affects this Application's rendered manifest beyond the new
+kube-state-metrics binary itself emitting the additive metrics above. **Convert** —
+a real, additive, security-relevant bump, not a no-op like the 8.3.0→8.3.1 packaging
+fix below.
 
 **2026-08-20** — Mimir image tag bumped `3.1.4` → `3.1.5` (upgrade-drafter fallback,
 `executor.prompt.md` STEP 6b — the "Now / next" lane was still fully gated on issue
