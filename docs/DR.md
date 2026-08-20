@@ -342,6 +342,18 @@ not true HA. What that looks like, and how you'd really do it in production:
   N≥2 LBs across N≥2 hosts/AZs, with an automatic failover mechanism.
 
 ### GitLab (the DR irony)
+
+> **GitLab vs. Forgejo, as of 2026-08-17.** This section (and the "make up" order
+> table above) describes what a fresh `make up` bootstrap still literally does —
+> GitLab is the git source that gets stood up and configured, unchanged. The
+> currently-running lab's ArgoCD, however, was separately re-pointed at Forgejo
+> directly on the live cluster (PR #1205), so today's steady-state recovery-path
+> SPOF is Forgejo, not GitLab — the DR reasoning below (single git source = single
+> point of failure in the recovery path) applies identically either way, just to
+> whichever one is actually live. See
+> [docs/dependency-tree.md](dependency-tree.md)'s own "Known gap, not yet
+> reconciled" note for the same caveat in the bootstrap-order diagram.
+
 GitLab is the source of truth for a system whose *recovery* is GitOps — so a single
 GitLab means a single point of failure **in the recovery path itself**. Note it does
 *not* take serving down: if GitLab dies, every running workload keeps running on
