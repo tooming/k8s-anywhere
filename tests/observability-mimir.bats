@@ -9,7 +9,12 @@ setup() {
   DEPLOYMENT="$REPO/gitops/observability/mimir/deployment.yaml"
 }
 
-@test "mimir deployment pins image tag 3.1.4" {
-  run grep -q 'image: grafana/mimir:3.1.4' "$DEPLOYMENT"
+@test "mimir deployment pins image tag 3.1.5" {
+  run grep -q 'image: grafana/mimir:3.1.5' "$DEPLOYMENT"
   [ "$status" -eq 0 ]
+}
+
+@test "mimir deployment does not pin the stale 3.1.4 tag" {
+  run grep -q 'image: grafana/mimir:3.1.4' "$DEPLOYMENT"
+  [ "$status" -ne 0 ]
 }

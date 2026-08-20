@@ -66,7 +66,7 @@ bootstrapped, formally recorded here for the first time.
 
 | Component | Deployment shape | Source | Version pin |
 |---|---|---|---|
-| **Mimir** | Raw manifests (`gitops/observability/mimir`), single-binary `-target=all`, filesystem storage | ArgoCD `Application` `mimir`, `targetRevision: main` (kustomize path, not a Helm chart — Mimir has no official chart this lab tracks) | Image tag tracked via `context.md` (currently `3.1.4` per this run's earlier currency sweep) |
+| **Mimir** | Raw manifests (`gitops/observability/mimir`), single-binary `-target=all`, filesystem storage | ArgoCD `Application` `mimir`, `targetRevision: main` (kustomize path, not a Helm chart — Mimir has no official chart this lab tracks) | `image: grafana/mimir:3.1.5` (tracked in this ADR's own Re-evaluation log, 2026-08-20 CVE bump) |
 | **Loki** | Raw manifests (`gitops/observability/loki`), single-binary, Garage S3-backed | ArgoCD `Application` `loki`, `targetRevision: main` | Image tag tracked via ADR-0006 (currently `3.7.6`) |
 | **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.8` directly | `2.10.8` (tracked in ADR-0006's Re-evaluation log, 2026-08-13 security bump) |
 | **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.1` | `2.2.1` |
@@ -112,6 +112,56 @@ shape (Alloy as sole collector feeding all four Grafana-authored stores).
 ---
 
 ## Re-evaluation log
+
+**2026-08-20** — Mimir image tag bumped `3.1.4` → `3.1.5` (upgrade-drafter fallback,
+`executor.prompt.md` STEP 6b — the "Now / next" lane was still fully gated on issue
+#633 and the two GitLab→Forgejo migration items, and this run's earlier PLANNER/
+ARCHITECT passes found no ungroomed issues and no un-RFC'd 🟡 items). Verified
+directly (not assumed, ADR-0004): `git ls-remote --tags github.com/grafana/mimir`
+shows `mimir-3.2.0` and an intermediate `mimir-3.1.5` both ahead of the pinned
+`3.1.4`. A real clone's `CHANGELOG.md` at the `mimir-3.1.5` tag shows exactly one
+entry: `[BUGFIX] Upgrade Go to 1.26.6 to address CVE-2026-33818, CVE-2026-39821,
+CVE-2026-46600, CVE-2026-56853, CVE-2026-56858, CVE-2026-56859, CVE-2026-56860, and
+CVE-2026-56862 (#16408)` — a clean, same-line Go-stdlib CVE bump with zero
+config/flag surface change. `docker hub`'s tag API confirms `grafana/mimir:3.1.5`
+exists (pushed 2026-08-20).
+
+**Deliberately did not jump to `3.2.0`** even though it's the highest stable tag:
+its `CHANGELOG.md` entry carries a long list of `[CHANGE]` lines with real
+behavioral/config impact — query-frontend default-behavior flips (query sharding
+on by default, reduced default querier concurrency), the embedded Alertmanager UI
+being removed entirely (upstream dropped the embeddable package), and a
+**required-coordinated-upgrade** note ("This change requires upgrading from Mimir
+3.1" for the querier/store-gateway opaque-gRPC-type change) — exactly the kind of
+live-cluster-verified rollout this clusterless session cannot safely assert
+succeeded (ADR-0004). The `3.1.x` line's own latest patch delivers the real
+security fix with none of that risk; `3.2.0` is left for a future live-cluster
+session with the headroom to verify a coordinated upgrade actually completes
+cleanly.
+
+Also corrected this ADR's own "What's actually running" table row (above), which
+previously read "Image tag tracked via `context.md` (currently `3.1.4`...)" —
+`context.md` (`docs/decisions/context.md`) has no Mimir version reference at all
+(checked directly; it only lists Garage S3 bucket names), so that citation was
+already stale/wrong independent of this bump. Reshaped the cell to the same
+`` `gitops/<dir>` `` + `` `image: <name>:<tag>` `` phrasing Tempo's row already uses,
+which brings Mimir under `scripts/adr-image-pin-sync-check.sh`'s existing
+mechanical drift guard (Shape 2) for the first time — it previously couldn't parse
+the old `context.md`-citing phrasing, so Mimir's row could have gone stale
+silently, the exact failure mode Tempo's 2026-08-18 entry below already fixed for
+that row specifically. No script change needed; the existing guard now covers this
+row automatically now that its phrasing matches.
+
+**ADR-0004 caveat.** This remote, clusterless session verified the changelog and
+published-image facts directly, but cannot verify Mimir starts cleanly and keeps
+ingesting metrics post-bump on a live cluster. Rollback is a one-line `image:` tag
+revert; Mimir is a plain manifest (not ArgoCD-templated Helm), so a revert takes
+effect on the next GitOps sync, and its storage (Garage S3 buckets `mimir`/
+`mimir-ruler`) is untouched by an image-tag change either way.
+
+**Flip condition (next re-evaluation).** Revisit the `3.2.0` minor once a
+live-cluster session can verify the coordinated querier/store-gateway upgrade path,
+or sooner if a new advisory names a version at or above `3.1.5` as affected.
 
 **2026-08-18** — table-row correction (Tempo): this ADR's own "What's actually
 running" table (above) still cited Tempo's image tag as `2.10.7`, but the live pin
