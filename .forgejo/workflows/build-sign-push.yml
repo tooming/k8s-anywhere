@@ -174,17 +174,15 @@ jobs:
       # live: a run that needed the extra headroom (build-and-push took 10m38s
       # total, ~9m55s of that inside retry_cmd's build+push retries) went on to
       # succeed instead of failing at the old budget's ~75s mark.
+      #
+      # 2026-08-20 (janitor cleanup): retry_cmd() itself now lives in
+      # scripts/lib/retry_cmd.sh, not inline here — this step and "Build, tag,
+      # and push" below both had byte-identical copies, and that duplication
+      # already caused one drift bug (see that file's own header comment).
+      # Sourced, not redefined; checkout above already put it on disk.
       - name: Login to Harbor
         run: |
-          retry_cmd() {
-            local n=0 max=14 delay=30
-            until "$@"; do
-              n=$((n+1))
-              [ "$n" -ge "$max" ] && { echo "retry_cmd: giving up after $n attempts: $*" >&2; return 1; }
-              echo "retry_cmd: attempt $n failed, retrying in ${delay}s: $*" >&2
-              sleep "$delay"
-            done
-          }
+          . scripts/lib/retry_cmd.sh
           retry_cmd sh -c 'echo "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USER" --password-stdin'
         env:
           HARBOR_USER: ${{ secrets.HARBOR_USER }}
@@ -193,16 +191,8 @@ jobs:
       - name: Build, tag, and push
         run: |
           # See "Login to Harbor" step's comment: same host-recovery-time-vs-budget
-          # mismatch, same fix (max=14/delay=30s).
-          retry_cmd() {
-            local n=0 max=14 delay=30
-            until "$@"; do
-              n=$((n+1))
-              [ "$n" -ge "$max" ] && { echo "retry_cmd: giving up after $n attempts: $*" >&2; return 1; }
-              echo "retry_cmd: attempt $n failed, retrying in ${delay}s: $*" >&2
-              sleep "$delay"
-            done
-          }
+          # mismatch, same fix (max=14/delay=30s), same shared scripts/lib/retry_cmd.sh.
+          . scripts/lib/retry_cmd.sh
           sha="${GITHUB_SHA:0:8}"
           # --build-arg REGISTRY: gitops/apps/demo/Dockerfile's FROM now pulls the
           # base image from Harbor's own mirror (found live 2026-08-18: docker.io's
@@ -292,6 +282,16 @@ jobs:
           # few minutes later succeeded once Harbor had recovered. Same
           # retry_cmd wrapper build-and-push already uses (max=14/delay=30s, see
           # that job's own comment for the full root-cause writeup).
+          #
+          # 2026-08-20 (janitor cleanup): build-and-push's two copies now source
+          # the shared scripts/lib/retry_cmd.sh instead of redefining this
+          # function inline (see that file's header comment). This job can't do
+          # the same yet — it has no checkout step (never needed repo files
+          # before this), and adding one purely to source a shared helper is a
+          # behavior change out of scope for a bounded cleanup while this
+          # pipeline is still under active live-tuning (issue #633). Keep this
+          # copy byte-identical to scripts/lib/retry_cmd.sh's body by hand until
+          # a follow-up gives this job a checkout step too.
           retry_cmd() {
             local n=0 max=14 delay=30
             until "$@"; do

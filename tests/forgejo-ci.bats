@@ -8,6 +8,7 @@
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   WF="$REPO/.forgejo/workflows/build-sign-push.yml"
+  RETRY_LIB="$REPO/scripts/lib/retry_cmd.sh"
 }
 
 @test "build-sign-push.yml exists under .forgejo/workflows/" {
@@ -129,11 +130,31 @@ setup() {
   grep -q '^          docker tag "\$REGISTRY/\$IMAGE_NAME:\$sha" "\$REGISTRY/\$IMAGE_NAME:latest"$' "$WF"
 }
 
-@test "every retry_cmd definition in the file gives Harbor at least several minutes of retry budget, not the old 75s (found live 2026-08-19: Harbor's core/registry crash under real push load and take 2-4+ minutes to recover, routinely outlasting the old 6-attempt/15s budget)" {
-  count="$(grep -c 'local n=0 max=14 delay=30' "$WF")"
-  [ "$count" -eq 3 ]
+@test "every retry_cmd definition (shared lib + sign-image's remaining inline copy) gives Harbor at least several minutes of retry budget, not the old 75s (found live 2026-08-19: Harbor's core/registry crash under real push load and take 2-4+ minutes to recover, routinely outlasting the old 6-attempt/15s budget)" {
+  [ -f "$RETRY_LIB" ]
+  wf_count="$(grep -c 'local n=0 max=14 delay=30' "$WF")"
+  [ "$wf_count" -eq 1 ]
+  lib_count="$(grep -c 'local n=0 max=14 delay=30' "$RETRY_LIB")"
+  [ "$lib_count" -eq 1 ]
   run grep -q 'max=6 delay=15' "$WF"
   [ "$status" -eq 1 ]
+}
+
+@test "build-and-push's two network-facing steps source the shared scripts/lib/retry_cmd.sh instead of redefining retry_cmd() inline (janitor cleanup 2026-08-20: the two copies were byte-identical and their drift already caused one bug, PR #1276->#1277)" {
+  run sed -n '/^  build-and-push:/,/^  sign-image:/p' "$WF"
+  [ "$status" -eq 0 ]
+  source_count="$(grep -c '^          \. scripts/lib/retry_cmd\.sh$' <<<"$output")"
+  [ "$source_count" -eq 2 ]
+  # build-and-push itself must define retry_cmd() nowhere — both call sites source it.
+  run sed -n '/^  build-and-push:/,/^  sign-image:/p' "$WF"
+  [[ "$output" != *"retry_cmd() {"* ]]
+}
+
+@test "scripts/lib/retry_cmd.sh defines retry_cmd() with the same budget/backoff shape used inline in the workflow" {
+  [ -f "$RETRY_LIB" ]
+  grep -q '^retry_cmd() {$' "$RETRY_LIB"
+  grep -q 'local n=0 max=14 delay=30' "$RETRY_LIB"
+  grep -q 'until "\$@"; do' "$RETRY_LIB"
 }
 
 # 2026-08-18: docker.io's auth-token endpoint was the one consistently-unreachable
