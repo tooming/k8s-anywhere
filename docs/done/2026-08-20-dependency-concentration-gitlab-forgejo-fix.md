@@ -37,4 +37,4 @@ No `gitops/` manifest change; `make markdown-links-check` confirmed green.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1293
