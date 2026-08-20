@@ -11,6 +11,13 @@ STEP 6b, a later run — two of the 2026-08-18 pass's own open items resolved
 since then: Cilium's `1.18.13` patch shipped and was pinned same-day, and
 RabbitMQ's `4.3.5-management` image (reported "not groundable yet" in the
 2026-08-18 pass) now resolves and was pinned. See "At-a-glance" for both.
+**Refreshed again 2026-08-20** (architect-fallback cycle, `executor.prompt.md`
+STEP 6b, third cycle of a new run — Mimir's image tag bumped `3.1.4`→`3.1.5`
+(a Go-stdlib CVE fix, `upgrade/mimir-3-1-4-to-3-1-5`, PR #1279) and ADR-0030
+(k3s) got its first dedicated GHSA-advisory sweep since its 2026-08-05 bump
+(the prior "reconfirmed" mention below only checked the version pointer, not
+published advisories) — kept, all three published k3s GHSAs already
+exceeded by the current pin (ADR audit #1281). See "At-a-glance" for both.
 
 ---
 
@@ -90,9 +97,27 @@ RabbitMQ's `4.3.5-management` image (reported "not groundable yet" in the
   correctly left unbumped in the 2026-W33 digest (a dashboard-snapshot
   `deletekey` backport this lab doesn't use, not a security fix); re-confirmed
   the same conclusion this pass, no new information changes it.
-- No open `adr-audit` issues to close (STEP 2), no un-RFC'd 🟡 ROADMAP item to
-  decide (STEP 3/4), and no new ADR-audit-worthy finding surfaced (STEP 2b) —
-  every existing ADR'd choice remains sound against this week's releases.
+- **New this cycle (2026-08-20): Mimir image tag `3.1.4`→`3.1.5`** — a
+  same-line Go-stdlib CVE bump (8 CVEs fixed, zero config/flag surface
+  change; found by this cycle's own UPGRADE-DRAFTER-fallback pass — Mimir
+  isn't on this routine's STEP 1 fetch list, no dedicated CVE-tracking
+  history beyond ADR-0034). Deliberately did NOT jump to the newer `3.2.0`
+  minor — its changelog carries real behavioral/config `[CHANGE]`s and an
+  explicit coordinated-upgrade requirement needing live-cluster
+  verification. Opened as `upgrade/mimir-3-1-4-to-3-1-5` (PR #1279),
+  self-reviewed and merged same cycle.
+- **New this cycle (2026-08-20): ADR-0030 (k3s) re-audited, kept** — its
+  last audit (2026-08-05) predates this run's 2026-08-19 GHSA-sweep round,
+  which covered most other ADR'd components but not k3s. This cycle gave
+  it its first dedicated advisory-page sweep: all three published k3s
+  GHSAs are already exceeded by the current `v1.36.3+k3s1` pin (the
+  most recent, GHSA-jxr7-mqhw-9p98, fixed at `v1.35.3+k3s1` — a full minor
+  line behind this lab's pin). ADR audit #1281, opened and resolved Keep
+  same cycle; see ADR-0030's own Re-evaluation log for the full finding.
+- No other open `adr-audit` issues to close (STEP 2), no un-RFC'd 🟡
+  ROADMAP item to decide (STEP 3/4), and no other new ADR-audit-worthy
+  finding surfaced (STEP 2b) beyond the k3s audit above — every other
+  existing ADR'd choice remains sound against this week's releases.
 
 ---
 
@@ -144,8 +169,9 @@ ADR-0004, never re-assert a fact not actually checked this run).
 
 ### Reconfirmed from this run's earlier cycles (not re-fetched cold this pass)
 
-- **k3s** (`v1.36.3+k3s1`, independently re-verified this cycle against
-  `k3s-io/k3s`'s own `channel.yaml` stable pointer), **Vault Helm chart**
+- **k3s** (`v1.36.3+k3s1` — the 2026-08-19 pass verified the version pointer;
+  the 2026-08-20 pass added a first dedicated GHSA-advisory sweep, kept, see
+  "At-a-glance" above and ADR audit #1281), **Vault Helm chart**
   (bumped `0.34.0`→`0.34.1` this cycle — see "At-a-glance" above), **Cilium**
   (bumped `1.18.12`→`1.18.13` a later cycle since this row was last written
   — see "At-a-glance" above; `1.21.0-pre.0` is still pre-release only, no
@@ -205,12 +231,14 @@ remains sound.
 
 This is the fourth entry produced under `architect.prompt.md` STEP 1c's now-mandatory
 digest-write contract, after [2026-W32](2026-W32-digest.md) (the cadence-resumption
-entry) and [2026-W33](2026-W33-digest.md) — refreshed in place three times within the
-same ISO week (2026-08-17, 2026-08-18, then 2026-08-19) rather than forking a second
-file, per STEP 1c's own instruction. The mechanism continues to hold: this file was
-touched again because a later run reached the ARCHITECT fallback role, and that
-role's own contract requires writing/refreshing this file unconditionally, not
-because anyone remembered to do it by hand. It also continues to catch real drift —
-two of the 2026-08-18 pass's own claims (RabbitMQ groundability, Cilium's pinned
-version) were already stale by the next day, exactly the kind of staleness a
+entry) and [2026-W33](2026-W33-digest.md) — refreshed in place four times within the
+same ISO week (2026-08-17, 2026-08-18, 2026-08-19, then 2026-08-20) rather than
+forking a second file, per STEP 1c's own instruction. The mechanism continues to
+hold: this file was touched again because a later run reached the ARCHITECT
+fallback role, and that role's own contract requires writing/refreshing this file
+unconditionally, not because anyone remembered to do it by hand. It also continues
+to catch real drift — two of the 2026-08-18 pass's own claims (RabbitMQ
+groundability, Cilium's pinned version) were already stale by the next day, and the
+2026-08-20 pass found k3s's own audit trail (last touched 2026-08-05) had gone
+stale relative to the rest of the ADR set, exactly the kind of staleness a
 refresh-on-every-cycle contract exists to catch rather than let compound.
