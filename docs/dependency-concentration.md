@@ -43,8 +43,9 @@ two different orgs despite sharing one ADR (ADR-0012); Longhorn (longhorn); Cili
 (cilium); Aiven Inkless (aiven); Valkey (valkey-io); Kyverno (kyverno); Velero
 (vmware-tanzu); Trivy Operator (aquasecurity); Kargo (akuity); Harbor (goharbor);
 Oracle Cloud Infrastructure (not GitHub-hosted — cloud.oracle.com); k3s (k3s-io);
-cert-manager (cert-manager); KEDA (kedacore); GitLab (not GitHub-hosted —
-gitlab.com/gitlab-org); kube-state-metrics (kubernetes); node-exporter (prometheus).
+cert-manager (cert-manager); KEDA (kedacore); Forgejo (not GitHub-hosted —
+codeberg.org/forgejo, code.forgejo.org/forgejo); kube-state-metrics (kubernetes);
+node-exporter (prometheus).
 No further grouping applies — padding this section with 24 one-line "groups" of a
 single tool each would not add information the register table doesn't already give
 directly.
