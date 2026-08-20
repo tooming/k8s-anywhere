@@ -218,3 +218,37 @@ trusting this pin in practice.
 `v1.36.3` ships with a security fix, or a CVE is disclosed against `v1.36.3`
 specifically — same architect CVE-sweep + RFC path, not a routine drive-by
 bump.
+
+### 2026-08-20 — `v1.36.3+k3s1` pin kept, still current, GHSA sweep clean (audit #1281)
+
+**Trigger.** This ADR's last audit (2026-08-05, the bump above) was two weeks
+stale relative to today, and this run's earlier 2026-08-19 GHSA-sweep round
+covered most other ADR'd components (ArgoCD, Garage, Cilium, Istio, Longhorn,
+Velero, Trivy Operator, Kargo, cert-manager, KEDA, External Secrets) but not
+k3s itself — architect-fallback cycle (`executor.prompt.md` STEP 6b) picked
+this ADR as the genuinely stalest-audited one.
+
+**Verified directly (not assumed, ADR-0004):** `git ls-remote --tags
+k3s-io/k3s` confirms `v1.36.3+k3s1` — the pin both backends already carry
+(`infra/modules/k3d-cluster/k3d-config.yaml.tftpl`'s `image:
+rancher/k3s:v1.36.3-k3s1`) — is still the newest tag on the `1.36.x` line; no
+`1.37.x` line exists yet. Fetched `github.com/k3s-io/k3s/security/advisories`
+directly: three published advisories total.
+- **GHSA-jxr7-mqhw-9p98** (Moderate, CVSS 5.8, ZIP path-traversal in etcd
+  snapshot decompression, published June 2026) — fetched the advisory itself
+  for exact ranges: affected `<=v1.35.2+k3s1` / `<=v1.34.5+k3s1` /
+  `<=v1.33.9+k3s`, fixed at `v1.35.3+k3s1` / `v1.34.6+k3s1` /
+  `v1.33.10+k3s1`. This lab's pin is on a newer minor line entirely than
+  every affected range.
+- **GHSA-m4hf-6vgr-75r2** (High, apiserver TLS-SAN-stuffing unauthenticated
+  DoS, 2023) and **GHSA-cxm9-4m6p-24mc** (Moderate, empty-token
+  bootstrap-data encryption, 2021) — both pre-date this pin by years,
+  already accounted for by prior audits.
+
+**Decision: Keep.** No new k3s release and no applicable CVE against the
+`1.36.x` line. Full audit trail: [ADR audit
+#1281](https://github.com/tooming/k8s-anywhere/issues/1281).
+
+**Flip condition (next re-evaluation):** unchanged — a new k3s stable release
+at or above `v1.36.3` ships with a security fix, or a CVE is disclosed
+against `v1.36.3` specifically.
