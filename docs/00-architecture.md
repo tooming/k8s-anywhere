@@ -76,6 +76,13 @@ Rows are grouped by layer, matching the README stack table.
 | **GitLab** | Git source of truth. Hosts the `gitops/` manifests and runs the CI pipeline (build → cosign sign → push to Harbor per ADR-0024). |
 | **ArgoCD** | GitOps engine. Watches GitLab and makes the cluster match it (app-of-apps pattern). All workloads below arrive via ArgoCD, never by `helm install` or `kubectl apply`. |
 
+> **GitLab vs. Forgejo, as of 2026-08-17.** This table describes what a fresh `make up`
+> still literally does — bootstrap GitLab as the git source (ADR-0035's migration items
+> 3/4 not yet picked up). The already-running lab was separately re-pointed at Forgejo
+> directly on the live cluster (PR #1205), so today's steady-state git source is Forgejo,
+> not GitLab. See [docs/dependency-tree.md](dependency-tree.md)'s "Day-0 bootstrap chain"
+> section for the full explanation of this gap and its own tracking note.
+
 ### Ingress
 
 | Tool | Role in the platform |
@@ -210,7 +217,7 @@ On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`har
 ## Suggested learning path
 
 0. **Toolchain + Colima** — container runtime VM. Set up first.
-1. **Foundation** — `make up` (k3d + ArgoCD + GitLab wiring). The whole lab rebuilds from this one command.
+1. **Foundation** — `make up` (k3d + ArgoCD + GitLab wiring — see the "GitOps engine" table above for why this still says GitLab, not Forgejo). The whole lab rebuilds from this one command.
 2. **Core platform** — Envoy Gateway routes traffic; cert-manager issues and auto-renews the TLS certs the Gateway's HTTPS listener serves from a self-signed root CA; Vault + External Secrets manage secrets; Garage + s3manager store objects.
 3. **Observability** — Alloy ships telemetry to Mimir (metrics), Loki (logs), Tempo (traces), and Pyroscope (profiles). Grafana displays all four. KSM and node-exporter add cluster and host vitals.
 4. **Data layer** — RabbitMQ messages and Valkey key-value, kept busy by data-demo. Real activity means real dashboard data. KEDA scales the `rabbitmq-load` Deployment on the queue's real depth — event-driven autoscaling, not a timer or a hand-set replica count.
