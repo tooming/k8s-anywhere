@@ -50,6 +50,15 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Promotion pipelines** | Kargo (`make kargo-up` / `make kargo-down` — Warehouse detects new image digests → Stage dev auto-promote → Stage prod manual gate · `kargo-project` capstone-pipeline Project · `kargo-networkpolicy` default-deny overlay · `kargo-project-networkpolicy` capstone-pipeline NetworkPolicy overlay; ADR-0023) |
 | **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Harbor CNCF OCI registry (`make harbor-up` / `make harbor-down` — Garage S3 backend; ADR-0024) · Istio ambient mesh — istio-base · istio-cni · istiod · ztunnel (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn distributed block storage (`make longhorn-up` / `make longhorn-down`) · Aiven Inkless diskless Kafka (`make inkless-up` / `make inkless-down`) · Kargo promotion engine (`make kargo-up` / `make kargo-down`) |
 
+> **GitLab vs. Forgejo, as of 2026-08-17.** The table above (and the `make up`
+> bootstrap and the `gitlab-`-prefixed commands below) describe what a fresh
+> bootstrap still literally does — GitLab is provisioned as the git source
+> (ADR-0035's migration items 3/4 not yet picked up). The already-running lab
+> was separately re-pointed at Forgejo directly on the live cluster (PR #1205),
+> so today's steady-state git source is Forgejo, not GitLab. See
+> [docs/dependency-tree.md](docs/dependency-tree.md)'s "Day-0 bootstrap chain"
+> section for the full explanation.
+
 ## Prerequisites
 
 macOS with **Colima** (not Docker Desktop). Install the toolchain, then verify:
