@@ -42,4 +42,4 @@ which only guards the frozen monolith itself — a new file needs no registratio
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1295
