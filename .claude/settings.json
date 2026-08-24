@@ -204,6 +204,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/dependency-register-sync-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking dependency-register.md Last-reviewed sync"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/yqs-lib-sync-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking for a duplicated yqs() helper"
