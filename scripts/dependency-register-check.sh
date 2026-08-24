@@ -30,13 +30,30 @@
 # recently Grafana), not specifically Loki's or Tempo's, and false-flag a row
 # that is actually current. Restricting to the ADR column avoids that.
 #
-# Also only recognizes the `### YYYY-MM-DD — ...` dated-heading Re-evaluation
-# log convention (ADR-0006, ADR-0008, ADR-0019, ADR-0030, and most others use
-# it) — ADR-0034's log instead uses `**YYYY-MM-DD** — ...` bold-text entries,
-# which this check does not parse, so Mimir/Loki/Tempo/Pyroscope/Alloy/KSM/
-# node-exporter rows citing ADR-0034 alone get no comparison at all (silently
-# skipped, not silently passed) until a future pass teaches this script that
-# second convention too — noted here rather than overclaimed (ADR-0004).
+# Also recognizes ONE shape of ADR-0034's `**YYYY-MM-DD** — ...` bold-text
+# Re-evaluation log convention: an entry naming the exact component and a real
+# version-changing action, `**YYYY-MM-DD** — <Component> chart bumped ...` or
+# `**YYYY-MM-DD** — <Component> image tag bumped ...` (2026-08-24 extension).
+# Deliberately narrow and component-scoped, unlike the `###`-heading shape's
+# per-ADR global-latest: a naive "latest bold-date entry anywhere in the ADR"
+# reading would false-flag rows like Tempo's — ADR-0034 has a
+# "**2026-08-18** — table-row correction (Tempo): ..." entry that mentions
+# Tempo by name but is a doc-formatting fix, not a new currency check (Tempo's
+# real last check is a 2026-08-13 entry in ADR-0006, which this script already
+# can't see either — see the ADR-column-only note above). Requiring the exact
+# "<Component> (chart|image tag) bumped" phrasing right after the date, and
+# matching it against the row's own Tool-column name, avoids exactly that
+# false positive (verified against a dedicated regression fixture,
+# tests/fixtures/dependency-register-check/shared-adr-no-false-positive/).
+# Any bold-date entry NOT matching this exact shape (a "kept, no bump" audit,
+# a doc-only correction, a multi-component summary) is silently skipped, not
+# silently passed — still an honest under-count, not an overclaim (ADR-0004),
+# same posture as the `###`-heading shape's own documented gaps below.
+#
+# Only recognizes these two shapes. A component whose ADR uses neither (e.g.
+# Loki/Tempo's real history lives in ADR-0006, cited only in the register's
+# own prose, never in the ADR column per the note above) gets no comparison
+# at all for that ADR.
 #
 # Run by `make dependency-register-check` and the CI 'drift' gate. Exit 0 = every
 # register row is at least as current as its cited ADRs' own Re-evaluation logs;
@@ -67,6 +84,14 @@ latest_reeval_date() {
     | awk '{print $2}' | sort | tail -1
 }
 
+# Latest bold-entry re-evaluation date for a SPECIFIC component in a given ADR
+# file (the ADR-0034 shape — see header comment). Empty if no matching entry.
+latest_bold_component_date() {
+  local adr_path="$1" component="$2"
+  grep -oE "^\*\*[0-9]{4}-[0-9]{2}-[0-9]{2}\*\* — ${component} (chart|image tag) bumped" "$adr_path" 2>/dev/null \
+    | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | sort | tail -1
+}
+
 while IFS= read -r row; do
   [ -n "$row" ] || continue
   tool="$(printf '%s' "$row" | awk -F'|' '{gsub(/^ +| +$/, "", $2); print $2}')"
@@ -91,10 +116,16 @@ while IFS= read -r row; do
   for adr_file in "${adr_files[@]}"; do
     adr_path="$ADR_DIR/$adr_file"
     [ -f "$adr_path" ] || continue
+
     adr_date="$(latest_reeval_date "$adr_path")"
-    [ -n "$adr_date" ] || continue
-    if [ -z "$newest_adr_date" ] || [[ "$adr_date" > "$newest_adr_date" ]]; then
+    if [ -n "$adr_date" ] && { [ -z "$newest_adr_date" ] || [[ "$adr_date" > "$newest_adr_date" ]]; }; then
       newest_adr_date="$adr_date"
+      newest_adr_name="$adr_file"
+    fi
+
+    bold_date="$(latest_bold_component_date "$adr_path" "$tool")"
+    if [ -n "$bold_date" ] && { [ -z "$newest_adr_date" ] || [[ "$bold_date" > "$newest_adr_date" ]]; }; then
+      newest_adr_date="$bold_date"
       newest_adr_name="$adr_file"
     fi
   done

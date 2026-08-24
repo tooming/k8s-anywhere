@@ -277,18 +277,25 @@ so a future edit can't silently drop the highest-severity rows without failing
   purely from existing ADR content.
 - **Evidence:** [docs/dependency-register.md](dependency-register.md).
 - **Gap:** narrower now — `make ci` gained a mechanical drift guard
-  (`scripts/dependency-register-check.sh`, 2026-08-24, PR #1297): it fails the build
-  if any register row's "Last reviewed" date is older than the newest
-  `### YYYY-MM-DD` Re-evaluation-log entry of the ADR(s) cited in that row's ADR
-  column, so a future ADR bump landing without a matching register update is now
-  caught, not silent. Two honest limits remain, stated in the script's own header
-  comment rather than overclaimed: (1) it doesn't parse ADR-0034's `**YYYY-MM-DD**`
-  bold-entry convention, so the seven rows citing ADR-0034 alone (Mimir, Loki, Tempo,
-  Pyroscope, Alloy, kube-state-metrics, node-exporter) aren't mechanically checked
-  yet; (2) it can't invent a review date for an ADR that never recorded one — a few
-  rows are still honestly marked "not dated in ADR" where the underlying ADR itself
-  has no Re-evaluation log, which is a gap in the ADR, not something this register
-  or its guard could paper over.
+  (`scripts/dependency-register-check.sh`, 2026-08-24, PR #1297, extended the same
+  day in a later cycle of the same run) plus a local PostToolUse nudge hook that
+  fires the same check at
+  edit time (`scripts/dependency-register-sync-hook.sh`, PR #1301). It fails the
+  build if any register row's "Last reviewed" date is older than the newest
+  Re-evaluation-log entry of the ADR(s) cited in that row's ADR column, recognizing
+  two log conventions: the `### YYYY-MM-DD` dated-heading shape most ADRs use, and
+  one narrow, component-scoped slice of ADR-0034's `**YYYY-MM-DD** — <Component>
+  (chart|image tag) bumped` bold-entry shape. Two honest limits remain, stated in
+  the script's own header comment rather than overclaimed: (1) only 3 of the 7 rows
+  citing ADR-0034 alone (kube-state-metrics, Mimir, Pyroscope) have a matching
+  bold-entry pattern to check against — Alloy/node-exporter currently have no
+  logged ADR-0034 entry at all, and Loki/Tempo's real currency history lives in
+  ADR-0006, not ADR-0034 (cited only in the register's own prose, per the
+  ADR-column-only scoping note above), so those four stay unchecked; (2) it can't
+  invent a review date for an ADR that never recorded one — a few rows are still
+  honestly marked "not dated in ADR" where the underlying ADR itself has no
+  Re-evaluation log, which is a gap in the ADR, not something this register or its
+  guard could paper over.
 
 **Q15. Is each dependency risk-assessed (license, maintenance status, single-vendor
 concentration)?**

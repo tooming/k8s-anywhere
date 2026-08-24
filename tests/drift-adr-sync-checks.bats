@@ -171,6 +171,17 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "dependency-register-check: fails on the ADR-0034 bold-entry shape when a newer 'chart bumped' entry names the same component" {
+  run env DEPENDENCYREGISTERCHECK_ROOT="$FIX/dependency-register-check/bold-entry-drift" bash "$REPO/scripts/dependency-register-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"older than"* ]]
+}
+
+@test "dependency-register-check: does not false-positive on a bold-entry that names the component but isn't a 'chart/image tag bumped' action (the real Tempo table-row-correction shape)" {
+  run env DEPENDENCYREGISTERCHECK_ROOT="$FIX/dependency-register-check/bold-entry-no-false-positive" bash "$REPO/scripts/dependency-register-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 @test "dependency-register-check: passes on the real repo's dependency-register.md" {
   run bash "$REPO/scripts/dependency-register-check.sh"
   [ "$status" -eq 0 ]
