@@ -771,3 +771,17 @@ kargo-down: ## Remove Kargo and its Envoy route (reclaims ~250-450 MB)
 	$(call argocd-delete,kargo-networkpolicy)
 	$(call argocd-delete,kargo-extras)
 	$(call argocd-delete,kargo)
+
+.PHONY: keda-up
+keda-up: ## Deploy KEDA event-driven autoscaling via ArgoCD manual sync (~320 MB; do after make up)
+	$(call argocd-sync,keda-extras)
+	$(call argocd-sync,keda)
+	$(call argocd-sync,keda-networkpolicy)
+	$(call argocd-sync,data-demo-keda-scaling)
+
+.PHONY: keda-down
+keda-down: ## Remove KEDA (reclaims ~320 MB; converted to on-demand 2026-08-25, ADR-0029)
+	$(call argocd-delete,data-demo-keda-scaling)
+	$(call argocd-delete,keda-networkpolicy)
+	$(call argocd-delete,keda)
+	$(call argocd-delete,keda-extras)

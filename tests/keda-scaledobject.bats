@@ -82,9 +82,13 @@ setup() {
   [ "$(yqs '.spec.destination.namespace' "$APP")" = "data" ]
 }
 
-@test "data-demo-keda-scaling Application is auto-synced" {
+# Converted always-on -> on-demand 2026-08-25 alongside keda itself
+# (ADR-0029's Re-evaluation log): this Application's own CRs hard-fail to
+# sync without keda's CRDs installed first, so it travels with keda's
+# on-demand lifecycle (`make keda-up`/`make keda-down`).
+@test "data-demo-keda-scaling Application is manual sync only (on-demand, alongside keda)" {
   run grep -q 'automated:' "$APP"
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
 }
 
 @test "data-demo-keda-scaling Application runs at sync-wave 7 (after keda's wave-6 CRDs)" {

@@ -13,8 +13,14 @@
 # templates/manager/deployment.yaml: enabling certManager flips the webhook
 # cert Secret volume from optional to required, so this Application must sync
 # after k8s-lab-ca exists (cert-manager-root-ca, wave 5) — see wave 6 below.
-# ALWAYS-ON: automated sync; keda-extras (wave 6) pre-creates the namespace
-# with PSA restricted labels before the Helm release schedules pods.
+# ON-DEMAND (converted 2026-08-25, cluster-load reduction — see ADR-0029's
+# Re-evaluation log): manual sync only, `make keda-up`/`make keda-down`.
+# KEDA is reactive/event-driven by its very nature — nothing in this lab
+# generates the RabbitMQ-queue-depth or Mimir-metric signals it scales on
+# unless someone is actively demonstrating that pattern, so there is no
+# always-on workload for it to watch between demos. keda-extras (wave 6)
+# pre-creates the namespace with PSA restricted labels before the Helm
+# release schedules pods; both now share the same on-demand lifecycle.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -93,10 +99,8 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: keda
+  # No automated block: manual sync only (on-demand — see top-of-file comment).
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       # KEDA's crd-scaledjobs.yaml is ~634 KB — over the 262144-byte kubectl
