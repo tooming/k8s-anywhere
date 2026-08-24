@@ -76,6 +76,22 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
+@test "k3s row cites ADR-0030's Re-evaluation log for its real last-reviewed date, not 'not dated in ADR' (2026-08-24)" {
+  # k3s's row correctly keeps ADR-0027 in the ADR column (the register's own
+  # Scope note deliberately excludes ADR-0030 — a policy ADR "enforced via
+  # k3s, whose backend choice ADR-0027 already covers"), but ADR-0030 is
+  # where k3s's actual version-currency re-evaluation history lives (audited
+  # 2026-08-05, 2026-07-28, 2026-08-20). Citing only ADR-0027's authoring
+  # date ("not dated in ADR") understated real, tracked currency review —
+  # same class of bug this file's own history already corrected for three
+  # other rows (docs/done/2026-08-12-dependency-register-log-drift-fix.md)
+  # and the PR #1283 Loki/Tempo ADR-0034-authoring-date fix.
+  k3s_line=$(grep -E '^\| k3s \|' "$DOC")
+  [ -n "$k3s_line" ]
+  grep -q 'adr-0030-pin-k3s-version-explicitly.md' <<<"$k3s_line"
+  ! grep -q 'not dated in ADR' <<<"$k3s_line"
+}
+
 @test "dora-audit-readiness.md's Q14 answer is no longer 'Not as a single consolidated register'" {
   q14_block=$(awk '/\*\*Q14\./{flag=1} flag{print} /\*\*Q15\./{exit}' "$AUDIT")
   [ -n "$q14_block" ]
