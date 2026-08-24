@@ -148,3 +148,30 @@ setup() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"ACK s3-controller"* ]]
 }
+
+# --- dependency-register-check -------------------------------------------------------
+@test "dependency-register-check: passes when a row's Last-reviewed date matches its cited ADR's newest Re-evaluation log entry" {
+  run env DEPENDENCYREGISTERCHECK_ROOT="$FIX/dependency-register-check/in-sync" bash "$REPO/scripts/dependency-register-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "dependency-register-check: fails when a row's Last-reviewed date predates its cited ADR's newest Re-evaluation log entry" {
+  run env DEPENDENCYREGISTERCHECK_ROOT="$FIX/dependency-register-check/drift" bash "$REPO/scripts/dependency-register-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"older than"* ]]
+}
+
+@test "dependency-register-check: does not false-positive on an ADR only cross-referenced in prose, not cited in the ADR column (the Loki/Tempo-vs-ADR-0006 shape)" {
+  run env DEPENDENCYREGISTERCHECK_ROOT="$FIX/dependency-register-check/shared-adr-no-false-positive" bash "$REPO/scripts/dependency-register-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "dependency-register-check: passes (nothing to compare against) when the cited ADR has no Re-evaluation log at all" {
+  run env DEPENDENCYREGISTERCHECK_ROOT="$FIX/dependency-register-check/no-reeval-log" bash "$REPO/scripts/dependency-register-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "dependency-register-check: passes on the real repo's dependency-register.md" {
+  run bash "$REPO/scripts/dependency-register-check.sh"
+  [ "$status" -eq 0 ]
+}
