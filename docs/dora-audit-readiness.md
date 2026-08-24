@@ -276,13 +276,19 @@ so a future edit can't silently drop the highest-severity rows without failing
   criticality, upstream source, deciding ADR, and last-reviewed date, re-indexed
   purely from existing ADR content.
 - **Evidence:** [docs/dependency-register.md](dependency-register.md).
-- **Gap:** the register has no mechanical drift guard yet — it's a manual snapshot
-  that can go stale as future ADR bumps land without a matching register update (the
-  file says so explicitly, rather than implying a freshness guarantee that doesn't
-  exist). Several dates are honestly marked "not dated in ADR" rather than guessed,
-  since a number of ADRs never stated an explicit decision date to begin with — that
-  gap is in the ADRs themselves, not something this register could invent its way
-  around.
+- **Gap:** narrower now — `make ci` gained a mechanical drift guard
+  (`scripts/dependency-register-check.sh`, 2026-08-24, PR #1297): it fails the build
+  if any register row's "Last reviewed" date is older than the newest
+  `### YYYY-MM-DD` Re-evaluation-log entry of the ADR(s) cited in that row's ADR
+  column, so a future ADR bump landing without a matching register update is now
+  caught, not silent. Two honest limits remain, stated in the script's own header
+  comment rather than overclaimed: (1) it doesn't parse ADR-0034's `**YYYY-MM-DD**`
+  bold-entry convention, so the seven rows citing ADR-0034 alone (Mimir, Loki, Tempo,
+  Pyroscope, Alloy, kube-state-metrics, node-exporter) aren't mechanically checked
+  yet; (2) it can't invent a review date for an ADR that never recorded one — a few
+  rows are still honestly marked "not dated in ADR" where the underlying ADR itself
+  has no Re-evaluation log, which is a gap in the ADR, not something this register
+  or its guard could paper over.
 
 **Q15. Is each dependency risk-assessed (license, maintenance status, single-vendor
 concentration)?**
