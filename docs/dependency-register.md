@@ -18,8 +18,8 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 35 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0035), two are **Superseded** and fully excluded per the index's own
+Of the 36 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0036), two are **Superseded** and fully excluded per the index's own
 convention (only their replacement is listed): ADR-0010 (Redis, superseded by
 ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor). A third,
 ADR-0033 (GitLab, superseded by ADR-0035/Forgejo), was **not** excluded the same way
@@ -35,7 +35,7 @@ in the repo (kept for rollback until the decommission item lands; see ADR-0035's
 migration-execution list, items 5–6, and ROADMAP.md's Now/next Forgejo-migration
 list for the current status of that follow-up).
 
-Of the remaining 33, **eight decide a policy or architectural posture rather than a
+Of the remaining 34, **eight decide a policy or architectural posture rather than a
 single third-party product** — they're excluded from the table below because there's
 no one upstream project to attach a criticality/upstream-source/last-reviewed row to:
 ADR-0003 (decoupled/no-SPOF design principle), ADR-0004 (no-fabricated-content
@@ -47,10 +47,12 @@ policy), and ADR-0030 (k3s version-pinning governance — no separate row of its
 but directly cited alongside ADR-0027 in the k3s row's ADR column since 2026-08-24,
 once a gap-analysis pass found the row's "Last reviewed" cell citing only
 ADR-0027's decision date and missing ADR-0030's own, much more current,
-Re-evaluation log entirely). Of the remaining 25, all 25 now
+Re-evaluation log entirely). Of the remaining 26, all 26 now
 have a row below — ADR-0035 (Forgejo) gained its own row 2026-08-17 once the live
 cutover (PR #1205) made Forgejo, not GitLab, the actual live component the row
-should describe (see the note above) — collectively naming the table's 32 distinct
+should describe (see the note above), and ADR-0036 (External Secrets Operator)
+gained its own row 2026-08-19 as a retroactive governance record for a mechanism
+that predated it having any ADR at all — collectively naming the table's 33 distinct
 third-party-tool rows: three ADRs each
 decide on more than one tool at once (ADR-0001: Terraform/Terragrunt + ArgoCD;
 ADR-0012: Istio + Kiali; ADR-0027: Oracle Cloud Infrastructure + k3s) and ADR-0034

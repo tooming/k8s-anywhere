@@ -272,7 +272,7 @@ so a future edit can't silently drop the highest-severity rows without failing
 
 **Q14. Is there a register of ICT third-party dependencies?**
 - **Answer:** Yes. [`docs/dependency-register.md`](dependency-register.md) tabulates
-  every third-party tool named in a binding ADR — 32 tools across 24 ADRs — by
+  every third-party tool named in a binding ADR — 33 tools across 27 ADRs — by
   criticality, upstream source, deciding ADR, and last-reviewed date, re-indexed
   purely from existing ADR content.
 - **Evidence:** [docs/dependency-register.md](dependency-register.md).
@@ -309,7 +309,7 @@ concentration)?**
 
 **Q16. Is concentration risk assessed (reliance on a single upstream provider)?**
 - **Answer:** Yes, as of [`docs/dependency-concentration.md`](dependency-concentration.md)
-  — a cross-cutting rollup of `docs/dependency-register.md`'s 32 tools by upstream
+  — a cross-cutting rollup of `docs/dependency-register.md`'s 33 tools by upstream
   GitHub org. `github.com/grafana` backs six always-on-core rows at once (Grafana,
   Mimir, Loki, Tempo, Pyroscope, Alloy) — the entire observability pane sharing one
   upstream governance/maintenance entity, the largest single concentration in the

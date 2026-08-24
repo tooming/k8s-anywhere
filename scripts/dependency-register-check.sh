@@ -55,9 +55,22 @@
 # own prose, never in the ADR column per the note above) gets no comparison
 # at all for that ADR.
 #
+# SECOND, independent check (2026-08-24): the Scope note's own summary arithmetic
+# ("Of the NN ADRs indexed...", "...the table's NN distinct third-party-tool
+# rows") is hand-maintained prose, not derived — and it drifted for real: ADR-0036
+# (External Secrets Operator) was added 2026-08-19 with its own register row, but
+# the Scope note's ADR-total (35) and row-total (32) were never bumped to match,
+# quietly wrong for 5 days until a 2026-08-24 gap-analysis pass cross-checked the
+# prose against a real `ls docs/decisions/adr-*.md | wc -l` and a real row count.
+# Three other files independently repeat the same "32" figure
+# (docs/dependency-concentration.md, docs/dora-audit-readiness.md ×2) — this
+# check only verifies the register's own Scope note; those three are NOT
+# mechanically checked here (a future extension, same honest-gap posture as the
+# rest of this script).
+#
 # Run by `make dependency-register-check` and the CI 'drift' gate. Exit 0 = every
-# register row is at least as current as its cited ADRs' own Re-evaluation logs;
-# 1 = drift found.
+# register row is at least as current as its cited ADRs' own Re-evaluation logs
+# AND the Scope note's ADR/row-count arithmetic matches reality; 1 = drift found.
 set -uo pipefail
 ROOT="${DEPENDENCYREGISTERCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
@@ -142,4 +155,38 @@ fi
 
 echo
 [ "$drift" -eq 0 ] && printf '  %s✓%s every dependency-register.md row is at least as current as its cited ADRs'"'"' own Re-evaluation logs\n' "$G" "$Z"
+
+# --- Scope note arithmetic check (see header comment) -------------------------
+printf '\n%s== dependency-register.md Scope-note arithmetic sync ==%s\n' "$B" "$Z"
+
+if [ -d "$ADR_DIR" ]; then
+  real_adr_count="$(find "$ADR_DIR" -maxdepth 1 -name 'adr-*.md' | wc -l | tr -d ' ')"
+  stated_adr_count="$(grep -oE 'Of the [0-9]+ ADRs indexed' "$REGISTER" | head -1 | grep -oE '[0-9]+')"
+  if [ -n "$stated_adr_count" ]; then
+    if [ "$stated_adr_count" = "$real_adr_count" ]; then
+      ok "Scope note's ADR total ($stated_adr_count) matches the real adr-*.md file count"
+    else
+      bad "Scope note says \"Of the $stated_adr_count ADRs indexed\" but docs/decisions/ actually has $real_adr_count adr-*.md files — update the Scope note's arithmetic (and its downstream row-count math)"
+    fi
+  fi
+else
+  skip "no docs/decisions/ — skipping Scope note ADR-count check"
+fi
+
+real_row_count="$(grep -cE '^\| [A-Za-z0-9]' "$REGISTER")"
+real_row_count=$((real_row_count > 0 ? real_row_count - 1 : 0)) # subtract the header row
+# The source prose wraps across a line break ("...table's 33 distinct\nthird-party-tool
+# rows:"), so collapse newlines to spaces before matching — a single-line grep can't
+# see across that wrap.
+stated_row_count="$(tr '\n' ' ' < "$REGISTER" | grep -oE "table's [0-9]+ distinct third-party-tool rows" | head -1 | grep -oE '[0-9]+')"
+if [ -n "$stated_row_count" ]; then
+  if [ "$stated_row_count" = "$real_row_count" ]; then
+    ok "Scope note's row total ($stated_row_count) matches the real table row count"
+  else
+    bad "Scope note says \"the table's $stated_row_count distinct third-party-tool rows\" but the table actually has $real_row_count data rows — update the Scope note's arithmetic"
+  fi
+fi
+
+echo
+[ "$drift" -eq 0 ] && printf '  %s✓%s Scope note ADR/row-count arithmetic matches reality\n' "$G" "$Z"
 exit "$drift"
