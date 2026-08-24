@@ -11,7 +11,7 @@ file as pure re-indexing, with no new dependency-risk judgment made in producing
 
 ## Method
 
-Group every one of `docs/dependency-register.md`'s 32 tool rows by **upstream GitHub
+Group every one of `docs/dependency-register.md`'s 33 tool rows by **upstream GitHub
 org**, reusing the register's own "Upstream source" column verbatim (nothing
 re-derived from memory), and flag any org backing more than one row as a
 concentration point.

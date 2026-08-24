@@ -182,7 +182,21 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "dependency-register-check: passes the Scope-note arithmetic check when the ADR-total and row-total match reality" {
+  run env DEPENDENCYREGISTERCHECK_ROOT="$FIX/dependency-register-check/scope-note-in-sync" bash "$REPO/scripts/dependency-register-check.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Scope note's ADR total"* ]]
+}
+
+@test "dependency-register-check: fails the Scope-note arithmetic check when the ADR-total or row-total is stale" {
+  run env DEPENDENCYREGISTERCHECK_ROOT="$FIX/dependency-register-check/scope-note-drift" bash "$REPO/scripts/dependency-register-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Of the 5 ADRs indexed"* ]]
+  [[ "$output" == *"table's 2 distinct third-party-tool rows"* ]]
+}
+
 @test "dependency-register-check: passes on the real repo's dependency-register.md" {
   run bash "$REPO/scripts/dependency-register-check.sh"
   [ "$status" -eq 0 ]
+  [[ "$output" == *"Scope note ADR/row-count arithmetic matches reality"* ]]
 }
