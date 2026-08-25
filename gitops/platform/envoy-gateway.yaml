@@ -1,6 +1,10 @@
 # Envoy Gateway control plane (installs Gateway API CRDs + the controller).
-# Helm chart pulled from its OCI registry. ServerSideApply avoids the
-# client-side-apply size limit on the large Gateway API CRDs.
+# Sourced via a local Kustomize overlay (gitops/envoy-gateway/) that vendors
+# the Helm chart through Kustomize's helmCharts inflator instead of ArgoCD's
+# native Helm source — see that overlay's kustomization.yaml for why (a probe
+# timeout the chart hardcodes with no values.yaml override hook).
+# ServerSideApply avoids the client-side-apply size limit on the large
+# Gateway API CRDs.
 #
 # leaderElection.disable — chronic-bug fix (observed repeatedly, most recently
 # 17+ restarts in ~2h during the #631/#633 investigation on 2026-08-07):
@@ -17,13 +21,28 @@
 # election has nothing to arbitrate. gateway-helm v1.8.3 exposes
 # provider.kubernetes.leaderElection.disable (EnvoyGateway API type
 # LeaderElection, gateway.envoyproxy.io/v1alpha1) precisely for this — verified
-# against the chart's rendered EnvoyGateway config (`helm template`); the
-# chart's values.yaml/templates expose no probe-timeout override hook for this
-# Deployment (checked: envoy-gateway-deployment.yaml hardcodes
-# livenessProbe/readinessProbe with no `.Values` reference), so unlike Harbor's
-# probe-timeout fix (PR #1040) there is no values knob to loosen here — moot
-# anyway since this fix removes the leader-election failure mode by
-# construction rather than by widening a timeout around it.
+# against the chart's rendered EnvoyGateway config (`helm template`).
+#
+# Probe timeoutSeconds fix (added 2026-08-25, found live investigating #633):
+# restart count kept climbing after the leaderElection fix regardless (153
+# restarts/13d, all clean exitCode 0 "Completed" — a liveness-probe-kill
+# signature, not a crash). The chart's values.yaml/templates expose no
+# probe-timeout override hook for this Deployment (checked:
+# envoy-gateway-deployment.yaml hardcodes livenessProbe/readinessProbe
+# timeoutSeconds: 1 with no `.Values` reference) — unlike Harbor's
+# probe-timeout fix (PR #1040) there is no values knob to loosen here, hence
+# the switch to a Kustomize-vendored chart + JSON6902 patch instead of
+# ArgoCD's native `helm:` source (which cannot post-process chart output).
+#
+# --enable-helm is NOT set here via `spec.source.kustomize.buildOptions` —
+# checked live against this cluster's Application CRD (argocd v3.5.0): that
+# field doesn't exist in the schema at all, so it would be silently ignored
+# (the same dead-config pattern already found on ~11 other Applications in
+# this repo that set it). --enable-helm is set globally instead, in
+# infra/modules/argocd/values.yaml's `configs.cm.kustomize.buildOptions`
+# (which the *directory-argument* form of kustomize.buildOptions DOES apply
+# cluster-wide, per ArgoCD's own docs) — see that file's comment for the full
+# story.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -34,18 +53,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: docker.io/envoyproxy
-    chart: gateway-helm
-    targetRevision: v1.8.3
-    helm:
-      releaseName: eg
-      valuesObject:
-        config:
-          envoyGateway:
-            provider:
-              kubernetes:
-                leaderElection:
-                  disable: true
+    repoURL: ssh://git@host.k3d.internal:2223/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/envoy-gateway
   destination:
     server: https://kubernetes.default.svc
     namespace: envoy-gateway-system

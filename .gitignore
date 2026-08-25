@@ -39,3 +39,9 @@ forgejo/.forgejo-token
 *.swp
 .idea/
 .vscode/
+
+# Kustomize helmCharts inflator's local chart-pull cache (gitops/envoy-gateway/
+# is the first user of --enable-helm in this repo, 2026-08-25) -- `kustomize
+# build --enable-helm` and ArgoCD's repo-server both `helm pull --untar` the
+# chart into a `charts/` dir next to the kustomization.yaml that declared it.
+gitops/*/charts/

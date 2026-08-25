@@ -1,0 +1,48 @@
+# Vendors the envoy-gateway control plane Helm chart via Kustomize's helmCharts
+# inflator (instead of ArgoCD's native Helm source) specifically so a JSON6902
+# patch can be applied on top -- see the patch below for why.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+helmCharts:
+  - name: gateway-helm
+    repo: oci://docker.io/envoyproxy
+    version: v1.8.3
+    releaseName: eg
+    namespace: envoy-gateway-system
+    includeCRDs: true
+    valuesInline:
+      config:
+        envoyGateway:
+          provider:
+            kubernetes:
+              leaderElection:
+                disable: true
+
+patches:
+  # Fixed 2026-08-25: the chart hardcodes livenessProbe/readinessProbe
+  # timeoutSeconds: 1 with no values.yaml override hook (verified against the
+  # pinned chart's templates/deployment.yaml -- gitops/platform/envoy-gateway.yaml's
+  # header comment already documented this as "no values knob... moot anyway
+  # since [leaderElection] fix removes the failure mode by construction" when
+  # only leader-election-induced restarts were being investigated). Restart
+  # count kept climbing after that fix regardless (153 restarts/13d, all clean
+  # exitCode 0 "Completed" -- liveness-probe-kill signature, not a crash) --
+  # same "chart default too tight for this host" footgun already fixed via
+  # probe timeoutSeconds bumps across Harbor (PR #1040/#1102), ArgoCD's
+  # repo-server/server (PR #1103/#1121), Kyverno's admissionController (PR
+  # #1115), cert-manager's webhook, and KEDA -- this is the same fix, just
+  # requiring the helmCharts-inflator route since this particular chart has no
+  # values.yaml knob for it. 15s matches the convention used everywhere else
+  # in this repo for the same failure mode. Found live investigating #633
+  # (a chronic front-door 502 pattern was traced to this same restart churn).
+  - target:
+      kind: Deployment
+      name: envoy-gateway
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/livenessProbe/timeoutSeconds
+        value: 15
+      - op: replace
+        path: /spec/template/spec/containers/0/readinessProbe/timeoutSeconds
+        value: 15
