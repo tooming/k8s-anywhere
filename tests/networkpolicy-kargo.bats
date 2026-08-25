@@ -113,8 +113,12 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-kargo-egress-registry allows egress on port 443" {
-  run grep -q 'port: 443' "$KARGO_NP/allow-kargo-egress-registry.yaml"
+@test "allow-kargo-egress-registry allows egress on port 10080 (envoy-proxy pod's containerPort, not the gateway Service's port)" {
+  # Fixed 2026-08-25 (#633 verification): NetworkPolicy matches the destination
+  # pod's containerPort, not the Service port (443/80) — same footgun
+  # gitops/harbor/networkpolicy/allow-harbor-ingress.yaml's own comment already
+  # documents for this exact registry path. See allow-kargo-egress-registry.yaml.
+  run grep -q 'port: 10080' "$KARGO_NP/allow-kargo-egress-registry.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -128,8 +132,12 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-@test "allow-kargo-egress-registry allows egress to the harbor namespace (auto/harbor-capstone-rewire cutover)" {
-  run grep -q 'kubernetes.io/metadata.name: harbor' "$KARGO_NP/allow-kargo-egress-registry.yaml"
+@test "allow-kargo-egress-registry allows egress to envoy-gateway-system (Harbor is only reachable via the Gateway, not directly)" {
+  # Fixed 2026-08-25 (#633 verification): the harbor namespace's own ingress
+  # policy (gitops/harbor/networkpolicy/allow-harbor-ingress.yaml) only admits
+  # traffic FROM envoy-gateway-system, not from kargo directly — this rule must
+  # select the gateway namespace to match.
+  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$KARGO_NP/allow-kargo-egress-registry.yaml"
   [ "$status" -eq 0 ]
 }
 
