@@ -58,6 +58,13 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the kargo namespace-deadlock incident (PR #1055)" {
+  for needle in 'capstone-pipeline' 'kargo-webhooks-server' '#1055' 'constraint: latest'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md logs the harbor-registry extraEnvVarsSecret incident (PR #1114)" {
   for needle in 'extraEnvVarsSecret' '#1114' 'NoCredentialProviders'; do
     run grep -q -- "$needle" "$DOC"
