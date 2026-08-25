@@ -269,219 +269,25 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
-- [x] 🟢 **Bump Vault Helm chart `0.34.0` → `0.34.1`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; UPGRADE-DRAFTER-fallback finding
-  2026-08-19, reached via `executor.prompt.md` STEP 6b — this new run's
-  Now/next lane was fully gated (the two GitLab→Forgejo migration items plus
-  the legacy capstone `Deployment` removal, still gated on issue #633,
-  re-checked) and PLANNER/ARCHITECT fallback passes found no ungroomed
-  issues and no un-RFC'd 🟡 items. **No prerequisites — executor may pick up
-  immediately.**
+- [x] 🟢 **Bump Vault Helm chart `0.34.0` → `0.34.1`** — full verification
+  writeup: [docs/done/2026-08-19-vault-chart-0-34-0-to-0-34-1.md](docs/done/2026-08-19-vault-chart-0-34-0-to-0-34-1.md)
+  (PR #1269). (auto/vault-chart-0-34-0-to-0-34-1)
 
-  Verified directly (not assumed, ADR-0004): `raw.githubusercontent.com/
-  hashicorp/vault-helm/v0.34.1/CHANGELOG.md` shows `v0.34.1` (tagged
-  2026-08-13, one release ahead of this lab's pinned `0.34.0`). A byte-level
-  diff of `values.yaml` between the two tags shows only default-image-tag
-  bumps (`vault-k8s` `1.7.5`→`1.7.6`, `vault-csi-provider` `1.7.3`→`1.7.4`,
-  the chart's own `server.image`/injector-image default `2.0.3`→`2.0.4`) plus
-  one bug fix (a license-secret-volume `defaultMode` octal/decimal rendering
-  fix for `python-yq` compatibility, PR #1203 upstream) — zero schema/key
-  changes. This lab's `gitops/platform/vault.yaml` already pins
-  `server.image.tag` explicitly (already `2.0.4`, unaffected by the chart
-  default) and doesn't use the injector, CSI provider, or a license secret,
-  so this is a pure chart-currency bump with zero rendered-manifest impact,
-  not a version change of what's actually running.
+- [x] 🟢 **Bump Oracle-workflow-pinned Terragrunt `v1.1.1` → `v1.1.3`** — full
+  verification writeup: [docs/done/2026-08-19-terragrunt-1-1-1-to-1-1-3.md](docs/done/2026-08-19-terragrunt-1-1-1-to-1-1-3.md)
+  (PR #1273). (auto/terragrunt-1-1-1-to-1-1-3)
 
-  Bump `gitops/platform/vault.yaml`'s `targetRevision: 0.34.0` → `0.34.1`.
-  Add a new dated Re-evaluation-log-style entry to the file's own inline
-  comment block (mirroring its existing `2.0.3`→`2.0.4` entry's style,
-  appended before it) documenting the diff finding above. Update
-  `tests/securitycontext-vault.bats`'s chart-pin assertion (retitle "vault
-  Application chart bumped to 0.34.0" → `0.34.1`, add a "does not pin the
-  stale 0.34.0 chart" recurrence guard, mirroring this repo's other
-  per-component exact-version pin pairs). No `docs/dependency-register.md`
-  update needed — Vault has no dedicated ADR/register row (checked directly;
-  it predates the register and isn't cited by any ADR by name — External
-  Secrets' ADR-0036 covers the sync mechanism, not Vault itself). `make ci`
-  must pass. PR body must document the `values.yaml`-diff finding above and
-  the ADR-0004 caveat that this remote clusterless session cannot verify
-  Vault starts cleanly and stays unsealed/reachable post-bump on a live
-  cluster — call out the rollback path (revert `targetRevision`; ArgoCD
-  re-syncs the prior chart version on next reconciliation; the explicit
-  `server.image.tag` pin means the actual running Vault image doesn't change
-  either way, only the chart's own packaging version, so there is no
-  meaningful rollback risk). `docs/done/` entry required.
-  (auto/vault-chart-0-34-0-to-0-34-1)
+- [x] 🟢 **Bump CI's pinned Terraform `1.15.8` → `1.15.9` (CVE-2026-14978)** —
+  full verification writeup: [docs/done/2026-08-19-ci-terraform-1-15-8-to-1-15-9.md](docs/done/2026-08-19-ci-terraform-1-15-8-to-1-15-9.md)
+  (PR #1272). (auto/ci-terraform-1-15-8-to-1-15-9)
 
-- [x] 🟢 **Bump Oracle-workflow-pinned Terragrunt `v1.1.1` → `v1.1.3`** (CHARTER
-  **Core Values** §"Everything as code" + general hardening;
-  UPGRADE-DRAFTER-fallback finding 2026-08-19, reached via
-  `executor.prompt.md` STEP 6b — found alongside this run's Terraform
-  CVE-2026-14978 currency check (same `hashicorp`/IaC-tooling sweep angle).
-  **No prerequisites — executor may pick up immediately.**
+- [x] 🟢 **Bump Grafana image `13.0.6` → `13.0.7` (CVE-2026-17183)** — full
+  verification writeup: [docs/done/2026-08-19-grafana-image-13-0-6-to-13-0-7.md](docs/done/2026-08-19-grafana-image-13-0-6-to-13-0-7.md)
+  (PR #1271). (auto/grafana-image-13-0-6-to-13-0-7)
 
-  Verified directly (not assumed, ADR-0004): `gruntwork-io/terragrunt`'s
-  real release notes for both intermediate versions (`v1.1.2`, `v1.1.3`)
-  fetched and read in full — neither documents a breaking change. `v1.1.2`
-  is bug fixes (a role-assumption regression fix, unnecessary
-  re-initialization fix, log-truncation fix) plus four new opt-in
-  experiments (`oci`, `otel-logs`, `profiling`, `azure-backend` — none
-  enabled by this repo's usage) and a `find_in_parent_folders()`
-  performance win. `v1.1.3` is bug fixes (`autoinclude` `values.*` handling,
-  `generate`-block no-trailing-newline handling, `mock_outputs` timing,
-  provider-cache race, filter-negation logic) plus four more opt-in
-  experiments (`block-iteration`, `bounded-discovery`, `browse-tui`,
-  `optional-dependency-outputs` — none enabled here) and a Go toolchain
-  bump. No CVE — a routine currency bump, same category as this repo's
-  other non-CVE tool-pin bumps.
-
-  Bumped the `terragrunt/releases/download/v1.1.1/` → `v1.1.3` download URL
-  in both `.github/workflows/oracle-cluster-apply.yml` and
-  `.github/workflows/oracle-cluster-apply-retry.yml` (kept in lockstep per
-  their existing convention). Updated `tests/ci-tool-pins.bats`'s pin
-  assertion (retitled to `v1.1.3`) and added a new "no workflow references
-  the pre-bump terragrunt v1.1.1 pin" recurrence guard mirroring the
-  existing `v0.67.0` guard. `make ci-parity-check` / `make
-  workflow-timeout-check` / `make routines-author-check` all pass. PR body
-  must document the release-notes verification above and the ADR-0004
-  caveat that this remote clusterless session has no OCI cloud credentials
-  reachable, so it cannot run a real `terragrunt apply` against Oracle
-  Cloud to verify this bump end-to-end — the workflow's own next real
-  `workflow_dispatch`/scheduled run is the actual verification, matching
-  the same caveat this file's own `v1.1.1` bump entry already established.
-  `docs/done/` entry required. (auto/terragrunt-1-1-1-to-1-1-3)
-
-- [x] 🟢 **Bump CI's pinned Terraform `1.15.8` → `1.15.9` (CVE-2026-14978)**
-  (CHARTER **Core Values** §"Everything as code" + security hardening;
-  UPGRADE-DRAFTER-fallback finding 2026-08-19, reached via
-  `executor.prompt.md` STEP 6b — found while researching an unrelated
-  component during this run's currency sweep: `hashicorp/terraform`'s own
-  releases page showed `v1.15.9` published the same day (2026-08-19,
-  hours before this cycle), citing a real CVE fix. **No prerequisites —
-  executor may pick up immediately.**
-
-  Verified directly (not assumed, ADR-0004): GitHub's release notes for
-  `v1.15.9` state it "addresses a vulnerability by updating go-slug to
-  v0.18.3 to mitigate CVE-2026-14978. This Unicode normalization issue
-  could have prevented files from being correctly excluded via
-  `.terraformignore` during uploads to Terraform Enterprise or HCP
-  Terraform." This repo's own `terraform`/Terragrunt flow never uploads to
-  TFE/HCP Terraform (state lives in Garage S3 per ADR-0007), so this pin
-  isn't itself exposed to the vulnerable path — recorded honestly as a
-  currency/hygiene bump on the CI tool, not an exploitable-in-this-repo
-  fix, matching this repo's existing CI-tool-pin currency convention
-  (kubeconform/kustomize pins in the same file).
-
-  Bumped `terraform_version: "1.15.8"` → `"1.15.9"` in all three workflow
-  files that pin it in lockstep (`.github/workflows/ci.yml`,
-  `.github/workflows/oracle-cluster-apply.yml`,
-  `.github/workflows/oracle-cluster-apply-retry.yml` — the latter two
-  already carry an explicit "keep in sync with ci.yml" comment; a prior
-  drift between these three, caught 2026-07-28, is exactly the class of
-  bug `tests/ci-tool-pins.bats` exists to prevent). Updated
-  `tests/ci-tool-pins.bats`'s three matching assertions (retitled the
-  `1.15.8` pin assertion to `1.15.9`, updated the oracle-workflow pair
-  assertion, added a new "no workflow references the pre-bump terraform
-  1.15.8 pin" recurrence guard mirroring the existing `1.9.8` guard).
-  `infra/modules/*/main.tf`'s `required_version = ">= 1.5"` floors are
-  unaffected (a floor, not an exact pin — `1.15.9` already satisfies it,
-  confirmed by the existing `ci-tool-pins.bats` floor-check test, unchanged).
-  `make ci-parity-check` / `make workflow-timeout-check` / `make
-  routines-author-check` all pass — this diff touches only CI workflow
-  YAML + its own bats coverage, no `routines/` file, no gate weakened.
-  PR body must document the CVE finding and the "not exploitable in this
-  repo's own flow, bumped for hygiene/currency anyway" honesty note above.
-  `docs/done/` entry required. (auto/ci-terraform-1-15-8-to-1-15-9)
-
-- [x] 🟢 **Bump Grafana image `13.0.6` → `13.0.7` (CVE-2026-17183)** (CHARTER
-  **Core Values** §"Everything as code" + security hardening;
-  UPGRADE-DRAFTER-fallback finding 2026-08-19, reached via
-  `executor.prompt.md` STEP 6b after this run's own Now/next lane was found
-  fully gated and PLANNER/ARCHITECT fallback passes found nothing to
-  groom/decide. **No prerequisites — executor may pick up immediately.**
-
-  Verified directly (not assumed, ADR-0004): GitHub's release notes pages for
-  `v13.0.7` and the sibling `v13.1.4` line (Grafana backports security fixes
-  across every actively-maintained minor simultaneously) both independently
-  cite the identical `Security: CVE-2026-17183` line — matching Grafana's
-  usual coordinated-release-line security-patch shape. CVE detail pages
-  (`nvd.nist.gov`, `api.osv.dev`, `grafana.com/security`) were all
-  unreachable from this sandbox's egress proxy, so severity/description
-  aren't independently confirmed beyond the release notes' own citation —
-  flagged honestly rather than overclaimed. `packaging/docker/run.sh` diffed
-  byte-identical between the `v13.0.6`/`v13.0.7` tags — no
-  entrypoint/packaging change, pure security patch.
-
-  Bumped both Grafana image-tag references in
-  `gitops/platform/observability-grafana.yaml` (`valuesObject.image.tag` and
-  the `ca-bundle` `extraInitContainers` image, kept in lockstep per this
-  file's existing convention) from `13.0.6` → `13.0.7`. Updated
-  `tests/observability-grafana.bats` (retitled the two `13.0.6` pin
-  assertions to `13.0.7`, added a new "no stray `13.0.6`" recurrence guard
-  mirroring the existing `13.0.1`/`13.0.3`/`13.0.5` guards). Added a new
-  dated Re-evaluation log entry to
-  `docs/decisions/adr-0006-grafana-native-git-sync.md` documenting the
-  finding and the CVE-detail-domains-blocked honesty caveat. Updated
-  `docs/decisions/context.md`'s "Grafana 13.0.6" prose citation to `13.0.7`
-  (caught live by `scripts/context-doc-version-sync-hook.sh`) and
-  `docs/dependency-register.md`'s Grafana row "Last reviewed" cell. `make
-  ci` must pass. PR body must document the coordinated-release-line finding
-  and the ADR-0004 caveat that this remote clusterless session cannot verify
-  Grafana starts cleanly and Git Sync/dashboard provisioning continues
-  working post-bump on a live cluster, and could not independently confirm
-  CVE-2026-17183's severity beyond the release notes' own citation — call
-  out the rollback path (revert both `image:` references; ArgoCD re-syncs
-  the prior image on next reconciliation; session/dashboard state lives on
-  Grafana's PVC, untouched by an image-tag change). `docs/done/` entry
-  required. (auto/grafana-image-13-0-6-to-13-0-7)
-
-- [x] 🟢 **Bump Cilium chart `1.18.12` → `1.18.13`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; planner-fallback finding
-  2026-08-19, reached via `executor.prompt.md` STEP 6b after the run's
-  UPGRADE-DRAFTER one-PR-per-run cap was already spent this run
-  (`upgrade/rabbitmq-4.3.4-to-4.3.5`, PR #1250) — filed as a Now/next item so
-  a later cycle this same run can pick it up as a normal executor
-  implementation (`auto/*`, not gated by that cap). **No prerequisites —
-  executor may pick up immediately.**
-
-  Verified directly (not assumed, ADR-0004): `github.com/cilium/cilium`'s
-  security-advisories page lists three new **High**-severity GHSAs published
-  2026-08-12 — GHSA-33qq-jq9c-6gcc (mutual-authentication identity spoofing,
-  CVSS 7.6, affects `1.18.0`–`1.18.11`, patched `1.18.12`),
-  GHSA-xqhm-7xhv-6ppj (SDS secret-sync name collision / cross-namespace L7
-  policy bypass, CVSS 7.3, affects `1.18.0`–`1.18.11`, patched `1.18.12`),
-  and GHSA-vh48-r624-p8v7 (VLAN-interface ingress/L7 policy bypass, CVSS 7.2,
-  affects `1.18.0`–`1.18.8`, patched `1.18.9`, older finding predating this
-  lab's `1.18.12` pin). **This lab's current pin (`1.18.12`,
-  `gitops/platform/cilium.yaml`) already sits at or past every one of these
-  fix floors — none of the three affects the running pin.** So this is not a
-  CVE-driven bump; it's a routine patch-currency finding on top: `git
-  ls-remote --tags` shows `v1.18.13` (released 2026-08-18, one day before
-  this finding) is now the newest `1.18.x` tag, and its own release notes
-  cite a security-relevant dependency bump (gRPC → `v1.82.1`, "to address
-  security vulnerabilities") alongside routine bugfixes (host-firewall
-  unknown-CT-protocol tolerance, netlink hang fix, CIDR refcount fix). A
-  byte-level diff of the `v1.18.12` vs `v1.18.13` chart `values.yaml`
-  (`raw.githubusercontent.com/cilium/cilium/v1.18.1{2,3}/install/kubernetes/
-  cilium/values.yaml`) shows **only image tag/digest changes — zero new,
-  removed, or restructured keys** — matching the same no-schema-change
-  verification this ADR's own 2026-07-30 entry established before its last
-  bump. Cilium's `SECURITY.md` support table still lists `1.18.x` as
-  supported (not end-of-life), so this is a same-line patch bump, not the
-  kind of cross-minor jump that previously needed a full RFC (#917).
-
-  Bump `gitops/platform/cilium.yaml`'s `targetRevision: 1.18.12` → `1.18.13`.
-  Update `docs/decisions/adr-0014-cilium-not-flannel-policy.md`'s
-  Re-evaluation log with a new dated entry documenting the three GHSAs
-  checked (and that the current pin already sat past their fix floors) plus
-  the `1.18.13` bump itself, mirroring the existing entries' style. Update
-  `docs/dependency-register.md`'s Cilium row "Last reviewed" cell. `make ci`
-  must pass. PR body must carry the ADR-0004 caveat that this remote
-  clusterless session cannot verify pod networking/policy enforcement
-  survives this bump on the live cluster — call out the rollback path
-  (revert `targetRevision`; ArgoCD re-syncs the prior chart version on next
-  reconciliation; always-on/auto-synced, so this reaches the live cluster on
-  next sync). `docs/done/` entry required. (auto/cilium-1-18-12-to-1-18-13)
+- [x] 🟢 **Bump Cilium chart `1.18.12` → `1.18.13`** — full verification
+  writeup: [docs/done/2026-08-19-auto-cilium-1-18-12-to-1-18-13.md](docs/done/2026-08-19-auto-cilium-1-18-12-to-1-18-13.md)
+  (PR #1252). (auto/cilium-1-18-12-to-1-18-13)
 
 - [x] 🟢 **Pin Aiven Inkless broker `ghcr.io/aiven/inkless:latest` → `:4.2.1-0.46`,
   remove the Kyverno `disallow-latest-tag` `inkless` carve-out** (CHARTER **Objective
