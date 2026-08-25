@@ -85,9 +85,14 @@ setup() {
 # excluded from governance as an on-demand-heavy namespace too variable for static
 # defaults — a `kiali` governance leaf would create an empty, unused namespace no
 # workload ever runs in (removed in the chore that added this comment).
+# `keda` is likewise now absent (REMOVED 2026-08-25): KEDA converted to fully
+# on-demand for cluster-load reduction (ADR-0029's Re-evaluation log) — its
+# own namespace-creating Application went on-demand too, so a `keda` governance
+# leaf would recreate an otherwise-empty namespace on every reconciliation,
+# the same dead-config shape the kiali removal above already established.
 STANDARD_NS="argocd capstone kyverno external-secrets velero argo-rollouts \
 trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway harbor \
-cert-manager keda capstone-pipeline"
+cert-manager capstone-pipeline"
 
 @test "every standard-tier namespace has a governance leaf overlay" {
   for ns in $STANDARD_NS; do
@@ -190,19 +195,16 @@ cert-manager keda capstone-pipeline"
   [ "$status" -eq 0 ]
 }
 
-# --- keda governance (ADR-0029 / RFC #294 follow-up) --------------------------
-@test "keda governance kustomization.yaml exists" {
-  [ -f "$GOV/keda/kustomization.yaml" ]
+# --- keda governance REMOVED 2026-08-25 (ADR-0029's on-demand conversion) ----
+# KEDA's own namespace-creating Application went on-demand alongside the
+# engine, so a keda-governance entry would recreate an otherwise-empty
+# namespace on every reconciliation — same dead-config shape as the
+# kiali-governance removal. Recurrence guards, not feature tests.
+@test "gitops/governance/keda leaf directory does not exist (keda is on-demand)" {
+  [ ! -d "$GOV/keda" ]
 }
 
-@test "keda governance kustomization references the shared base limitrange" {
-  run grep -q 'base/limitrange-standard.yaml' "$GOV/keda/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "governance-appset has keda-governance entry" {
-  run grep -q 'destNamespace: keda' "$APPSET"
-  [ "$status" -eq 0 ]
+@test "governance-appset has NO keda-governance entry (keda is on-demand)" {
   run grep -q 'appName: keda-governance' "$APPSET"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }

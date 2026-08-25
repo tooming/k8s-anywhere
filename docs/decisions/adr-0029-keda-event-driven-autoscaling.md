@@ -250,6 +250,20 @@ Grafana dashboard panel demonstrating live scale events as a permanent
 fixture rather than an on-demand walkthrough), or if this host's resource
 budget grows enough that the always-on footprint stops mattering.
 
+**Follow-up (same day) — `keda-governance` was a dead-config gap this
+conversion left behind.** `gitops/platform/governance-appset.yaml` still
+carried a `keda-governance` list entry (RFC #293/#294's per-namespace
+LimitRange fan-out) targeting `destNamespace: keda` with `CreateNamespace:
+true`. Since `keda-extras` — the Application that used to create that
+namespace — went on-demand in this same conversion, that entry would have
+had ArgoCD recreate an otherwise-empty `keda` namespace (just a LimitRange,
+no workload) on every reconciliation, working against this decision's own
+"fully on-demand, zero footprint" intent. Removed the entry (and the
+`gitops/governance/keda/` leaf directory) — same dead-config shape the
+`kiali-governance` removal already established (`istio-system` excluded as
+an on-demand-heavy namespace too variable for static defaults). Re-add if
+`keda`'s namespace becomes always-on again.
+
 ---
 
 ## Files this work will touch

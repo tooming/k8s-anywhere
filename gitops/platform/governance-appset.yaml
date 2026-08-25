@@ -77,9 +77,17 @@ spec:
           - appName: cert-manager-governance
             gitPath: gitops/governance/cert-manager
             destNamespace: cert-manager
-          - appName: keda-governance
-            gitPath: gitops/governance/keda
-            destNamespace: keda
+          # keda-governance REMOVED 2026-08-25: KEDA (engine + namespace, via
+          # keda-extras) converted to fully on-demand for cluster-load reduction
+          # (ADR-0029's Re-evaluation log) — unlike harbor/kargo, KEDA's own
+          # namespace-creating Application went on-demand too, so this entry's
+          # `CreateNamespace=true` would recreate an otherwise-empty `keda`
+          # namespace (just a LimitRange, no workload) on every reconciliation,
+          # working against the "fully on-demand, zero footprint" intent of that
+          # conversion. Mirrors the kiali-governance removal precedent below
+          # (istio-system excluded as an on-demand-heavy namespace too variable
+          # for static defaults) — re-add only if keda's namespace becomes
+          # always-on again.
           - appName: capstone-pipeline-governance
             gitPath: gitops/governance/capstone-pipeline
             destNamespace: capstone-pipeline
