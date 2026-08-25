@@ -107,6 +107,13 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the kyverno admission-controller probe-timeout incident" {
+  for needle in 'kyverno' 'startupProbe' 'connection refused' 'probe-timeout-check.sh'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md has no fabricated/placeholder content (ADR-0004)" {
   run grep -iE '"(fake|mock|placeholder|dummy)"' "$DOC"
   [ "$status" -ne 0 ]
