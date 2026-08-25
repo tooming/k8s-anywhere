@@ -7,6 +7,28 @@
 # (ADR-0024/RFC #297, auto/harbor-capstone-rewire cutover) — the prior legacy
 # registry egress target was removed once the Warehouse `repoURL` flipped, since
 # nothing in gitops points Kargo at it any longer.
+#
+# Fixed live 2026-08-25 (issue #633 verification): this rule's `to:` selected the
+# `harbor` namespace directly, but `harbor.127.0.0.1.nip.io` only has an in-cluster
+# DNS answer via a CoreDNS rewrite (coredns-custom, not yet gitops-tracked) pointing
+# at the Envoy Gateway Service — and `gitops/harbor/networkpolicy/allow-harbor-ingress.yaml`
+# only admits ingress to Harbor pods FROM `envoy-gateway-system`, not from `kargo`
+# directly. So this policy's own comment ("Kargo reaches it via the nip.io hostname
+# which resolves to the cluster's ingress address") was already describing the
+# gateway path — the selector just never matched it, so Warehouse discovery
+# silently timed out (dropped by the default-deny floor, not refused) instead of
+# reaching Harbor. Selecting `envoy-gateway-system` instead makes the selector match
+# the comment.
+#
+# Also fixed same pass: port 80/443 are the gateway *Service's* ports, not the
+# envoy-proxy *pod's* containerPorts (10080/10443 — same "NetworkPolicy matches the
+# destination pod's port, not the Service's port" footgun
+# gitops/harbor/networkpolicy/allow-harbor-ingress.yaml's own comment already
+# documents for the exact same registry path). envoy-gateway-system's own
+# allow-envoy-proxy-listener-ingress.yaml only opens 10080 (plain HTTP — Harbor's
+# route carries no TLS listener, ADR-0024 §"Minimal profile"), so only 10080 is
+# listed here; keeping 443 would just add a silent per-discovery-cycle timeout for
+# a TLS attempt that also has no allowed ingress path on the other side.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -18,11 +40,9 @@ spec:
     - Egress
   egress:
     - ports:
-        - port: 443
-          protocol: TCP
-        - port: 80
+        - port: 10080
           protocol: TCP
       to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: harbor
+              kubernetes.io/metadata.name: envoy-gateway-system
