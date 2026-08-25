@@ -79,6 +79,13 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the 8-bug Forgejo CI signing incident (PR #1213)" {
+  for needle in '#1213' 'signature.cosign' 'QEMU emulation' 'TUF signing config'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md logs the argo-rollouts sync-failure incident (issue #633)" {
   for needle in 'argo-rollouts' 'argoproj.github.io/argo-helm' 'Unresolved as of 2026-08-17'; do
     run grep -q -- "$needle" "$DOC"
