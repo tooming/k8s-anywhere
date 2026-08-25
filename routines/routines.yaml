@@ -18,11 +18,13 @@ source: https://github.com/tooming/k8s-anywhere  # repo cloned into each run (re
 
 # Quota math (WAYS-OF-WORKING.md §5 — 5 runs / rolling 24h free, shared ACROSS THE WHOLE
 # ACCOUNT, not per-repo). Updated 2026-08-18: dropped from 5→4 runs/day here to free one
-# slot for a new easysportstream executor trigger (tooming/easysportstream repo, PR-only —
-# no self-merge there, since its `main` deploys to production instantly with no rollback).
-# The freed 19:00 UTC slot was handed directly to that trigger, so the account-wide
-# rolling-24h invariant (exactly 5 fixed fire-times total, never more) is unchanged —
-# see tooming/easysportstream's routines/routines.yaml for the other half of this split.
+# slot for a new easysportstream executor trigger (toomingsolutions/easysportstream repo,
+# PR-only — no self-merge there, since its `main` deploys to production instantly with no
+# rollback). The freed 19:00 UTC slot was handed directly to that trigger, so the
+# account-wide rolling-24h invariant (exactly 5 fixed fire-times total, never more) is
+# unchanged — see toomingsolutions/easysportstream's routines/routines.yaml for the other
+# half of this split. (The `easysportstream` GitHub org was renamed to `toomingsolutions`
+# 2026-08-25; the repo itself keeps its `easysportstream` name.)
 #
 # Updated 2026-08-25: dropped from 4→3 runs/day here to free a second slot for a new
 # tooming/keebridge executor trigger (at the maintainer's explicit request — "AI to
@@ -42,7 +44,7 @@ source: https://github.com/tooming/k8s-anywhere  # repo cloned into each run (re
 # k8s-anywhere 2 + easysportstream 1 + keebridge 1 + skoor-ai 1).
 #
 # Updated 2026-08-25 (same day, third cut): dropped from 2→1 run/day to free a fourth
-# slot for a new tooming/appforge-ci executor trigger, matching the same
+# slot for a new toomingsolutions/appforge-ci executor trigger, matching the same
 # autonomous-dev pattern (at the maintainer's request). The freed 05:00 UTC slot was
 # handed directly to that trigger — see appforge-ci's own routines/routines.yaml for
 # the other half of this split. Account-wide rolling-24h total is still unchanged
