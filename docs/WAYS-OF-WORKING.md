@@ -196,7 +196,7 @@ _Process:_
   this trigger's daily slots stays productive without a second trigger or a per-day
   rotation to keep in sync by hand. **2026-08-18: this trigger dropped from 5→4 runs/day**
   to free one account-wide slot for a new PR-only executor trigger on
-  [`tooming/easysportstream`](https://github.com/tooming/easysportstream) (see that repo's
+  [`toomingsolutions/easysportstream`](https://github.com/toomingsolutions/easysportstream) (see that repo's
   `routines/routines.yaml` and `docs/AGENT_WAYS_OF_WORKING.md` §5 for the other half of this
   split). **2026-08-25: dropped again, 4→3 runs/day**, at the maintainer's explicit request,
   to free a second account-wide slot for a new executor trigger on

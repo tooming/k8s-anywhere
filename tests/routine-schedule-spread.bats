@@ -9,7 +9,7 @@
 #
 # Numeric thresholds updated 2026-08-25 (found live: PR #1342/#1343 dropped this
 # repo's own cron from 3->2 runs/day, hours "0,5", to free a third account-wide
-# slot for a new tooming/skoor-ai executor trigger — see routines.yaml's own
+# slot for a new toomingsolutions/skoor-ai executor trigger — see routines.yaml's own
 # header comment for the full history of this repo's slot count shrinking
 # 5->4->3->2 across three separate hand-offs to sibling-repo triggers — without
 # updating this file's now-stale "at least 12 hours"/"exactly 3" assertions,
