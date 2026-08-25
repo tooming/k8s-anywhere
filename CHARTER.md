@@ -166,6 +166,19 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   of this core that lacks ArgoCD's `automated:` sync flag — it bootstraps manually
   before ArgoCD itself can run, then is adopted by ArgoCD afterward, per its own
   manifest comment).
+
+  > **GitLab vs. Forgejo, as of 2026-08-17.** This bullet (and the Capstone bullet
+  > below) describe what a fresh `make up` bootstrap still literally does — GitLab
+  > is provisioned as the git source (ADR-0035's migration items 3/4 not yet picked
+  > up; see ROADMAP.md's Now/next Forgejo-migration items). The already-running lab
+  > was separately re-pointed at Forgejo directly on the live cluster (PR #1205), so
+  > today's steady-state git source + CI runner is Forgejo, not GitLab. See
+  > [docs/dependency-tree.md](docs/dependency-tree.md)'s "Day-0 bootstrap chain"
+  > section for the full explanation of this gap, and README.md /
+  > [docs/00-architecture.md](docs/00-architecture.md) / [docs/DR.md](docs/DR.md) /
+  > [docs/dependency-concentration.md](docs/dependency-concentration.md) /
+  > [docs/platform-products.md](docs/platform-products.md) for the same caveat
+  > applied to this repo's other architecture-description docs.
 - **Always-on next wave** (built, ~500 MB total within budget): **Kyverno** (admission
   policy — validation, mutation, image verification); **Argo Rollouts** (SLO-driven
   canary delivery via Envoy traffic-splitting); **Velero** (cluster + PVC backup to
