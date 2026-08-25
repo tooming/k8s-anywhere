@@ -63,7 +63,7 @@ way around; if they disagree, trust the YAML and fix this table.
 
 | Routine | Trigger ID | Owner | Purpose | Cadence · Model | Branch |
 |---|---|---|---|---|---|
-| Executor | `trig_01XxtSdkPdRNjBfAidUXTwos` | @tooming | implements ROADMAP items back-to-back for as long as the run continues (one PR per item, STEP 8 loop — no longer one-and-done); empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no cycle is wasted | 00:00/05:00/10:00/14:00 UTC, every day (4/day) · Sonnet 5 | `auto/*` (fallback roles keep their own prefixes) |
+| Executor | `trig_01XxtSdkPdRNjBfAidUXTwos` | @tooming | implements ROADMAP items back-to-back for as long as the run continues (one PR per item, STEP 8 loop — no longer one-and-done); empty lane ⇒ escalates through the blocking role's work (planner → architect → upgrade-drafter → doc-drift → triager → janitor) so no cycle is wasted | 00:00/05:00/14:00 UTC, every day (3/day) · Sonnet 5 | `auto/*` (fallback roles keep their own prefixes) |
 
 **One trigger, not eight.** Planner, architect, triager, upgrade-drafter, doc-drift-author,
 industry-news-writer, and the old "executor 4th slot" each *used to* have their own
@@ -198,11 +198,15 @@ _Process:_
   to free one account-wide slot for a new PR-only executor trigger on
   [`tooming/easysportstream`](https://github.com/tooming/easysportstream) (see that repo's
   `routines/routines.yaml` and `docs/AGENT_WAYS_OF_WORKING.md` §5 for the other half of this
-  split) — the account-wide 5-runs/rolling-24h total is unchanged, just redistributed. No
-  headroom beyond that combined total — adding any further routine trigger or raising either
-  repo's cadence requires enabling the paid "additional runs" toggle. (The local verifier and
-  operator are invoked by hand on the maintainer's machine; they have no cron and no quota
-  cost.)
+  split). **2026-08-25: dropped again, 4→3 runs/day**, at the maintainer's explicit request,
+  to free a second account-wide slot for a new executor trigger on
+  [`tooming/keebridge`](https://github.com/tooming/keebridge) (see that repo's own
+  `routines/routines.yaml` for the other half of this split) — the account-wide
+  5-runs/rolling-24h total is unchanged across both drops, just redistributed across three
+  repos now. No headroom beyond that combined total — adding any further routine trigger or
+  raising any repo's cadence requires enabling the paid "additional runs" toggle. (The local
+  verifier and operator are invoked by hand on the maintainer's machine; they have no cron
+  and no quota cost.)
 - **Spread-across-the-day schedule + rolling-24h credit safety.** This trigger's daily runs
   fire at fixed clock-times (see `routines.yaml`'s `cron` for the exact current values,
   evenly spaced across the full day rather than clustered in one nightly window). The times
