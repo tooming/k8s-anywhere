@@ -100,8 +100,8 @@ setup() {
   done
 }
 
-@test "incident-log.md logs the envoy-gateway xDS control-plane connectivity incident (PR #1323)" {
-  for needle in 'DeltaAggregatedResources' '148 restarts' 'allow-envoy-proxy-xds-egress.yaml' 'Unresolved as of 2026-08-25'; do
+@test "incident-log.md logs the envoy-gateway xDS control-plane connectivity incident (PR #1323) and its resolution" {
+  for needle in 'DeltaAggregatedResources' '148 restarts' 'allow-envoy-proxy-xds-egress.yaml' 'Resolved same day, PR #1333'; do
     run grep -q -- "$needle" "$DOC"
     [ "$status" -eq 0 ]
   done
@@ -137,6 +137,27 @@ setup() {
 
 @test "incident-log.md logs the kargo egress NetworkPolicy port/namespace-mismatch incident (PR #1323)" {
   for needle in 'allow-kargo-egress-registry.yaml' 'PR #1323' 'fourth' '10080'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "incident-log.md logs the envoy-gateway probe-timeout incident and its resolution (PR #1333)" {
+  for needle in 'PR #1333' '153 restarts' 'helmCharts' 'Resolved 2026-08-25'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "incident-log.md logs the harbor-database SIGPIPE crash-recovery incident (PR #1121)" {
+  for needle in 'PR #1121' 'SIGPIPE' 'exit code 141' 'ARGOCD_EXEC_TIMEOUT'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "incident-log.md logs the cert-manager + KEDA probe-timeout audit incident" {
+  for needle in 'systemic probe-timeout audit' 'metricsServer' 'cert-manager-1.21.1' 'keda-2.20.2'; do
     run grep -q -- "$needle" "$DOC"
     [ "$status" -eq 0 ]
   done
