@@ -246,6 +246,28 @@ You review and merge plan PRs, same as implementation PRs.
 > [`docs/backlog/`](docs/backlog/), one dated file per run — never inline here (see
 > the **Conflict-free editing** binding rule above). History through 2026-06-20:
 > [`docs/backlog/2026-06-20-planner-note-migration.md`](docs/backlog/2026-06-20-planner-note-migration.md)._
+>
+> **Investigation-note discipline (added 2026-08-25, JANITOR-fallback cleanup).**
+> When picking up an item and finding it still blocked, write the full
+> investigation (what was checked, what was found, the recommendation) to
+> [`docs/roadmap/investigations/`](docs/roadmap/investigations/)
+> (`YYYY-MM-DD-<slug>.md`, one file per investigation) instead of appending it
+> inline here. Keep only a short "Investigated YYYY-MM-DD — <one-line reason
+> still blocked>, full findings: <link>" pointer in the item body. A completed
+> item's writeup is already mirrored verbatim into `docs/done/` (rule #7 below),
+> so trimming its ROADMAP.md copy loses nothing there — but a *blocked* item's
+> investigation prose had no such mirror anywhere, so every re-investigation
+> across every cycle kept accreting new paragraphs onto the same item with
+> nothing ever pruned. This is a real contributor to ROADMAP.md's size (>500 KB,
+> 2026-08-25) exceeding what standard tooling can load in a single pass — same
+> fix pattern this repo already applies elsewhere (`## Done` → `docs/done/`,
+> per-run narrative → `docs/backlog/`, an oversized bats file →
+> `tests/<scope>-<name>.bats`). Applied retroactively to the one item that had
+> already grown a multi-paragraph inline investigation
+> (the GitLab→Forgejo rename item below); the ~180 already-completed `[x]`
+> items' own inline writeups are a separate, larger cleanup (each needs
+> verifying against its `docs/done/` mirror before trimming) intentionally left
+> for a future bounded cycle, not attempted in this one.
 
 - [x] 🟢 **Bump Vault Helm chart `0.34.0` → `0.34.1`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; UPGRADE-DRAFTER-fallback finding
@@ -1152,52 +1174,16 @@ there is no point where the lab loses a working git source or CI path.
   gitlab-down`) — these scripts are dead code pointing at a stopped service, so this
   is now safe/overdue, not merely unblocked.
 
-  **Investigated 2026-08-17 (executor STEP 3 pickup, clusterless session) — this is
-  NOT a mechanical rename, and picking it up blind risks a broken `make up`.**
-  Findings, verified directly against the actual repo (ADR-0004):
-  1. **The auth model changed, not just the hostname.** GitLab's push flow
-     (`gitlab-push`/`gitlab-force-push` Makefile targets, `scripts/gitlab-pat.sh`,
-     `scripts/gitlab-credential-helper.sh`) is HTTPS + a Terraform-provisioned
-     Personal Access Token. `infra/modules/forgejo-config/main.tf`'s own header
-     comment states the Forgejo Terraform provider "has no HTTP-token-based deploy
-     credential resource" — it uses `forgejo_deploy_key` (SSH) instead, confirmed
-     live: PR #1205's cutover pushed via `ssh://git@host.k3d.internal:2223/...`, not
-     HTTPS+PAT. A same-named `forgejo-push` target can't be a faithful rename of
-     `gitlab-push` — it needs a different auth mechanism, and this clusterless
-     session cannot verify a new SSH-based push flow actually authenticates against
-     the live Forgejo instance (no live host to test against).
-  2. **`gitlab-tls-bootstrap` and `scripts/gitlab-bootstrap.rb` likely have no
-     Forgejo equivalent to rename to.** `forgejo/docker-compose.yml` runs Forgejo on
-     plain HTTP (`GITEA__server__ROOT_URL: http://localhost:3300/`, no TLS/nginx
-     sidecar anywhere in that file) — unlike GitLab, which needed `gitlab-tls`'s
-     mkcert+nginx proxy specifically because its own web UI required HTTPS for git
-     operations over HTTP Basic auth. Forgejo's git operations go over SSH (which
-     doesn't need this lab's mkcert layer), so there may be nothing to rename here,
-     only to retire. Similarly `gitlab-bootstrap.rb` (a Rails-runner script for
-     GitLab's own root-password bootstrap) has no analog need — Forgejo's admin
-     bootstrap is already a *different*, existing script
-     (`scripts/forgejo-admin-ensure.sh`), not a gap this item fills.
-  3. **`make up`'s full-lifecycle bootstrap sequence (line ~275) still calls
-     `gitlab-up`/`gitlab-configure`/`gitlab-tls-bootstrap`, not any Forgejo
-     equivalent** — meaning a fresh `make up` today would still try to bring up and
-     configure GitLab as the git source, even though the *live* cluster (per PR
-     #1205) already has GitLab stopped and every `repoURL` pointed at Forgejo.
-     That's a real, already-existing inconsistency between `make up`'s scripted
-     bootstrap path and the cluster's actual live state — bigger in scope and risk
-     than a same-shaped rename, and squarely the kind of "rebuild the whole lab
-     from scratch" critical path (CHARTER Core Value "Recreate-from-code") that
-     needs live verification (a real `make up` run) before trusting a rewritten
-     version, not something to guess at from a clusterless session.
-
-  **Recommendation:** this item needs a live-cluster or otherwise better-verified
-  session to (a) design the SSH-based `forgejo-push`/`forgejo-force-push` replacement
-  against the actual live deploy-key/known_hosts setup, (b) confirm whether a
-  Forgejo TLS layer is wanted at all before inventing one, and (c) update `make up`'s
-  bootstrap sequence and verify a real end-to-end rebuild still works — each a
-  materially different, live-verification-dependent design decision, not a
-  find-and-replace. Left unchecked and un-picked-up this cycle rather than shipping
-  a same-shaped-but-wrong rename (ADR-0004 — don't assert a working replacement
-  this session can't verify).
+  **Investigated 2026-08-17 (executor STEP 3 pickup, clusterless session) — NOT a
+  mechanical rename; picking it up blind risks a broken `make up`. Still blocked:**
+  the push auth model changes shape entirely (GitLab's HTTPS+PAT → Forgejo's SSH
+  deploy key), Forgejo likely needs no TLS-bootstrap equivalent at all (plain HTTP,
+  unlike GitLab), and `make up`'s bootstrap sequence still calls the GitLab targets
+  outright — a live-cluster or otherwise better-verified session needs to design
+  and verify the replacement end-to-end, not find-and-replace it blind. Full
+  findings and recommendation:
+  [docs/roadmap/investigations/2026-08-17-gitlab-forgejo-rename.md](docs/roadmap/investigations/2026-08-17-gitlab-forgejo-rename.md).
+  Left unchecked rather than shipping a same-shaped-but-wrong rename (ADR-0004).
 - [ ] 🟢 **Decommission `gitlab/docker-compose.yml` + `infra/modules/gitlab-config`** —
   GitLab is **stopped** as of 2026-08-17 (`make gitlab-down`, volumes kept for
   rollback) but not yet removed from the repo — deliberately kept a beat longer than
