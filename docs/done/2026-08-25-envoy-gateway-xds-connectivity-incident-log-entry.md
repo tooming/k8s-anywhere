@@ -51,4 +51,4 @@ failures).
 
 ## PR
 
-<!-- filled in after opening the PR -->
+https://github.com/tooming/k8s-anywhere/pull/1329
