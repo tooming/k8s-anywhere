@@ -135,6 +135,13 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the kargo egress NetworkPolicy port/namespace-mismatch incident (PR #1323)" {
+  for needle in 'allow-kargo-egress-registry.yaml' 'PR #1323' 'fourth' '10080'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md has no fabricated/placeholder content (ADR-0004)" {
   run grep -iE '"(fake|mock|placeholder|dummy)"' "$DOC"
   [ "$status" -ne 0 ]
