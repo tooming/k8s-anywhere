@@ -39,4 +39,4 @@ New matching bats assertion in `tests/incident-log.bats`.
 
 ## PR
 
-<!-- filled in after opening the PR -->
+https://github.com/tooming/k8s-anywhere/pull/1336
