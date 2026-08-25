@@ -114,6 +114,20 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the Harbor chart-default probe-timeout incident (PR #1040)" {
+  for needle in 'PR #1040' 'timeoutSeconds: 1' 'self-inflicted crashloops'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "incident-log.md logs the argocd-repo-server probe-timeout crashloop incident (PR #1103)" {
+  for needle in 'PR #1103' '54+ restarts' 'cluster-wide (every ArgoCD Application'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md has no fabricated/placeholder content (ADR-0004)" {
   run grep -iE '"(fake|mock|placeholder|dummy)"' "$DOC"
   [ "$status" -ne 0 ]
