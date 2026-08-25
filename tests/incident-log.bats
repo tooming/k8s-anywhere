@@ -100,6 +100,13 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the envoy-gateway xDS control-plane connectivity incident (PR #1323)" {
+  for needle in 'DeltaAggregatedResources' '148 restarts' 'allow-envoy-proxy-xds-egress.yaml' 'Unresolved as of 2026-08-25'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md has no fabricated/placeholder content (ADR-0004)" {
   run grep -iE '"(fake|mock|placeholder|dummy)"' "$DOC"
   [ "$status" -ne 0 ]
