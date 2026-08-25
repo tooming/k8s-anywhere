@@ -39,4 +39,4 @@ Kyverno row and each other. Two new matching bats assertions in
 
 ## PR
 
-<!-- filled in after opening the PR -->
+https://github.com/tooming/k8s-anywhere/pull/1331
