@@ -42,4 +42,4 @@ docs/dependency-concentration.md / docs/platform-products.md all resolve).
 
 ## PR
 
-(filled in once opened)
+https://github.com/tooming/k8s-anywhere/pull/1309
