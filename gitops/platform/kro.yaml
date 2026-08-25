@@ -3,6 +3,30 @@
 # capstone: pairs with ACK so a single high-level claim provisions cloud + k8s
 # resources together. rbac.mode: unrestricted (default) so KRO can manage the
 # arbitrary resource kinds its RGDs reference (incl. ACK Buckets).
+#
+# SUSPENDED (2026-08-24, cluster-load reduction): kro's controller was
+# chronically crash-looping (216+ restarts over 13 days) with "failed to wait
+# for ResourceGraphDefinition caches to sync" -- a downstream symptom of this
+# host's apiserver being too slow to satisfy kro's own informer-sync startup
+# timeout, not an independent bug in kro itself. Each crash-restart triggers a
+# fresh full-cache resync (a burst of List/Watch calls against the shared k3s
+# datastore), so a chronically-crashing kro was *also* a contributor to the
+# same apiserver/datastore write pressure it was a victim of. This laptop's
+# Colima VM has been running far more simultaneously than it comfortably can
+# (12 GB budget, 18+ always-on namespaces); kro is CHARTER-mentioned demo
+# infrastructure (cloud control-plane patterns), not ADR-mandated core
+# infra, so it's the right thing to trim first.
+#
+# Turned off via syncPolicy (automated removed below), not a Helm values
+# field: this chart's OCI ref (ghcr.io/kro-run/kro, path resolution ArgoCD
+# alone seems able to do) isn't independently pullable from this session to
+# verify a values-field name against its real schema, and this repo has been
+# burned before by a values key that silently no-ops because it doesn't
+# match the chart's actual schema (see harbor.yaml's extraEnvVarsSecret /
+# pyroscope.yaml's dead securityContext-key comments for that history).
+# Manual sync only now; live
+# replicas scaled to 0 directly. Re-enable by restoring the automated block
+# below once the cluster has real headroom again.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -43,9 +67,9 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: kro
+  # No automated block: manual sync only while suspended (see top-of-file
+  # comment). selfHeal:true would otherwise re-scale the live replicas back
+  # up the moment the Deployment is patched to 0 below.
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true

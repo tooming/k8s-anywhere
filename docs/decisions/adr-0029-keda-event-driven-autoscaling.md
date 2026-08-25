@@ -2,9 +2,9 @@
 
 **Status.** Adopted. Architect decision, self-authorizing per
 [WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2 (no binding ADR contradicted — this
-is new ground, not a supersession). Always-on component. New CHARTER Goal ("event-driven
-autoscaling") — no existing Objective covers it; ROADMAP items below carry the buildable
-scope.
+is new ground, not a supersession). On-demand component (converted from always-on
+2026-08-25 — see Re-evaluation log). New CHARTER Goal ("event-driven autoscaling") — no
+existing Objective covers it; ROADMAP items below carry the buildable scope.
 
 ---
 
@@ -34,8 +34,9 @@ autoscaling — no rejected-technology conflict with anything already adopted.
 
 ## Decision
 
-Adopt **KEDA** as the lab's always-on event-driven autoscaling controller, using the
-**official Helm chart**.
+Adopt **KEDA** as the lab's event-driven autoscaling controller, using the
+**official Helm chart**. (Originally always-on; converted to on-demand 2026-08-25 —
+see Re-evaluation log.)
 
 ### Chart + version
 
@@ -216,6 +217,38 @@ unchanged in kind from the 2026-07-27 entry above, now against the `2.20.2`
 floor — revisit if this lab's `TriggerAuthentication` is ever changed to use
 `spec.hashiCorpVault`, or a new CVE is filed against a KEDA version above
 `2.20.2`.
+
+### 2026-08-25 — Convert always-on → on-demand (cluster-load reduction)
+
+**Trigger.** Live-cluster session investigating issue #633 found this
+laptop's Colima VM (12 GB budget, 6 cores) chronically overloaded — load
+average routinely 10-35 with the on-demand Harbor/Kargo units both already
+down, driven by 18+ always-on namespaces plus whatever on-demand unit(s)
+happened to be up. The maintainer directed a general trim of anything not
+strictly needed continuously.
+
+**Decision: Convert (Always-on → On-demand).** KEDA is reactive/event-driven
+by its very design — it scales workloads in response to a RabbitMQ queue
+depth or a Mimir/PromQL signal crossing a threshold. Nothing in this lab
+generates sustained load on those signal sources outside an active
+autoscaling demo, so there is no always-on workload for KEDA to be watching
+between demonstrations — unlike, say, Cilium (CNI, every packet) or
+cert-manager (continuous cert-expiry monitoring), whose whole value is being
+up all the time. `gitops/platform/keda.yaml` and `keda-extras.yaml` both
+lost their `syncPolicy.automated` block (manual sync only); `make keda-up` /
+`make keda-down` added to the Makefile, mirroring Longhorn/Kargo/Inkless's
+existing on-demand pattern. Not registered in
+`scripts/ondemand-budget-check.sh`'s `UNIT_APPS`/`UNIT_NS` maps — that guard
+protects the "one heavy unit at a time" budget for genuinely large units
+(Harbor, Kargo, Longhorn, Inkless, TiDB, Istio), and KEDA's ~320 MiB
+footprint doesn't compete for that budget; it's safe to run alongside any
+other on-demand unit.
+
+**Flip condition (next re-evaluation).** Revisit if the lab grows a workload
+whose autoscaling behavior needs to be *continuously* observable (e.g., a
+Grafana dashboard panel demonstrating live scale events as a permanent
+fixture rather than an on-demand walkthrough), or if this host's resource
+budget grows enough that the always-on footprint stops mattering.
 
 ---
 

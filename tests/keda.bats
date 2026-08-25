@@ -9,7 +9,7 @@ setup() {
   load lib/yq
 }
 
-# --- ArgoCD Application shape (always-on, auto-synced) ------------------------
+# --- ArgoCD Application shape (on-demand, manual sync) -------------------------
 @test "keda Application exists" {
   [ -f "$REPO/gitops/platform/keda.yaml" ]
 }
@@ -24,9 +24,22 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "keda Application is auto-synced (always-on)" {
+# Converted always-on -> on-demand 2026-08-25 (ADR-0029's Re-evaluation log,
+# cluster-load reduction): KEDA is reactive/event-driven by design, nothing in
+# this lab generates sustained scaling-signal load outside an active demo.
+@test "keda Application is manual sync only (on-demand, not auto-synced)" {
   run grep -q 'automated:' "$REPO/gitops/platform/keda.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
+}
+
+@test "keda-extras Application is also manual sync only (on-demand)" {
+  run grep -q 'automated:' "$REPO/gitops/platform/keda-extras.yaml"
+  [ "$status" -eq 1 ]
+}
+
+@test "Makefile has keda-up and keda-down on-demand targets" {
+  grep -q '^keda-up:' "$REPO/Makefile"
+  grep -q '^keda-down:' "$REPO/Makefile"
 }
 
 @test "keda Application targets the keda namespace" {

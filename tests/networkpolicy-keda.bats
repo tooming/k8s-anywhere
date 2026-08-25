@@ -102,9 +102,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "keda-networkpolicy Application has automated sync" {
+# Converted always-on -> on-demand 2026-08-25 alongside keda itself
+# (ADR-0029's Re-evaluation log).
+@test "keda-networkpolicy Application is manual sync only (on-demand, alongside keda)" {
   run grep -q 'automated:' "$REPO/gitops/platform/keda-networkpolicy.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
 }
 
 @test "keda-networkpolicy Application has LoadRestrictionsNone buildOption" {

@@ -9,7 +9,11 @@
 # found and fixed for keda's own placement. data-demo's own workloads (rabbitmq-load,
 # valkey-load, their ExternalSecret) are untouched and stay at wave 4 — they don't
 # depend on any KEDA CRD.
-# ALWAYS-ON: automated sync.
+# ON-DEMAND (converted 2026-08-25 alongside keda itself — ADR-0029's
+# Re-evaluation log, cluster-load reduction): this Application's own CRs
+# (ScaledObject/TriggerAuthentication) hard-fail to sync without keda's CRDs
+# installed first, so it can never usefully run independently of keda's
+# on-demand lifecycle anyway. Brought up/down by `make keda-up`/`make keda-down`.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -26,7 +30,6 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: data
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+  # No automated block: manual sync only (on-demand, alongside keda). No
+  # syncOptions needed — unchanged from before this conversion.
+  syncPolicy: {}

@@ -7,7 +7,9 @@
 # for the ClusterIssuer reference) — keda-extras stays paired with it so the
 # namespace's enforce/warn/audit labels are still in place before the Helm
 # release deploys.
-# ALWAYS-ON: automated sync alongside keda.
+# ON-DEMAND (converted 2026-08-25, cluster-load reduction — see ADR-0029's
+# Re-evaluation log): manual sync only, alongside keda, via `make keda-up`/
+# `make keda-down`.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -24,9 +26,7 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: keda
+  # No automated block: manual sync only (on-demand).
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true

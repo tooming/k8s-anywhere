@@ -67,7 +67,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "keda-extras Application is auto-synced" {
+# Converted always-on -> on-demand 2026-08-25 (ADR-0029's Re-evaluation log).
+@test "keda-extras Application is manual sync only (on-demand)" {
   run grep -q 'automated:' "$EXTRAS"
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
 }
