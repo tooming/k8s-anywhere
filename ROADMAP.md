@@ -6319,6 +6319,61 @@ there is no point where the lab loses a working git source or CI path.
 > — both need an architect go/no-go call, not a mechanical bump, per
 > `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
 
+- [ ] 🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
+  sync strategy** (issue #1335, filed 2026-08-25 by a live-cluster session
+  investigating issue #633; planner grooming 2026-08-25, reached via
+  `executor.prompt.md` STEP 6b — an un-groomed intake issue takes priority over
+  a re-run of an already-exhausted search). **This item is 🟡, not 🟢, because
+  it names a real decision (which sync mechanism, or a working-agreement policy
+  change) an architect must make — it is explicitly NOT a mechanical
+  reconciliation an executor can safely attempt blind.**
+
+  **The gap, verified directly in the issue (not assumed, ADR-0004):** ArgoCD's
+  `root` app-of-apps (`selfHeal: true`) tracks the in-cluster Forgejo remote
+  (`ssh://git@host.k3d.internal:2223/lab/k8s-lab.git`, ADR-0035) — not GitHub.
+  Every merged-and-green GitHub PR in this repo's normal executor/planner/
+  architect workflow only reaches `github/main`; nothing in this repo
+  automatically pushes that content to Forgejo. As of the issue: 118 commits
+  exist on `github/main` not on Forgejo's `main` (meaning most recent merged
+  PRs are **not actually live on the cluster** yet), and 38 commits exist on
+  Forgejo's `main` not on `github/main` (real live-verified fixes — e.g.
+  Harbor S3 blob storage, cert-manager cainjector OOM, argo-rollouts PSA
+  securityContext, pyroscope's writable-emptyDir fix — that have no GitHub PR
+  trail at all and would silently vanish if Forgejo's `main` were ever reset).
+  A `git merge-tree` dry-run the filing session ran found real conflicts
+  between the two histories — this is a genuine divergence, not a fast-forward
+  lag.
+
+  **Why this clusterless executor cannot attempt the reconciliation itself,
+  even as a 🟢 item:** the actual fix requires read/write access to the
+  in-cluster Forgejo remote (`host.k3d.internal:2223`), which is only
+  reachable from inside the cluster's network — this remote, clusterless
+  session has no path to it at all (unlike GitHub, which this session reaches
+  normally). Grooming this into a 🟢 "just merge the two histories" item would
+  be asking the executor to do something structurally impossible from where
+  it runs, not merely risky.
+
+  **RFC scope for the architect:** decide (a) whether to build a real
+  GitHub→Forgejo sync mechanism (a webhook-triggered or scheduled push job —
+  needs a live-cluster-reachable component, e.g. a Forgejo Actions workflow or
+  a periodic in-cluster CronJob, not something a GitHub-hosted Action can do
+  since GitHub Actions cannot reach `host.k3d.internal`) or (b) formalize
+  "push to Forgejo" as an explicit required step of the working agreement
+  (updating `CLAUDE.md`, which today only describes the GitHub PR flow) for
+  live-cluster/interactive sessions to perform manually, or (c) both — a
+  policy stopgap now plus a real sync mechanism later. Acceptance criteria for
+  the resulting RFC: names the chosen mechanism (or explicitly defers it with
+  a documented reason); if a sync job is chosen, specifies where it runs
+  (cannot be GitHub-hosted per the reachability constraint above) and its
+  trigger (webhook vs. schedule); if a working-agreement change is chosen,
+  names exactly which doc(s) change and what the new required step says. The
+  one-time history reconciliation itself (merging the current 118-vs-38
+  divergence) is **out of scope for this RFC** — it needs a live-cluster
+  session with Forgejo access to actually perform, tracked separately (open a
+  standing `[Action required]` issue per ROADMAP rule #11 once the sync-
+  mechanism RFC lands, naming the live-cluster session's exact task).
+  (Groomed from issue #1335.)
+
 - ~~🟡 **`argo-cd` Helm chart major bump — `9.7.1` → `10.x`**~~ (issue #781; RFC #785 —
   architect decision 2026-07-28: **Approve**, chart `10.2.1`, with a required
   `global.networkPolicy.create: false` companion override.) **Groomed ↗** into a 🟢
