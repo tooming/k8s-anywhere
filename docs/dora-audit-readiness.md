@@ -48,11 +48,13 @@ duplicated.
 - **Answer:** Yes, for the stateful surface. CHARTER Objective O3 names the six
   stateful namespaces (`data`, `tidb`, `capstone`, `vault`, `observability`,
   `inkless`) as critical; the always-on
-  vs. on-demand split (12GB budget, ADR-0003) documents which ~58 Applications are
-  load-bearing (re-counted 2026-07-29, issue #846 — CHARTER's own "Always-on core"
-  bullet count is ~33 of those 58; the rest are the always-on next-wave/cert-manager/
-  KEDA/capstone Applications, distinct from the ~5 namespace-only PSA-floor shells
-  that merely pre-stage an otherwise on-demand heavy component).
+  vs. on-demand split (12GB budget, ADR-0003) documents which ~53 Applications are
+  load-bearing (re-derived 2026-08-25 after KEDA + KRO's engine both converted to
+  on-demand for cluster-load reduction, ADR-0029's Re-evaluation log — down from
+  "~58" as of the 2026-07-29/issue #846 count; CHARTER's own "Always-on core"
+  bullet count is ~32 of those 53; the rest are the always-on next-wave/
+  cert-manager/capstone Applications, distinct from the ~5 namespace-only
+  PSA-floor shells that merely pre-stage an otherwise on-demand component).
 - **Evidence:** [CHARTER.md](../CHARTER.md) O3; [docs/dependency-tree.md](dependency-tree.md).
 - **Gap:** closed below — see "Stateless component criticality tiers".
 
