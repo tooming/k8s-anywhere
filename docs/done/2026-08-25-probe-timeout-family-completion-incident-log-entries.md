@@ -49,4 +49,4 @@ PR #1333's actual bodies rather than paraphrasing from memory.
 
 ## PR
 
-<!-- filled in after opening the PR -->
+https://github.com/tooming/k8s-anywhere/pull/1337
