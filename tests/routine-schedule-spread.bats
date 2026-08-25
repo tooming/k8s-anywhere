@@ -6,6 +6,21 @@
 # content only takes effect on `main` once an interactive session's
 # `RemoteTrigger update` call actually succeeds; it was refused in the 2026-07-16
 # session that authored this, so this PR is expected to land separately/later).
+#
+# Numeric thresholds updated 2026-08-25 (found live: PR #1342/#1343 dropped this
+# repo's own cron from 3->2 runs/day, hours "0,5", to free a third account-wide
+# slot for a new tooming/skoor-ai executor trigger — see routines.yaml's own
+# header comment for the full history of this repo's slot count shrinking
+# 5->4->3->2 across three separate hand-offs to sibling-repo triggers — without
+# updating this file's now-stale "at least 12 hours"/"exactly 3" assertions,
+# breaking `make ci`'s `unit` job on every run since). The "spread across the
+# day" invariant this file's title describes is now an ACCOUNT-WIDE property
+# (5 fixed fire-times total spread across k8s-anywhere+easysportstream+
+# keebridge+skoor-ai combined, per routines.yaml's own "Quota math" comment) —
+# this repo's own remaining 2 slots can't individually span 12+ hours anymore,
+# so the per-repo check below is scaled down to what's still a meaningful
+# "not clustered in the same couple of hours" guard for a 2-value schedule,
+# rather than dropped entirely.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -17,7 +32,7 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "routines.yaml cron hour list spans at least 12 hours (spread, not clustered)" {
+@test "routines.yaml cron hour list spans at least 4 hours (spread, not clustered)" {
   cron_line="$(grep -oE 'cron: "[^"]+"' "$ROUTINES_YAML" | head -1)"
   hours="$(echo "$cron_line" | sed -E 's/cron: "0 ([0-9,]+) \* \* \*"/\1/')"
   min=99
@@ -28,7 +43,7 @@ setup() {
     [ "$h" -gt "$max" ] && max="$h"
   done
   spread=$((max - min))
-  [ "$spread" -ge 12 ] || { echo "cron hours $hours only span $spread hours — not spread across the day"; return 1; }
+  [ "$spread" -ge 4 ] || { echo "cron hours $hours only span $spread hours — not spread across the day"; return 1; }
 }
 
 @test "routines.yaml no longer uses the old all-night clustered cron" {
@@ -36,9 +51,25 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-@test "routines.yaml fires at most 3 times a day (account-wide free-quota cap, 1 slot shared out to easysportstream 2026-08-18, 1 slot shared out to keebridge 2026-08-25)" {
+@test "routines.yaml's actual cron hour count matches its own declared 'Exactly N runs/day' policy comment" {
+  # Derived from routines.yaml's own header comment instead of a second
+  # hardcoded literal here: this is the actual fix for the 2026-08-25 drift
+  # (see this file's header) — a hardcoded expected count in THIS file needed
+  # a human to remember to update it every time routines.yaml's cron changed,
+  # and that's exactly the step that got missed. Deriving the expectation from
+  # routines.yaml's own "Exactly N runs/day" sentence instead makes this a
+  # doc-vs-reality consistency check: it now fails if EITHER the cron or the
+  # comment changes without the other, not just when this test file itself
+  # falls behind.
+  declared_count="$(grep -oE 'Exactly [0-9]+ runs/day' "$ROUTINES_YAML" | tail -1 | grep -oE '[0-9]+')"
+  [ -n "$declared_count" ] || { echo "no 'Exactly N runs/day' sentence found in $ROUTINES_YAML"; return 1; }
+
   cron_line="$(grep -oE 'cron: "[^"]+"' "$ROUTINES_YAML" | head -1)"
   hours="$(echo "$cron_line" | sed -E 's/cron: "0 ([0-9,]+) \* \* \*"/\1/')"
-  count="$(echo "$hours" | tr ',' '\n' | grep -c .)"
-  [ "$count" -eq 3 ]
+  actual_count="$(echo "$hours" | tr ',' '\n' | grep -c .)"
+
+  [ "$actual_count" -eq "$declared_count" ] || {
+    echo "cron fires $actual_count times/day (hours: $hours) but routines.yaml's own comment declares \"Exactly $declared_count runs/day\" — one of the two is stale"
+    return 1
+  }
 }
