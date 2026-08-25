@@ -128,6 +128,13 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the GitLab CI mirror.gcr.io CGNAT-egress incident (.gitlab-ci.yml)" {
+  for needle in '100.64.0.0/10' 'mirror.gcr.io' 'i/o timeout' 'pipeline #63'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md has no fabricated/placeholder content (ADR-0004)" {
   run grep -iE '"(fake|mock|placeholder|dummy)"' "$DOC"
   [ "$status" -ne 0 ]
