@@ -1,0 +1,99 @@
+# Scheduled GitHub -> Forgejo sync (RFC #1340, ROADMAP "GitHub->Forgejo pull-based,
+# fast-forward-only sync workflow" item). Closes the gap issue #1335 found: every
+# merged-and-green GitHub PR only reaches `github/main`; nothing in this repo
+# automatically pushes that content to the in-cluster Forgejo remote ArgoCD's
+# `root` app-of-apps actually tracks (`ssh://git@host.k3d.internal:2223/lab/k8s-lab.git`,
+# ADR-0035, `selfHeal: true`) -- meaning recently-merged work isn't actually live on
+# the cluster until something pushes it to Forgejo.
+#
+# Direction is pull-based (GitHub -> Forgejo), not push-based, because that's the
+# only reachable direction: GitHub Actions cannot reach this lab's private
+# `host.k3d.internal` network, but an in-cluster-adjacent job reaching OUT to
+# github.com's public HTTPS endpoint is a normal egress, same class as this repo's
+# other outbound fetches (docker.io, quay.io, mirror.gcr.io -- see
+# build-sign-push.yml's own comments for the documented Colima-VM egress-flakiness
+# class this job's retry_cmd usage below also guards against).
+#
+# Fast-forward-only is the load-bearing design choice (RFC #1340's binding
+# Decision -- do not redesign without a new RFC): `git merge --ff-only` can only
+# succeed when Forgejo's `main` has no commit GitHub doesn't already have -- i.e.
+# it self-limits to the normal case (this repo's executor/planner/architect merges
+# are the sole source of truth) and can NEVER auto-resolve a real divergence. On
+# `--ff-only` rejection this job fails loudly (the default Forgejo/GitHub Actions
+# bash shell for `run:` steps is `-eo pipefail`, so a failing `git merge` fails the
+# step with no extra error-handling code needed) and does NOT attempt any
+# auto-merge, auto-resolve, or force-push -- ADR-0004's "never fabricate/discard
+# state" concern applies to git history exactly as much as to a dashboard.
+#
+# NO NetworkPolicy egress rule needed here, unlike most of this repo's egress
+# concerns: Forgejo (and its runner, registered by scripts/forgejo-runner-ensure.sh
+# via a plain `docker run`, executing job containers over the `forgejo_default`
+# Docker network) runs OUTSIDE the Kubernetes cluster entirely -- see
+# forgejo/docker-compose.yml's own header comment (it runs as a plain
+# docker-compose service, not an in-cluster Deployment). ADR-0016's Cilium
+# default-deny NetworkPolicy governs in-cluster pod traffic only and has no
+# jurisdiction over this docker-compose tier. (RFC #1340's own text specified a
+# NetworkPolicy rule for this -- that was written before confirming the
+# runner's actual execution model; corrected here rather than shipping a
+# NetworkPolicy that would do nothing.)
+#
+# ADR-0004 caveat (this item's own required caveat -- see ROADMAP.md): this file
+# was authored and structurally validated from a clusterless remote session with
+# no live Forgejo/forgejo-runner instance to actually execute it against. Beyond
+# the general "no live run yet" caveat every workflow file in this repo carries,
+# this one has a SPECIFIC, already-documented reachability risk worth flagging
+# explicitly: build-sign-push.yml's own header comment records that a prior
+# live-cluster session found `github.com` itself timing out from inside a job
+# container ("data.forgejo.org ... timed out repeatedly, alongside github.com --
+# the same class of Colima-VM egress flakiness ... while the exact same host was
+# reachable in under 150ms from the Mac host directly"). That finding is why this
+# job wraps its GitHub fetch in the same retry_cmd budget the rest of this repo's
+# CI already relies on for this exact flakiness class -- but a live-cluster
+# session must confirm at least one real successful run before trusting this job
+# unattended; if github.com proves durably unreachable from job containers (not
+# just flaky), this job's whole approach needs a live-cluster session to
+# re-diagnose (e.g. a registry-mirror-style workaround, mirroring the
+# `mirror.gcr.io` fix this repo already applied for `docker.io`), not a blind
+# retry-budget increase.
+
+name: sync-from-github
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+
+jobs:
+  sync:
+    runs-on: docker
+    timeout-minutes: 10
+    container:
+      # Same pinned image build-sign-push.yml's build-and-push job uses --
+      # includes git, which this job also needs (both for its own checkout and
+      # for fetching/merging GitHub's main).
+      image: docker:29.7.2
+    steps:
+      # Plain git clone against Forgejo's own internal HTTP endpoint, not
+      # actions/checkout@v4 -- same reasoning, same CHECKOUT_TOKEN prerequisite
+      # secret (write:repository scope), as build-sign-push.yml's identically
+      # named step. See that file's header comment for the full story of why
+      # actions/checkout is avoided in this lab.
+      - name: Checkout
+        run: |
+          git clone "http://lab-admin:${{ secrets.CHECKOUT_TOKEN }}@forgejo:3000/${GITHUB_REPOSITORY}.git" .
+          git checkout main
+
+      - name: Fetch GitHub's main and fast-forward-merge
+        run: |
+          . scripts/lib/retry_cmd.sh
+          retry_cmd git fetch https://github.com/tooming/k8s-anywhere.git main:github-main
+          # --ff-only: see this file's header comment. Fails the step (and the
+          # job) on any real divergence -- intentional, not a bug to silence.
+          git merge --ff-only github-main
+
+      - name: Push the fast-forwarded main to Forgejo
+        run: |
+          . scripts/lib/retry_cmd.sh
+          # No-op (exit 0, "Everything up-to-date") when the prior step found
+          # nothing new to merge -- that's the common case for a job running
+          # every 30 minutes, not an error.
+          retry_cmd git push "http://lab-admin:${{ secrets.CHECKOUT_TOKEN }}@forgejo:3000/${GITHUB_REPOSITORY}.git" HEAD:main

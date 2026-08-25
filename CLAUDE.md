@@ -149,6 +149,26 @@ main, so catching up early is always easier than resolving conflicts later.
 
 The `SessionStart` hook also runs this automatically at the start of each session.
 
+## Live-cluster/interactive sessions: mirror a direct Forgejo fix back to GitHub
+GitHub is this repo's normal workflow — every executor/planner/architect merge lands
+there, and (per RFC #1340, `auto/forgejo-github-sync-workflow`) a scheduled Forgejo
+Actions job pulls those merges into the in-cluster Forgejo remote ArgoCD actually
+tracks (ADR-0035). That sync is one-directional (GitHub → Forgejo) and
+fast-forward-only by design — it can never pick up a fix made the other way. If a
+live-cluster or interactive session commits a change **directly against the live
+Forgejo remote** (a live-verified hotfix, a manual config correction applied
+in-cluster) without also landing it on GitHub, that fix has no PR trail, cannot be
+reviewed the normal way, and — worse — would silently vanish if Forgejo's `main`
+were ever reset or reconciled against GitHub's history. This is exactly the gap
+issue #1335 found: 38 such commits existed with no GitHub trail at all.
+
+**The rule:** any session that commits a change directly against the live Forgejo
+remote must, in the same session, also open a matching GitHub PR carrying the same
+fix. Land it there before considering the fix "done," not as a follow-up someone
+might forget. This applies regardless of urgency — a hotfix made to unblock a live
+incident still needs its GitHub PR before or immediately after the incident is
+resolved, the same way any other change does.
+
 ## Routines: pointer architecture — only routines.yaml needs "apply"
 Since 2026-07-15, a live trigger's actual content is `routines.yaml`'s `live_prompt` — a
 short, effectively-static instruction telling the run to read `prompt_file` (e.g.

@@ -422,6 +422,29 @@ backups; not in scope).
   run `make gitlab-tls-bootstrap` (re-publishes the mkcert CA ConfigMap and restarts
   Grafana if needed), then `make grafana-gitsync-bootstrap` (re-creates the Repository in
   unified storage). Both are idempotent. After `make up` these steps are automatic.
+- **GitHub→Forgejo sync job (`.forgejo/workflows/sync-from-github.yml`, RFC #1340)
+  failing:** this scheduled job fast-forward-merges GitHub's `main` into Forgejo's —
+  the mechanism that keeps ArgoCD's actual tracked remote (ADR-0035) current with
+  merged GitHub PRs. It's designed to fail loudly (not silently no-op) on two
+  distinct conditions, each needing a different fix:
+  - **Real divergence** (`git merge --ff-only` rejects): Forgejo's `main` has a
+    commit GitHub doesn't — almost certainly a live-cluster fix committed directly
+    against Forgejo without a matching GitHub PR (the exact gap issue #1335 found,
+    and the working-agreement rule this repo's `CLAUDE.md` now states to prevent
+    it going forward). Fix: a live-cluster session reconciles the two histories
+    (see standing issue #1345 for the one-time backlog this job's own future runs
+    don't cover) and opens the missing GitHub PR(s) for any Forgejo-only commit.
+  - **Network/reachability failure** (the `git fetch`/`git push` step itself fails
+    after exhausting `retry_cmd`'s budget): most likely the documented Colima-VM
+    egress-flakiness class (see `build-sign-push.yml`'s own header comment) —
+    usually transient, the job's next scheduled run typically recovers on its own.
+    If it recurs persistently, `github.com` may be durably unreachable from job
+    containers (not just flaky) — see `sync-from-github.yml`'s own header comment
+    for the specific prior finding this would confirm, and treat it as needing a
+    live-cluster re-diagnosis, not a bigger retry budget.
+  No `make` target exists for this — it's a Forgejo Actions schedule, not part of
+  `make up`'s bootstrap sequence; check its run history directly in the Forgejo
+  Actions UI.
 
 ### k3s embedded datastore (SQLite/kine) health
 
