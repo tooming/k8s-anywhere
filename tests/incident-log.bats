@@ -44,6 +44,13 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the vault-unsealer wedged-loop incident (PR #884)" {
+  for needle in 'vault-unsealer' 'sealed for' 'while true'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md logs the kro chronic crash-loop incident (PR #1300)" {
   for needle in 'kro' '#1300' 'ResourceGraphDefinition caches to sync'; do
     run grep -q -- "$needle" "$DOC"
