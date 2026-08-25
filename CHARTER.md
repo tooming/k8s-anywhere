@@ -159,12 +159,16 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 ## Target end-state (initiatives — the platform we're growing toward)
 
 - **Always-on core** (built): k3d + ArgoCD + GitLab + Envoy Gateway + Vault + External
-  Secrets + Garage + the full LGTMP observability stack + moto/ACK/KRO + a demo app
-  (~33 ArgoCD `Application`s, re-counted 2026-07-29 — issue #846 found the prior "~28"
-  stale; the RabbitMQ/Valkey data layer and its always-on traffic-generating demo grew
-  this bucket since it was first written. Cilium is the one component conceptually part
-  of this core that lacks ArgoCD's `automated:` sync flag — it bootstraps manually
-  before ArgoCD itself can run, then is adopted by ArgoCD afterward, per its own
+  Secrets + Garage + the full LGTMP observability stack + moto/ACK + a demo app
+  (~32 ArgoCD `Application`s, re-derived 2026-08-25 — KRO's own controller
+  Application was converted to on-demand for cluster-load reduction (ADR-0029's
+  Re-evaluation log), one fewer than the prior "~33" [issue #846]; only KRO's
+  namespace/RBAC scaffolding (`kro-extras`/`kro-resources`) stays auto-synced,
+  matching the harbor-extras-style "PSA floor for an on-demand component"
+  pattern — see [docs/dependency-tree.md](docs/dependency-tree.md)'s ArgoCD
+  apply-order table. Cilium is the one component conceptually part of this core
+  that lacks ArgoCD's `automated:` sync flag — it bootstraps manually before
+  ArgoCD itself can run, then is adopted by ArgoCD afterward, per its own
   manifest comment).
 
   > **GitLab vs. Forgejo, as of 2026-08-17.** This bullet (and the Capstone bullet
@@ -210,13 +214,17 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   Gateway's HTTPS listener — a wildcard `*.127.0.0.1.nip.io` Certificate backs it, and
   the DR front door proxies `:8443` through to it — additive alongside the original
   HTTP-only path, never a breaking cutover. (ADR-0028)
-- **Event-driven autoscaling** (built): KEDA scales workloads on a real signal — a
-  RabbitMQ queue's depth, a Prometheus expression — augmenting the stock HPA rather
-  than replacing it. Engine is auto-synced, `restricted` PSA with zero carve-out (same
-  as cert-manager). Its admission webhook's TLS is wired to cert-manager's
-  `k8s-lab-ca` (a second real consumer beyond the Gateway), and a `ScaledObject`
-  demo (`gitops/data/demo/keda-scaling/`) scales the `rabbitmq-load` Deployment on
-  the `data` namespace's RabbitMQ queue depth. (ADR-0029)
+- **Event-driven autoscaling** (built, on-demand as of 2026-08-25): KEDA scales
+  workloads on a real signal — a RabbitMQ queue's depth, a Prometheus expression —
+  augmenting the stock HPA rather than replacing it. `restricted` PSA with zero
+  carve-out (same as cert-manager). Its admission webhook's TLS is wired to
+  cert-manager's `k8s-lab-ca` (a second real consumer beyond the Gateway), and a
+  `ScaledObject` demo (`gitops/data/demo/keda-scaling/`) scales the `rabbitmq-load`
+  Deployment on the `data` namespace's RabbitMQ queue depth. Originally always-on;
+  converted to on-demand (`make keda-up`/`make keda-down`) for cluster-load
+  reduction — reactive/event-driven scaling has no need to run continuously between
+  demos, unlike the RabbitMQ/Valkey signal sources it watches. (ADR-0029's
+  Re-evaluation log)
 
 ## How this drives the ROADMAP
 

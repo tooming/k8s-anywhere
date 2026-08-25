@@ -140,7 +140,7 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **KEDA** | Event-driven autoscaling — scales a workload on a real signal (a RabbitMQ queue's depth, a Prometheus expression), augmenting the stock HPA rather than replacing it. A `ScaledObject` demo (`gitops/data/demo/keda-scaling/`) scales the `rabbitmq-load` Deployment on the `data` namespace's RabbitMQ queue depth. Its admission webhook's TLS is wired to cert-manager's `k8s-lab-ca` — a second real consumer beyond the Gateway. `restricted` PSA, zero carve-out. (ADR-0029) |
+| **KEDA** | Event-driven autoscaling — scales a workload on a real signal (a RabbitMQ queue's depth, a Prometheus expression), augmenting the stock HPA rather than replacing it. A `ScaledObject` demo (`gitops/data/demo/keda-scaling/`) scales the `rabbitmq-load` Deployment on the `data` namespace's RabbitMQ queue depth. Its admission webhook's TLS is wired to cert-manager's `k8s-lab-ca` — a second real consumer beyond the Gateway. `restricted` PSA, zero carve-out. On-demand as of 2026-08-25 (`make keda-up` / `make keda-down`, cluster-load reduction — was always-on before). (ADR-0029) |
 
 ### Cloud / platform-engineering
 
@@ -148,7 +148,7 @@ Rows are grouped by layer, matching the README stack table.
 |------|----------------------|
 | **moto** | AWS API mock (S3, IAM, STS). ACK targets it instead of real AWS — no cloud account needed. |
 | **ACK (S3 controller)** | AWS Controllers for Kubernetes. Reconciles `Bucket` CRs against the moto mock. |
-| **KRO** | Kube Resource Orchestrator. Defines a `ResourceGraphDefinition` that turns a single `S3BucketClaim` CR into a coordinated set of ACK `Bucket` resources — a minimal platform-engineering composition layer. |
+| **KRO** | Kube Resource Orchestrator. Defines a `ResourceGraphDefinition` that turns a single `S3BucketClaim` CR into a coordinated set of ACK `Bucket` resources — a minimal platform-engineering composition layer. Controller suspended 2026-08-25 for cluster-load reduction (chronic crash-loop under this host's apiserver latency); its namespace/RBAC scaffolding stays auto-synced, re-enable by restoring `gitops/platform/kro.yaml`'s `automated` sync block. |
 
 ### CNI (bootstrap step)
 
