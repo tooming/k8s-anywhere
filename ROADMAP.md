@@ -6320,8 +6320,13 @@ there is no point where the lab loses a working git source or CI path.
 > `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
 
 - [ ] 🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
-  sync strategy** (issue #1335, filed 2026-08-25 by a live-cluster session
-  investigating issue #633; planner grooming 2026-08-25, reached via
+  sync strategy** (RFC #1340 — architect decision 2026-08-25: build a scheduled,
+  pull-based, fast-forward-only Forgejo Actions sync job (GitHub → Forgejo) plus
+  a CLAUDE.md working-agreement rule requiring live-cluster sessions to mirror
+  any direct Forgejo commit back to a GitHub PR; no new/superseding ADR needed.
+  The planner should groom RFC #1340's acceptance criteria into a 🟢 executor
+  item on its next pass.) (issue #1335, filed 2026-08-25 by a live-cluster
+  session investigating issue #633; planner grooming 2026-08-25, reached via
   `executor.prompt.md` STEP 6b — an un-groomed intake issue takes priority over
   a re-run of an already-exhausted search). **This item is 🟡, not 🟢, because
   it names a real decision (which sync mechanism, or a working-agreement policy
