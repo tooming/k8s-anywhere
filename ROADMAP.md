@@ -269,6 +269,71 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [ ] 🟢 **GitOps-track the `harbor.127.0.0.1.nip.io`-class in-cluster DNS rewrite
+  found live in PR #1323 — extend `scripts/coredns-host-alias.sh`** (CHARTER
+  **Core Values** §"Everything as code; GitOps deploys it" (ADR-0001);
+  planner-fallback gap analysis 2026-08-25, reached via `executor.prompt.md`
+  STEP 6b after the "Now / next" lane was re-confirmed fully gated this cycle —
+  both standing GitLab→Forgejo migration items below (rename, decommission) are
+  blocked on the same live-cluster-design prerequisite the 2026-08-17
+  investigation already found (`make up`'s bootstrap sequence and `make
+  rebase-prs`' push path both still call the GitLab targets directly — a blind
+  rename/removal would break `make up`), and the capstone-`Deployment`-removal
+  item further below is still gated on unconfirmed issue #633 (re-checked this
+  cycle: latest comment 2026-08-25 09:34 UTC still reports it unresolved). No
+  un-groomed intake issue exists (only the two standing `[Action required]`
+  issues, #633 and #1229, neither new work) and every later ROADMAP section is
+  already fully `[x]`, so this is genuine new gap-analysis output, not a
+  promoted item. **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): merged PR #1323 (2026-08-25,
+  `fix(kargo): egress NetworkPolicy targeted wrong namespace+port (#633)`)'s own
+  body states `harbor.127.0.0.1.nip.io` has **no in-cluster DNS answer** —
+  nip.io's real wildcard DNS resolves any of its subdomains to the literal IP
+  in the name, `127.0.0.1`, which is a *pod's own loopback* for any in-cluster
+  client, not the Envoy Gateway — and that the fix was a `coredns-custom`
+  ConfigMap patch applied **live, out-of-band**, with the PR body itself
+  flagging: "This isn't gitops-tracked yet... follow-up issue warranted to
+  bring it under GitOps management with a drift guard." Grepping `gitops/`
+  confirms 12 distinct `*.127.0.0.1.nip.io` hostnames (`argocd`, `capstone`,
+  `grafana`, `harbor`, `kargo`, `kiali`, `longhorn`, `moto`, `rabbitmq`,
+  `rollouts`, `s3`, `tidb-demo`, `vault`) all route through the single shared
+  Envoy Gateway (ADR-0008) and share this exact same unresolvable-in-cluster-DNS
+  problem — none has this rewrite committed anywhere in the repo today. Only a
+  *different* hostname, `host.k3d.internal` (for GitLab's `repoURL`), is
+  captured today, by `scripts/coredns-host-alias.sh` + its `coredns-custom`
+  ConfigMap pattern (`docs/done/2026-07-15-coredns-host-alias-bats-coverage.md`)
+  — this is the established, already-`make up`-wired mechanism to extend, not a
+  new script.
+
+  Extend `scripts/coredns-host-alias.sh` (same idempotent,
+  `make up`-wired, `coredns-custom`-ConfigMap-in-`kube-system` pattern already
+  used for `host.k3d.internal` — do not create a second parallel script) to add
+  a second server-block key (e.g. `nip-io-rewrite.server`) rewriting
+  `*.127.0.0.1.nip.io` to the Envoy Gateway's real in-cluster Service DNS name.
+  Confirm the exact generated Service name/namespace against
+  `gitops/network/gateway.yaml` (the `Gateway` resource, name `eg`, namespace
+  `lab-gateway`) and Envoy Gateway's own generated-Service naming convention —
+  `gitops/envoy-gateway-system/networkpolicy/allow-envoy-proxy-listener-ingress.yaml`
+  and PR #1323's own NetworkPolicy fix confirm the actual proxy pods run in the
+  `envoy-gateway-system` namespace on containerPort 10080 — before hardcoding
+  it; do not guess. The current single-key `kubectl create configmap ...
+  --from-literal=host-k3d-internal.server="$DESIRED" --dry-run=client -o yaml`
+  call fully replaces the ConfigMap's `data` on every apply — add the new key
+  as a second `--from-literal` in the *same* command (verify this explicitly in
+  the diff/PR body) or the two keys will clobber each other instead of
+  coexisting. Update `tests/coredns-host-alias.bats` with new structural
+  assertions mirroring its existing `host-k3d-internal` ones (both keys present
+  in the desired ConfigMap data; the `*.127.0.0.1.nip.io` rewrite target is
+  correct; idempotency still holds for the two-key ConfigMap). Add a "CoreDNS
+  nip.io rewrite" row/section to `docs/DR.md`'s bootstrap-steps table (next to
+  the existing CoreDNS host-alias row) explaining why this exists, citing PR
+  #1323's finding. `make ci` must pass. PR body must state the ADR-0004 caveat
+  that this remote clusterless session cannot verify the rewrite resolves
+  correctly against a live cluster (same caveat pattern as
+  `coredns-host-alias.sh`'s own original PR) and must cite PR #1323 as the
+  source of the finding. `docs/done/` entry required.
+  (auto/coredns-nip-io-gitops-tracking)
+
 - [x] 🟢 **Bump Vault Helm chart `0.34.0` → `0.34.1`** — full verification
   writeup: [docs/done/2026-08-19-vault-chart-0-34-0-to-0-34-1.md](docs/done/2026-08-19-vault-chart-0-34-0-to-0-34-1.md)
   (PR #1269). (auto/vault-chart-0-34-0-to-0-34-1)
