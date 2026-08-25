@@ -58,6 +58,20 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the harbor-registry extraEnvVarsSecret incident (PR #1114)" {
+  for needle in 'extraEnvVarsSecret' '#1114' 'NoCredentialProviders'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "incident-log.md logs the harbor-registry OOMKill incident (38cebf0/9fd14c8)" {
+  for needle in 'OOMKilled' '38cebf0' '9fd14c8'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md logs the kro chronic crash-loop incident (PR #1300)" {
   for needle in 'kro' '#1300' 'ResourceGraphDefinition caches to sync'; do
     run grep -q -- "$needle" "$DOC"
