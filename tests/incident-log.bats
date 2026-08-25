@@ -44,6 +44,13 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the kro chronic crash-loop incident (PR #1300)" {
+  for needle in 'kro' '#1300' 'ResourceGraphDefinition caches to sync'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md has no fabricated/placeholder content (ADR-0004)" {
   run grep -iE '"(fake|mock|placeholder|dummy)"' "$DOC"
   [ "$status" -ne 0 ]
