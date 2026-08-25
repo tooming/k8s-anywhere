@@ -311,271 +311,32 @@ You review and merge plan PRs, same as implementation PRs.
   — full verification writeup: [docs/done/2026-08-17-ack-s3-chart-1-10-0.md](docs/done/2026-08-17-ack-s3-chart-1-10-0.md)
   (PR #1203). (auto/ack-s3-chart-1-10-0)
 
-- [x] 🟢 **`scripts/forgejo-runner-ensure.sh` has no bats coverage at all — its two
-  sibling bootstrap scripts do** (CHARTER **Core Values** §"Everything as code" +
-  ROADMAP rule #9's own named filler example, "a script with no bats coverage";
-  planner-fallback coverage/hardening sweep 2026-08-17, fourth pass this run, reached
-  via `executor.prompt.md` STEP 6b — every Now/next item is still gated (the three
-  standing GitLab→Forgejo migration items plus the `verifyImages` Enforce flip, the O4
-  CI-rejection-gate, and the legacy capstone `Deployment` removal, all still gated on
-  unconfirmed maintainer-confirmation issues #631/#633, re-checked this cycle — no new
-  comment since 2026-08-13 05:57 UTC — and this run's first three PLANNER-fallback
-  passes already claimed the gaps their sweeps found: Valkey, GitLab, and the
-  `docker:29` CI-image pin). This cycle's fresh angle, per STEP 8's "widen the lens"
-  guidance: rather than a fourth currency sweep, checked every `scripts/*.sh` file
-  against `tests/*.bats` for basic coverage — a different class of gap than the prior
-  three passes found. **No prerequisites — executor may pick up immediately.**
+- [x] 🟢 **`scripts/forgejo-runner-ensure.sh` bats coverage** →
+  [docs/done/2026-08-17-forgejo-runner-ensure-bats-coverage.md](docs/done/2026-08-17-forgejo-runner-ensure-bats-coverage.md)
+  (PR #1201)
 
-  Verified directly (not assumed, ADR-0004): grepped every `scripts/*.sh` basename
-  against every `tests/*.bats` file's content. `scripts/forgejo-runner-ensure.sh` is
-  the only script repo-wide with zero references anywhere under `tests/` — its two
-  sibling Forgejo bootstrap scripts, `scripts/forgejo-env-ensure.sh` and
-  `scripts/forgejo-admin-ensure.sh`, each already have an `"<script> exists and is
-  executable"` assertion in `tests/forgejo-compose.bats` (lines 64–70 as of this
-  writing); `forgejo-runner-ensure.sh` — called from the same `make forgejo-up`
-  target (`Makefile` line 403), added in the same PR family — was simply missed. This
-  matches ROADMAP rule #9's own named filler example verbatim ("a script with no bats
-  coverage") and CLAUDE.md's "every bugfix must prevent recurrence" mechanical-guard
-  principle, applied here as closing a coverage gap before it hides a real regression
-  (this script writes/reads a `.runner` state file and calls a live Forgejo Admin API
-  with no structural check that it still does either safely).
+- [x] 🟢 **`docker:29`/`docker:29-dind` CI-image exact-patch pin** →
+  [docs/done/2026-08-17-docker-ci-image-explicit-pin.md](docs/done/2026-08-17-docker-ci-image-explicit-pin.md)
+  (PR #1199)
 
-  Add to `tests/forgejo-compose.bats` (same file as its two sibling scripts' coverage,
-  not a new file — this is exactly the established pattern, not a new scope):
-  1. `"forgejo-runner-ensure.sh exists and is executable"` — mirrors the sibling
-     scripts' exact assertion shape.
-  2. A structural assertion that the script reads `FORGEJO_ADMIN_PASSWORD` from
-     `forgejo/.env` (not a hardcoded credential) — mirrors this repo's existing
-     no-hardcoded-credential assertions elsewhere (e.g. `tests/forgejo-ci.bats`'s
-     `"build-sign-push.yml contains no hardcoded credential values"`).
-  3. A structural assertion that the registration-token fetch uses `-X GET` (the
-     script's own inline comment documents a live-discovered `405 Method Not
-     Allowed` on `POST` — a recurrence guard for that exact discovered bug, matching
-     CLAUDE.md's bugfix-prevention principle even though the original fix already
-     shipped, since nothing currently guards against it silently regressing back to
-     POST in a future edit).
-  Clusterless scope only — no live Docker/Forgejo-instance test is added (this remote
-  session cannot run one, and the script's actual runtime behavior — registration
-  token exchange, `.runner` file creation — needs a live Forgejo instance to verify,
-  same ADR-0004 ceiling as every other `make forgejo-up`-family script in this repo's
-  test suite). `make ci` must pass. PR body must document the "only unreferenced
-  script" finding above and the ADR-0004 caveat that this remote clusterless session
-  cannot verify the script itself still functions against a live Forgejo instance —
-  this item adds structural coverage only, it does not change the script's behavior
-  (zero-diff to `scripts/forgejo-runner-ensure.sh` itself). `docs/done/` entry
-  required. (auto/forgejo-runner-ensure-bats-coverage)
+- [x] 🟢 **GitLab CE `19.2.1-ce.0` → `19.2.2-ce.0` + `gitlab-runner` `v19.2.1` →
+  `v19.2.2` (15 security fixes)** →
+  [docs/done/2026-08-17-gitlab-19-2-2-security-bump.md](docs/done/2026-08-17-gitlab-19-2-2-security-bump.md)
+  (PR #1197)
 
-- [x] 🟢 **Pin the floating `docker:29`/`docker:29-dind` CI-build images to the exact
-  patch `docker:29.7.2`/`docker:29.7.2-dind` in both `.gitlab-ci.yml` and
-  `.forgejo/workflows/build-sign-push.yml`** (CHARTER **Core Values** §"Everything as
-  code" + general hardening; planner-fallback gap analysis 2026-08-17, third pass this
-  run, reached via `executor.prompt.md` STEP 6b — every Now/next item is still gated
-  (the three standing GitLab→Forgejo migration items plus the `verifyImages` Enforce
-  flip, the O4 CI-rejection-gate, and the legacy capstone `Deployment` removal, all
-  still gated on unconfirmed maintainer-confirmation issues #631/#633, re-checked this
-  cycle — no new comment since 2026-08-13 05:57 UTC — and this run's first two
-  PLANNER-fallback passes, `auto/valkey-8-1-9-security-bump` and
-  `auto/gitlab-19-2-2-security-bump`, already claimed the gaps those sweeps found).
-  This cycle's fresh angle: swept the CI pipeline definitions themselves
-  (`.gitlab-ci.yml` and `.forgejo/workflows/*.yml`) for image currency — a distinct
-  enumeration surface from the `gitops/**/*.yaml` and `docker-compose.yml` sweeps the
-  prior two passes used. **No prerequisites — executor may pick up immediately.**
-
-  Verified directly (not assumed, ADR-0004): `.gitlab-ci.yml`'s `build-and-push` job
-  (and its `docker:29-dind` service) and `.forgejo/workflows/build-sign-push.yml`'s
-  `build-and-push` job all pin the bare major-version tag `docker:29`/`docker:29-dind`,
-  not an exact patch — unlike every other version-sensitive pin in this repo (Vault,
-  Grafana, Argo Rollouts, Envoy Gateway, Kiali, k3s, Inkless's Postgres, and this run's
-  own Valkey/GitLab bumps), all of which pin an exact patch explicitly. This is the
-  same bug class ADR-0030's own risk description names and this repo has fixed
-  repeatedly for other files (`nginx:alpine` → `nginx:1.31.3-alpine` for the TiDB demo,
-  `nginx:1.27-alpine` → `nginx:1.27.5-alpine` for `gitlab-tls`): "an unpinned tag can
-  silently jump versions on a routine pull, with no PR, no changelog review, and no
-  rollback record." Docker Hub's tags API confirms the floating `docker:29` tag's
-  amd64-layer digest (`sha256:ab772b0e...`) is byte-identical to the exact-patch tag
-  `docker:29.7.2`'s digest — a **pin-what's-already-running** change, not a version
-  bump: the floating tag already resolves to `29.7.2` on any fresh pull today; explicit
-  pinning only makes that fact durable and inspectable. (`docker:29.7.1` and
-  `docker:29.7.0` have distinct, older digests — confirmed separately, so this is
-  genuinely the newest patch on the line, not a guess.) `.gitlab-ci.yml`'s own header
-  comment on this image already documents *why* the `29` major line was chosen over
-  the abandoned `24` line (2026-07-28 currency check) and names a flip condition for
-  when the whole `29` line itself goes stale — that reasoning is about major-line
-  abandonment risk and is unaffected by adding an exact-patch pin underneath it; the
-  two concerns (line abandonment vs. silent patch drift) are independent, and this
-  item closes only the second one.
-
-  Bump `.gitlab-ci.yml`'s `image: docker:29` → `image: docker:29.7.2` and
-  `name: docker:29-dind` → `name: docker:29.7.2-dind` (`build-and-push` job).
-  Bump `.forgejo/workflows/build-sign-push.yml`'s `image: docker:29` →
-  `image: docker:29.7.2` (`build-and-push` job — this file has no separate `-dind`
-  service; it runs dockerd in-container per its own ADR-0004 caveat comment). Add a
-  short note to each file's existing header comment near the image line documenting
-  the digest-match finding above, preserving the existing major-line-abandonment
-  reasoning and flip condition unchanged (do not delete or rewrite it — append).
-  Update `tests/cosign-bootstrap.bats`'s existing assertion (currently titled
-  `"build-and-push job and its dind service use the actively-maintained docker:29
-  line..."`) to assert the exact `docker:29.7.2`/`docker:29.7.2-dind` tags and retitle
-  it; check `tests/forgejo-ci.bats` for an equivalent assertion and update it the same
-  way. No `docs/dependency-tree.md`/`docs/dependency-register.md` update needed — CI
-  build tooling images aren't tracked rows there (checked directly; neither file's
-  existing rows cover ephemeral build-job images, only deployed/running components).
-  `make ci` must pass. PR body must document the digest-comparison finding above and
-  the ADR-0004 caveat that this remote clusterless session cannot verify a real
-  pipeline run still builds/pushes/signs successfully post-pin on either GitLab's live
-  runner or a future live Forgejo instance — call out the rollback path (revert both
-  `image:`/`name:` lines in both files; both are plain CI-pipeline YAML, not
-  GitOps-managed, so a revert takes effect on the very next pipeline run with zero
-  cluster or data-loss risk either way, since `docker:29` and `docker:29.7.2` are the
-  same actual image content today). `docs/done/` entry required.
-  (auto/docker-ci-image-explicit-pin)
-
-- [x] 🟢 **Bump GitLab CE `19.2.1-ce.0` → `19.2.2-ce.0` + `gitlab-runner` `v19.2.1` →
-  `v19.2.2` (15 real security fixes)** (CHARTER **Core Values** §"Everything as code" +
-  general hardening; planner-fallback gap analysis 2026-08-17, second pass this run,
-  reached via `executor.prompt.md` STEP 6b — every Now/next item is still gated (the
-  three standing GitLab→Forgejo migration items plus the `verifyImages` Enforce flip,
-  the O4 CI-rejection-gate, and the legacy capstone `Deployment` removal, all still
-  gated on unconfirmed maintainer-confirmation issues #631/#633, re-checked this
-  cycle — no new comment since 2026-08-13 05:57 UTC — and this run's first
-  PLANNER-fallback pass, `auto/valkey-8-1-9-security-bump`, already claimed the
-  data-layer gap that sweep found). This cycle's fresh angle, per STEP 8's "widen the
-  lens" guidance: swept the two out-of-cluster `docker-compose.yml` stacks
-  (`gitlab/`, `forgejo/`) for image currency — a distinct enumeration surface from the
-  `gitops/**/*.yaml` sweep the prior pass used. **No prerequisites — executor may pick
-  up immediately.**
-
-  Verified directly (not assumed, ADR-0004): Docker Hub's tags API confirms
-  `gitlab/gitlab-ce:19.2.2-ce.0` (pushed 2026-08-12) and
-  `gitlab/gitlab-runner:v19.2.2` (pushed 2026-08-12) both exist as real, published
-  tags — one patch ahead of this repo's current `19.2.1-ce.0`/`v19.2.1` pins. A real
-  clone's `gitlab.com/gitlab-org/gitlab` `CHANGELOG.md` at tag `v19.2.2-ee` (GitLab's
-  server and CE/EE package versions track together; the CE image is built from the
-  same release) shows a **substantial security release**: a `### Security (15
-  changes)` section including real, non-cosmetic fixes — `Fix authorize_admin_project!
-  being skipped on project update` (an authorization-bypass fix), `Re-validate upload
-  path traversal before store`, `Filter unauthorized merge requests from global API
-  endpoint`, `Enforce namespace containment in aiToolRules resolver`, `Enforce package
-  protection rules on npm dist-tags`, `Prevent pipeline creation for spoofed merge
-  request refs`, and nine more. This clears this repo's own "ships with a real fix"
-  bar for a non-CVE-numbered currency bump by a wide margin — GitLab's security
-  releases are typically not assigned individual CVE IDs but are still real,
-  merge-request-linked fixes (each entry above links a real
-  `gitlab-org/security/gitlab` commit + merge request, not a placeholder). The
-  `gitlab-runner` `v19.2.2` release itself is maintenance-only (one entry: "Verify
-  resources: authenticate Docker Hub image checks") — bumped alongside the server pin
-  for version parity, matching this file's own existing rationale for why the two
-  pins move together (`gitlab/docker-compose.yml`'s `gitlab-runner` service comment:
-  "aligned with the gitlab-ce pin above").
-
-  Bump `gitlab/docker-compose.yml`'s `image: gitlab/gitlab-ce:19.2.1-ce.0` →
-  `image: gitlab/gitlab-ce:19.2.2-ce.0` and `image: gitlab/gitlab-runner:v19.2.1` →
-  `image: gitlab/gitlab-runner:v19.2.2` (both services, matching the file's own
-  existing paired-pin precedent). Update both services' existing header comments to
-  cite the new tags and the security-release finding (name at least three of the
-  fifteen security fixes, not just "security fixes exist" — matching this repo's own
-  citation-specificity bar). Update `tests/gitlab-compose.bats`'s two pin assertions
-  (`"gitlab service is pinned to 19.2.1-ce.0"` / `"gitlab-runner service is pinned to
-  v19.2.1"`) to assert the new tags and retitle them. No
-  `docs/dependency-tree.md`/`docs/dependency-register.md` version-string update needed
-  beyond the register's existing GitLab row, which must cite this bump (the row's own
-  existing note already flags it as "still the live, running component" pending the
-  Forgejo cutover — this bump doesn't change that framing). `make ci` must pass. PR
-  body must document at least three of the fifteen named security fixes above and the
-  ADR-0004 caveat that this remote clusterless session cannot verify GitLab's own
-  omnibus migration/upgrade path completes cleanly on the maintainer's actual running
-  container (GitLab's own upgrade docs require sequential patch-release upgrades, no
-  version skipping — a single patch bump like this one is within the always-safe
-  window) — call out the rollback path (revert both `image:` tags; both services are
-  plain Docker Compose, not GitOps-managed, so a revert takes effect on the next
-  `docker compose up -d`/`gitlab-tls-bootstrap.sh` run on the maintainer's host; GitLab
-  omnibus stores its data in named volumes untouched by an image-tag change, though a
-  downgrade after a real omnibus DB migration ran would need the maintainer's own
-  backup/restore, same caveat any GitLab patch bump carries). `docs/done/` entry
-  required. (auto/gitlab-19-2-2-security-bump)
-
-- [x] 🟢 **Bump Valkey `8.0.10-alpine` → `8.1.9-alpine` — ADR-0018's own flip condition is
-  now met (two RCE-severity CVEs)** (CHARTER **Core Values** §"Everything as code" +
-  general hardening; planner-fallback gap analysis 2026-08-17, reached via
-  `executor.prompt.md` STEP 6b — every Now/next item is still gated (the three
-  standing GitLab→Forgejo migration items plus the `verifyImages` Enforce flip, the O4
-  CI-rejection-gate, and the legacy capstone `Deployment` removal, all still gated on
-  unconfirmed maintainer-confirmation issues #631/#633, both re-checked this run — no
-  new comment since 2026-08-13 05:57 UTC). **No prerequisites — executor may pick up
-  immediately.**
-
-  [ADR-0018](docs/decisions/adr-0018-valkey-not-redis.md)'s own `## Re-evaluation log`
-  (2026-07-20 audit #627) explicitly kept the pin at the `8.0-alpine` line and recorded
-  a concrete flip condition: *"A CVE or critical-bug advisory is disclosed against the
-  `8.0.x` line that `8.1.x` (or later) fixes... bump the pins to the fixed/needed
-  version, update this ADR's Re-evaluation log documenting the flip."* That condition is
-  now met. Verified directly (not assumed, ADR-0004): both
-  `raw.githubusercontent.com/valkey-io/valkey/8.0.10/00-RELEASENOTES` and
-  `.../8.1.9/00-RELEASENOTES` were fetched directly. Both `8.0.10` (this repo's current
-  pin) and `8.1.9` were released the same day (Tue 21 July 2026) and cite the same two
-  CVE IDs — but with materially different severity language for the identical IDs:
-  - `8.0.10`'s notes: *"CVE-2026-56684: Fix a use-after-free in TLS connection handling
-    that could allow an authenticated client to **crash the server** using CLIENT
-    KILL"* and *"CVE-2026-63639: Reject corrupt stream RDB files containing a shared
-    NACK across consumers"* (no RCE mentioned).
-  - `8.1.9`'s notes for the **same two CVE IDs**: *"could allow an authenticated client
-    to achieve **remote code execution** using CLIENT KILL"* and *"...which could allow
-    remote code execution"*.
-
-  A real `git ls-remote --tags valkey-io/valkey` confirms `8.1.9` is the newest `8.1.x`
-  tag and no `8.0.11` (or later `8.0.x`) tag exists — the `8.0.x` line stopped at
-  `8.0.10` the same day `8.1.9` shipped, so there is no same-line patch available; the
-  only fixed/current pin is on the `8.1.x` line. This is a **minor** version bump
-  (`8.0.x` → `8.1.x`, not `8.x` → `9.0.0`) — in scope for direct executor action per
-  `routines/upgrade-drafter.prompt.md`'s "skip major bumps only" rule, not an
-  architect-gated major jump — and `8.1.0` GA's own release notes (also fetched
-  directly) state it is *"fully compatible with all previous Valkey releases as well as
-  Redis OSS 7.2.4"*, i.e. no breaking behavior change for this lab's plain
-  `--requirepass`/`--save`/`--appendonly no` single-node usage. Docker Hub's tags API
-  confirms `valkey/valkey:8.1.9-alpine` is a real, published multi-arch image (pushed
-  2026-07-22). Whether the RCE/crash-only wording gap reflects a genuinely deeper fix
-  landed only on the `8.1.x` branch or an inconsistency in upstream's own per-branch
-  release-note wording, this repo's own ADR-0004 stance is to not assume the more
-  reassuring reading when a more authoritative, actively-patched line (`8.1.x`, which
-  has continued shipping — `8.1.9` is its 10th release since `8.1.0` GA — while `8.0.x`
-  has not shipped since `8.0.10`) describes the same two CVE IDs as RCE-capable.
-
-  Bump `gitops/data/valkey/statefulset.yaml` and
-  `gitops/data/demo/valkey-load.yaml`'s `image: valkey/valkey:8.0.10-alpine` →
-  `image: valkey/valkey:8.1.9-alpine` (both must move together, matching ADR-0018's own
-  prior-bump precedent). Update `statefulset.yaml`'s existing header comment block to
-  describe this bump: the flip-condition-met finding, the RCE-vs-crash severity
-  discrepancy for the identical CVE IDs across the two branches, and that `8.1.0` GA is
-  documented as fully backward-compatible. Update `tests/data-layer.bats`'s two pin
-  assertions (`"valkey image is pinned to 8.0.10-alpine..."` /
-  `"valkey-load image is pinned to 8.0.10-alpine..."`) to assert `8.1.9-alpine` and
-  retitle them to name the CVE IDs and the RCE finding. Add a new dated entry to
-  [ADR-0018](docs/decisions/adr-0018-valkey-not-redis.md)'s `## Re-evaluation log`
-  documenting the flip (superseding the 2026-07-20 "kept" entry's own stated
-  condition — do not delete the prior entry, append after it) and its own new flip
-  condition (e.g. a further CVE against `8.1.x`). No
-  `docs/dependency-tree.md`/`docs/dependency-register.md` version-string update needed
-  beyond the register's existing Valkey row "Last reviewed" cell, which must cite this
-  bump. `make ci` must pass. PR body must document the CVE findings and severity-wording
-  discrepancy above and the ADR-0004 caveat that this remote clusterless session cannot
-  verify the Valkey pod restarts cleanly and the "Lab — Valkey" dashboard keeps
-  populating post-bump on a live cluster — call out the rollback path (revert both
-  `image:` tags; Valkey is a plain `StatefulSet`, not an ArgoCD-templated Helm release,
-  so a revert takes effect on the next GitOps sync; the AOF-off/RDB-snapshot-every-60s
-  config means at most 60s of writes could be lost on an actual server crash during the
-  window, unrelated to this image-tag change itself). `docs/done/` entry required.
-  (auto/valkey-8-1-9-security-bump)
+- [x] 🟢 **Valkey `8.0.10-alpine` → `8.1.9-alpine` — ADR-0018's flip condition met (two
+  RCE-severity CVEs)** →
+  [docs/done/2026-08-17-valkey-8-1-9-security-bump.md](docs/done/2026-08-17-valkey-8-1-9-security-bump.md)
+  (PR #1195)
 
 **GitLab → Forgejo migration (ADR-0035, 2026-08-11, superseding ADR-0033) — seven items
 (originally six; item 4 split in two on 2026-08-11 per rule #9 below), work
 top-to-bottom, each its own PR.** GitLab keeps running unmodified until the last item;
 there is no point where the lab loses a working git source or CI path.
 
-- [x] 🟢 **Forgejo compose stack, additive alongside GitLab** — `forgejo/docker-compose.yml`
-  (`forgejo` + `forgejo-runner` services, reuse the existing `nginx` TLS-terminator
-  pattern from `gitlab/docker-compose.yml`), `make forgejo-up`/`forgejo-down` targets,
-  `tests/forgejo-compose.bats`. Zero risk to the current CI path — GitLab is untouched.
-  No prerequisites, executor may pick up immediately. (feat/forgejo-compose-stage1, #1105)
+- [x] 🟢 **Forgejo compose stack, additive alongside GitLab** →
+  [docs/done/2026-08-11-forgejo-compose-stack-roadmap-bookkeeping.md](docs/done/2026-08-11-forgejo-compose-stack-roadmap-bookkeeping.md)
+  (PR #1105, bookkeeping PR #1106)
 - [x] 🟢 **`infra/modules/forgejo-config` Terraform module** — org/repo/branch-protection/
   deploy-token resources via `svalabs/terraform-provider-forgejo` (or
   `adyxax/terraform-provider-forgejo` if its resource coverage fits better — check both
