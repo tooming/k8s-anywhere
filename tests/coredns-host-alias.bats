@@ -1,11 +1,11 @@
 #!/usr/bin/env bats
-# Clusterless structural tests for scripts/coredns-host-alias.sh, which had zero
-# coverage of its own behaviour (tests/cilium.bats only asserts its Makefile
-# ordering relative to cilium-up). Wired into `make coredns-host-alias` / `make up`
-# and required for ArgoCD's GitLab repoURL to resolve under Colima/Docker on macOS
-# (see the script's own header comment). No running cluster required: these tests
-# verify declared structure/behaviour only, never execute docker/kubectl against a
-# live target.
+# Clusterless structural tests for scripts/coredns-host-alias.sh, which manages two
+# independent rewrites in the coredns-custom ConfigMap (kube-system): host.k3d.internal
+# (docker host gateway, needed for ArgoCD's GitLab repoURL) and *.127.0.0.1.nip.io
+# (Envoy Gateway's in-cluster proxy Service, needed by any in-cluster client resolving
+# a lab hostname — found live-patched out-of-band in PR #1323/issue #633). No running
+# cluster required: these tests verify declared structure/behaviour only, never execute
+# docker/kubectl against a live target.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -20,7 +20,14 @@ setup() {
   [ -x "$SCRIPT" ]
 }
 
-@test "coredns-host-alias.sh fails clearly when the docker network gateway can't be resolved" {
+@test "coredns-host-alias.sh accepts host-alias and nip-io-rewrite modes, defaulting to host-alias" {
+  run grep -q 'MODE="\${1:-host-alias}"' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q 'host-alias | nip-io-rewrite)' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "coredns-host-alias.sh host-alias mode fails clearly when the docker network gateway can't be resolved" {
   run grep -q 'could not resolve docker network' "$SCRIPT"
   [ "$status" -eq 0 ]
   run grep -q 'exit 1' "$SCRIPT"
@@ -40,16 +47,18 @@ setup() {
 }
 
 @test "coredns-host-alias.sh aliases host.k3d.internal via the host-k3d-internal.server key" {
-  run grep -q 'host-k3d-internal\.server' "$SCRIPT"
+  run grep -q 'host-k3d-internal\\.server' "$SCRIPT"
   [ "$status" -eq 0 ]
   run grep -q 'host.k3d.internal:53' "$SCRIPT"
   [ "$status" -eq 0 ]
 }
 
-@test "coredns-host-alias.sh is idempotent — skips the apply when the ConfigMap already matches" {
+@test "coredns-host-alias.sh is idempotent — skips the apply when both keys already match" {
   run grep -q 'already up to date' "$SCRIPT"
   [ "$status" -eq 0 ]
-  run grep -q 'CURRENT.*=.*DESIRED' "$SCRIPT"
+  run grep -q 'NEW_HOST_ALIAS.*=.*OLD_HOST_ALIAS' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q 'NEW_NIPIO.*=.*OLD_NIPIO' "$SCRIPT"
   [ "$status" -eq 0 ]
 }
 
@@ -58,4 +67,61 @@ setup() {
   [ "$status" -eq 0 ]
   run grep -q 'rollout status deploy/coredns' "$SCRIPT"
   [ "$status" -eq 0 ]
+}
+
+@test "coredns-host-alias.sh nip-io-rewrite mode discovers the Envoy Gateway proxy Service via its owning-gateway labels" {
+  run grep -q 'gateway.envoyproxy.io/owning-gateway-namespace=\$GW_NS,gateway.envoyproxy.io/owning-gateway-name=\$GW_NAME' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q 'GW_NAME=eg' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q 'GW_NS=lab-gateway' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q 'EG_NS=envoy-gateway-system' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "coredns-host-alias.sh nip-io-rewrite mode polls with a budget instead of failing on the first check" {
+  run grep -q 'COREDNS_NIPIO_WAIT:-300' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q 'until \[ -n "\$PROXY_SVC" \]' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "coredns-host-alias.sh rewrites *.127.0.0.1.nip.io to the discovered proxy Service via the nip-io-rewrite.server key" {
+  run grep -q 'nip-io-rewrite\\.server' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q 'rewrite name regex (\.\*)\\\.127\\\.0\\\.0\\\.1\\\.nip\\\.io' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q 'svc.cluster.local' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "coredns-host-alias.sh always includes both ConfigMap keys in the same apply, carrying the untouched mode's value forward" {
+  # the exact clobbering pitfall this script exists to avoid: a `kubectl apply`
+  # that only sets one data key would delete the other on next apply.
+  run grep -q 'NEW_HOST_ALIAS="\$OLD_HOST_ALIAS"' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q 'NEW_NIPIO="\$OLD_NIPIO"' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q -- '--from-literal="host-k3d-internal.server=\$NEW_HOST_ALIAS"' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  run grep -q -- '--from-literal="nip-io-rewrite.server=\$NEW_NIPIO"' "$SCRIPT"
+  [ "$status" -eq 0 ]
+}
+
+@test "Makefile declares both coredns-host-alias and coredns-nip-io-rewrite targets" {
+  run grep -q '^coredns-host-alias:' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+  run grep -q '^coredns-nip-io-rewrite:' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+}
+
+@test "make up runs coredns-nip-io-rewrite after root-app (Envoy Gateway's proxy Service doesn't exist before that)" {
+  run bash -c "sed -n '/^up:/,/^\.PHONY: down/p' '$REPO/Makefile' | grep -n 'root-app\\|coredns-nip-io-rewrite'"
+  [ "$status" -eq 0 ]
+  root_line="$(echo "$output" | grep 'root-app' | head -1 | cut -d: -f1)"
+  nipio_line="$(echo "$output" | grep 'coredns-nip-io-rewrite' | head -1 | cut -d: -f1)"
+  [ -n "$root_line" ]
+  [ -n "$nipio_line" ]
+  [ "$nipio_line" -gt "$root_line" ]
 }

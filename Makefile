@@ -287,6 +287,7 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) gitlab-up
 	$(MAKE) gitlab-configure
 	$(MAKE) root-app
+	$(MAKE) coredns-nip-io-rewrite
 	$(MAKE) vault-bootstrap
 	$(MAKE) gitlab-tls-bootstrap
 	$(MAKE) garage-bootstrap
@@ -367,7 +368,11 @@ cluster-down: ## Destroy the k3d cluster
 
 .PHONY: coredns-host-alias
 coredns-host-alias: ## Teach CoreDNS to resolve host.k3d.internal -> docker gateway (k3d 5.x on Colima omits this)
-	@bash scripts/coredns-host-alias.sh
+	@bash scripts/coredns-host-alias.sh host-alias
+
+.PHONY: coredns-nip-io-rewrite
+coredns-nip-io-rewrite: ## Teach CoreDNS to resolve *.127.0.0.1.nip.io -> Envoy Gateway's proxy Service (needed for in-cluster clients, e.g. Kargo image discovery; issue #633/PR #1323)
+	@bash scripts/coredns-host-alias.sh nip-io-rewrite
 
 ##@ Bootstrap (day-0, imperative seam)
 

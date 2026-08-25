@@ -384,12 +384,13 @@ is reconciled by ArgoCD from GitLab.
 | 7 | GitLab omnibus | `gitlab-up` | yes (docker) | the git **source** — can't be created by ArgoCD (chicken-and-egg, ADR-0001) |
 | 8 | GitLab project + repo secret + push | `gitlab-configure` | yes (Terraform + git) | mints root token (`scripts/gitlab-pat.sh`), creates the project + ArgoCD repo deploy-token, pushes the repo |
 | 9 | App-of-apps | `root-app` | yes (`kubectl apply`) | the single seed; ArgoCD now syncs **everything else** |
-| 10 | Vault bootstrap | `vault-bootstrap` | yes (`scripts/vault-bootstrap.sh`) | init/unseal, store keys in `vault-keys`, enable KV, **generate+write secrets**, enable k8s auth + `eso` role |
-| 11 | GitLab TLS bootstrap | `gitlab-tls-bootstrap` | yes (`scripts/gitlab-tls-bootstrap.sh`) | mint mkcert cert + start nginx TLS proxy + publish `gitlab-tls-ca` ConfigMap; must run after Vault (the observability namespace is created by ArgoCD by this point) and before Garage, so the CA is in place before Grafana's init container bakes its CA bundle |
-| 12 | Garage bootstrap | `garage-bootstrap` | yes (`scripts/garage-bootstrap.sh`) | assign layout, create S3 key + buckets, push the S3 key to Vault |
-| 13 | Cosign bootstrap | `cosign-bootstrap` | yes (`scripts/cosign-bootstrap.sh`) | generate the cosign keypair + seed the `cosign-public-key` ConfigMap in `kyverno` (idempotent, ADR-0019); needs Garage's S3 key in place first |
-| 14 | Front door | `frontdoor` | yes (`scripts/frontdoor-ensure.sh`) | bring up the stable `:8000` entry point to the active cluster (canonical lab entry) |
-| 15 | Grafana Git Sync bootstrap | `grafana-gitsync-bootstrap` | yes (`scripts/grafana-gitsync-bootstrap.sh`) | create the Pure Git `Repository` in Grafana's unified storage + set the home dashboard; must run once Grafana is healthy (waits up to 5 min) |
+| 10 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | yes (`scripts/coredns-host-alias.sh nip-io-rewrite`) | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Envoy Gateway's in-cluster proxy Service (nip.io's real DNS otherwise resolves it to a pod's own loopback); must run after `root-app` since it discovers the proxy Service ArgoCD's sync of `envoy-gateway` generates — polls up to `COREDNS_NIPIO_WAIT` (default 300s) rather than assuming it exists immediately |
+| 11 | Vault bootstrap | `vault-bootstrap` | yes (`scripts/vault-bootstrap.sh`) | init/unseal, store keys in `vault-keys`, enable KV, **generate+write secrets**, enable k8s auth + `eso` role |
+| 12 | GitLab TLS bootstrap | `gitlab-tls-bootstrap` | yes (`scripts/gitlab-tls-bootstrap.sh`) | mint mkcert cert + start nginx TLS proxy + publish `gitlab-tls-ca` ConfigMap; must run after Vault (the observability namespace is created by ArgoCD by this point) and before Garage, so the CA is in place before Grafana's init container bakes its CA bundle |
+| 13 | Garage bootstrap | `garage-bootstrap` | yes (`scripts/garage-bootstrap.sh`) | assign layout, create S3 key + buckets, push the S3 key to Vault |
+| 14 | Cosign bootstrap | `cosign-bootstrap` | yes (`scripts/cosign-bootstrap.sh`) | generate the cosign keypair + seed the `cosign-public-key` ConfigMap in `kyverno` (idempotent, ADR-0019); needs Garage's S3 key in place first |
+| 15 | Front door | `frontdoor` | yes (`scripts/frontdoor-ensure.sh`) | bring up the stable `:8000` entry point to the active cluster (canonical lab entry) |
+| 16 | Grafana Git Sync bootstrap | `grafana-gitsync-bootstrap` | yes (`scripts/grafana-gitsync-bootstrap.sh`) | create the Pure Git `Repository` in Grafana's unified storage + set the home dashboard; must run once Grafana is healthy (waits up to 5 min) |
 
 Once 9–10 are done, **External Secrets** syncs Vault → k8s Secrets, and the
 workloads (Garage, Mimir, Grafana, Alloy, Envoy, moto, …) come up on their own.

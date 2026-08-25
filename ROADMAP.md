@@ -269,8 +269,11 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
-- [ ] 🟢 **GitOps-track the `harbor.127.0.0.1.nip.io`-class in-cluster DNS rewrite
-  found live in PR #1323 — extend `scripts/coredns-host-alias.sh`** (CHARTER
+- [x] 🟢 **GitOps-track the `harbor.127.0.0.1.nip.io`-class in-cluster DNS rewrite
+  found live in PR #1323 — extend `scripts/coredns-host-alias.sh`** — full
+  verification writeup:
+  [docs/done/2026-08-25-coredns-nip-io-gitops-tracking.md](docs/done/2026-08-25-coredns-nip-io-gitops-tracking.md).
+  (auto/coredns-nip-io-gitops-tracking) (CHARTER
   **Core Values** §"Everything as code; GitOps deploys it" (ADR-0001);
   planner-fallback gap analysis 2026-08-25, reached via `executor.prompt.md`
   STEP 6b after the "Now / next" lane was re-confirmed fully gated this cycle —
