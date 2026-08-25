@@ -40,8 +40,17 @@ source: https://github.com/tooming/k8s-anywhere  # repo cloned into each run (re
 # total is still unchanged (exactly 5 fixed fire-times across
 # k8s-anywhere+easysportstream+keebridge+skoor-ai combined, never more:
 # k8s-anywhere 2 + easysportstream 1 + keebridge 1 + skoor-ai 1).
-#   One trigger, cron "0 0,5 * * *" — fires at 00:00, 05:00 UTC every day.
-#   Exactly 2 runs/day, 7 days/week. One prompt, one model.
+#
+# Updated 2026-08-25 (same day, third cut): dropped from 2→1 run/day to free a fourth
+# slot for a new tooming/appforge-ci executor trigger, matching the same
+# autonomous-dev pattern (at the maintainer's request). The freed 05:00 UTC slot was
+# handed directly to that trigger — see appforge-ci's own routines/routines.yaml for
+# the other half of this split. Account-wide rolling-24h total is still unchanged
+# (exactly 5 fixed fire-times across
+# k8s-anywhere+easysportstream+keebridge+skoor-ai+appforge-ci combined, never more:
+# k8s-anywhere 1 + easysportstream 1 + keebridge 1 + skoor-ai 1 + appforge-ci 1).
+#   One trigger, cron "0 0 * * *" — fires at 00:00 UTC every day.
+#   Exactly 1 run/day, 7 days/week. One prompt, one model.
 #
 # SPREAD-ACROSS-THE-DAY SCHEDULE + CREDIT SAFETY (rolling-24h-proof, changed 2026-07-16
 # from the original all-night 21/22/23/0/1 UTC clustering, at the maintainer's explicit
@@ -95,7 +104,7 @@ routines:
   # maintainer-prompt issue.
   - name: k8s-anywhere autonomous dev
     trigger_id: trig_01XxtSdkPdRNjBfAidUXTwos
-    cron: "0 0,5 * * *"   # 00:00/05:00 UTC — 2/day, spread, all 7 days (19:00 slot moved to easysportstream 2026-08-18; 10:00 slot moved to keebridge 2026-08-25; 14:00 slot moved to skoor-ai 2026-08-25)
+    cron: "0 0 * * *"   # 00:00 UTC — 1/day, all 7 days (19:00 slot moved to easysportstream 2026-08-18; 10:00 slot moved to keebridge 2026-08-25; 14:00 slot moved to skoor-ai 2026-08-25; 05:00 slot moved to appforge-ci 2026-08-25)
     model: claude-sonnet-5
     enabled: true
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
