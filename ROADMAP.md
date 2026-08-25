@@ -619,6 +619,66 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live,
   running component") to a Forgejo row once this lands.
 
+- [ ] 🟢 **GitHub→Forgejo pull-based, fast-forward-only sync workflow** (RFC #1340
+  — architect decision 2026-08-25, groomed 2026-08-25 by the planner-fallback
+  role, reached via `executor.prompt.md` STEP 6b after this cycle's own
+  Now/next re-scan found the same three items above still gated and no
+  ungroomed intake existed besides this already-decided RFC. **No
+  prerequisites — executor may pick up immediately.**) Closes #1340.
+
+  **Decision (RFC #1340, binding — do not redesign):** add a scheduled
+  Forgejo Actions workflow, `.forgejo/workflows/sync-from-github.yml`
+  (`on: schedule`, e.g. `cron: '*/30 * * * *'`), on the same `runs-on: docker`
+  runner `.forgejo/workflows/build-sign-push.yml` already uses. It must:
+  1. Fetch `https://github.com/tooming/k8s-anywhere.git` `main` over plain
+     HTTPS (public repo, read-only — no credential needed for the fetch).
+  2. Attempt `git merge --ff-only` of Forgejo's local `main` onto GitHub's
+     `main` tip. Fast-forward-only is the load-bearing choice — it only
+     succeeds in the normal case (no divergence) and can never auto-resolve
+     a real conflict.
+  3. On success: push the fast-forwarded `main` to Forgejo's own remote using
+     an admin-scoped Forgejo Actions secret token, mirroring
+     `build-sign-push.yml`'s own `CHECKOUT_TOKEN` prerequisite-secret pattern
+     (a maintainer-set Forgejo Actions secret, not GitOps-managed, not
+     plaintext in this repo).
+  4. On failure (`--ff-only` rejects — real divergence): fail loudly
+     (nonzero exit, visible in Forgejo Actions). Must NOT attempt any
+     auto-merge, auto-resolve, or force-push — ADR-0004's "never
+     fabricate/discard state" concern applies to git history too.
+
+  Also required: a narrowly-scoped NetworkPolicy egress allow rule (ADR-0016
+  is default-deny) permitting the Forgejo runner pod to reach
+  `github.com`/`codeload.github.com` on 443 only — mirror the shape of
+  `gitops/trivy-system/networkpolicy/allow-trivy-egress-vdb.yaml`, do not
+  open broad internet egress. And a CLAUDE.md amendment (the live-cluster/
+  interactive-session guidance section) requiring any session that commits
+  directly against the live Forgejo remote to also open a matching GitHub PR
+  with the same fix in the same session — targets RFC #1340's finding that
+  38 commits exist on Forgejo's `main` with no GitHub PR trail at all.
+
+  **Explicitly no new/superseding ADR** — this is additive automation within
+  ADR-0035's existing scope (Forgejo remains what ArgoCD tracks in-cluster);
+  do not author one.
+
+  Deliverables: (1) the workflow file above; (2) the NetworkPolicy egress
+  rule; (3) the CLAUDE.md amendment; (4) `tests/` bats coverage mirroring
+  `tests/forgejo-ci.bats`'s existing `build-sign-push.yml` coverage — assert
+  the `schedule` trigger exists, `--ff-only` is present, and no `--force`/`-f`
+  flag appears anywhere in the file; (5) a `docs/DR.md` note on why this job
+  exists and what it does on failure, matching the CoreDNS host-alias row's
+  precedent. `make ci` must pass. PR body must state the ADR-0004 caveat that
+  this remote clusterless session cannot verify the scheduled job actually
+  executes or successfully syncs against the live Forgejo instance — a
+  live-cluster session must confirm at least one real run. `docs/done/` entry
+  required.
+
+  **Out of scope for this item** (per RFC #1340): the one-time reconciliation
+  of the current 118-vs-38 commit divergence between GitHub and Forgejo — that
+  needs a live-cluster session with real Forgejo network access, tracked by
+  its own standing `[Action required]` issue #1345 (opened alongside this
+  grooming pass, per ROADMAP rule #11).
+  (auto/forgejo-github-sync-workflow)
+
 - [x] 🟢 **Bump Valkey's `redis_exporter` sidecar `v1.88.0-alpine` → `v1.89.0-alpine`**
   (CHARTER **Core Values** §"Everything as code" + general hardening; planner-fallback
   currency sweep 2026-08-13, reached via `executor.prompt.md` STEP 6b — every unchecked
@@ -6319,65 +6379,15 @@ there is no point where the lab loses a working git source or CI path.
 > — both need an architect go/no-go call, not a mechanical bump, per
 > `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
 
-- [ ] 🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
-  sync strategy** (RFC #1340 — architect decision 2026-08-25: build a scheduled,
-  pull-based, fast-forward-only Forgejo Actions sync job (GitHub → Forgejo) plus
-  a CLAUDE.md working-agreement rule requiring live-cluster sessions to mirror
-  any direct Forgejo commit back to a GitHub PR; no new/superseding ADR needed.
-  The planner should groom RFC #1340's acceptance criteria into a 🟢 executor
-  item on its next pass.) (issue #1335, filed 2026-08-25 by a live-cluster
-  session investigating issue #633; planner grooming 2026-08-25, reached via
-  `executor.prompt.md` STEP 6b — an un-groomed intake issue takes priority over
-  a re-run of an already-exhausted search). **This item is 🟡, not 🟢, because
-  it names a real decision (which sync mechanism, or a working-agreement policy
-  change) an architect must make — it is explicitly NOT a mechanical
-  reconciliation an executor can safely attempt blind.**
-
-  **The gap, verified directly in the issue (not assumed, ADR-0004):** ArgoCD's
-  `root` app-of-apps (`selfHeal: true`) tracks the in-cluster Forgejo remote
-  (`ssh://git@host.k3d.internal:2223/lab/k8s-lab.git`, ADR-0035) — not GitHub.
-  Every merged-and-green GitHub PR in this repo's normal executor/planner/
-  architect workflow only reaches `github/main`; nothing in this repo
-  automatically pushes that content to Forgejo. As of the issue: 118 commits
-  exist on `github/main` not on Forgejo's `main` (meaning most recent merged
-  PRs are **not actually live on the cluster** yet), and 38 commits exist on
-  Forgejo's `main` not on `github/main` (real live-verified fixes — e.g.
-  Harbor S3 blob storage, cert-manager cainjector OOM, argo-rollouts PSA
-  securityContext, pyroscope's writable-emptyDir fix — that have no GitHub PR
-  trail at all and would silently vanish if Forgejo's `main` were ever reset).
-  A `git merge-tree` dry-run the filing session ran found real conflicts
-  between the two histories — this is a genuine divergence, not a fast-forward
-  lag.
-
-  **Why this clusterless executor cannot attempt the reconciliation itself,
-  even as a 🟢 item:** the actual fix requires read/write access to the
-  in-cluster Forgejo remote (`host.k3d.internal:2223`), which is only
-  reachable from inside the cluster's network — this remote, clusterless
-  session has no path to it at all (unlike GitHub, which this session reaches
-  normally). Grooming this into a 🟢 "just merge the two histories" item would
-  be asking the executor to do something structurally impossible from where
-  it runs, not merely risky.
-
-  **RFC scope for the architect:** decide (a) whether to build a real
-  GitHub→Forgejo sync mechanism (a webhook-triggered or scheduled push job —
-  needs a live-cluster-reachable component, e.g. a Forgejo Actions workflow or
-  a periodic in-cluster CronJob, not something a GitHub-hosted Action can do
-  since GitHub Actions cannot reach `host.k3d.internal`) or (b) formalize
-  "push to Forgejo" as an explicit required step of the working agreement
-  (updating `CLAUDE.md`, which today only describes the GitHub PR flow) for
-  live-cluster/interactive sessions to perform manually, or (c) both — a
-  policy stopgap now plus a real sync mechanism later. Acceptance criteria for
-  the resulting RFC: names the chosen mechanism (or explicitly defers it with
-  a documented reason); if a sync job is chosen, specifies where it runs
-  (cannot be GitHub-hosted per the reachability constraint above) and its
-  trigger (webhook vs. schedule); if a working-agreement change is chosen,
-  names exactly which doc(s) change and what the new required step says. The
-  one-time history reconciliation itself (merging the current 118-vs-38
-  divergence) is **out of scope for this RFC** — it needs a live-cluster
-  session with Forgejo access to actually perform, tracked separately (open a
-  standing `[Action required]` issue per ROADMAP rule #11 once the sync-
-  mechanism RFC lands, naming the live-cluster session's exact task).
-  (Groomed from issue #1335.)
+- ~~🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
+  sync strategy**~~ (issue #1335; RFC #1340 — architect decision 2026-08-25:
+  build a scheduled, pull-based, fast-forward-only Forgejo Actions sync job
+  plus a CLAUDE.md working-agreement rule; no new/superseding ADR needed.)
+  **Groomed ↗** into a 🟢 item in *Now / next* above (`auto/forgejo-github-sync-workflow`),
+  planner-fallback run 2026-08-25 — the one-time 118-vs-38 history
+  reconciliation itself stays tracked separately via standing
+  `[Action required]` issue #1345 (out of scope for the sync-workflow item;
+  needs a live-cluster session with real Forgejo network access).
 
 - ~~🟡 **`argo-cd` Helm chart major bump — `9.7.1` → `10.x`**~~ (issue #781; RFC #785 —
   architect decision 2026-07-28: **Approve**, chart `10.2.1`, with a required
