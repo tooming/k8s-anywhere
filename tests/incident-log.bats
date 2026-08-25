@@ -51,6 +51,13 @@ setup() {
   done
 }
 
+@test "incident-log.md logs the argo-rollouts sync-failure incident (issue #633)" {
+  for needle in 'argo-rollouts' 'argoproj.github.io/argo-helm' 'Unresolved as of 2026-08-17'; do
+    run grep -q -- "$needle" "$DOC"
+    [ "$status" -eq 0 ]
+  done
+}
+
 @test "incident-log.md has no fabricated/placeholder content (ADR-0004)" {
   run grep -iE '"(fake|mock|placeholder|dummy)"' "$DOC"
   [ "$status" -ne 0 ]
