@@ -619,64 +619,27 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live,
   running component") to a Forgejo row once this lands.
 
-- [ ] 🟢 **GitHub→Forgejo pull-based, fast-forward-only sync workflow** (RFC #1340
-  — architect decision 2026-08-25, groomed 2026-08-25 by the planner-fallback
-  role, reached via `executor.prompt.md` STEP 6b after this cycle's own
-  Now/next re-scan found the same three items above still gated and no
-  ungroomed intake existed besides this already-decided RFC. **No
-  prerequisites — executor may pick up immediately.**) Closes #1340.
+- [x] 🟢 **GitHub→Forgejo pull-based, fast-forward-only sync workflow** — full
+  verification writeup:
+  [docs/done/2026-08-25-forgejo-github-sync-workflow.md](docs/done/2026-08-25-forgejo-github-sync-workflow.md).
+  (RFC #1340; PR TBD.) Closes #1340.
 
-  **Decision (RFC #1340, binding — do not redesign):** add a scheduled
-  Forgejo Actions workflow, `.forgejo/workflows/sync-from-github.yml`
-  (`on: schedule`, e.g. `cron: '*/30 * * * *'`), on the same `runs-on: docker`
-  runner `.forgejo/workflows/build-sign-push.yml` already uses. It must:
-  1. Fetch `https://github.com/tooming/k8s-anywhere.git` `main` over plain
-     HTTPS (public repo, read-only — no credential needed for the fetch).
-  2. Attempt `git merge --ff-only` of Forgejo's local `main` onto GitHub's
-     `main` tip. Fast-forward-only is the load-bearing choice — it only
-     succeeds in the normal case (no divergence) and can never auto-resolve
-     a real conflict.
-  3. On success: push the fast-forwarded `main` to Forgejo's own remote using
-     an admin-scoped Forgejo Actions secret token, mirroring
-     `build-sign-push.yml`'s own `CHECKOUT_TOKEN` prerequisite-secret pattern
-     (a maintainer-set Forgejo Actions secret, not GitOps-managed, not
-     plaintext in this repo).
-  4. On failure (`--ff-only` rejects — real divergence): fail loudly
-     (nonzero exit, visible in Forgejo Actions). Must NOT attempt any
-     auto-merge, auto-resolve, or force-push — ADR-0004's "never
-     fabricate/discard state" concern applies to git history too.
-
-  Also required: a narrowly-scoped NetworkPolicy egress allow rule (ADR-0016
-  is default-deny) permitting the Forgejo runner pod to reach
-  `github.com`/`codeload.github.com` on 443 only — mirror the shape of
-  `gitops/trivy-system/networkpolicy/allow-trivy-egress-vdb.yaml`, do not
-  open broad internet egress. And a CLAUDE.md amendment (the live-cluster/
-  interactive-session guidance section) requiring any session that commits
-  directly against the live Forgejo remote to also open a matching GitHub PR
-  with the same fix in the same session — targets RFC #1340's finding that
-  38 commits exist on Forgejo's `main` with no GitHub PR trail at all.
-
-  **Explicitly no new/superseding ADR** — this is additive automation within
-  ADR-0035's existing scope (Forgejo remains what ArgoCD tracks in-cluster);
-  do not author one.
-
-  Deliverables: (1) the workflow file above; (2) the NetworkPolicy egress
-  rule; (3) the CLAUDE.md amendment; (4) `tests/` bats coverage mirroring
-  `tests/forgejo-ci.bats`'s existing `build-sign-push.yml` coverage — assert
-  the `schedule` trigger exists, `--ff-only` is present, and no `--force`/`-f`
-  flag appears anywhere in the file; (5) a `docs/DR.md` note on why this job
-  exists and what it does on failure, matching the CoreDNS host-alias row's
-  precedent. `make ci` must pass. PR body must state the ADR-0004 caveat that
-  this remote clusterless session cannot verify the scheduled job actually
-  executes or successfully syncs against the live Forgejo instance — a
-  live-cluster session must confirm at least one real run. `docs/done/` entry
-  required.
-
-  **Out of scope for this item** (per RFC #1340): the one-time reconciliation
-  of the current 118-vs-38 commit divergence between GitHub and Forgejo — that
-  needs a live-cluster session with real Forgejo network access, tracked by
-  its own standing `[Action required]` issue #1345 (opened alongside this
-  grooming pass, per ROADMAP rule #11).
+  **Correction found live during implementation (not in RFC #1340's original
+  text — recorded here since ROADMAP is this repo's binding spec for the
+  item, ADR-0004):** the RFC's Decision specified a NetworkPolicy egress rule
+  for the Forgejo Actions runner. Verified directly against
+  `forgejo/docker-compose.yml`'s own header comment and
+  `scripts/forgejo-runner-ensure.sh` before implementing: the Forgejo runner
+  executes job containers via a plain `docker run` over the `forgejo_default`
+  Docker network, entirely **outside** the Kubernetes cluster (same
+  architectural tier GitLab occupied, per ADR-0035) — not an in-cluster pod
+  ADR-0016's Cilium default-deny NetworkPolicy has any jurisdiction over. A
+  NetworkPolicy deliverable would have been dead configuration doing nothing.
+  Implemented without one; see `.forgejo/workflows/sync-from-github.yml`'s
+  own header comment for the full explanation. Everything else in RFC #1340's
+  Decision (pull-based, fast-forward-only, fail-loud-on-divergence, no
+  auto-resolve, no new ADR, CLAUDE.md working-agreement amendment) landed as
+  specified — see the `docs/done/` writeup for the full delivered shape.
   (auto/forgejo-github-sync-workflow)
 
 - [x] 🟢 **Bump Valkey's `redis_exporter` sidecar `v1.88.0-alpine` → `v1.89.0-alpine`**
