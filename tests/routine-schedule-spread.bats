@@ -32,7 +32,12 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "routines.yaml cron hour list spans at least 4 hours (spread, not clustered)" {
+@test "routines.yaml cron hour list spans at least 4 hours when it has more than one fire-time (spread, not clustered)" {
+  # A single-hour cron (this repo dropped to 1 run/day on 2026-08-25 to fund
+  # appforge-ci — see routines.yaml's header) has nothing to spread against
+  # by itself; the "not clustered" invariant only means something once this
+  # repo's own schedule has 2+ fire-times again. See this file's header for
+  # why the invariant itself is now account-wide, not per-repo.
   cron_line="$(grep -oE 'cron: "[^"]+"' "$ROUTINES_YAML" | head -1)"
   hours="$(echo "$cron_line" | sed -E 's/cron: "0 ([0-9,]+) \* \* \*"/\1/')"
   min=99
@@ -42,6 +47,9 @@ setup() {
     [ "$h" -lt "$min" ] && min="$h"
     [ "$h" -gt "$max" ] && max="$h"
   done
+  if [ "${#HR[@]}" -lt 2 ]; then
+    skip "single fire-time ($hours) — spread invariant is vacuous for one value"
+  fi
   spread=$((max - min))
   [ "$spread" -ge 4 ] || { echo "cron hours $hours only span $spread hours — not spread across the day"; return 1; }
 }
@@ -61,7 +69,7 @@ setup() {
   # doc-vs-reality consistency check: it now fails if EITHER the cron or the
   # comment changes without the other, not just when this test file itself
   # falls behind.
-  declared_count="$(grep -oE 'Exactly [0-9]+ runs/day' "$ROUTINES_YAML" | tail -1 | grep -oE '[0-9]+')"
+  declared_count="$(grep -oE 'Exactly [0-9]+ runs?/day' "$ROUTINES_YAML" | tail -1 | grep -oE '[0-9]+')"
   [ -n "$declared_count" ] || { echo "no 'Exactly N runs/day' sentence found in $ROUTINES_YAML"; return 1; }
 
   cron_line="$(grep -oE 'cron: "[^"]+"' "$ROUTINES_YAML" | head -1)"
