@@ -116,6 +116,15 @@ jobs:
             https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.1/kustomize_v5.8.1_linux_amd64.tar.gz
           tar -xzf /tmp/kustomize.tar.gz -C /tmp kustomize
           sudo install /tmp/kustomize /usr/local/bin/kustomize
+      # Needed for `kustomize build --enable-helm` (gitops/envoy-gateway/ vendors
+      # a Helm chart via Kustomize's helmCharts inflator, 2026-08-25). Pinned
+      # the same way kustomize is above, not the moving get-helm-3 script.
+      - name: Install helm
+        run: |
+          curl -fsSL -o /tmp/helm.tar.gz \
+            https://get.helm.sh/helm-v4.2.0-linux-amd64.tar.gz
+          tar -xzf /tmp/helm.tar.gz -C /tmp linux-amd64/helm
+          sudo install /tmp/linux-amd64/helm /usr/local/bin/helm
       - run: bash scripts/validate-kustomize.sh
 
   unit:
