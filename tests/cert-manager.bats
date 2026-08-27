@@ -54,28 +54,20 @@ setup() {
 }
 
 # --- cert-manager-extras (namespace pre-creation, wave 0) ---------------------
-@test "cert-manager-extras Application exists" {
-  [ -f "$REPO/gitops/platform/cert-manager-extras.yaml" ]
-}
-
+# "cert-manager-extras Application exists" lives in tests/securitycontext-cert-manager.bats
+# (removed here 2026-08-27 — exact duplicate, same target file, found in a
+# cross-file duplication sweep).
 @test "cert-manager-extras runs at sync-wave 0" {
   run grep -q 'argocd.argoproj.io/sync-wave: "0"' "$REPO/gitops/platform/cert-manager-extras.yaml"
   [ "$status" -eq 0 ]
 }
 
 # --- Namespace PSA labels (restricted — no carve-out needed, ADR-0028) --------
+# "cert-manager namespace enforces PSS restricted" and "...has enforce-version:
+# latest" live in tests/securitycontext-cert-manager.bats (removed here
+# 2026-08-27 — exact duplicates, same target file).
 @test "cert-manager namespace manifest exists" {
   [ -f "$REPO/gitops/cert-manager/namespace.yaml" ]
-}
-
-@test "cert-manager namespace enforces PSS restricted" {
-  run grep -q 'pod-security.kubernetes.io/enforce: restricted' "$REPO/gitops/cert-manager/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "cert-manager namespace has enforce-version: latest" {
-  run grep -q 'enforce-version: latest' "$REPO/gitops/cert-manager/namespace.yaml"
-  [ "$status" -eq 0 ]
 }
 
 @test "cert-manager namespace has warn and audit at restricted too" {
