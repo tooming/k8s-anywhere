@@ -61,6 +61,20 @@ setup() {
   [[ "$output" != *"repo-gitlab-gitops"* ]]
 }
 
+# Regression guard: VERIFIED 2026-08-27 against argoproj/argo-cd's own
+# docs/operator-manual/argocd-repositories.yaml reference example — `insecure` is
+# the current, unified field ArgoCD's Repository type uses for both SSH host-key and
+# HTTPS TLS-cert verification skip. `insecureIgnoreHostKey` is a real field on the
+# same type but deprecated in favor of `insecure` — pin this so a future "fix" (this
+# file's own main.tf comment used to flag `insecure` as this session's unverified
+# best-effort guess) doesn't regress to the deprecated name.
+@test "forgejo-config repo-credential Secret uses the current 'insecure' field, not the deprecated 'insecureIgnoreHostKey' alias" {
+  run sed -n '/^resource "kubernetes_secret" "argocd_repo" {/,/^}/p' "$MAIN"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'insecure      = "true"'* ]]
+  [[ "$output" != *"insecureIgnoreHostKey"* ]]
+}
+
 @test "forgejo-config: every gitops/**/*.yaml Application repoURL points at Forgejo" {
   # The repoURL flip landed 2026-08-17 (ROADMAP "GitLab -> Forgejo migration" item 4,
   # PR #1205) — this now asserts the opposite of what it did pre-flip: no gitops
