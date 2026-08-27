@@ -82,11 +82,15 @@ resource "forgejo_deploy_key" "argocd" {
 # `insecure = "true"` is intended to skip ArgoCD's SSH known-hosts check for this repo,
 # matching this lab's existing risk tolerance for other in-cluster-only endpoints (e.g.
 # Harbor's TLS-disabled minimal profile, ADR-0024) — host.k3d.internal never leaves
-# the Colima VM. UNVERIFIED (ADR-0004): this field name is this session's best-effort
-# match against ArgoCD's documented repository-Secret schema from memory, not
-# confirmed against a live ArgoCD repo-server — the next live-cluster session applying
-# this module should verify ArgoCD actually accepts/uses this key (vs. e.g. a stale
-# `insecureIgnoreHostKey` alias) before relying on it, and fix it here if wrong.
+# the Colima VM. VERIFIED 2026-08-27 (ADR-0004, no live cluster needed for this one —
+# checked against ArgoCD's own published docs instead): argoproj/argo-cd's own
+# `docs/operator-manual/argocd-repositories.yaml` reference example states the
+# `insecure` field "does not validate the server's host key or TLS certificate" and
+# uses it in BOTH its SSH and HTTPS repository examples — it is the current, unified
+# field for this on ArgoCD's Repository type. The alternative this comment used to
+# flag, `insecureIgnoreHostKey`, is real but deprecated in favor of `insecure` — using
+# it here would have been a regression to the older field name, not a fix. This field
+# name is confirmed correct as-is; no change needed.
 #
 # Deliberately NOT wired up yet: no live Application repoURL points at
 # var.repo_url_in_cluster, so ArgoCD keeps syncing from the still-live predecessor git
