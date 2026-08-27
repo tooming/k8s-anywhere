@@ -322,6 +322,43 @@ numbered releases and reverts to `edge`-only builds, `tests/kyverno.bats`'s
 new regression test would need updating alongside re-adding the carve-out —
 a fresh, deliberate decision, not a silent regression.
 
+### 2026-08-27 — `disallow-latest-tag` extended to cover `initContainers`/`ephemeralContainers`, not just `containers`
+
+**Trigger.** A JANITOR-fallback executor cycle (Now/next lane fully gated;
+no ungroomed intake; STEP 6b's fallback chain otherwise exhausted this
+cycle) read every Kyverno `ClusterPolicy` in `gitops/kyverno/policies/`
+adversarially, checking each `validate`/`mutate` block against every Pod
+sub-field it could plausibly need to cover, not just the one it already
+covers. `disallow-latest-tag.yaml`'s `foreach` only iterated
+`request.object.spec.containers` — `spec.initContainers` and
+`spec.ephemeralContainers` were never checked.
+
+**Decision: real, unbackstopped gap — extended, not just noted.** Unlike
+`require-pod-security-restricted` (whose own `spec.containers`-only pattern
+check is backstopped by the cluster's native Pod Security Admission, which
+does enforce PSS-restricted on every container kind), `disallow-latest-tag`
+is a *Kyverno-only* rule — Kubernetes has no built-in "no `:latest` tag"
+admission control. A chart-injected initContainer (a common Helm pattern for
+wait-for-dependency or migration steps) using `:latest` or no tag would have
+been silently admitted, with no other control catching it. Verified directly
+(ADR-0004) that no manifest under `gitops/` defines an `initContainers` or
+`ephemeralContainers` field today — this closes the gap structurally ahead
+of ever being hit, not in response to an observed violation. Added two more
+`foreach` entries (`spec.initContainers`, `spec.ephemeralContainers`)
+identical in their deny conditions to the existing `spec.containers` entry —
+Kyverno resolves a `foreach.list` that JMESPaths to a null/absent field as
+zero iterations, so this is safe for every pod shape, including the vast
+majority that set neither field. Added regression coverage
+(`tests/kyverno.bats`: the foreach-entry-count assertion and the
+matching-conditions assertion) so a future edit can't silently narrow this
+back down to `containers`-only without a test failing.
+
+**Flip condition (recurrence guard).** None — this is a permanent
+completeness fix, not a temporary carve-out. If a future Kyverno version
+changes how `foreach` handles an absent list (erroring instead of skipping),
+the new regression test would catch admission failures on ordinary pods
+before they reached a live cluster.
+
 ---
 
 ## Files this work will touch
