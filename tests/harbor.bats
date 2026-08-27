@@ -113,10 +113,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "harbor namespace has enforce-version: latest" {
-  run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$REPO/gitops/harbor/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
+# "harbor namespace has enforce-version: latest" lives in
+# tests/securitycontext-harbor.bats (removed here 2026-08-27 — exact
+# duplicate, same target file, found in a cross-file duplication sweep).
 
 # --- harbor-extras (auto-synced wave 0, pre-creates namespace + route) --------
 @test "harbor-extras Application exists" {

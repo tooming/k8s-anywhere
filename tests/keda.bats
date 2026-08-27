@@ -81,28 +81,20 @@ setup() {
 }
 
 # --- keda-extras (namespace pre-creation, wave 6) ------------------------------
-@test "keda-extras Application exists" {
-  [ -f "$REPO/gitops/platform/keda-extras.yaml" ]
-}
-
+# "keda-extras Application exists" lives in tests/securitycontext-keda.bats
+# (removed here 2026-08-27 — exact duplicate, same target file, found in a
+# cross-file duplication sweep).
 @test "keda-extras runs at sync-wave 6 (moved alongside keda, ADR-0029 webhook-TLS follow-up)" {
   run grep -q 'argocd.argoproj.io/sync-wave: "6"' "$REPO/gitops/platform/keda-extras.yaml"
   [ "$status" -eq 0 ]
 }
 
 # --- Namespace PSA labels (restricted — no carve-out needed, ADR-0029) --------
+# "keda namespace enforces PSS restricted" and "...has enforce-version: latest"
+# live in tests/securitycontext-keda.bats (removed here 2026-08-27 — exact
+# duplicates, same target file).
 @test "keda namespace manifest exists" {
   [ -f "$REPO/gitops/keda/namespace.yaml" ]
-}
-
-@test "keda namespace enforces PSS restricted" {
-  run grep -q 'pod-security.kubernetes.io/enforce: restricted' "$REPO/gitops/keda/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "keda namespace has enforce-version: latest" {
-  run grep -q 'enforce-version: latest' "$REPO/gitops/keda/namespace.yaml"
-  [ "$status" -eq 0 ]
 }
 
 @test "keda namespace has warn and audit at restricted too" {
