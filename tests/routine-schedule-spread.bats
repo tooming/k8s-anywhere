@@ -81,3 +81,48 @@ setup() {
     return 1
   }
 }
+
+@test "docs/WAYS-OF-WORKING.md's Executor registry row cadence matches routines.yaml's actual cron" {
+  # Found live 2026-08-27: routines.yaml's cron dropped 3->2->1 runs/day across
+  # three same-day hand-offs to sibling-repo triggers (see routines.yaml's own
+  # header comment), and each cut updated THIS bats file's assertions above
+  # (which read routines.yaml's own comment) but never touched
+  # docs/WAYS-OF-WORKING.md §1's registry table, which still hardcodes both a
+  # fire-time list ("00:00/05:00/14:00 UTC") and a "(3/day)" count as free
+  # prose with no mechanical link back to routines.yaml. Same drift class the
+  # "actual cron hour count matches its own declared" test above already
+  # guards for routines.yaml's *own* comment — this test closes the same gap
+  # for WAYS-OF-WORKING.md's separate copy of the same fact.
+  WOW="$REPO/docs/WAYS-OF-WORKING.md"
+  [ -f "$WOW" ] || skip "docs/WAYS-OF-WORKING.md not found"
+
+  # Executor's row is the one carrying its trigger_id from routines.yaml.
+  trigger_id="$(grep -oE 'trigger_id: [A-Za-z0-9_]+' "$ROUTINES_YAML" | head -1 | awk '{print $2}')"
+  [ -n "$trigger_id" ] || { echo "no trigger_id found in $ROUTINES_YAML"; return 1; }
+  row="$(grep -F "$trigger_id" "$WOW")"
+  [ -n "$row" ] || { echo "no WAYS-OF-WORKING.md registry row cites trigger_id $trigger_id"; return 1; }
+
+  # Same hour-derivation as the test above.
+  cron_line="$(grep -oE 'cron: "[^"]+"' "$ROUTINES_YAML" | head -1)"
+  hours="$(echo "$cron_line" | sed -E 's/cron: "0 ([0-9,]+) \* \* \*"/\1/')"
+  actual_count="$(echo "$hours" | tr ',' '\n' | grep -c .)"
+
+  # The row's Cadence cell states the count as "(N/day)".
+  row_count="$(echo "$row" | grep -oE '\([0-9]+/day\)' | grep -oE '[0-9]+')"
+  [ -n "$row_count" ] || { echo "WAYS-OF-WORKING.md's Executor row has no '(N/day)' count to check"; return 1; }
+  [ "$actual_count" -eq "$row_count" ] || {
+    echo "routines.yaml's cron fires $actual_count times/day (hours: $hours) but docs/WAYS-OF-WORKING.md's Executor row declares ($row_count/day) — the table is stale, fix the row to match routines.yaml"
+    return 1
+  }
+
+  # The row also spells out the fire-times themselves (e.g. "00:00 UTC" or
+  # "00:00/05:00/14:00 UTC") — check that too, not just the count.
+  expected_times="$(echo "$hours" | awk -F',' '{for(i=1;i<=NF;i++) printf "%s%02d:00", (i>1?"/":""), $i}')"
+  case "$row" in
+    *"$expected_times UTC"*) ;;
+    *)
+      echo "routines.yaml's cron implies fire-times \"$expected_times UTC\" but docs/WAYS-OF-WORKING.md's Executor row doesn't contain that exact string — the table's fire-time list is stale"
+      return 1
+      ;;
+  esac
+}
