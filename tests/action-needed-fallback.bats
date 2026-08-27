@@ -16,14 +16,23 @@
 # All seven routine prompts are covered: executor, planner, janitor,
 # doc-drift-author, and upgrade-drafter get the `[Action needed]` PR mechanism;
 # triager and learning-post-writer (both PR-less by design) accept a no-op instead.
+#
+# Carve-out: a `[Manual step]` issue (label `manual-step`) is NOT a fallback
+# deliverable — it is a follow-up to work that already shipped in a PR (a
+# post-merge `terraform apply`, secret rotation, infra change CI can't
+# exercise), cross-linked from that PR. It can never be an idle/no-work
+# declaration and never substitutes for shipping, so `issue create` is allowed
+# on lines that also carry the `manual-step` label.
 
 setup() {
   REPO="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 }
 
 no_issue_create() {
-  run grep -c "issue create\|issue_write" "$REPO/routines/$1"
-  [ "$status" -ne 0 ] || [ "$output" = "0" ]
+  # Offending = an `issue create` / `issue_write` call that is NOT the allowed
+  # `manual-step` post-merge follow-up issue.
+  run bash -c "grep -E 'issue create|issue_write' '$REPO/routines/$1' | grep -v 'manual-step' || true"
+  [ -z "$output" ]
 }
 
 has_action_needed() {
