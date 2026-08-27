@@ -63,7 +63,42 @@ spec:
     validate:
       message: "Image tag is required and must not be ':latest'."
       foreach:
+      # Three separate foreach entries, not one list expression, because a Pod's
+      # spec.initContainers/spec.ephemeralContainers are OPTIONAL fields (most
+      # pods have neither) — Kyverno resolves a foreach `list` that JMESPaths to
+      # null/absent as zero iterations rather than an error, so this is safe for
+      # every pod shape, not just ones that happen to set all three fields. Found
+      # live 2026-08-27: only spec.containers was covered here, so a chart or
+      # manifest introducing an initContainer (e.g. a wait-for-dependency or
+      # migration container, a common Helm-chart pattern) with a `:latest` tag or
+      # no tag at all would have been silently admitted — this is the sole
+      # enforcement point for this rule (unlike require-pod-security-restricted,
+      # which is backstopped by the cluster's native PSS admission on every
+      # container kind), so a gap here was a real, unbackstopped hole, not just
+      # defence-in-depth. No gitops/ manifest defines an initContainer today
+      # (checked directly, ADR-0004) — this closes the gap structurally before it
+      # is ever hit, not in response to an observed violation.
       - list: "request.object.spec.containers"
+        deny:
+          conditions:
+            any:
+            - key: "{{ ends_with(element.image, ':latest') }}"
+              operator: Equals
+              value: true
+            - key: "{{ contains(element.image, ':') }}"
+              operator: Equals
+              value: false
+      - list: "request.object.spec.initContainers"
+        deny:
+          conditions:
+            any:
+            - key: "{{ ends_with(element.image, ':latest') }}"
+              operator: Equals
+              value: true
+            - key: "{{ contains(element.image, ':') }}"
+              operator: Equals
+              value: false
+      - list: "request.object.spec.ephemeralContainers"
         deny:
           conditions:
             any:

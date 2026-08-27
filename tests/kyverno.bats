@@ -292,6 +292,27 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
+# Regression guard (found live 2026-08-27): the original policy only checked
+# spec.containers, so a chart-injected initContainer with a ':latest' tag or no
+# tag would have been silently admitted — this is the sole enforcement point
+# for this rule, unlike the PSS policy which is backstopped by native admission.
+@test "disallow-latest-tag foreach covers spec.containers, spec.initContainers, and spec.ephemeralContainers" {
+  P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
+  [ "$(yqs '.spec.rules[0].validate.foreach | length' "$P")" = "3" ]
+  [ "$(yqs '.spec.rules[0].validate.foreach[0].list' "$P")" = "request.object.spec.containers" ]
+  [ "$(yqs '.spec.rules[0].validate.foreach[1].list' "$P")" = "request.object.spec.initContainers" ]
+  [ "$(yqs '.spec.rules[0].validate.foreach[2].list' "$P")" = "request.object.spec.ephemeralContainers" ]
+}
+
+@test "disallow-latest-tag's initContainers and ephemeralContainers foreach entries deny the same ':latest'/no-tag conditions as containers" {
+  P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
+  containers_conditions="$(yqs -o=json '.spec.rules[0].validate.foreach[0].deny.conditions' "$P")"
+  init_conditions="$(yqs -o=json '.spec.rules[0].validate.foreach[1].deny.conditions' "$P")"
+  ephemeral_conditions="$(yqs -o=json '.spec.rules[0].validate.foreach[2].deny.conditions' "$P")"
+  [ "$containers_conditions" = "$init_conditions" ]
+  [ "$containers_conditions" = "$ephemeral_conditions" ]
+}
+
 @test "add-default-seccomp ClusterPolicy file exists" {
   [ -f "$REPO/gitops/kyverno/policies/add-default-seccomp.yaml" ]
 }
