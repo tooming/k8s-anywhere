@@ -362,6 +362,18 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# Regression guard (found live 2026-08-27): this policy lacked the same
+# kube-system/baseline/privileged carve-out its sibling PSS policies
+# (require-pod-security-restricted, add-default-runasnonroot) already have —
+# without it, this mutate would keep injecting RuntimeDefault into pods in
+# namespaces deliberately exempted from PSS-restricted elsewhere (vault,
+# istio-system, tidb, kube-system's own CNI/DNS pods).
+@test "add-default-seccomp excludes the same kube-system/baseline/privileged namespaces as its sibling PSS policies" {
+  P="$REPO/gitops/kyverno/policies/add-default-seccomp.yaml"
+  SIBLING="$REPO/gitops/kyverno/policies/require-pod-security-restricted.yaml"
+  [ "$(yqs -o=json '.spec.rules[0].exclude' "$P")" = "$(yqs -o=json '.spec.rules[0].exclude' "$SIBLING")" ]
+}
+
 # --- verifyImages policy structural checks -----------------------------------
 @test "verify-image-signatures references the Harbor registry pattern" {
   run grep -q 'harbor.127.0.0.1.nip.io' "$REPO/gitops/kyverno/policies/verify-image-signatures.yaml"

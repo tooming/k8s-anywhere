@@ -71,7 +71,7 @@ so the engine is up first):
 |--------|------|--------------|
 | `require-pod-security-restricted` | `validate` | Backstop ADR-0017: reject pods missing `runAsNonRoot`, `allowPrivilegeEscalation=false`, `capabilities.drop=[ALL]`, `seccompProfile=RuntimeDefault`. Skips namespaces labelled `pod-security.kubernetes.io/enforce=baseline` or `=privileged` (matches the ADR-0017 carve-out table). |
 | `disallow-latest-tag` | `validate` | Reject any container `image:` ending in `:latest` or with no tag. **Carve-out (issue #498, 2026-07-18):** excludes the `capstone` namespace, whose manifests still hardcode a floating `:latest` placeholder pending Kargo wiring a real CI-pinned tag to capstone's image ref — without it, any Pod creation after the initial sync (crash/restart, Rollout scale event) is rejected and ArgoCD's `selfHeal` retries the same failing reconcile forever. Flip condition: remove the exclusion once `gitops/apps/capstone/{deployment,rollout}.yaml` reference a real, CI-pinned tag. **`argocd` carve-out REMOVED 2026-08-06** (issue #999, PR #1037) and **`inkless` carve-out REMOVED 2026-08-18** (PR #1217) — both flip conditions were met (a real, pinnable named release now exists for each). `gitops/kyverno/policies/disallow-latest-tag.yaml`'s `exclude` list is now `[capstone]` only — see this ADR's Re-evaluation log for the full writeup. |
-| `add-default-seccomp` | `mutate` | Inject `seccompProfile.type=RuntimeDefault` when missing (defence-in-depth alongside the validation rule). |
+| `add-default-seccomp` | `mutate` | Inject `seccompProfile.type=RuntimeDefault` when missing (defence-in-depth alongside the validation rule). Excludes the same kube-system/baseline/privileged namespaces as `require-pod-security-restricted` (added 2026-08-27 — see this ADR's Re-evaluation log). |
 | `verify-image-signatures` | `verifyImages` | Required for **Objective O4**. Admit only images cosign-signed by the lab's CI key (public key stored in a ConfigMap `cosign-public-key` in `kyverno` namespace, seeded by `scripts/cosign-bootstrap.sh`). Scope: registries in `artifactory.127.0.0.1.nip.io/**` to start; expand once O4 is end-to-end green. |
 | `add-default-runasnonroot` | `mutate` | Inject pod-level `runAsNonRoot: true` when missing — closes the admission gap exposed by the Harbor migration (ADR-0024): the `goharbor` chart sets container-level but not pod-level `runAsNonRoot`, and `require-pod-security-restricted` validates the pod level. See `tests/kyverno-add-default-runasnonroot.bats`. |
 
@@ -358,6 +358,47 @@ completeness fix, not a temporary carve-out. If a future Kyverno version
 changes how `foreach` handles an absent list (erroring instead of skipping),
 the new regression test would catch admission failures on ordinary pods
 before they reached a live cluster.
+
+### 2026-08-27 — `add-default-seccomp` given the same namespace carve-out as its sibling PSS policies
+
+**Trigger.** Same executor cycle as the `disallow-latest-tag` entry above, a
+few minutes later: a direct diff of all Pod-Security-related
+`ClusterPolicy`s against each other found `add-default-seccomp` was the
+only one of the three (`require-pod-security-restricted`,
+`add-default-runasnonroot`, `add-default-seccomp`) with no `exclude` block
+at all — despite its own header comment describing it as "defence-in-depth
+alongside the require-pod-security-restricted validate policy," which does
+carve out `kube-system`/`kube-public`/`kube-node-lease` and any
+`baseline`/`privileged`-PSA-labelled namespace.
+
+**Decision: added the exclude, matching the sibling policies exactly.**
+Those namespaces (vault, istio-system, tidb, kube-system's own CNI/DNS
+pods, …) deliberately run root/privileged workloads PSS-restricted was
+never meant to reach — `require-pod-security-restricted` skips validating
+them for exactly that reason. Without a matching exclude,
+`add-default-seccomp` would still try to mutate `seccompProfile` into pods
+in those same namespaces whenever they omit it, which could restrict
+syscalls a privileged workload (Cilium's own eBPF agent, Vault's `mlock`)
+genuinely needs. Copied the identical `exclude.any` block from
+`require-pod-security-restricted.yaml` verbatim — this is the CONSERVATIVE
+direction (the policy now mutates fewer, not more, pods), not a security
+weakening: nothing in this repo currently relies on the removed mutation
+firing in an excluded namespace (no manifest under `gitops/` sets
+`seccompProfile` itself, in an excluded namespace or otherwise). Added a
+`tests/kyverno.bats` regression test asserting `add-default-seccomp`'s
+`exclude` block is byte-identical to `require-pod-security-restricted`'s, so
+the two can't silently drift apart again.
+
+**ADR-0004 caveat.** Unverified against a live cluster whether any
+already-running pod in an excluded namespace was depending on this mutate
+having fired — no evidence of that in this repo's own manifests, but a
+live-cluster session should confirm nothing regresses (e.g. that Cilium's
+agent, currently unaffected either way since it's chart-managed and doesn't
+declare `seccompProfile` in this repo's own tracked config, still runs
+cleanly).
+
+**Flip condition (recurrence guard).** None — permanent consistency fix,
+not a temporary carve-out.
 
 ---
 

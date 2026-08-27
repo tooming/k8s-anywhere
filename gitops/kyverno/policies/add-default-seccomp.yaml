@@ -2,6 +2,27 @@
 # Defence-in-depth alongside the require-pod-security-restricted validate policy.
 # The +(seccompProfile) conditional anchor means "only patch if the field is missing"
 # so workloads that already set seccompProfile are not overwritten (ADR-0019).
+#
+# Exclude block added 2026-08-27 (JANITOR-fallback executor cycle): this policy
+# lacked the same kube-system/baseline/privileged carve-out its two sibling PSS
+# policies (require-pod-security-restricted, add-default-runasnonroot) already
+# have — found via a direct diff of all three Pod-Security-related
+# ClusterPolicies against each other. Those siblings exempt these namespaces
+# because they deliberately run root/privileged workloads (vault, istio-system,
+# tidb, kube-system's own CNI/DNS pods, …) that PSS-restricted was never meant
+# to apply to. Without this exclude, add-default-seccomp would still try to
+# inject RuntimeDefault into those same exempted namespaces' pods whenever they
+# omit seccompProfile — a real, if usually harmless, inconsistency, since
+# RuntimeDefault can restrict syscalls some privileged workloads (Cilium's own
+# eBPF agent, Vault's mlock) may need. Adding this exclude is the CONSERVATIVE
+# direction — it only makes this policy mutate fewer, not more, pods, and
+# brings it in line with the carve-out its own header comment ("alongside the
+# require-pod-security-restricted validate policy") already implies it should
+# share. UNVERIFIED against a live cluster (ADR-0004) whether any workload in
+# these namespaces was actually relying on the RuntimeDefault injection this
+# removes — no evidence of that in this repo (no manifest here sets
+# seccompProfile itself, so nothing currently depends on this mutate firing) —
+# a live-cluster session should confirm nothing regresses.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -11,6 +32,8 @@ metadata:
     policies.kyverno.io/category: Pod Security
     policies.kyverno.io/description: >-
       Injects seccompProfile.type=RuntimeDefault at pod level when absent (ADR-0019).
+      Excludes kube-system/baseline/privileged namespaces, matching
+      require-pod-security-restricted's own carve-out.
 spec:
   rules:
   - name: add-default-seccomp
@@ -18,6 +41,19 @@ spec:
       any:
       - resources:
           kinds: [Pod]
+    # Same carve-out set as require-pod-security-restricted and
+    # add-default-runasnonroot: never mutate pods in namespaces that are
+    # deliberately baseline/privileged (root/privileged workloads live there).
+    exclude:
+      any:
+      - resources:
+          namespaces: [kube-system, kube-public, kube-node-lease]
+      - resources:
+          namespaceSelector:
+            matchExpressions:
+            - key: pod-security.kubernetes.io/enforce
+              operator: In
+              values: [baseline, privileged]
     mutate:
       patchStrategicMerge:
         spec:
