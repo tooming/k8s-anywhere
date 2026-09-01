@@ -61,4 +61,4 @@ change affects live-cluster state.
 
 ## PR
 
-(filled in after PR creation)
+[#1374](https://github.com/tooming/k8s-anywhere/pull/1374)
