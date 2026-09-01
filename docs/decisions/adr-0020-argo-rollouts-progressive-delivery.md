@@ -31,12 +31,13 @@ by Alloy).
 
 ### Chart + version
 
-- **Chart:** `argo/argo-rollouts` `2.41.1` (`appVersion: 1.9.1`; pin lives in
+- **Chart:** `argo/argo-rollouts` `2.43.0` (`appVersion: 1.10.0`; pin lives in
   `gitops/platform/argo-rollouts.yaml`'s `targetRevision` — this note read
-  "v2.40.x" until the 2026-07-18 audit corrected it to the actual pin, and
-  "2.41.0 (appVersion: 1.9.0)" until the 2026-07-20 upgrade-drafter bump; see
-  [§Re-evaluation log](#re-evaluation-log) for the current CVE status of this
-  pin).
+  "v2.40.x" until the 2026-07-18 audit corrected it to the actual pin,
+  "2.41.0 (appVersion: 1.9.0)" until the 2026-07-20 upgrade-drafter bump, and
+  "2.41.1 (appVersion: 1.9.1)" until the 2026-09-01 upgrade-drafter currency
+  bump; see [§Re-evaluation log](#re-evaluation-log) for the current status
+  of this pin).
 - **Source:** `https://argoproj.github.io/argo-helm`
 - **Namespace:** `argo-rollouts` (new namespace; PSA label `restricted` —
   controller is non-root-capable per upstream Helm chart).
@@ -320,3 +321,39 @@ analysistemplate-step-count-check`, wired into `make ci`) fails the build if any
 metric with `interval` set and `count` unset — the exact invalid combination above.
 Covers the `latency-p95` / `error-rate-by-route` follow-up templates this ADR's
 §"Scope & exceptions" names, not just `success-rate`.
+
+### 2026-09-01 — Chart bumped `2.41.1` → `2.43.0` (upgrade-drafter fallback, routine currency)
+
+**Trigger.** Found via this run's own architect-fallback industry digest
+(`docs/industry/2026-W36-digest.md`), which flagged the running appVersion
+(`1.9.1`, chart `2.41.1`) as one minor release behind upstream's real newest
+(`1.10.0`) and deliberately left it un-bumped in that digest's own PR to
+keep it singular.
+
+**Verification (ADR-0004).** Confirmed directly against the real chart
+source (`raw.githubusercontent.com/argoproj/argo-helm/argo-rollouts-2.43.0/
+charts/argo-rollouts/Chart.yaml`): `version: 2.43.0`, `appVersion: v1.10.0`
+— `argoproj/argo-helm`'s tags also show an intermediate `argo-rollouts-2.42.0`
+release, skipped in favor of the highest stable release per this routine's
+own "pick the highest stable" convention (no pre-release, no major bump —
+chart stays on major `2`, app stays on major `1`).
+
+**Decision: bump.** Release notes
+(`github.com/argoproj/argo-rollouts/releases/tag/v1.10.0`) cite no security
+fixes and no breaking changes; real stability fixes: a panic-prevention
+guard for empty `Values` in the injected anti-affinity check, a deepcopy
+fix for ALB status updates (issues #3673/#4184), and flaky-test fixes.
+`values.yaml` schema re-verified at `2.43.0` for every path this
+Application sets: `controller.{replicas,resources,trafficRouterPlugins}`
+and `dashboard.{enabled,replicas,resources,containerSecurityContext}` — all
+present, unchanged structure. Notably, `dashboard.containerSecurityContext`
+still defaults to `{}` (empty) at this tag too, confirming the explicit
+override the 2026-08-19 finding added (this ADR, `## NetworkPolicy + PSS`
+context) remains necessary, not something this bump could drop.
+
+This Application is **ALWAYS-ON** (automated sync) — unlike Kargo/TiDB's
+on-demand bumps this same run, this pin takes effect on the next ArgoCD
+reconciliation, not a manual bring-up.
+
+**Flip conditions.** Revisit when `argo-helm` publishes a chart release
+above `2.43.0`, or a security advisory is filed against `v1.10.0`/`2.43.0`.
