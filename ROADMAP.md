@@ -619,8 +619,11 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live,
   running component") to a Forgejo row once this lands.
 
-- [ ] 🟢 **Bump Valkey image pin `8.1.9-alpine` → `8.1.10-alpine` — SECURITY
-  release (GHSA-jcj7-v34w-v9vv), ADR-0018's own flip condition triggered**
+- [x] 🟢 **Bump Valkey image pin `8.1.9-alpine` → `8.1.10-alpine` — SECURITY
+  release (GHSA-jcj7-v34w-v9vv), ADR-0018's own flip condition triggered** —
+  full verification writeup:
+  [docs/done/2026-09-01-valkey-8-1-10-security-bump.md](docs/done/2026-09-01-valkey-8-1-10-security-bump.md).
+  (auto/valkey-8.1.10-security-bump)
   (CHARTER **Core Values** §"Real observability only" / general hardening +
   ADR-0004; planner-fallback gap analysis 2026-09-01, reached via
   `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed

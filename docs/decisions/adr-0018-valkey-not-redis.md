@@ -49,7 +49,7 @@ what they will encounter in cloud-managed services.
 
 ## Plain manifests over a Helm chart
 
-Same reasoning as ADR-0009 and ADR-0010: a pinned official `valkey/valkey:8.1.9-alpine`
+Same reasoning as ADR-0009 and ADR-0010: a pinned official `valkey/valkey:8.1.10-alpine`
 image in a plain `StatefulSet` is fully reproducible, transparent, and validated by
 `kubeconform` (see [§Re-evaluation log](#re-evaluation-log) for the CVE-driven bump
 history from the original `8.0-alpine` pin).
@@ -251,3 +251,34 @@ which case the "smallest safe delta" preference from the 2026-07-22 entry should
 restored as the default going forward), OR a concrete lab-teaching need emerges for a
 version this line does not carry — bump the pins to the fixed/needed version and add a
 new dated log entry here.
+
+### 2026-09-01 — Valkey `8.1.9` → `8.1.10`; security release fixes GHSA-jcj7-v34w-v9vv
+
+**Trigger.** This is exactly the flip condition the 2026-08-17 entry above names:
+Valkey `8.1.10`, published 2026-08-31, is a real `SECURITY`-urgency release on the
+`8.1.x` line this ADR's pin already tracks. Verified directly (not assumed, ADR-0004)
+against `github.com/valkey-io/valkey/releases/tag/8.1.10` and
+`raw.githubusercontent.com/valkey-io/valkey/8.1.10/00-RELEASENOTES`: "Upgrade urgency
+SECURITY: This release includes security fixes we recommend you apply as soon as
+possible", documenting `GHSA-jcj7-v34w-v9vv` (a use-after-free in RDMA connection
+handling reachable via `CLIENT KILL` on a build compiled with `USE_RDMA` and an RDMA
+listener configured — this lab's stock, non-RDMA image is not directly exposed to this
+specific CVE), plus several unconditional bug fixes: AOF recovery of a truncated
+MULTI/EXEC block that could lose writes after a restart, listpack validation on RDB
+load/RESTORE to prevent deferred crashes, and multiple use-after-free fixes in TLS
+handling, cluster messaging, and stream processing. Also verified before implementing:
+the built `valkey/valkey:8.1.10-alpine` Docker image itself (not just the GitHub source
+tag) — a `GET https://hub.docker.com/v2/repositories/valkey/valkey/tags/8.1.10-alpine`
+initially returned `404` on 2026-09-01 (the multi-arch image build lagged the source
+tag by roughly a day) and was re-checked before this bump landed, confirming the image
+is now published (amd64/arm64/ppc64le/armv7, `last_updated: 2026-09-01`).
+
+**Decision: bump the pin to `8.1.10-alpine`.** `gitops/data/valkey/statefulset.yaml`
+and `gitops/data/demo/valkey-load.yaml`'s `valkey/valkey:8.1.9-alpine` image references
+are updated to `valkey/valkey:8.1.10-alpine`. Same-line patch bump, no breaking-change
+risk — smallest safe delta, matching this ADR's established pattern.
+
+**Flip condition.** A CVE or critical-bug advisory is disclosed against the `8.1.x`
+line (from `8.1.10` onward) that a later patch fixes, OR a concrete lab-teaching need
+emerges for a version this line does not carry — bump the pins to the fixed/needed
+version and add a new dated log entry here.
