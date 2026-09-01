@@ -9,12 +9,14 @@ setup() {
   APP="$REPO/gitops/platform/external-secrets.yaml"
 }
 
-@test "external-secrets Application pins chart targetRevision 2.9.0" {
-  run grep -q 'targetRevision: 2.9.0' "$APP"
+@test "external-secrets Application pins chart targetRevision 2.10.0" {
+  run grep -q 'targetRevision: 2.10.0' "$APP"
   [ "$status" -eq 0 ]
 }
 
-@test "external-secrets Application does not pin the stale 2.8.0 chart" {
+@test "external-secrets Application does not pin the stale 2.9.0 or 2.8.0 chart" {
+  run grep -q 'targetRevision: 2.9.0' "$APP"
+  [ "$status" -ne 0 ]
   run grep -q 'targetRevision: 2.8.0' "$APP"
   [ "$status" -ne 0 ]
 }
