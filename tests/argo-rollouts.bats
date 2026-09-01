@@ -20,14 +20,21 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "argo-rollouts Application pins a specific 2.41.x chart version" {
-  run grep -qE 'targetRevision: 2\.41\.' "$REPO/gitops/platform/argo-rollouts.yaml"
+@test "argo-rollouts Application pins a specific chart version" {
+  run grep -qE 'targetRevision: [0-9]+\.[0-9]+\.[0-9]+' "$REPO/gitops/platform/argo-rollouts.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "argo-rollouts Application chart pin is at least 2.41.1 (CVE-2026-35469 fix, ADR-0020)" {
-  run grep -q 'targetRevision: 2.41.1' "$REPO/gitops/platform/argo-rollouts.yaml"
+@test "argo-rollouts Application chart pin is at least 2.43.0 (appVersion v1.10.0 currency bump, ADR-0020)" {
+  run grep -q 'targetRevision: 2.43.0' "$REPO/gitops/platform/argo-rollouts.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "argo-rollouts Application does not pin the pre-bump 2.41.1 or 2.41.0 versions" {
+  run grep -q 'targetRevision: 2.41.1' "$REPO/gitops/platform/argo-rollouts.yaml"
+  [ "$status" -ne 0 ]
+  run grep -q 'targetRevision: 2.41.0' "$REPO/gitops/platform/argo-rollouts.yaml"
+  [ "$status" -ne 0 ]
 }
 
 @test "argo-rollouts Application is auto-synced (always-on)" {

@@ -26,7 +26,25 @@ spec:
     # entries added (as a stopgap while only the image, not the chart, could be
     # bumped) are gone below: the chart's own default now already resolves to
     # v1.9.1, so pinning it explicitly would just be redundant.
-    targetRevision: 2.41.1
+    #
+    # 2.43.0 (bumped from 2.41.1, upgrade-drafter fallback, 2026-09-01):
+    # routine currency, no CVE. Verified directly (not assumed, ADR-0004)
+    # against the real chart source
+    # (raw.githubusercontent.com/argoproj/argo-helm/argo-rollouts-2.43.0/
+    # charts/argo-rollouts/Chart.yaml): version 2.43.0, appVersion v1.10.0 —
+    # a minor bump on both the chart (2.x) and app (1.x) major lines, no
+    # major crossed. Release notes (github.com/argoproj/argo-rollouts/
+    # releases/tag/v1.10.0) cite no security fixes and no breaking changes;
+    # real stability fixes: a panic-prevention guard for empty Values in the
+    # injected anti-affinity check, a deepcopy fix for ALB status updates
+    # (issues #3673/#4184), and flaky-test fixes. values.yaml schema
+    # re-verified at 2.43.0 for every path this Application sets:
+    # controller.{replicas,resources,trafficRouterPlugins} and
+    # dashboard.{enabled,replicas,resources,containerSecurityContext} — all
+    # present, unchanged structure; dashboard.containerSecurityContext still
+    # defaults to {} (empty) at this tag too, confirming the explicit
+    # override below (2026-08-19 finding) remains necessary.
+    targetRevision: 2.43.0
     helm:
       releaseName: argo-rollouts
       valuesObject:
