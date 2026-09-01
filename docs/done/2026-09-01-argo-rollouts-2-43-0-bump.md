@@ -16,4 +16,4 @@ Bumped `gitops/platform/argo-rollouts.yaml`'s `targetRevision: 2.41.1` → `2.43
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1366
