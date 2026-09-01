@@ -619,6 +619,91 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live,
   running component") to a Forgejo row once this lands.
 
+- [ ] 🟢 **Bump Valkey image pin `8.1.9-alpine` → `8.1.10-alpine` — SECURITY
+  release (GHSA-jcj7-v34w-v9vv), ADR-0018's own flip condition triggered**
+  (CHARTER **Core Values** §"Real observability only" / general hardening +
+  ADR-0004; planner-fallback gap analysis 2026-09-01, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed
+  fully gated this cycle — the two standing GitLab→Forgejo migration items
+  above and the capstone-`Deployment`-removal item further below all remain
+  blocked on the same unconfirmed live-cluster/design prerequisites (issues
+  #633/#1229/#1345 all still open, latest comments unchanged since
+  2026-08-25), and no un-RFC'd 🟡 item or ungroomed intake issue exists (the
+  three open issues are all standing `[Action required]` trackers, not
+  groomable work — confirmed by re-reading each). Fresh angle this cycle:
+  re-check every plain `image:` pin for a newer upstream release rather than
+  assume the 2026-08-17 sweep's findings still hold three weeks later.
+  **Prerequisite: the `valkey/valkey:8.1.10-alpine` Docker Hub image must
+  exist before this is picked up — confirmed NOT yet published as of
+  2026-09-01 (see caveat below); re-check before building.**)
+
+  Verified directly (not assumed, ADR-0004): fetched
+  `github.com/valkey-io/valkey/releases/tag/8.1.10` and
+  `raw.githubusercontent.com/valkey-io/valkey/8.1.10/00-RELEASENOTES`
+  directly — published 2026-08-31, "Upgrade urgency SECURITY: This release
+  includes security fixes we recommend you apply as soon as possible",
+  documenting `GHSA-jcj7-v34w-v9vv` (a use-after-free in RDMA connection
+  handling allowing an authenticated client to crash the server via
+  `CLIENT KILL`; only affects builds compiled with `USE_RDMA` and an RDMA
+  listener configured — this lab's stock `valkey/valkey:8.1.9-alpine` image
+  is not RDMA-enabled, so this specific CVE doesn't reach it as deployed)
+  plus several unconditional bug fixes on the same tag: AOF recovery of a
+  truncated MULTI/EXEC block that could lose writes after a restart,
+  listpack validation on RDB load/RESTORE to prevent deferred crashes, and
+  multiple use-after-free fixes in TLS handling, cluster messaging, and
+  stream processing. This is exactly the flip condition ADR-0018's
+  2026-08-17 re-evaluation log entry names verbatim: "A CVE or critical-bug
+  advisory is disclosed against the `8.1.x` line (from `8.1.9` onward) that
+  a later patch fixes ... bump the pins to the fixed/needed version and add
+  a new dated log entry here." No `8.1.11`+ tag exists yet (checked the same
+  releases page) and no major-version jump is involved — smallest safe
+  delta.
+
+  **Not yet groundable — checked directly, ADR-0004 (mirrors the
+  2026-08-25 digest's Velero `v1.18.2` precedent: a real upstream release
+  with no published artifact to pin yet is not actionable).** The GitHub
+  source tag (`8.1.10`) exists, but the built Docker image does not: a
+  direct `GET
+  https://hub.docker.com/v2/repositories/valkey/valkey/tags/8.1.10-alpine`
+  returned **HTTP 404** (checked twice, several minutes apart, 2026-09-01),
+  while the same query for `8.1.9-alpine` correctly returns real tag data
+  (`last_updated: 2026-08-31T10:04:57Z`) — so the negative result is a real
+  "not published yet" finding, not a broken query. Valkey's Docker Hub
+  multi-arch image build typically lags its GitHub source tag by hours to
+  roughly a day (observed pattern: `8.1.9-alpine`'s own last-updated
+  timestamp postdates its GitHub tag similarly). **Before implementing:**
+  re-run the same check (`curl -s -o /dev/null -w '%{http_code}'
+  https://hub.docker.com/v2/repositories/valkey/valkey/tags/8.1.10-alpine`
+  — `200` means it's published, pick this up; `404` means it still isn't,
+  leave unchecked and try again next cycle). Do not bump the manifest pin
+  to a tag that doesn't exist yet — ArgoCD would sync a StatefulSet
+  referencing a nonexistent image and the pod would never pull.
+
+  Four touch points once the image is confirmed published, all confirmed by
+  direct grep (not guessed): (1)
+  `gitops/data/valkey/statefulset.yaml`'s `image: valkey/valkey:8.1.9-alpine`
+  → `:8.1.10-alpine`; (2) `gitops/data/demo/valkey-load.yaml`'s identical
+  pin, same bump; (3) `tests/data-layer.bats` — retitle and update both
+  `"valkey image is pinned to 8.1.9-alpine (...)"` (line 57) and
+  `"valkey-load image is pinned to 8.1.9-alpine (...)"` (line 67) tests to
+  assert `8.1.10-alpine`, and update their stale-pin-absent negative
+  assertions (lines 63/73, currently checking the *old* `8.0.10-alpine` pin
+  is absent — update to check `8.1.9-alpine` is absent instead, mirroring
+  the pattern each prior bump in this file has followed); (4)
+  `docs/decisions/adr-0018-valkey-not-redis.md` — update line 52's
+  `valkey/valkey:8.1.9-alpine` citation to `8.1.10-alpine` and append a new
+  dated `### 2026-09-01 — Valkey \`8.1.9\` → \`8.1.10\`; security release
+  fixes GHSA-jcj7-v34w-v9vv` entry to the Re-evaluation log, in the same
+  Trigger/Decision/Flip-condition shape as the existing 2026-08-17 entry,
+  citing the exact release-notes fetch above and noting the
+  RDMA-inapplicability finding. Also update `docs/dependency-register.md`'s
+  Valkey row (currently dated 2026-08-17) to cite the new bump and today's
+  date. `make ci` must pass. PR body must state the ADR-0004 caveat that
+  this remote clusterless session cannot verify the running StatefulSet
+  actually restarts cleanly on the new tag or that the "Lab — Valkey"
+  Grafana dashboard keeps populating — a live-cluster session should confirm
+  post-merge.
+
 - [x] 🟢 **GitHub→Forgejo pull-based, fast-forward-only sync workflow** — full
   verification writeup:
   [docs/done/2026-08-25-forgejo-github-sync-workflow.md](docs/done/2026-08-25-forgejo-github-sync-workflow.md).
