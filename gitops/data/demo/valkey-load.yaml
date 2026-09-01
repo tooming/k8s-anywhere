@@ -28,7 +28,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: valkey-load
-          image: valkey/valkey:8.1.9-alpine
+          image: valkey/valkey:8.1.10-alpine
           env:
             - name: REDISCLI_AUTH
               valueFrom:
