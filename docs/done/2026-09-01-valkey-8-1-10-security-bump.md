@@ -12,4 +12,4 @@ Bumped `gitops/data/valkey/statefulset.yaml` and `gitops/data/demo/valkey-load.y
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1361
