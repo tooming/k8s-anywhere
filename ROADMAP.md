@@ -405,37 +405,15 @@ there is no point where the lab loses a working git source or CI path.
 - [x] 🟢 **Forgejo compose stack, additive alongside GitLab** →
   [docs/done/2026-08-11-forgejo-compose-stack-roadmap-bookkeeping.md](docs/done/2026-08-11-forgejo-compose-stack-roadmap-bookkeeping.md)
   (PR #1105, bookkeeping PR #1106)
-- [x] 🟢 **`infra/modules/forgejo-config` Terraform module** — org/repo/branch-protection/
-  deploy-token resources via `svalabs/terraform-provider-forgejo` (or
-  `adyxax/terraform-provider-forgejo` if its resource coverage fits better — check both
-  before committing), `infra/live/{local,oracle}/forgejo/`. Parallels `gitlab-config`.
-  Prerequisite: previous item (needs a live Forgejo instance to point Terraform at).
-  (auto/forgejo-config-terraform-module)
-- [x] 🟢 **Port `.gitlab-ci.yml` → `.forgejo/workflows/build-sign-push.yml`** — same
-  build → `cosign sign` → push-to-Harbor job (ADR-0011/ADR-0024). Verify live (ADR-0004):
-  a real pipeline run must push a genuinely signed image to Harbor, not just parse.
-  Prerequisite: previous item. (auto/forgejo-ci-workflow)
-- [x] 🟢 **Wire ArgoCD's repo-credential Secret for the Forgejo remote (prep slice)** —
-  split from this list's original single item via ROADMAP rule #9's split-the-gate
-  judgment (2026-08-11, reached via `executor.prompt.md` STEP 3 — this was the
-  topmost unchecked item and no open PR claimed it): repointing `Application`
-  `repoURL`s (including `root-app.yaml`, the always-on-synced app-of-apps entrypoint)
-  is exactly the live-reconcile-affecting "flip" rule #9 says must stay gated for a
-  clusterless session — ArgoCD would attempt to re-sync every Application from
-  Forgejo on the next live reconcile, and neither the Forgejo repo's content (no
-  `forgejo-push` mechanism exists yet — that's item 5, below) nor its CI/runner
-  (item 3's own docs/done record: unverified) are confirmed live-working. Building
-  that flip anyway would risk the same fleet-wide blast radius the cosign
-  `enforce-flip` slice was split out to avoid (RFC #214 precedent, cited by this
-  list's own item 3). What *is* safe and additive: `infra/modules/forgejo-config`'s
-  `kubernetes_secret.argocd_repo` resource (SSH-keyed, named `repo-forgejo-gitops` —
-  distinct from the still-used `repo-gitlab-gitops`) plus the `repo_url_in_cluster`/
-  `argocd_namespace` variables and both live Terragrunt units' `kubernetes` provider
-  wiring, all parallel to the predecessor module's own resource shape. No
-  `gitops/**/*.yaml` Application references the new URL yet, so this is inert until
-  the next item flips it — `make ci` (kubeconform, kustomize, terraform fmt/validate,
-  bats) confirms the module is well-formed without needing a live cluster.
-  (auto/forgejo-argocd-repo-secret)
+- [x] 🟢 **`infra/modules/forgejo-config` Terraform module** →
+  [docs/done/2026-08-11-forgejo-config-terraform-module.md](docs/done/2026-08-11-forgejo-config-terraform-module.md)
+  (PR #1107)
+- [x] 🟢 **Port `.gitlab-ci.yml` → `.forgejo/workflows/build-sign-push.yml`** →
+  [docs/done/2026-08-11-forgejo-ci-workflow.md](docs/done/2026-08-11-forgejo-ci-workflow.md)
+  (PR #1108)
+- [x] 🟢 **Wire ArgoCD's repo-credential Secret for the Forgejo remote (prep slice)** →
+  [docs/done/2026-08-11-forgejo-argocd-repo-secret.md](docs/done/2026-08-11-forgejo-argocd-repo-secret.md)
+  (PR #1110)
 - [x] 🟢 **Flip `Application` `repoURL`s (including `root-app.yaml`) to the Forgejo
   remote, verify a real sync** — done 2026-08-17, accelerated per explicit user
   direction ("get rid of GitLab already... fix-forward") rather than waiting for
@@ -460,137 +438,13 @@ there is no point where the lab loses a working git source or CI path.
   all 121 Applications' live `spec.source.repoURL` point at Forgejo; cluster health
   held at 106-107/121 Healthy throughout. (PR #1205)
 - [x] 🟢 **Simulate Garage unavailability — third DR fault-injection drill
-  (`make dr-garage-failure`)** (CHARTER **Goals** §"operational-resilience
-  discipline" + **Objective O3**'s stateful-DR framing; DORA Pillar 3 TLPT
-  concept; planner-fallback gap analysis 2026-08-18, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was found fully
-  gated on unconfirmed maintainer-confirmation issues #631/#633 — both
-  standing GitLab-migration items above need live-cluster design work this
-  clusterless session already investigated and correctly declined to guess
-  at, and the capstone-Deployment-removal item below is still gated on #633.
-  **No prerequisites — executor may pick up immediately.**) Verified directly
-  (not assumed, ADR-0004): `docs/dora-audit-readiness.md` Q12 names this exact
-  gap — after `dr-chaos.sh` (pod-kill self-heal) and `dr-network-partition.sh`
-  (NetworkPolicy-delete self-heal) both shipped, Q12's own Gap line says
-  "Simulating Garage unavailability, as this question's original framing also
-  suggested, remains a real, separately-scoped future drill if wanted — a
-  different failure domain (storage-layer availability) from either drill
-  here." `gitops/storage/garage/statefulset.yaml` confirms Garage runs as a
-  single-replica (`replicas: 1`) `StatefulSet` (`app: garage`, namespace
-  `storage`) — the same "one pod, assert Kubernetes self-heals it" shape
-  `dr-chaos.sh` already exercises for capstone, just against a different
-  component and namespace, so this is a mechanical adaptation of a proven
-  pattern, not a new design.
-
-  Add `scripts/dr-garage-failure.sh`, copying `dr-chaos.sh`'s structure
-  exactly (source `lib/colors.sh` + `lib/budget-check.sh` + `lib/confirm.sh`
-  + `lib/dr-results-log.sh`; `confirm_or_abort` gate with a
-  `DR_ASSUME_YES`-compatible bypass; a `BUDGET_S` constant — justify it in
-  the PR body against Garage's actual startup profile, not a guessed value,
-  the same way `dr-chaos.sh`'s own header comment reasons about capstone's):
-  target `NAMESPACE="storage"`, `LABEL_SELECTOR="app=garage"`; delete the
-  single running Garage pod (`kubectl delete ... --wait=false`, mirroring
-  `dr-chaos.sh`'s pattern — a pod delete has a
-  `terminationGracePeriodSeconds` window, unlike the NetworkPolicy delete in
-  `dr-network-partition.sh`, which correctly does NOT use `--wait=false`;
-  keep this distinction straight, don't copy the wrong drill's flag); poll
-  until a replacement pod's single container reports `ready=true` (excluding
-  the deleted pod's own name by field-selector, exactly as `dr-chaos.sh`'s
-  own self-review-caught fix does — reuse that fixed logic, don't
-  reintroduce the phase=Running-without-readiness bug it found) within
-  budget, or fail. Call `dr_log_result "dr-garage-failure.sh" "PASS"/"FAIL"`
-  on both exit paths. Add `dr-garage-failure: ## Chaos drill: kill the
-  single-replica Garage pod, assert self-heal within budget (DORA Pillar 3
-  TLPT concept)` to the Makefile's DR section, on-demand only — do NOT wire
-  into `make up`, `make ci`, or `make dr-test`, same as `dr-chaos`/
-  `dr-network-partition`. New `tests/dr-garage-failure.bats` mirroring
-  `tests/dr-network-partition.bats`'s shape exactly (clusterless structural,
-  no live cluster required): script exists + is executable; sources all four
-  shared libs; uses `confirm_or_abort`; declares `BUDGET_S`; targets
-  `NAMESPACE="storage"` and `LABEL_SELECTOR="app=garage"` (and assert
-  `gitops/storage/garage/statefulset.yaml` actually carries `app: garage` +
-  `replicas: 1`, the same real-manifest recurrence guard
-  `dr-network-partition.bats` uses for its NetworkPolicy name); calls
-  `dr_log_result "dr-garage-failure.sh"` on both exit paths; uses
-  `--wait=false` on the pod delete (recurrence guard the *other* direction
-  from `dr-network-partition.bats`'s check — this drill deletes a pod, so
-  `--wait=false` is correct here, not a bug); Makefile declares the
-  `dr-garage-failure` target and it is NOT invoked from `up`, `ci`, or
-  `dr-test`'s own block. Update `docs/DR.md` with a new "Garage-failure drill
-  (`make dr-garage-failure`)" subsection immediately after the existing
-  "Network-partition drill" section, matching its structure (what it does,
-  budget + reasoning, exit codes, real-world side effect). Update
-  `docs/dora-audit-readiness.md` Q12's Gap line: the Garage-unavailability
-  drill it named as a future candidate now exists — state plainly that all
-  three fault-injection scenarios this lab's TLPT concept covers are pod-kill
-  (capstone), NetworkPolicy-delete (capstone/ArgoCD selfHeal), and now
-  pod-kill (Garage/storage) — and note what's still *not* covered (e.g. a
-  multi-pod/quorum-loss scenario, N/A here since Garage runs single-replica
-  in this lab; a full node-loss scenario) so the gap stays honestly scoped,
-  not overclaimed. `make ci` must pass. PR body must document the
-  single-replica-StatefulSet finding and cite the exact `dr-chaos.sh`
-  self-review fix being reused, plus the ADR-0004 caveat that this remote
-  clusterless session authored and structurally verified the script but has
-  not executed it against a real cluster — call out the rollback path (this
-  is a read-only-to-the-repo, on-demand script; a failed drill run leaves no
-  cluster-state change beyond the one pod delete Kubernetes itself already
-  guarantees to recover from). `docs/done/` entry required.
-  (auto/dr-garage-failure-drill)
+  (`make dr-garage-failure`)** →
+  [docs/done/2026-08-18-dr-garage-failure-drill.md](docs/done/2026-08-18-dr-garage-failure-drill.md)
+  (PR #1240)
 - [x] 🟢 **Dependency exit runbooks for the lab's top concentration risks — closes
-  DORA audit Q17's named gap** (CHARTER **Core Values** §"Everything as code; GitOps
-  deploys it" + operational-resilience discipline; planner-fallback gap analysis
-  2026-08-18, reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated this cycle — the same three standing items above (two
-  sequential GitLab-migration items needing live-cluster design work already
-  investigated and declined; the capstone `Deployment` removal gated on unconfirmed
-  issue #633, re-checked this cycle: still no confirmation comment as of its last
-  2026-08-17 update) — and no un-RFC'd 🟡 item, ungroomable open issue, or
-  `docs/roadmap/incoming/` file exists to promote instead. **No prerequisites —
-  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004):
-  `docs/dora-audit-readiness.md` Q17 names this exact gap — exit strategy is
-  "implicit" (ADR-0001's GitOps-repointing design) and "demonstrated" (the real,
-  executed ADR-0011→ADR-0024 Artifactory→Harbor migration), but "no dependency has a
-  *written* exit runbook in advance of needing one." Grepping `docs/` for "exit
-  runbook"/"exit strategy" turns up only this Q17 answer itself — nothing already
-  tracks this, distinct from `docs/dependency-concentration.md` (Q16, names *which*
-  orgs concentrate risk, not *how* to exit any of them) and `docs/dependency-
-  register.md` (Q14, pure re-indexing, explicitly "no new dependency-risk judgment").
-
-  Add `docs/dependency-exit-runbooks.md`: for each of `docs/dependency-
-  concentration.md`'s three named concentration groups (`github.com/grafana` — 6
-  tools, `github.com/argoproj` — 2 tools, `github.com/pingcap` — 2 tools) plus any
-  single-tool row the register's own criticality column marks `always-on-core` that
-  isn't already covered by one of those three groups, write one short runbook
-  section: what a real exit looks like *mechanically* in this repo (which
-  `gitops/platform/*.yaml` `Application`(s) and `targetRevision`/chart repo values
-  would change, whether a straight fork-and-repoint suffices or a schema/API
-  migration is also needed, and — reusing the real Artifactory→Harbor precedent's
-  actual shape, not an invented one — cite `docs/done/2026-07-29-harbor-artifactory-
-  decommission.md` and ADR-0024 as the worked example of what "done" looks like for
-  a tool exit). Do not invent urgency or a rejected-alternative list from scratch for
-  tools that have never needed one — where no real fork/alternative research has
-  been done for a given tool, say so plainly (e.g. "no alternative evaluated yet;
-  first step of any real exit would be the same ADR-writing process ADR-0002/
-  ADR-0018/ADR-0024 already used to pick this tool") rather than fabricating a
-  synthetic decision (ADR-0004). Update Q17's Answer/Evidence/Gap in `docs/dora-
-  audit-readiness.md` to point at the new file and state plainly that these are
-  *pre-planned* runbooks now, not just the reactive-migration precedent, while
-  keeping the Gap honest about what's still true (a written runbook existing in
-  advance doesn't mean the effort of an actual exit is smaller — it only means the
-  first-response steps are already identified). Add a cross-reference from `docs/
-  dependency-concentration.md`'s "Keeping this in sync" section noting the new file
-  is a downstream consumer of both its own concentration groups and the register's
-  criticality column. New structural assertions (extend `tests/dora-audit-
-  readiness.bats` if `auto/stateless-criticality-tiers`/`auto/dependency-
-  concentration-rollup` already created one — check first, don't create a second
-  file for the same doc family) asserting the new file exists and names at minimum
-  `github.com/grafana`, `github.com/argoproj`, and `github.com/pingcap`. `make ci`
-  must pass. PR body must state which tools got a runbook section and why those and
-  not others (ADR-0004 — an unscoped "covers everything" claim would itself be a
-  form of fabricated completeness), and must not assert any of these exits has
-  actually been rehearsed — only that the first-response steps are now written down
-  in advance, matching Q17's own "written, not yet exercised" framing. `docs/done/`
-  entry required. (auto/dependency-exit-runbooks)
+  DORA audit Q17's named gap** →
+  [docs/done/2026-08-18-dependency-exit-runbooks.md](docs/done/2026-08-18-dependency-exit-runbooks.md)
+  (PR #1242)
 - [ ] 🟢 **Rename `scripts/gitlab-*.sh` → `scripts/forgejo-*.sh` + matching `Makefile`
   targets** (bootstrap, TLS bootstrap, push, force-push, `rebase-prs`' GitLab leg);
   `tests/gitlab-compose.bats`/`tests/gitlab-push.bats` → `forgejo-*` bats files with
