@@ -20,4 +20,4 @@ Bumped both `gitops/platform/observability-ksm.yaml`/`observability-node-exporte
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1371
