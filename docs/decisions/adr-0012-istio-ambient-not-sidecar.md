@@ -275,6 +275,44 @@ pinned identically across `base`/`cni`/`istiod`/`ztunnel`).
 publishes a stable release above `1.30.4`, or a security advisory is filed
 naming `1.30.4` (or any version at/above it) as affected.
 
+### 2026-09-01 — `kiali-server` `2.30.0` → `2.31.0`, real CVE fixes
+
+**Trigger.** Found as a bonus finding while re-verifying Kiali's own row in
+`docs/dependency-register.md` alongside the Istio chart bump above:
+`kiali/helm-charts`' real tags.atom feed shows `v2.31.0` (published
+2026-08-24) one release past the pinned `2.30.0`.
+
+**Verification (ADR-0004).** `kiali-server/Chart.yaml` and `values.yaml`
+both carry unresolved `0.0.0`/`${HELM_IMAGE_TAG}` placeholders in git at
+every tag (version and image tag are injected only at release-packaging
+time, not committed) — the packaged `.tgz` release asset couldn't be
+located at a guessable URL in this sandbox, so schema verification used
+`git diff v2.30.0 v2.31.0 -- kiali-server/` directly on a real clone of
+`kiali/helm-charts` instead: **completely empty** — the chart directory is
+byte-for-byte unchanged between the two tags. No schema risk either way;
+this lab's `valuesObject` (`auth.strategy`, `external_services.*`,
+`deployment.resources`) doesn't touch `deployment.image_version` regardless.
+
+A real clone's `git log v2.30.0..v2.31.0` on the `kiali/kiali` app repo
+(versioning tracks 1:1 with the chart, same as the 2026-08-04 entry above)
+shows 47 commits, five of them named CVE-driven dependency bumps: "Upgrade
+axios, undici, and immutable for CVE fixes" (#10178), "Upgrade
+OpenTelemetry-Go to v1.44.0 for CVE-2026-41178" (#10211), "CVE-2026-73089
+and CVE-2026-73088: upgrade browserslist to 4.28.8" (#10194), "Upgrade
+golang.org/x/text to v0.39.0 for CVE-2026-56852" (#10193), "Upgrade
+brace-expansion, ip-address, and postcss for CVE fixes" (#10161). Also real,
+non-CVE fixes: several Istio-validation false-positive corrections
+(KIA0105, KIA0102, KIA1313, and P0/P1 validation checks) and UI bugfixes.
+
+**Decision: Convert (bump to `2.31.0`).** Real CVE fixes, empty chart diff,
+no `valuesObject` key affected — same smallest-safe-delta reasoning as this
+ADR's other chart-pin bumps, higher-priority than a routine currency bump
+given the named CVEs.
+
+**Flip condition (next re-evaluation).** Revisit when a Kiali-specific CVE
+is published against `kiali-server` at or above `2.31.0`, or the chart repo
+prunes `2.31.0` itself.
+
 ---
 
 ## Files
