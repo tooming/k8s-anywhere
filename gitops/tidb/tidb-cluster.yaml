@@ -15,13 +15,33 @@
 # rollback is a one-line revert of this field; ADR-0005's recreate-over-HA means
 # `make tidb-down && make tidb-up` rebuilds the cluster from manifest with no
 # state to lose beyond the demo data itself.
+#
+# Bumped v8.5.7 -> v8.5.8 (upgrade-drafter fallback, 2026-09-01): ADR-0032
+# explicitly holds the database at the v8.5.x LINE, not a specific patch --
+# "a future v8.5.z patch ... remains in scope for a routine upgrade-drafter
+# bump" -- so this stays clear of that ADR's own scope. Verified directly (not
+# assumed, ADR-0004) via the real Atom tags/releases feeds
+# (github.com/pingcap/tidb/tags.atom, .../releases.atom -- the HTML release
+# page's rendered publish date is unreliable in this sandbox, the raw XML's
+# ISO-8601 <updated> field is not): "TiDB v8.5.8" published
+# 2026-08-27T09:06:37Z, the newest plain release tag on the v8.5.x line (only
+# nightly/commit-titled build tags like v8.5.8-20260829-... exist beyond it,
+# not stable releases). docs.pingcap.com's release-notes page is proxy-blocked
+# in this sandbox and the GitHub compare view (39 commits, 156 files) was too
+# large to render specific fix content -- this is treated as routine currency,
+# not a claimed security fix, matching the same evidence bar this repo used
+# for the original v8.1.2 -> v8.5.7 bump. No major bump (stays on TiDB major
+# `8`, same v8.5.x line ADR-0032 holds). ADR-0004 caveat: this remote
+# clusterless session cannot verify tidb-operator 1.6.6 reconciles this
+# version cleanly on a live cluster (TiDB is on-demand, `make tidb-up`) --
+# rollback is a one-line revert of this field.
 apiVersion: pingcap.com/v1alpha1
 kind: TidbCluster
 metadata:
   name: lab
   namespace: tidb
 spec:
-  version: "v8.5.7"
+  version: "v8.5.8"
   timezone: UTC
   pvReclaimPolicy: Delete
   enableDynamicConfiguration: true

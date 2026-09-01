@@ -27,8 +27,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "TidbCluster version pin is at least v8.5.7 (2026-07-23 currency bump)" {
-  run grep -q 'version: "v8.5.7"' "$TIDB_CLUSTER"
+@test "TidbCluster version pin is at least v8.5.8 (2026-09-01 currency bump)" {
+  run grep -q 'version: "v8.5.8"' "$TIDB_CLUSTER"
   [ "$status" -eq 0 ]
 }
 
