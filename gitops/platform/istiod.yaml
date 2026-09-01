@@ -1,6 +1,10 @@
 # Istio control plane — istiod running in ambient profile (no sidecar injection;
 # ADR-0012). ON-DEMAND: no auto-sync block. Bring up with: make istio-up (step 3,
 # after istio-cni). Tear down with: make istio-down (step 2, after ztunnel).
+#
+# Bumped 1.30.3 -> 1.30.4 (upgrade-drafter fallback, 2026-09-01) — see
+# gitops/platform/istio-base.yaml's header + ADR-0012's Re-evaluation log for
+# the full verification trail (all four Istio charts move in lockstep).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -13,7 +17,7 @@ spec:
   source:
     repoURL: https://istio-release.storage.googleapis.com/charts
     chart: istiod
-    targetRevision: 1.30.3
+    targetRevision: 1.30.4
     helm:
       releaseName: istiod
       valuesObject:
