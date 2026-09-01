@@ -70,7 +70,7 @@ bootstrapped, formally recorded here for the first time.
 | **Loki** | Raw manifests (`gitops/observability/loki`), single-binary, Garage S3-backed | ArgoCD `Application` `loki`, `targetRevision: main` | Image tag tracked via ADR-0006 (currently `3.7.6`) |
 | **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.8` directly | `2.10.8` (tracked in ADR-0006's Re-evaluation log, 2026-08-13 security bump) |
 | **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.1` | `2.2.1` |
-| **Alloy** | Helm chart | `gitops/platform/observability-alloy.yaml`, `targetRevision: 1.11.1` | `1.11.1` |
+| **Alloy** | Helm chart | `gitops/platform/observability-alloy.yaml`, `targetRevision: 1.12.1` | `1.12.1` (tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
 | **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.4.1` | `8.4.1` (tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
 | **node-exporter** | Helm chart, `prometheus-community/helm-charts` (`prometheus-node-exporter`) | `gitops/platform/observability-node-exporter.yaml`, `targetRevision: 4.56.3`; dedicated `node-exporter` namespace (not `observability`) because it needs `hostPID`/`hostNetwork`/`hostRootFsMount` semantics [ADR-0017](adr-0017-pod-security-standards-restricted.md)'s `restricted` profile forbids | `4.56.3` (tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
 
@@ -112,6 +112,29 @@ shape (Alloy as sole collector feeding all four Grafana-authored stores).
 ---
 
 ## Re-evaluation log
+
+**2026-09-01** — Alloy chart bumped `1.11.1` → `1.12.1` (upgrade-drafter fallback,
+routine currency sweep, `executor.prompt.md` STEP 6b — this run's thirteenth cycle).
+Verified directly (ADR-0004) via a real clone of `grafana/alloy` (the chart moved out
+of the old `grafana/helm-charts` monorepo into its own repo, `operations/helm/charts/
+alloy/`): `git diff helm-chart/1.11.1 helm-chart/1.12.1 -- operations/helm/charts/
+alloy/` touches only `Chart.yaml` (`version: 1.11.1` → `1.12.1`, `appVersion: v1.18.1`
+→ `v1.19.2`), `README.md`, and `CHANGELOG.md` — templates and `values.yaml` are
+byte-identical, so every schema fact this Application's own header comment
+previously verified (no `--storage.path` volume, `global.podSecurityContext` not
+`controller.podSecurityContext`, `alloy.timeoutSeconds` as a flat key, etc.) still
+holds unchanged. Checked the real top-level `CHANGELOG.md` for the `v1.18.1..v1.19.2`
+binary range: `v1.19.0` names three breaking changes —
+`prometheus.operator.servicemonitors` rejecting local-file TLS/bearer-token refs by
+default, an OTel `memory_limiter` processor telemetry-metric rename, and removal of
+the `prometheus.write.queue` component — none of which this lab's embedded River
+config uses (it only uses `prometheus.remote_write`/`prometheus.scrape`/
+`discovery.*`/`loki.*`/`pyroscope.*`, confirmed by direct grep). Real, applicable
+fixes found: a `discovery.relabel` fix ("use the underlying string of secret target
+values") and several `loki.source.docker`/`loki.source.file` fixes (not directly
+used here, but no regression risk since they're additive correctness fixes).
+**Flip condition:** revisit when `grafana/alloy` publishes a chart release above
+`1.12.1`, or a security advisory is filed naming `v1.19.2` (or later) as affected.
 
 **2026-09-01** — node-exporter chart bumped `4.56.1` → `4.56.3` (upgrade-drafter
 fallback, routine currency sweep, `executor.prompt.md` STEP 6b — the twelfth cycle
