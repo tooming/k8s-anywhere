@@ -18,6 +18,16 @@
 # runtime/code-generator bump (v0.62.0 -> v0.62.1, #244) — no change to any key this
 # Application's valuesObject sets (aws.*, installScope, podSecurityContext.*,
 # securityContext.*, resources.*).
+#
+# Chart bumped 1.10.0 -> 1.11.0 (upgrade-drafter fallback, 2026-09-01). Verified
+# directly (ADR-0004) via a real clone of aws-controllers-k8s/s3-controller:
+# `git diff v1.10.0 v1.11.0 -- helm/Chart.yaml helm/values.yaml` shows the
+# version/appVersion/image.tag bump plus exactly ONE new key,
+# `featureGates.IgnoreFieldDrift: false` (a new opt-in feature, default off) --
+# this Application's valuesObject sets no `featureGates` override at all, so
+# it's a complete no-op here. Upstream's own release notes name the real
+# feature: "Support tags at CreateBucket time from Spec.Tagging" plus an ACK
+# runtime bump to v0.63.0.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -30,7 +40,7 @@ spec:
   source:
     repoURL: public.ecr.aws/aws-controllers-k8s
     chart: s3-chart
-    targetRevision: 1.10.0
+    targetRevision: 1.11.0
     helm:
       releaseName: ack-s3
       valuesObject:
