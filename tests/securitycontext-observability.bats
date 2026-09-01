@@ -186,10 +186,16 @@ setup() {
 # --- kube-state-metrics chart-pin recurrence guard ----------------------------
 # 8.3.1 -> 8.4.0: appVersion bump 2.19.1 -> 2.20.0, CVE remediations (GO-2026-5038)
 # + additive metrics only — see docs/done/ entry.
+# 8.4.0 -> 8.4.1: purely additive opt-in collectors, appVersion unchanged.
 
-@test "kube-state-metrics Application pins chart version 8.4.0" {
-  run grep -q 'targetRevision: 8.4.0' "$KSM"
+@test "kube-state-metrics Application pins chart version 8.4.1" {
+  run grep -q 'targetRevision: 8.4.1' "$KSM"
   [ "$status" -eq 0 ]
+}
+
+@test "kube-state-metrics Application does not pin the superseded 8.4.0 chart" {
+  run grep -q 'targetRevision: 8.4.0' "$KSM"
+  [ "$status" -ne 0 ]
 }
 
 @test "kube-state-metrics Application does not pin the stale 8.3.1 version" {

@@ -2,6 +2,13 @@
 # for the "Node Exporter Full" community dashboard. DaemonSet on every node;
 # Alloy scrapes it (job "node-exporter") -> Mimir. On k3d these are the node
 # *containers'* metrics (still useful to see per-node load).
+#
+# Bumped 4.56.1 -> 4.56.3 (upgrade-drafter fallback, 2026-09-01): appVersion
+# unchanged (1.12.1). Real default change: chart's own extraArgs default now
+# excludes pseudo/container filesystems from node_filesystem_* metrics (this
+# lab sets no extraArgs override, so it inherits the new default) -- verified
+# this doesn't affect lab-node-exporter.json's two node_filesystem_* panels
+# (both real host disks). See ADR-0034's Re-evaluation log for the full diff.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -14,7 +21,7 @@ spec:
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
     chart: prometheus-node-exporter
-    targetRevision: 4.56.1
+    targetRevision: 4.56.3
     helm:
       releaseName: node-exporter
       valuesObject:
