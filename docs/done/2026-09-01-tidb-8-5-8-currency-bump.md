@@ -14,4 +14,4 @@ Bumped `gitops/tidb/tidb-cluster.yaml`'s `spec.version: "v8.5.7"` → `"v8.5.8"`
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1363
