@@ -116,6 +116,35 @@
 # verify they change that issue's outcome -- noted honestly, not claimed as
 # a fix for #633.
 # Release: https://github.com/akuity/kargo/releases/tag/v1.11.2
+#
+# Bumped 1.11.2 -> 1.11.3 (2026-09-01, upgrade-drafter fallback): a real
+# authorization-bypass fix, not routine currency. Verified directly (not
+# assumed): the packaged chart's GitHub Packages page (github.com/akuity/
+# kargo/pkgs/container/kargo-charts%2Fkargo) lists 1.11.3 published ~8h
+# before this check, digest sha256:842baea04e91c798f566ed389230d960572b
+# c829c3ce30eedb1e9ee8d29ee57f -- a real, already-published chart, not just
+# a git tag. Kargo ships app+chart together from one Chart.yaml per release
+# tag, so this is a same-tag app+chart bump. Commit log
+# (github.com/akuity/kargo/compare/v1.11.2...v1.11.3) shows the headline
+# fix: 08a4d08 "fix(server): close cluster-scoped authorization bypass in
+# generic resource writes" plus 2aa5fd0 "fix: no authz performed for
+# resource refresh" -- a real authz-bypass fix, though not yet assigned a
+# GHSA/CVE number (github.com/akuity/kargo/security/advisories' newest
+# entry is still April 2026, unchanged -- checked directly, this fix hasn't
+# been formally disclosed as an advisory yet). Also includes hardening
+# commits: "build: compile the Helm binary ourselves to reduce
+# vulnerabilities" and "chore(deps): update dependencies to reduce
+# vulnerabilities", plus unrelated UI fixes (AnalysisRun result rendering,
+# a Freight-refetch infinite loop). values.yaml schema re-verified at both
+# tags for every path this Application sets (global.securityContext,
+# api.{replicas,resources,tls.selfSignedCert,secret}, controller.resources,
+# webhooksServer.{replicas,resources}) -- all present and unchanged;
+# `controller.replicas` in this Application's own valuesObject below has no
+# matching chart parameter at either tag (confirmed pre-existing at 1.11.2
+# too, not a regression from this bump -- Helm silently ignores unused
+# values keys, so this has always been a harmless no-op, not a new schema
+# break).
+# Release: https://github.com/akuity/kargo/releases/tag/v1.11.3
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -128,7 +157,7 @@ spec:
   source:
     repoURL: ghcr.io/akuity/kargo-charts
     chart: kargo
-    targetRevision: 1.11.2
+    targetRevision: 1.11.3
     helm:
       releaseName: kargo
       valuesObject:
