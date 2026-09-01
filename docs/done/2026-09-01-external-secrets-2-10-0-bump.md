@@ -16,4 +16,4 @@ Bumped `gitops/platform/external-secrets.yaml`'s `targetRevision: 2.9.0` → `2.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1370
