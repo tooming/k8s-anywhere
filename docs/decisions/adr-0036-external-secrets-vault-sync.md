@@ -46,9 +46,12 @@ etc.) into native `Secret` objects, via its **official Helm chart**.
 ### Chart + version
 
 - **Chart:** `external-secrets` from `https://charts.external-secrets.io`.
-- **Current pin:** `2.9.0` (`gitops/platform/external-secrets.yaml`). Verified directly
-  (ADR-0004) via `git ls-remote --tags` against `github.com/external-secrets/external-secrets`
-  — `v2.9.0` is the newest published tag; no currency gap.
+- **Current pin:** `2.10.0` (`gitops/platform/external-secrets.yaml`). Bumped from `2.9.0`
+  2026-09-01 (upgrade-drafter fallback) — verified directly (ADR-0004) via a real clone's
+  `git diff helm-chart-2.9.0 helm-chart-2.10.0` (purely additive TLS-config options, no
+  `valuesObject` key this lab sets changed shape) and `git log v2.9.0..v2.10.0` (real fixes
+  including an AWS credential-log-redaction fix). See
+  [§Re-evaluation log](#re-evaluation-log) for the full trail.
 - **CRDs via the chart itself** (`installCRDs: true`), keeping day-2 CRD management
   inside the GitOps loop per [ADR-0001](adr-0001-gitops-over-terraform-helm.md).
 - **Namespace:** `external-secrets`.
@@ -130,6 +133,38 @@ above the current pin).
 version above `2.9.0`, or if this lab's `ClusterSecretStore` provider config ever
 changes away from the Kubernetes-auth Vault backend (which would reopen the
 provider-specific advisories currently marked not-applicable, e.g. the BeyondTrust one).
+
+### 2026-09-01 — Chart bumped `2.9.0` → `2.10.0` (upgrade-drafter fallback, no CVE)
+
+**Trigger.** Routine currency sweep (this run's eleventh cycle) found
+`external-secrets/external-secrets`'s `helm-chart-2.10.0` tag one release
+past this lab's pinned `2.9.0` — the prior "no currency gap" note above had
+gone stale.
+
+**Verification (ADR-0004).** Real clone of `external-secrets/external-secrets`:
+`git diff helm-chart-2.9.0 helm-chart-2.10.0 -- deploy/charts/external-secrets/
+values.yaml` is purely additive (48 insertions, 0 deletions) — new optional
+`tls.{minVersion,ciphers,curvePreferences}` blocks at the global/webhook/
+certController levels, every one defaulting to empty (no behavior change
+unless explicitly set). Every key this lab's `valuesObject` sets
+(`installCRDs`, `podSecurityContext`, `securityContext`, `webhook.*`,
+`certController.*`, `resources`) is unchanged in shape. `git log
+v2.9.0..v2.10.0` (39 commits) includes real fixes: `fix(aws): redact
+credentials in aws auth config logs` (a real credential-leak fix),
+`fix(gcp): preserve workload identity token expiry`, `fix(vault): only apply
+deprecated token-cache flags when explicitly set` — plus the TLS
+security-profile feature itself (`feat: apply TLS security profile to the
+external-secrets deployment`) and routine dependency bumps. No CVE cited
+explicitly.
+
+**Decision: bump.** Same major/minor line, additive-only schema change, real
+fixes included. No blast radius concern beyond the normal ArgoCD
+auto-sync reconciliation (this Application IS auto-synced, unlike this
+run's on-demand bumps).
+
+**Flip condition (next re-evaluation).** Revisit if a new GHSA is filed
+against a version above `2.10.0`, or the `ClusterSecretStore` provider
+config changes (same condition as the prior entry).
 
 ---
 
