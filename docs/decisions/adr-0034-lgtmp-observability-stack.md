@@ -71,8 +71,8 @@ bootstrapped, formally recorded here for the first time.
 | **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.8` directly | `2.10.8` (tracked in ADR-0006's Re-evaluation log, 2026-08-13 security bump) |
 | **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.1` | `2.2.1` |
 | **Alloy** | Helm chart | `gitops/platform/observability-alloy.yaml`, `targetRevision: 1.11.1` | `1.11.1` |
-| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.4.0` | `8.4.0` (tracked in this ADR's own Re-evaluation log, 2026-08-20 currency bump) |
-| **node-exporter** | Helm chart, `prometheus-community/helm-charts` (`prometheus-node-exporter`) | `gitops/platform/observability-node-exporter.yaml`, `targetRevision: 4.56.1`; dedicated `node-exporter` namespace (not `observability`) because it needs `hostPID`/`hostNetwork`/`hostRootFsMount` semantics [ADR-0017](adr-0017-pod-security-standards-restricted.md)'s `restricted` profile forbids | `4.56.1` |
+| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.4.1` | `8.4.1` (tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
+| **node-exporter** | Helm chart, `prometheus-community/helm-charts` (`prometheus-node-exporter`) | `gitops/platform/observability-node-exporter.yaml`, `targetRevision: 4.56.3`; dedicated `node-exporter` namespace (not `observability`) because it needs `hostPID`/`hostNetwork`/`hostRootFsMount` semantics [ADR-0017](adr-0017-pod-security-standards-restricted.md)'s `restricted` profile forbids | `4.56.3` (tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
 
 Mimir and Loki are deliberately **not** Helm charts (Mimir has no chart this lab
 tracks; both run from hand-maintained raw manifests) — this is an existing, working
@@ -112,6 +112,44 @@ shape (Alloy as sole collector feeding all four Grafana-authored stores).
 ---
 
 ## Re-evaluation log
+
+**2026-09-01** — node-exporter chart bumped `4.56.1` → `4.56.3` (upgrade-drafter
+fallback, routine currency sweep, `executor.prompt.md` STEP 6b — the twelfth cycle
+of this run). Verified directly (ADR-0004) via a sparse clone of
+`prometheus-community/helm-charts`: the tagged `Chart.yaml` at
+`prometheus-node-exporter-4.56.3` shows `version: "4.56.3"`, `appVersion: "1.12.1"`
+(unchanged app version — chart-only bump). `git diff
+prometheus-node-exporter-4.56.1 prometheus-node-exporter-4.56.3 --
+charts/prometheus-node-exporter/values.yaml` shows two changes: (1) an additive
+`kubeRBACProxy.listenHost` default (`":"`, no behavior change — this lab doesn't
+enable `kubeRBACProxy` anyway); (2) a **real default behavior change** —
+`extraArgs` moves from empty (`[]`) to two new filesystem-collector exclusion
+flags (`--collector.filesystem.mount-points-exclude=...`,
+`--collector.filesystem.fs-types-exclude=...`) that filter out pseudo/container
+filesystems (overlay, proc, tmpfs-family, container-runtime mount paths) from
+node-exporter's `node_filesystem_*` metrics. This lab's `valuesObject` in
+`gitops/platform/observability-node-exporter.yaml` sets no `extraArgs` override,
+so it inherits the new default. Checked `grafana/dashboards/lab-node-exporter.json`
+directly: only two `node_filesystem_*` metrics are queried
+(`node_filesystem_avail_bytes`, `node_filesystem_size_bytes`), both for real host
+disk usage — excluding pseudo-filesystem noise from these series is a genuine
+improvement (fewer, more relevant time series), not a regression; no panel breaks.
+**Flip condition:** revisit if a future dashboard panel needs a filesystem type
+this exclusion list now hides.
+
+**2026-09-01** — kube-state-metrics chart bumped `8.4.0` → `8.4.1` (upgrade-drafter
+fallback, same routine currency sweep as the node-exporter entry above). Verified
+directly (ADR-0004): the tagged `Chart.yaml` at `kube-state-metrics-8.4.1` shows
+`version: "8.4.1"`, `appVersion: "2.20.0"` (unchanged app version — chart-only
+bump). `git diff kube-state-metrics-8.4.0 kube-state-metrics-8.4.1 --
+charts/kube-state-metrics/values.yaml` is purely additive: new commented-out
+opt-in collector entries (`validatingadmissionpolicies`,
+`validatingadmissionpolicybindings`, `mutatingadmissionpolicies`,
+`mutatingadmissionpolicybindings`, all disabled by default, matching this lab's
+"comment out to disable" convention for every other collector) plus a doc-comment
+rewording. No `valuesObject` key this lab sets (`fullnameOverride`,
+`selfMonitor.enabled`, `securityContext.*`, `containerSecurityContext.*`,
+`resources.*`) changed shape.
 
 **2026-08-20** — kube-state-metrics chart bumped `8.3.1` → `8.4.0` (executor-fallback
 upstream-currency sweep, `executor.prompt.md` STEP 6b — the "Now / next" lane was

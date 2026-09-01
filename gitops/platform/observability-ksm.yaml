@@ -1,5 +1,9 @@
 # kube-state-metrics — exposes real cluster object metrics (pod phases,
 # deployment replica readiness, etc.) that drive the stack-health view.
+#
+# Bumped 8.4.0 -> 8.4.1 (upgrade-drafter fallback, 2026-09-01): purely
+# additive (new opt-in, default-disabled admission-policy collector
+# entries); appVersion unchanged (2.20.0). See ADR-0034's Re-evaluation log.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -12,7 +16,7 @@ spec:
   source:
     repoURL: https://prometheus-community.github.io/helm-charts
     chart: kube-state-metrics
-    targetRevision: 8.4.0
+    targetRevision: 8.4.1
     helm:
       releaseName: kube-state-metrics
       valuesObject:
