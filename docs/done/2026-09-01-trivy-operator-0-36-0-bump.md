@@ -16,4 +16,4 @@ Bumped `gitops/platform/trivy-operator.yaml`'s `targetRevision: 0.35.0` → `0.3
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1367
