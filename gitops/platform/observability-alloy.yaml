@@ -1,6 +1,20 @@
 # Grafana Alloy — the collector. Metrics: scrapes kube-state-metrics + ArgoCD,
 # remote_writes to Mimir. Logs: tails pod logs (k8s API) and ships to Loki.
 # Both multi-tenant (X-Scope-OrgID: lab). Decoupled from storage.
+#
+# Bumped 1.11.1 -> 1.12.1 (upgrade-drafter fallback, 2026-09-01): appVersion
+# v1.18.1 -> v1.19.2. Verified directly (ADR-0004) via a real clone of
+# grafana/alloy: `git diff helm-chart/1.11.1 helm-chart/1.12.1 --
+# operations/helm/charts/alloy/` touches ONLY Chart.yaml (version bump) +
+# README/CHANGELOG -- byte-identical templates and values.yaml, so every
+# schema fact this file's prior header comments established (no storage
+# volume, global.podSecurityContext, alloy.timeoutSeconds flat key, etc.)
+# still holds unchanged. v1.19.0's three breaking changes (checked directly
+# against the real top-level CHANGELOG.md) don't apply here: this config
+# uses none of `prometheus.operator.servicemonitors`, the OTel
+# `memory_limiter` processor, or `prometheus.write.queue` -- only
+# `prometheus.remote_write`/`prometheus.scrape`/`discovery.*`/`loki.*`/
+# `pyroscope.*`, none of which changed shape.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -13,7 +27,7 @@ spec:
   source:
     repoURL: https://grafana.github.io/helm-charts
     chart: alloy
-    targetRevision: 1.11.1
+    targetRevision: 1.12.1
     helm:
       releaseName: alloy
       valuesObject:
