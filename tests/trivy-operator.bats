@@ -18,12 +18,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "trivy-operator Application pins chart version 0.35.0" {
-  run grep -q 'targetRevision: 0.35.0' "$REPO/gitops/platform/trivy-operator.yaml"
+@test "trivy-operator Application pins chart version 0.36.0" {
+  run grep -q 'targetRevision: 0.36.0' "$REPO/gitops/platform/trivy-operator.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "trivy-operator Application does not pin the stale 0.34.0 chart" {
+@test "trivy-operator Application does not pin the stale 0.35.0 or 0.34.0 chart" {
+  run grep -q 'targetRevision: 0.35.0' "$REPO/gitops/platform/trivy-operator.yaml"
+  [ "$status" -ne 0 ]
   run grep -q 'targetRevision: 0.34.0' "$REPO/gitops/platform/trivy-operator.yaml"
   [ "$status" -ne 0 ]
 }

@@ -313,3 +313,47 @@ than silently dropped.
 **Flip condition:** re-add an SBOM-count panel once a real metric backs it (either
 trivy-operator ships one upstream, or a `kube-state-metrics` custom-resource-state
 config is added for `SbomReport`).
+
+### 2026-09-01 — Chart currency bump `0.35.0` → `0.36.0` kept current
+
+**Trigger.** Executor STEP 6b UPGRADE-DRAFTER fallback (this run's eighth cycle):
+`aquasecurity/helm-charts`' `gh-pages` index (confirmed via the real Atom feed,
+`github.com/aquasecurity/helm-charts/releases.atom`, ISO-8601 `<updated>`
+`2026-08-24T12:37:49Z`) shows `trivy-operator-0.36.0` one release past this lab's
+pinned `0.35.0`.
+
+**Findings, verified directly (not assumed, ADR-0004).** Same method as the
+2026-08-07 entry above (the git repo's `main` branch carries no chart source —
+chart-releaser publishes packaged `.tgz` assets only): downloaded both
+`trivy-operator-0.35.0.tgz` and `trivy-operator-0.36.0.tgz` release assets
+directly and ran `diff -ru` on the extracted trees. Exactly the same three kinds
+of change as last time: `Chart.yaml`'s `version`/`appVersion`
+(`0.35.0`→`0.36.0`, `appVersion` `0.33.0`→`0.34.0`), `README.md` badges/table,
+and the bundled `trivy.image.tag` default (`0.73.0`→`0.74.0` in both
+`values.yaml` and `README.md`), plus the same version-label bump repeated
+across the same five `templates/specs/*.yaml` compliance-scan CronJob
+manifests (label only, not behavior). No other `values.yaml` key changed shape
+— every key this lab's `valuesObject` sets (`operator.*`,
+`trivy.resources`/`storageClassName`/`storageSize`, `nodeCollector.*`) is
+present and unchanged.
+
+A real `git log v0.33.0..v0.34.0` (trivy-operator app repo) shows 4 commits: 2
+routine dependency bumps (`golang.org/x/text`, a grouped common-deps bump) and
+the Trivy scanner version bump itself (`chore: bump up Trivy version to
+0.74.0`) plus a release-prep commit — no operator-side feature/fix commit in
+this range, same shape as the prior entry. The bundled Trivy scanner bump
+(`v0.73.0`→`v0.74.0`) does carry real fixes per its own `CHANGELOG.md`
+(fetched directly): Java scanning ("read artifact properties only from the
+MANIFEST.MF main section"), Terraform misconfiguration parsing (Azure
+parameter parsing, `for_each` unknown-value panic prevention, OpenTofu
+language-block support), and Python `pyproject.toml` dependency-name
+normalization — real detection-accuracy/stability fixes, the same "ships with
+a real fix" bar this repo's other non-CVE currency bumps use.
+
+**Decision: Keep current — bump the pin.** Smallest-safe-delta, same-shape
+`values.yaml`, no breaking change. Does not touch this ADR's 2026-07-28
+compromise finding (`0.69.4` is still the only affected tag; `0.74.0` postdates
+it by many releases) — noted here only because the pin that entry's own
+citation references moved again. **Flip condition (unchanged):** re-evaluate
+on the next Trivy supply-chain advisory, or when a future chart bump changes a
+`valuesObject` key shape.
