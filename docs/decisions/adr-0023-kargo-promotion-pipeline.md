@@ -34,7 +34,7 @@ Adopt **Kargo** as the lab's promotion-orchestration layer.
 - **Helm repo:** `ghcr.io/akuity/kargo-charts` (OCI; the original
   `https://charts.kargo.io` HTTPS index was retired upstream — see
   `gitops/platform/kargo.yaml`'s header comment)
-- **Chart:** `kargo` `1.11.2` (`appVersion: 1.11.2`; pin lives in
+- **Chart:** `kargo` `1.11.3` (`appVersion: 1.11.3`; pin lives in
   `gitops/platform/kargo.yaml`'s `targetRevision` — Kargo ships app+chart together
   from one `Chart.yaml` per release tag, so chart version and appVersion are always
   identical; see [§Re-evaluation log](#re-evaluation-log) for the bump history —
@@ -316,6 +316,56 @@ next might want this pin already in place, not claiming it as a fix.
 **Flip conditions:** revisit when the OCI registry's tag list shows a newer
 stable release above `1.11.2`, or a security advisory is filed against
 `1.11.2` (check `github.com/akuity/kargo/security/advisories` manually or
+via the maintainer).
+
+### 2026-09-01 — Chart bumped `1.11.2` → `1.11.3` (upgrade-drafter fallback, real authz-bypass fix)
+
+**Trigger.** Executor STEP 6b fallback chain: the "Now / next" lane remained
+fully gated this cycle (the two GitLab→Forgejo migration items and the
+capstone-`Deployment`-removal item, all blocked on unconfirmed live-cluster
+prerequisites), PLANNER found no ungroomed intake or un-RFC'd 🟡 item, so
+the chain continued to UPGRADE-DRAFTER. A prior dependency-currency sweep
+this run (Valkey, see ADR-0018) surfaced Kargo `1.11.3` as a real candidate
+via its own commit log.
+
+**Verification (ADR-0004).** Confirmed directly against the real packaged
+chart's GitHub Packages page (`github.com/akuity/kargo/pkgs/container/
+kargo-charts%2Fkargo`, since the OCI registry's own `tags/list` endpoint
+needs registry-auth this sandbox can't complete — same fallback method as
+the 2026-08-18 entry above): `1.11.3` is listed, published ~8 hours before
+this check, real digest
+`sha256:842baea04e91c798f566ed389230d960572bc829c3ce30eedb1e9ee8d29ee57f`.
+Kargo ships app+chart together from one `Chart.yaml` per release tag, so
+this is a same-tag app+chart bump, same as every prior entry here.
+
+**Decision: bump.** Commit log (`github.com/akuity/kargo/compare/
+v1.11.2...v1.11.3`) shows the headline fix is real and security-relevant,
+not routine currency: `08a4d08` "fix(server): close cluster-scoped
+authorization bypass in generic resource writes" plus `2aa5fd0` "fix: no
+authz performed for resource refresh". Checked
+`github.com/akuity/kargo/security/advisories` directly — no new advisory
+has been filed for this fix yet (newest entry is still April 2026,
+unchanged), so this predates formal GHSA/CVE disclosure; treated with the
+same urgency as a CVE-mentioning release per this repo's own bump-priority
+convention (CVE-mentioning > patch > minor) given the fix's own commit
+message names an authorization bypass. Also includes two hardening
+commits ("compile the Helm binary ourselves to reduce vulnerabilities",
+"update dependencies to reduce vulnerabilities") and two unrelated UI
+fixes. `values.yaml` schema re-verified at both tags
+(`raw.githubusercontent.com/akuity/kargo/{v1.11.2,v1.11.3}/charts/kargo/
+values.yaml`) for every path this Application sets: `global.securityContext`,
+`api.{replicas,resources,tls.selfSignedCert,secret}`, `controller.resources`,
+`webhooksServer.{replicas,resources}` — all present, unchanged structure.
+Also confirmed `controller.replicas` (set in this Application's
+`valuesObject` but absent from the chart's own schema at both tags) is a
+pre-existing harmless no-op, not a regression introduced by this bump —
+Helm silently ignores values keys with no matching template use. No blast
+radius either way — Kargo is ON-DEMAND (ADR-0005 budget), so this pin only
+takes effect on the next `make kargo-up`.
+
+**Flip conditions:** revisit when the OCI registry's tag list shows a newer
+stable release above `1.11.3`, or a security advisory is filed against
+`1.11.3` (check `github.com/akuity/kargo/security/advisories` manually or
 via the maintainer).
 
 ---

@@ -30,12 +30,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "kargo Application pins chart version 1.11.2" {
-  run grep -q 'targetRevision: 1.11.2' "$REPO/gitops/platform/kargo.yaml"
+@test "kargo Application pins chart version 1.11.3" {
+  run grep -q 'targetRevision: 1.11.3' "$REPO/gitops/platform/kargo.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "kargo Application does not pin the pre-bump 1.11.1, 1.11.0, 1.10.9, 1.6.4, or 1.2.3 versions" {
+@test "kargo Application does not pin the pre-bump 1.11.2, 1.11.1, 1.11.0, 1.10.9, 1.6.4, or 1.2.3 versions" {
+  run grep -q 'targetRevision: 1.11.2' "$REPO/gitops/platform/kargo.yaml"
+  [ "$status" -ne 0 ]
   run grep -q 'targetRevision: 1.11.1' "$REPO/gitops/platform/kargo.yaml"
   [ "$status" -ne 0 ]
   run grep -q 'targetRevision: 1.11.0' "$REPO/gitops/platform/kargo.yaml"
