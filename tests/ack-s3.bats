@@ -11,9 +11,14 @@ setup() {
   [ -f "$ACK_S3" ]
 }
 
-@test "ack-s3 Application pins chart version 1.10.0 (adds Bucket ABAC field, #241)" {
-  run grep -q 'targetRevision: 1.10.0' "$ACK_S3"
+@test "ack-s3 Application pins chart version 1.11.0 (adds IgnoreFieldDrift feature gate)" {
+  run grep -q 'targetRevision: 1.11.0' "$ACK_S3"
   [ "$status" -eq 0 ]
+}
+
+@test "ack-s3 Application does not pin the stale 1.10.0 version" {
+  run grep -q 'targetRevision: 1.10.0' "$ACK_S3"
+  [ "$status" -ne 0 ]
 }
 
 @test "ack-s3 Application does not pin the stale 1.9.0 version" {
