@@ -14,4 +14,4 @@ Bumped `gitops/platform/kargo.yaml`'s `targetRevision: 1.11.2` → `1.11.3` and 
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1362
