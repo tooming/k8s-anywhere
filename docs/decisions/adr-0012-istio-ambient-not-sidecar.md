@@ -223,6 +223,58 @@ published against `kiali-server` at or above `2.30.0`, or the chart repo
 prunes `2.30.0` itself (same as the 2026-07-23 entry's pattern — bump again to
 whatever the newest resolvable tag is at that time).
 
+### 2026-09-01 — All four Istio charts bumped `1.30.3` → `1.30.4` (routine currency, no CVE)
+
+**Trigger.** Executor STEP 6b UPGRADE-DRAFTER fallback (this run's ninth
+cycle). Every prior version-currency entry in this log was CVE-driven — this
+is the first entry to bump Istio purely on routine currency, matching the
+non-security-bump pattern this run already established for Kargo/TiDB/Trivy
+Operator (each governed by an ADR with its own "future patch bumps stay
+in-scope for upgrade-drafter" carve-out). No such explicit carve-out exists
+in this ADR's own text, but nothing in it forbids a routine patch bump
+either — this Decision's binding scope is the ambient-vs-sidecar
+architecture choice, not a version pin; noted explicitly here for
+transparency about the shift in pattern.
+
+**Verification (ADR-0004).** Confirmed directly against the real chart
+repo's `index.yaml` (`istio-release.storage.googleapis.com/charts/index.yaml`
+— downloaded directly via `curl`, not summarized, since the file is too
+large for a single-pass fetch tool to render completely): `1.30.4` is the
+newest stable tag for all four charts (`base`, `cni`, `istiod`, `ztunnel`),
+one patch above the pinned `1.30.3`; only `1.31.0-rc.0`/`-beta.*` pre-release
+tags exist beyond it, correctly skipped. Downloaded and diffed the actual
+`.tgz` release assets for all four charts at both `1.30.3` and `1.30.4`
+(the chart repo has no browsable GitHub source tree, same shape as the
+Trivy Operator chart-releaser pattern) — `Chart.yaml` version/appVersion and
+the bundled image `tag:` default move together in every chart, as expected.
+
+**Real fix found, not just currency.** `istiod`'s diff shows a genuine
+template-hardening fix across `gateway-injection-template.yaml`,
+`grpc-agent.yaml`, `kube-gateway.yaml`, and `waypoint.yaml`: several
+Helm-template annotation lookups (`sidecar.istio.io/proxyImage`,
+`/logLevel`, `/componentLogLevel`, `/bootstrapOverride`, read from
+user-settable pod annotations) previously interpolated unquoted into
+generated YAML — a value containing a YAML-special character (e.g. a colon)
+could produce malformed or misinterpreted YAML. `1.30.4` wraps every one of
+these lookups in Helm's `| quote` filter. This lab's `istiod`/`istio-cni`
+`valuesObject`s don't set any of the affected annotations directly, but the
+templates apply to any ambient waypoint/gateway proxy generated in-cluster,
+so this is a real, applicable hardening fix, not dead code.
+
+**Schema compatibility verified.** No `values.yaml` key this lab's four
+`valuesObject`s set (`profile`, `resources.{requests,limits}.{cpu,memory}`)
+changed shape in any of the four charts — confirmed by the full `diff -ru`
+output, not assumed.
+
+**Decision: bump all four charts together.** Same major/minor line
+(`1.30.x`), no breaking change, real fix included. All four move in lockstep
+(matching how every prior Istio version in this repo's history has been
+pinned identically across `base`/`cni`/`istiod`/`ztunnel`).
+
+**Flip condition (next re-evaluation).** Revisit when the chart repo
+publishes a stable release above `1.30.4`, or a security advisory is filed
+naming `1.30.4` (or any version at/above it) as affected.
+
 ---
 
 ## Files
