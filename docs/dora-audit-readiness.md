@@ -303,11 +303,21 @@ so a future edit can't silently drop the highest-severity rows without failing
 concentration)?**
 - **Answer:** License/tier is assessed and binding ([ADR-0025](decisions/adr-0025-free-oss-tiers-only.md)).
   Maintenance status is assessed *at adoption time* (each ADR cites project maturity —
-  e.g., "CNCF incubating") but not re-checked afterward except when a breaking change is
-  independently noticed (the `docs/industry/` digest).
-- **Evidence:** ADR-0025; `docs/industry/2026-W23-digest.md`.
-- **Gap:** no scheduled re-check of maintenance health (is the project still active,
-  still maintained) after initial adoption.
+  e.g., "CNCF incubating") and, as of 2026-09-02, can also be re-checked on demand:
+  `make dependency-maintenance-check` (`scripts/dependency-maintenance-check.sh`)
+  walks every `docs/dependency-register.md` row's `github.com` upstream source and
+  reports days since that repo's default branch last committed, flagging anything
+  past a year with no commit as worth a fresh look. It is *report-only*, not wired
+  into `make ci` (GitHub's request volume for a ~30-repo sweep makes it unsuitable as
+  a hard, always-on gate) — so this narrows the gap from "no mechanism at all" to "a
+  real mechanism that still needs a human/routine to actually invoke it", same
+  category as the industry digest's own cadence.
+- **Evidence:** ADR-0025; `docs/industry/2026-W23-digest.md`;
+  `scripts/dependency-maintenance-check.sh`.
+- **Gap:** narrower now — the re-check mechanism exists and is real (mechanical, not
+  fabricated: it resolves each repo's actual last-commit date), but nothing schedules
+  its invocation automatically; it depends on a future architect/janitor/executor
+  cycle choosing to run it, same as `dora-metrics`.
 
 **Q16. Is concentration risk assessed (reliance on a single upstream provider)?**
 - **Answer:** Yes, as of [`docs/dependency-concentration.md`](dependency-concentration.md)
