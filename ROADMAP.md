@@ -473,6 +473,48 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live,
   running component") to a Forgejo row once this lands.
 
+- [x] 🟢 **Close DORA audit Q7's named future-candidate gap — add a
+  `VaultSealedDegraded` Grafana alert rule reading `vault_core_unsealed` directly** —
+  full verification writeup:
+  [docs/done/2026-09-02-vault-sealed-degraded-alert.md](docs/done/2026-09-02-vault-sealed-degraded-alert.md).
+  (auto/vault-sealed-degraded-alert)
+  (CHARTER **Core Values** §"Real observability only" (DORA audit readiness Q7);
+  planner-fallback gap analysis 2026-09-02, this run's third cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated this cycle (same GitLab→Forgejo/capstone-`Deployment` blockers as the two
+  prior cycles this run) and PLANNER/ARCHITECT/UPGRADE-DRAFTER/DOC-DRIFT-AUTHOR/
+  TRIAGER all came up empty (no ungroomed intake, no un-RFC'd 🟡 item, digest already
+  fresh from yesterday, register already current, `make ci` clean with no drift
+  signal, all 3 open issues already fully labeled). Fresh angle this cycle: continued
+  mining `docs/dora-audit-readiness.md` (the same document Q15's gap-closure came
+  from two cycles ago) for another still-open, previously-untouched gap — Q7's own
+  text explicitly named a concrete future candidate: "a new alert rule reading the
+  now-scraped `vault_core_unsealed` directly could catch that gap if it proves worth
+  closing." **No prerequisites — executor may pick up immediately.**)
+
+  Added a sixth Grafana Unified Alerting rule (RFC #1084,
+  `gitops/platform/observability-grafana.yaml`'s existing `valuesObject.alerting`
+  block, immediately after `VaultPodNotReady`): `VaultSealedDegraded`, `for: 10m`,
+  expr `vault_core_unsealed{job="vault"} == bool 0` (the `== bool 0` form is
+  required, not just `== 0` — mirrors the file's own documented stateSet-metric
+  gotcha: a plain `== 0` filter returns the matched sample's own value, which is 0,
+  so a `gt 0` threshold could never fire; `bool` forces it to emit 1 on match). This
+  is a direct, independent seal-state signal alongside `VaultPodNotReady`'s
+  pod-readiness one — reads `vault_core_unsealed` from Vault's own telemetry
+  (already scraped by `auto/vault-telemetry-scrape`, no new Alloy job needed), not
+  dependent on whatever the pod's readiness probe happens to reflect about seal
+  state (this remote clusterless session cannot verify that probe's exact live
+  behavior either way, ADR-0004 — the new rule's value doesn't depend on it: it's a
+  genuinely separate signal, not conditional on the first rule having a gap).
+  Updated `tests/observability-alerting.bats` (new rule-presence assertion; the
+  "five rules" `for`/datasource count assertions bumped to six) and
+  `docs/dependency-tree.md`'s Grafana-alerting row. Updated
+  `docs/dora-audit-readiness.md`'s Q7 answer/gap to describe six rules and cite the
+  new one, narrowing (not fabricating closure of) the section's remaining gaps
+  (escalation stays a non-goal; the CI-health metric still doesn't cover live-cluster
+  incidents). `make ci` must pass. `docs/done/` entry required.
+  (auto/vault-sealed-degraded-alert)
+
 - [x] 🟢 **Close DORA audit Q15's named gap — add `make dependency-maintenance-check`,
   a re-checkable maintenance-health report for every `docs/dependency-register.md`
   row** — full verification writeup:
