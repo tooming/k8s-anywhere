@@ -46,4 +46,4 @@ the new/updated tests above, and `scripts/ci-parity-check.sh`.
 
 ## PR
 
-(filled in after PR creation)
+[#1380](https://github.com/tooming/k8s-anywhere/pull/1380)
