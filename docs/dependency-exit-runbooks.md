@@ -11,13 +11,16 @@ Harbor precedent; this only writes the steps down before an exit is forced.
 
 **Scope of this slice.** [`docs/dependency-concentration.md`](dependency-concentration.md)
 (Q16) named three upstream-org concentration groups, worst-first — this file covers
-exactly those three, the lab's actual highest-blast-radius exit candidates. It does
-**not** yet cover every remaining `always-on-core` single-tool row in
-[`docs/dependency-register.md`](dependency-register.md) (Terraform/Terragrunt, Garage,
-Envoy Gateway, RabbitMQ, Cilium, Valkey, cert-manager, KEDA, Forgejo,
-kube-state-metrics, node-exporter — eleven more rows) — extending to those is real,
-separately-scoped future work if wanted, not attempted here to keep this PR within
-WAYS-OF-WORKING.md §3's per-PR size discipline. Said plainly rather than silently
+those three plus, as of 2026-09-02, the four highest-blast-radius of the eleven
+remaining `always-on-core` single-tool rows in
+[`docs/dependency-register.md`](dependency-register.md) (Cilium — the CNI every pod's
+traffic depends on; Garage — the only stateful S3-compatible store; Envoy Gateway —
+the sole ingress path for every UI in this lab; cert-manager — TLS issuance, a silent
+failure mode if it stops). It does **not** yet cover the remaining seven
+(Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo, kube-state-metrics,
+node-exporter) — extending to those is real, separately-scoped future work if
+wanted, not attempted here to keep this PR within WAYS-OF-WORKING.md §3's per-PR
+size discipline. Said plainly rather than silently
 narrowed (ADR-0004: an unscoped "covers dependencies" title would itself overclaim
 completeness).
 
@@ -118,6 +121,56 @@ the demo data itself is disposable.
 ADR-0032 for the distributed-SQL choice itself (both ADRs are version-pin policies,
 not the original tool selection). Same first step as the other two groups: a new ADR
 before assuming a replacement.
+
+---
+
+## Remaining `always-on-core` single-tool rows (partial slice, highest blast-radius four)
+
+Unlike the three groups above, each of these is a single tool with no shared-org
+sibling — so each entry below is one paragraph, not three, covering the same ground
+(mechanically, fork-and-repoint-or-bigger, alternative evaluated) more tersely.
+
+**Cilium** (CNI — [ADR-0014](decisions/adr-0014-cilium-not-flannel-policy.md)).
+`gitops/platform/cilium.yaml` is Terraform-bootstrapped, not a `gitops/` `Application`
+(ADR-0001's day-0 seam, like ArgoCD itself) — every pod's network path, and this
+lab's entire default-deny `NetworkPolicy` posture (ADR-0016), depends on it. A real
+exit is the single highest-blast-radius one in this file: swap the bootstrap CNI
+install, then re-verify every existing `NetworkPolicy` manifest still expresses the
+intended rules under the new CNI's policy engine (not guaranteed — policy dialects
+differ). No alternative has been re-evaluated since ADR-0014 rejected Flannel +
+Kubernetes' bundled NetworkPolicy controller at adoption time; a real exit starts
+with a new ADR, same as every group above.
+
+**Garage** (S3-compatible storage — [ADR-0002](decisions/adr-0002-garage-not-minio.md)/
+[ADR-0007](decisions/adr-0007-off-cluster-garage-tfstate-backend.md)). The lab's only
+stateful S3-compatible store — Velero backups, Mimir/Loki/Tempo chunks, and
+Terraform state (off-cluster instance) all target it directly. `gitops/platform/
+garage.yaml` is a normal auto-synced `Application`, but a real exit is a genuine
+data migration (every bucket's real content), not a repoint — the S3 API surface is
+portable, the data behind it is not. ADR-0002 rejected MinIO at adoption time; no
+exit-direction alternative has been separately evaluated since.
+
+**Envoy Gateway** (ingress — [ADR-0008](decisions/adr-0008-envoy-gateway-not-traefik.md)).
+`gitops/platform/envoy-gateway.yaml` (Kustomize-vendored per its own probe-timeout
+fix) is the sole `Gateway API` implementation fronting every `HTTPRoute` in this lab
+— the front door for every UI in README.md's Endpoints table. A real exit means
+picking a replacement Gateway API implementation and re-verifying every existing
+`HTTPRoute`/`Gateway` resource against it (Gateway API is a spec multiple
+implementations share, so this is closer to fork-and-repoint than Cilium's CNI-level
+exit — but the specific `EnvoyGateway`/`EnvoyProxy` CRD tuning this lab already
+needed, e.g. the disabled leader-election fix, would need re-discovering against the
+new implementation). ADR-0008 rejected Traefik at adoption time; no exit-direction
+alternative has been separately evaluated since.
+
+**cert-manager** (TLS lifecycle — [ADR-0028](decisions/adr-0028-cert-manager-tls-lifecycle.md)).
+`gitops/platform/cert-manager.yaml` + `cert-manager-root-ca.yaml` issue every
+in-cluster TLS certificate; unlike the other three, its failure mode is silent
+(existing certs keep working until they expire) rather than an immediate outage — a
+real exit is closer to fork-and-repoint (`Certificate`/`Issuer` are cert-manager's
+own CRDs, so a replacement means re-authoring those resources into the new tool's
+CRD shape, not a data migration). ADR-0028 doesn't record a rejected alternative
+(cert-manager was this lab's first and only TLS-lifecycle choice) — no exit-direction
+alternative has ever been evaluated.
 
 ---
 

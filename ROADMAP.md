@@ -473,6 +473,47 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live,
   running component") to a Forgejo row once this lands.
 
+- [x] 🟢 **Extend `docs/dependency-exit-runbooks.md` (DORA audit Q17) to the four
+  highest-blast-radius remaining single-tool rows — Cilium, Garage, Envoy Gateway,
+  cert-manager** — full verification writeup:
+  [docs/done/2026-09-02-dependency-exit-runbooks-single-tool-slice.md](docs/done/2026-09-02-dependency-exit-runbooks-single-tool-slice.md).
+  (auto/dependency-exit-runbooks-single-tool-slice)
+  (CHARTER **Core Values** §"Everything as code" (DORA audit readiness Q17);
+  planner-fallback gap analysis 2026-09-02, this run's fourth cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated this cycle (same blockers as the three prior cycles this run) and
+  PLANNER/ARCHITECT/UPGRADE-DRAFTER/DOC-DRIFT-AUTHOR/TRIAGER all came up empty
+  again. Fresh angle: continued mining `docs/dora-audit-readiness.md` — this run's
+  third pass over it — for another real, previously-untouched, explicitly-named
+  gap. `docs/dependency-exit-runbooks.md`'s own "Scope of this slice" note already
+  named the eleven remaining `always-on-core` single-tool rows as "real,
+  separately-scoped future work if wanted" — picked the four highest actual
+  blast-radius ones (CNI, storage, ingress, TLS) rather than all eleven, to stay
+  within WAYS-OF-WORKING.md §3's size discipline, matching this file's own existing
+  scoping precedent. **No prerequisites — executor may pick up immediately.**)
+
+  Added four single-paragraph runbook entries (Cilium, Garage, Envoy Gateway,
+  cert-manager) to `docs/dependency-exit-runbooks.md`, each covering the same
+  ground as the existing three group entries (what a real exit changes
+  mechanically, fork-and-repoint-or-a-real-migration, whether an exit-direction
+  alternative has been evaluated — honestly "no" for all four, distinct from each
+  ADR's own original rejected-alternative record) in a leaner one-paragraph shape
+  since each is a single tool, not a multi-tool group. Verified each citation
+  directly against the real gitops manifests and ADRs (not assumed): Cilium is
+  Terraform-bootstrapped like ArgoCD, not a `gitops/` Application; Envoy Gateway is
+  sourced via a Kustomize-vendored chart per its own header comment (the
+  probe-timeout fix); cert-manager's ADR-0028 explicitly states no prior ADR
+  evaluated or rejected an alternative (verified directly, not assumed). Updated
+  the file's "Scope of this slice" note to name the four newly-covered rows and
+  the seven still remaining. Added a bats assertion
+  (`tests/dora-audit-readiness.bats`) confirming all four new entries are present.
+  Updated `docs/dora-audit-readiness.md`'s own Q17 gap text (it previously listed
+  all eleven remaining single-tool rows as un-covered — now stale/inaccurate for
+  four of them, caught and fixed in the same pass rather than left stale,
+  ADR-0004) to name the four newly-covered rows and the seven still remaining.
+  `make ci` must
+  pass. `docs/done/` entry required. (auto/dependency-exit-runbooks-single-tool-slice)
+
 - [x] 🟢 **Close DORA audit Q7's named future-candidate gap — add a
   `VaultSealedDegraded` Grafana alert rule reading `vault_core_unsealed` directly** —
   full verification writeup:
