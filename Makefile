@@ -179,6 +179,10 @@ dependency-register-check: ## Check docs/dependency-register.md's "Last reviewed
 dependency-concentration-sync-check: ## Check every dependency-register.md org backing 2+ rows is named in dependency-concentration.md (drift detector)
 	@bash scripts/dependency-concentration-sync-check.sh
 
+.PHONY: dependency-exit-runbooks-sync-check
+dependency-exit-runbooks-sync-check: ## Check every dependency-concentration.md group has a matching section in dependency-exit-runbooks.md (drift detector)
+	@bash scripts/dependency-exit-runbooks-sync-check.sh
+
 .PHONY: docs-done-pr-link-check
 docs-done-pr-link-check: ## Check every docs/done/*.md file's "## PR" section is backfilled with a real PR link, not left on the placeholder (drift detector)
 	@bash scripts/docs-done-pr-link-check.sh
@@ -258,6 +262,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/context-doc-version-sync-check.sh
 	@bash scripts/dependency-register-check.sh
 	@bash scripts/dependency-concentration-sync-check.sh
+	@bash scripts/dependency-exit-runbooks-sync-check.sh
 	@bash scripts/docs-done-pr-link-check.sh
 	@bash scripts/kustomize-orphan-check.sh
 	@bash scripts/yqs-lib-check.sh

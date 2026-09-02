@@ -216,6 +216,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/dependency-exit-runbooks-sync-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking dependency-exit-runbooks.md group sync"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/yqs-lib-sync-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking for a duplicated yqs() helper"

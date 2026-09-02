@@ -509,6 +509,38 @@ there is no point where the lab loses a working git source or CI path.
   `make ci` must pass. `docs/done/` entry required.
   (auto/dependency-concentration-sync-check)
 
+- [x] 🟢 **Add `make dependency-exit-runbooks-sync-check` — a mechanical `make ci`
+  guard closing the second half of the "no mechanical drift guard yet" gap between
+  `docs/dependency-concentration.md` and `docs/dependency-exit-runbooks.md`** — full
+  verification writeup:
+  [docs/done/2026-09-02-dependency-exit-runbooks-sync-check.md](docs/done/2026-09-02-dependency-exit-runbooks-sync-check.md).
+  (auto/dependency-exit-runbooks-sync-check)
+  (CHARTER **Core Values** §"Everything as code" (DORA audit readiness Q14/Q16/Q17);
+  planner-fallback gap analysis 2026-09-02, this run's sixth cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again this cycle and PLANNER/ARCHITECT/UPGRADE-DRAFTER/DOC-DRIFT-AUTHOR/
+  TRIAGER all came up empty again. Fresh angle: the fifth cycle's
+  `dependency-concentration-sync-check.sh` closed only half of the "no mechanical
+  drift guard yet" gap (register rows -> named concentration groups); this cycle
+  closes the other half (named concentration groups -> matching exit-runbook
+  sections), rather than re-mining `docs/dora-audit-readiness.md` a fourth time.
+  **No prerequisites — executor may pick up immediately.**)
+
+  `scripts/dependency-exit-runbooks-sync-check.sh` parses every named
+  `` `github.com/ORG` `` concentration-group header out of
+  `docs/dependency-concentration.md` (currently three) and fails if
+  `docs/dependency-exit-runbooks.md` has no matching section for one. Deliberately
+  scoped to the three named concentration *groups* only, not the eleven-minus-four
+  remaining single-tool rows the fourth cycle already documented as an intentional
+  partial slice (not drift) — checking those would conflate "not yet covered by
+  choice" with "out of sync by accident". Pure text-parsing, no network calls, wired
+  directly into `make ci` and `.github/workflows/ci.yml`'s `drift` job. Added a
+  matching `dependency-exit-runbooks-sync-hook.sh` (PostToolUse nudge, mirrors
+  `dependency-concentration-sync-hook.sh`) plus bats coverage
+  (`tests/dependency-exit-runbooks-sync-check.bats`,
+  `tests/hook-scripts-dependency-exit-runbooks-sync.bats`). `make ci` must pass.
+  `docs/done/` entry required. (auto/dependency-exit-runbooks-sync-check)
+
 - [x] 🟢 **Extend `docs/dependency-exit-runbooks.md` (DORA audit Q17) to the four
   highest-blast-radius remaining single-tool rows — Cilium, Garage, Envoy Gateway,
   cert-manager** — full verification writeup:

@@ -198,6 +198,7 @@ jobs:
       - run: bash scripts/context-doc-version-sync-check.sh
       - run: bash scripts/dependency-register-check.sh
       - run: bash scripts/dependency-concentration-sync-check.sh
+      - run: bash scripts/dependency-exit-runbooks-sync-check.sh
       - run: bash scripts/docs-done-pr-link-check.sh
       - run: bash scripts/kustomize-orphan-check.sh
       - run: bash scripts/yqs-lib-check.sh
