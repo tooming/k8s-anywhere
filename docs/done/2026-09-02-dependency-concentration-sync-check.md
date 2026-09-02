@@ -69,4 +69,4 @@ clusterless, network-free check; nothing here depends on live-cluster state.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1379
