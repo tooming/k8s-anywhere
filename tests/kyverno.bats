@@ -305,6 +305,12 @@ setup() {
 }
 
 @test "disallow-latest-tag's initContainers and ephemeralContainers foreach entries deny the same ':latest'/no-tag conditions as containers" {
+  # -o=json's exact serialization isn't yqs()-normalisable across variants (see
+  # tests/lib/yq.bash's require_mikefarah_yq_or_skip doc comment) — confirmed
+  # live: apt's yq (kislyuk/python-yq, a jq wrapper) doesn't even accept the
+  # `-o=json` flag ("Unknown option -o=json"), which silently made every
+  # yqs() call here return empty instead of comparing real structures.
+  require_mikefarah_yq_or_skip
   P="$REPO/gitops/kyverno/policies/disallow-latest-tag.yaml"
   containers_conditions="$(yqs -o=json '.spec.rules[0].validate.foreach[0].deny.conditions' "$P")"
   init_conditions="$(yqs -o=json '.spec.rules[0].validate.foreach[1].deny.conditions' "$P")"
@@ -369,6 +375,8 @@ setup() {
 # namespaces deliberately exempted from PSS-restricted elsewhere (vault,
 # istio-system, tidb, kube-system's own CNI/DNS pods).
 @test "add-default-seccomp excludes the same kube-system/baseline/privileged namespaces as its sibling PSS policies" {
+  # Same -o=json variant risk as the disallow-latest-tag foreach test above.
+  require_mikefarah_yq_or_skip
   P="$REPO/gitops/kyverno/policies/add-default-seccomp.yaml"
   SIBLING="$REPO/gitops/kyverno/policies/require-pod-security-restricted.yaml"
   [ "$(yqs -o=json '.spec.rules[0].exclude' "$P")" = "$(yqs -o=json '.spec.rules[0].exclude' "$SIBLING")" ]
