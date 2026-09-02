@@ -597,6 +597,10 @@ frontdoor: ## Ensure the stable front door is up on :8000 -> active cluster (can
 dora-metrics: ## Compute DORA metrics from git/CI history -> docs/dora-metrics.md (RFC #580, on-demand only)
 	bash scripts/dora-metrics.sh
 
+.PHONY: dependency-maintenance-check
+dependency-maintenance-check: ## Report how long since each dependency-register.md repo last committed (DORA Q15, on-demand only)
+	bash scripts/dependency-maintenance-check.sh
+
 ##@ Capstone (demo + learning path)
 
 .PHONY: capstone-demo
