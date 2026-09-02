@@ -105,4 +105,4 @@ rules in this same file, not by observing this specific rule fire live.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1377
