@@ -50,6 +50,7 @@ while [ $# -gt 0 ]; do
 done
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/dependency-register.sh"
 # ok()/skip() come from lib/colors.sh (shared, per tests/colors-lib.bats's
 # de-duplication guard). warn() is local — no shared equivalent exists yet
 # (bad() carries a drift=1 side effect this advisory report doesn't want).
@@ -82,19 +83,13 @@ resolve() {
   if [ -n "$RESOLVER" ]; then "$RESOLVER" "$1" "$2"; else resolve_builtin "$1" "$2"; fi
 }
 
-# Enumerate: every table row's Tool + Upstream-source cell, tab-separated so a comma
-# inside either field (common in this table, e.g. "grafana.com, github.com/...")
-# can't be mistaken for the field delimiter.
+# Enumerate every table row's Tool + Upstream-source cell (shared parser, lib/
+# dependency-register.sh — also used by dependency-concentration-sync-check.sh).
 declare -a ROWS=()
 while IFS=$'\t' read -r tool source; do
   [ -n "$tool" ] || continue
-  [ "$tool" = "Tool" ] && continue
   ROWS+=("$tool"$'\t'"$source")
-done < <(awk -F'|' '/^\| [A-Za-z(]/{
-  t=$2; s=$4;
-  gsub(/^ +| +$/,"",t); gsub(/^ +| +$/,"",s);
-  print t "\t" s
-}' "$REGISTER")
+done < <(depreg_rows "$REGISTER")
 
 if [ "${#ROWS[@]}" -eq 0 ]; then
   warn "no rows parsed from docs/dependency-register.md — table format may have changed"
@@ -105,13 +100,13 @@ printf '%s== dependency maintenance health (docs/dependency-register.md, %s-day 
 stale=0
 for row in "${ROWS[@]}"; do
   IFS=$'\t' read -r tool source <<<"$row"
-  match="$(printf '%s' "$source" | grep -oE 'github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+' | head -1)"
+  match="$(depreg_github_match "$source")"
   if [ -z "$match" ]; then
     skip "$tool: no github.com upstream source in the register — skipped"
     continue
   fi
-  owner="$(printf '%s' "$match" | cut -d/ -f2)"
-  repo="$(printf '%s' "$match" | cut -d/ -f3)"
+  owner="$(cut -d/ -f1 <<<"$match")"
+  repo="$(cut -d/ -f2 <<<"$match")"
   result="$(resolve "$owner" "$repo")"
   case "$result" in
     UNREACHABLE)  skip "$tool: github.com/$owner/$repo unreachable — skipped" ;;
