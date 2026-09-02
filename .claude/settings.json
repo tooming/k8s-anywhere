@@ -210,6 +210,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/dependency-concentration-sync-hook.sh",
+            "timeout": 15,
+            "statusMessage": "Checking dependency-concentration.md org sync"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/yqs-lib-sync-hook.sh",
             "timeout": 15,
             "statusMessage": "Checking for a duplicated yqs() helper"

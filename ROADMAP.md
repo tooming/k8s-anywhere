@@ -473,6 +473,42 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-register.md`'s GitLab row (currently flagged "still the live,
   running component") to a Forgejo row once this lands.
 
+- [x] 🟢 **Add `make dependency-concentration-sync-check` — a mechanical `make ci`
+  guard closing the "no mechanical drift guard yet" gap `docs/dependency-register.md`,
+  `docs/dependency-concentration.md`, and `docs/dependency-exit-runbooks.md` each
+  honestly flag in their own "Keeping this in sync" sections** — full verification
+  writeup:
+  [docs/done/2026-09-02-dependency-concentration-sync-check.md](docs/done/2026-09-02-dependency-concentration-sync-check.md).
+  (auto/dependency-concentration-sync-check)
+  (CHARTER **Core Values** §"Everything as code" (DORA audit readiness Q14/Q16/Q17);
+  planner-fallback gap analysis 2026-09-02, this run's fifth cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again this cycle and PLANNER/ARCHITECT/UPGRADE-DRAFTER/DOC-DRIFT-AUTHOR/
+  TRIAGER all came up empty again. Fresh angle: rather than a fourth pass mining
+  `docs/dora-audit-readiness.md` for another named prose gap, this cycle closed the
+  "no mechanical drift guard yet" limitation those three docs each honestly
+  self-flag — the exact CLAUDE.md bugfix-recurrence-prevention pattern (mechanical
+  guard over a note to remember). **No prerequisites — executor may pick up
+  immediately.**)
+
+  Unlike `dependency-maintenance-check.sh` (network-dependent, deliberately kept
+  out of `make ci`), this check is pure text-parsing over two already-committed
+  docs — fast, deterministic, network-free — so it's wired directly into `make ci`
+  and `.github/workflows/ci.yml`'s `drift` job. It counts how many
+  `docs/dependency-register.md` rows share each `github.com` upstream org and fails
+  if any org backing 2+ rows isn't named in `docs/dependency-concentration.md`.
+  Extracted the shared table-parsing logic (`depreg_rows`/`depreg_github_match`)
+  into `scripts/lib/dependency-register.sh` first, refactoring
+  `dependency-maintenance-check.sh` to use it too, rather than let a second
+  near-identical parser copy exist — the exact "two copies of a parser" class
+  CLAUDE.md's de-duplication principle exists to catch, closed proactively before a
+  third copy could appear. Added a matching `dependency-concentration-sync-hook.sh`
+  (PostToolUse nudge, mirrors `dependency-register-sync-hook.sh`) plus bats coverage
+  for the check, the shared lib, and the hook (`tests/dependency-concentration-sync-check.bats`,
+  `tests/dependency-register-lib.bats`, `tests/hook-scripts-dependency-concentration-sync.bats`).
+  `make ci` must pass. `docs/done/` entry required.
+  (auto/dependency-concentration-sync-check)
+
 - [x] 🟢 **Extend `docs/dependency-exit-runbooks.md` (DORA audit Q17) to the four
   highest-blast-radius remaining single-tool rows — Cilium, Garage, Envoy Gateway,
   cert-manager** — full verification writeup:
