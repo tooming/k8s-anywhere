@@ -72,6 +72,18 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "dependency-exit-runbooks.md covers the four highest-blast-radius single-tool rows (2026-09-02 slice)" {
+  RUNBOOKS="$REPO/docs/dependency-exit-runbooks.md"
+  run grep -q '^\*\*Cilium\*\*' "$RUNBOOKS"
+  [ "$status" -eq 0 ]
+  run grep -q '^\*\*Garage\*\*' "$RUNBOOKS"
+  [ "$status" -eq 0 ]
+  run grep -q '^\*\*Envoy Gateway\*\*' "$RUNBOOKS"
+  [ "$status" -eq 0 ]
+  run grep -q '^\*\*cert-manager\*\*' "$RUNBOOKS"
+  [ "$status" -eq 0 ]
+}
+
 @test "Q17's Gap line points at the new file instead of stating the gap as purely reactive" {
   run grep -q 'docs/dependency-exit-runbooks.md' "$DOC"
   [ "$status" -eq 0 ]

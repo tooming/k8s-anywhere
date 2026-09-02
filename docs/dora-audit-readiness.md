@@ -360,15 +360,16 @@ concentration)?**
   they don't replace that structural exit-ability or invent a smaller true cost.
 - **Evidence:** [docs/dependency-exit-runbooks.md](dependency-exit-runbooks.md);
   ADR-0024 (executed migration); ADR-0001 (structural exit-ability).
-- **Gap:** narrower now — the lab's three named concentration groups (Q16) each have
-  a written runbook; the remaining `always-on-core` single-tool rows in
-  `docs/dependency-register.md` not part of any concentration group (Terraform/
-  Terragrunt, Garage, Envoy Gateway, RabbitMQ, Cilium, Valkey, cert-manager, KEDA,
-  Forgejo, kube-state-metrics, node-exporter) don't have one yet — a real,
-  separately-scoped future item if wanted. A written runbook existing in advance
-  also doesn't mean the effort of an actual exit is smaller, only that the
-  first-response steps are already identified — exits still happen reactively via a
-  new ADR when actually triggered.
+- **Gap:** narrower still (as of 2026-09-02) — the lab's three named concentration
+  groups (Q16) each have a written runbook, and so now do the four
+  highest-blast-radius remaining `always-on-core` single-tool rows (Cilium, Garage,
+  Envoy Gateway, cert-manager). Seven lower-blast-radius single-tool rows still
+  don't (Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo,
+  kube-state-metrics, node-exporter) — a real, separately-scoped future item if
+  wanted. A written runbook existing in advance also doesn't mean the effort of an
+  actual exit is smaller, only that the first-response steps are already
+  identified — exits still happen reactively via a new ADR when actually
+  triggered.
 
 ---
 
