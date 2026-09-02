@@ -133,17 +133,25 @@ so a future edit can't silently drop the highest-severity rows without failing
 
 **Q7. Is there a defined detection → escalation → resolution path?**
 - **Answer:** Detection is now partly automated: Grafana Unified Alerting (RFC #1084,
-  `gitops/platform/observability-grafana.yaml` `valuesObject.alerting`) evaluates five
+  `gitops/platform/observability-grafana.yaml` `valuesObject.alerting`) evaluates six
   rules against Mimir every minute — an ArgoCD Application unhealthy for 10m+, an
   ArgoCD Application OutOfSync for 30m+, a Deployment running below its desired
-  replica count for 10m+, a PVC stuck `Pending`/`Lost` for 10m+, and (ROADMAP
-  `auto/vault-pod-readiness-alert`) the Vault server pod not Ready for 10m+ — surfaced
-  visually in Grafana's own Alerting UI. The Vault rule closes this section's own
-  previously-named gap (a real 2026-07-29 incident, documented in
-  `gitops/vault/unsealer.yaml`'s header comment, where Vault stayed sealed for 4+ days
-  with nothing surfacing anywhere visible) using `kube_pod_status_ready` from the
-  already-scraped `ksm` job, not a new Vault-specific scrape target — pod-readiness
-  was the first signal closed. Vault's own internal metrics are now scraped too
+  replica count for 10m+, a PVC stuck `Pending`/`Lost` for 10m+, (ROADMAP
+  `auto/vault-pod-readiness-alert`) the Vault server pod not Ready for 10m+, and
+  (2026-09-02, `auto/vault-sealed-degraded-alert`) Vault sealed for 10m+ even while
+  its pod stays Ready — surfaced visually in Grafana's own Alerting UI. The first
+  Vault rule closes this section's own previously-named gap (a real 2026-07-29
+  incident, documented in `gitops/vault/unsealer.yaml`'s header comment, where
+  Vault stayed sealed for 4+ days with nothing surfacing anywhere visible) using
+  `kube_pod_status_ready` from the already-scraped `ksm` job, not a new
+  Vault-specific scrape target — pod-readiness was the first signal closed. The
+  second Vault rule (`VaultSealedDegraded`) is a direct, independent signal on
+  top of it: rather than inferring seal state from the pod's readiness probe
+  (whose exact behavior on a sealed-but-running Vault this remote clusterless
+  session can't verify live either way, ADR-0004), it reads `vault_core_unsealed`
+  straight from Vault's own telemetry — so seal state is caught whether or not
+  the readiness probe happens to reflect it. Vault's own internal metrics are
+  now scraped too
   (ROADMAP `auto/vault-telemetry-scrape`): a `telemetry` stanza +
   `unauthenticated_metrics_access = true` in `vault.yaml` exposes real
   `vault_core_unsealed`/`vault_core_active`/`vault_core_in_flight_requests`/
@@ -161,15 +169,15 @@ so a future edit can't silently drop the highest-severity rows without failing
 - **Evidence:** [docs/DR.md](DR.md#recovery-cookbook-single-component); `make status`
   target; [docs/dora-metrics.md](dora-metrics.md) "Time to restore service" row;
   `gitops/platform/observability-grafana.yaml` `valuesObject.alerting`; RFC #1084.
-- **Gap:** the "no alerting" half of this gap is closed for the five conditions above,
-  and Vault's own internal telemetry is now scraped and dashboarded (not just
-  pod-readiness) — narrower gaps remain: the rule set doesn't cover every known
-  failure mode yet (the `VaultPodNotReady` rule only catches failures severe enough
-  to fail the pod's readiness probe, e.g. sealed, crashed, or unreachable, not a
-  degraded-but-Ready state — a new alert rule reading the now-scraped
-  `vault_core_unsealed` directly could catch that gap if it proves worth closing);
-  escalation stays a permanent non-goal for this solo-operator lab; the CI-health
-  metric still doesn't cover a live-cluster incident.
+- **Gap:** narrower now — the "no alerting" half of this gap is closed for the six
+  conditions above (as of 2026-09-02, `VaultSealedDegraded` closed the future
+  candidate this section previously named: a direct, independent seal-state
+  signal alongside pod-readiness, reading the already-scraped
+  `vault_core_unsealed` rather than only inferring seal state from
+  `kube_pod_status_ready`), and Vault's own internal telemetry is now scraped
+  and dashboarded (not just pod-readiness). Remaining gaps: escalation stays a
+  permanent non-goal for this solo-operator lab; the CI-health metric still
+  doesn't cover a live-cluster incident.
 
 **Q8. Are incidents logged with root cause and a corrective action, after the fact?**
 - **Answer:** Yes, as of [`docs/incident-log.md`](incident-log.md)'s "Real incident

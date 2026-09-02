@@ -474,6 +474,36 @@ spec:
                           refId: B
                     noDataState: NoData
                     execErrState: Error
+                  - uid: vault-sealed-degraded
+                    title: VaultSealedDegraded
+                    condition: B
+                    for: 10m
+                    labels:
+                      severity: warning
+                    annotations:
+                      summary: Vault has been sealed for 10+ minutes, read directly from vault_core_unsealed (independent of pod-readiness — fires even if VaultPodNotReady's readiness-probe signal doesn't).
+                    data:
+                      - refId: A
+                        relativeTimeRange:
+                          from: 600
+                          to: 0
+                        datasourceUid: mimir
+                        model:
+                          expr: vault_core_unsealed{job="vault"} == bool 0
+                          instant: true
+                          refId: A
+                      - refId: B
+                        datasourceUid: __expr__
+                        model:
+                          type: threshold
+                          expression: A
+                          conditions:
+                            - evaluator:
+                                type: gt
+                                params: [0]
+                          refId: B
+                    noDataState: NoData
+                    execErrState: Error
         # No k8s-configmap-watcher: lab dashboards now sync from GitLab via native Git Sync
         # (ADR-0006). The community dashboards above (gnetId) use a separate file
         # provider and are unaffected.
