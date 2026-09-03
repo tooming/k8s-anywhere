@@ -269,6 +269,34 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Bump Kyverno chart `3.8.2` → `3.9.0` (2 CVEs, 2 GHSAs, minor bump)** —
+  full verification writeup:
+  [docs/done/2026-09-03-kyverno-3-8-2-to-3-9-0-cve-bump.md](docs/done/2026-09-03-kyverno-3-8-2-to-3-9-0-cve-bump.md).
+  (auto/kyverno-3-8-2-to-3-9-0)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
+  currency sweep 2026-09-03, this run's seventh cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again (issues #633/#1229 unchanged) and no ungroomed intake/`rfc` issue
+  existed to groom. Fresh angle: continuing the currency-sweep pattern (Loki,
+  Grafana, Inkless, k3s), this cycle found Kyverno's chart had real fixes
+  available only on a minor bump (no 3.8.x patch backport exists) — a bigger,
+  riskier change than the patch bumps so far this run, so extra verification was
+  done: fetched the real chart values.yaml at the target tag directly to confirm
+  this Application's specific override keys and PSA-restricted-critical
+  securityContext defaults are unchanged before proceeding. **No prerequisites —
+  executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): GitHub's release notes for
+  `v1.19.0` cite CVE-2026-32280, CVE-2026-39836, GHSA-79gf-7frw-68m9, and
+  GHSA-gcjh-h69q-9w9g under a Security heading. `raw.githubusercontent.com`'s
+  real `values.yaml` at `kyverno-chart-3.9.0` confirmed unchanged
+  override-key shape and identical PSA-restricted securityContext defaults.
+  Noted (not acted on): four new policy CRDs this lab doesn't use, and a
+  deprecation warning on the legacy `kyverno.io` policy types this lab's
+  `ClusterPolicy` resources actually use (still functional, just warns).
+  `gitops/platform/kyverno.yaml`, `tests/kyverno.bats`, a new ADR-0019
+  Re-evaluation log entry, and `docs/dependency-register.md`'s row all
+  updated. `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **Bump k3s `v1.36.3+k3s1` → `v1.36.4+k3s1` on both backends** — full
   verification writeup:
   [docs/done/2026-09-03-k3s-1-36-3-to-1-36-4-currency-bump.md](docs/done/2026-09-03-k3s-1-36-3-to-1-36-4-currency-bump.md).
