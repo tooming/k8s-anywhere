@@ -269,6 +269,28 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Author ADR-0038 — moto + ACK (S3) + KRO for the cloud-control-plane
+  demo pattern (retroactive record); bump moto `5.2.2` → `5.2.3`** — full
+  verification writeup:
+  [docs/done/2026-09-03-adr-0038-ack-kro-moto-retroactive-record.md](docs/done/2026-09-03-adr-0038-ack-kro-moto-retroactive-record.md).
+  (auto/adr-0038-ack-kro-moto-retroactive-record)
+  (CHARTER **Core Values** §"Everything as code" (governance completeness);
+  ARCHITECT-fallback gap analysis 2026-09-03, this run's eighteenth cycle,
+  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated and PLANNER/ARCHITECT/TRIAGER all came up empty.
+  Fresh angle: extending this run's retroactive-ADR-authorship pattern
+  (ADR-0036 ESO, ADR-0037 Vault) to moto/ACK-S3/KRO — three real, live,
+  already-hardened always-on components (KRO currently suspended) with their
+  own dashboard and bats coverage, yet zero governing ADR and zero
+  dependency-register row, unlike every other component in the lab.
+  **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): moto bumped to a confirmed-real
+  newer patch (Docker Hub tags API); ACK-S3 (`1.11.0`) and KRO (`0.9.3`) both
+  reconfirmed already current via direct tag/release checks; zero GHSA
+  advisories exist for any of the three. `docs/decisions/README.md` and
+  `docs/dependency-register.md` (3 new rows + fixed scope-note arithmetic)
+  updated. `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **Longhorn currency re-check — `v1.12.1` now stable, ADR's own flip
   condition still not triggered, kept at `1.11.3`** — full verification
   writeup:

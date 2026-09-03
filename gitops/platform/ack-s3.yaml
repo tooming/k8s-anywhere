@@ -9,25 +9,10 @@
 #                              <bucket>.moto... (virtual-host style has no DNS here)
 # Credentials come from Vault via ESO (ack-aws-creds Secret, INI format).
 #
-# Chart bumped 1.9.0 -> 1.10.0 (2026-08-17, upstream-currency gap-analysis finding,
-# executor.prompt.md STEP 6b/rule #9 filler after every Now/next item was
-# re-confirmed gated on #631/#633). Verified directly (not assumed, ADR-0004): the
-# upstream repo's Chart.yaml at tag v1.10.0 shows version/appVersion 1.10.0 (one
-# minor release ahead of the prior 1.9.0 pin, not a major bump); the tag's only
-# functional change is "feat: add ABAC field to Bucket" (#241) plus a routine ACK
-# runtime/code-generator bump (v0.62.0 -> v0.62.1, #244) — no change to any key this
-# Application's valuesObject sets (aws.*, installScope, podSecurityContext.*,
-# securityContext.*, resources.*).
-#
-# Chart bumped 1.10.0 -> 1.11.0 (upgrade-drafter fallback, 2026-09-01). Verified
-# directly (ADR-0004) via a real clone of aws-controllers-k8s/s3-controller:
-# `git diff v1.10.0 v1.11.0 -- helm/Chart.yaml helm/values.yaml` shows the
-# version/appVersion/image.tag bump plus exactly ONE new key,
-# `featureGates.IgnoreFieldDrift: false` (a new opt-in feature, default off) --
-# this Application's valuesObject sets no `featureGates` override at all, so
-# it's a complete no-op here. Upstream's own release notes name the real
-# feature: "Support tags at CreateBucket time from Spec.Tagging" plus an ACK
-# runtime bump to v0.63.0.
+# Full version-bump history (1.9.0 -> 1.10.0 -> 1.11.0) moved to ADR-0038's own
+# Re-evaluation log (2026-09-03) — this comment used to carry that history
+# inline, the only version-sensitive component in this repo that did besides
+# Vault before ADR-0037; see ADR-0038 for the complete trail.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

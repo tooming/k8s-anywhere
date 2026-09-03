@@ -18,8 +18,8 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 37 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0037), two are **Superseded** and fully excluded per the index's own
+Of the 38 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0038), two are **Superseded** and fully excluded per the index's own
 convention (only their replacement is listed): ADR-0010 (Redis, superseded by
 ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor). A third,
 ADR-0033 (GitLab, superseded by ADR-0035/Forgejo), was **not** excluded the same way
@@ -35,7 +35,7 @@ in the repo (kept for rollback until the decommission item lands; see ADR-0035's
 migration-execution list, items 5–6, and ROADMAP.md's Now/next Forgejo-migration
 list for the current status of that follow-up).
 
-Of the remaining 35, **eight decide a policy or architectural posture rather than a
+Of the remaining 36, **eight decide a policy or architectural posture rather than a
 single third-party product** — they're excluded from the table below because there's
 no one upstream project to attach a criticality/upstream-source/last-reviewed row to:
 ADR-0003 (decoupled/no-SPOF design principle), ADR-0004 (no-fabricated-content
@@ -47,18 +47,20 @@ policy), and ADR-0030 (k3s version-pinning governance — no separate row of its
 but directly cited alongside ADR-0027 in the k3s row's ADR column since 2026-08-24,
 once a gap-analysis pass found the row's "Last reviewed" cell citing only
 ADR-0027's decision date and missing ADR-0030's own, much more current,
-Re-evaluation log entirely). Of the remaining 27, all 27 now
+Re-evaluation log entirely). Of the remaining 28, all 28 now
 have a row below — ADR-0035 (Forgejo) gained its own row 2026-08-17 once the live
 cutover (PR #1205) made Forgejo, not GitLab, the actual live component the row
 should describe (see the note above), ADR-0036 (External Secrets Operator)
 gained its own row 2026-08-19 as a retroactive governance record for a mechanism
-that predated it having any ADR at all, and ADR-0037 (Vault) gained its own row
+that predated it having any ADR at all, ADR-0037 (Vault) gained its own row
 2026-09-03 for the same reason — a mechanism that predated it having any ADR at
 all, whose version history had instead been living as inline `gitops/` YAML
-comments — collectively naming the table's 34 distinct
-third-party-tool rows: three ADRs each
+comments — and ADR-0038 (moto + ACK S3 + KRO) gained three rows the same day for
+the identical reason, one per tool — collectively naming the table's 37 distinct
+third-party-tool rows: four ADRs each
 decide on more than one tool at once (ADR-0001: Terraform/Terragrunt + ArgoCD;
-ADR-0012: Istio + Kiali; ADR-0027: Oracle Cloud Infrastructure + k3s) and ADR-0034
+ADR-0012: Istio + Kiali; ADR-0027: Oracle Cloud Infrastructure + k3s; ADR-0038:
+moto + ACK S3 + KRO) and ADR-0034
 alone names seven (the LGTMP observability internals — Mimir, Loki, Tempo, Pyroscope,
 Alloy, kube-state-metrics, node-exporter); one tool, Garage, is named by two ADRs
 (ADR-0002, ADR-0007) for two different roles and gets one merged row; ADR-0031/
@@ -129,6 +131,9 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | kube-state-metrics | always-on-core (observability — Kubernetes object-state exporter) | github.com/kubernetes/kube-state-metrics | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-01 (chart bumped `8.4.0` → `8.4.1`, purely additive opt-in collectors, appVersion unchanged `2.20.0`; see ADR-0034's own Re-evaluation log) |
 | node-exporter | always-on-core (observability — node/host metrics exporter) | github.com/prometheus/node_exporter | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-01 (chart bumped `4.56.1` → `4.56.3`, real default `extraArgs` change filtering pseudo-filesystems from `node_filesystem_*` metrics, appVersion unchanged `1.12.1`; verified no dashboard panel affected; see ADR-0034's own Re-evaluation log) |
 | Vault | always-on-core (secrets backend) | helm.releases.hashicorp.com, github.com/hashicorp/vault | [ADR-0037](decisions/adr-0037-vault-secrets-management.md) | 2026-09-03 (ADR-0037 authored as a retroactive governance record — Vault previously had no ADR and its version history lived only as inline `gitops/platform/vault.yaml` comments, now migrated; server image bumped `2.0.4`→`2.1.0` in the same cycle, two real Go-vulnerability-database dependency fixes, no GitHub-native advisories exist for this repo; see ADR-0037's own Re-evaluation log) |
+| moto | always-on-core (AWS emulator) | github.com/getmoto/moto | [ADR-0038](decisions/adr-0038-ack-kro-moto-cloud-control-plane.md) | 2026-09-03 (ADR-0038 authored as a retroactive governance record — moto previously had no ADR; image bumped `5.2.2`→`5.2.3` in the same cycle, confirmed via Docker Hub's tags API (`last_updated: 2026-08-22`), routine patch, no CVE — zero published GHSA advisories exist for this repo at all; see ADR-0038's own Re-evaluation log) |
+| ACK S3 controller | always-on-core (cloud-control-plane demo) | public.ecr.aws/aws-controllers-k8s, github.com/aws-controllers-k8s/s3-controller | [ADR-0038](decisions/adr-0038-ack-kro-moto-cloud-control-plane.md) | 2026-09-03 (ADR-0038 authored as a retroactive governance record — ACK S3 previously had no ADR, its version history lived only as inline `gitops/platform/ack-s3.yaml` comments, now migrated; current pin `1.11.0` reconfirmed the newest tag (`1.11.1` 404s); zero published GHSA advisories exist for this repo) |
+| KRO | always-on-core, currently suspended (cluster-load reduction, 2026-08-24) | ghcr.io/kro-run/kro, github.com/kubernetes-sigs/kro | [ADR-0038](decisions/adr-0038-ack-kro-moto-cloud-control-plane.md) | 2026-09-03 (ADR-0038 authored as a retroactive governance record — KRO previously had no ADR; current pin `0.9.3` reconfirmed the newest tag via the real GitHub releases list; project moved orgs to `kubernetes-sigs/kro` since the original pin, noted but not action-requiring; zero published GHSA advisories exist for this repo) |
 
 ## Keeping this in sync
 
