@@ -343,6 +343,23 @@ pyroscope#5474) is explicitly a **security release**: `github.com/getkin/kin-ope
 fixes. **Keep** — no reason to reconsider Pyroscope itself, this is a routine security
 patch. Flip condition unchanged from below.
 
+**2026-09-04** — Pyroscope kept at chart `2.2.1`; app `v2.3.0` exists but has no
+matching chart release yet (executor coverage sweep). Verified directly
+(ADR-0004): `github.com/grafana/pyroscope/releases/tag/v2.3.0` is real
+(released 24 Aug, a genuine minor app release with real security content —
+Go 1.25.13, `go.etcd.io/etcd/client/pkg/v3` v3.6.14,
+`golang.org/x/mod` v0.40.0, a `nanoid` bump, and its own release notes state
+it "includes every security fix from 2.2.1"). But `github.com/grafana/
+pyroscope/tags` shows `pyroscope-2.2.1` is still the newest **chart** tag —
+confirmed by fetching `operations/pyroscope/helm/pyroscope/Chart.yaml` at a
+`pyroscope-2.3.0` tag guess, which 404s (the tag doesn't exist at all, not a
+path-naming mismatch). The chart release lags the app release upstream, so
+there is nothing to bump this repo's `targetRevision` to yet — the current
+pin already carries every security fix `v2.3.0` mentions (2.2.1 already
+included them, per that release's own "includes every security fix from
+2.2.1" line, read the other direction). **Keep** — not a currency gap, a
+genuine "nothing newer packaged yet" state. Flip condition unchanged below.
+
 _(This is the ADR's first version besides the entry above. Future architect audits
 record Keep/Supersede/Convert outcomes here.)_
 
