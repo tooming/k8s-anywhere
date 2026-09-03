@@ -107,11 +107,13 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-@test "both jobs override harbor.127.0.0.1.nip.io's own resolution via /proc/net/route (portable — sign-image's Photon OS base has no ip command), not a second host.docker.internal hostname" {
+@test "all three jobs override harbor.127.0.0.1.nip.io's own resolution via /proc/net/route (portable — sign-image's Photon OS base has no ip command), not a second host.docker.internal hostname" {
+  # verify-rejection (restored 2026-09-03) is the third: it predated this fix
+  # landing in the other two jobs, so its restoration adopted it too.
   count="$(grep -c "awk '\\\$2 == \"00000000\"" "$WF")"
-  [ "$count" -eq 2 ]
+  [ "$count" -eq 3 ]
   count2="$(grep -c 'harbor\.127\.0\.0\.1\.nip\.io" >> /etc/hosts' "$WF")"
-  [ "$count2" -eq 2 ]
+  [ "$count2" -eq 3 ]
 }
 
 @test "build-and-push wraps every network-facing docker command in retry_cmd (login, build, both pushes) — found live 2026-08-18, the port to Forgejo Actions had silently dropped this from the predecessor pipeline" {
@@ -216,4 +218,103 @@ setup() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"retry_cmd cosign sign"* ]]
   [[ "$output" == *"local n=0 max=14 delay=30"* ]]
+}
+
+# --- verify-rejection job (O4 CI gate, RFC #289) ---------------------------------
+# Restored 2026-09-03 (executor coverage sweep, issue #1229): this job was added
+# 2026-08-17 (#1224) then silently dropped in its entirety by a later rewrite
+# (#1238, 2026-08-18) with no test pinning its presence — the exact failure class
+# this file's own retry_cmd history already hit once. These assertions are the
+# mechanical recurrence guard a third silent drop would now fail against.
+@test "build-sign-push.yml declares a verify-rejection job that needs sign-image" {
+  grep -q '^  verify-rejection:' "$WF"
+  run sed -n '/^  verify-rejection:/,/^  [a-zA-Z]/p' "$WF"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"needs: sign-image"* ]]
+}
+
+@test "verify-rejection sets an explicit timeout-minutes" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *"timeout-minutes:"* ]]
+}
+
+@test "verify-rejection has its own checkout step (2026-09-03 adaptation: sources the shared retry_cmd.sh instead of a third hand-copied inline copy)" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -q 'git clone --no-checkout'
+  echo "$output" | grep -q 'git checkout "\$GITHUB_SHA"'
+}
+
+@test "verify-rejection resolves \$REGISTRY's host via /proc/net/route, same as the other two jobs (2026-09-03 adaptation: this job predates that fix landing elsewhere in the file)" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *'awk '"'"'$2 == "00000000"'* ]]
+}
+
+@test "verify-rejection wraps its docker login/pull/push in retry_cmd, sourced from the shared lib (2026-09-03 adaptation, matches build-and-push's convention)" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *'. scripts/lib/retry_cmd.sh'* ]]
+  [[ "$output" == *'retry_cmd sh -c'* ]]
+  [[ "$output" == *'retry_cmd docker pull busybox:1.37.0'* ]]
+  [[ "$output" == *'retry_cmd docker push "$REGISTRY/library/test-unsigned:rejection-test"'* ]]
+}
+
+@test "verify-rejection pushes an unsigned test image distinct from the real app image" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *"library/test-unsigned:rejection-test"* ]]
+  # Never the real IMAGE_NAME (library/hello) — this job must not touch the
+  # signed production image.
+  [[ "$output" != *"library/hello:rejection-test"* ]]
+}
+
+@test "verify-rejection's test Pod is PSS-restricted compliant (capstone namespace enforces it)" {
+  # Namespace enforces Pod Security restricted (gitops/apps/capstone/namespace.yaml)
+  # — a non-compliant Pod would be rejected by Kubernetes' own admission before
+  # Kyverno's verifyImages rule ever runs, making the test meaningless. Mirrors
+  # gitops/apps/capstone/rollout.yaml's own securityContext exactly. The Pod is
+  # sent as a single-line JSON payload (see the recurrence-guard test below), not
+  # YAML, so these assertions match the JSON key/value form.
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *'"runAsNonRoot": true'* ]]
+  [[ "$output" == *'"allowPrivilegeEscalation": false'* ]]
+  [[ "$output" == *'"readOnlyRootFilesystem": true'* ]]
+  [[ "$output" == *'"drop": ["ALL"]'* ]]
+}
+
+@test "verify-rejection's test Pod uses the harbor-registry imagePullSecret (matches the real capstone workload)" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *'"name": "harbor-registry"'* ]]
+}
+
+@test "verify-rejection's test Pod is applied via a single-line JSON payload, not a heredoc (recurrence guard, found in self-review 2026-08-18)" {
+  # A quoted heredoc's (<<'WORD') closing delimiter must sit at column zero to
+  # match, but this step's own YAML run: block-literal scalar indents every
+  # line, including any would-be terminator -- a less-indented line would end
+  # the YAML scalar early instead of closing the heredoc, so the heredoc could
+  # never actually close. JSON is a YAML/kubectl-apply-accepted superset, so a
+  # single echo '{...}' | kubectl apply -f - line sidesteps the incompatibility
+  # entirely.
+  run sed -n '/Assert Kyverno rejects the unsigned image at admission/,/^      - name: Clean up/p' "$WF"
+  [[ "$output" != *"<<'"* ]]
+  [[ "$output" == *"kubectl apply -f -"* ]]
+}
+
+@test "verify-rejection asserts a real rejection reason, not just a non-zero exit" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *'grep -qiE'* ]]
+  [[ "$output" == *"denied|policy|verify|signature|admission webhook"* ]]
+}
+
+@test "verify-rejection fails loudly if the unsigned image is wrongly admitted" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *"unsigned image was admitted"* ]]
+}
+
+@test "verify-rejection references the KUBECONFIG secret (no plaintext)" {
+  grep -q 'secrets.KUBECONFIG' "$WF"
+}
+
+@test "verify-rejection cleans up the test Pod even on failure" {
+  run sed -n '/^  verify-rejection:/,$p' "$WF"
+  [[ "$output" == *"if: always()"* ]]
+  [[ "$output" == *"kubectl delete pod test-rejection-pod"* ]]
 }

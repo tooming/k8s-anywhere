@@ -269,6 +269,31 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Restore the silently-dropped `verify-rejection` CI job (O4 gate) +
+  mechanical recurrence guard** — full verification writeup:
+  [docs/done/2026-09-03-forgejo-ci-verify-rejection-restored.md](docs/done/2026-09-03-forgejo-ci-verify-rejection-restored.md).
+  (auto/forgejo-ci-verify-rejection-restored)
+  (CHARTER **Objective O4** ("every image is signed and verified") /
+  **Core Values** §"Clusterless gates stay green"; JANITOR-fallback
+  coverage sweep 2026-09-03, this run's twenty-first cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed
+  fully gated and PLANNER/ARCHITECT/TRIAGER all came up empty. Fresh angle:
+  re-reading issue #1229's own comment history (not just its title) found it
+  had already root-caused something deeper than a missing secret — the
+  entire `verify-rejection` job was silently dropped by a rewrite (#1238)
+  with no test pinning its presence, and the issue's own comment explicitly
+  named the executor-buildable slice ("the job restored... a
+  `tests/forgejo-ci.bats` regression pinning its presence... *then* the
+  KUBECONFIG secret") per ROADMAP rule #9's "split the gate" guidance.
+  **No prerequisites for the restoration — executor may pick up
+  immediately; the KUBECONFIG secret + live run stay gated on #1229, left
+  open.**)
+  Restored the job re-adapted to the file's post-rewrite conventions
+  (retry_cmd wrapping, shared host-resolution step, its own checkout);
+  restored + extended `tests/forgejo-ci.bats`'s coverage (12 original + 3
+  new assertions). Full local bats run: 2970/2970 pass. `make ci` must
+  pass. `docs/done/` entry required. Issue #1229 stays open.
+
 - [x] 🟢 **Inkless kafka-exporter sidecar — document in ADR-0015,
   currency-check clean** — full verification writeup:
   [docs/done/2026-09-03-inkless-kafka-exporter-documented.md](docs/done/2026-09-03-inkless-kafka-exporter-documented.md).
