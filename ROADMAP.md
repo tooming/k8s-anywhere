@@ -141,6 +141,21 @@ rules below are binding.
     exactly what to check/run and what it unblocks) rather than falling back to prose
     alone.
 
+    **Never close a standing `[Action required]` issue except via the real
+    confirmation it names — not as a side effect of merging a PR that only shrinks the
+    gap toward it.** Found live 2026-09-04: a cycle merged PR #1403 (the RBAC half of
+    issue #1229's ask) and, in the same breath as posting a comment that itself said
+    "Still open per the `[Action required]` convention," made a direct API call
+    closing the issue anyway — no `Closes #1229`/`Fixes #1229` keyword anywhere in the
+    PR, so this wasn't GitHub's own auto-close; it was the executor's own mistake,
+    caught and reopened the same day. `[Action required]` issues have no code-level
+    guard against this (unlike a bats assertion, a wrong `issue_write` call can't be
+    caught by `make ci`) — the mechanical discipline is procedural: after any cycle
+    that touches a gated item's issue, re-read the issue's own state before ending the
+    turn, and never call `issue_write`/`gh issue close` on one except when the
+    confirmation comment it's actually waiting for has just been posted (by a human,
+    or by a live-cluster session that performed the real check).
+
 ---
 
 ## Where new items come from — the planner
@@ -268,6 +283,25 @@ You review and merge plan PRs, same as implementation PRs.
 > items' own inline writeups are a separate, larger cleanup (each needs
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
+
+- [x] 🟢 **Issue #1229 wrongly closed alongside PR #1403 — reopened, ROADMAP
+  rule #11 hardened** — full verification writeup:
+  [docs/done/2026-09-04-issue-1229-wrongly-closed-reopened.md](docs/done/2026-09-04-issue-1229-wrongly-closed-reopened.md).
+  (auto/issue-1229-reopen-rule-11-hardened)
+  (CHARTER **Core Values** §"Dashboards/outputs show real, auto-discovered
+  state" (ADR-0004); self-caught correction 2026-09-04, this run's
+  twenty-third cycle, found on session resume while re-orienting on
+  open issues per STEP 1/2 — a prior cycle's PR #1403 closed issue #1229
+  despite its own comment saying it should stay open, with no closing
+  keyword anywhere in the PR to explain it. **No prerequisites — this is a
+  correction, not a gated item.**)
+  Reopened #1229 via the GitHub API, posted a comment naming the exact
+  mistake and re-confirming what's still needed, and hardened ROADMAP rule
+  #11 with an explicit procedural guard against recurrence (no code-level
+  guard is possible for a wrong `issue_write` call — see the docs/done
+  entry's own "why procedural, not mechanical" section, per CLAUDE.md's
+  escape hatch for genuinely unguardable classes). No `gitops/` or code
+  change. `make ci` must pass. `docs/done/` entry required.
 
 - [x] 🟢 **Restore the silently-dropped `verify-rejection` CI job (O4 gate) +
   mechanical recurrence guard** — full verification writeup:
