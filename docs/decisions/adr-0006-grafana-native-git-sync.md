@@ -509,3 +509,69 @@ image-tag change.
 
 **Flip condition (next re-evaluation).** Revisit Loki's pin again when a new
 advisory/fix range names a version at or above `3.7.7` as affected.
+
+### 2026-09-03 — Grafana security bump, pin bumped `13.0.7` → `13.0.8` (3 named CVEs)
+
+**Trigger.** This entry's own flip condition fired: the 2026-08-19 entry's
+condition was "revisit when a new advisory names a version at or above `13.0.7`
+as affected, or when the next scheduled currency sweep finds a newer `13.0.x`
+patch" — a planner-fallback currency sweep (`executor.prompt.md` STEP 6b,
+Now/next's three standing items still gated on unconfirmed
+maintainer-confirmation issues #633/#1229) found `v13.0.8` published
+(GitHub releases, tagged 2026-09-02) citing three `Security:` fixes.
+
+**Verified directly (not assumed, ADR-0004):** GitHub's release notes page for
+`v13.0.8` lists, under a `Security` heading: "Fix CVE-2026-12704", "Fix
+CVE-2026-14199", "Fix CVE-2026-19475" — three distinct named CVEs, not one
+repeated across sibling release lines this time. Docker Hub's public tag API
+confirms `grafana/grafana:13.0.8` is a real, published multi-arch manifest
+(amd64/arm64/armv7, pushed 2026-09-01T15:21:53Z). Grafana's own CVE-detail
+pages (`grafana.com/security/security-advisories/`) remained unreachable from
+this sandbox's egress proxy — same limitation as every prior Grafana entry in
+this history — so a WebSearch aggregation of third-party CVE trackers
+(OffSeq.com) was used instead of a primary source, and is flagged as such
+rather than asserted with more confidence than verified: CVE-2026-14199 is
+reported HIGH severity, CVSS 7.1 — an Auth Proxy identity-cache key collision
+(the cache key concatenates username and forwarded identity attributes with
+no delimiter) allowing an authenticated user to authenticate as a
+higher-privileged user; this lab's Grafana doesn't use Auth Proxy
+authentication (admin credentials come from Vault via ExternalSecret), so not
+exploitable here, but the fix ships in the same binary regardless.
+CVE-2026-12704 (CWE-294, improper certificate validation) is reported as
+Grafana **Enterprise**-specific — this lab runs open-source Grafana, so this
+CVE likely doesn't apply, but Enterprise-vs-OSS isn't independently confirmed
+beyond the third-party tracker's own component tag. CVE-2026-19475 affects the
+PostgreSQL datasource specifically — this lab has no PostgreSQL datasource
+configured, so not exploitable here either. No severity/CVSS confirmed for
+the latter two beyond the third-party aggregation.
+
+**Decision: bump `grafana:13.0.7` → `13.0.8`** (the newest `13.0.x` patch,
+smallest safe delta, security-driven per the release notes — even though none
+of the three CVEs are confirmed exploitable in this lab's specific
+configuration, patching is still the correct default rather than relying on
+a non-exploitability assessment this session can't fully verify against a
+primary source). `gitops/platform/observability-grafana.yaml`'s
+`valuesObject.image.tag` and the `ca-bundle` `extraInitContainers` image both
+updated in lockstep (same pin, same analysis);
+`tests/observability-grafana.bats` updated to assert `13.0.8` present and add
+a new "no stray `13.0.7`" guard; `docs/decisions/context.md`'s "Grafana
+13.0.7" prose citation updated to `13.0.8` (mechanically enforced by `make
+context-doc-version-sync-check`, which caught the drift live via its
+`PostToolUse` hook while authoring this entry, same as every prior Grafana
+bump).
+
+**ADR-0004 caveat.** This remote, clusterless session verified the release
+notes and published-image facts directly, but cannot verify Grafana starts
+cleanly and Git Sync/dashboard provisioning continues working post-bump on a
+live cluster, and could not independently confirm any of the three CVEs'
+severity/technical description against a primary source (egress proxy blocked
+every CVE-database and grafana.com domain tried) — a WebSearch aggregation
+filled the gap for one of the three (CVE-2026-14199) but that is not a
+primary source either. Rollback is a one-line revert of both `image:`
+references; Grafana's chart Application syncs via ArgoCD, so a revert takes
+effect on the next automated sync; Grafana's session/dashboard state lives on
+its PVC, untouched by an image-tag change.
+
+**Flip condition (next re-evaluation).** Revisit Grafana's pin again when a
+new advisory names a version at or above `13.0.8` as affected, or when the
+next scheduled currency sweep finds a newer `13.0.x` patch.
