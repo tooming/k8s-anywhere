@@ -269,6 +269,31 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Longhorn currency re-check — `v1.12.1` now stable, ADR's own flip
+  condition still not triggered, kept at `1.11.3`** — full verification
+  writeup:
+  [docs/done/2026-09-03-longhorn-currency-recheck-kept.md](docs/done/2026-09-03-longhorn-currency-recheck-kept.md).
+  (auto/longhorn-currency-recheck-kept)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004;
+  JANITOR-fallback coverage sweep 2026-09-03, this run's seventeenth cycle,
+  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated again and PLANNER/ARCHITECT/TRIAGER all came up
+  empty. Fresh angle: a pinned-chart currency sweep (distinct from the
+  GHSA-advisory-sweep lens already used heavily this run) found Longhorn's
+  `1.12.x` line — the line ADR-0013's own 2026-07-18 entry deliberately
+  stayed one minor line behind — went stable (`v1.12.1`, 2026-08-14) since
+  the last check. Verified this is an ADR-guarded case, not an unswept
+  currency gap: CLAUDE.md's "never silently violate an ADR" rule applies —
+  neither of ADR-0013's own named flip conditions (EOL window, a filed CVE)
+  has fired, so the pin correctly stays put; the check itself, with its
+  fresh verification, is the deliverable. **No prerequisites — executor may
+  pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): `v1.12.1`'s existence confirmed
+  via two independent sources (the release page and a real, resolving raw
+  image-list file at that tag); ADR-0013's Re-evaluation log and
+  `docs/dependency-register.md`'s row updated with the fresh check. No
+  `gitops/` change. `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **dependency-concentration-sync-check: close the reverse-direction gap
   + fix a stale comment** — full verification writeup:
   [docs/done/2026-09-03-dependency-concentration-reverse-check.md](docs/done/2026-09-03-dependency-concentration-reverse-check.md).

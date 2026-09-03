@@ -230,3 +230,37 @@ the current `1.11.3` pin (four-plus years and multiple major lines newer).
 2026-07-28 currency check from a different angle (security advisories rather
 than release-tag currency) rather than superseding it. Flip condition
 unchanged from the 2026-07-18 entry above.
+
+### 2026-09-03 — `1.12.1` now stable; flip condition still not triggered, kept
+
+**Trigger.** This run's coverage/hardening sweep (ROADMAP rule #9's fallback
+chain) re-checked every pinned chart's real upstream currency after the
+"Now / next" lane was re-confirmed fully gated.
+
+**Re-checked directly against live sources (ADR-0004):** `longhorn/longhorn`'s
+own GitHub releases confirm `v1.12.1` (the `1.12.x` line the 2026-07-18 entry
+named as the reason to stay one minor line behind) went stable **2026-08-14**
+— cross-verified two ways, not assumed from a single fetch: (1) the release
+tag's own page, and (2) `raw.githubusercontent.com/longhorn/longhorn/v1.12.1/
+deploy/longhorn-images.txt`, which resolves and lists real
+`longhornio/*:v1.12.1` image tags (a tag that doesn't exist would 404 there,
+same verification method used for the ADR-0037/Vault tag check this run).
+`v1.12.1`'s own release notes describe a materially larger surface than a
+routine patch: V2 Data Engine fast volume cloning + experimental storage
+sharding (erasure coding), extended instance-manager mTLS, new internal
+`NetworkPolicy` ingress rules, and an explicit **breaking change** — "legacy
+V2 linked-clone volumes created in v1.12.0 or earlier are deprecated... cannot
+be operated on except for detachment and deletion."
+
+**Decision: kept at `1.11.3` — the ADR's own flip condition has still not
+fired.** Neither named trigger applies: `1.11.x` is roughly seven weeks into
+its support window (nowhere near the pre-1.8 12-month EOL policy that
+justified the original `1.7.3`→`1.11.3` bump), and the 2026-08-19 GHSA sweep
+above found no CVE filed against `1.11.3`. `v1.12.1`'s own release notes
+reinforce, rather than undercut, the original 2026-07-18 reasoning — this is
+now confirmed as a bigger behavioral change (including a breaking one) than a
+routine currency bump should absorb, not a smaller one. Bumping here without
+either flip condition firing would silently contradict this ADR's own binding
+decision (CLAUDE.md's "never silently violate an ADR" rule) — noted
+explicitly rather than done quietly. Flip condition unchanged from the
+2026-07-18 entry above.
