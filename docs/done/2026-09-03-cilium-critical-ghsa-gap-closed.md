@@ -44,4 +44,4 @@ No code change — the pin (`1.18.13`) is unaffected and needs no bump.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1392
