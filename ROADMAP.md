@@ -269,6 +269,28 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Envoy Gateway full GHSA sweep — confirm `v1.8.3` pin security-clean** —
+  full verification writeup:
+  [docs/done/2026-09-03-envoy-gateway-ghsa-sweep-clean.md](docs/done/2026-09-03-envoy-gateway-ghsa-sweep-clean.md).
+  (auto/envoy-gateway-ghsa-sweep-clean)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
+  security sweep 2026-09-03, this run's tenth cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again and every remaining register row's version-currency was already
+  re-confirmed exhausted this run. Fresh angle: rather than "is a newer version
+  available" (already asked twice this run), asked a different question —
+  "does any published advisory affect the version we're deliberately holding at" —
+  for ADR-0008's Envoy Gateway hold specifically, since that ADR's own log had
+  only ever answered the first question, never the second. **No prerequisites —
+  executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): fetched all 10 published GitHub
+  security advisories for `envoyproxy/gateway` and their affected/patched
+  version ranges. Every affected range tops out at `1.8.1` or lower — current
+  pin `v1.8.3` is past every floor, including the lone Critical. No code
+  change; `docs/decisions/adr-0008-envoy-gateway-not-traefik.md`'s
+  Re-evaluation log and `docs/dependency-register.md`'s row updated to record
+  the sweep. `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **Refresh `docs/dora-metrics.md` (stale since 2026-07-30)** — full
   verification writeup:
   [docs/done/2026-09-03-dora-metrics-refresh.md](docs/done/2026-09-03-dora-metrics-refresh.md).

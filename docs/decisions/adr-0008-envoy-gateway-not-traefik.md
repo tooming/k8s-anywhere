@@ -225,6 +225,51 @@ lab's actual Gateway API CRD versions and confirm no breaking change applies,
 or when a security bulletin names a version above `v1.8.3` as affected
 (shortening the timeline regardless of tooling availability).
 
+### 2026-09-03 — full GHSA sweep, `v1.8.3` pin kept, security-clean
+
+**Trigger.** Planner-fallback GHSA sweep (`executor.prompt.md` STEP 6b,
+Now/next's three standing items still gated on unconfirmed
+maintainer-confirmation issues #633/#1229). Prior entries checked whether a
+*newer release* existed; this cycle instead directly enumerated
+`envoyproxy/gateway`'s published GitHub security advisories to check whether
+any *known vulnerability* affects the currently-held `v1.8.3` pin
+specifically — a different, more direct question than "is a newer version
+available," and one this ADR's own Re-evaluation log had not answered
+explicitly before (each prior entry reasoned about breaking changes, not a
+systematic advisory-by-advisory affected-range check).
+
+**Verified directly (not assumed, ADR-0004):** fetched all 10 published
+advisories from `github.com/envoyproxy/gateway/security/advisories` and their
+individual affected/patched version ranges:
+
+| Advisory | CVE | Severity | Affected | Patched |
+|---|---|---|---|---|
+| GHSA-wcrf-9vrr-854f | CVE-2026-53713 | Critical | `<1.7.4`, `<1.8.1` | `1.7.4`, `1.8.1` |
+| GHSA-22xc-xg2r-9j7v | CVE-2026-53714 | High | `<1.7.4`, `<1.8.1` | `1.7.4`, `1.8.1` |
+| GHSA-xrwg-mqj6-6m22 | CVE-2026-22771 | High | `<1.5.7`, `<1.6.2` | `1.5.7`, `1.6.2` |
+| GHSA-j777-63hf-hx76 | CVE-2025-24030 | High | `<1.2.6` | `1.2.6` |
+| GHSA-fcrp-7gc2-93g7 | CVE-2026-53718 | Moderate | `<1.7.4`, `<1.8.1` | `1.7.4`, `1.8.1` |
+| GHSA-8fv2-88gg-hm7q | CVE-2026-53715 | Moderate | `<1.7.4`, `<1.8.1` | `1.7.4`, `1.8.1` |
+| GHSA-m2v6-2jmh-4c68 | CVE-2026-53719 | Moderate | `<1.7.4`, `<1.8.1` | `1.7.4`, `1.8.1` |
+| GHSA-h7pq-86h8-rp5x | CVE-2026-53717 | Moderate | `<1.7.3`, `<1.8.1` | `1.7.4`, `1.8.1` |
+| GHSA-cxpq-8v7q-cg56 | CVE-2026-53716 | Moderate | `<1.7.4`, `<1.8.1` | `1.7.4`, `1.8.1` |
+| GHSA-mf24-chxh-hmvj | CVE-2025-25294 | Moderate | `<1.2.7`, `<1.3.1` | `1.2.7`, `1.3.1` |
+
+Every affected range tops out at `1.8.1` or lower — the current pin (`v1.8.3`)
+is past every published floor, including the lone Critical
+(GHSA-wcrf-9vrr-854f, a Lua-script `EnvoyExtensionPolicy` path-validation
+bypass, exploitable only if that policy type is actually used — this lab
+doesn't define one, but the pin is past the fix regardless).
+
+**Decision: Keep `v1.8.3`.** No security-driven reason exists to bump; the
+breaking-change hold from the 2026-08-18 entry above is the only remaining
+reason this pin isn't on `v1.9.0`, unchanged by this cycle's finding.
+
+**Flip condition.** Unchanged from the 2026-08-18 entry — revisit when a
+live-cluster or better-tooled session can verify `v1.9.0`'s breaking Gateway
+API CRD change renders cleanly, or when a *new* advisory names a version
+above `v1.8.3` as affected (this sweep found none as of 2026-09-03).
+
 ---
 
 ## Files
