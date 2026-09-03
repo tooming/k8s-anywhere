@@ -41,6 +41,15 @@
 #   Images push to the "library" project — Harbor's built-in default project,
 #   no manual repository creation needed.
 #
+# verify-rejection job prerequisite (RFC #289, O4 CI gate — restored 2026-09-03,
+# see that job's own header comment for the full silent-drop-and-restore story):
+#   7. In Forgejo → repo Settings → Actions → Secrets, add:
+#        KUBECONFIG   ← a service-account kubeconfig with at least create/delete
+#                        Pod permission in the capstone namespace
+#      Generating this kubeconfig is a live-cluster action a clusterless session
+#      cannot perform or verify (ADR-0004) — tracked as a standing confirmation
+#      gate, issue #1229.
+#
 # The in-cluster ESO ExternalSecret (gitops/secrets/harbor-registry-externalsecret.yaml)
 # makes the same credentials available to pods as an imagePullSecret in namespace capstone.
 # The Kyverno verifyImages ClusterPolicy (gitops/kyverno/policies/verify-image-signatures.yaml)
@@ -315,3 +324,124 @@ jobs:
       - name: Clean up
         if: always()
         run: rm -rf /tmp/cosign
+
+  # verify-rejection: the actual O4 CI gate (RFC #289) — pushes a deliberately
+  # UNSIGNED test image and asserts Kyverno's verifyImages ClusterPolicy rejects
+  # it at admission. Originally added 2026-08-17 (#1224), then silently dropped
+  # in its entirety during the native-arm64/real-S3-storage rewrite (#1238,
+  # 2026-08-18) — no corresponding removal commit, just absent from the rewritten
+  # file, the same "broad rewrite silently loses an earlier feature with no test
+  # pinning its presence" failure class this file's own retry_cmd history already
+  # hit once (see "Build, tag, and push" step's comment). Found live 2026-08-25
+  # investigating issue #1229 (git log -- this file, confirmed via `git show` that
+  # the removal commit contains a clean `-  verify-rejection:` with no re-add).
+  # Restored 2026-09-03 (executor coverage sweep) — re-adapted to this file's
+  # post-rewrite conventions rather than pasted back verbatim: added the
+  # "Resolve $REGISTRY's host" step every other job in this file now needs (this
+  # job predates that fix landing in the other two jobs), added a checkout step
+  # so this job can source the shared scripts/lib/retry_cmd.sh instead of adding
+  # a third hand-copied inline copy (the two existing copies already caused one
+  # drift bug — PR #1276->#1277), and wrapped every network-facing docker command
+  # (login, pull, push) in retry_cmd for the same documented docker.io/Harbor
+  # flakiness the other two jobs already guard against.
+  #
+  # Still gated on a live-cluster action this remote session cannot perform or
+  # verify (ADR-0004): the KUBECONFIG secret this job needs doesn't exist yet
+  # (issue #1229, open) and no run of this workflow (with or without this job)
+  # has ever actually executed on live Forgejo infrastructure. Restoring the job
+  # + its test coverage is the executor-buildable slice; setting the secret and
+  # watching a real run complete is not (ROADMAP rule #9's "split the gate").
+  verify-rejection:
+    needs: sign-image
+    runs-on: docker
+    timeout-minutes: 10
+    container:
+      image: docker:29.7.2
+      options: --privileged
+    steps:
+      # Same checkout as build-and-push — needed to source
+      # scripts/lib/retry_cmd.sh below, so this job's restoration doesn't add a
+      # third hand-copied inline retry_cmd() (see this job's own header comment).
+      - name: Checkout
+        run: |
+          git clone --no-checkout "http://lab-admin:${{ secrets.CHECKOUT_TOKEN }}@forgejo:3000/${GITHUB_REPOSITORY}.git" .
+          git checkout "$GITHUB_SHA"
+
+      - name: Resolve $REGISTRY's host to this container's default gateway
+        run: |
+          gw_hex="$(awk '$2 == "00000000" {print $3; exit}' /proc/net/route)"
+          [ -n "$gw_hex" ] || { echo "could not determine default gateway"; exit 1; }
+          gw="$(printf '%d.%d.%d.%d' 0x${gw_hex:6:2} 0x${gw_hex:4:2} 0x${gw_hex:2:2} 0x${gw_hex:0:2})"
+          echo "$gw harbor.127.0.0.1.nip.io" >> /etc/hosts
+
+      - name: Start dockerd (insecure registry for the in-lab Harbor route)
+        run: |
+          dockerd --insecure-registry="$REGISTRY" &
+          for i in $(seq 1 30); do
+            docker info >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker info >/dev/null 2>&1 || { echo "dockerd did not come up in time"; exit 1; }
+
+      - name: Push an UNSIGNED test image
+        run: |
+          . scripts/lib/retry_cmd.sh
+          retry_cmd sh -c 'echo "$HARBOR_PASSWORD" | docker login "$REGISTRY" -u "$HARBOR_USER" --password-stdin'
+          retry_cmd docker pull busybox:1.37.0
+          docker tag busybox:1.37.0 "$REGISTRY/library/test-unsigned:rejection-test"
+          retry_cmd docker push "$REGISTRY/library/test-unsigned:rejection-test"
+          docker logout "$REGISTRY" || true
+        env:
+          HARBOR_USER: ${{ secrets.HARBOR_USER }}
+          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
+
+      - name: Install kubectl
+        run: apk add --no-cache kubectl
+
+      # KUBECONFIG prerequisite — see this file's header comment. Generating this
+      # kubeconfig is a live-cluster action this remote session cannot perform or
+      # verify (ADR-0004) — left as an explicit maintainer prerequisite, not
+      # asserted as already done. Tracked as a standing confirmation gate: #1229.
+      - name: Write kubeconfig from the Forgejo Actions secret
+        run: |
+          mkdir -p /tmp/kube
+          printf '%s' "${{ secrets.KUBECONFIG }}" > /tmp/kube/config
+          chmod 600 /tmp/kube/config
+
+      # Note: the Pod's image: field intentionally omits the :8080 port the docker
+      # push above needs — the cluster resolves harbor.127.0.0.1.nip.io directly on
+      # its default port, the same way gitops/apps/capstone/rollout.yaml's own
+      # image: field does (no :8080 there either).
+      #
+      # Single-line JSON payload, not a heredoc — a quoted heredoc's closing
+      # delimiter must sit at column zero to match, but this run: block's own YAML
+      # indentation puts every line at a shared indentation level, so the heredoc
+      # could never actually close (found in self-review 2026-08-18, before the
+      # job's first-ever live run — see the file's git history at 8ff2f1e). YAML
+      # is a JSON superset, so kubectl apply -f - accepts JSON directly.
+      - name: Assert Kyverno rejects the unsigned image at admission
+        env:
+          KUBECONFIG: /tmp/kube/config
+        run: |
+          set +e
+          out=$(echo '{"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "test-rejection-pod", "namespace": "capstone"}, "spec": {"restartPolicy": "Never", "securityContext": {"runAsNonRoot": true, "runAsUser": 10001, "runAsGroup": 10001, "fsGroup": 10001, "seccompProfile": {"type": "RuntimeDefault"}}, "imagePullSecrets": [{"name": "harbor-registry"}], "containers": [{"name": "test-rejection", "image": "harbor.127.0.0.1.nip.io/library/test-unsigned:rejection-test", "securityContext": {"allowPrivilegeEscalation": false, "privileged": false, "readOnlyRootFilesystem": true, "capabilities": {"drop": ["ALL"]}}}]}}' | kubectl apply -f - 2>&1)
+          status=$?
+          echo "$out"
+          if [ "$status" -eq 0 ]; then
+            echo "FAIL: unsigned image was admitted — verifyImages policy did not reject it"
+            exit 1
+          fi
+          if echo "$out" | grep -qiE 'denied|policy|verify|signature|admission webhook'; then
+            echo "PASS: unsigned image was correctly rejected at admission"
+          else
+            echo "FAIL: pod creation failed, but not with a recognizable Kyverno rejection message"
+            exit 1
+          fi
+
+      - name: Clean up
+        if: always()
+        env:
+          KUBECONFIG: /tmp/kube/config
+        run: |
+          kubectl delete pod test-rejection-pod -n capstone --ignore-not-found=true || true
+          rm -rf /tmp/kube
