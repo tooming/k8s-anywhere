@@ -269,6 +269,29 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Refresh `docs/dora-metrics.md` (stale since 2026-07-30)** — full
+  verification writeup:
+  [docs/done/2026-09-03-dora-metrics-refresh.md](docs/done/2026-09-03-dora-metrics-refresh.md).
+  (auto/dora-metrics-refresh)
+  (CHARTER **Objective O7**; planner-fallback gap analysis 2026-09-03, this run's
+  ninth cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next"
+  lane was re-confirmed fully gated again, no ungroomed intake/`rfc` issue existed
+  to groom, and a second full currency sweep across every remaining register row
+  (Istio, Argo Rollouts, Trivy Operator, Kargo, Valkey, ACK-S3, TiDB, Mimir) found
+  nothing further to bump — all already at their newest stable version. Fresh
+  angle: `docs/dora-metrics.md` itself was over a month stale (2026-07-30) and
+  this run alone had already landed 8 merged PRs, meaningfully changing the real
+  trailing-90-day numbers a stale snapshot was misreporting. **No prerequisites —
+  executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): confirmed this session's clone is
+  not shallow before trusting `make dora-metrics`' output — the script's own
+  header comment documents a real prior bug where a shallow clone silently
+  undercounted with no warning. Deployment frequency and change failure rate
+  both updated with real, freshly computed numbers; lead time / restore time
+  remain honestly "insufficient data" (this session lacks `gh` CLI, same
+  limitation as whichever prior session computed the stale snapshot — not a
+  script bug). `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **De-duplicate `scripts/dependency-register-check.sh`'s row-parsing logic
   into `scripts/lib/dependency-register.sh`** — full verification writeup:
   [docs/done/2026-09-03-dependency-register-check-lib-dedup.md](docs/done/2026-09-03-dependency-register-check-lib-dedup.md).
