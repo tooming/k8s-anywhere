@@ -464,3 +464,48 @@ session/dashboard state lives on its PVC, untouched by an image-tag change.
 **Flip condition (next re-evaluation).** Revisit Grafana's pin again when a
 new advisory names a version at or above `13.0.7` as affected, or when the
 next scheduled currency sweep finds a newer `13.0.x` patch.
+
+### 2026-09-03 — Loki security-relevant bump, pin bumped `3.7.6` → `3.7.7`
+
+**Trigger.** This entry's own flip condition fired: the 2026-08-06 entry's
+condition was "revisit when a new advisory/fix range names a version at or
+above `3.7.6` as affected" — a planner-fallback currency sweep
+(`executor.prompt.md` STEP 6b, Now/next's three standing items still gated
+on unconfirmed maintainer-confirmation issues #633/#1229) re-checked
+`grafana/loki` as the oldest-reviewed row in `docs/dependency-register.md`
+(last reviewed 2026-08-06, the oldest date among all 33 rows as of this
+cycle) and found `v3.7.7` published in the interim.
+
+**Verified directly (not assumed, ADR-0004):** GitHub's tags list for
+`grafana/loki` shows `v3.7.7` (published 2026-08-27) as the newest tag on
+the `3.7.x` line pinned here — no `3.7.8`+ or major/minor jump exists.
+`v3.7.7`'s own release notes list three security-relevant dependency
+updates (`containerd` module bumped to `v2.2.5`, `etcd` client package
+bumped to `v3.6.14`, `golang.org/x/mod` bumped to `v0.40.0`, each cited "for
+security purposes") plus a functional change (a flag to ignore missing
+chunks during deletion) and a storage optimization (pre-computed SHA-256
+hashes to avoid aws-chunked encoding on `PutObject`) — a real, security-
+relevant fix set, not a no-op release. Docker Hub's public tag API confirms
+`grafana/loki:3.7.7` is published as a real multi-arch manifest (amd64/
+arm64/armv7, pushed 2026-08-27T20:15:44Z) — not just a source-repo tag with
+no matching image.
+
+**Decision: bump `loki:3.7.6` → `3.7.7`** (the newest `3.7.x` patch, smallest
+safe delta carrying the security-relevant dependency bumps above).
+`gitops/observability/loki/deployment.yaml`'s `image:` field updated;
+`tests/observability-loki.bats` updated to assert `3.7.7` present and
+`3.7.6` absent (recurrence guard, same pattern as every prior Loki entry).
+Grafana and Tempo were not re-checked this cycle (out of scope — this was a
+targeted re-check of Loki specifically, the oldest-reviewed row, not a full
+stack sweep); their flip conditions from the prior entries remain unmet as
+of their last audit.
+
+**ADR-0004 caveat.** Same as every prior Loki entry: this remote, clusterless
+session verified the release-notes and published-image facts directly, but
+cannot verify Loki starts cleanly and continues ingesting logs post-bump on
+a live cluster. Rollback is a one-line revert of the `image:` tag; no data
+loss either way since Loki's log storage lives in Garage S3, untouched by an
+image-tag change.
+
+**Flip condition (next re-evaluation).** Revisit Loki's pin again when a new
+advisory/fix range names a version at or above `3.7.7` as affected.

@@ -269,6 +269,30 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Bump Loki image tag `3.7.6` → `3.7.7` (security-relevant dependency
+  bumps)** — full verification writeup:
+  [docs/done/2026-09-03-loki-3-7-6-to-3-7-7-security-bump.md](docs/done/2026-09-03-loki-3-7-6-to-3-7-7-security-bump.md).
+  (auto/loki-3-7-6-to-3-7-7)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
+  currency sweep 2026-09-03, this run's third cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again (issues #633/#1229 unchanged) and no ungroomed intake/`rfc` issue
+  existed to groom. Fresh angle: rather than a third dependency-docs-prose pass,
+  this cycle re-checked `grafana/loki` specifically as the oldest-reviewed row
+  (2026-08-06) across all 33 `docs/dependency-register.md` rows and found a real,
+  security-relevant patch published since. **No prerequisites — executor may pick
+  up immediately.**)
+  Verified directly (not assumed, ADR-0004): GitHub's tags list confirms `v3.7.7`
+  (2026-08-27) is the newest `3.7.x` tag; its release notes cite three
+  security-relevant dependency bumps (`containerd`, `etcd` client,
+  `golang.org/x/mod`); Docker Hub confirms `grafana/loki:3.7.7` is a real
+  published multi-arch image. `gitops/observability/loki/deployment.yaml` and
+  `tests/observability-loki.bats` updated; new ADR-0006 Re-evaluation log entry
+  added; `docs/dependency-register.md`'s Loki row updated (Grafana's row also
+  collaterally date-bumped, honestly worded, per `dependency-register-check.sh`'s
+  documented shared-ADR global-latest limitation). `make ci` must pass. `docs/done/`
+  entry required.
+
 - [x] 🟢 **Extend `docs/dependency-exit-runbooks.md` to the remaining seven
   single-tool rows (Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo,
   kube-state-metrics, node-exporter)** — full verification writeup:
