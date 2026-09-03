@@ -97,6 +97,19 @@ well-known, officially-supported image with no additional dependencies. A single
 used (ADR-0005: single-host lab; production deployments use HA Postgres). The database is
 scoped to the `inkless` namespace; credentials flow `Vault → ESO → Secret`.
 
+## Observability — kafka-exporter sidecar
+
+The Inkless broker's own StatefulSet (`gitops/inkless/inkless-statefulset.yaml`)
+runs a `danielqsj/kafka-exporter:v1.9.0` sidecar — a Prometheus exporter that
+translates the broker's Kafka-protocol metrics (topic/partition offsets,
+consumer-group lag) into scrapeable Prometheus metrics, the same role
+`redis_exporter` plays for Valkey ([ADR-0018](adr-0018-valkey-not-redis.md)).
+Verified directly (ADR-0004, 2026-09-03 coverage sweep — this section had no
+prior mention despite the sidecar being live since Inkless first landed):
+Docker Hub's tags API confirms `v1.9.0` (2025-02-17) is still the newest real
+version tag (`latest` was re-pushed 2026-04-13 but carries no newer content);
+zero published GHSA advisories exist for `danielqsj/kafka_exporter`.
+
 ---
 
 ## 12 GB budget — on-demand, not auto-synced
@@ -136,6 +149,26 @@ ADR audits (the architect routine's STEP 2) record their outcome here when the
 decision changes but the underlying technology choice does not. A version bump
 (or a deliberate decision to hold one) still leaves a dated trail so the
 reasoning is never lost.
+
+### 2026-09-03 — kafka-exporter sidecar documented + currency-checked (coverage sweep gap)
+
+**Trigger.** This run's coverage/hardening sweep (ROADMAP rule #9's fallback
+chain) found the `danielqsj/kafka-exporter:v1.9.0` sidecar in
+`gitops/inkless/inkless-statefulset.yaml` had zero mention anywhere in this
+ADR, despite being live since Inkless first landed — the same class of gap
+already closed elsewhere this run via full new ADRs (ADR-0038, ADR-0039), but
+here small enough to close as a section addition to the existing governing
+ADR instead (kafka-exporter is Inkless's own observability sidecar, not an
+independent architectural choice).
+
+**Checked directly (ADR-0004):** Docker Hub's tags API confirms `v1.9.0`
+(2025-02-17) is still the newest real version tag; zero published GHSA
+advisories exist for `danielqsj/kafka_exporter`. **Decision: kept at
+`v1.9.0`** — no currency or security gap, this cycle's work is documentation
+only (see the new §Observability — kafka-exporter sidecar section above).
+
+**Flip condition (next re-evaluation).** Re-check kafka-exporter currency and
+GHSA status on the next full-sweep pass.
 
 ### 2026-09-03 — bumped Inkless broker `4.2.1-0.46` → `4.2.1-0.47` (currency sweep; DB migration caveat)
 
