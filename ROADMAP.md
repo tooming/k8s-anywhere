@@ -284,6 +284,27 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Pyroscope currency re-check — app `v2.3.0` exists, no matching
+  chart release yet, kept at `2.2.1`** — full verification writeup:
+  [docs/done/2026-09-04-pyroscope-currency-recheck-kept.md](docs/done/2026-09-04-pyroscope-currency-recheck-kept.md).
+  (auto/pyroscope-currency-recheck-kept)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004;
+  JANITOR-fallback coverage sweep 2026-09-04, this run's twenty-fifth
+  cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next"
+  lane was re-confirmed fully gated (unchanged from cycle 24's exhaustive
+  re-check) and PLANNER/ARCHITECT/TRIAGER all came up empty. Fresh angle:
+  ranked every dependency-register row by "Last reviewed" date and checked
+  the oldest untouched one (Pyroscope, 2026-08-10) rather than re-checking
+  an already-recently-verified component. **No prerequisites — executor
+  may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): app `v2.3.0` confirmed real
+  with genuine security content, but the chart release (what this repo
+  actually pins) hasn't caught up yet — confirmed via a direct tag-404
+  check, not assumed from a release-list summary. `docs/decisions/
+  adr-0034-lgtmp-observability-stack.md`'s Re-evaluation log and
+  `docs/dependency-register.md`'s row updated. No `gitops/` change.
+  `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **Issue #1229 wrongly closed alongside PR #1403 — reopened, ROADMAP
   rule #11 hardened** — full verification writeup:
   [docs/done/2026-09-04-issue-1229-wrongly-closed-reopened.md](docs/done/2026-09-04-issue-1229-wrongly-closed-reopened.md).
