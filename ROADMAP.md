@@ -269,6 +269,29 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Bump k3s `v1.36.3+k3s1` → `v1.36.4+k3s1` on both backends** — full
+  verification writeup:
+  [docs/done/2026-09-03-k3s-1-36-3-to-1-36-4-currency-bump.md](docs/done/2026-09-03-k3s-1-36-3-to-1-36-4-currency-bump.md).
+  (auto/k3s-1-36-3-to-1-36-4)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
+  currency sweep 2026-09-03, this run's sixth cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again (issues #633/#1229 unchanged) and no ungroomed intake/`rfc` issue
+  existed to groom. Fresh angle: continuing the currency-sweep pattern (Loki,
+  Grafana, Inkless), this cycle checked RabbitMQ/cert-manager/Cilium/Velero/Harbor
+  (all confirmed already current, no bump needed) before finding k3s genuinely due.
+  **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): GitHub's release notes for `v1.36.4+k3s1`
+  confirmed; a release-list summary's CVE-2025-54410 claim was independently
+  checked and found unconfirmed by the release's own detailed notes and unlikely
+  to apply to k3s's actual runtime (containerd, not Docker Engine) — flagged as
+  such rather than asserted. Docker Hub confirms `rancher/k3s:v1.36.4-k3s1` is
+  real and published. Both backends (`k3d-config.yaml.tftpl`,
+  `oracle-k3s-cluster/cloud-init.yaml`) bumped together per ADR-0030's own
+  discipline; `tests/k3s-version-pin.bats`, `docs/decisions/context.md`, a new
+  ADR-0030 Re-evaluation log entry, and `docs/dependency-register.md`'s row all
+  updated. `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **Bump Aiven Inkless broker `4.2.1-0.46` → `4.2.1-0.47`** — full
   verification writeup:
   [docs/done/2026-09-03-inkless-4-2-1-0-46-to-0-47-bump.md](docs/done/2026-09-03-inkless-4-2-1-0-46-to-0-47-bump.md).
