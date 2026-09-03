@@ -269,6 +269,30 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **dependency-concentration-sync-check: close the reverse-direction gap
+  + fix a stale comment** — full verification writeup:
+  [docs/done/2026-09-03-dependency-concentration-reverse-check.md](docs/done/2026-09-03-dependency-concentration-reverse-check.md).
+  (auto/dependency-concentration-reverse-check)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / DORA audit readiness
+  Q14/Q16/Q17; JANITOR-fallback coverage sweep 2026-09-03, this run's sixteenth
+  cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated (3 items, all still blocked on live-cluster
+  verification or maintainer confirmation — issues #633/#1229/#1345 re-checked,
+  none confirmed) and PLANNER/ARCHITECT/TRIAGER all came up empty (zero
+  ungroomed intake/rfc issues, zero un-RFC'd 🟡 items, zero untriaged open
+  issues). Fresh angle: a coverage/hardening sweep of the mechanical drift
+  guards themselves (not their subjects) found `scripts/
+  dependency-concentration-sync-check.sh`'s own header comment claiming an
+  already-closed gap (docs/dependency-exit-runbooks.md's downstream sync,
+  actually closed by #1380 the same day #1379 landed) was still open, plus a
+  genuinely still-open gap (the reverse direction: a concentration.md group
+  whose stated data has drifted from the register) named in the same comment.
+  **No prerequisites — executor may pick up immediately.**)
+  Fixed the stale comment; added a second check pass verifying every
+  concentration.md group still backs 2+ register rows and its stated count
+  still matches. New bats fixtures + tests exercise both new failure modes.
+  `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **KEDA + Velero full GHSA sweep — confirm both pins security-clean** —
   full verification writeup:
   [docs/done/2026-09-03-keda-velero-full-ghsa-sweep-clean.md](docs/done/2026-09-03-keda-velero-full-ghsa-sweep-clean.md).

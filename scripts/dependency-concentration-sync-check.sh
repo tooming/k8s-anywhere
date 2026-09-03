@@ -13,14 +13,28 @@
 # notes describe (a register edit that changes an org's row count without a matching
 # update to the concentration rollup).
 #
-# Does NOT check the reverse (a concentration-file entry with no matching register
-# rows) or docs/dependency-exit-runbooks.md's own downstream sync to concentration.md
-# — both are real, separately-scoped gaps, same shape as this repo's other partial-
-# coverage drift guards (e.g. adr-chart-version-sync-check.sh only checks ADRs that
-# self-declare a chart-version note).
+# SECOND, independent check (2026-09-03, JANITOR-fallback): the reverse direction
+# — a concentration.md group whose own stated "N tools" count no longer matches
+# the register's real row count for that org (register rows removed/re-orged since
+# the concentration entry was written), or whose org has dropped below the 2-row
+# concentration threshold entirely (a stale entry naming a group that no longer
+# exists). This was named as an open gap in this script's very first version
+# (#1379) — "Does NOT check the reverse" — and left that way until this sweep
+# closed it. Parses concentration.md's own established heading shape
+# (`` **`github.com/ORG` — N tools** ``, see its "Findings, worst-first" section)
+# and compares N against the same $ORG_COUNT map the forward check already builds.
+#
+# docs/dependency-exit-runbooks.md's own downstream sync to concentration.md was
+# also named here as an open gap when this script first landed (#1379) — that one
+# was actually closed the same day by a sibling script,
+# scripts/dependency-exit-runbooks-sync-check.sh (#1380), but this comment went
+# un-updated until this same 2026-09-03 sweep caught the drift (a stale comment
+# claiming an already-closed gap is its own small instance of the exact "nothing
+# catches it" failure mode this script exists to close for the register itself).
 #
 # Run by `make dependency-concentration-sync-check`, wired into `make ci`.
-# Exit 0 = every concentration org (2+ rows) is named in concentration.md; 1 = drift.
+# Exit 0 = every concentration org (2+ rows) is named in concentration.md AND every
+# named group's stated tool count matches the register; 1 = drift.
 set -uo pipefail
 
 ROOT="${DEPCONCCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -62,5 +76,36 @@ done
 echo
 if [ "$drift" -eq 0 ]; then
   ok "every register org backing 2+ rows is named in dependency-concentration.md"
+fi
+
+echo
+printf '%s== dependency concentration-risk sync (concentration.md -> register, reverse) ==%s\n' "$B" "$Z"
+
+# Every "**`github.com/ORG` — N tools" group header in concentration.md's own
+# established shape. Captures the org and its stated count as tab-separated pairs.
+mapfile -t GROUP_LINES < <(grep -oE '\*\*`github\.com/[A-Za-z0-9_.-]+`[^0-9]*[0-9]+ tools?' "$CONCENTRATION" \
+  | sed -E 's/^\*\*`github\.com\/([A-Za-z0-9_.-]+)`[^0-9]*([0-9]+) tools?.*/\1\t\2/')
+
+if [ "${#GROUP_LINES[@]}" -eq 0 ]; then
+  bad "no '**\`github.com/ORG\` — N tools' concentration-group headers parsed from docs/dependency-concentration.md — heading format may have changed"
+  exit 1
+fi
+
+for line in "${GROUP_LINES[@]}"; do
+  org="${line%%$'\t'*}"
+  stated="${line##*$'\t'}"
+  actual="${ORG_COUNT[$org]:-0}"
+  if [ "$actual" -lt 2 ]; then
+    bad "github.com/$org is named as a concentration group in dependency-concentration.md but backs only $actual row(s) in dependency-register.md now (below the 2-row threshold) — remove the stale entry or explain why it's kept"
+  elif [ "$actual" -ne "$stated" ]; then
+    bad "github.com/$org's stated count in dependency-concentration.md ($stated tools) no longer matches dependency-register.md's real row count ($actual) — update the entry"
+  else
+    ok "github.com/$org's stated count ($stated tools) matches dependency-register.md's real row count"
+  fi
+done
+
+echo
+if [ "$drift" -eq 0 ]; then
+  ok "every concentration.md group's stated count matches the register, and no group is stale"
 fi
 exit "$drift"
