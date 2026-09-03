@@ -282,7 +282,29 @@ You review and merge plan PRs, same as implementation PRs.
 > (the GitLab→Forgejo rename item below); the ~180 already-completed `[x]`
 > items' own inline writeups are a separate, larger cleanup (each needs
 > verifying against its `docs/done/` mirror before trimming) intentionally left
-> for a future bounded cycle, not attempted in this one.
+> for a future bounded cycle, not attempted in this one. **Pilot batch done
+> 2026-09-04** (see the ROADMAP item immediately below) — trimmed the 4 RFC
+> #377 Oracle items as a small, fully-verified first pass; ~176 legacy items
+> remain for future bounded cycles to continue against.
+
+- [x] 🟢 **ROADMAP.md legacy `[x]` item trim — pilot batch (RFC #377 Oracle
+  items)** — full verification writeup:
+  [docs/done/2026-09-04-roadmap-legacy-item-trim-pilot.md](docs/done/2026-09-04-roadmap-legacy-item-trim-pilot.md).
+  (auto/roadmap-legacy-item-trim-pilot)
+  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
+  scale); JANITOR-fallback pilot cleanup 2026-09-04, this run's twenty-eighth
+  cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next" lane
+  was re-confirmed fully gated and PLANNER/ARCHITECT/TRIAGER all came up
+  empty, and the dependency-currency lens (cycles 24-27) was found exhausted.
+  Fresh angle: this ROADMAP's own 2026-08-25 note explicitly named the
+  ~180-item legacy-writeup trim as deferred future work — picked up a small,
+  fully-verified pilot batch rather than the whole backlog at once.
+  **No prerequisites — executor may pick up immediately.**)
+  Trimmed 4 RFC #377 (Oracle backend) items, each verified against its real
+  `docs/done/` mirror before touching the ROADMAP text — no information
+  lost, ~31 lines saved. `ROADMAP.md` 7382→7351 lines. `make ci` must pass
+  (2976/2976 bats tests this cycle, with shellcheck/yamllint also installed
+  and run clean). `docs/done/` entry required.
 
 - [x] 🟢 **Oldest dependency-register rows re-swept — Garage, RabbitMQ, Tempo
   confirmed clean; Forgejo unreachable** — full verification writeup:
@@ -7239,54 +7261,23 @@ there is no point where the lab loses a working git source or CI path.
   Acceptance criteria. Items 2–5 depend on item 1 merging first (module must exist
   before it can be wired in / tested).
 
-- [x] 🟢 **`infra/modules/oracle-k3s-cluster` Terraform module** (RFC #377 item 1 —
-  ADR-0027 is the binding spec). OCI Terraform provider setup; an Ampere A1
-  compute instance resource sized to the Always Free shape (2 OCPU / 12 GB per
-  ADR-0027 — use `required` variables for compartment/tenancy/availability-domain,
-  no live-account defaults, so `terraform validate`/`fmt` pass in clusterless
-  `make ci` without real OCI credentials); cloud-init installing k3s
-  (`curl -sfL https://get.k3s.io | sh -`); a `local-exec` provisioner that `scp`s
-  `/etc/rancher/k3s/k3s.yaml` off the instance and merges it into `~/.kube/config`
-  under a distinct context name (must not collide with `k3d-k8s-lab` — see
-  ADR-0027 §"Contract compliance"). Outputs: `cluster_name`, `kube_context`,
-  `api_endpoint`, matching `infra/live/README.md`'s contract exactly (same names
-  as `k3d-cluster`'s outputs). `make ci` (terraform fmt/validate) must pass.
+- [x] 🟢 **`infra/modules/oracle-k3s-cluster` Terraform module** (RFC #377 item 1
+  — ADR-0027 is the binding spec) — full writeup:
+  [docs/done/2026-07-13-oracle-k3s-cluster-module.md](docs/done/2026-07-13-oracle-k3s-cluster-module.md).
   (auto/oracle-k3s-cluster-module)
 
 - [x] 🟢 **`infra/live/oracle/{cluster,argocd,gitlab}/terragrunt.hcl`** (RFC #377
-  item 2 — depends on the module above merging first). New `oracle/` backend
-  directory mirroring `local/`'s three-unit structure: `cluster/` points
-  `source` at `infra/modules/oracle-k3s-cluster`; `argocd/` and `gitlab/` are
-  copied from `local/`'s units **unchanged** (per the contract, only the
-  `cluster` unit differs per backend) — same `dependency "cluster"` block, same
-  generated provider blocks. New `root.hcl` for the `oracle/` backend if its
-  Terraform-state backend (item 3) needs different backend-block config than
-  `local/`'s. (auto/oracle-live-units)
+  item 2) — full writeup:
+  [docs/done/2026-07-13-oracle-live-units.md](docs/done/2026-07-13-oracle-live-units.md).
+  (auto/oracle-live-units)
 
 - [x] 🟢 **Second off-cluster Garage state store for the `oracle` backend, on a
-  separate Always Free AMD Micro instance** (RFC #377 item 3 — corrected in
-  ADR-0027 2026-07-13: the state backend cannot live on the same VM the
-  `oracle-k3s-cluster` module creates, since that Terraform apply needs the
-  state backend to already exist — same causal-ordering constraint
-  [ADR-0007](docs/decisions/adr-0007-off-cluster-garage-tfstate-backend.md)
-  already solved for `local/`. Uses the *separate* Always Free AMD Micro
-  allocation, 1/8 OCPU / 1 GB — distinct quota from the Ampere A1 shape the
-  k3s cluster uses). `infra/tfstate-oracle/` (garage.toml template, no
-  hardcoded secrets — unlike `infra/tfstate/garage.toml`'s throwaway
-  localhost-only secrets, this instance has a public IP) + a bootstrap
-  script using the OCI CLI (not Terraform — matching ADR-0007's precedent
-  that the state backend is imperative, never managed by the Terraform it
-  backs) to launch the Micro instance via cloud-init, generating the Garage
-  RPC secret + admin token at launch time and never committing them + a
-  `make tfstate-oracle-up` target, matching the existing `tfstate-up` shape.
+  separate Always Free AMD Micro instance** (RFC #377 item 3) — full writeup:
+  [docs/done/2026-07-13-oracle-tfstate.md](docs/done/2026-07-13-oracle-tfstate.md).
   (auto/oracle-tfstate)
 
-- [x] 🟢 **`tests/oracle-cluster.bats`** (RFC #377 item 4 — depends on items 1–2).
-  Module shape assertions (required variables present, no hardcoded
-  credentials/secrets anywhere in `infra/modules/oracle-k3s-cluster` or
-  `infra/live/oracle/`), output names match the `k3d-cluster` contract exactly,
-  `argocd`/`gitlab` units under `oracle/` are byte-identical to `local/`'s
-  (mechanical drift guard — mirrors the repo's existing drift-detector pattern).
+- [x] 🟢 **`tests/oracle-cluster.bats`** (RFC #377 item 4) — full writeup:
+  [docs/done/2026-07-13-oracle-cluster-bats.md](docs/done/2026-07-13-oracle-cluster-bats.md).
   (auto/oracle-cluster-bats)
 
 - [x] ~~🟡~~ **Author retroactive ADR(s) for GitLab and the LGTMP observability-stack
