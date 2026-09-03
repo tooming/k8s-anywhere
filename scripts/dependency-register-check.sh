@@ -74,6 +74,7 @@
 set -uo pipefail
 ROOT="${DEPENDENCYREGISTERCHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/dependency-register.sh"
 
 REGISTER="$ROOT/docs/dependency-register.md"
 ADR_DIR="$ROOT/docs/decisions"
@@ -105,11 +106,8 @@ latest_bold_component_date() {
     | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | sort | tail -1
 }
 
-while IFS= read -r row; do
-  [ -n "$row" ] || continue
-  tool="$(printf '%s' "$row" | awk -F'|' '{gsub(/^ +| +$/, "", $2); print $2}')"
-  adr_column="$(printf '%s' "$row" | awk -F'|' '{print $5}')"
-  reviewed_column="$(printf '%s' "$row" | awk -F'|' '{print $6}')"
+while IFS=$'\t' read -r tool adr_column reviewed_column; do
+  [ -n "$tool" ] || continue
 
   # Every real ADR file basename cited in the ADR column specifically (not the
   # whole row — see header comment on why). De-duplicated, order preserved.
@@ -147,7 +145,7 @@ while IFS= read -r row; do
   if [[ "$newest_adr_date" > "$row_date" ]]; then
     bad "$tool: register row's \"Last reviewed\" cell (${row_date/0000-00-00/not dated}) is older than $newest_adr_name's own Re-evaluation log entry ($newest_adr_date) — update the row's date + summary to match"
   fi
-done < <(grep -E '^\| [A-Za-z0-9]' "$REGISTER")
+done < <(depreg_full_rows "$REGISTER")
 
 if [ "$checked" -eq 0 ]; then
   ok "no register row cites a real adr-NNNN-*.md file — nothing to check"

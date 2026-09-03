@@ -62,3 +62,25 @@ EOF
   run grep -q 'lib/dependency-register.sh' "$REPO/scripts/dependency-concentration-sync-check.sh"
   [ "$status" -eq 0 ]
 }
+
+@test "dependency-register-check.sh also sources this shared lib (no re-inlined copy)" {
+  run grep -q 'lib/dependency-register.sh' "$REPO/scripts/dependency-register-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "depreg_full_rows(): parses tool+adr_column+reviewed_column rows, skips the header row" {
+  FIX="$BATS_TEST_TMPDIR/register.md"
+  cat > "$FIX" << 'EOF'
+# Register (fixture)
+
+| Tool | Criticality | Upstream source | ADR | Last reviewed |
+|---|---|---|---|---|
+| Tool A | always-on-core | github.com/some-org/tool-a | [ADR-0001](decisions/adr-0001-x.md) | 2026-08-01 |
+| Tool B | always-on-core | cloud.example.com | [ADR-0002](decisions/adr-0002-y.md) | not dated in ADR |
+EOF
+  run depreg_full_rows "$FIX"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Tool A"*$'\t'*"adr-0001-x.md"*$'\t'*"2026-08-01"* ]]
+  [[ "$output" == *"Tool B"*$'\t'*"adr-0002-y.md"*$'\t'*"not dated in ADR"* ]]
+  [[ "$output" != *$'\n'"Tool"$'\t'"ADR"* ]]
+}

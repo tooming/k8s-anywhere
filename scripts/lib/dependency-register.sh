@@ -22,6 +22,24 @@ depreg_rows() {
   }' "$register"
 }
 
+# depreg_full_rows(): prints one "<tool>\t<adr_column>\t<reviewed_column>" line
+# per real table row from docs/dependency-register.md (or $1 if given), for
+# callers that need the ADR and Last-reviewed columns rather than the
+# tool/source pair depreg_rows() above returns. Same header/divider-skipping
+# shape as depreg_rows(), matching the exact `^\| [A-Za-z0-9]` row-start test
+# dependency-register-check.sh used before this was extracted (2026-09-03) —
+# a second near-identical row-walker in that script, the exact duplication
+# class depreg_rows() itself was extracted to stop (see this file's own
+# header comment above).
+depreg_full_rows() {
+  local register="${1:?depreg_full_rows: register file path required}"
+  awk -F'|' '/^\| [A-Za-z0-9]/{
+    t=$2; a=$5; r=$6;
+    gsub(/^ +| +$/,"",t);
+    if (t != "Tool") print t "\t" a "\t" r
+  }' "$register"
+}
+
 # depreg_github_match(): prints the first "OWNER/REPO" substring found in a
 # source-column value, or nothing if it has no github.com/OWNER/REPO substring.
 # Callers needing just the org (e.g. concentration grouping) can `cut -d/ -f1`;
