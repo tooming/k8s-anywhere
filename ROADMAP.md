@@ -269,6 +269,32 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **ArgoCD full GHSA sweep — confirm `v3.5.2` pin security-clean** — full
+  verification writeup:
+  [docs/done/2026-09-03-argocd-full-ghsa-sweep-clean.md](docs/done/2026-09-03-argocd-full-ghsa-sweep-clean.md).
+  (auto/argocd-full-ghsa-sweep-clean)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
+  security sweep 2026-09-03, this run's twelfth cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again. Fresh angle: extending the same full-advisory-sweep technique
+  (Envoy Gateway, Cilium) to ArgoCD itself — this lab's actual GitOps deployment
+  mechanism and, per `docs/dependency-exit-runbooks.md`, its single largest
+  possible dependency exit — completing all 8 published advisories this time
+  (a small enough total to sweep exhaustively, unlike Cilium's multi-page
+  history). Complements this run's earlier chart-currency check (10.5.0→10.7.0
+  exists, template-only, no appVersion change, judged not worth the risk for
+  zero functional gain) by confirming that decision wasn't hiding an unpatched
+  security gap. **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): every advisory's affected range
+  tops out at `3.4.2` or lower; current pin's appVersion `v3.5.2` is past every
+  floor, including the highest severity (Critical, a `ServerSideDiff` secret
+  extraction this lab's own `Application` manifests don't trigger the
+  precondition for anyway). No code change; `docs/dependency-register.md`'s
+  ArgoCD row updated (no dedicated ADR/Re-evaluation log exists for ArgoCD
+  specifically — its register row cites ADR-0001, which has no such section —
+  so the finding is recorded in the register row itself). `make ci` must pass.
+  `docs/done/` entry required.
+
 - [x] 🟢 **Cilium: Critical advisory GHSA-3fcv-jvfp-m4q9 found unaudited, confirmed
   not applicable** — full verification writeup:
   [docs/done/2026-09-03-cilium-critical-ghsa-gap-closed.md](docs/done/2026-09-03-cilium-critical-ghsa-gap-closed.md).
