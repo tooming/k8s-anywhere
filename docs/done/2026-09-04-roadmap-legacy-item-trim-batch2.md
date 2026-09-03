@@ -34,4 +34,4 @@ No `gitops/` change. `make ci` passes green (2976/2976 bats tests).
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1410
