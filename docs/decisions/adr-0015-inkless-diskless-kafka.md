@@ -43,7 +43,7 @@ JVM Kafka broker (~1 GB) on top of the always-on stack without explicit user int
 
 | Component | Image / Source | Notes |
 |-----------|---------------|-------|
-| Inkless broker | `ghcr.io/aiven/inkless:4.2.1-0.46` (pinned 2026-08-18; was `:latest` — see Re-evaluation log) | Single-node KRaft (broker+controller combined); diskless mode |
+| Inkless broker | `ghcr.io/aiven/inkless:4.2.1-0.47` (bumped 2026-09-03 from `:4.2.1-0.46`, pinned 2026-08-18; was `:latest` — see Re-evaluation log) | Single-node KRaft (broker+controller combined); diskless mode |
 | PostgreSQL | `postgres:17` | Batch coordinator (control plane); single-node per ADR-0005 |
 | S3 storage | Garage (ADR-0002) | `inkless` bucket; new `inkless-key` S3 credential pair |
 
@@ -136,6 +136,69 @@ ADR audits (the architect routine's STEP 2) record their outcome here when the
 decision changes but the underlying technology choice does not. A version bump
 (or a deliberate decision to hold one) still leaves a dated trail so the
 reasoning is never lost.
+
+### 2026-09-03 — bumped Inkless broker `4.2.1-0.46` → `4.2.1-0.47` (currency sweep; DB migration caveat)
+
+**Trigger.** Planner-fallback currency sweep (`executor.prompt.md` STEP 6b,
+Now/next's three standing items still gated on unconfirmed
+maintainer-confirmation issues #633/#1229) re-checked `ghcr.io/aiven/inkless`
+per its own numbered-release-line convention established in the 2026-08-18
+entry below.
+
+**Verified directly (not assumed, ADR-0004).** GitHub's release list for
+`aiven/inkless` shows `inkless-release-0.47` (published 2026-08-19) as the
+newest release, one build past the currently-pinned `0.46`. Confirmed the
+exact image tag `ghcr.io/aiven/inkless:4.2.1-0.47` is real and pullable via
+the same anonymous-token GHCR manifest query the 2026-08-18 entry used
+(`GET /v2/aiven/inkless/manifests/4.2.1-0.47` with an `Accept` header
+covering `application/vnd.oci.image.index.v1+json` — a first attempt using
+only `application/vnd.docker.distribution.manifest.v2+json` returned a
+misleading 404, since this is a multi-arch manifest list, not a single-arch
+manifest; re-tried with the broader `Accept` header and confirmed 200,
+cross-checked against the known-good `4.2.1-0.46` tag returning the same
+200 to validate the query methodology itself wasn't broken).
+
+**Release contents.** No named CVE or security advisory this release —
+`inkless-release-0.47`'s own notes list real bug fixes (retention-enforcement
+throughput pacing, control-plane row repair, ISR/ take clearing after a
+classic-to-diskless switch, bounded error-message/logging sizes) and new
+metrics/observability additions. **Caveat flagged, not silently absorbed:**
+the release notes state "Three PostgreSQL migrations included; migrations
+V24 and V25 require table-level locks" against the `postgres:17`
+batch-coordinator this ADR's Stack table already names. This session could
+not confirm from GitHub's README/release notes alone whether Inkless runs
+these migrations automatically on broker startup (the common pattern for
+this class of embedded-migration tooling) or needs a human-triggered step —
+neither this repo's own docs nor Inkless's public README document its
+migration-execution mechanism. Since Inkless is on-demand
+(`gitops/platform/inkless.yaml` carries no `syncPolicy.automated`) and is not
+currently running in any live cluster this session can affect, this bump
+itself carries zero live-cluster blast radius today — but the next `make
+inkless-up` needs to watch the broker's startup logs for migration
+completion before assuming the bump is safe. Filed as a `[Manual step]`
+issue per ROADMAP rule/`executor.prompt.md` STEP 6.5 rather than left only in
+this ADR entry.
+
+**Action.** Bumped `gitops/inkless/inkless-statefulset.yaml`'s broker image
+to `ghcr.io/aiven/inkless:4.2.1-0.47`. Updated `tests/inkless.bats` (assert
+`4.2.1-0.47` present, add a new "no stray `4.2.1-0.46`" guard, mirroring this
+repo's other per-component pin-bump pattern). `docs/dependency-register.md`'s
+Aiven Inkless row updated to match.
+
+**ADR-0004 caveat.** This remote, clusterless session verified the release
+existence and published-image facts directly, but cannot verify the broker
+starts cleanly and the PostgreSQL migrations complete successfully on a live
+cluster — flagged above and tracked via a standing `[Manual step]` issue
+rather than assumed benign. Rollback is a one-line image-tag revert; no data
+loss risk from the revert itself since Inkless's real state lives in
+Garage S3 + the `postgres:17` PVC, both untouched by reverting the broker's
+image tag alone (though a completed forward migration is not automatically
+reversed by an image downgrade — a real consideration if a live `make
+inkless-up` hits trouble post-bump, noted in the manual-step issue).
+
+**Flip condition (next re-evaluation).** Revisit Inkless's pin again when a
+new numbered release is published, or when the `[Manual step]` issue's
+observation reveals the migration behavior for future bumps' reference.
 
 ### 2026-08-18 — pinned Inkless broker `ghcr.io/aiven/inkless:latest` → `:4.2.1-0.46`, removed the Kyverno `disallow-latest-tag` carve-out
 

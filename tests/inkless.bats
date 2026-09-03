@@ -119,9 +119,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "inkless broker is pinned to a real release tag, 4.2.1-0.46 (2026-08-18, not :latest)" {
-  run grep -q 'image: ghcr.io/aiven/inkless:4.2.1-0.46' "$REPO/gitops/inkless/inkless-statefulset.yaml"
+@test "inkless broker is pinned to a real release tag, 4.2.1-0.47 (2026-09-03, not :latest)" {
+  run grep -q 'image: ghcr.io/aiven/inkless:4.2.1-0.47' "$REPO/gitops/inkless/inkless-statefulset.yaml"
   [ "$status" -eq 0 ]
+}
+
+@test "inkless broker does not pin the stale 4.2.1-0.46 tag" {
+  run grep -q 'image: ghcr.io/aiven/inkless:4.2.1-0.46' "$REPO/gitops/inkless/inkless-statefulset.yaml"
+  [ "$status" -ne 0 ]
 }
 
 @test "inkless broker does not use the floating :latest image tag" {

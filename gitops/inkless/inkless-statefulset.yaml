@@ -43,7 +43,7 @@ spec:
           # verification time didn't match this (or any other numbered) tag,
           # so this is a real version pin, called out honestly rather than
           # asserted equivalent (ADR-0004).
-          image: ghcr.io/aiven/inkless:4.2.1-0.46
+          image: ghcr.io/aiven/inkless:4.2.1-0.47
           ports:
             - name: kafka
               containerPort: 9092
