@@ -269,6 +269,29 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Cilium: Critical advisory GHSA-3fcv-jvfp-m4q9 found unaudited, confirmed
+  not applicable** — full verification writeup:
+  [docs/done/2026-09-03-cilium-critical-ghsa-gap-closed.md](docs/done/2026-09-03-cilium-critical-ghsa-gap-closed.md).
+  (auto/cilium-critical-ghsa-gap-closed)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
+  security sweep 2026-09-03, this run's eleventh cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again. Fresh angle: extending the same "full advisory listing, not just
+  currency" technique from this run's Envoy Gateway sweep to Cilium — the other
+  highest-blast-radius always-on-core component per `docs/dependency-exit-runbooks.md`
+  — and finding a real gap this time: a Critical advisory ADR-0014's own prior
+  audit (scoped only to advisories published on one specific date) never recorded.
+  **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): the advisory's affected/patched
+  ranges confirm this lab's pin (`1.18.13`) is five patches past the `1.18.x`
+  fix floor (`1.18.8`) — not affected. Explicitly scoped as a targeted
+  Critical-advisory check plus a partial spot-check (one of several advisory
+  pages), not an exhaustive full-history re-audit — said plainly rather than
+  overclaiming completeness. No code change; `docs/decisions/
+  adr-0014-cilium-not-flannel-policy.md`'s Re-evaluation log and
+  `docs/dependency-register.md`'s row updated. `make ci` must pass. `docs/done/`
+  entry required.
+
 - [x] 🟢 **Envoy Gateway full GHSA sweep — confirm `v1.8.3` pin security-clean** —
   full verification writeup:
   [docs/done/2026-09-03-envoy-gateway-ghsa-sweep-clean.md](docs/done/2026-09-03-envoy-gateway-ghsa-sweep-clean.md).

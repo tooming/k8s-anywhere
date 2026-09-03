@@ -256,3 +256,47 @@ so a revert re-rolls the same way the bump did.
 **Flip condition (next re-evaluation).** Unchanged from above: revisit when
 `1.18.x` itself reaches end-of-support, or a CVE lands against `1.18.13`
 specifically.
+
+### 2026-09-03 — Critical advisory GHSA-3fcv-jvfp-m4q9 found unaudited, confirmed not applicable
+
+**Trigger.** Planner-fallback GHSA sweep (`executor.prompt.md` STEP 6b,
+Now/next's three standing items still gated on unconfirmed
+maintainer-confirmation issues #631/#633) enumerated
+`github.com/cilium/cilium`'s published security advisories directly (not
+just the "new since the last date-filtered search" query the 2026-08-19
+entry above used) and found **GHSA-3fcv-jvfp-m4q9** ("Sensitive information
+disclosure and cluster disruption via local Envoy admin socket access",
+**Critical**, CVE-2026-49445, published 2026-06-01) — a Critical-severity
+advisory that **predates** the 2026-08-19 entry above but was never recorded
+in this ADR's Re-evaluation log. The 2026-08-19 entry's own trigger was
+scoped to "three new High-severity GHSAs published 2026-08-12" — a narrower,
+date-filtered search that structurally couldn't have surfaced an
+already-published June advisory it wasn't looking for. Not a claim that the
+2026-08-19 audit was wrong for its own stated scope, but a real gap this
+cycle closes: a Critical advisory sat unrecorded for three months.
+
+**Verified directly (not assumed, ADR-0004):** the advisory's own affected/
+patched ranges are `<1.19.2`, `1.18.0`–`1.18.7` (patched `1.18.8`),
+`<1.17.14` (patched `1.17.14`). This lab's pin (`1.18.13`) is past the
+`1.18.x` fix floor (`1.18.8`) by five patches — not affected. The
+vulnerability itself (an insufficiently-protected local Envoy admin socket,
+exploitable by a local user on the same node) requires Cilium's L7
+functionality to be enabled; independent of that, the pin is simply past the
+fix regardless.
+
+**Scope note.** This was a targeted check of one Critical advisory found via
+a broader listing pass, not an exhaustive re-audit of every advisory across
+Cilium's full multi-page advisory history (a spot-check of page 2's ten
+Moderate/Low advisories found nothing above Moderate severity and nothing
+suggesting a floor above `1.18.13`, but pages 3+ were not exhaustively
+walked this cycle) — said plainly per ADR-0004 rather than overclaiming
+completeness.
+
+**Decision: Keep pin, no CVE-driven bump needed.** `1.18.13` already sits
+past this advisory's fix floor.
+
+**Flip condition (next re-evaluation).** Unchanged: revisit when `1.18.x`
+itself reaches end-of-support, or a CVE lands against `1.18.13` specifically.
+A future cycle wanting stronger assurance than this cycle's spot-check
+should walk Cilium's full multi-page advisory list end-to-end rather than
+re-doing this same partial pass.
