@@ -51,4 +51,4 @@ No code change. `make ci` passes green.
 
 ## PR
 
-(filled in after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1396
