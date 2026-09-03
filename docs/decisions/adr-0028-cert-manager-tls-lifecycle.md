@@ -220,6 +220,32 @@ upstream-confirmed security fix. `gitops/platform/cert-manager.yaml`'s
 **Flip condition (next re-evaluation).** Revisit when a cert-manager security
 advisory names a version at or above `1.21.1` as affected.
 
+### 2026-09-03 — full GHSA sweep, `1.21.1` pin kept, security-clean
+
+**Trigger.** Planner-fallback GHSA sweep (`executor.prompt.md` STEP 6b),
+extending this run's "check every published advisory directly, not just the
+newest release" technique (already applied to Envoy Gateway, Cilium, ArgoCD)
+to cert-manager.
+
+**Verified directly (not assumed, ADR-0004):** `github.com/cert-manager/
+cert-manager/security/advisories` lists exactly three published advisories —
+a small enough total to sweep exhaustively. Two were already accounted for in
+the 2026-08-19 register entry (GHSA-8rvj-mm4h-c258 High, affects
+`1.18.0`-`1.20.2`, patched `1.19.6`/`1.20.3`; GHSA-gx3x-vq4p-mhhv Moderate,
+affects `1.18.0`-`1.18.4`/`1.19.0`-`1.19.2`, patched `1.18.5`/`1.19.3`). The
+third, **GHSA-r4pg-vg54-wxx4** (Low, no CVE assigned, published 2024-11-20,
+"potential slowdown/DoS when parsing specially crafted PEM inputs" via the
+standard library's `pem.Decode()`) had not been explicitly checked before:
+affects `<v1.12.14`, `<v1.15.4`, `<v1.16.2`, patched at those versions. The
+current pin (`1.21.1`) is past all three floors.
+
+**Decision: Keep `1.21.1`.** No security-driven reason to bump; all three
+published advisories are accounted for and the pin is past every floor.
+
+**Flip condition (next re-evaluation).** Unchanged: revisit when a
+cert-manager security advisory names a version at or above `1.21.1` as
+affected.
+
 ---
 
 ## Files this work will touch

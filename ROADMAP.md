@@ -269,6 +269,25 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **cert-manager full GHSA sweep — confirm `1.21.1` pin security-clean** —
+  full verification writeup:
+  [docs/done/2026-09-03-cert-manager-full-ghsa-sweep-clean.md](docs/done/2026-09-03-cert-manager-full-ghsa-sweep-clean.md).
+  (auto/cert-manager-full-ghsa-sweep-clean)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
+  security sweep 2026-09-03, this run's fourteenth cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again. Fresh angle: extending this run's full-advisory-sweep technique
+  (Envoy Gateway, Cilium, ArgoCD) to cert-manager — only 3 advisories total, a
+  small enough set to sweep exhaustively and confirm two already-tracked findings
+  plus one previously-unchecked Low advisory. **No prerequisites — executor may
+  pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): all 3 published advisories checked;
+  current pin `1.21.1` is past every floor including the newly-checked
+  GHSA-r4pg-vg54-wxx4. No code change; `docs/decisions/
+  adr-0028-cert-manager-tls-lifecycle.md`'s Re-evaluation log and
+  `docs/dependency-register.md`'s row updated. `make ci` must pass. `docs/done/`
+  entry required.
+
 - [x] 🟢 **Author ADR-0037 — HashiCorp Vault for secrets management (retroactive
   record); bump server image `2.0.4` → `2.1.0`** — full verification writeup:
   [docs/done/2026-09-03-vault-adr-0037-retroactive-record.md](docs/done/2026-09-03-vault-adr-0037-retroactive-record.md).
