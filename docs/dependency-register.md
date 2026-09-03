@@ -128,21 +128,33 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 
 ## Keeping this in sync
 
-This register has no mechanical drift guard yet — it's a manual, best-effort snapshot
-as of 2026-08-07 (the ArgoCD and Trivy Operator rows were updated that day, and eight
-new rows — GitLab plus the seven LGTMP observability-internals tools — were added the
-same day once ADR-0033/ADR-0034 closed the gap that used to leave them un-rowable; see
-above). Every future
-chart/image-version bump PR already updates its own
-ADR's Re-evaluation log (an existing, enforced convention); this file's "Last
-reviewed" column should be updated in the same PR when it touches a row here, but
-nothing currently fails `make ci` if it drifts. A future item could add a mechanical
-check (e.g. flag when an ADR's Re-evaluation log has a newer entry than this file's
-corresponding row) if staleness here proves to be a real recurring problem —
-premature to build before it's shown to actually drift.
+**"Last reviewed" staleness is now mechanically guarded.** As of 2026-08-24,
+`scripts/dependency-register-check.sh` (`make dependency-register-check`, wired into
+`make ci`'s `drift` job) fails the build if any row's "Last reviewed" date is older
+than the newest Re-evaluation-log entry of the ADR(s) cited in that row's ADR column —
+the exact gap this section used to name ("nothing currently fails `make ci` if it
+drifts"), closed after it bit real rows twice (Inkless/TiDB Operator/cert-manager,
+2026-08-12; the k3s row, 2026-08-24 — see the script's own header comment for both).
+Two honest limits remain, stated there rather than overclaimed: it can't check an ADR
+that has no Re-evaluation log at all, and it can't invent a review date for an ADR
+that never recorded one — both are gaps in the underlying ADR, not something this
+guard could paper over.
+
+**Register → concentration.md sync is now mechanically guarded too.** As of
+2026-09-02/03, `scripts/dependency-concentration-sync-check.sh` (`make
+dependency-concentration-sync-check`, also wired into `make ci`) counts how many rows
+above share each `github.com` upstream org and fails if any org backing 2+ rows isn't
+named in [`docs/dependency-concentration.md`](dependency-concentration.md) — the
+"future row add/remove/rename here should prompt a look there too" caveat this section
+used to state as a manual-only expectation is now enforced, not just hoped for. It
+checks one direction only (a real concentration point missing from concentration.md);
+it does not check the reverse (a concentration.md entry with no matching register
+rows) — a real, separately-scoped gap, same partial-coverage shape as this repo's
+other drift guards (e.g. `adr-chart-version-sync-check.sh` only checks ADRs that
+self-declare a chart-version note).
 
 [`docs/dependency-concentration.md`](dependency-concentration.md) is a downstream
 consumer of the table above (grouped by upstream GitHub org, closing
-[`docs/dora-audit-readiness.md`](dora-audit-readiness.md) Q16's gap) — a future row
-add/remove/rename here should prompt a look there too, same manual-sync caveat as
-above.
+[`docs/dora-audit-readiness.md`](dora-audit-readiness.md) Q16's gap) — see that file's
+own "Keeping this in sync" section for how its sync to
+[`docs/dependency-exit-runbooks.md`](dependency-exit-runbooks.md) (Q17) is guarded.
