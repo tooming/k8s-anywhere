@@ -3,6 +3,22 @@
 # whitespace, bad indentation) without fighting the conventions k8s YAML uses.
 extends: default
 
+# Paths yamllint must not walk. All are either not-our-code or not-real-YAML, and
+# every one is git-ignored — so a fresh CI checkout never sees them and CI stays
+# green regardless; this list only keeps `make ci` / the pre-push hook honest on a
+# working tree that also holds local build artifacts (terragrunt caches, vendored
+# Helm charts inflated by kustomize's helmCharts).
+#   - cloud-init.yaml: its mandatory first line is literally `#cloud-config` — a
+#     fixed marker, not a comment — which yamllint >= 1.37 flags under the
+#     `comments` rule (older versions, incl. CI's apt one, did not).
+#   - .terragrunt-cache/: Terragrunt's local module cache (contains a copy of the
+#     above, plus vendored provider YAML).
+#   - **/charts/: third-party Helm chart templates (Go templating, not valid YAML).
+ignore: |
+  **/cloud-init.yaml
+  **/.terragrunt-cache/**
+  **/charts/**
+
 rules:
   # k8s manifests rarely start with `---`; many are single-doc.
   document-start: disable
