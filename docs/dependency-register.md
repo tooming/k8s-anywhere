@@ -18,8 +18,8 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 38 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0038), two are **Superseded** and fully excluded per the index's own
+Of the 39 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0039), two are **Superseded** and fully excluded per the index's own
 convention (only their replacement is listed): ADR-0010 (Redis, superseded by
 ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor). A third,
 ADR-0033 (GitLab, superseded by ADR-0035/Forgejo), was **not** excluded the same way
@@ -35,7 +35,7 @@ in the repo (kept for rollback until the decommission item lands; see ADR-0035's
 migration-execution list, items 5–6, and ROADMAP.md's Now/next Forgejo-migration
 list for the current status of that follow-up).
 
-Of the remaining 36, **eight decide a policy or architectural posture rather than a
+Of the remaining 37, **eight decide a policy or architectural posture rather than a
 single third-party product** — they're excluded from the table below because there's
 no one upstream project to attach a criticality/upstream-source/last-reviewed row to:
 ADR-0003 (decoupled/no-SPOF design principle), ADR-0004 (no-fabricated-content
@@ -47,7 +47,7 @@ policy), and ADR-0030 (k3s version-pinning governance — no separate row of its
 but directly cited alongside ADR-0027 in the k3s row's ADR column since 2026-08-24,
 once a gap-analysis pass found the row's "Last reviewed" cell citing only
 ADR-0027's decision date and missing ADR-0030's own, much more current,
-Re-evaluation log entirely). Of the remaining 28, all 28 now
+Re-evaluation log entirely). Of the remaining 29, all 29 now
 have a row below — ADR-0035 (Forgejo) gained its own row 2026-08-17 once the live
 cutover (PR #1205) made Forgejo, not GitLab, the actual live component the row
 should describe (see the note above), ADR-0036 (External Secrets Operator)
@@ -55,9 +55,10 @@ gained its own row 2026-08-19 as a retroactive governance record for a mechanism
 that predated it having any ADR at all, ADR-0037 (Vault) gained its own row
 2026-09-03 for the same reason — a mechanism that predated it having any ADR at
 all, whose version history had instead been living as inline `gitops/` YAML
-comments — and ADR-0038 (moto + ACK S3 + KRO) gained three rows the same day for
-the identical reason, one per tool — collectively naming the table's 37 distinct
-third-party-tool rows: four ADRs each
+comments — ADR-0038 (moto + ACK S3 + KRO) gained three rows the same day for
+the identical reason, one per tool, and ADR-0039 (s3manager) gained its own row
+the same day for the same reason again — collectively naming the table's 38
+distinct third-party-tool rows: four ADRs each
 decide on more than one tool at once (ADR-0001: Terraform/Terragrunt + ArgoCD;
 ADR-0012: Istio + Kiali; ADR-0027: Oracle Cloud Infrastructure + k3s; ADR-0038:
 moto + ACK S3 + KRO) and ADR-0034
@@ -134,6 +135,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | moto | always-on-core (AWS emulator) | github.com/getmoto/moto | [ADR-0038](decisions/adr-0038-ack-kro-moto-cloud-control-plane.md) | 2026-09-03 (ADR-0038 authored as a retroactive governance record — moto previously had no ADR; image bumped `5.2.2`→`5.2.3` in the same cycle, confirmed via Docker Hub's tags API (`last_updated: 2026-08-22`), routine patch, no CVE — zero published GHSA advisories exist for this repo at all; see ADR-0038's own Re-evaluation log) |
 | ACK S3 controller | always-on-core (cloud-control-plane demo) | public.ecr.aws/aws-controllers-k8s, github.com/aws-controllers-k8s/s3-controller | [ADR-0038](decisions/adr-0038-ack-kro-moto-cloud-control-plane.md) | 2026-09-03 (ADR-0038 authored as a retroactive governance record — ACK S3 previously had no ADR, its version history lived only as inline `gitops/platform/ack-s3.yaml` comments, now migrated; current pin `1.11.0` reconfirmed the newest tag (`1.11.1` 404s); zero published GHSA advisories exist for this repo) |
 | KRO | always-on-core, currently suspended (cluster-load reduction, 2026-08-24) | ghcr.io/kro-run/kro, github.com/kubernetes-sigs/kro | [ADR-0038](decisions/adr-0038-ack-kro-moto-cloud-control-plane.md) | 2026-09-03 (ADR-0038 authored as a retroactive governance record — KRO previously had no ADR; current pin `0.9.3` reconfirmed the newest tag via the real GitHub releases list; project moved orgs to `kubernetes-sigs/kro` since the original pin, noted but not action-requiring; zero published GHSA advisories exist for this repo) |
+| s3manager | always-on-core (Garage browser UI) | github.com/cloudlena/s3manager | [ADR-0039](decisions/adr-0039-s3manager-garage-browser-ui.md) | 2026-09-03 (ADR-0039 authored as a retroactive governance record — s3manager previously had no ADR, its version history lived only as inline `gitops/storage/s3manager/deployment.yaml` comments, now migrated; bumped `v0.8.0`→`v0.9.0` in the same cycle, confirmed via Docker Hub's tags API and a real commit diff (CSS-framework migration, dependency bumps, no CVE) — zero published GHSA advisories exist for this repo; see ADR-0039's own Re-evaluation log) |
 
 ## Keeping this in sync
 

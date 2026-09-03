@@ -46,3 +46,4 @@ rationale travels with the code.
   - [ADR-0036](adr-0036-external-secrets-vault-sync.md) — External Secrets Operator for Vault-backed secret sync (retroactive governance record)
   - [ADR-0037](adr-0037-vault-secrets-management.md) — HashiCorp Vault for secrets management (retroactive governance record)
   - [ADR-0038](adr-0038-ack-kro-moto-cloud-control-plane.md) — moto + ACK (S3) + KRO for the cloud-control-plane demo pattern (retroactive governance record)
+  - [ADR-0039](adr-0039-s3manager-garage-browser-ui.md) — s3manager as the lab's Garage (S3) browser UI (retroactive governance record)
