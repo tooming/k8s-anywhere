@@ -269,6 +269,31 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Bump Aiven Inkless broker `4.2.1-0.46` → `4.2.1-0.47`** — full
+  verification writeup:
+  [docs/done/2026-09-03-inkless-4-2-1-0-46-to-0-47-bump.md](docs/done/2026-09-03-inkless-4-2-1-0-46-to-0-47-bump.md).
+  (auto/inkless-4-2-1-0-46-to-0-47)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
+  currency sweep 2026-09-03, this run's fifth cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again (issues #633/#1229 unchanged) and no ungroomed intake/`rfc` issue
+  existed to groom. Fresh angle: continuing the currency-sweep pattern (Loki,
+  Grafana), this cycle re-checked Aiven Inkless, the oldest-reviewed row not yet
+  covered this run (2026-08-18). **No prerequisites — executor may pick up
+  immediately.**)
+  Verified directly (not assumed, ADR-0004): GitHub's release list confirms
+  `inkless-release-0.47`; the exact image tag confirmed real and pullable via an
+  anonymous-token GHCR manifest query (with the correct multi-arch `Accept`
+  header — a first attempt with the wrong header returned a misleading 404).
+  No named CVE this release, but real bug fixes. **Flagged, not silently
+  absorbed:** the release includes PostgreSQL migrations (two requiring
+  table-level locks) whose execution mechanism (automatic on startup vs.
+  human-triggered) this session could not confirm — filed as a `[Manual step]`
+  issue for the next live `make inkless-up`. `gitops/inkless/inkless-statefulset.yaml`,
+  `tests/inkless.bats`, ADR-0015's Re-evaluation log, and
+  `docs/dependency-register.md`'s row all updated. `make ci` must pass.
+  `docs/done/` entry required.
+
 - [x] 🟢 **Bump Grafana image tag `13.0.7` → `13.0.8` (3 named CVEs:
   CVE-2026-12704, CVE-2026-14199, CVE-2026-19475)** — full verification writeup:
   [docs/done/2026-09-03-grafana-13-0-7-to-13-0-8-cve-bump.md](docs/done/2026-09-03-grafana-13-0-7-to-13-0-8-cve-bump.md).
