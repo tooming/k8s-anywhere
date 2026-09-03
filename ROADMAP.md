@@ -269,6 +269,28 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **KEDA + Velero full GHSA sweep — confirm both pins security-clean** —
+  full verification writeup:
+  [docs/done/2026-09-03-keda-velero-full-ghsa-sweep-clean.md](docs/done/2026-09-03-keda-velero-full-ghsa-sweep-clean.md).
+  (auto/keda-velero-full-ghsa-sweep-clean)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
+  security sweep 2026-09-03, this run's fifteenth cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again. Fresh angle: extending this run's full-advisory-sweep technique
+  (Envoy Gateway, Cilium, ArgoCD, cert-manager) to KEDA (3 advisories) and Velero
+  (2 advisories) — both small enough to sweep exhaustively in one PR, after an
+  attempted RabbitMQ sweep (~80-90 advisories across 9 pages) was abandoned as
+  disproportionate. **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): all 3 KEDA advisories and both
+  Velero advisories checked; one previously-unchecked advisory found per
+  project (KEDA's CI-workflow-only GHSA-w92x-gx4w-j5f2, not applicable to the
+  deployed operator; Velero's GHSA-72xg-3mcq-52v4, current pin many majors
+  past the fixed floor). No code change; `docs/decisions/
+  adr-0029-keda-event-driven-autoscaling.md` and `docs/decisions/
+  adr-0021-velero-backup-restore.md`'s Re-evaluation logs and
+  `docs/dependency-register.md`'s rows updated. `make ci` must pass. `docs/done/`
+  entry required.
+
 - [x] 🟢 **cert-manager full GHSA sweep — confirm `1.21.1` pin security-clean** —
   full verification writeup:
   [docs/done/2026-09-03-cert-manager-full-ghsa-sweep-clean.md](docs/done/2026-09-03-cert-manager-full-ghsa-sweep-clean.md).

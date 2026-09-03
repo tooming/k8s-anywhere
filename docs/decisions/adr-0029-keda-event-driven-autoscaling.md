@@ -264,6 +264,26 @@ no workload) on every reconciliation, working against this decision's own
 an on-demand-heavy namespace too variable for static defaults). Re-add if
 `keda`'s namespace becomes always-on again.
 
+### 2026-09-03 — Full GHSA sweep, one new advisory found (not applicable)
+
+Extending this run's "check every published advisory directly" technique
+(ADR-0004; already applied to Envoy Gateway, Cilium, ArgoCD, cert-manager,
+Velero) to KEDA. `github.com/kedacore/keda/security/advisories` lists
+exactly three published advisories — small enough to sweep exhaustively.
+
+**GHSA-6w3m-4hhp-775q** (Moderate) and **GHSA-c4p6-qg4m-9jmr** (High) were
+already tracked (2026-07-27 and 2026-08-03 entries above). The third,
+**GHSA-w92x-gx4w-j5f2** (Low), had not been explicitly checked before:
+confirmed via direct advisory read to be a command-injection bug in KEDA's
+own `pr-e2e.yml` GitHub Actions workflow file (a CI/build-pipeline issue
+triggerable via a crafted PR title/branch name against KEDA's own repo) —
+it does not affect the `keda` or `keda-metrics-apiserver` container images
+this lab deploys at all, only KEDA's upstream CI. Affected KEDA's workflow
+at v2.11, patched at v2.11.2. **Decision: kept at `2.20.2` — no action
+needed**, not applicable to a deployed operator regardless of version.
+**Flip condition:** revisit if a new GHSA is filed against the operator
+binary (not CI tooling) at a version above `2.20.2`.
+
 ---
 
 ## Files this work will touch
