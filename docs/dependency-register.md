@@ -18,8 +18,8 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 36 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0036), two are **Superseded** and fully excluded per the index's own
+Of the 37 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0037), two are **Superseded** and fully excluded per the index's own
 convention (only their replacement is listed): ADR-0010 (Redis, superseded by
 ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor). A third,
 ADR-0033 (GitLab, superseded by ADR-0035/Forgejo), was **not** excluded the same way
@@ -35,7 +35,7 @@ in the repo (kept for rollback until the decommission item lands; see ADR-0035's
 migration-execution list, items 5–6, and ROADMAP.md's Now/next Forgejo-migration
 list for the current status of that follow-up).
 
-Of the remaining 34, **eight decide a policy or architectural posture rather than a
+Of the remaining 35, **eight decide a policy or architectural posture rather than a
 single third-party product** — they're excluded from the table below because there's
 no one upstream project to attach a criticality/upstream-source/last-reviewed row to:
 ADR-0003 (decoupled/no-SPOF design principle), ADR-0004 (no-fabricated-content
@@ -47,12 +47,15 @@ policy), and ADR-0030 (k3s version-pinning governance — no separate row of its
 but directly cited alongside ADR-0027 in the k3s row's ADR column since 2026-08-24,
 once a gap-analysis pass found the row's "Last reviewed" cell citing only
 ADR-0027's decision date and missing ADR-0030's own, much more current,
-Re-evaluation log entirely). Of the remaining 26, all 26 now
+Re-evaluation log entirely). Of the remaining 27, all 27 now
 have a row below — ADR-0035 (Forgejo) gained its own row 2026-08-17 once the live
 cutover (PR #1205) made Forgejo, not GitLab, the actual live component the row
-should describe (see the note above), and ADR-0036 (External Secrets Operator)
+should describe (see the note above), ADR-0036 (External Secrets Operator)
 gained its own row 2026-08-19 as a retroactive governance record for a mechanism
-that predated it having any ADR at all — collectively naming the table's 33 distinct
+that predated it having any ADR at all, and ADR-0037 (Vault) gained its own row
+2026-09-03 for the same reason — a mechanism that predated it having any ADR at
+all, whose version history had instead been living as inline `gitops/` YAML
+comments — collectively naming the table's 34 distinct
 third-party-tool rows: three ADRs each
 decide on more than one tool at once (ADR-0001: Terraform/Terragrunt + ArgoCD;
 ADR-0012: Istio + Kiali; ADR-0027: Oracle Cloud Infrastructure + k3s) and ADR-0034
@@ -125,6 +128,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | Alloy | always-on-core (observability — unified collector) | github.com/grafana/alloy | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-01 (bumped `1.11.1` → `1.12.1`, appVersion `v1.18.1`→`v1.19.2`; chart templates/values.yaml byte-identical, none of v1.19.0's three breaking changes apply to this lab's River config; see ADR-0034's own Re-evaluation log) |
 | kube-state-metrics | always-on-core (observability — Kubernetes object-state exporter) | github.com/kubernetes/kube-state-metrics | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-01 (chart bumped `8.4.0` → `8.4.1`, purely additive opt-in collectors, appVersion unchanged `2.20.0`; see ADR-0034's own Re-evaluation log) |
 | node-exporter | always-on-core (observability — node/host metrics exporter) | github.com/prometheus/node_exporter | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-01 (chart bumped `4.56.1` → `4.56.3`, real default `extraArgs` change filtering pseudo-filesystems from `node_filesystem_*` metrics, appVersion unchanged `1.12.1`; verified no dashboard panel affected; see ADR-0034's own Re-evaluation log) |
+| Vault | always-on-core (secrets backend) | helm.releases.hashicorp.com, github.com/hashicorp/vault | [ADR-0037](decisions/adr-0037-vault-secrets-management.md) | 2026-09-03 (ADR-0037 authored as a retroactive governance record — Vault previously had no ADR and its version history lived only as inline `gitops/platform/vault.yaml` comments, now migrated; server image bumped `2.0.4`→`2.1.0` in the same cycle, two real Go-vulnerability-database dependency fixes, no GitHub-native advisories exist for this repo; see ADR-0037's own Re-evaluation log) |
 
 ## Keeping this in sync
 

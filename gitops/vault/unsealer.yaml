@@ -40,7 +40,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: unsealer
-          image: hashicorp/vault:2.0.4
+          image: hashicorp/vault:2.1.0
           env:
             - name: VAULT_ADDR
               value: http://vault.vault.svc.cluster.local:8200

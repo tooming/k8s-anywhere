@@ -44,3 +44,4 @@ rationale travels with the code.
   - [ADR-0034](adr-0034-lgtmp-observability-stack.md) — Grafana LGTM(P) stack internals + kube-state-metrics/node-exporter for observability
   - [ADR-0035](adr-0035-forgejo-not-gitlab.md) — Forgejo (self-hosted) as the lab's git source of truth + CI runner (supersedes ADR-0033)
   - [ADR-0036](adr-0036-external-secrets-vault-sync.md) — External Secrets Operator for Vault-backed secret sync (retroactive governance record)
+  - [ADR-0037](adr-0037-vault-secrets-management.md) — HashiCorp Vault for secrets management (retroactive governance record)

@@ -69,8 +69,13 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-@test "vault Application server image pinned to 2.0.4" {
-  [ "$(yqs '.spec.source.helm.valuesObject.server.image.tag' "$APP")" = "2.0.4" ]
+@test "vault Application server image pinned to 2.1.0" {
+  [ "$(yqs '.spec.source.helm.valuesObject.server.image.tag' "$APP")" = "2.1.0" ]
+}
+
+@test "vault Application does not pin the stale 2.0.4 server image" {
+  run grep -q 'tag: "2.0.4"' "$APP"
+  [ "$status" -ne 0 ]
 }
 
 @test "vault Application server image repository is hashicorp/vault" {
@@ -118,9 +123,14 @@ setup() {
 
 # --- vault-unsealer Deployment: image bump + securityContext -----------------
 
-@test "vault-unsealer image bumped to hashicorp/vault:2.0.4" {
-  run grep -q 'image: hashicorp/vault:2.0.4' "$UNSEALER"
+@test "vault-unsealer image bumped to hashicorp/vault:2.1.0" {
+  run grep -q 'image: hashicorp/vault:2.1.0' "$UNSEALER"
   [ "$status" -eq 0 ]
+}
+
+@test "vault-unsealer does not pin the stale hashicorp/vault:2.0.4 image" {
+  run grep -q 'image: hashicorp/vault:2.0.4' "$UNSEALER"
+  [ "$status" -ne 0 ]
 }
 
 @test "vault-unsealer pod securityContext sets runAsNonRoot" {
