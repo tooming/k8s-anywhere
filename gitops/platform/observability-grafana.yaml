@@ -26,7 +26,7 @@ spec:
     helm:
       releaseName: grafana
       valuesObject:
-        # Pin Grafana 13.0.7 — keeps the Pure-Git Git Sync provider from ADR-0006 and
+        # Pin Grafana 13.0.8 — keeps the Pure-Git Git Sync provider from ADR-0006 and
         # avoids the 13.0.0 unified-storage migration bug for Git Sync users. Bumped
         # from 13.0.1 (CVE-2026-9029, CVE-2026-33382, CVE-2026-42127, CVE-2026-42129,
         # CVE-2026-10601, CVE-2026-8609, CVE-2026-8595 — all fixed in 13.0.2; RFC #563),
@@ -46,10 +46,27 @@ spec:
         # independently confirmed beyond the release notes themselves — flagged
         # per ADR-0004 rather than asserted with more confidence than verified.
         # `packaging/docker/run.sh` diffed byte-identical between the v13.0.6 and
-        # v13.0.7 tags — no entrypoint/packaging change, pure security patch).
-        # 13.0.7 is the newest 13.0.x patch.
+        # v13.0.7 tags — no entrypoint/packaging change, pure security patch), then
+        # from 13.0.7 (2026-09-03, planner-fallback currency sweep — three named
+        # CVEs fixed: CVE-2026-12704 (CWE-294 improper certificate validation,
+        # Grafana Enterprise-specific — this lab runs open-source Grafana, so this
+        # one may not even apply, but the shared release line carries the fix
+        # regardless), CVE-2026-14199 (HIGH, CVSS 7.1 per a WebSearch aggregation of
+        # third-party CVE trackers — an Auth Proxy identity-cache key collision
+        # allowing authentication bypass/privilege escalation when Auth Proxy +
+        # identity caching are both enabled; this lab doesn't use Auth Proxy
+        # authentication, so not exploitable here either, but worth patching since
+        # the binary ships the fix regardless of whether the feature is used), and
+        # CVE-2026-19475 (affects the PostgreSQL datasource specifically — this lab
+        # has no PostgreSQL datasource configured, so not exploitable here). grafana.com's
+        # own CVE-detail pages remained unreachable from this sandbox's egress
+        # proxy (same limitation as every prior entry in this history), so severity
+        # for CVE-2026-12704/-19475 is not independently confirmed beyond a
+        # WebSearch aggregation of third-party trackers (OffSeq.com) — flagged per
+        # ADR-0004 rather than asserted with more confidence than verified.
+        # 13.0.8 is the newest 13.0.x patch.
         image:
-          tag: "13.0.7"
+          tag: "13.0.8"
         # admin login comes from Vault via the grafana-admin ExternalSecret
         # (gitops/secrets/grafana-admin-externalsecret.yaml): no plaintext default,
         # and a non-"admin" password means Grafana stops nagging to change it.
@@ -162,7 +179,7 @@ spec:
             mountPath: /etc/ssl-custom
         extraInitContainers:
           - name: ca-bundle
-            image: docker.io/grafana/grafana:13.0.7
+            image: docker.io/grafana/grafana:13.0.8
             securityContext:
               runAsNonRoot: true
               runAsUser: 472

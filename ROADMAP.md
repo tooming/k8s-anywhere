@@ -269,6 +269,33 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Bump Grafana image tag `13.0.7` → `13.0.8` (3 named CVEs:
+  CVE-2026-12704, CVE-2026-14199, CVE-2026-19475)** — full verification writeup:
+  [docs/done/2026-09-03-grafana-13-0-7-to-13-0-8-cve-bump.md](docs/done/2026-09-03-grafana-13-0-7-to-13-0-8-cve-bump.md).
+  (auto/grafana-13-0-7-to-13-0-8)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
+  currency sweep 2026-09-03, this run's fourth cycle, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated again (issues #633/#1229 unchanged) and no ungroomed intake/`rfc` issue
+  existed to groom. Fresh angle: continuing the currency-sweep pattern from this
+  run's third cycle (Loki), this cycle re-checked Grafana specifically — its own
+  last real check (2026-08-19) was due per ADR-0006's own flip condition — and
+  found a genuine security release with three named CVEs, a stronger priority
+  than a routine patch per upgrade-drafter's own priority rule (CVE-mentioning
+  release > patch > minor). **No prerequisites — executor may pick up
+  immediately.**)
+  Verified directly (not assumed, ADR-0004): GitHub's release notes for `v13.0.8`
+  cite three named CVEs under a `Security` heading; Docker Hub confirms
+  `grafana/grafana:13.0.8` is a real published multi-arch image. Per-CVE
+  applicability to this lab's specific configuration analyzed and documented
+  (Auth Proxy not used, no PostgreSQL datasource, Enterprise-only CVE likely N/A)
+  — patched regardless since the binary ships the fix either way.
+  `gitops/platform/observability-grafana.yaml` (both image references),
+  `tests/observability-grafana.bats`, `docs/decisions/context.md`'s version
+  citation, a new ADR-0006 Re-evaluation log entry, and
+  `docs/dependency-register.md`'s Grafana row all updated. `make ci` must pass.
+  `docs/done/` entry required.
+
 - [x] 🟢 **Bump Loki image tag `3.7.6` → `3.7.7` (security-relevant dependency
   bumps)** — full verification writeup:
   [docs/done/2026-09-03-loki-3-7-6-to-3-7-7-security-bump.md](docs/done/2026-09-03-loki-3-7-6-to-3-7-7-security-bump.md).
