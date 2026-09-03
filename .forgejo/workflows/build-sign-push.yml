@@ -44,11 +44,17 @@
 # verify-rejection job prerequisite (RFC #289, O4 CI gate — restored 2026-09-03,
 # see that job's own header comment for the full silent-drop-and-restore story):
 #   7. In Forgejo → repo Settings → Actions → Secrets, add:
-#        KUBECONFIG   ← a service-account kubeconfig with at least create/delete
-#                        Pod permission in the capstone namespace
-#      Generating this kubeconfig is a live-cluster action a clusterless session
-#      cannot perform or verify (ADR-0004) — tracked as a standing confirmation
-#      gate, issue #1229.
+#        KUBECONFIG   ← a service-account kubeconfig for the dedicated, least-
+#                        privilege ServiceAccount ci-verify-rejection (create/
+#                        delete/get/list Pod in the capstone namespace only)
+#      The ServiceAccount + Role + RoleBinding are GitOps-managed —
+#      gitops/apps/capstone/ci-verify-rejection-rbac.yaml — so once that syncs,
+#      generating the kubeconfig is a single `kubectl create token` plus an
+#      envsubst into a template. Full step-by-step:
+#        docs/runbooks/2026-09-04-ci-verify-rejection-kubeconfig.md
+#      Minting the token + pasting the secret is still a live-cluster action a
+#      clusterless session cannot perform or verify (ADR-0004) — tracked as a
+#      standing confirmation gate, issue #1229.
 #
 # The in-cluster ESO ExternalSecret (gitops/secrets/harbor-registry-externalsecret.yaml)
 # makes the same credentials available to pods as an imagePullSecret in namespace capstone.

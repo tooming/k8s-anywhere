@@ -242,3 +242,56 @@ setup() {
   run grep -q 'APP_KEY' "$REPO/gitops/apps/capstone/deployment.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- O4 CI verify-rejection RBAC (issue #1229) ------------------------------
+# The .forgejo/workflows/build-sign-push.yml verify-rejection job needs a
+# KUBECONFIG scoped to create/delete Pod in capstone. Issue #1229 asked for a
+# dedicated least-privilege ServiceAccount rather than a broad credential; this
+# manifest is that. These assertions are the mechanical guard that a future edit
+# can't silently drop it or broaden its scope (same silent-drop failure class
+# that removed the verify-rejection job itself — PR #1402).
+
+RBAC="gitops/apps/capstone/ci-verify-rejection-rbac.yaml"
+
+@test "ci-verify-rejection RBAC manifest exists and is wired into the kustomization" {
+  [ -f "$REPO/$RBAC" ]
+  run grep -q 'ci-verify-rejection-rbac.yaml' "$REPO/gitops/apps/capstone/kustomization.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "ci-verify-rejection RBAC defines exactly a ServiceAccount, Role, and RoleBinding" {
+  run grep -c '^kind: ' "$REPO/$RBAC"
+  [ "$output" = "3" ]
+  run grep -q '^kind: ServiceAccount' "$REPO/$RBAC"
+  [ "$status" -eq 0 ]
+  run grep -q '^kind: Role' "$REPO/$RBAC"
+  [ "$status" -eq 0 ]
+  run grep -q '^kind: RoleBinding' "$REPO/$RBAC"
+  [ "$status" -eq 0 ]
+}
+
+@test "ci-verify-rejection RBAC is namespace-scoped to capstone (no ClusterRole/ClusterRoleBinding)" {
+  run grep -qE '^kind: (ClusterRole|ClusterRoleBinding)' "$REPO/$RBAC"
+  [ "$status" -ne 0 ]
+  run grep -c 'namespace: capstone' "$REPO/$RBAC"
+  [ "$output" = "4" ]
+}
+
+@test "ci-verify-rejection Role grants only pods verbs, nothing broader" {
+  # The only resources: line is pods; no secrets/deployments/etc.
+  run grep -E '^\s+resources:' "$REPO/$RBAC"
+  [ "$output" = '    resources: ["pods"]' ]
+  run grep -E '^\s+verbs:' "$REPO/$RBAC"
+  [ "$output" = '    verbs: ["create", "delete", "get", "list"]' ]
+}
+
+@test "ci-verify-rejection ServiceAccount does not auto-mount its token" {
+  run grep -q 'automountServiceAccountToken: false' "$REPO/$RBAC"
+  [ "$status" -eq 0 ]
+}
+
+@test "verify-rejection kubeconfig runbook exists and is linked from the workflow header" {
+  [ -f "$REPO/docs/runbooks/2026-09-04-ci-verify-rejection-kubeconfig.md" ]
+  run grep -q 'docs/runbooks/2026-09-04-ci-verify-rejection-kubeconfig.md' "$REPO/.forgejo/workflows/build-sign-push.yml"
+  [ "$status" -eq 0 ]
+}
