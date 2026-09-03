@@ -284,6 +284,25 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Oldest dependency-register rows re-swept — Garage, RabbitMQ, Tempo
+  confirmed clean; Forgejo unreachable** — full verification writeup:
+  [docs/done/2026-09-04-oldest-register-rows-resweep-clean.md](docs/done/2026-09-04-oldest-register-rows-resweep-clean.md).
+  (auto/oldest-register-rows-resweep-clean)
+  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004;
+  JANITOR-fallback coverage sweep 2026-09-04, this run's twenty-sixth
+  cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next"
+  lane was re-confirmed fully gated and PLANNER/ARCHITECT/TRIAGER all came
+  up empty. Fresh angle: continuing the prior cycle's "rank by
+  Last-reviewed date" lens to the next three oldest untouched rows.
+  **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): Garage, RabbitMQ, Tempo all
+  confirmed still current via direct tag/advisory checks; Forgejo attempted
+  but `codeberg.org` is egress-blocked from this sandbox, noted explicitly
+  rather than assumed current. `docs/decisions/adr-0002-garage-not-minio.md`,
+  `adr-0009-rabbitmq-message-broker.md`, `adr-0006-grafana-native-git-sync.md`
+  and `docs/dependency-register.md` updated. No `gitops/` change. `make ci`
+  must pass. `docs/done/` entry required.
+
 - [x] 🟢 **Pyroscope currency re-check — app `v2.3.0` exists, no matching
   chart release yet, kept at `2.2.1`** — full verification writeup:
   [docs/done/2026-09-04-pyroscope-currency-recheck-kept.md](docs/done/2026-09-04-pyroscope-currency-recheck-kept.md).
