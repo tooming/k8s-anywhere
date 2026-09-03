@@ -400,6 +400,63 @@ cleanly).
 **Flip condition (recurrence guard).** None — permanent consistency fix,
 not a temporary carve-out.
 
+### 2026-09-03 — chart bumped `3.8.2` → `3.9.0`, four real fixes (2 CVEs, 2 GHSAs)
+
+**Trigger.** Planner-fallback currency sweep (`executor.prompt.md` STEP 6b,
+Now/next's three standing items still gated on unconfirmed
+maintainer-confirmation issues #633/#1229). This is a minor bump (appVersion
+v1.18.2 → v1.19.0, chart stays on major 3) rather than the usual same-line
+patch — taken because the fixes below exist ONLY on this line: GitHub's tags
+list confirms `kyverno-chart-3.9.0` is the newest release after `3.8.2`, with
+no intermediate `3.8.x` patch backporting them.
+
+**Verified directly (not assumed, ADR-0004):** `v1.19.0`'s own GitHub release
+notes cite, under a Security heading: **CVE-2026-32280** (intermediate
+certificate validation — fixed by limiting which intermediate certs are
+trusted), **CVE-2026-39836** (Go toolchain bumped to 1.26.3),
+**GHSA-79gf-7frw-68m9** (a namespace-boundary bypass in
+`generator.apply()`, fixed via an API bump + CRD regeneration), and
+**GHSA-gcjh-h69q-9w9g** (`cel-go` bumped to `v0.30.0`). Fetched the real
+`values.yaml` at tag `kyverno-chart-3.9.0` directly (`raw.githubusercontent.com`
+— the gh-pages chart index itself, `kyverno.github.io`, is egress-blocked
+from this sandbox, same limitation noted in prior entries): all four
+controllers' `replicas`/`resources` keys and `admissionController`'s
+`startupProbe`/`livenessProbe`/`readinessProbe` keys this Application's
+`valuesObject` overrides depend on are unchanged, and the
+`containerSecurityContext` defaults RFC #483's PSA-restricted flip depends
+on (`runAsNonRoot: true`, `allowPrivilegeEscalation: false`,
+`readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`) are byte-for-byte
+identical to the `3.8.2` entry above.
+
+**What else changed (noted, not acted on).** `v1.19.0` introduces four new
+policy CRDs (`MutatingPolicy`, `GeneratingPolicy`, `DeletingPolicy`,
+`ImageValidatingPolicy`) this lab doesn't use and has no plans to adopt this
+cycle, and marks the legacy `kyverno.io` policy types — what
+`gitops/kyverno/policies/*.yaml`'s four `ClusterPolicy` resources actually
+use — as deprecated-but-still-functional (a warning at admission time, not a
+removal). No policy-side change was needed or made.
+
+**Decision: bump.** `gitops/platform/kyverno.yaml`'s `targetRevision` `3.8.2`
+→ `3.9.0`, header comment extended with this bump's full history.
+`tests/kyverno.bats` updated: the chart-pin assertion now checks `3.9.0`, and
+a new "does not pin the superseded `3.8.2` version" guard was added
+(matching the existing `3.3.4`/`3.3.9` guards' pattern).
+
+**ADR-0004 caveat.** This remote, clusterless session verified the release
+notes and the real chart `values.yaml` content directly, but cannot verify
+Kyverno's admission webhook, background/cleanup/reports controllers, and the
+four existing `ClusterPolicy` resources all continue reconciling cleanly
+post-bump on a live cluster — particularly whether the deprecation warning
+on legacy policy types produces any user-visible noise (e.g. in
+`kubectl describe policyreport` output or controller logs) beyond a log
+line. Rollback is a one-line `targetRevision` revert; ArgoCD's own
+`selfHeal: true` re-applies it on the next sync.
+
+**Flip condition (next re-evaluation).** Revisit when a new chart release
+ships on the `3.9.x` (or later) line with a security fix, or when this lab
+adopts one of the new policy CRD types (at which point the deprecation
+warning on the legacy types becomes directly relevant, not just noted).
+
 ---
 
 ## Files this work will touch
