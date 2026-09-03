@@ -269,6 +269,29 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Author ADR-0039 — s3manager as the lab's Garage (S3) browser UI
+  (retroactive record); bump `v0.8.0` → `v0.9.0`** — full verification
+  writeup:
+  [docs/done/2026-09-03-adr-0039-s3manager-retroactive-record.md](docs/done/2026-09-03-adr-0039-s3manager-retroactive-record.md).
+  (auto/adr-0039-s3manager-retroactive-record)
+  (CHARTER **Core Values** §"Everything as code" (governance completeness);
+  ARCHITECT-fallback gap analysis 2026-09-03, this run's nineteenth cycle,
+  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated and PLANNER/ARCHITECT/TRIAGER all came up empty.
+  Fresh angle: continuing this run's retroactive-ADR-authorship pattern
+  (ADR-0036 ESO, ADR-0037 Vault, ADR-0038 moto+ACK+KRO) found s3manager — a
+  real, live, always-on Garage-browser UI with a genuine version-bump
+  history — also had zero governing ADR and zero dependency-register row.
+  **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): `v0.9.0` confirmed real via
+  Docker Hub's tags API and a real commit-history diff; zero GHSA advisories
+  exist. ADR-0004 caveat noted explicitly (cannot visually verify the
+  CSS-framework migration renders correctly; stateless + digest-pinned, so
+  rollback is a one-line revert with zero data-loss risk).
+  `docs/decisions/README.md` and `docs/dependency-register.md` (1 new row +
+  fixed scope-note arithmetic) updated. `make ci` must pass. `docs/done/`
+  entry required.
+
 - [x] 🟢 **Author ADR-0038 — moto + ACK (S3) + KRO for the cloud-control-plane
   demo pattern (retroactive record); bump moto `5.2.2` → `5.2.3`** — full
   verification writeup:

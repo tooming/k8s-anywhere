@@ -20,26 +20,13 @@ spec:
       enableServiceLinks: false
       containers:
         - name: s3manager
-          # Pinned 2026-07-28 (recreate-from-code / no-floating-tag hardening),
-          # bumped 2026-08-18 (upgrade-drafter fallback currency sweep). Original
-          # pin's digest (sha256:f666e6fc...) predated any matching version tag —
-          # Docker Hub's tags API at the time showed `latest` one build ahead of
-          # `v0.7.0`. Upstream has since tagged that build and moved past it:
-          # `v0.8.0` (published 2026-08-11) is now the newest tag, and its digest
-          # matches `latest`'s current digest — verified directly against a full
-          # clone of github.com/cloudlena/s3manager (ADR-0004): `git log
-          # v0.7.0..v0.8.0` contains three real features (per-object version
-          # listing, per-object metadata display, local-timezone Last-Modified
-          # rendering) plus two "Update dependencies" commits that bump the Go
-          # toolchain 1.26.2→1.26.5 (the same stdlib-CVE-fixing release this repo's
-          # own Tempo 2.10.8 bump already cited: CVE-2026-39822, CVE-2026-27145,
-          # CVE-2026-42504, CVE-2026-42505, CVE-2026-42507) and
-          # golang.org/x/{crypto,net,sys,text} + this app's S3-client SDK
-          # dependency (v7.1.0→v7.2.1). Still pinned by digest, not tag, per this
-          # file's own no-floating-tag convention above (the Kyverno
-          # `disallow-latest-tag` ClusterPolicy gap this pin already closes) —
-          # `v0.8.0` is cited here for provenance only.
-          image: cloudlena/s3manager@sha256:9ed3a8ecf10381031b19afa4e5ff863efddb81aeac2f84b142a2190d7973e68b
+          # Full version-bump history (digest pin -> v0.8.0 -> v0.9.0) moved to
+          # ADR-0039's own Re-evaluation log (2026-09-03) — this comment used to
+          # carry that history inline, same shape ADR-0038 fixed for ack-s3.yaml;
+          # see ADR-0039 for the complete trail. Still pinned by digest, not tag
+          # (the Kyverno `disallow-latest-tag` ClusterPolicy gap this pin already
+          # closes) — `v0.9.0` is cited here for provenance only.
+          image: cloudlena/s3manager@sha256:cc4b81ea29fb59610e29df6707ab6646e36e32744bbb700cffd5d2d6bf60c03f
           env:
             - name: ENDPOINT
               value: "garage.storage.svc.cluster.local:3900"
