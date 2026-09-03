@@ -55,4 +55,4 @@ the remaining live confirmation stays tracked on issue #1229.
 
 ## PR
 
-https://github.com/tooming/k8s-anywhere/pull/REPLACE_ME
+https://github.com/tooming/k8s-anywhere/pull/1403
