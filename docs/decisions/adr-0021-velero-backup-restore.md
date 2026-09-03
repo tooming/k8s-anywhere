@@ -223,6 +223,21 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 
 ## Re-evaluation log
 
+- **2026-09-03 (executor full GHSA sweep — second advisory found, confirmed
+  clean).** Extending this run's "check every published advisory directly"
+  technique (ADR-0004; already applied to Envoy Gateway, Cilium, ArgoCD,
+  cert-manager) to Velero. `github.com/vmware-tanzu/velero/security/
+  advisories` lists exactly two published advisories — small enough to sweep
+  exhaustively. **GHSA-j2g6-362q-6qc6** was already tracked (2026-08-19
+  entry below). The second, **GHSA-72xg-3mcq-52v4** (CVE-2020-3996), had not
+  been explicitly checked before: Moderate severity, a PV/PVC binding issue
+  allowing a restore to bind a pre-existing PV/PVC pair, affecting all
+  `0.*`/`1.*` releases before `1.4.3`/`1.5.2`. This lab's pin (chart
+  `12.1.0`, appVersion `1.18.1`) is many majors past both floors. **Decision:
+  kept at `12.1.0`/`1.18.1` — no action needed**, both published advisories
+  are now accounted for. **Flip condition:** revisit if a new GHSA is filed
+  against a version at or above `1.18.1`.
+
 - **2026-08-19 (executor security sweep — same-day GHSA, already patched).**
   Direct GHSA-page audit (ADR-0004: checked
   `github.com/vmware-tanzu/velero/security/advisories` directly, not
