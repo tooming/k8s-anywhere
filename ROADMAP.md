@@ -269,6 +269,28 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Extend `docs/dependency-exit-runbooks.md` to the remaining seven
+  single-tool rows (Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo,
+  kube-state-metrics, node-exporter)** — full verification writeup:
+  [docs/done/2026-09-03-dependency-exit-runbooks-remaining-seven.md](docs/done/2026-09-03-dependency-exit-runbooks-remaining-seven.md).
+  (auto/dependency-exit-runbooks-remaining-seven)
+  (CHARTER **Core Values** §"Docs & dashboards don't drift" (ADR-0004,
+  `docs/dora-audit-readiness.md` Q17); planner-fallback gap analysis 2026-09-03, this
+  run's second cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next"
+  lane was re-confirmed fully gated again this cycle (issues #633/#1229 unchanged,
+  no new comments) and no ungroomed intake/`rfc` issue existed to groom. Fresh angle:
+  `docs/dependency-exit-runbooks.md`'s own "Scope of this slice" note already named
+  this exact remaining work as real, separately-scoped, deferred only for PR-size
+  discipline — this cycle picked it up directly rather than re-mining
+  `docs/dora-audit-readiness.md` for a new gap. **No prerequisites — executor may pick
+  up immediately.**)
+  Verified directly (not assumed, ADR-0004): confirmed each of the seven tools' real
+  `gitops/` manifest path, owning ADR, and register criticality row before writing its
+  runbook paragraph (no invented claims about what depends on what). `make ci` must
+  pass — the `dependency-exit-runbooks-sync-check.sh` concentration-group check is
+  unaffected (it only checks concentration-group coverage, not single-tool-row
+  coverage). `docs/done/` entry required.
+
 - [x] 🟢 **Fix stale "Keeping this in sync" claims in `docs/dependency-register.md`,
   `docs/dependency-concentration.md`, and `docs/dependency-exit-runbooks.md`** — full
   verification writeup:
