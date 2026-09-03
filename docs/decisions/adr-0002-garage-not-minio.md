@@ -24,6 +24,18 @@ decision is **kept**. An audit terminates in a documented decision — not only
 when something changes — so a finding that survives review leaves a dated
 trail and an explicit *flip condition* instead of an open issue that lingers.
 
+### 2026-09-04 — `v2.3.0` pin re-checked, still current, zero advisories
+
+**Trigger.** Ranked `dependency-register.md` rows by "Last reviewed" date and
+picked up the oldest still-untouched entries this run — Garage's own last
+check was 2026-08-19.
+
+**Re-checked directly (ADR-0004):** `github.com/deuxfleurs-org/garage`'s own
+tags list confirms `v2.3.0` (Apr 16, 2026) is still the newest tag; its
+security-advisories page still shows zero published advisories. **Decision:
+kept.** No currency or security gap. Flip condition unchanged from the
+2026-08-19 entry below.
+
 ### 2026-08-19 — `v2.3.0` pin re-kept; upstream org-slug bug found and fixed (executor JANITOR pass, cycle 17)
 
 **Trigger.** Routine currency re-check of Garage as part of a JANITOR-fallback

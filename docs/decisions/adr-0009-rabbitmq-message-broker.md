@@ -254,3 +254,14 @@ and a "no CVE found" claim from release notes alone can understate real risk
 even when, as here, the outcome (already patched) turns out the same.
 
 **Flip condition (next re-evaluation).** Unchanged from above.
+
+### 2026-09-04 — currency re-check, no newer patch, kept
+
+**Trigger.** Ranked `dependency-register.md` rows by "Last reviewed" date and
+picked up the oldest still-untouched entries this run — RabbitMQ's own last
+check was 2026-08-19.
+
+**Re-checked directly (ADR-0004):** Docker Hub's tags API confirms neither
+`4.3.6-management` nor `4.4.0-management` exist (both 404) — `4.3.5-management`
+is still the newest tag on the `4.3.x` line. **Decision: kept.** No currency
+or security gap. Flip condition unchanged from above.

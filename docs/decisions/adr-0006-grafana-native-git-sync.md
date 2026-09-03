@@ -575,3 +575,14 @@ its PVC, untouched by an image-tag change.
 **Flip condition (next re-evaluation).** Revisit Grafana's pin again when a
 new advisory names a version at or above `13.0.8` as affected, or when the
 next scheduled currency sweep finds a newer `13.0.x` patch.
+
+### 2026-09-04 — Tempo currency re-check, no newer image, kept
+
+**Trigger.** Ranked `dependency-register.md` rows by "Last reviewed" date and
+picked up the oldest still-untouched entries this run — Tempo's own last
+check was 2026-08-13.
+
+**Re-checked directly (ADR-0004):** Docker Hub's tags API confirms neither
+`2.10.9` nor `2.11.0` exist for `grafana/tempo` (both 404) — `2.10.8` is still
+the newest tag. **Decision: kept.** No currency or security gap. Flip
+condition unchanged from the 2026-08-13 entry above.
