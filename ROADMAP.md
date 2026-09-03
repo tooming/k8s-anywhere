@@ -269,6 +269,33 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Author ADR-0037 — HashiCorp Vault for secrets management (retroactive
+  record); bump server image `2.0.4` → `2.1.0`** — full verification writeup:
+  [docs/done/2026-09-03-vault-adr-0037-retroactive-record.md](docs/done/2026-09-03-vault-adr-0037-retroactive-record.md).
+  (auto/vault-adr-0037-retroactive-record)
+  (CHARTER **Core Values** §"Everything as code" / CHARTER **Goals** §"the secrets
+  flow (Vault → External Secrets → workload)"; architect-fallback gap analysis
+  2026-09-03, this run's thirteenth cycle, reached via `executor.prompt.md`
+  STEP 6b after the "Now / next" lane was re-confirmed fully gated again. Fresh
+  angle: extending this run's GHSA-sweep pass (Envoy Gateway, Cilium, ArgoCD) to
+  Vault surfaced a much bigger gap than "is the pin current" — Vault had no ADR
+  at all and no register row, exactly the same class of gap ADR-0036 (External
+  Secrets Operator) closed on 2026-08-19, and worse: its version-audit trail
+  lived only as inline YAML comments in `vault.yaml`, the sole component in this
+  repo doing that instead of pointing at its own ADR. **No prerequisites —
+  executor may pick up immediately.**)
+  Mirrors ADR-0036's established retroactive-record structure and migrates all
+  four pre-existing Re-evaluation log entries verbatim from `vault.yaml`'s inline
+  comments. While authoring it, re-checked currency and found `v2.1.0`
+  (2026-09-01) fixes two real Go-vulnerability-database dependency issues;
+  bumped the server image and its `vault-unsealer` lockstep image together.
+  Caught and corrected a WebFetch ambiguity mid-research (a `main`-branch
+  CHANGELOG.md fetch resolved to an unrelated section) by cross-checking against
+  the real releases list instead of trusting the first result. `docs/dependency-
+  register.md`'s Scope-note arithmetic updated and verified via
+  `make dependency-register-check`, not hand-counted. `make ci` must pass.
+  `docs/done/` entry required.
+
 - [x] 🟢 **ArgoCD full GHSA sweep — confirm `v3.5.2` pin security-clean** — full
   verification writeup:
   [docs/done/2026-09-03-argocd-full-ghsa-sweep-clean.md](docs/done/2026-09-03-argocd-full-ghsa-sweep-clean.md).

@@ -25,81 +25,15 @@ spec:
           enabled: true
         server:
           # Explicit image pin (2026-07-24, ROADMAP "Pin Vault's server image
-          # tag explicitly"): previously inherited silently from the chart's
-          # own default (same value, `2.0.3` — this is a pin-what's-already-
-          # running change, not a version bump). Every other version-sensitive
-          # component in this repo (Grafana, Argo Rollouts, Valkey, Envoy
-          # Gateway, Kiali, k3s/ADR-0030) pins its running version explicitly;
-          # Vault previously did not, which meant "what version are we
-          # running" was only ever answerable from a prose comment, not a
-          # field a bats test or a future ADR-audit sweep could check.
-          #
-          # Re-evaluation log:
-          # - 2026-08-19: bumped chart `targetRevision` `0.34.0` -> `0.34.1`
-          #   (upstream tagged 2026-08-13, `hashicorp/vault-helm`). A direct
-          #   `values.yaml` diff between the two tags (fetched both raw, not
-          #   assumed) shows only default-image-tag bumps
-          #   (`vault-k8s` 1.7.5->1.7.6, `vault-csi-provider` 1.7.3->1.7.4,
-          #   `server.image.tag`/injector image default `2.0.3`->`2.0.4`) plus
-          #   one bug fix (a license-secret-volume `defaultMode` octal/decimal
-          #   rendering fix for `python-yq` compatibility) — this lab already
-          #   pins `server.image.tag` explicitly above (already `2.0.4`,
-          #   unaffected by the chart default) and doesn't use the injector,
-          #   CSI provider, or a license secret, so the rendered manifest for
-          #   this Application is unaffected; this is a pure chart-currency
-          #   bump, not a behavior change. Flip condition unchanged: revisit
-          #   the image pin when a bulletin names a version above `2.0.4` as
-          #   affected; revisit the chart pin when a newer `vault-helm` tag
-          #   ships past `0.34.1`.
-          # - 2026-08-05: bumped `2.0.3` -> `2.0.4`. HashiCorp's published
-          #   CHANGELOG.md has no `2.0.x` section at either tag (a gap in
-          #   their own changelog publishing for this release line, not
-          #   silently worked around — confirmed via a real clone + `git log
-          #   v2.0.3..v2.0.4` instead). Three "security:"-titled commits in
-          #   that range turn out to be false-positive suppressions, not real
-          #   vulnerabilities (their own origin commits are titled "Suppress
-          #   false positive for GO-2026-5856 & 4970" and the same shape for
-          #   GO-2026-5298) — these do NOT count toward the flip condition.
-          #   Two fixes ARE real: `go.mod`/`go.sum` bump `klauspost/compress`
-          #   to `v1.18.7` and `go.opentelemetry.io/otel` to `v1.44.0`,
-          #   resolving GO-2026-5158 and GO-2026-5841 (real dependency CVEs).
-          #   Separately, a "Fix Goroutine Leak in Seal Encryption" commit
-          #   touches `vault/seal/seal.go` — the shared encrypt/decrypt path
-          #   every seal type (including this lab's Shamir/file-storage seal)
-          #   goes through, a real reliability fix. Satisfies this pin's flip
-          #   condition in spirit (a real security-relevant fix past `2.0.3`)
-          #   even though no public bulletin names `2.0.3` itself as affected.
-          #   Flip condition: revisit when a bulletin names a version above
-          #   `2.0.4` as affected, or when bumping the chart `targetRevision`
-          #   past `0.34.0`.
-          # - 2026-07-24: pinned at `2.0.3` (the chart v0.34.0 default).
-          #   Cross-checked against every 2026 Vault CVE/security bulletin
-          #   findable from this sandbox. Confirmed directly in Vault's own
-          #   CHANGELOG.md (fetched live from
-          #   raw.githubusercontent.com/hashicorp/vault/main/CHANGELOG.md,
-          #   not training-data recall): the `2.0.0` section fixes
-          #   CVE-2026-5807 (unauthenticated root-token/rekey DoS — "sys/rekey
-          #   endpoints are now authenticated by default"), CVE-2026-5052
-          #   (ACME SSRF — "Reject obviously unsafe validation targets during
-          #   ACME HTTP-01 and TLS-ALPN-01 challenge verification"), and
-          #   HCSEC-2026-07 (token exposure to auth plugins — "Correctly
-          #   remove any Vault tokens from the Authorization header when this
-          #   header is forwarded to plugin backends"). Two further bulletins
-          #   found only via secondary sources (SentinelOne, GitLab Advisory
-          #   DB; HashiCorp's own discuss.hashicorp.com bulletin pages
-          #   returned proxy/auth errors to direct fetch from this sandbox) —
-          #   CVE-2026-3605 (KVv2 glob-wildcard delete DoS) and HCSEC-2026-16
-          #   (audit device directory-guard bypass) — are both reported fixed
-          #   by `2.0.0`/`2.0.1` respectively; not independently confirmed in
-          #   the plain-text CHANGELOG.md, flagged here per ADR-0004 rather
-          #   than asserted as verified. `2.0.3` (this pin) is newer than all
-          #   five fixed versions either way.
-          #   Flip condition: revisit when a bulletin names a version above
-          #   `2.0.3` as affected, or when bumping the chart `targetRevision`
-          #   past `0.34.0` (a later chart may change the default image tag).
+          # tag explicitly"). Full version history and security-audit trail
+          # moved to ADR-0037's own Re-evaluation log (2026-09-03) — this
+          # comment used to carry that history inline, the only
+          # version-sensitive component in this repo that did (every other
+          # one already points at its own ADR); see ADR-0037 for the
+          # complete trail through this pin's origin at `2.0.3`.
           image:
             repository: "hashicorp/vault"
-            tag: "2.0.4"
+            tag: "2.1.0"
           standalone:
             enabled: true
             config: |
