@@ -252,3 +252,57 @@ directly: three published advisories total.
 **Flip condition (next re-evaluation):** unchanged — a new k3s stable release
 at or above `v1.36.3` ships with a security fix, or a CVE is disclosed
 against `v1.36.3` specifically.
+
+### 2026-09-03 — bumped to `v1.36.4+k3s1` (planner-fallback currency sweep)
+
+**Trigger.** The prior entry's flip condition was met: `v1.36.4+k3s1` shipped
+(GitHub releases, 2026-08-27). A planner-fallback currency sweep
+(`executor.prompt.md` STEP 6b, Now/next's three standing items still gated on
+unconfirmed maintainer-confirmation issues #633/#1229) picked up k3s as part
+of a broader currency sweep across several older-reviewed ADRs this run.
+
+**Verified directly (not assumed, ADR-0004):** GitHub's release notes for
+`v1.36.4+k3s1` list, among other changes, "Backports for 2026-08" and a bump
+of `containerd` to `v2.3.4-k3s1.36`. A separate summarization of the releases
+*list* page (not the release itself) claimed this backport mitigates
+CVE-2025-54410 via a `docker/docker` v25.0.13 dependency bump — but the
+release's own detailed notes do **not** cite any CVE or Security heading, so
+this is flagged as unconfirmed rather than asserted: a WebSearch independently
+confirmed CVE-2025-54410 is real (Docker Engine network-isolation bypass on
+`firewalld` reload, CVSS 3.3 Low, fixed in Moby 25.0.13) but this describes
+the actual Docker Engine daemon, which k3s does not run — k3s uses
+`containerd` directly as its runtime, not Docker Engine, so even if
+`github.com/docker/docker` is vendored as a Go dependency somewhere in k3s's
+own tooling, the actual exploitable surface this CVE describes (a running
+Docker daemon's iptables rules) likely doesn't apply to this lab's setup
+either way. Also confirmed: this release bumps the bundled Traefik chart to
+`v40.x` with a documented breaking change (`kubernetesIngressNginx` →
+`kubernetesIngressNGINX` provider rename) — irrelevant here since this lab's
+k3s config passes `--disable=traefik`
+(`infra/modules/k3d-cluster/k3d-config.yaml.tftpl`'s `disable_traefik`
+variable) on both backends per ADR-0008 (Envoy Gateway, not Traefik).
+Docker Hub confirms `rancher/k3s:v1.36.4-k3s1` is a real, published,
+`active`-status tag (last updated 2026-08-27T15:55:33Z).
+
+**Decision: Convert (bump), treated as routine currency — not asserted as a
+confirmed security fix.** Pinned `v1.36.4+k3s1` on both backends:
+`infra/modules/k3d-cluster/k3d-config.yaml.tftpl`'s `image:
+rancher/k3s:v1.36.4-k3s1`; `infra/modules/oracle-k3s-cluster/cloud-init.yaml`'s
+`INSTALL_K3S_VERSION=v1.36.4+k3s1`. Both tag formats moved together, per this
+ADR's own established discipline. `tests/k3s-version-pin.bats` updated (both
+per-backend pin assertions + the cross-backend match assertion + the
+context.md documentation assertion); `docs/decisions/context.md`'s "k3s
+v1.36.3+k3s1" citation updated to `v1.36.4+k3s1`.
+
+**ADR-0004 caveat.** This remote, clusterless session verified the release's
+real existence and published-image facts directly, but cannot verify a fresh
+`make up`/Terraform apply against either backend still bootstraps cleanly on
+this new k3s minor patch. Rollback is a one-line revert of both pins;
+ArgoCD/GitOps state is unaffected by a k3s-version change alone since it
+governs only the bootstrap layer (ADR-0001).
+
+**Flip condition (next re-evaluation).** Revisit k3s's pin again when a new
+stable release at or above `v1.36.4` ships, or when a CVE is disclosed
+against `v1.36.4` specifically (or a primary source, unlike this cycle's
+release-list-only claim, confirms CVE-2025-54410's actual applicability to
+k3s's own runtime).
