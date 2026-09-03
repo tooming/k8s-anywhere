@@ -64,13 +64,20 @@ maintains six of its already-replaceable components.
 
 ## Keeping this in sync
 
-This file is a downstream consumer of `docs/dependency-register.md`'s table. A future
-register edit that adds, removes, or renames a row (a new ADR naming a new tool, or an
-existing tool's ADR being superseded) should prompt a look here too — no mechanical
-drift guard connects the two files today, matching the register's own honestly-stated
-"no mechanical drift guard yet" limitation ([Q14](dora-audit-readiness.md)).
+This file is a downstream consumer of `docs/dependency-register.md`'s table. As of
+2026-09-02/03, `scripts/dependency-concentration-sync-check.sh` (`make
+dependency-concentration-sync-check`, wired into `make ci`'s `drift` job) mechanically
+guards this direction: it fails the build if any register org backing 2+ rows isn't
+named as a group here — a future register edit that grows an org past one row can no
+longer silently skip this file. It checks one direction only (a register-side org
+crossing the 2-row threshold); a concentration.md entry with no matching register rows
+is a real, separately-scoped gap the check doesn't catch.
 
 [`docs/dependency-exit-runbooks.md`](dependency-exit-runbooks.md) (Q17) is in turn a
-downstream consumer of *this* file's three named concentration groups — a new group
-appearing here (an upstream org crossing from one to two-or-more rows) should prompt
-a new runbook section there too, same "no mechanical guard, keep by hand" caveat.
+downstream consumer of *this* file's three named concentration groups — that sync is
+also now mechanically guarded: `scripts/dependency-exit-runbooks-sync-check.sh` (`make
+dependency-exit-runbooks-sync-check`, wired into `make ci`'s `drift` job) fails the
+build if a `github.com/ORG` group named above has no matching section in
+`dependency-exit-runbooks.md`. It only checks concentration-GROUP coverage, not full
+`always-on-core` single-tool-row coverage — see that file's own "Keeping this in sync"
+section for its deliberate, documented partial scope.

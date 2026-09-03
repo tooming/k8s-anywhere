@@ -181,5 +181,16 @@ concentration.md`](dependency-concentration.md)'s three named concentration grou
 (a new group appearing there should get a runbook section here) and
 [`docs/dependency-register.md`](dependency-register.md)'s criticality column (an
 `always-on-core` single-tool row not yet covered here — see the Scope note above).
-No mechanical drift guard connects these files today, matching the register's and
-concentration file's own honestly-stated "no mechanical drift guard yet" limitation.
+
+**The concentration-group half is now mechanically guarded.** As of 2026-09-02/03,
+`scripts/dependency-exit-runbooks-sync-check.sh` (`make
+dependency-exit-runbooks-sync-check`, wired into `make ci`'s `drift` job) fails the
+build if any `github.com/ORG` group named in `dependency-concentration.md` has no
+matching `## \`github.com/ORG\`` section here — a new concentration group can no
+longer silently go un-runbooked. **The register single-tool-row half is not** — the
+partial slice named in the Scope note above (4 of 11 `always-on-core` single-tool rows
+covered) is a deliberate, documented scope choice, not drift, so the check
+deliberately doesn't require full coverage there; extending to the remaining seven
+rows (Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo, kube-state-metrics,
+node-exporter) is real, separately-scoped future work if wanted, same as the Scope
+note already says.
