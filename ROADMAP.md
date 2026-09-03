@@ -269,6 +269,26 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **Inkless kafka-exporter sidecar — document in ADR-0015,
+  currency-check clean** — full verification writeup:
+  [docs/done/2026-09-03-inkless-kafka-exporter-documented.md](docs/done/2026-09-03-inkless-kafka-exporter-documented.md).
+  (auto/inkless-kafka-exporter-documented)
+  (CHARTER **Core Values** §"Everything as code" (governance completeness);
+  JANITOR-fallback coverage sweep 2026-09-03, this run's twentieth cycle,
+  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated and PLANNER/ARCHITECT/TRIAGER all came up empty.
+  Fresh angle: a full `gitops/`-wide image inventory (distinct from the
+  per-ADR sweeps done so far) found `danielqsj/kafka-exporter:v1.9.0` — live
+  in the Inkless broker's StatefulSet since Inkless first landed — had zero
+  mention in ADR-0015, unlike Valkey's equivalent `redis_exporter` sidecar in
+  ADR-0018. Small enough to close as a section addition rather than a new
+  ADR (an observability sidecar, not an independent architectural choice).
+  **No prerequisites — executor may pick up immediately.**)
+  Verified directly (not assumed, ADR-0004): `v1.9.0` reconfirmed the newest
+  real tag via Docker Hub's tags API; zero GHSA advisories exist. No
+  `gitops/` change. `docs/dependency-register.md`'s Inkless row updated.
+  `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **Author ADR-0039 — s3manager as the lab's Garage (S3) browser UI
   (retroactive record); bump `v0.8.0` → `v0.9.0`** — full verification
   writeup:
