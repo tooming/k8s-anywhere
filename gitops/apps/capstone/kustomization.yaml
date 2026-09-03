@@ -12,3 +12,4 @@ resources:
   - deployment.yaml
   - rollout.yaml
   - route.yaml
+  - ci-verify-rejection-rbac.yaml

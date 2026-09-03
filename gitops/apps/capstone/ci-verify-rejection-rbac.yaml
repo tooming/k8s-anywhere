@@ -1,0 +1,61 @@
+# Dedicated, least-privilege RBAC for the Forgejo CI `verify-rejection` job in
+# `.forgejo/workflows/build-sign-push.yml` (CHARTER Objective O4 — RFC #289).
+#
+# That job proves Kyverno's `verifyImages` ClusterPolicy rejects an UNSIGNED
+# image at admission by doing exactly two things against the live cluster:
+#   kubectl apply  -f - (a test Pod in `capstone`, expected to be denied)
+#   kubectl delete pod test-rejection-pod -n capstone   (cleanup, if: always())
+#
+# Issue #1229 explicitly asked for "a Role scoped to capstone + a RoleBinding
+# for a dedicated ServiceAccount ... cleaner than reusing an existing
+# broad-access credential — no such Role/ServiceAccount exists yet either, so
+# that's part of this ask". This manifest is that part — fully GitOps-managed so
+# the credential surface is reviewable and drift-guarded, unlike the KUBECONFIG
+# Forgejo Actions secret itself (which is set outside this repo by the
+# maintainer; see the workflow header and
+# docs/runbooks/2026-09-04-ci-verify-rejection-kubeconfig.md).
+#
+# Scope: create/delete/get/list on `pods` in `capstone` ONLY. Deliberately no
+# `deployments`, no `secrets`, no other verbs, no cluster scope — the job never
+# needs more, and a denied `apply` still returns the admission-webhook message
+# the job greps for (RBAC lets the request reach admission; Kyverno then denies
+# it — that is the PASS path).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-verify-rejection
+  namespace: capstone
+  labels:
+    app.kubernetes.io/name: ci-verify-rejection
+    app.kubernetes.io/component: ci-o4-gate
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-verify-rejection
+  namespace: capstone
+  labels:
+    app.kubernetes.io/name: ci-verify-rejection
+    app.kubernetes.io/component: ci-o4-gate
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "delete", "get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-verify-rejection
+  namespace: capstone
+  labels:
+    app.kubernetes.io/name: ci-verify-rejection
+    app.kubernetes.io/component: ci-o4-gate
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ci-verify-rejection
+subjects:
+  - kind: ServiceAccount
+    name: ci-verify-rejection
+    namespace: capstone
