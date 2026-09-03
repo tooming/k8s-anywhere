@@ -269,6 +269,34 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one.
 
+- [x] 🟢 **De-duplicate `scripts/dependency-register-check.sh`'s row-parsing logic
+  into `scripts/lib/dependency-register.sh`** — full verification writeup:
+  [docs/done/2026-09-03-dependency-register-check-lib-dedup.md](docs/done/2026-09-03-dependency-register-check-lib-dedup.md).
+  (auto/dependency-register-check-lib-dedup)
+  (CHARTER **Core Values** §"Everything as code" (CLAUDE.md de-duplication
+  principle); JANITOR-fallback codebase-health sweep 2026-09-03, this run's eighth
+  cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated again (issues #633/#1229 unchanged), no ungroomed
+  intake/`rfc` issue existed to groom, and this run's currency sweep had checked
+  every remaining register row with no further bump found (RabbitMQ, cert-manager,
+  Cilium, Velero, Harbor, KEDA, Longhorn all already current; ArgoCD's chart has a
+  newer template-only release with no appVersion/CVE change, judged not worth the
+  risk to the repo's highest-blast-radius component for zero functional gain).
+  Delegated a broad codebase-health scan (untested scripts, Makefile/script
+  orphans, stale TODOs, broken doc cross-refs, oversized files, duplicate bats
+  assertions) to a sub-agent — six of seven categories came back clean (this repo
+  has already been heavily janitor-swept), but found one real gap: `scripts/lib/
+  dependency-register.sh`'s own extraction (2026-09-02) missed a third pre-existing
+  copy of the same row-parser in `dependency-register-check.sh`, exactly the
+  duplication class it was extracted to stop. **No prerequisites — executor may
+  pick up immediately.**)
+  Verified behavior-preserving (not just structurally similar): ran the refactored
+  script directly against all 8 existing fixture scenarios in
+  `tests/fixtures/dependency-register-check/` — every one produced the identical
+  exit code as before the refactor (bats isn't installed in this clusterless
+  session, so fixtures were exercised directly rather than assumed unaffected).
+  `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **Bump Kyverno chart `3.8.2` → `3.9.0` (2 CVEs, 2 GHSAs, minor bump)** —
   full verification writeup:
   [docs/done/2026-09-03-kyverno-3-8-2-to-3-9-0-cve-bump.md](docs/done/2026-09-03-kyverno-3-8-2-to-3-9-0-cve-bump.md).
