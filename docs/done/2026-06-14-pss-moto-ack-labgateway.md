@@ -25,3 +25,7 @@ Three namespace PSA-label manifests + moto deployment securityContext hardening
 - `lab-gateway` holds no pods (Envoy proxy pods live in `envoy-gateway-system`); restricted PSA labels are trivially safe.
 - `kro` controller namespace (where the KRO Helm chart lands) is separate from `ack-system`; pod-level securityContext patch to `kro.yaml` ensures compliance at the workload level. Namespace PSA label for `kro` controller namespace is a follow-up once a clean mechanism exists.
 - `readOnlyRootFilesystem: true` for moto is backed by a `/tmp` emptyDir mount. For ACK S3 and KRO (Go controllers), the same flag is set in Helm valuesObject; if either controller writes outside `/tmp` at startup a follow-up item will add the necessary emptyDir.
+
+## PR
+
+https://github.com/tooming/k8s-anywhere/pull/202

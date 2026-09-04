@@ -46,3 +46,7 @@ O4 — the in-cluster half is the Kyverno `verifyImages` ClusterPolicy already i
 - The verifyImages `Audit → Enforce` flip (`auto/cosign-enforce-flip`) — that item has
   a maintainer-confirmation prerequisite (at least one `.sig` tag must exist in
   Artifactory before Enforce mode is safe to enable).
+
+## PR
+
+https://github.com/tooming/k8s-anywhere/pull/223

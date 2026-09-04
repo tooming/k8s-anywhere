@@ -44,3 +44,7 @@ the default-deny floor is present before `make tidb-up` runs — not racing pod 
 IPs are not stable in the Docker-based lab so `ipBlock: cidr: 0.0.0.0/0` scoped to
 port 10250 is used — the same pragmatic pattern as Alloy's kubelet/cAdvisor scrape in
 the observability namespace.
+
+## PR
+
+https://github.com/tooming/k8s-anywhere/pull/203
