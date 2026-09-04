@@ -285,8 +285,30 @@ You review and merge plan PRs, same as implementation PRs.
 > for a future bounded cycle, not attempted in this one. **Pilot batch done
 > 2026-09-04** (see the ROADMAP items immediately below) — trimmed 4 RFC #377
 > Oracle items, then 4 more (batch 2), then 5 more (batch 3), then 5 more
-> (batch 4), then 5 more (batch 5); ~157 legacy items remain for future
-> bounded cycles to continue against.
+> (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
+> items remain for future bounded cycles to continue against.
+
+- [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 6** — full verification
+  writeup:
+  [docs/done/2026-09-04-roadmap-legacy-item-trim-batch6.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch6.md).
+  (auto/roadmap-legacy-item-trim-batch6)
+  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
+  scale); JANITOR-fallback cleanup 2026-09-04, this run's fifth cycle,
+  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated (issues #633 and #1229 both re-checked, no new
+  confirmation comment on either since cycle 2) and PLANNER/TRIAGER
+  re-confirmed empty (zero new/ungroomed issues; no new open PRs).
+  Continues the legacy-item-trim JANITOR fallback from batch 5. **No
+  prerequisites — executor may pick up immediately.**)
+  Trimmed 3 more legacy items (a smaller batch — the easy-to-verify
+  candidate lens is thinning), each verified against its real
+  `docs/done/` mirror before touching the ROADMAP text; deliberately left
+  2 other candidates untouched (one has no `docs/done/` mirror to point
+  to at all, the other is a planner resolution note spanning multiple
+  PRs/ADRs, not a single-mirror executor spec — see the `docs/done/`
+  writeup for the full reasoning). No information lost, 45 lines saved.
+  `ROADMAP.md` 6944→6899 lines. `make ci` must pass. `docs/done/` entry
+  required.
 
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 5** — full verification
   writeup:
@@ -3871,28 +3893,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-17-cosign-ci-sign-step.md](docs/done/2026-06-17-cosign-ci-sign-step.md)
   (PR #223). (auto/cosign-ci-sign-step)
 
-- [x] 🟢 **`make capstone-demo` + `scripts/capstone-demo.sh`** (CHARTER **Objective O6**,
-  RFC #215 — demo-only wall-clock scope, 900 s budget; no dependency on other items).
-  New `scripts/capstone-demo.sh` per RFC #215 §Decision: records `START_EPOCH`; (1) waits
-  for capstone ArgoCD app Healthy (`argocd app wait capstone --health --timeout 120`; exits
-  1 on timeout); (2) asserts capstone ExternalSecret Ready (`kubectl -n capstone get
-  externalsecret` jsonpath `.status.conditions[?(@.type=="Ready")].status == "True"` within
-  30 s); (3) sends synthetic curl to `http://capstone.127.0.0.1.nip.io:8000/` asserting
-  HTTP 200; (4) verifies a Tempo trace via `kubectl -n observability port-forward
-  svc/tempo-query-frontend 3100:3100 &` + Tempo HTTP `/api/search?service.name=capstone`
-  (OS-portable `date` arithmetic per RFC #215 — macOS `-v-5M` vs Linux
-  `$(( $(date +%s) - 300 ))`); (5) enforces 900 s budget with per-step elapsed check;
-  (6) prints a summary table (elapsed per step + total, same pattern as
-  `scripts/dr-restore.sh`). New `make capstone-demo` phony target (`##@ Capstone` section
-  or nearest existing section) calling `bash scripts/capstone-demo.sh`. New
-  `tests/capstone-demo.bats` (clusterless structural): script exists + is executable; 900 s
-  budget check present; `argocd app wait capstone` invocation present;
-  `tempo-query-frontend` present; `externalsecret` check present. Update `docs/DR.md` with
-  a `## Capstone demo (O6)` section (prereqs: healthy cluster + `argocd` CLI logged in;
-  900 s budget). **Executor note:** `make capstone-demo` is a live-cluster target (like
-  `make dr-restore`), not a `make ci` gate; the bats tests are clusterless and must pass
-  without a live cluster. Makefile change is RFC #215-approved per WAYS-OF-WORKING.md §2.
-  (auto/capstone-demo-target)
+- [x] 🟢 **`make capstone-demo` + `scripts/capstone-demo.sh`** — full
+  verification writeup:
+  [docs/done/2026-06-18-capstone-demo-target.md](docs/done/2026-06-18-capstone-demo-target.md)
+  (PR #225). (auto/capstone-demo-target)
 
 - [x] 🟢 **PSS-restricted hardening — `external-secrets` namespace** (CHARTER **Objective O2**,
   due **2026-09-30**; RFC #229 — architect decision 2026-06-19). Add
@@ -4023,53 +4027,10 @@ there is no point where the lab loses a working git source or CI path.
   No code changes, no bats changes (the bats file already exists). `make ci` must pass.
   `docs/done/` entry required. (auto/adr-0019-runasnonroot-row)
 
-- [x] 🟢 **cert-manager engine + self-signed root CA bootstrap** (CHARTER new Goal
-  "automated TLS certificate lifecycle" — ADR-0028 for the binding chart values, PSA
-  profile, and root-CA issuer chain. **No prerequisites — executor may pick up
-  immediately; purely additive, does not touch the existing HTTP-only traffic path.**)
-  Add `gitops/platform/cert-manager.yaml` (auto-synced ArgoCD `Application`, chart
-  `cert-manager` from `https://charts.jetstack.io`, namespace `cert-manager`; pin a
-  specific 1.20.x patch at executor pickup — confirm the tag exists via
-  `git ls-remote --tags https://github.com/cert-manager/cert-manager.git` since
-  `charts.jetstack.io`'s index is proxy-blocked in this environment). `valuesObject`
-  per ADR-0028 §"Chart + version": `crds.enabled: true`; §"Footprint controls" memory
-  caps (controller 128Mi, webhook 64Mi, cainjector 64Mi). Add
-  `gitops/cert-manager/namespace.yaml` with all four PSA labels at `restricted`
-  (ADR-0028 confirms the chart's default securityContext is fully
-  `restricted`-compatible — no carve-out needed, verify this against the actual pinned
-  chart's `values.yaml` at executor pickup per ADR-0028's verification method). Default-deny
-  NetworkPolicy overlay at `gitops/cert-manager/networkpolicy/kustomization.yaml`
-  referencing the shared baseline templates + ingress TCP 10250 from the
-  kube-apiserver (webhook callback — cert-manager's webhook `securePort` default,
-  confirmed against the pinned chart's `values.yaml`; mirror the existing apiserver
-  `ipBlock` pattern) + ingress TCP 9402 from `observability` (metrics scrape, all
-  three components expose on this port). New auto-synced
-  `Application` `gitops/platform/cert-manager-networkpolicy.yaml` (sync-wave 4,
-  `LoadRestrictionsNone`). Root CA bootstrap at `gitops/cert-manager/root-ca/`: a
-  `selfSigned`-type `ClusterIssuer` (bootstrap-only), a `Certificate` requesting
-  `isCA: true` from it, and a `ca`-type `ClusterIssuer` referencing the resulting
-  Secret — exact shape per ADR-0028 §"Certificate strategy". New `cert-manager` scrape
-  job in `gitops/platform/observability-alloy.yaml` targeting
-  `cert-manager.cert-manager.svc.cluster.local:9402`. New
-  `grafana/dashboards/lab-cert-manager.json` ("Lab — cert-manager (TLS Lifecycle)")
-  modelled on `lab-kyverno.json` stat-row: pod running per component
-  (controller/webhook/cainjector from KSM), ArgoCD sync state, certificate count by
-  `Ready` condition (real `certmanager_certificate_ready_status`), certificate expiry
-  timestamps (`certmanager_certificate_expiration_timestamp_seconds`). No HTTPRoute —
-  cert-manager has no web UI; document in the PR body. Update
-  `docs/dependency-tree.md` with a CERT-MANAGER subgraph + Alloy scrape edge. New
-  `tests/cert-manager.bats`: Application shape, chart source + version pin,
-  `crds.enabled: true`, namespace PSA labels, NetworkPolicy overlay structure,
-  the two-`ClusterIssuer` root-CA chain shape, scrape job target, dashboard file +
-  required panels. Add a `cert-manager: restricted` row to ADR-0017's per-namespace
-  profile table in the same PR (small, directly caused by this item — unlike other
-  items' separate "ADR-0017 amendment" follow-ups, this one ships with zero carve-out
-  so there's nothing to amend later). **Executor note:** if the PR crosses ~400 lines
-  per WAYS-OF-WORKING.md §3, split the chart Application + namespace + NetworkPolicy
-  from the root-CA bootstrap + dashboard + Alloy scrape. The Gateway HTTPS listener +
-  wildcard Certificate + frontdoor `:8443` port mapping is a separate follow-up item
-  (ADR-0028 §"Scope & exceptions" — deliberately not bundled here).
-  (auto/cert-manager-engine)
+- [x] 🟢 **cert-manager engine + self-signed root CA bootstrap** — full
+  verification writeup:
+  [docs/done/2026-07-16-cert-manager-engine.md](docs/done/2026-07-16-cert-manager-engine.md)
+  (PR #439). (auto/cert-manager-engine)
 
 - [x] 🟢 **Gateway HTTPS listener + wildcard Certificate + frontdoor `:8443` port
   mapping** (follow-up to the cert-manager engine item above, scoped in ADR-0028
@@ -6928,13 +6889,9 @@ there is no point where the lab loses a working git source or CI path.
   2026-08-07" note above.)
 
 - [x] 🟢 **`infra/live/README.md` + `docs/dependency-tree.md` — document the
-  `oracle/` backend** (RFC #377 item 5 — depends on items 1–2 existing). Added an
-  `oracle/` row to `infra/live/README.md`'s "Status" section, explicitly marked
-  "unverified against a real account" (per ADR-0004 — reviewed code isn't the
-  same as exercised code). Skipped `docs/dependency-tree.md`: that doc reflects
-  the *actual running* localhost lab's integration/bootstrap graph — the `oracle`
-  backend has never been deployed, so adding it there would misrepresent
-  never-run code as live system state.
+  `oracle/` backend** — full verification writeup:
+  [docs/done/2026-07-13-oracle-backend-docs.md](docs/done/2026-07-13-oracle-backend-docs.md)
+  (PR #384). (RFC #377 item 5)
 
 - ~~🟡 **Grafana/Mimir alerting rules for known failure conditions**~~ (RFC #1084 —
   architect decision 2026-08-10: **Grafana Unified Alerting** querying Mimir, not
