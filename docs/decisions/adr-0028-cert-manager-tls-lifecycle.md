@@ -77,11 +77,20 @@ resources:            { limits: { memory: 128Mi } }   # controller
 webhook:
   resources:           { limits: { memory: 64Mi } }
 cainjector:
-  resources:           { limits: { memory: 64Mi } }
+  resources:           { limits: { memory: 128Mi } }
 ```
 
-Total cap: ~256 MiB combined limits — lighter than any of the four Tier 1 next-wave
-components individually (Kyverno's admission controller alone caps at 256Mi).
+Total cap: ~320 MiB combined limits — still lighter than any of the four Tier 1
+next-wave components individually (Kyverno's admission controller alone caps at 256Mi).
+
+**cainjector raised 64Mi → 128Mi (2026-08-18, live-verified; reconciled to GitHub
+2026-09-04 per issue #1345).** 64Mi was fine at authoring time, but cainjector
+caches every CRD, Certificate, `{Mutating,Validating}WebhookConfiguration`, and
+APIService cluster-wide in memory, and the lab's CRD/webhook footprint has grown
+substantially since (Kargo, Argo Rollouts, TiDB, Longhorn, Velero, Kyverno). Observed
+live: 464 restarts over 7 days, each `exitCode 137` (OOMKilled) within ~2s of
+container start — which silently broke Kargo's own admission webhooks (CA bundle
+never injected). See `gitops/platform/cert-manager.yaml`'s inline comment.
 
 ### Certificate strategy — self-signed root CA, not public ACME
 

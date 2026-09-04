@@ -46,6 +46,12 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "cert-manager cainjector memory limit is 128Mi (live-verified OOMKill fix, ADR-0028; issue #1345)" {
+  # 64Mi OOMKilled cainjector 464x/7d once the lab's CRD/webhook footprint grew,
+  # silently breaking Kargo's admission webhooks. Raised to 128Mi 2026-08-18.
+  [ "$(yqs '.spec.source.helm.valuesObject.cainjector.resources.limits.memory' "$REPO/gitops/platform/cert-manager.yaml")" = "128Mi" ]
+}
+
 @test "cert-manager Application syncs with ServerSideApply (its issuer CRDs exceed the client-side-apply cap)" {
   # clusterissuers.cert-manager.io / issuers.cert-manager.io are ~325 KB each,
   # over the 262144-byte client-side-apply annotation limit — same failure class

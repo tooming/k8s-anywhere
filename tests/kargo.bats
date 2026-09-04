@@ -72,6 +72,21 @@ setup() {
   [ "$(yqs '.spec.source.helm.valuesObject.api.tls.selfSignedCert' "$P")" = "false" ]
 }
 
+# Found live 2026-08-18 (#633 verification, first time kargo-api ever actually
+# got observed booting); reconciled to GitHub 2026-09-04 (issue #1345 — only
+# ever landed on Forgejo's main). selfSignedCert: false alone does NOT disable
+# TLS — the chart's own values.yaml doc comment says tls.enabled: true is the
+# default and "all other settings in this section... are ignored when this is
+# set to false". With only selfSignedCert overridden, templates/api/cert.yaml's
+# Certificate is skipped but api/deployment.yaml still mounts a TLS secret
+# whenever tls.enabled is true — one the chart then expects to be provided
+# externally and never is. Pod hangs forever in ContainerCreating
+# (`MountVolume.SetUp failed ... secret "kargo-api-cert" not found`).
+@test "kargo Application disables TLS entirely on the API server (tls.enabled: false, not just selfSignedCert)" {
+  P="$REPO/gitops/platform/kargo.yaml"
+  [ "$(yqs '.spec.source.helm.valuesObject.api.tls.enabled' "$P")" = "false" ]
+}
+
 @test "kargo Application does not use the dead selfSignedCert.generate key" {
   P="$REPO/gitops/platform/kargo.yaml"
   # selfSignedCert is a boolean (see the test above) — indexing .generate past it is
