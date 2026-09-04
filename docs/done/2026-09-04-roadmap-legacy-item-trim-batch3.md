@@ -58,4 +58,4 @@ No `gitops/` change. `make ci` passes green.
 
 ## PR
 
-(see GitHub — this run)
+https://github.com/tooming/k8s-anywhere/pull/1412
