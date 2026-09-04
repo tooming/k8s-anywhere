@@ -2,8 +2,11 @@
 # Helm chart kargo from the OCI registry ghcr.io/akuity/kargo-charts (the old
 # https://charts.kargo.io HTTPS index was retired upstream and is now NXDOMAIN).
 # Single replica per component (ADR-0005 lab trade-off; production runs HA).
-# Plain HTTP inside the cluster (api.tls.selfSignedCert.generate: false); TLS
-# terminated at Envoy Gateway (ADR-0008). Admin credentials from Vault via ESO
+# Plain HTTP inside the cluster (api.tls.enabled: false — see that key's own
+# comment below: selfSignedCert: false alone, this file's setting before
+# 2026-08-18, does NOT disable TLS and left kargo-api's pod permanently stuck
+# in ContainerCreating). TLS terminated at Envoy Gateway (ADR-0008). Admin
+# credentials from Vault via ESO
 # (ExternalSecret kargo-admin-credentials, Vault path secret/kargo/admin),
 # wired in wholesale via api.secret.name — the chart has no secretKeyRef-style
 # field for individual admin-account values.
@@ -178,6 +181,21 @@ spec:
             requests:
               memory: 64Mi
           tls:
+            # Found live 2026-08-18 (#633 verification, first time kargo-api ever
+            # actually got observed booting); reconciled from the in-cluster
+            # Forgejo remote 2026-09-04 (issue #1345 — only ever landed on
+            # Forgejo's main). selfSignedCert: false alone does NOT disable TLS —
+            # per the chart's own values.yaml doc comment, enabled: true is the
+            # default and "all other settings in this section... are ignored when
+            # this is set to false". With only selfSignedCert overridden, the
+            # chart skips creating templates/api/cert.yaml's Certificate but the
+            # Deployment still mounts a TLS secret because tls.enabled is still
+            # true — a secret the chart then expects to be provided externally
+            # and never is. Pod hangs forever in ContainerCreating
+            # (`MountVolume.SetUp failed ... secret "kargo-api-cert" not found`).
+            # enabled: false is the actual "plain HTTP inside the cluster" switch
+            # this file's own top comment already claimed to be using.
+            enabled: false
             selfSignedCert: false
           secret:
             name: kargo-admin-credentials

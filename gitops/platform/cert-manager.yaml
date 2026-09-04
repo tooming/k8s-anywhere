@@ -4,7 +4,7 @@
 # project (unlike most charts in this repo).
 # Single replica per component (ADR-0005 lab trade-off; production uses 2-3 for
 # the webhook/controller). Memory limits per ADR-0028 §"Footprint controls":
-# controller 128Mi, webhook 64Mi, cainjector 64Mi — ~256 MiB combined cap.
+# controller 128Mi, webhook 64Mi, cainjector 128Mi — ~320 MiB combined cap.
 # CRDs installed via the chart itself (crds.enabled: true), not a separate
 # imperative kubectl apply step (ADR-0001).
 # ALWAYS-ON: automated sync; cert-manager-extras (wave 0) pre-creates the
@@ -51,7 +51,22 @@ spec:
         cainjector:
           resources:
             limits:
-              memory: 64Mi
+              memory: 128Mi
+          # Found live 2026-08-18 (#633 verification), reconciled from the
+          # in-cluster Forgejo remote 2026-09-04 (issue #1345 — this fix only
+          # ever landed on Forgejo's main, never on GitHub): 64Mi was almost
+          # certainly fine when this was first set, but cainjector caches every
+          # CRD, Certificate, {Mutating,Validating}WebhookConfiguration, and
+          # APIService cluster-wide in memory to do its job — and this lab's CRD
+          # footprint has grown substantially (Kargo, Argo Rollouts, TiDB,
+          # Longhorn, Velero, Kyverno, and more, none of which existed when 64Mi
+          # was chosen). Observed live: 464 restarts over 7 days (`kubectl get
+          # pods -n cert-manager`), each exitCode 137 (OOMKilled) within ~2s of
+          # container start — too fast to be anything but the memory limit
+          # itself. This silently broke Kargo's own admission webhooks (their CA
+          # bundle never gets injected without a cainjector that stays up long
+          # enough to reconcile), surfaced only once #633's verification
+          # exercised a live Warehouse write for the first time.
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
