@@ -285,8 +285,28 @@ You review and merge plan PRs, same as implementation PRs.
 > for a future bounded cycle, not attempted in this one. **Pilot batch done
 > 2026-09-04** (see the ROADMAP items immediately below) — trimmed 4 RFC #377
 > Oracle items, then 4 more (batch 2), then 5 more (batch 3), then 5 more
-> (batch 4); ~162 legacy items remain for future bounded cycles to
-> continue against.
+> (batch 4), then 5 more (batch 5); ~157 legacy items remain for future
+> bounded cycles to continue against.
+
+- [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 5** — full verification
+  writeup:
+  [docs/done/2026-09-04-roadmap-legacy-item-trim-batch5.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch5.md).
+  (auto/roadmap-legacy-item-trim-batch5)
+  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
+  scale); JANITOR-fallback cleanup 2026-09-04, this run's fourth cycle,
+  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated (unchanged since cycle 2/3 — issues #633 and
+  #1229 both re-checked, no new confirmation) and PLANNER/TRIAGER
+  re-confirmed empty (zero new/ungroomed issues; no new open PRs).
+  Continues the legacy-item-trim JANITOR fallback from batch 4.
+  **No prerequisites — executor may pick up immediately.**)
+  Trimmed 5 more legacy items — the cloud-control-plane dashboard,
+  PSS/NetworkPolicy fan-out, and cosign CI-signing sequence — each
+  verified against its real `docs/done/` mirror before touching the
+  ROADMAP text; added a proper `## PR` section (with the real merged-PR
+  link, found via GitHub search) to 4 of those 5 mirrors that had none.
+  No information lost, 111 lines saved. `ROADMAP.md` 7055→6944 lines.
+  `make ci` must pass. `docs/done/` entry required.
 
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 4** — full verification
   writeup:
@@ -3672,109 +3692,19 @@ there is no point where the lab loses a working git source or CI path.
   (PR #184). (auto/adr-0017-next-wave-rows)
 
 - [x] 🟢 **Lab — Cloud control-plane (moto / ACK / KRO)
-  dashboard** (CHARTER **Objective O5**, due **2026-09-30**:
-  every always-on component has a real-metric Grafana dashboard.
-  Promoted from *Cross-cutting* — this is the only always-on
-  piece with no dashboard, see `grafana/dashboards/` against the
-  always-on Application list). New
-  `grafana/dashboards/lab-cloud-control-plane.json` modelled on
-  the `lab-vault.json` stat-row pattern, three subsections —
-  **moto** (pod running / memory / CPU / restarts from
-  KSM+cAdvisor, ArgoCD sync state for the `moto` Application;
-  namespace `moto`); **ACK S3** (same five metrics for the
-  `ack-s3` Application's controller Deployment in namespace
-  `ack-system`, plus a Loki logs panel filtered to the ACK
-  controller pod showing reconciles against `kind=Bucket`);
-  **KRO** (same five metrics for the KRO controller in namespace
-  `ack-system`, plus a stat panel counting `kubectl get
-  resourcegraphdefinitions` instances and a logs panel for the
-  KRO controller pod showing RGD reconciles). About-text panel
-  cites the `ack-demo-bucket` + `app-data` instance as the live
-  demo objects to watch reconcile. All data from real
-  KSM/cAdvisor/ArgoCD/Loki sources already scraped by Alloy —
-  no new scrape jobs needed (ADR-0004). Wire the dashboard into
-  the Grafana "Lab UIs" stack-health panel row list. Add
-  `tests/observability.bats` assertions (file exists, three
-  subsection headings present, no Prometheus query references
-  metrics not currently scraped). Update
-  `docs/dependency-tree.md` with a brief note that the
-  cloud-control-plane stack now has a dashboard. *(Note for
-  executor: if ACK or KRO controller pods expose
-  controller-runtime metrics on a `:8080/metrics`-style port, do
-  NOT add a scrape job in this PR — file that as a follow-up
-  planner item; this PR stays clusterless-verifiable.)*
-  (auto/cloud-control-plane-dashboard)
+  dashboard** — full verification writeup:
+  [docs/done/2026-06-13-cloud-control-plane-dashboard.md](docs/done/2026-06-13-cloud-control-plane-dashboard.md)
+  (PR #201). (auto/cloud-control-plane-dashboard)
 
 - [x] 🟢 **PSS-restricted fan-out — `moto` + `ack-system`
-  namespaces + `lab-gateway` labels** (CHARTER **Objective O2**,
-  due **2026-09-30**; ADR-0017 §"Staged rollout" continuation —
-  closes the always-on `restricted`-eligible fan-out except
-  argocd which is 🟡). Three changes bundled because each is
-  small individually and they share the moto+ack control-plane
-  pair: (a) `moto` — add `gitops/moto/namespace.yaml` with the
-  four PSA labels at `restricted` per ADR-0017 §"Per-namespace
-  profile"; patch the moto chart's `valuesObject` in
-  `gitops/platform/moto.yaml` with pod-level (`runAsNonRoot:
-  true`, `runAsUser`/`runAsGroup`/`fsGroup` non-zero,
-  `seccompProfile.type: RuntimeDefault`) + container-level
-  (`allowPrivilegeEscalation: false`,
-  `readOnlyRootFilesystem: true` with an `emptyDir` for moto's
-  writable paths, `capabilities.drop: [ALL]`);
-  (b) `ack-system` — add `gitops/ack/namespace.yaml` with the
-  same four PSA labels at `restricted`; patch the `ack-s3` and
-  `kro` chart `valuesObject`s in `gitops/platform/ack-s3.yaml`
-  and `gitops/platform/kro.yaml` with the same securityContext
-  shape (ACK + KRO controllers are stock controller-runtime,
-  non-root-capable);
-  (c) `lab-gateway` — the namespace today holds no pods (Envoy
-  proxy pods live in `envoy-gateway-system`) so this is
-  label-only: add `gitops/network/namespace.yaml` with the four
-  PSA labels at `restricted` per ADR-0017's fan-out table. New
-  `tests/securitycontext-moto-ack-labgateway.bats` (or extend
-  the existing `tests/securitycontext.bats`): three namespace
-  PSA-label assertions + securityContext field assertions for
-  the moto Deployment + the ack-s3 / kro controller Deployments.
-  **Executor note:** if the PR crosses ~400 lines per
-  WAYS-OF-WORKING.md §3, ship `moto` + `lab-gateway` first and
-  file `ack-system` as a follow-up. (auto/pss-moto-ack-labgateway)
+  namespaces + `lab-gateway` labels** — full verification writeup:
+  [docs/done/2026-06-14-pss-moto-ack-labgateway.md](docs/done/2026-06-14-pss-moto-ack-labgateway.md)
+  (PR #202). (auto/pss-moto-ack-labgateway)
 
 - [x] 🟢 **NetworkPolicy fan-out — `tidb` + `tidb-admin`
-  namespaces** (CHARTER **Objective O2**, due **2026-09-30**;
-  ADR-0016 §4 fan-out completion — these are on-demand
-  namespaces so the policy only takes effect after
-  `make tidb-up`, but the manifest needs to exist so a future
-  on-demand bring-up gets the default-deny floor automatically).
-  Two overlays:
-  (a) `gitops/tidb/networkpolicy/kustomization.yaml` — baseline
-  (`default-deny-all` + `allow-dns-and-apiserver`) +
-  per-workload allows for the TiDB cluster topology:
-  intra-namespace TCP 2379/2380 (PD client/peer), TCP
-  20160/20180 (TiKV server/status), TCP 4000/10080 (TiDB
-  server/status); egress TCP 10250 to nodes for kubelet (TiKV
-  topology probe); egress to `tidb-admin` namespace for
-  operator reconciliation; ingress from `tidb-admin` for the
-  same; ingress TCP 4000 from `tidb` namespace (for the
-  `tidb-demo` workload reading the database); ingress TCP
-  10080 from `observability` for the existing Alloy scrape job.
-  (b) `gitops/tidb-admin/networkpolicy/kustomization.yaml` —
-  baseline only; egress to `tidb` namespace for operator
-  reconciliation; egress to kube-apiserver via the baseline
-  template. Two new ArgoCD `Application`s
-  `gitops/platform/tidb-networkpolicy.yaml` and
-  `gitops/platform/tidb-admin-networkpolicy.yaml`. **Sync
-  policy is `automated: { prune: true, selfHeal: true }`** —
-  these are on-demand namespaces, but the *NetworkPolicy
-  manifests themselves are cheap (no pods)* so they can
-  auto-sync alongside the namespace creation; this means the
-  policies are *already in place* when the on-demand `make
-  tidb-up` brings the pods up, not racing it. *(This is the
-  same shape as the `lab-gateway-networkpolicy` Application
-  that landed in the prior wave — see *Done*.)* Extend
-  `tests/networkpolicy.bats` with tidb + tidb-admin overlay
-  assertions. Update `docs/dependency-tree.md`. **Executor
-  note:** if the PR crosses ~400 lines per WAYS-OF-WORKING.md
-  §3, ship `tidb-admin` (small) first and file `tidb` as a
-  follow-up. (auto/networkpolicy-tidb-fanout)
+  namespaces** — full verification writeup:
+  [docs/done/2026-06-14-networkpolicy-tidb-fanout.md](docs/done/2026-06-14-networkpolicy-tidb-fanout.md)
+  (PR #203). (auto/networkpolicy-tidb-fanout)
 
 - [x] 🟢 **Argo Rollouts dashboard + Alloy scrape job** (CHARTER **Objective O1** +
   **O5**; deferred from `auto/argo-rollouts-controller` per the 400-line budget rule
@@ -3931,36 +3861,15 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-tree.md` with envoy-gateway-system NP note.
   `docs/done/` entry required. (auto/envoy-gateway-system-networkpolicy)
 
-- [x] 🟢 **cosign-bootstrap wiring into `make up`** (CHARTER **Objective O4**, RFC #214
-  Item 1; `scripts/cosign-bootstrap.sh` already merged in `auto/cosign-bootstrap-script`).
-  Add a `cosign-bootstrap` phony target to `Makefile` calling `bash
-  scripts/cosign-bootstrap.sh` (mirrors `make vault-bootstrap` / `make garage-bootstrap`
-  pattern). Insert `$(MAKE) cosign-bootstrap` into the `make up` target **after**
-  `$(MAKE) garage-bootstrap` and **before** `$(MAKE) grafana-gitsync-bootstrap` per RFC
-  #214 §Decision (kyverno namespace is synced by ArgoCD by the time garage-bootstrap
-  completes; the script is idempotent). Extend `tests/cosign-bootstrap.bats` with two
-  structural assertions: Makefile `cosign-bootstrap` target exists; the `make up`
-  insertion order is correct (grep for the two adjacent calls in the documented sequence).
-  `make ci` must pass. **Executor note:** Makefile change is normally 🟡 but RFC #214
-  explicitly names this target in its binding Decision — the RFC IS the approval per
-  WAYS-OF-WORKING.md §2. (auto/cosign-make-up-wiring)
+- [x] 🟢 **cosign-bootstrap wiring into `make up`** — full verification
+  writeup:
+  [docs/done/2026-06-17-cosign-make-up-wiring.md](docs/done/2026-06-17-cosign-make-up-wiring.md)
+  (PR #222). (auto/cosign-make-up-wiring)
 
-- [x] 🟢 **`cosign sign` stage in `.gitlab-ci.yml`** (CHARTER **Objective O4**, RFC #214
-  Item 2; wait for `auto/cosign-make-up-wiring` to merge first). Add `sign` to the
-  `stages:` list. New `sign-image` job: `image: bitnami/cosign:2`; variables
-  `COSIGN_PASSWORD: ""` and `COSIGN_EXPERIMENTAL: "0"` (disables Rekor transparency
-  upload — no outbound internet in lab); `before_script` copies `$COSIGN_KEY` (GitLab
-  File CI variable) to `/tmp/cosign/cosign.key`; `script` runs `cosign sign --key
-  /tmp/cosign/cosign.key --allow-insecure-registry --registry-username "$ARTIFACTORY_USER"
-  --registry-password "$ARTIFACTORY_PASSWORD" "$REGISTRY/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"`
-  (pushes `.sig` OCI tag back to Artifactory; `--allow-insecure-registry` because the
-  Artifactory route uses HTTP); `after_script: [rm -rf /tmp/cosign]`; `needs:
-  [build-and-push]`; `rules: if $CI_COMMIT_BRANCH == "main"`. Add a comment above the
-  job explaining `COSIGN_KEY` is a GitLab CI File variable the maintainer must set
-  (masked, type File — same doc pattern as existing `ARTIFACTORY_USER`/`ARTIFACTORY_PASSWORD`
-  comment block). `make ci` must pass. **Executor note:** CI change is normally 🟡 but
-  RFC #214 explicitly specifies this job in its binding Decision — the RFC IS the approval.
-  (auto/cosign-ci-sign-step)
+- [x] 🟢 **`cosign sign` stage in `.gitlab-ci.yml`** — full verification
+  writeup:
+  [docs/done/2026-06-17-cosign-ci-sign-step.md](docs/done/2026-06-17-cosign-ci-sign-step.md)
+  (PR #223). (auto/cosign-ci-sign-step)
 
 - [x] 🟢 **`make capstone-demo` + `scripts/capstone-demo.sh`** (CHARTER **Objective O6**,
   RFC #215 — demo-only wall-clock scope, 900 s budget; no dependency on other items).

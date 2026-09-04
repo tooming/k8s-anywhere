@@ -46,3 +46,7 @@ is already present in the stack-health Lab UIs panel from the moto HTTPRoute.
 - **ACK / KRO controller-runtime scrape jobs** — if ACK S3 or KRO pods expose metrics
   at `:8080/metrics`, a follow-up planner item adds the Alloy scrape job and extends
   this dashboard with `controller_runtime_reconcile_total` and workqueue panels.
+
+## PR
+
+https://github.com/tooming/k8s-anywhere/pull/201
