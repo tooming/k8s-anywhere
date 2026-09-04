@@ -37,4 +37,4 @@ PostToolUse hook + bats coverage, alongside `readme-check`/`roadmap-check`/
 
 ## PR
 
-(this session's branch)
+https://github.com/tooming/k8s-anywhere/pull/400

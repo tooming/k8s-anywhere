@@ -57,4 +57,4 @@ for the bats run itself).
 
 ## PR
 
-See PR link on the branch `chore/capstone-securitycontext-path-aware-tests`.
+https://github.com/tooming/k8s-anywhere/pull/648

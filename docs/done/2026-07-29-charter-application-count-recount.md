@@ -47,4 +47,4 @@ folded into the count, since ArgoCD doesn't actually auto-heal it.
 
 ## PR
 
-(this run's `arch/charter-application-count-recount` branch)
+https://github.com/tooming/k8s-anywhere/pull/849

@@ -287,6 +287,26 @@ You review and merge plan PRs, same as implementation PRs.
 > Oracle items, then 4 more (batch 2); ~172 legacy items remain for future
 > bounded cycles to continue against.
 
+- [x] 🟢 **docs/done/ PR-link integrity fix — 80 files + mechanical guard
+  hardened** — full verification writeup:
+  [docs/done/2026-09-04-docs-done-pr-link-integrity-fix.md](docs/done/2026-09-04-docs-done-pr-link-integrity-fix.md).
+  (auto/docs-done-pr-link-integrity-fix)
+  (CHARTER "Everything as code; GitOps deploys it" + the repo's own docs/done/
+  convention; JANITOR-fallback finding 2026-09-04, this run's thirtieth cycle,
+  surfaced while verifying trimmed ROADMAP items' `docs/done/` mirrors during
+  the batch-2 trim below. **No prerequisites — executor may pick up
+  immediately.**)
+  `scripts/docs-done-pr-link-check.sh`'s existing placeholder-wording
+  allowlist missed dozens of other unresolved `## PR` shapes (bare branch
+  names, unnamed-PR prose, un-substituted `PR #NNN`/`pull/TBD` templates).
+  Backfilled all 80 with real, GitHub-API-verified PR links found via
+  `git log --diff-filter=A` + last-`#NNN`-in-subject extraction. Hardened the
+  guard with a second, broader pass: any file with a `## PR` heading must now
+  contain a real `github.com/.../pull/NNN` URL or bare `#NNN` — not an
+  allowlist of known-bad wordings. 3 new bats fixtures/cases cover the new
+  logic (bare-branch-name failure, no-heading skip, README.md exclusion).
+  `make ci` must pass. `docs/done/` entry required.
+
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 2** — full verification
   writeup:
   [docs/done/2026-09-04-roadmap-legacy-item-trim-batch2.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch2.md).

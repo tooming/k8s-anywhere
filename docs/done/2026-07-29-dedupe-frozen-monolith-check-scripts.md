@@ -71,5 +71,4 @@ via `git stash` before/after).
 
 ## PR
 
-Autonomous scheduled run — produced by the `executor` routine
-(`routines/executor.prompt.md` STEP 6b JANITOR fallback).
+https://github.com/tooming/k8s-anywhere/pull/886

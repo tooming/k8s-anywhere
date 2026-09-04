@@ -24,4 +24,4 @@ seed namespace dirs exist each with `kustomization.yaml` and `limitrange.yaml`.
 
 ## PR
 
-(to be filled by the autonomous scheduled run after `gh pr create`)
+https://github.com/tooming/k8s-anywhere/pull/303

@@ -57,4 +57,4 @@ with the real `mikefarah/yq` binary on `PATH` — zero `not ok`, exit 0.
 
 ## PR
 
-auto/kyverno-add-default-seccomp-namespace-exclude
+https://github.com/tooming/k8s-anywhere/pull/1354

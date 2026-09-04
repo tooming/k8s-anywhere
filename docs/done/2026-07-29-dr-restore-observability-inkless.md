@@ -43,4 +43,4 @@ which now asserts the six-namespace default). `make ci` passes.
 
 ## PR
 
-auto/dr-restore-observability-inkless
+https://github.com/tooming/k8s-anywhere/pull/883

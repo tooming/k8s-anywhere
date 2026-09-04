@@ -81,5 +81,4 @@ gap noted in PR #431's `docs/done/2026-07-16-validate-scripts-bats-coverage.md`)
 
 ## PR
 
-See the pull request opened alongside this change on branch
-`auto/hook-scripts-negative-path-coverage`.
+https://github.com/tooming/k8s-anywhere/pull/432

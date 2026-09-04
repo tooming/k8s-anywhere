@@ -44,4 +44,4 @@ authoritative gate).
 
 ## PR
 
-See PR link on the branch `upgrade/pyroscope-2.1.1-to-2.1.2`.
+https://github.com/tooming/k8s-anywhere/pull/650

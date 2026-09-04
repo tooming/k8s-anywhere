@@ -31,6 +31,23 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
+@test "docs-done-pr-link-check: fails on a '## PR' section with only a bare branch name (second pass)" {
+  run env DOCSDONEPRCHECK_ROOT="$FIX/drift-bare-branch-name" bash "$REPO/scripts/docs-done-pr-link-check.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no real PR reference"* ]]
+  [[ "$output" == *"2026-01-01-example.md"* ]]
+}
+
+@test "docs-done-pr-link-check: a file with no '## PR' heading at all is skipped (legacy, pre-migration)" {
+  run env DOCSDONEPRCHECK_ROOT="$FIX/no-pr-heading" bash "$REPO/scripts/docs-done-pr-link-check.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "docs-done-pr-link-check: docs/done/README.md's own example placeholder is excluded" {
+  run env DOCSDONEPRCHECK_ROOT="$FIX/readme-excluded" bash "$REPO/scripts/docs-done-pr-link-check.sh"
+  [ "$status" -eq 0 ]
+}
+
 @test "docs-done-pr-link-check: a missing docs/done/ directory is a clean no-op" {
   run env DOCSDONEPRCHECK_ROOT="$FIX/no-docs-done-dir" bash "$REPO/scripts/docs-done-pr-link-check.sh"
   [ "$status" -eq 0 ]

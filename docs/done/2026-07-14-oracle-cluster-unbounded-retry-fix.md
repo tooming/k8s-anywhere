@@ -59,4 +59,4 @@ session — unrelated `yq`/`helm` tooling gaps).
 
 ## PR
 
-(this session's branch)
+https://github.com/tooming/k8s-anywhere/pull/405

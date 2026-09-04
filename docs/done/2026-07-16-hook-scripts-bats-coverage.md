@@ -68,4 +68,4 @@ change).
 
 ## PR
 
-Autonomous scheduled run — see the `chore/hook-scripts-bats-coverage` branch.
+https://github.com/tooming/k8s-anywhere/pull/429

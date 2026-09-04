@@ -32,4 +32,4 @@ within its sync interval, no data loss (the `dataStorage` PVC is untouched).
 
 ## PR
 
-(auto/vault-psa-restricted)
+https://github.com/tooming/k8s-anywhere/pull/481

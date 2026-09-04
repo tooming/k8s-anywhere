@@ -28,4 +28,4 @@ Updated `docs/dependency-tree.md` with a one-line note that the
 
 ## PR
 
-https://github.com/tooming/k8s-lab/pull/TBD
+https://github.com/tooming/k8s-anywhere/pull/327

@@ -50,4 +50,4 @@ is the authoritative gate for the bats run itself).
 
 ## PR
 
-See PR link on the branch `chore/ci-workflow-job-timeouts`.
+https://github.com/tooming/k8s-anywhere/pull/649

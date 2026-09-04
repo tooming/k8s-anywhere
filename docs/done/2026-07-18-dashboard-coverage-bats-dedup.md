@@ -36,4 +36,4 @@ a local sandbox `yq` version mismatch, not a repo defect).
 
 ## PR
 
-(chore/dashboard-coverage-bats-dedup)
+https://github.com/tooming/k8s-anywhere/pull/488

@@ -67,4 +67,4 @@ more errors, one self-introduced by the edit above:
 
 ## PR
 
-(this session's branch)
+https://github.com/tooming/k8s-anywhere/pull/404

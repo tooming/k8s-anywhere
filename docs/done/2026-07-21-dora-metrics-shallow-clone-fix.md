@@ -71,5 +71,4 @@ No topology change — no README/`docs/dependency-tree.md` update needed.
 
 ## PR
 
-See the PR this file was committed alongside
-(`chore/dora-metrics-shallow-clone-fix`).
+https://github.com/tooming/k8s-anywhere/pull/646

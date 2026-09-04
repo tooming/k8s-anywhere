@@ -51,4 +51,4 @@ on a clean checkout).
 
 ## PR
 
-(this session's branch: `claude/continue-previous-goal-hg79rz`)
+https://github.com/tooming/k8s-anywhere/pull/399

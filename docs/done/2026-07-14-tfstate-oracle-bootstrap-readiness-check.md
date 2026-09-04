@@ -43,4 +43,4 @@ after `#`, same as the other cloud-init file touched in PR #405). `make ci` pass
 
 ## PR
 
-(this session's branch)
+https://github.com/tooming/k8s-anywhere/pull/407

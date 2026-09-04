@@ -40,4 +40,4 @@ this repo for that failure mode; it resolves only when Oracle's capacity does.
 
 ## PR
 
-(this session's branch)
+https://github.com/tooming/k8s-anywhere/pull/412

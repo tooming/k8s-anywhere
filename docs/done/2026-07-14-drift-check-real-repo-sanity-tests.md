@@ -23,4 +23,4 @@ No script changes — both scripts already passed against the real repo when run
 
 ## PR
 
-(this session's branch)
+https://github.com/tooming/k8s-anywhere/pull/401

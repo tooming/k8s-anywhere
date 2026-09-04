@@ -42,4 +42,4 @@ readOnlyRootFilesystem hardening item filed 2026-07-14.
 
 ## PR
 
-<!-- filled in after opening the PR -->
+https://github.com/tooming/k8s-anywhere/pull/415

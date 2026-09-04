@@ -75,4 +75,4 @@ in this same cycle (no audit outlives one cycle, per STEP 2).
 
 ## PR
 
-(this run's `arch/adr-0018-redis-license-recheck` branch)
+https://github.com/tooming/k8s-anywhere/pull/830

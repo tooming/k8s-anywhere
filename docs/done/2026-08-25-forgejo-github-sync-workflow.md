@@ -95,4 +95,4 @@ standing `[Action required]` issue #1345.
 
 ## PR
 
-auto/forgejo-github-sync-workflow
+https://github.com/tooming/k8s-anywhere/pull/1347

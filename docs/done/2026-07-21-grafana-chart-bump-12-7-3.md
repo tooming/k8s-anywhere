@@ -62,4 +62,4 @@ authoritative gate).
 
 ## PR
 
-See PR link on the branch `upgrade/grafana-chart-12.7.2-to-12.7.3`.
+https://github.com/tooming/k8s-anywhere/pull/653

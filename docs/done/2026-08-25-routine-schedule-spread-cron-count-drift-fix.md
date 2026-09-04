@@ -51,4 +51,4 @@ green.
 
 ## PR
 
-auto/routine-schedule-spread-cron-count-fix
+https://github.com/tooming/k8s-anywhere/pull/1344

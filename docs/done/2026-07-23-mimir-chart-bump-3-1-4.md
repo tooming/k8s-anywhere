@@ -57,4 +57,4 @@ authoritative gate for those).
 
 ## PR
 
-See PR link on the branch `upgrade/mimir-3-1-3-to-3-1-4`.
+https://github.com/tooming/k8s-anywhere/pull/665

@@ -17,4 +17,4 @@ real-metric Grafana dashboard) for the CNI layer. (RFC #358, ADR-0014, ADR-0004)
 
 ## PR
 
-#auto/cilium-agent-metrics
+https://github.com/tooming/k8s-anywhere/pull/367

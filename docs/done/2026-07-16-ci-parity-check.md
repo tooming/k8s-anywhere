@@ -43,4 +43,4 @@ script-only-in-workflow) with an ad hoc fixture before relying on it.
 
 ## PR
 
-Autonomous session run — see the `claude/work-until-credits-exhausted-b828b2` branch.
+https://github.com/tooming/k8s-anywhere/pull/437

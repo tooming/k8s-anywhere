@@ -65,4 +65,4 @@ cycle 3's PR) — 2781 lines of gate output, zero `not ok`, exit 0.
 
 ## PR
 
-auto/forgejo-argocd-repo-secret-insecure-field-verified
+https://github.com/tooming/k8s-anywhere/pull/1353
