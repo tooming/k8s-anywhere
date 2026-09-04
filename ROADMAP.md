@@ -284,8 +284,29 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one. **Pilot batch done
 > 2026-09-04** (see the ROADMAP items immediately below) — trimmed 4 RFC #377
-> Oracle items, then 4 more (batch 2), then 5 more (batch 3); ~167 legacy
-> items remain for future bounded cycles to continue against.
+> Oracle items, then 4 more (batch 2), then 5 more (batch 3), then 5 more
+> (batch 4); ~162 legacy items remain for future bounded cycles to
+> continue against.
+
+- [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 4** — full verification
+  writeup:
+  [docs/done/2026-09-04-roadmap-legacy-item-trim-batch4.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch4.md).
+  (auto/roadmap-legacy-item-trim-batch4)
+  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
+  scale); JANITOR-fallback cleanup 2026-09-04, this run's third cycle,
+  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated (unchanged since cycle 2 — issues #633 and
+  #1229 both re-checked, no new confirmation) and PLANNER/TRIAGER
+  re-confirmed empty (zero new/ungroomed issues; `make ci` zero drift).
+  Continues the legacy-item-trim JANITOR fallback from batch 3.
+  **No prerequisites — executor may pick up immediately.**)
+  Trimmed 5 more legacy items — the Kyverno + cosign + Trivy Operator +
+  ADR-0017 sequence — each verified against its real `docs/done/` mirror
+  before touching the ROADMAP text; backfilled 4 of those 5 mirrors' own
+  missing/placeholder `## PR` sections with the real merged-PR link first
+  (#170, #177, #178, #183 — one still carried a literal `PR #TBD`). No
+  information lost, 153 lines saved. `ROADMAP.md` 7187→7034 lines.
+  `make ci` must pass. `docs/done/` entry required.
 
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 3** — full verification
   writeup:
@@ -3603,114 +3624,19 @@ there is no point where the lab loses a working git source or CI path.
   > as of this writing) — if a raw fetch 404s, check the old repo's chart README for a
   > migration notice before assuming the path is wrong.
 
-- [x] 🟢 **Kyverno engine + observability** (CHARTER **Objective O1**,
-  RFC #153 — see
-  [ADR-0019](docs/decisions/adr-0019-kyverno-admission-engine.md) for
-  the binding chart values, scrape target, and namespace profile).
-  Add `gitops/platform/kyverno.yaml` (auto-synced ArgoCD
-  `Application`, chart `kyverno/kyverno` v3.3.x from
-  `https://kyverno.github.io/kyverno/`, namespace `kyverno`; pin a
-  specific 3.3.x patch at executor pickup). Apply the per-ADR
-  `valuesObject` lab footprint overrides: 1 replica per controller +
-  memory limits per ADR-0019 §"Footprint controls" (admission 256Mi,
-  background 128Mi, cleanup 64Mi, reports 128Mi). Add
-  `gitops/kyverno/namespace.yaml` with PSA labels at `baseline` +
-  `enforce-version: latest` per ADR-0019 (carve-out is `baseline`,
-  not `restricted` — webhook TLS material needs `fsGroup`).
-  Default-deny NetworkPolicy overlay at
-  `gitops/kyverno/networkpolicy/kustomization.yaml` referencing the
-  shared baseline templates + ingress TCP 9443 from the
-  kube-apiserver (webhook callback — use the existing apiserver
-  `ipBlock` pattern from `allow-dns-and-apiserver.yaml`) + ingress
-  TCP 8000 from `observability` (metrics scrape) + egress to
-  kube-apiserver for admission review fan-out. New auto-synced
-  `Application` `gitops/platform/kyverno-networkpolicy.yaml`
-  (sync-wave 4, `LoadRestrictionsNone`). New `kyverno` scrape job
-  in `gitops/platform/observability-alloy.yaml` targeting
-  `kyverno-svc.kyverno.svc.cluster.local:8000` per ADR-0019
-  §"Scrape target". New `grafana/dashboards/lab-kyverno.json`
-  ("Lab — Kyverno (Admission Policy)") modelled on `lab-vault.json`
-  stat-row: pod running per controller
-  (admission/background/cleanup/reports from KSM), memory +
-  restarts (cAdvisor), ArgoCD sync state, policy results rate from
-  real `kyverno_policy_results_total` by `policy_validation_mode` +
-  `policy_background_mode`, admission review latency p95 from
-  `kyverno_admission_review_duration_seconds_bucket`,
-  policy-execution errors from
-  `kyverno_policy_execution_duration_seconds_count` filtered by
-  `result!="pass"`. Wire dashboard into the Grafana "Lab UIs" panel
-  (no HTTPRoute — Kyverno has no UI; document in the PR body).
-  Update `docs/dependency-tree.md` with a KYVERNO subgraph + Alloy
-  scrape edge. New `tests/kyverno.bats`: Application shape, chart
-  source + version pin, namespace PSA labels, NetworkPolicy overlay
-  structure, scrape job target, dashboard file + three required
-  panels. **Executor note:** if the PR crosses ~400 lines per
-  WAYS-OF-WORKING.md §3, ship the chart Application + namespace +
-  NetworkPolicy in PR 1; file the dashboard + Alloy scrape + bats
-  as the next planner item. The `kyverno: baseline` row addition
-  to ADR-0017's per-namespace profile table is a separate small
-  docs item (see "ADR-0017 amendment" below) — do NOT include it
-  here. The *initial ClusterPolicy set* (validate + mutate +
-  verifyImages) lands as the next item. (auto/kyverno-engine)
+- [x] 🟢 **Kyverno engine + observability** — full verification writeup:
+  [docs/done/auto-kyverno-engine.md](docs/done/auto-kyverno-engine.md)
+  (PR #170). (auto/kyverno-engine)
 
 - [x] 🟢 **Kyverno initial ClusterPolicies (validate + mutate +
-  verifyImages)** (CHARTER **Objective O1** + gates **Objective O4**,
-  RFC #153 — ADR-0019 §"Initial ClusterPolicy set" for binding
-  policy text). Wait for the Kyverno engine PR above to merge before
-  this one (CRDs need to exist for the policies to validate against
-  in `make ci`). Add four `ClusterPolicy` manifests under
-  `gitops/kyverno/policies/` (each ≤ 50 lines per ADR-0019):
-  `require-pod-security-restricted.yaml` (validate `enforce`-mode;
-  matches all pods; skips namespaces labelled
-  `pod-security.kubernetes.io/enforce=baseline` or `=privileged`;
-  backstops ADR-0017);
-  `disallow-latest-tag.yaml` (validate; rejects `image: *:latest`
-  or no-tag);
-  `add-default-seccomp.yaml` (mutate; injects
-  `seccompProfile.type=RuntimeDefault` when omitted);
-  `verify-image-signatures.yaml` (verifyImages; cosign matching the
-  `cosign-public-key` ConfigMap seeded by the cosign-bootstrap
-  script; scoped to `artifactory.127.0.0.1.nip.io/**` per ADR-0019
-  §"verifyImages scope" so upstream chart images are *not*
-  rejected). Add `gitops/platform/kyverno-policies.yaml` (auto-synced
-  `Application`, sync-wave 5 — after the engine, before policies
-  need to take effect; matches RFC #153 acceptance criteria).
-  Extend `tests/kyverno.bats` (or new `tests/kyverno-policies.bats`)
-  asserting all four policy files exist, the verifyImages policy
-  references the artifactory registry pattern, the PSS backstop has
-  the documented skip labels, the seccomp mutation has the correct
-  `mutate.patchStrategicMerge` shape. **Executor note:** the
-  `verifyImages` policy will *not* admit any image until the cosign
-  signing step in `.gitlab-ci.yml` is wired (separate planner item
-  once the cosign-bootstrap script lands). To keep the lab
-  functional in the interim, gate the
-  `verify-image-signatures.yaml` policy as `failurePolicy: Ignore`
-  *and* set `validationFailureAction: Audit`; flip to `Enforce` in
-  a future planner item once the CI signing flow lands. Document
-  this stance in the PR body. (auto/kyverno-policies)
+  verifyImages)** — full verification writeup:
+  [docs/done/legacy-kyverno-initial-clusterpolicies-validate-mutate-verifyimages.md](docs/done/legacy-kyverno-initial-clusterpolicies-validate-mutate-verifyimages.md)
+  (PR #177). (auto/kyverno-policies)
 
 - [x] 🟢 **cosign-bootstrap.sh day-0 seam (key generation +
-  ConfigMap)** (CHARTER **Objective O4** enabler, RFC #153 —
-  script-only PR per ADR-0019 §"Cosign keypair management"). New
-  `scripts/cosign-bootstrap.sh` that: (a) generates a cosign
-  keypair under `infra/secrets/cosign/` (gitignored — the path is
-  the standard local-only secret seam used by the existing
-  `vault-bootstrap.sh` and `garage-bootstrap.sh`); (b) seeds the
-  cosign public key into a Kubernetes `ConfigMap` named
-  `cosign-public-key` in namespace `kyverno` (`kubectl create
-  configmap`; idempotent with `--dry-run=client -o yaml | kubectl
-  apply -f -` so re-running matches the existing seam patterns).
-  Per RFC #153 acceptance criteria: this script lands in this PR
-  but is NOT yet wired into `make up` — that's a separate planner
-  item once the script is reviewed. Add
-  `tests/cosign-bootstrap.bats` (clusterless structural tests:
-  script exists, is executable, declares the expected `cosign
-  generate-key-pair` invocation, the ConfigMap name + namespace
-  match the verifyImages policy's `keyRef`, the
-  `--dry-run | apply` idempotency pattern is used). No Makefile
-  target is added yet (Makefile changes are 🟡 — defer to the
-  "wire cosign-bootstrap into make up" follow-up the next planner
-  cycle files once this lands). (auto/cosign-bootstrap-script)
+  ConfigMap)** — full verification writeup:
+  [docs/done/auto-cosign-bootstrap-script.md](docs/done/auto-cosign-bootstrap-script.md)
+  (PR #178). (auto/cosign-bootstrap-script)
 
 - [x] 🟢 **Velero controller + Garage S3 backend** — full verification writeup:
   [docs/done/2026-06-12-velero-controller.md](docs/done/2026-06-12-velero-controller.md)
@@ -3735,73 +3661,15 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-13-capstone-rollout.md](docs/done/2026-06-13-capstone-rollout.md)
   (PR #200). (auto/capstone-rollout)
 
-- [x] 🟢 **Trivy Operator continuous scanning + SBOMs** (CHARTER
-  **Objective O1** + CHARTER goal *supply-chain security
-  end-to-end*, RFC #156 — see
-  [ADR-0022](docs/decisions/adr-0022-trivy-operator-supply-chain.md)
-  for the binding chart values, scanner toggles, and namespace
-  profile). Add `gitops/platform/trivy-operator.yaml`
-  (auto-synced `Application`, chart `aqua/trivy-operator`
-  v0.30.x from `https://aquasecurity.github.io/helm-charts/`,
-  namespace `trivy-system`; pin a specific 0.30.x patch at
-  executor pickup). Apply the per-ADR `valuesObject`: all
-  scanners enabled per RFC #156 *Decision* (`vulnerability`,
-  `configAudit`, `rbacAssessment`, `exposedSecret`,
-  `sbomGeneration`, `clusterCompliance`, `infraAssessment`);
-  `excludeNamespaces` list per the RFC
-  (`kube-system,kube-public,kube-node-lease`); 5Gi vuln-DB cache
-  PVC on `local-path`. Add `gitops/trivy-system/namespace.yaml`
-  with PSA labels at `baseline` (the controller alone is
-  `restricted`-compatible but the chart applies one profile to
-  both; scan-job pods unpack arbitrary OCI artifacts which
-  exceeds `restricted`). Default-deny NetworkPolicy overlay at
-  `gitops/trivy-system/networkpolicy/kustomization.yaml`
-  (ingress 8080 from `observability`; egress 443 to the vuln-DB
-  mirror `ghcr.io` — use the existing `ipBlock 0.0.0.0/0` egress
-  pattern with port 443 since the mirror's IP is not stable).
-  New auto-synced `Application`
-  `gitops/platform/trivy-system-networkpolicy.yaml` (sync-wave 4,
-  `LoadRestrictionsNone`). New `trivy-operator` scrape job in
-  `gitops/platform/observability-alloy.yaml`
-  (`trivy-operator.trivy-system.svc.cluster.local:8080`). New
-  `grafana/dashboards/lab-trivy.json` ("Lab — Trivy Operator
-  (Supply Chain)") with stat-row (operator running, ArgoCD
-  sync) + CVE-by-severity stat panels (Critical / High / Medium
-  / Low from `trivy_image_vulnerabilities{severity=…}`) +
-  top-10 vulnerable workloads table + configAudit pass/fail pie
-  + scan-job p95 duration timeseries + a stat panel counting
-  `SbomReport` CRs per namespace (CHARTER SBOM goal). Wire
-  dashboard into the Grafana "Lab UIs" panel. Update
-  `docs/dependency-tree.md` (TRIVY subgraph + vuln-DB egress +
-  scan target edges). New `tests/trivy-operator.bats`:
-  Application shape, chart source + version pin, scanner toggles
-  match the RFC, `excludeNamespaces` matches the RFC, namespace
-  PSA labels, NetworkPolicy overlay structure, scrape job
-  target, dashboard file + required panels. **Executor note:**
-  if the PR crosses ~400 lines per WAYS-OF-WORKING.md §3, ship
-  the chart Application + namespace + NetworkPolicy in PR 1;
-  file the dashboard + Alloy scrape + bats as the next planner
-  item. The `trivy-system: baseline` row addition to ADR-0017
-  is in the combined "ADR-0017 amendment" docs item below.
-  (auto/trivy-operator)
+- [x] 🟢 **Trivy Operator continuous scanning + SBOMs** — full
+  verification writeup:
+  [docs/done/auto-trivy-operator.md](docs/done/auto-trivy-operator.md)
+  (PR #183). (auto/trivy-operator)
 
 - [x] 🟢 **ADR-0017 amendment — four Tier 1 next-wave namespace
-  rows** (CHARTER **Objective O2** record-keeping; docs-only).
-  Small docs PR adding four rows to the ADR-0017
-  §"Per-namespace profile" table for the namespaces introduced
-  by the Tier 1 next-wave items above: `kyverno` → `baseline`
-  (webhook TLS `fsGroup` per ADR-0019 §"Per-namespace profile
-  update"); `velero` → `restricted` (controller + node-agent
-  both non-root per ADR-0021); `argo-rollouts` → `restricted`
-  (per ADR-0020); `trivy-system` → `baseline` (scan-job pods
-  unpack arbitrary OCI artifacts per ADR-0022). Cite each row's
-  source ADR in the "Reason (today)" column. Add one bats
-  assertion to `tests/securitycontext.bats` per namespace
-  verifying the namespace manifest's labels match the ADR-0017
-  row. **Executor note:** this item can be done as soon as the
-  corresponding namespace manifests land — if a namespace
-  manifest isn't merged yet, skip that row and file a follow-up
-  planner item. (auto/adr-0017-next-wave-rows)
+  rows** — full verification writeup:
+  [docs/done/2026-06-12-auto-adr-0017-next-wave-rows.md](docs/done/2026-06-12-auto-adr-0017-next-wave-rows.md)
+  (PR #184). (auto/adr-0017-next-wave-rows)
 
 - [x] 🟢 **Lab — Cloud control-plane (moto / ACK / KRO)
   dashboard** (CHARTER **Objective O5**, due **2026-09-30**:
