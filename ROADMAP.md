@@ -283,9 +283,22 @@ You review and merge plan PRs, same as implementation PRs.
 > items' own inline writeups are a separate, larger cleanup (each needs
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one. **Pilot batch done
-> 2026-09-04** (see the ROADMAP item immediately below) — trimmed the 4 RFC
-> #377 Oracle items as a small, fully-verified first pass; ~176 legacy items
-> remain for future bounded cycles to continue against.
+> 2026-09-04** (see the ROADMAP items immediately below) — trimmed 4 RFC #377
+> Oracle items, then 4 more (batch 2); ~172 legacy items remain for future
+> bounded cycles to continue against.
+
+- [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 2** — full verification
+  writeup:
+  [docs/done/2026-09-04-roadmap-legacy-item-trim-batch2.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch2.md).
+  (auto/roadmap-legacy-item-trim-batch2)
+  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
+  scale); JANITOR-fallback cleanup 2026-09-04, this run's twenty-ninth cycle,
+  continuing the pilot batch from the previous cycle. **No prerequisites —
+  executor may pick up immediately.**)
+  Trimmed 4 more legacy items, each verified against its real `docs/done/`
+  mirror before touching the ROADMAP text — no information lost, 54 lines
+  saved. `ROADMAP.md` 7351→7297 lines. `make ci` must pass. `docs/done/`
+  entry required.
 
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — pilot batch (RFC #377 Oracle
   items)** — full verification writeup:
@@ -6431,100 +6444,24 @@ there is no point where the lab loses a working git source or CI path.
   actual pass/fail behavior is unchanged — verify each one still exits the same
   way before/after). `docs/done/` entry required. (auto/scripts-drift-var-rename)
 
-- [x] 🟢 **Extract shared `ok()`/`bad()` helpers to `scripts/lib/colors.sh`; add a
-  recurrence guard** (janitor finding, issue #957; **pick up ONLY after
-  `auto/scripts-drift-var-rename` merges** — every `scripts/*.sh` defining its
-  own `bad()` must already use `drift` as the failure-flag variable name before
-  this extraction is safe, since the shared version below writes to the
-  sourcing script's own `drift` variable). Add `ok()`/`bad()` function
-  definitions to `scripts/lib/colors.sh` (which already centralizes the
-  `$G`/`$R`/`$Z` color codes these two functions use); remove each script's own
-  inline `ok()`/`bad()` copy, replacing with (or confirming) a
-  `source .../lib/colors.sh` line. New `scripts/ok-bad-lib-check.sh` (+ `make
-  ok-bad-lib-check`, wired into `make ci` and the GitHub Actions `drift` job,
-  plus a PostToolUse sync hook) mirroring `scripts/yqs-lib-check.sh`'s pattern
-  (PR #956): fails if any `scripts/*.sh` still defines its own local
-  `ok()`/`bad()` instead of sourcing the shared copy. Add matching bats coverage
-  (`tests/drift-<scope>.bats` + `tests/hook-scripts-<scope>.bats` conventions —
-  the relevant monoliths are frozen). `make ci` must pass. `docs/done/` entry
-  required. (auto/ok-bad-lib-extract)
+- [x] 🟢 **Extract shared `ok()`/`bad()` helpers to `scripts/lib/colors.sh`;
+  add a recurrence guard** (janitor finding, issue #957) — full writeup:
+  [docs/done/2026-08-03-ok-bad-lib-extract.md](docs/done/2026-08-03-ok-bad-lib-extract.md).
+  (auto/ok-bad-lib-extract)
 
-- [x] 🟢 **`capstone-pipeline` governance LimitRange — RFC #294 fan-out completion**
-  (CHARTER **Core Values** §"Fits the 16 GB reality" + §"Everything as code; GitOps
-  deploys it"; RFC #294 mapping-table completion gap — discovered via a systematic
-  cross-reference of every PSA-labeled namespace against
-  `gitops/platform/governance-appset.yaml`'s coverage list, same technique that found
-  the `auto/remove-dead-kiali-governance` cleanup. **No prerequisites — executor may
-  pick up immediately.**) The `capstone-pipeline` namespace
-  (`gitops/kargo-project/namespace.yaml`, PSA `restricted` — ADR-0017's own row calls
-  it "a defense-in-depth floor ensuring any future pod admitted here is hardened by
-  default") is the only PSA-labeled, non-excluded namespace still missing a
-  governance LimitRange entry: every other standard-tier namespace already has one,
-  and `capstone-pipeline` is not in the documented on-demand-heavy exclusion list
-  (`tidb`, `tidb-admin`, `longhorn-system`, `istio-system`, `inkless`) or the
-  ADR-0024 `artifactory` exclusion. Add
-  `gitops/governance/capstone-pipeline/kustomization.yaml` (standard tier, mirrors
-  every other leaf overlay: `resources: [../base/limitrange-standard.yaml]`). Add a
-  `capstone-pipeline-governance` entry to `governance-appset.yaml`'s list generator
-  (`gitPath: gitops/governance/capstone-pipeline`, `destNamespace:
-  capstone-pipeline`). Add `capstone-pipeline` to `tests/governance.bats`'s
-  `STANDARD_NS`. Update `docs/dependency-tree.md`'s wave-4 governance list to include
-  `capstone-pipeline`. **Executor note:** unlike most governance items, this creates
-  one new piece of always-on auto-synced cluster state (a `capstone-pipeline`
-  namespace + LimitRange, pre-created ahead of `make kargo-up`) — the same
-  pre-creation pattern already used for the `kargo` namespace itself via
-  `kargo-extras`, not a new pattern. PR body must call this out explicitly and note
-  the rollback path (revert the appset entry; ArgoCD prunes the LimitRange +
-  namespace within its sync interval — `capstone-pipeline` hosts no other workload
-  today, so pruning is lossless). `make ci` must pass. `docs/done/` entry required.
+- [x] 🟢 **`capstone-pipeline` governance LimitRange — RFC #294 fan-out
+  completion** — full writeup:
+  [docs/done/2026-07-26-governance-capstone-pipeline-limitrange.md](docs/done/2026-07-26-governance-capstone-pipeline-limitrange.md).
   (auto/governance-capstone-pipeline)
 
 - [x] 🟢 **O5 bats gap — `lab-argocd.json` + `lab-gitsync.json` in
-  `tests/dashboard-coverage.bats`** (CHARTER **Core Values** §"Docs &
-  dashboards don't drift" + **Objective O5**, due **2026-09-30**; O5 drift
-  gap — both dashboards exist in `grafana/dashboards/` with real Mimir
-  datasource panels (`"uid": "mimir"`) but are absent from the O5 coverage
-  sweep in `tests/dashboard-coverage.bats`. `lab-argocd.json` (32 panels)
-  covers ArgoCD operational metrics already scraped by Alloy (four scrape
-  targets in `observability-alloy.yaml`: application-controller-metrics:8082,
-  server-metrics:8083, repo-server-metrics:8084,
-  applicationset-controller-metrics:8080). `lab-gitsync.json` (4 panels,
-  "Lab — Git Sync") monitors Grafana native Git Sync health and proves
-  ADR-0006 works in the lab. **No prerequisites — executor may pick up
-  immediately.** Add two section blocks to `tests/dashboard-coverage.bats`
-  following the existing 2-assertion-per-section pattern (see `# argo-rollouts`
-  section for the exact style): block headed `# argocd` with
-  `@test "lab-argocd.json exists (argocd coverage)"` asserting
-  `[ -f "$DASHBOARDS/lab-argocd.json" ]` and
-  `@test "lab-argocd.json has real Mimir datasource panel (ADR-0004)"`
-  asserting `run grep -q '"uid": "mimir"' "$DASHBOARDS/lab-argocd.json"`;
-  block headed `# gitsync` with the same two assertions for `lab-gitsync.json`.
-  Verify both JSON files exist and contain `"uid": "mimir"` before committing.
-  `make ci` must pass. `docs/done/` entry required.
+  `tests/dashboard-coverage.bats`** — full writeup:
+  [docs/done/2026-07-11-o5-argocd-gitsync-coverage-bats.md](docs/done/2026-07-11-o5-argocd-gitsync-coverage-bats.md).
   (auto/o5-argocd-gitsync-coverage-bats)
 
 - [x] 🟢 **Governance gap — add `envoy-gateway-system` and `node-exporter`
-  to the platform governance ApplicationSet** (CHARTER **Core Values** §"Resource
-  limits everywhere"; RFC #294 execution gap — both namespaces are always-on,
-  carry PSA labels, and have full NP overlays, but neither appears in
-  `gitops/platform/governance-appset.yaml` and no explicit exclusion for them
-  exists in RFC #294's rationale; no LimitRange is applied to either namespace
-  today. **No prerequisites — executor may pick up immediately.**) Three
-  deliverables: (1) add two entries in the `# standard tier` block of
-  `gitops/platform/governance-appset.yaml` matching the existing format
-  (`appName: envoy-gateway-system-governance`, `gitPath:
-  gitops/governance/envoy-gateway-system`, `destNamespace:
-  envoy-gateway-system`) and the same for `node-exporter`; (2) create
-  `gitops/governance/envoy-gateway-system/kustomization.yaml` and
-  `gitops/governance/node-exporter/kustomization.yaml`, each containing
-  `namespace: <ns>` + `resources: - ../base/limitrange-standard.yaml` (same
-  pattern as `gitops/governance/argocd/kustomization.yaml`); (3) extend
-  `tests/governance.bats` with two assertions per new namespace:
-  `envoy-gateway-system governance leaf dir has kustomization.yaml` (asserting
-  `[ -f "$GOV/envoy-gateway-system/kustomization.yaml" ]`) and
-  `envoy-gateway-system kustomization references the shared base limitrange`
-  (asserting `run grep -q 'base/limitrange-standard.yaml'`), and the same two
-  for `node-exporter`. `make ci` must pass. `docs/done/` entry required.
+  to the platform governance ApplicationSet** — full writeup:
+  [docs/done/2026-07-11-auto-governance-envoy-node-exporter.md](docs/done/2026-07-11-auto-governance-envoy-node-exporter.md).
   (auto/governance-envoy-node-exporter)
 
 - [x] 🟢 **NetworkPolicy overlay — `capstone-pipeline` namespace** (**blocked
