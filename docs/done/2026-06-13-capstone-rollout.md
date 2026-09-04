@@ -4,7 +4,7 @@
 (CHARTER Objective O1 + capstone "Argo Rollouts canaries on real Mimir SLOs → Envoy
 routes it" vision, RFC #154 / ADR-0020 §"Capstone integration").
 **Branch:** auto/capstone-rollout
-**PR:** (see GitHub)
+**PR:** https://github.com/tooming/k8s-anywhere/pull/200
 
 ## Item description (verbatim from ROADMAP)
 

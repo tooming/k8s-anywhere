@@ -284,8 +284,34 @@ You review and merge plan PRs, same as implementation PRs.
 > verifying against its `docs/done/` mirror before trimming) intentionally left
 > for a future bounded cycle, not attempted in this one. **Pilot batch done
 > 2026-09-04** (see the ROADMAP items immediately below) — trimmed 4 RFC #377
-> Oracle items, then 4 more (batch 2); ~172 legacy items remain for future
-> bounded cycles to continue against.
+> Oracle items, then 4 more (batch 2), then 5 more (batch 3); ~167 legacy
+> items remain for future bounded cycles to continue against.
+
+- [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 3** — full verification
+  writeup:
+  [docs/done/2026-09-04-roadmap-legacy-item-trim-batch3.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch3.md).
+  (auto/roadmap-legacy-item-trim-batch3)
+  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
+  scale); JANITOR-fallback cleanup 2026-09-04, this run's second cycle,
+  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  found fully gated (all three unchecked items re-confirmed still blocked —
+  issues #633 and #1229 both re-checked, neither has a new confirmation
+  comment) and PLANNER (zero ungroomed intake, zero un-RFC'd 🟡 items, zero
+  `docs/roadmap/incoming/` files)/ARCHITECT (zero open `adr-audit` issues,
+  no 🟡 items to RFC)/DOC-DRIFT-AUTHOR (`make ci` had zero drift warnings)
+  all came up empty. TRIAGER found and labeled one genuinely untriaged issue
+  (#1385, missing domain/readiness/priority) as this run's first cycle —
+  a real, complete labels-only deliverable in its own right, not a PR. This
+  cycle continues the legacy-item-trim JANITOR fallback from batch 2.
+  **No prerequisites — executor may pick up immediately.**)
+  Trimmed 5 more legacy items, each verified against its real `docs/done/`
+  mirror before touching the ROADMAP text — no information lost, 156 lines
+  saved. Also fixed each mirror's own placeholder PR link
+  (`(see GitHub)`/`(autonomous scheduled run — executor routine)`) with the
+  real merged-PR URL found via GitHub search, verifying `merged: true`
+  since two of the five components had an earlier closed-unmerged attempt
+  under the same title. `ROADMAP.md` 7297→7141 lines. `make ci` must pass.
+  `docs/done/` entry required.
 
 - [x] 🟢 **docs/done/ PR-link integrity fix — 80 files + mechanical guard
   hardened** — full verification writeup:
@@ -3686,197 +3712,28 @@ there is no point where the lab loses a working git source or CI path.
   "wire cosign-bootstrap into make up" follow-up the next planner
   cycle files once this lands). (auto/cosign-bootstrap-script)
 
-- [x] 🟢 **Velero controller + Garage S3 backend** (CHARTER
-  **Objective O1** + gates **Objective O3**, RFC #155 — see
-  [ADR-0021](docs/decisions/adr-0021-velero-backup-restore.md) for
-  the binding chart values, Garage backend shape, and
-  ExternalSecret). Add `gitops/platform/velero.yaml` (auto-synced
-  `Application`, chart `vmware-tanzu/velero` v8.4.x from
-  `https://vmware-tanzu.github.io/helm-charts`, namespace
-  `velero`; pin a specific 8.4.x patch at executor pickup). Apply
-  the per-ADR `valuesObject`: `backupStorageLocation` provider
-  `aws`, `s3ForcePathStyle=true`,
-  `s3Url=http://garage.storage.svc.cluster.local:3900`, bucket
-  `velero`, `defaultVolumesToFsBackup: true`,
-  `uploaderType: kopia` (NOT restic — restic is deprecated in
-  Velero 1.14 per ADR-0021). Add `gitops/velero/namespace.yaml`
-  with PSA labels at `restricted` (controller + node-agent both
-  run non-root; node-agent DaemonSet gets a per-workload
-  `hostPath` carve-out matching the node-exporter pattern — see
-  ADR-0017 §"Per-workload field carve-outs"). Update
-  `scripts/garage-bootstrap.sh` to (a) create the `velero-key`
-  Garage access key, (b) grant on the `velero` bucket, (c)
-  create the `velero` bucket, (d) store the rendered creds at
-  Vault path `secret/velero/s3` (mirrors the existing
-  `inkless/s3` flow). Add
-  `gitops/secrets/velero-s3-externalsecret.yaml` (ESO
-  ExternalSecret rendering the `cloud-credentials` Secret the
-  chart consumes — see ADR-0021 §"ExternalSecret shape" for the
-  AWS-style INI body). Update `scripts/vault-bootstrap.sh`
-  ensuring the `secret/velero/s3` path exists (mirrors inkless).
-  Default-deny NetworkPolicy overlay at
-  `gitops/velero/networkpolicy/kustomization.yaml` (ingress 8085
-  from `observability` for metrics; egress 3900 to `storage` for
-  Garage S3; egress to backed-up-namespace pod IPs for Kopia PV
-  reads — Kopia egress allow uses `podSelector: {}` across
-  namespaces `data`/`tidb`/`capstone`/`vault` matching the
-  Schedule set in the next item). New auto-synced `Application`
-  `gitops/platform/velero-networkpolicy.yaml` (sync-wave 4,
-  `LoadRestrictionsNone`). New `velero` Alloy scrape job in
-  `gitops/platform/observability-alloy.yaml`
-  (`velero.velero.svc.cluster.local:8085`). New
-  `grafana/dashboards/lab-velero.json` ("Lab — Velero (Backup &
-  Restore)") with stat-row (controller running, node-agent
-  running, ArgoCD sync) +
-  `velero_backup_last_successful_timestamp` per Schedule +
-  `velero_backup_partial_failure_total` + restore success rate.
-  Wire dashboard into the Grafana "Lab UIs" panel. Update
-  `docs/dependency-tree.md` (VELERO subgraph + Garage S3 edge).
-  New `tests/velero.bats`: Application shape, chart source +
-  version pin, Garage backend URL + path-style + bucket,
-  ExternalSecret references `velero/s3`, namespace PSA labels,
-  NetworkPolicy overlay structure, scrape job target, dashboard
-  file + required panels, the `garage-bootstrap.sh` and
-  `vault-bootstrap.sh` updates are present. **Executor note:**
-  if the PR crosses ~400 lines per WAYS-OF-WORKING.md §3, ship
-  the chart Application + namespace + bootstrap script updates +
-  ExternalSecret in PR 1; file the dashboard + NetworkPolicy +
-  Alloy scrape as the next planner item. The `velero: restricted`
-  row addition to ADR-0017 is a separate small docs item (see
-  "ADR-0017 amendment" below). The four `Schedule` CRs land in
-  the next item; the `make dr-restore` Make target lands in the
-  item after that. (auto/velero-controller)
+- [x] 🟢 **Velero controller + Garage S3 backend** — full verification writeup:
+  [docs/done/2026-06-12-velero-controller.md](docs/done/2026-06-12-velero-controller.md)
+  (PR #189). (auto/velero-controller)
 
-- [x] 🟢 **Velero Schedules — four stateful namespaces** (CHARTER
-  **Objective O1** + gates **Objective O3**, RFC #155 — see
-  ADR-0021 §"Schedule set" for binding cron + TTL). Wait for the
-  Velero controller PR above to merge first (CRDs need to exist
-  for Schedule manifests to validate in `make ci`). Add four
-  `Schedule` CRs under `gitops/velero/schedules/`:
-  `data-daily.yaml` (`schedule: "0 2 * * *"`, `ttl: 168h`,
-  `includedNamespaces: [data]`, `defaultVolumesToFsBackup: true`);
-  `tidb-daily.yaml` (`schedule: "30 2 * * *"`, TTL 168h,
-  namespace `tidb`); `capstone-daily.yaml`
-  (`schedule: "0 3 * * *"`, TTL 168h, namespace `capstone`);
-  `vault-daily.yaml` (`schedule: "30 3 * * *"`, TTL 168h,
-  namespace `vault`). Add `gitops/platform/velero-schedules.yaml`
-  (auto-synced `Application`, sync-wave 5 — after the velero
-  controller establishes CRDs). Extend `tests/velero.bats` with
-  four-schedule assertions (each manifest exists, has the
-  documented cron + TTL + namespace,
-  `defaultVolumesToFsBackup: true` present on each).
-  (auto/velero-schedules)
+- [x] 🟢 **Velero Schedules — four stateful namespaces** — full verification
+  writeup:
+  [docs/done/2026-06-13-velero-schedules.md](docs/done/2026-06-13-velero-schedules.md)
+  (PR #198). (auto/velero-schedules)
 
-- [x] 🟢 **make dr-restore + scripts/dr-restore.sh — Objective O3
-  enabler** (CHARTER **Objective O3**, due **2026-12-31**: the
-  explicit `< 10 min` wall-clock bar for restoring every stateful
-  namespace from its latest Velero backup. RFC #155 acceptance
-  criteria.). Wait for the Velero Schedules PR above to merge
-  first. Add `scripts/dr-restore.sh` per ADR-0021 §"dr-restore
-  runner": iterates `velero restore create --from-schedule
-  <ns>-daily --wait` for `data`/`tidb`/`capstone`/`vault`, times
-  each restore, prints a table, fails with exit code 1 if the
-  total wall-clock exceeds 600s (Objective O3 budget) or any
-  restore reports `phase != Completed`. Add `dr-restore` target
-  to `Makefile` (clusterless `make` invocations are 🟢; the
-  script's `velero` CLI call is run by the maintainer locally —
-  not by the executor). Add `tests/dr-restore.bats` (clusterless
-  structural tests: script exists + is executable, the four
-  namespace restore lines are present, the 600s budget check is
-  implemented, the Makefile target is wired). Update
-  `docs/DR.md` with a section documenting the new `make
-  dr-restore` target and its budget. **Executor note:** this PR
-  adds a `Makefile` target — per WAYS-OF-WORKING.md §2 that is
-  normally 🟡, but the architect's RFC #155 acceptance criteria
-  explicitly names this Makefile target as part of the binding
-  decision, so the planner grooms it as 🟢 (the architect's RFC
-  is the approval). (auto/dr-restore-script)
+- [x] 🟢 **make dr-restore + scripts/dr-restore.sh — Objective O3 enabler** —
+  full verification writeup:
+  [docs/done/2026-06-13-dr-restore-script.md](docs/done/2026-06-13-dr-restore-script.md)
+  (PR #199). (auto/dr-restore-script)
 
-- [x] 🟢 **Argo Rollouts controller** (CHARTER **Objective O1**,
-  RFC #154 — see
-  [ADR-0020](docs/decisions/adr-0020-argo-rollouts-progressive-delivery.md)
-  for the binding chart values, plug-in install, and
-  traffic-router config). Add
-  `gitops/platform/argo-rollouts.yaml` (auto-synced
-  `Application`, chart `argo/argo-rollouts` v2.40.x from
-  `https://argoproj.github.io/argo-helm`, namespace
-  `argo-rollouts`; pin a specific 2.40.x patch at executor
-  pickup). Apply the per-ADR `valuesObject`: 1 controller replica
-  + 1 dashboard replica;
-  `controller.trafficRouterPlugins` array carrying the
-  `argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi` v0.5.0
-  plug-in per ADR-0020 §"Traffic-router plug-in". Add
-  `gitops/argo-rollouts/namespace.yaml` with PSA labels at
-  `restricted`. Add `gitops/argo-rollouts/route.yaml` (Envoy
-  `HTTPRoute` `rollouts.127.0.0.1.nip.io` → rollouts-dashboard
-  Service on TCP 3100, namespace `argo-rollouts`). Add
-  `gitops/platform/argo-rollouts-extras.yaml` (auto-synced
-  `Application` for the route). Default-deny NetworkPolicy overlay
-  at `gitops/argo-rollouts/networkpolicy/kustomization.yaml`
-  (ingress 8090 from `observability` for metrics; ingress 3100
-  from `envoy-gateway-system` for the HTTPRoute; egress 8080 to
-  `observability` for Mimir analysis queries; egress to the k8s
-  apiserver via the shared baseline). New auto-synced
-  `Application` `gitops/platform/argo-rollouts-networkpolicy.yaml`
-  (sync-wave 4, `LoadRestrictionsNone`). New `argo-rollouts`
-  scrape job in `gitops/platform/observability-alloy.yaml`
-  (`argo-rollouts-metrics.argo-rollouts.svc.cluster.local:8090`).
-  New `grafana/dashboards/lab-argo-rollouts.json` ("Lab — Argo
-  Rollouts (Progressive Delivery)") with stat-row (controller
-  running, dashboard running, ArgoCD sync) + reconcile rate +
-  Rollout phase distribution + analysis run outcomes. Wire
-  dashboard into the Grafana "Lab UIs" panel + add the new
-  HTTPRoute tile (`make lab-ui-check` must stay green). Update
-  `docs/dependency-tree.md` (ARGO-ROLLOUTS subgraph + Mimir query
-  edge + Envoy HTTPRoute edge). New `tests/argo-rollouts.bats`:
-  Application shape, chart source + version pin, plug-in install
-  block, namespace PSA labels, HTTPRoute wired, NetworkPolicy
-  overlay structure, scrape job target, dashboard file +
-  required panels. **Executor note:** if the PR crosses ~400
-  lines per WAYS-OF-WORKING.md §3, ship the chart Application +
-  namespace + HTTPRoute + NetworkPolicy in PR 1; file the
-  dashboard + Alloy scrape as the next planner item. The
-  capstone Rollout overlay + success-rate AnalysisTemplate land
-  in the next item. The `argo-rollouts: restricted` row addition
-  to ADR-0017 is a separate small docs item (see "ADR-0017
-  amendment" below). (auto/argo-rollouts-controller)
+- [x] 🟢 **Argo Rollouts controller** — full verification writeup:
+  [docs/done/2026-06-13-argo-rollouts-controller.md](docs/done/2026-06-13-argo-rollouts-controller.md)
+  (PR #190). (auto/argo-rollouts-controller)
 
-- [x] 🟢 **Capstone Rollout overlay + success-rate
-  AnalysisTemplate** (CHARTER **Objective O1** + the capstone
-  "Argo Rollouts canaries on real Mimir SLOs → Envoy routes it"
-  vision, RFC #154). Wait for the Argo Rollouts controller PR
-  above to merge first. Add
-  `gitops/argo-rollouts/analysistemplates/success-rate.yaml`
-  (`AnalysisTemplate` `success-rate` using the `prometheus`
-  provider, address
-  `http://mimir-query-frontend.observability.svc.cluster.local:8080/prometheus`,
-  header `X-Scope-OrgID: lab`, query
-  `sum(rate(envoy_cluster_upstream_rq{response_code!~"5.."}[1m]))
-  / sum(rate(envoy_cluster_upstream_rq[1m]))` — exact PromQL is
-  in ADR-0020 §"AnalysisTemplate"; success condition `>= 0.95`).
-  Add `gitops/apps/capstone/rollout.yaml` (`Rollout` resource —
-  SEPARATE file from `deployment.yaml` per RFC #154; the
-  existing Deployment stays for now as the "no-canary"
-  reference, executor may delete it in a follow-up planner item
-  once the Rollout proves out). Rollout
-  `spec.strategy.canary.steps`: `setWeight: 10` →
-  `pause: {duration: 60s}` → `analysis: success-rate` →
-  `setWeight: 50` → `pause: {duration: 60s}` →
-  `analysis: success-rate` → (auto-complete to 100% via no
-  terminal step). `spec.strategy.canary.trafficRouting.plugins`
-  references the `argoproj-labs/gatewayAPI` plug-in pointing at
-  the existing capstone HTTPRoute. Extend
-  `tests/argo-rollouts.bats` (or add
-  `tests/capstone-rollout.bats`): Rollout file exists, the four
-  steps are in the documented order, AnalysisTemplate references
-  Mimir at the documented URL with the `X-Scope-OrgID` header,
-  the success-rate query matches the documented shape, the
-  plug-in reference is correct. **Executor note:** the Rollout
-  will not produce traffic-split data until a `kubectl argo
-  rollouts set image` is run against the capstone Rollout (the
-  maintainer does this locally to demo). That's intentional —
-  the PR ships the shape, not a live demo. Document this in the
-  PR body. (auto/capstone-rollout)
+- [x] 🟢 **Capstone Rollout overlay + success-rate AnalysisTemplate** — full
+  verification writeup:
+  [docs/done/2026-06-13-capstone-rollout.md](docs/done/2026-06-13-capstone-rollout.md)
+  (PR #200). (auto/capstone-rollout)
 
 - [x] 🟢 **Trivy Operator continuous scanning + SBOMs** (CHARTER
   **Objective O1** + CHARTER goal *supply-chain security
