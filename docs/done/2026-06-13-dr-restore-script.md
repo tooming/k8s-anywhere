@@ -2,7 +2,7 @@
 
 **ROADMAP item:** `make dr-restore + scripts/dr-restore.sh — Objective O3 enabler`
 **Branch:** `auto/dr-restore-script`
-**PR:** (see PR opened by this run)
+**PR:** https://github.com/tooming/k8s-anywhere/pull/199
 
 ## What was delivered
 

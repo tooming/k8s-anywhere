@@ -2,7 +2,7 @@
 
 **ROADMAP item:** Velero controller + Garage S3 backend (CHARTER Objective O1 + gates Objective O3, RFC #155 / ADR-0021)
 **Branch:** auto/velero-controller
-**PR:** (see GitHub)
+**PR:** https://github.com/tooming/k8s-anywhere/pull/189
 
 ## What landed
 

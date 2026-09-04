@@ -1,6 +1,7 @@
 # Argo Rollouts controller (PR auto/argo-rollouts-controller)
 
 **ROADMAP item:** 🟢 Argo Rollouts controller (CHARTER Objective O1, RFC #154 / ADR-0020)
+**PR:** https://github.com/tooming/k8s-anywhere/pull/190
 
 Delivered the Argo Rollouts progressive delivery controller as an always-on ArgoCD
 Application backed by the Gateway API TrafficRouter plug-in (ADR-0020 + ADR-0008).

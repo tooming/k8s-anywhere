@@ -3,7 +3,7 @@
 **ROADMAP item:** Velero Schedules — four stateful namespaces (CHARTER Objective O1
 + gates Objective O3, RFC #155 / ADR-0021 §"Schedule set").
 **Branch:** claude/zealous-curie-evu99r
-**PR:** (see GitHub)
+**PR:** https://github.com/tooming/k8s-anywhere/pull/198
 
 ## Item description (verbatim from ROADMAP)
 
