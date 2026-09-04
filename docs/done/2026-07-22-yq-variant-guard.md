@@ -69,4 +69,4 @@ none installed in this environment).
 
 ## PR
 
-See the PR this file was committed alongside (`chore/yq-variant-guard`).
+https://github.com/tooming/k8s-anywhere/pull/662

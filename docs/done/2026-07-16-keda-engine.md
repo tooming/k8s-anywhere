@@ -98,4 +98,4 @@ repo's `release/v2.18` branch, which is reachable via git.
 
 ## PR
 
-Autonomous session run — see the `claude/work-until-credits-exhausted-b828b2` branch.
+https://github.com/tooming/k8s-anywhere/pull/444

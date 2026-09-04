@@ -33,4 +33,4 @@ entry). `tests/test-script.bats` in isolation: 8/8 pass in ~9s.
 
 ## PR
 
-Autonomous session run — see the `claude/work-until-credits-exhausted-b828b2` branch.
+https://github.com/tooming/k8s-anywhere/pull/435

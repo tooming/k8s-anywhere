@@ -41,4 +41,4 @@ repo root when unset — no behavior change for `make routines-mark-applied`).
 
 ## PR
 
-<!-- filled in after opening the PR -->
+https://github.com/tooming/k8s-anywhere/pull/418

@@ -68,4 +68,4 @@ verifying the single Oracle backend swap-in, not building failover between cloud
 
 ## PR
 
-(this session's branch)
+https://github.com/tooming/k8s-anywhere/pull/409

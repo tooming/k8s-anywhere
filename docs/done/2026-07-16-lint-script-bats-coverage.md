@@ -62,4 +62,4 @@ entry for how). `tests/lint-script.bats` run in isolation: 14/14 pass in ~13s.
 
 ## PR
 
-Autonomous session run — see the `claude/work-until-credits-exhausted-b828b2` branch.
+https://github.com/tooming/k8s-anywhere/pull/434

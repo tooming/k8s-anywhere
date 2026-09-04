@@ -83,4 +83,4 @@ tooling claims, not just dashboard content), not assumed.
 
 ## PR
 
-Autonomous session run — see the `claude/work-until-credits-exhausted-b828b2` branch.
+https://github.com/tooming/k8s-anywhere/pull/440

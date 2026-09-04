@@ -92,4 +92,4 @@ directly against the pinned chart/source, not assumed.
 
 ## PR
 
-Autonomous scheduled executor run.
+https://github.com/tooming/k8s-anywhere/pull/459

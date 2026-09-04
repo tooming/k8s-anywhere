@@ -52,4 +52,4 @@ repo on both its checks.
 
 ## PR
 
-chore/dependency-register-scope-note-arithmetic-fix-and-guard
+https://github.com/tooming/k8s-anywhere/pull/1304

@@ -66,4 +66,4 @@ compliance); the gatewayAPI plugin rewrites the capstone HTTPRoute's backendRef 
 
 ## PR
 
-(autonomous scheduled run — executor routine)
+https://github.com/tooming/k8s-anywhere/pull/200

@@ -18,4 +18,4 @@ ArgoCD before the ConfigMap is applied.
 
 ## PR
 
-auto/cosign-make-up-wiring
+https://github.com/tooming/k8s-anywhere/pull/222

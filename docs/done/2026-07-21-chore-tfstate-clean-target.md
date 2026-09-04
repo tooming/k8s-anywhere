@@ -67,4 +67,4 @@ is a Makefile + drift-script + test change only).
 
 ## PR
 
-See the PR this file was committed alongside (`chore/tfstate-clean-target`).
+https://github.com/tooming/k8s-anywhere/pull/645

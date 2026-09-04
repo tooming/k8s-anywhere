@@ -73,4 +73,4 @@ correctly reflected in a downstream summary doc. Zero live-cluster blast radius.
 
 ## PR
 
-chore/dependency-register-drift-fix-and-guard
+https://github.com/tooming/k8s-anywhere/pull/1297

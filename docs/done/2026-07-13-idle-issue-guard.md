@@ -32,4 +32,4 @@ substance, but wrong in process: it never showed that work.
 
 ## PR
 
-(opened alongside this entry — see branch `claude/continue-previous-25k2hz`)
+https://github.com/tooming/k8s-anywhere/pull/391

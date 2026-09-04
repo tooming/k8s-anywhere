@@ -22,4 +22,4 @@ KSM and cAdvisor):
 
 ## PR
 
-See PR for `auto/demo-data-demo-dashboards`.
+https://github.com/tooming/k8s-anywhere/pull/264

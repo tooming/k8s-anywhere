@@ -39,4 +39,4 @@ and that would be false. `routines-check` stays red until the maintainer applies
 
 ## PR
 
-(opened alongside this entry — see branch `claude/continue-previous-25k2hz`)
+https://github.com/tooming/k8s-anywhere/pull/391

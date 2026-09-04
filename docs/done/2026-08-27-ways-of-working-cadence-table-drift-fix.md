@@ -65,4 +65,4 @@ the run's own tail output).
 
 ## PR
 
-auto/ways-of-working-cadence-table-drift-fix
+https://github.com/tooming/k8s-anywhere/pull/1350

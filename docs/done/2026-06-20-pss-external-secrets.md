@@ -34,4 +34,4 @@ cert-controller, webhook) do not write to the container filesystem at runtime.
 
 ## PR
 
-PR #NNN — https://github.com/tooming/k8s-lab/pull/NNN
+https://github.com/tooming/k8s-anywhere/pull/238

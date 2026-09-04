@@ -57,4 +57,4 @@ the 6 new `stale-prs-check.bats` assertions).
 
 ## PR
 
-chore/stale-prs-check-guard
+https://github.com/tooming/k8s-anywhere/pull/923

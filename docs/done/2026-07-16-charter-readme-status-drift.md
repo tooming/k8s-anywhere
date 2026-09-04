@@ -67,4 +67,4 @@ pass (1848/1848, full toolchain installed this session).
 
 ## PR
 
-Autonomous session run — see the `claude/work-until-credits-exhausted-b828b2` branch.
+https://github.com/tooming/k8s-anywhere/pull/433

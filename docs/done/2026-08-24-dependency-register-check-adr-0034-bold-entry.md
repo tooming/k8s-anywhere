@@ -66,4 +66,4 @@ just makes that fact mechanically enforced going forward).
 
 ## PR
 
-chore/dependency-register-check-adr-0034-bold-entry
+https://github.com/tooming/k8s-anywhere/pull/1302

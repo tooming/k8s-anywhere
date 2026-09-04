@@ -57,5 +57,4 @@ reconciliation of the RFC table against the live Kiali topology.
 
 ## PR
 
-PR: _autonomous scheduled run — see branch `claude/scheduled-routine-execution-uq33d8`._
-Closes #294.
+https://github.com/tooming/k8s-anywhere/pull/304

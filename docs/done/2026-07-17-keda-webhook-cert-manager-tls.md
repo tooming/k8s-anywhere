@@ -71,4 +71,4 @@ logic verified against the pinned `release/v2.18` chart source, not guessed.
 
 ## PR
 
-Autonomous scheduled executor run.
+https://github.com/tooming/k8s-anywhere/pull/458

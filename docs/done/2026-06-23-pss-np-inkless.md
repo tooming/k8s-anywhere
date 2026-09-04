@@ -45,4 +45,4 @@ workload lifecycle.
 
 ## PR
 
-PR to be filled in.
+https://github.com/tooming/k8s-anywhere/pull/260

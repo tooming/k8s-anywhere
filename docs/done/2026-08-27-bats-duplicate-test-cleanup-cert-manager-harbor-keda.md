@@ -64,4 +64,4 @@ real `mikefarah/yq` binary on `PATH` — zero `not ok`, exit 0.
 
 ## PR
 
-auto/bats-duplicate-test-cleanup
+https://github.com/tooming/k8s-anywhere/pull/1355

@@ -50,4 +50,4 @@ absent coverage.
 
 ## PR
 
-chore/dependency-register-sync-hook
+https://github.com/tooming/k8s-anywhere/pull/1301

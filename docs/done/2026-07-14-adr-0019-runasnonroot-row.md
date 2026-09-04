@@ -18,4 +18,4 @@ passes.
 
 ## PR
 
-(opened alongside this entry)
+https://github.com/tooming/k8s-anywhere/pull/395

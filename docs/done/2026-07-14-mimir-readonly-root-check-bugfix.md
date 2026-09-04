@@ -41,4 +41,4 @@ session). The real repo's actual Mimir manifests still pass the check unchanged.
 
 ## PR
 
-(this session's branch)
+https://github.com/tooming/k8s-anywhere/pull/403

@@ -74,4 +74,4 @@ both pass on the new manifest. `tests/harbor-bootstrap.bats` in isolation: 23/23
 
 ## PR
 
-Autonomous session run — see the `claude/work-until-credits-exhausted-b828b2` branch.
+https://github.com/tooming/k8s-anywhere/pull/438

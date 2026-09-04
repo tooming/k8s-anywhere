@@ -95,4 +95,4 @@ as designed; the chart version itself (1.20.3) was confirmed to exist via
 
 ## PR
 
-Autonomous session run — see the `claude/work-until-credits-exhausted-b828b2` branch.
+https://github.com/tooming/k8s-anywhere/pull/439

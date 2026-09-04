@@ -77,4 +77,4 @@ this PR's own edits triggered) green, exit 0.
 
 ## PR
 
-auto/kyverno-disallow-latest-tag-init-ephemeral-containers
+https://github.com/tooming/k8s-anywhere/pull/1352
