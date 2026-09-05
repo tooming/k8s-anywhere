@@ -97,3 +97,29 @@ setup() {
   run grep -q '^forgejo-down:' "$REPO/Makefile"
   [ "$status" -eq 0 ]
 }
+
+@test "forgejo-harbor-secret-sync.sh exists and is executable" {
+  [ -x "$REPO/scripts/forgejo-harbor-secret-sync.sh" ]
+}
+
+@test "forgejo-harbor-secret-sync.sh reads Harbor's live admin credential, not a hardcoded one" {
+  run grep -q "harbor-admin-creds" "$REPO/scripts/forgejo-harbor-secret-sync.sh"
+  [ "$status" -eq 0 ]
+  run grep -q "HARBOR_ADMIN_USER" "$REPO/scripts/forgejo-harbor-secret-sync.sh"
+  [ "$status" -eq 0 ]
+  run grep -q "HARBOR_ADMIN_PASSWORD" "$REPO/scripts/forgejo-harbor-secret-sync.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "forgejo-harbor-secret-sync.sh is best-effort (never hard-fails harbor-up on a sync miss)" {
+  run grep -q '^set -uo pipefail' "$REPO/scripts/forgejo-harbor-secret-sync.sh"
+  [ "$status" -eq 0 ]
+  run grep -qE 'set -euo pipefail' "$REPO/scripts/forgejo-harbor-secret-sync.sh"
+  [ "$status" -eq 1 ]
+}
+
+@test "Makefile's harbor-up runs forgejo-harbor-secret-sync (recurrence guard for #631/#633 credential drift)" {
+  run grep -A5 '^harbor-up:' "$REPO/Makefile"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"forgejo-harbor-secret-sync"* ]]
+}
