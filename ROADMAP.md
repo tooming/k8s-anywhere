@@ -1406,48 +1406,10 @@ there is no point where the lab loses a working git source or CI path.
   recording this bump the same way. `make ci` must pass. `docs/done/` entry
   required. (auto/loki-3-7-6 or upgrade/loki-3-7-5-to-3-7-6)
 
-- [x] 🟢 **Bump Loki image `grafana/loki:3.7.4` → `3.7.5`** (CHARTER **Core
-  Values** §"Everything as code" + general hardening; this run's second-cycle
-  currency sweep 2026-08-06, reached via `executor.prompt.md` STEP 6b — Now/next's
-  three items remain gated on #631/#633 (re-checked this cycle, unchanged), this
-  same run's first cycle's PLANNER/ARCHITECT fallback passes found no ungroomed
-  issues, no un-RFC'd 🟡 items, and resolved the only fresh ADR-audit trigger found
-  (ADR-0032, TiDB) already. This cycle's fresh angle: a full inventory of every
-  `image:` line under `gitops/` — not just ArgoCD `Application` `targetRevision`s,
-  which the day's earlier sweeps focused on — surfaced a one-patch-behind Loki pin.
-  **No prerequisites — executor may pick up immediately.**) Verified directly (not
-  assumed, ADR-0004): `git ls-remote --tags grafana/loki` shows `v3.7.5` as the
-  newest tag on the `3.7.x` line this lab already runs (no major/minor jump). A
-  real clone's `git log v3.7.4..v3.7.5` (25 commits) shows six `[SECURITY]`-tagged
-  dependency-CVE fixes (`klauspost/compress` → `v1.18.7` ×3 module paths,
-  `golang.org/x/text` → `v0.39.0` ×2, `go.opentelemetry.io/otel` → `v1.42.0`,
-  `google.golang.org/grpc` → `v1.82.1`) plus a real reliability fix
-  (`fix(ingester): Fix flush race in ingester`, #23682) — the same "ships with a
-  security fix" flip-condition standard this repo's k3s (RFC #995) and Vault
-  (2026-08-05) bumps used, not a blind patch assumption. This also catches up a
-  small pre-existing gap: the live pin had already moved `3.7.2` → `3.7.4` since
-  [ADR-0006](docs/decisions/adr-0006-grafana-native-git-sync.md)'s last dated log
-  entry (2026-07-28, which still cited `3.7.2`) without a matching log update or
-  `docs/done/` record — noted honestly in the ADR's new entry rather than silently
-  re-dated.
-
-  Bump `gitops/observability/loki/deployment.yaml`'s `image: grafana/loki:3.7.4`
-  → `grafana/loki:3.7.5`. Update `tests/observability-loki.bats`'s assertion to
-  `3.7.5` and add a "does not pin the stale `3.7.4` tag" recurrence guard (mirrors
-  this repo's other exact-version-pin test pairs, e.g. `ack-s3.bats`). Add a new
-  dated entry to ADR-0006's `## Re-evaluation log` (after the existing 2026-07-28
-  entry) recording the security-fix findings above, the log-drift note, and a new
-  flip condition for the next audit ("revisit when a new advisory/fix range names
-  a version at or above `3.7.5` as affected"). No `docs/dependency-tree.md` update
-  needed — it doesn't cite Loki's specific version (checked directly). `make ci`
-  must pass. PR body must document the security-fix findings above and the
-  ADR-0004 caveat that this remote clusterless session cannot verify Loki starts
-  cleanly and continues ingesting logs post-bump on a live cluster — call out the
-  rollback path (revert the `image:` tag; Loki is a plain `Deployment`, not an
-  ArgoCD-templated Helm release, so a revert takes effect on the next manual
-  apply/GitOps sync; no data loss either way since Loki's log storage lives in
-  Garage S3, untouched by an image-tag change). `docs/done/` entry required.
-  (auto/loki-image-3-7-5)
+- [x] 🟢 **Bump Loki image `grafana/loki:3.7.4` → `3.7.5`** — full verification
+  writeup:
+  [docs/done/2026-08-06-loki-image-3-7-5.md](docs/done/2026-08-06-loki-image-3-7-5.md).
+  (auto/loki-image-3-7-5; PR #1033)
 
 - [x] 🟢 **Bump `kube-state-metrics` chart `8.0.0` → `8.1.3`** — full
   verification writeup:
@@ -1545,50 +1507,10 @@ there is no point where the lab loses a working git source or CI path.
   reconciliation; no CRD/CR schema change in this bump, so no data-loss risk).
   `docs/done/` entry required. (auto/ack-s3-chart-1-9-0)
 
-- [x] 🟢 **Bump k3s pin `v1.36.2+k3s1` → `v1.36.3+k3s1` on both backends** (CHARTER
-  **Core Values** §"Recreate-from-code" + general hardening; RFC #995 — architect
-  decision 2026-08-05, ADR-0030 audit #994 resolved as **Convert**. **No
-  prerequisites — executor may pick up immediately.**) Verified directly (not
-  assumed, ADR-0004): `git ls-remote --tags k3s-io/k3s` shows `v1.36.3+k3s1` as
-  the newest stable tag, one patch ahead of ADR-0030's pinned `v1.36.2+k3s1`
-  (kept at the 2026-07-28 re-evaluation, audit #770). `git log
-  v1.36.2+k3s1..v1.36.3+k3s1` on a real clone contains one security-relevant
-  fix among ~35 commits: `11f5071f57` ("Redact single-dash secret flags in the
-  node args annotation") — the `k3s.io/node-args` annotation's redaction logic
-  previously only matched double-dash secret flags, letting a single-dash
-  secret flag's value leak in plaintext into a `Node` object annotation,
-  readable by anyone with `get`/`list` RBAC on `nodes`. No formal CVE/GHSA is
-  attached to this specific commit (checked GitHub's published security
-  advisories for `k3s-io/k3s` directly — none matches), but it satisfies
-  ADR-0030's flip condition ("ships with a security fix", broader than "a CVE
-  is disclosed"). No breaking changes in the range — the rest is routine
-  dependency bumps (etcd, Traefik, CoreDNS, Metrics Server, spegel, kine,
-  dynamiclistener) and CI/build chores. Full record: RFC #995, ADR audit #994.
-
-  Bump `infra/modules/k3d-cluster/k3d-config.yaml.tftpl`'s `image:
-  rancher/k3s:v1.36.2-k3s1` → `rancher/k3s:v1.36.3-k3s1` (Docker Hub hyphen
-  tag format). Bump `infra/modules/oracle-k3s-cluster/cloud-init.yaml`'s
-  `INSTALL_K3S_VERSION=v1.36.2+k3s1` → `v1.36.3+k3s1` (GitHub release/installer
-  plus-sign tag format — both formats must move together per ADR-0030's own
-  footgun note; re-verify both are updated at pickup time, don't trust this
-  note's cached read). Update `docs/decisions/context.md`'s k3s version line to
-  match. Extend `tests/k3s-version-pin.bats`'s recurrence-guard assertions from
-  `v1.36.2` to `v1.36.3` in both tag formats. Add a new dated entry to
-  ADR-0030's `## Re-evaluation log` (after the existing 2026-07-28 audit #770
-  entry) recording this bump, citing RFC #995 and commit `11f5071f57`, with a
-  new flip condition for the next audit (e.g. "revisit when a k3s stable
-  release at or above `v1.36.3` ships with a security fix, or a CVE is
-  disclosed against `v1.36.3` specifically"). `make ci` (specifically
-  `terraform validate`/`fmt`, clusterless — this seam needs no live
-  cluster/cloud credentials) must pass. PR body must document the
-  secret-redaction finding above, why `v1.36.3+k3s1` (smallest safe delta past
-  a verified security fix), and the ADR-0004 caveat that this remote
-  clusterless session cannot verify a `make up`/Oracle bootstrap with this pin
-  succeeds end-to-end — call out the rollback path (revert both pins; the next
-  `make up`/Oracle instance launch picks up the reverted version; no
-  live-cluster state depends on this pin beyond cluster bootstrap itself, per
-  ADR-0030's own Scope & exceptions). `docs/done/` entry required. Closes #995.
-  (auto/k3s-1-36-3)
+- [x] 🟢 **Bump k3s pin `v1.36.2+k3s1` → `v1.36.3+k3s1` on both backends** —
+  full verification writeup:
+  [docs/done/2026-08-05-k3s-1-36-3.md](docs/done/2026-08-05-k3s-1-36-3.md).
+  (auto/k3s-1-36-3; PR #998) Closes #995.
 
 - [x] 🟢 **Bump Terraform-bootstrapped `argo-cd` chart `10.2.2` → `10.2.3`** —
   full verification writeup:
@@ -1600,51 +1522,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-08-05-grafana-chart-12-10-3.md](docs/done/2026-08-05-grafana-chart-12-10-3.md).
   (auto/grafana-chart-12-10-3; PR #991)
 
-- [x] 🟢 **Bump `kiali-server` chart `2.29.0` → `2.30.0`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; ADR-0012's own Re-evaluation log flip
-  condition ("revisit when a Kiali-specific CVE is published against `kiali-server`
-  at or above `2.29.0`") has fired — planner-fallback upstream check 2026-08-04
-  (reached via `executor.prompt.md` STEP 6b, Now/next starved by #631/#633). **No
-  prerequisites — executor may pick up immediately.**) Verified directly (not
-  assumed, ADR-0004): a real clone of `github.com/kiali/helm-charts` shows `v2.30.0`
-  as a genuine tag past the currently-pinned `v2.29.0` (both non-`-master` stable
-  tags); a real clone of the `kiali/kiali` app repo (same versioning — chart version
-  tracks app version 1:1 in this project, confirmed at the prior `1.89.8`→`2.29.0`
-  Convert audit too) shows `git log v2.29.0..v2.30.0` contains three named CVE fixes
-  in Kiali's bundled frontend dependencies: **CVE-2026-59877** (`protobufjs` →
-  `7.6.5`), **CVE-2026-49978** (`dompurify` → `3.4.7+`), and **CVE-2026-59869**
-  (`js-yaml` → `4.3.0`) — each affects versions up to and including `2.29.0` and is
-  fixed in `2.30.0`, which is exactly ADR-0012's recorded flip condition. The rest of
-  the `v2.29.0..v2.30.0` range is feature work (opt-in OpenShift impersonation mode,
-  Gateway API TCPRoute/UDPRoute support, Ambient-mesh validation improvements) plus
-  CI/chore commits — none of it touches this lab's `valuesObject` keys (`auth.strategy`,
-  `external_services.prometheus.{url,custom_headers}`, `external_services.tracing.enabled`,
-  `deployment.resources`); the new opt-in `auth.openshift.impersonation.*` block this
-  lab doesn't set stays at its (still-present) default.
-
-  Bump `gitops/platform/kiali.yaml`'s `targetRevision: 2.29.0` → `2.30.0`. Re-verify
-  directly at pickup time that the `2.30.0` chart's `values.yaml` still contains every
-  key this Application's `valuesObject` sets unchanged in shape (same due-diligence
-  pattern as the Harbor/cert-manager/kro bumps). Update `tests/platform.bats`'s
-  `"kiali Application pins kiali-server chart 2.29.0"` assertion to assert `2.30.0`
-  instead — a recurrence guard mirroring this repo's other per-component
-  exact-version pin assertions. Update `docs/dependency-tree.md`'s kiali bullet
-  (line ~326), which cites the chart version explicitly (`v2.29.0` → `v2.30.0`). Add
-  a new dated entry to ADR-0012's `## Re-evaluation log` (after the existing
-  2026-07-28 audit #778 entry) recording this bump, citing the three CVE IDs above
-  and the CVE-fix-floor reasoning, with a new flip condition for the next audit
-  (e.g. "revisit when a Kiali-specific CVE is published against `kiali-server` at or
-  above `2.30.0`, or the chart repo prunes `2.30.0` itself"). `make ci` must pass. PR
-  body must document the three CVEs, why `2.30.0` (smallest safe delta that clears
-  the CVE floor — the next tag is a real minor bump, not a patch, but Kiali's
-  versioning scheme doesn't publish narrower patch releases for the `2.29.x` line),
-  and the ADR-0004 caveat that this remote clusterless session cannot verify Kiali's
-  UI starts cleanly post-bump on a live cluster (Kiali is on-demand/never
-  auto-synced per ADR-0012, so this bump has zero live-cluster blast radius until
-  the maintainer next runs `make kiali-up`) — call out the rollback path (revert
-  `targetRevision`; next `make kiali-up` picks up the reverted chart; Kiali is a
-  stateless UI/API service reading from Prometheus, so a revert recovers immediately
-  with no data loss). `docs/done/` entry required. (auto/kiali-chart-2-30-0)
+- [x] 🟢 **Bump `kiali-server` chart `2.29.0` → `2.30.0`** — full verification
+  writeup:
+  [docs/done/2026-08-04-kiali-chart-2-30-0.md](docs/done/2026-08-04-kiali-chart-2-30-0.md).
+  (auto/kiali-chart-2-30-0; PR #970)
 
 - [x] 🟢 **Bump Harbor chart `1.19.1` → `1.19.2`** — full verification writeup:
   [docs/done/2026-08-03-harbor-chart-1-19-2.md](docs/done/2026-08-03-harbor-chart-1-19-2.md).
@@ -3442,49 +3323,10 @@ there is no point where the lab loses a working git source or CI path.
   have LimitRange defaults. `make ci` must pass. `docs/done/` entry required.
   Closes #294. (auto/namespace-resource-profiles)
 
-- [x] 🟢 **Harbor on-demand Application + namespace + Envoy route**
-  (CHARTER **Core Values** §"Everything as code; GitOps deploys it" +
-  **Objective O1**, RFC #297 /
-  [ADR-0024](docs/decisions/adr-0024-harbor-not-artifactory.md) — architect
-  decision 2026-06-30; **Yellow work — new chart source + namespace — is
-  pre-approved by the superseding ADR per WAYS-OF-WORKING.md §2**). First slice
-  of the Artifactory→Harbor migration. Add `gitops/platform/harbor.yaml`: a
-  **non-auto-synced** ArgoCD `Application` (NO `automated:` block — mirror
-  `gitops/platform/artifactory.yaml`), chart `harbor` from
-  `https://helm.goharbor.io` (pin a specific chart version at executor pickup —
-  current line is chart v1.16.x / appVersion v2.12.x), namespace `harbor`.
-  `valuesObject` **minimal profile** per ADR-0024 §"Minimal profile":
-  `trivy.enabled: false` (cluster scanning is Trivy Operator, ADR-0022),
-  `notary.enabled: false`, `expose.type: clusterIP` + `expose.tls.enabled:
-  false` (Envoy HTTPRoute fronts ingress, ADR-0008 — disable the chart's own
-  ingress), `externalURL: http://harbor.127.0.0.1.nip.io:8000`,
-  `persistence.imageChartStorage.type: s3` with the registry bucket pointed at
-  **Garage S3** (ADR-0002 — `regionendpoint` the in-cluster Garage Service in
-  `storage`; credentials via the existing Vault→ESO pattern, never inline),
-  `redis.type: external` pointed at the platform **Valkey** (ADR-0018, `data`
-  ns) where the chart allows; bundled internal Postgres is acceptable for the
-  first cut. Set modest `resources` requests/limits per enabled component
-  (core/registry/jobservice/portal). Add `gitops/platform/harbor-extras.yaml`
-  (auto-synced, sync-wave 0 — mirror `artifactory-extras.yaml`) sourcing
-  `gitops/harbor` so the namespace PSA floor + HTTPRoute exist before
-  `make harbor-up`. Add `gitops/harbor/namespace.yaml` with PSA **`restricted`**
-  + `enforce-version: latest` per ADR-0017/ADR-0024 (Harbor is Go/non-root →
-  target restricted, advancing the hardening track); fall back to `baseline`
-  only with a documented justification + flip condition (mirror the
-  `artifactory` namespace comment style) if a chart component genuinely cannot
-  render restricted-compatible even with `securityContext` overrides. Add
-  `gitops/harbor/route.yaml`: an Envoy `HTTPRoute` `harbor.127.0.0.1.nip.io`
-  (ADR-0008, parentRef `eg`/`lab-gateway`) backendRef'ing the Harbor
-  portal/core Service + port (mirror `gitops/artifactory/route.yaml`). Wire the
-  new UI into the Grafana "Lab UIs" panel (`grafana/dashboards/stack-health.json`)
-  so `make lab-ui-check` stays green. New `tests/harbor.bats`: Application has
-  **no** `automated:` block (on-demand); chart `harbor` from `helm.goharbor.io`
-  with a pinned version; `trivy.enabled: false` + `notary.enabled: false`;
-  storage type `s3`; namespace PSA labels present; route host
-  `harbor.127.0.0.1.nip.io`. `make ci` must pass. `docs/done/` entry required.
-  **Executor note:** if the PR crosses ~400 lines (WAYS-OF-WORKING.md §3), ship
-  the Application + extras + namespace in PR 1 and the route + Lab-UIs wiring +
-  bats as the next item. (auto/harbor-application)
+- [x] 🟢 **Harbor on-demand Application + namespace + Envoy route** — full
+  verification writeup:
+  [docs/done/2026-06-30-harbor-application.md](docs/done/2026-06-30-harbor-application.md).
+  (auto/harbor-application; PR #306)
 
 - [x] 🟢 **Harbor NetworkPolicy floor + appset entry** (CHARTER **Core
   Values**, RFC #297 / ADR-0024 — architect decision 2026-06-30; **NP fan-out
@@ -4176,49 +4018,10 @@ there is no point where the lab loses a working git source or CI path.
   (auto/hook-scripts-negative-path-coverage)
 
 - [x] 🟢 **Fix stale `(follow-up item)` markers in ADR-0028/ADR-0029 + widen
-  `scripts/adr-followup-check.sh` to catch the parenthetical form** (CHARTER
-  **Core Values** §"Docs & dashboards don't drift"; planner gap-analysis finding,
-  2026-07-19 — **no prerequisites, executor may pick up immediately**). Verified
-  directly against the actual repo state (not assumed, per ADR-0004): five table
-  rows across two ADRs still carry a `(follow-up item)` annotation for work that
-  has already shipped and is already tested:
-  - `docs/decisions/adr-0028-cert-manager-tls-lifecycle.md` lines 192-194: the
-    HTTPS `:443` listener (`gitops/network/gateway.yaml:32-34`), the wildcard
-    `Certificate` (`gitops/network/certificates/wildcard-certificate.yaml`), and
-    the `:8443` frontdoor port mapping (`scripts/bluegreen-frontdoor.sh`,
-    `scripts/frontdoor-ensure.sh`) all exist and are covered by
-    `tests/frontdoor-https.bats`.
-  - `docs/decisions/adr-0029-keda-event-driven-autoscaling.md` lines 184-185: the
-    cert-manager webhook TLS wiring (`gitops/platform/keda.yaml`'s
-    `certManager.enabled: true` block referencing the `k8s-lab-ca` issuer) and the
-    `ScaledObject`/`TriggerAuthentication` demo
-    (`gitops/data/demo/keda-scaling/{scaledobject,triggerauthentication}.yaml`)
-    both exist and are covered by `tests/keda.bats` /
-    `tests/keda-scaledobject.bats`.
-
-  `scripts/adr-followup-check.sh` (the existing mechanical guard for exactly this
-  drift class — its own header comment cites the ADR-0006/CHARTER precedent) only
-  greps for the capitalized literal `Follow-up:` and does not catch this
-  parenthetical `(follow-up item)` form, so it stayed green through both of these
-  going stale — the same undetected-drift failure mode the script exists to
-  prevent, recurring in a second syntactic shape.
-
-  Two changes: (1) edit the five table cells in ADR-0028/ADR-0029 above to drop
-  the stale `(follow-up item)` annotation now that each is verified shipped and
-  tested (cite the concrete file/test in the cell or an adjacent note, mirroring
-  how other ADRs' "Files touched"-style tables read once implemented); (2) widen
-  `scripts/adr-followup-check.sh`'s `grep` pattern (currently `'Follow-up:'`) to
-  an alternation also matching the literal string `(follow-up item)` — extend the
-  existing `hits=` grep line, keep the same exit-2/CI/hook wiring, no other
-  script structure change. Add fixtures/cases mirroring the existing
-  `tests/fixtures/adr-followup-check/{in-sync,drift-adr}` pattern: a new
-  drift fixture carrying `(follow-up item)` in a table cell should fail the
-  check the same way the existing `Follow-up:` drift fixture does. Extend
-  `tests/drift-detectors.bats` with one new `@test` asserting the check fails on
-  the new fixture, and confirm the existing "passes on the real repo" test
-  (`tests/drift-detectors.bats:87`) still passes once the stale markers are
-  removed. `make ci` must pass. `docs/done/` entry required.
-  (auto/adr-followup-parenthetical-form)
+  `scripts/adr-followup-check.sh` to catch the parenthetical form** — full
+  verification writeup:
+  [docs/done/2026-07-19-adr-followup-parenthetical-form.md](docs/done/2026-07-19-adr-followup-parenthetical-form.md).
+  (auto/adr-followup-parenthetical-form; PR #601)
 
 - [x] 🟢 **GitHub Actions major-version bumps — `actions/checkout` v4.3.0→v7.0.0,
   `actions/cache` v4.3.0→v6.1.0, `actions/github-script` v7.0.1→v9.0.0,
