@@ -1436,112 +1436,14 @@ there is no point where the lab loses a working git source or CI path.
   release (GHSA-jcj7-v34w-v9vv), ADR-0018's own flip condition triggered** —
   full verification writeup:
   [docs/done/2026-09-01-valkey-8-1-10-security-bump.md](docs/done/2026-09-01-valkey-8-1-10-security-bump.md).
-  (auto/valkey-8.1.10-security-bump)
-  (CHARTER **Core Values** §"Real observability only" / general hardening +
-  ADR-0004; planner-fallback gap analysis 2026-09-01, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed
-  fully gated this cycle — the two standing GitLab→Forgejo migration items
-  above and the capstone-`Deployment`-removal item further below all remain
-  blocked on the same unconfirmed live-cluster/design prerequisites (issues
-  #633/#1229/#1345 all still open, latest comments unchanged since
-  2026-08-25), and no un-RFC'd 🟡 item or ungroomed intake issue exists (the
-  three open issues are all standing `[Action required]` trackers, not
-  groomable work — confirmed by re-reading each). Fresh angle this cycle:
-  re-check every plain `image:` pin for a newer upstream release rather than
-  assume the 2026-08-17 sweep's findings still hold three weeks later.
-  **Prerequisite: the `valkey/valkey:8.1.10-alpine` Docker Hub image must
-  exist before this is picked up — confirmed NOT yet published as of
-  2026-09-01 (see caveat below); re-check before building.**)
-
-  Verified directly (not assumed, ADR-0004): fetched
-  `github.com/valkey-io/valkey/releases/tag/8.1.10` and
-  `raw.githubusercontent.com/valkey-io/valkey/8.1.10/00-RELEASENOTES`
-  directly — published 2026-08-31, "Upgrade urgency SECURITY: This release
-  includes security fixes we recommend you apply as soon as possible",
-  documenting `GHSA-jcj7-v34w-v9vv` (a use-after-free in RDMA connection
-  handling allowing an authenticated client to crash the server via
-  `CLIENT KILL`; only affects builds compiled with `USE_RDMA` and an RDMA
-  listener configured — this lab's stock `valkey/valkey:8.1.9-alpine` image
-  is not RDMA-enabled, so this specific CVE doesn't reach it as deployed)
-  plus several unconditional bug fixes on the same tag: AOF recovery of a
-  truncated MULTI/EXEC block that could lose writes after a restart,
-  listpack validation on RDB load/RESTORE to prevent deferred crashes, and
-  multiple use-after-free fixes in TLS handling, cluster messaging, and
-  stream processing. This is exactly the flip condition ADR-0018's
-  2026-08-17 re-evaluation log entry names verbatim: "A CVE or critical-bug
-  advisory is disclosed against the `8.1.x` line (from `8.1.9` onward) that
-  a later patch fixes ... bump the pins to the fixed/needed version and add
-  a new dated log entry here." No `8.1.11`+ tag exists yet (checked the same
-  releases page) and no major-version jump is involved — smallest safe
-  delta.
-
-  **Not yet groundable — checked directly, ADR-0004 (mirrors the
-  2026-08-25 digest's Velero `v1.18.2` precedent: a real upstream release
-  with no published artifact to pin yet is not actionable).** The GitHub
-  source tag (`8.1.10`) exists, but the built Docker image does not: a
-  direct `GET
-  https://hub.docker.com/v2/repositories/valkey/valkey/tags/8.1.10-alpine`
-  returned **HTTP 404** (checked twice, several minutes apart, 2026-09-01),
-  while the same query for `8.1.9-alpine` correctly returns real tag data
-  (`last_updated: 2026-08-31T10:04:57Z`) — so the negative result is a real
-  "not published yet" finding, not a broken query. Valkey's Docker Hub
-  multi-arch image build typically lags its GitHub source tag by hours to
-  roughly a day (observed pattern: `8.1.9-alpine`'s own last-updated
-  timestamp postdates its GitHub tag similarly). **Before implementing:**
-  re-run the same check (`curl -s -o /dev/null -w '%{http_code}'
-  https://hub.docker.com/v2/repositories/valkey/valkey/tags/8.1.10-alpine`
-  — `200` means it's published, pick this up; `404` means it still isn't,
-  leave unchecked and try again next cycle). Do not bump the manifest pin
-  to a tag that doesn't exist yet — ArgoCD would sync a StatefulSet
-  referencing a nonexistent image and the pod would never pull.
-
-  Four touch points once the image is confirmed published, all confirmed by
-  direct grep (not guessed): (1)
-  `gitops/data/valkey/statefulset.yaml`'s `image: valkey/valkey:8.1.9-alpine`
-  → `:8.1.10-alpine`; (2) `gitops/data/demo/valkey-load.yaml`'s identical
-  pin, same bump; (3) `tests/data-layer.bats` — retitle and update both
-  `"valkey image is pinned to 8.1.9-alpine (...)"` (line 57) and
-  `"valkey-load image is pinned to 8.1.9-alpine (...)"` (line 67) tests to
-  assert `8.1.10-alpine`, and update their stale-pin-absent negative
-  assertions (lines 63/73, currently checking the *old* `8.0.10-alpine` pin
-  is absent — update to check `8.1.9-alpine` is absent instead, mirroring
-  the pattern each prior bump in this file has followed); (4)
-  `docs/decisions/adr-0018-valkey-not-redis.md` — update line 52's
-  `valkey/valkey:8.1.9-alpine` citation to `8.1.10-alpine` and append a new
-  dated `### 2026-09-01 — Valkey \`8.1.9\` → \`8.1.10\`; security release
-  fixes GHSA-jcj7-v34w-v9vv` entry to the Re-evaluation log, in the same
-  Trigger/Decision/Flip-condition shape as the existing 2026-08-17 entry,
-  citing the exact release-notes fetch above and noting the
-  RDMA-inapplicability finding. Also update `docs/dependency-register.md`'s
-  Valkey row (currently dated 2026-08-17) to cite the new bump and today's
-  date. `make ci` must pass. PR body must state the ADR-0004 caveat that
-  this remote clusterless session cannot verify the running StatefulSet
-  actually restarts cleanly on the new tag or that the "Lab — Valkey"
-  Grafana dashboard keeps populating — a live-cluster session should confirm
-  post-merge.
+  (auto/valkey-8.1.10-security-bump; PR #1361)
 
 - [x] 🟢 **GitHub→Forgejo pull-based, fast-forward-only sync workflow** — full
   verification writeup:
   [docs/done/2026-08-25-forgejo-github-sync-workflow.md](docs/done/2026-08-25-forgejo-github-sync-workflow.md).
-  (RFC #1340; PR TBD.) Closes #1340.
-
-  **Correction found live during implementation (not in RFC #1340's original
-  text — recorded here since ROADMAP is this repo's binding spec for the
-  item, ADR-0004):** the RFC's Decision specified a NetworkPolicy egress rule
-  for the Forgejo Actions runner. Verified directly against
-  `forgejo/docker-compose.yml`'s own header comment and
-  `scripts/forgejo-runner-ensure.sh` before implementing: the Forgejo runner
-  executes job containers via a plain `docker run` over the `forgejo_default`
-  Docker network, entirely **outside** the Kubernetes cluster (same
-  architectural tier GitLab occupied, per ADR-0035) — not an in-cluster pod
-  ADR-0016's Cilium default-deny NetworkPolicy has any jurisdiction over. A
-  NetworkPolicy deliverable would have been dead configuration doing nothing.
-  Implemented without one; see `.forgejo/workflows/sync-from-github.yml`'s
-  own header comment for the full explanation. Everything else in RFC #1340's
-  Decision (pull-based, fast-forward-only, fail-loud-on-divergence, no
-  auto-resolve, no new ADR, CLAUDE.md working-agreement amendment) landed as
-  specified — see the `docs/done/` writeup for the full delivered shape.
-  (auto/forgejo-github-sync-workflow)
+  (auto/forgejo-github-sync-workflow; RFC #1340.) Closes #1340.
+  (PR #1347 — the mirror's own placeholder resolved via GitHub search,
+  confirmed `merged: true`.)
 
 - [x] 🟢 **Bump Valkey's `redis_exporter` sidecar `v1.88.0-alpine` → `v1.89.0-alpine`**
   (CHARTER **Core Values** §"Everything as code" + general hardening; planner-fallback
@@ -6581,59 +6483,9 @@ there is no point where the lab loses a working git source or CI path.
   content). (auto/stateless-criticality-tiers)
 
 - [x] 🟢 **Third-party dependency concentration-risk rollup — closes DORA audit Q16's
-  named gap** (CHARTER **Core Values** §"Everything as code; GitOps deploys it" /
-  operational-resilience discipline; planner-fallback gap analysis 2026-08-12, reached
-  via `executor.prompt.md` STEP 6b PLANNER role after this run's Now/next lane was
-  re-confirmed fully gated — the same six standing items (three sequential Forgejo-
-  migration items; `verifyImages` Enforce-flip + O4 CI gate on unconfirmed issue #631;
-  capstone `Deployment` removal on unconfirmed issue #633, both re-checked this cycle,
-  most recent comment 2026-08-11 on each, neither confirms the gate) — and this
-  cycle's own sweep found no groomable intake (the only two open issues are those same
-  standing `[Action required]` trackers), no un-RFC'd 🟡 item anywhere in ROADMAP.md
-  (zero `- [ ] 🟡` lines), and no `docs/roadmap/incoming/` file to absorb. **No
-  prerequisites — executor may pick up immediately.**) Verified directly (not assumed,
-  ADR-0004): `docs/dora-audit-readiness.md` Q16 ("Is concentration risk assessed —
-  reliance on a single upstream provider?") answers that concentration is "assessed
-  per-decision... but never rolled up into a single cross-cutting view of *which*
-  single upstream repo, registry, or chart source, if it disappeared, would break the
-  most components at once," and its own Gap line calls this "real; a genuinely new
-  artifact, not just re-indexing" (distinct from Q14's `docs/dependency-register.md`,
-  which the register's own header explicitly scopes as pure re-indexing with "no new
-  dependency-risk judgment"). Grepping `docs/` for "concentration" turns up only this
-  Q16 answer itself — nothing already tracks this.
-
-  Add `docs/dependency-concentration.md`: group every row of
-  `docs/dependency-register.md`'s 32-tool table by **upstream GitHub org** (the
-  register's own "Upstream source" column — reuse those exact org strings, don't
-  re-derive from memory) and surface any org backing more than one tool as a
-  concentration point, one short paragraph each, worst-first. Verify the count
-  directly against the live register table before writing it (the table has grown
-  since Q14 first answered "24 ADRs" — re-count from the file, don't reuse a stale
-  number). At minimum, `github.com/grafana` backs six always-on-core rows at once
-  (Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy) — the entire observability pane
-  shares one upstream governance/maintenance entity, the largest single concentration
-  in the table; `github.com/argoproj` backs two (ArgoCD, Argo Rollouts); `github.com/
-  pingcap` backs two (TiDB Operator, TiDB, both heavy-on-demand only, so lower blast
-  radius than the always-on Grafana-org cluster). Every other row is a distinct org —
-  state that plainly rather than padding the doc with single-tool "groups." Close by
-  naming the lab's actual mitigation, already true today per ADR-0001's own design
-  (don't invent a new one): every workload is a GitOps `Application` pointing at a
-  pinned chart/image ref, so a disappeared upstream is a fork-the-source-and-repoint
-  operation, not a rebuild — cite the real, already-executed ADR-0011→ADR-0024
-  Artifactory→Harbor migration as the existence proof (same precedent Q17 already
-  cites). Update Q16's "Gap" line in `docs/dora-audit-readiness.md` to point at the
-  new file instead of stating the gap as open, and add the file to the "Evidence" line
-  of both Q16 and Q14 (Q14's own "Keeping this in sync" section should note this new
-  file is a downstream consumer of its table, so a future register edit that removes
-  or renames a row should prompt a look here too). New assertions in a `dora-audit-
-  readiness.bats`-style file (extend the existing one if `auto/stateless-criticality-
-  tiers` already created `tests/dora-audit-readiness.bats` — check first, don't create
-  a second file for the same doc, matching this section's own `tests/observability.bats`
-  frozen-file precedent) asserting the new file exists and names at minimum
-  `github.com/grafana` with a count. `make ci` must pass. `docs/done/` entry required.
-  PR body must state the actual computed per-org counts, not just assert the file
-  exists (ADR-0004 — an unverified rollup would itself be a form of fabricated
-  content). (auto/dependency-concentration-rollup)
+  named gap** — full verification writeup:
+  [docs/done/2026-08-12-dependency-concentration-rollup.md](docs/done/2026-08-12-dependency-concentration-rollup.md).
+  (auto/dependency-concentration-rollup; PR #1163)
 
 ### Heavy on-demand components (README "Planned" row)
 > **All three heavy components have human RFCs (#58 Artifactory, #59 Istio
@@ -6688,24 +6540,10 @@ there is no point where the lab loses a working git source or CI path.
   `global.networkPolicy.create: false` companion override.) **Groomed ↗** into a 🟢
   item in *Now / next* above (`auto/argocd-chart-10x-bump`), planner run 2026-07-28.
 
-- [x] 🟢 **`kube-state-metrics` chart major bump — `7.8.1` → `8.0.0`** (issue #704;
-  RFC #707 — architect decision 2026-07-24: **Approve.** appVersion unchanged at
-  `2.19.1` — chart-packaging-only major bump, the entire breaking surface is the
-  chart dropping its own bundled `CiliumNetworkPolicy` template +
-  `networkPolicy.flavor: cilium` values key, which
-  `gitops/platform/observability-ksm.yaml` never sets (verified directly: a `git
-  diff` between the `kube-state-metrics-7.8.1` and `kube-state-metrics-8.0.0`
-  chart tags touches only `Chart.yaml`, `README.md`, the removed
-  `ciliumnetworkpolicy.yaml` template, and a combined 14-line
-  `networkpolicy.yaml`/`values.yaml` trim — nothing this Application's
-  `valuesObject` references). **No prerequisites — executor may pick up
-  immediately.** Bump `targetRevision: 7.8.1` → `8.0.0` in
-  `gitops/platform/observability-ksm.yaml`. Re-verify the chart's `values.yaml`
-  still matches this Application's `valuesObject` at pickup time before merging
-  (don't just trust this RFC's cached read — same due-diligence pattern as the
-  `auto/pyroscope-*`/`auto/grafana-chart-*` bumps). `make ci` must pass.
-  `docs/done/` entry required. Closes #707. (auto/ksm-chart-8-0-0 or
-  upgrade/ksm-chart-8-0-0)
+- [x] 🟢 **`kube-state-metrics` chart major bump — `7.8.1` → `8.0.0`** — full
+  verification writeup:
+  [docs/done/2026-07-24-ksm-chart-8-0-0.md](docs/done/2026-07-24-ksm-chart-8-0-0.md).
+  (issue #704; RFC #707; auto/ksm-chart-8-0-0; PR #710) Closes #707.
 
 - ~~🟡 **`apache/kafka` client image major bump — `3.9.2` → `4.3.1`**~~ (issue
   #705; RFC #708 — architect decision 2026-07-24: **Hold.** `gitops/inkless/
