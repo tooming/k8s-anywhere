@@ -1368,43 +1368,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-08-06-grafana-image-13-0-5.md](docs/done/2026-08-06-grafana-image-13-0-5.md).
   (auto/grafana-image-13-0-5; PR #1044)
 
-- [x] 🟢 **Bump Loki image `grafana/loki:3.7.5` → `3.7.6`** (CHARTER **Core
-  Values** §"Everything as code" + general hardening; planner-fallback currency
-  sweep 2026-08-06, reached via `executor.prompt.md` STEP 6b — Now/next's three
-  standing items remain gated on unconfirmed maintainer-confirmation issues
-  #631/#633 (re-checked this cycle: latest comments on both, 2026-08-06 07:38 UTC,
-  still report the same live-cluster blocker, no maintainer confirmation). This
-  cycle's angle: re-running the same per-`image:`-line inventory the prior
-  `3.7.4`→`3.7.5` bump (merged today) used turned up a brand-new `3.7.6` tag —
-  published *today*, after that bump already merged, so it's a genuinely fresh
-  gap, not a miss by the prior sweep. **No prerequisites — executor may pick up
-  immediately.**) Verified directly (not assumed, ADR-0004): a real clone of
-  `github.com/grafana/loki` (`git ls-remote --tags` / `git log
-  v3.7.5..v3.7.6`) shows `v3.7.6` as the newest tag on the `3.7.x` line (no
-  major/minor jump; next-newest after that is unreleased). The Docker Hub tags
-  API for `grafana/loki` confirms the `3.7.6` image itself is published
-  (multi-arch manifest, pushed 2026-08-06) — not just a source-repo tag with no
-  matching image. Two substantive commits in the range (a third is the
-  `3.7.5` release-bump commit itself, mechanically re-listed by git's ref
-  math, not new content): a docs backport, and a real bug fix
-  `fix(queryrange): Preserve sketch in MergeLabels [release-3.7.x]` (#23770) —
-  a query-correctness fix in `pkg/storage/detected/labels.go` (topk/sketch
-  merging for detected-labels queries returned wrong results without it). No
-  `[SECURITY]`-tagged commit this time, but a real, verified correctness fix on
-  the exact patch line this lab already tracks is the same bar the prior
-  `3.7.4`→`3.7.5` bump used for its own non-CVE commit
-  (`fix(ingester): Fix flush race`) — smallest-safe-delta, not a blind patch
-  assumption.
-
-  Bump `gitops/observability/loki/deployment.yaml`'s `image: grafana/loki:3.7.5`
-  → `grafana/loki:3.7.6`. Update `tests/observability-loki.bats`'s assertion to
-  `3.7.6` and flip its "does not pin the stale tag" guard to check for `3.7.5`
-  (mirrors the exact-version-pin test-pair pattern this file itself just
-  demonstrated). Add a new dated entry to
-  [ADR-0006](docs/decisions/adr-0006-grafana-native-git-sync.md)'s
-  `## Re-evaluation log` (after the existing 2026-08-06 `3.7.4`→`3.7.5` entry)
-  recording this bump the same way. `make ci` must pass. `docs/done/` entry
-  required. (auto/loki-3-7-6 or upgrade/loki-3-7-5-to-3-7-6)
+- [x] 🟢 **Bump Loki image `grafana/loki:3.7.5` → `3.7.6`** — full verification
+  writeup:
+  [docs/done/2026-08-06-loki-image-3-7-6.md](docs/done/2026-08-06-loki-image-3-7-6.md).
+  (auto/loki-3-7-6; PR #1042)
 
 - [x] 🟢 **Bump Loki image `grafana/loki:3.7.4` → `3.7.5`** — full verification
   writeup:
@@ -1500,43 +1467,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-28-istio-observability-dashboard.md](docs/done/2026-07-28-istio-observability-dashboard.md).
   (auto/istio-observability-dashboard; PR #824)
 
-- [x] 🟢 **Bump Envoy Gateway chart `v1.8.2` → `v1.8.3`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; RFC #671 — architect decision
-  2026-07-23, ADR-0008 audit resolved as **Convert**. **No prerequisites —
-  executor may pick up immediately.**) ADR-0008's 2026-07-18 Re-evaluation log
-  entry (audit #515) recorded an explicit flip condition: "revisit when a new
-  Envoy Gateway security bulletin names a version above `v1.8.2` as affected."
-  Issue #663 (2026-07-22T05:46 UTC) found `v1.8.3` existed as a GitHub tag but
-  its chart/image weren't yet published to Docker Hub (404), so the bump was
-  correctly held back. Re-verified 2026-07-23: `v1.8.3` is now live — GitHub
-  release published 2026-07-22T18:59:00Z (stable, not pre-release; changelog:
-  dependency updates + a fix that "rejects TLS secret when certificate and
-  private key do not match"), and the Docker Hub OCI artifact
-  `envoyproxy/gateway-helm:v1.8.3` resolves for real (`tag_status: active`,
-  digest `sha256:cfb34ff4266c87a394cd6be5c13607a2dd47083aef771368302eaeaa99c4a0a9`,
-  content-type `application/vnd.cncf.helm.config.v1+json`, `last_updated:
-  2026-07-22T18:57:28Z` — confirmed via direct query against
-  `https://hub.docker.com/v2/repositories/envoyproxy/gateway-helm/tags/v1.8.3`,
-  not just training knowledge, per ADR-0004).
-
-  Bump `gitops/platform/envoy-gateway.yaml`'s `targetRevision: v1.8.2` →
-  `v1.8.3` (same source, same major.minor line — patch bump only). Add a new
-  dated entry to ADR-0008's `## Re-evaluation log` (after the existing
-  2026-07-18 audit #515 entry) recording this bump, citing the GitHub release
-  + Docker Hub verification above, with a new flip condition for the next
-  audit (e.g. "revisit when a bulletin names a version above `v1.8.3` as
-  affected"). Add or extend a `tests/*.bats` chart-pin assertion for
-  envoy-gateway (check for an existing one first) asserting `v1.8.3` is
-  present in `envoy-gateway.yaml` — a recurrence guard mirroring the existing
-  Argo Rollouts/Grafana/Valkey image-tag pin assertions. Update
-  `docs/dependency-tree.md` only if it references the pinned chart version
-  explicitly. `make ci` must pass. PR body must note the ADR-0004 caveat that
-  this remote clusterless session cannot verify Envoy Gateway starts cleanly
-  post-bump on a live cluster — call out the rollback path (revert
-  `targetRevision`; ArgoCD self-heals within its sync interval; Envoy Gateway
-  is stateless control plane, so a revert recovers immediately with no data
-  loss). `docs/done/` entry required. Closes #671.
-  (auto/envoy-gateway-chart-1-8-3)
+- [x] 🟢 **Bump Envoy Gateway chart `v1.8.2` → `v1.8.3`** — full verification
+  writeup:
+  [docs/done/2026-07-23-envoy-gateway-chart-1-8-3.md](docs/done/2026-07-23-envoy-gateway-chart-1-8-3.md).
+  (auto/envoy-gateway-chart-1-8-3; PR #674) Closes #671.
 
 - [x] 🟢 **Bump kiali-server chart `1.89.8` → `2.29.0`** (CHARTER **Core Values**
   §"Everything as code" + §"Docs & dashboards don't drift"; RFC #668 — architect
@@ -1559,43 +1493,10 @@ there is no point where the lab loses a working git source or CI path.
   blast radius. `make ci` must pass. `docs/done/` entry required. Closes #668.
   (arch/adr-0012-kiali-chart-index-audit)
 
-- [x] 🟢 **Bump Valkey image tag `8.0-alpine` → `8.0.10-alpine`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; RFC/issue #655 — architect decision
-  2026-07-22, ADR-0018 audit #654 resolved as **Convert**. **No prerequisites —
-  executor may pick up immediately.**) Valkey shipped a coordinated security release
-  across every maintained branch on 2026-07-21 (`8.0.10`/`8.1.9`/`9.0.5`/`9.1.1`),
-  fixing **CVE-2026-56684** (TLS use-after-free, authenticated-client DoS via
-  `CLIENT KILL`) and **CVE-2026-63639** (corrupt stream RDB with shared NACK across
-  consumers) — confirmed directly from Valkey's own GitHub release page
-  (`github.com/valkey-io/valkey/releases/tag/8.0.10`), marked "Upgrade Urgency:
-  SECURITY". This lab pins the floating tag `valkey/valkey:8.0-alpine`
-  (`gitops/data/valkey/statefulset.yaml`, `gitops/data/demo/valkey-load.yaml`) — this
-  is exactly the flip condition ADR-0018's own prior audit (#627, 2026-07-20) recorded
-  in advance: "A CVE ... disclosed against the `8.0.x` line that `8.1.x` (or later)
-  fixes."
-
-  Bump both files' `image:` field from `valkey/valkey:8.0-alpine` to
-  `valkey/valkey:8.0.10-alpine` (the smallest safe delta on the `8.0.x` line — same
-  reasoning as the Cilium/Kargo/Grafana pin bumps; deliberately not jumping to
-  `8.1.x`/`9.x` since the fix is fully available on `8.0.x` and no lab-teaching need
-  exists for those minors). Grep both files for every literal `8.0-alpine` occurrence
-  to catch any other reference. Add a new dated entry to ADR-0018's
-  `## Re-evaluation log` (after the existing 2026-07-20 audit #627 entry) recording
-  this bump, citing both CVE IDs and the 8.0.10 release date, with a new flip
-  condition for the next audit.
-
-  Extend the relevant `tests/*.bats` file covering Valkey (check for an existing
-  image-tag pin assertion first; add one if none exists) asserting
-  `valkey:8.0.10-alpine` is present in both files — a recurrence guard mirroring the
-  existing Argo Rollouts/Grafana image-tag pin assertions. No topology change, so no
-  README/`docs/dependency-tree.md` update is expected — note that explicitly in the
-  PR body. PR body must document: both CVE IDs, why `8.0.10` (smallest safe delta),
-  and the ADR-0004 caveat that this remote clusterless session cannot verify Valkey
-  starts cleanly post-bump on a live cluster — call out the rollback path (revert the
-  image tag; ArgoCD self-heals; Valkey is a single-replica StatefulSet with an RDB
-  snapshot every 60s, so a revert re-rolls the same way the bump did, recovering in
-  place per ADR-0018's "Single node" section). `make ci` must pass. `docs/done/`
-  entry required. Closes #655. (auto/valkey-cve-bump-8-0-10)
+- [x] 🟢 **Bump Valkey image tag `8.0-alpine` → `8.0.10-alpine`** — full
+  verification writeup:
+  [docs/done/2026-07-22-valkey-cve-bump-8-0-10.md](docs/done/2026-07-22-valkey-cve-bump-8-0-10.md).
+  (auto/valkey-cve-bump-8-0-10; PR #658) Closes #655.
 
 - [x] 🟢 **`docs/dora-resilience-mapping.md` — DORA (EU regulation) pillar
   mapping, explicitly not a compliance claim** — full verification writeup:
@@ -1658,45 +1559,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-19-k3s-version-pin.md](docs/done/2026-07-19-k3s-version-pin.md).
   (auto/k3s-version-pin; PR #561) Closes #558.
 
-- [x] 🟢 **Bump Argo Rollouts image tag `v1.9.0` → `v1.9.1`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; RFC/issue #552 — architect decision
-  2026-07-19, ADR-0020 audit resolved as **Convert** (converts the 2026-07-18
-  "Keep" from audit #520 with new signal). **No prerequisites — executor may pick
-  up immediately.**)
-  [CVE-2026-35469](https://github.com/argoproj/argo-rollouts/releases/tag/v1.9.1)
-  (fixed in `v1.9.1`, released 2026-07-17): a `google.golang.org/grpc` dependency
-  fix closing upstream issue #4667. Audit #520 correctly kept the chart pin
-  because the `argo/argo-rollouts` Helm chart (this lab's deploy mechanism,
-  `gitops/platform/argo-rollouts.yaml`, `targetRevision: 2.41.0`) has not yet
-  published a release tracking `appVersion >= 1.9.1` — bumping `targetRevision`
-  today would assert a fixed posture with nothing newer to actually pin to
-  (ADR-0004). That audit did not consider a second lever this repo already uses
-  elsewhere: pinning the **image tag** independently of the chart version, the
-  same technique `gitops/platform/observability-grafana.yaml` uses (`image.tag:
-  "13.0.1"` on top of an unrelated chart version) — the `argo/argo-rollouts`
-  chart's `values.yaml` exposes the identical override for both
-  `controller.image.tag` and `dashboard.image.tag`.
-
-  Edit `gitops/platform/argo-rollouts.yaml`'s `spec.source.helm.valuesObject`:
-  add `image: { tag: "v1.9.1" }` under both the existing `controller:` block and
-  the existing `dashboard:` block (do not touch `targetRevision`, which stays
-  `2.41.0`). Extend `tests/argo-rollouts.bats` with two new assertions — grep
-  for `tag: "v1.9.1"` appearing under both the controller and dashboard sections
-  — alongside the existing, unchanged `targetRevision: 2\.41\.` pin assertion.
-  No topology change, so no README/`docs/dependency-tree.md` update is expected
-  — note that explicitly in the PR body so a reviewer doesn't wonder why it's
-  missing. See RFC #552 and
-  [ADR-0020's Re-evaluation log](docs/decisions/adr-0020-argo-rollouts-progressive-delivery.md#re-evaluation-log)
-  (2026-07-19 entry) for the full verification reasoning, including an explicit
-  ADR-0004 note that the `quay.io` image manifest itself could not be directly
-  confirmed from this environment (registry API blocked by the sandbox's egress
-  policy) — grounded instead via the real `v1.9.1` git tag plus the project's
-  own tag-triggered release workflow, which pushes that exact image as part of
-  the same pipeline that published the live GitHub Release. If the executor CAN
-  reach the registry directly and wants to double-check the tag pulls before
-  landing this, that's a welcome belt-and-suspenders step, not a blocker. `make
-  ci` must pass. `docs/done/` entry required. Closes #552.
-  (auto/argo-rollouts-cve-image-tag)
+- [x] 🟢 **Bump Argo Rollouts image tag `v1.9.0` → `v1.9.1`** — full
+  verification writeup:
+  [docs/done/2026-07-19-argo-rollouts-cve-image-tag.md](docs/done/2026-07-19-argo-rollouts-cve-image-tag.md).
+  (auto/argo-rollouts-cve-image-tag; PR #555) Closes #552.
 
 - [x] 🟢 **ADR-0006 — remove stale "Follow-up: wire both bootstraps into `make up`/DR"
   note** (CHARTER **Core Values** §"Docs & dashboards don't drift"; planner gap-analysis
@@ -2268,47 +2134,10 @@ there is no point where the lab loses a working git source or CI path.
   `certificates.certManager` block with the documented issuer fields. `make ci` must
   pass. `docs/done/` entry required. (auto/keda-webhook-cert-manager-tls)
 
-- [x] 🟢 **KEDA `ScaledObject` demo — scale `rabbitmq-load` on RabbitMQ queue depth**
-  (CHARTER new Goal "event-driven autoscaling" — the actual pedagogical payoff (scaling
-  *demonstrated*, not just installed); ADR-0029 §"Scope & exceptions" — the ADR is the
-  binding spec, no new RFC needed. **No prerequisites — independent of the webhook-TLS
-  item above; the executor may pick up either first.**) Add a `TriggerAuthentication`
-  named `rabbitmq-trigger-auth` and a `ScaledObject` named `rabbitmq-load-scaler`, both
-  in namespace `data` (co-located with the `rabbitmq-load` Deployment they target — see
-  `gitops/data/demo/rabbitmq-load.yaml` and its `data-demo-creds` Secret from
-  `gitops/data/demo/externalsecret.yaml`, keys `rabbitmq-username`/`rabbitmq-password`
-  sourced from Vault `rabbitmq/default` — note this is the correct existing Secret; ADR-0029's
-  text calls it "the existing `rabbitmq-creds` ExternalSecret" but the actual manifest is
-  named `data-demo-creds`). `TriggerAuthentication.spec.secretTargetRef` reads the
-  `rabbitmq-username`/`rabbitmq-password` keys from `data-demo-creds` (verify the exact
-  field name the pinned KEDA version's `rabbitmq` scaler expects — `host` vs
-  `hostFromEnv` — against the chart's scaler docs/source at pickup, not guessed).
-  `ScaledObject` targets the `rabbitmq-load` Deployment, `minReplicaCount: 1`,
-  `maxReplicaCount: 5` (small bound — a demo, not a capacity plan), trigger type
-  `rabbitmq`, `queueName: demo` (the queue `rabbitmq-load` itself declares via the
-  management API — see its startup script), connection host
-  `http://rabbitmq.data.svc.cluster.local:15672` (management HTTP API, `protocol: http`),
-  a `queueLength` threshold tuned low enough that the demo's own publish/consume loop
-  visibly moves the replica count — document the exact metadata block and the expected
-  observable behavior in the PR body (ADR-0004: no fabricated claims — this must actually
-  produce a scale event visible in `lab-keda.json`'s existing `keda_scaler_active` panel,
-  which currently shows "No data" pending exactly this item). NetworkPolicy: the KEDA
-  operator pod (namespace `keda`) is what polls the RabbitMQ management API, not
-  `rabbitmq-load` itself, so add `allow-keda-egress-rabbitmq.yaml` to
-  `gitops/keda/networkpolicy/kustomization.yaml` (egress TCP 15672 to
-  `namespaceSelector: kubernetes.io/metadata.name: data`); on the `data` side, verify
-  whether `gitops/data/networkpolicy/allow-rabbitmq-ingress.yaml`'s existing
-  `from: - podSelector: {}` peer (no `namespaceSelector`) actually covers cross-namespace
-  traffic — per NetworkPolicy semantics a bare `podSelector` peer only matches pods in the
-  *same* namespace as the policy, so it likely does NOT yet permit the `keda` namespace;
-  add a `namespaceSelector: kubernetes.io/metadata.name: keda` ingress peer to that file
-  if so. Extend `tests/keda.bats` (or a new `tests/keda-scaledobject.bats`):
-  `TriggerAuthentication` + `ScaledObject` manifests exist; `ScaledObject` references the
-  `rabbitmq-load` Deployment and `queueName: demo`; the new NetworkPolicy egress allow is
-  present; the `data` namespace ingress allow now covers the `keda` namespace. `make ci`
-  must pass. `docs/done/` entry required. **Executor note:** if this crosses ~400 lines
-  per WAYS-OF-WORKING.md §3, split the `ScaledObject`/`TriggerAuthentication` manifests
-  from the NetworkPolicy egress/ingress changes. (auto/keda-scaledobject-demo)
+- [x] 🟢 **KEDA `ScaledObject` demo — scale `rabbitmq-load` on RabbitMQ queue
+  depth** — full verification writeup:
+  [docs/done/2026-07-17-keda-scaledobject-demo.md](docs/done/2026-07-17-keda-scaledobject-demo.md).
+  (auto/keda-scaledobject-demo; PR #459)
 
 - [x] 🟢 **`disallow-latest-tag` ClusterPolicy — exclude the `capstone` namespace**
   (RFC/issue #498 — architect decision 2026-07-18, implementing in the same PR as the
