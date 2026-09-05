@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Guards docs/00-architecture.md's documented resource ceiling: "A 12 GB Colima VM
 # holds the always-on stack at ~7 GB. Heavy components (TiDB, Harbor, Istio, Longhorn,
-# Inkless, Kargo) each add 1-4 GB. Running two full stacks at once would exhaust the
+# Kargo) each add 1-4 GB. Running two full stacks at once would exhaust the
 # VM." Nothing enforced that until now (2026-08-05 incident): a chain of live-debugging
 # sessions each ran a `make <name>-up` and never the matching `-down`, so Harbor,
-# Istio, Kiali, Longhorn, Kargo, TiDB, and Inkless ended up running SIMULTANEOUSLY —
+# Istio, Kiali, Longhorn, Kargo, and TiDB ended up running SIMULTANEOUSLY —
 # plus a fully orphaned `artifactory` namespace with no owning ArgoCD Application at
 # all, left over from before the Harbor migration (ADR-0024) decommissioned it. The
 # Colima VM hit 11Gi/11Gi memory used, load average 30+ on 6 cores, kubelet couldn't
@@ -41,7 +41,6 @@ declare -A UNIT_APPS=(
   [istio]="istio-base istio-cni istiod ztunnel"
   [kiali]="kiali kiali-extras"
   [longhorn]="longhorn longhorn-extras"
-  [inkless]="inkless"
   [kargo]="kargo-extras kargo kargo-networkpolicy kargo-project"
   [tidb]="tidb-operator tidb-cluster tidb-demo"
 )
@@ -52,7 +51,6 @@ declare -A UNIT_NS=(
   [istio]="istio-system"
   [kiali]="kiali"
   [longhorn]="longhorn-system"
-  [inkless]="inkless"
   [kargo]="kargo"
   [tidb]="tidb tidb-admin"
 )
@@ -64,7 +62,6 @@ declare -A UNIT_SIZE=(
   [istio]="~480 MB"
   [kiali]="~200 MB"
   [longhorn]="~350-400 MB"
-  [inkless]="~1.1 GB"
   [kargo]="~250-450 MB"
   [tidb]="~1.75 GB (operator ~256 MB + cluster ~1.5 GB)"
 )
@@ -72,7 +69,7 @@ declare -A UNIT_SIZE=(
 # scripts/lab-health-check.sh's LAB_ONDEMAND_NS default plus the historical
 # artifactory carve-out (decommissioned, ADR-0024, but namespaces aren't
 # self-deleting, so a stray manual `make artifactory-up` can still leave one behind).
-ONDEMAND_NS="tidb tidb-admin istio-system kiali longhorn-system inkless kargo harbor artifactory"
+ONDEMAND_NS="tidb tidb-admin istio-system kiali longhorn-system kargo harbor artifactory"
 
 command -v kubectl >/dev/null 2>&1 || { echo "kubectl not installed"; exit 2; }
 kubectl get nodes >/dev/null 2>&1 || { bad "cluster unreachable (kubectl get nodes failed)"; exit 2; }
@@ -144,7 +141,6 @@ for ns in $ONDEMAND_NS; do
     istio-system) unit_is_up istio || is_owned=0 ;;
     kiali) unit_is_up kiali || is_owned=0 ;;
     longhorn-system) unit_is_up longhorn || is_owned=0 ;;
-    inkless) unit_is_up inkless || is_owned=0 ;;
     kargo) unit_is_up kargo || is_owned=0 ;;
     harbor) unit_is_up harbor || is_owned=0 ;;
     artifactory) is_owned=0 ;; # no unit owns this at all anymore, ADR-0024 — always orphaned if present

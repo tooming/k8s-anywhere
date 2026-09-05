@@ -393,17 +393,6 @@ spec:
                 scrape_interval = "30s"
               }
 
-              // ---- Inkless (diskless Kafka) exporter metrics -> Mimir ----
-              // kafka-exporter co-located container in the Inkless StatefulSet exposes Prometheus
-              // metrics on :9308; this target is idle unless inkless is manually synced.
-              prometheus.scrape "inkless" {
-                targets = [
-                  {"__address__" = "inkless.inkless.svc.cluster.local:9308", "job" = "inkless"},
-                ]
-                forward_to      = [prometheus.remote_write.mimir.receiver]
-                scrape_interval = "30s"
-              }
-
               // ---- Trivy Operator (supply-chain CVE + SBOM scanner) -> Mimir ----
               // Trivy Operator exposes Prometheus metrics at :8080/metrics; feeds the
               // "Lab — Trivy Operator" dashboard with real trivy_image_vulnerabilities,

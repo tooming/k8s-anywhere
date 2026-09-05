@@ -1,7 +1,7 @@
 # Allow all pods within the istio-system namespace to communicate with each other (ADR-0016).
 # This is a documented carve-out from ADR-0016's general "no catch-all 'allow same
 # namespace'" rule — see ADR-0016 §"Scope & exceptions" → Carve-outs table (the
-# argocd/harbor/inkless/istio-system/longhorn-system/tidb row) for the binding
+# argocd/harbor/istio-system/longhorn-system/tidb row) for the binding
 # rationale and flip condition.
 # The Istio ambient control-plane has dense intra-namespace flows:
 #   istiod control plane <-> istio-base CRD webhooks (TCP 15010/15012 xDS gRPC);

@@ -49,14 +49,6 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: envoy-gateway-system
-    # Inkless kafka-exporter (:9308) — on-demand; idle unless inkless is synced.
-    - ports:
-        - port: 9308
-          protocol: TCP
-      to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: inkless
     # Kyverno admission engine metrics (:8000) — four controller Services.
     - ports:
         - port: 8000

@@ -56,9 +56,6 @@ spec:
           - appName: vault-networkpolicy
             gitPath: gitops/vault/networkpolicy
             destNamespace: vault
-          - appName: inkless-networkpolicy
-            gitPath: gitops/inkless/networkpolicy
-            destNamespace: inkless
           - appName: istio-system-networkpolicy
             gitPath: gitops/istio-system/networkpolicy
             destNamespace: istio-system

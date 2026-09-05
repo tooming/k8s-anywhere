@@ -53,29 +53,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-garage-s3-from-inkless.yaml exists in storage/networkpolicy/" {
-  [ -f "$STORAGE_NP/allow-garage-s3-from-inkless.yaml" ]
-}
-
-@test "allow-garage-s3-from-inkless allows port 3900 (Garage S3 API)" {
-  run grep -q 'port: 3900' "$STORAGE_NP/allow-garage-s3-from-inkless.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-garage-s3-from-inkless targets Garage pods (app: garage)" {
-  run grep -q 'app: garage' "$STORAGE_NP/allow-garage-s3-from-inkless.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-garage-s3-from-inkless allows ingress from inkless namespace" {
-  run grep -q 'kubernetes.io/metadata.name: inkless' "$STORAGE_NP/allow-garage-s3-from-inkless.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-garage-s3-from-inkless allows ingress from Inkless broker pods (app: inkless)" {
-  run grep -q 'app: inkless' "$STORAGE_NP/allow-garage-s3-from-inkless.yaml"
-  [ "$status" -eq 0 ]
-}
 
 # 2026-08-05: found live that the storage namespace had NO ingress policy at all
 # covering s3manager (only Garage had allow rules) — under the default-deny floor
