@@ -1,10 +1,9 @@
 # NetworkPolicy Kustomize overlay for the storage namespace (ADR-0016 §4 fan-out).
 # Pulls the two shared baseline templates and adds per-workload allow rules for
 # Garage's real ingress flows: from the LGTMP stack in observability (S3 writes
-# on TCP 3900 + Alloy metrics scrape on TCP 3903), from the Inkless broker in the
-# inkless namespace (diskless Kafka log-segment S3 writes on TCP 3900), and from
-# Harbor's registry in the harbor namespace (blob storage S3 writes on TCP 3900 —
-# found live 2026-08-18, see allow-garage-s3-from-harbor.yaml's own comment: this
+# on TCP 3900 + Alloy metrics scrape on TCP 3903), and from Harbor's registry in
+# the harbor namespace (blob storage S3 writes on TCP 3900 — found live
+# 2026-08-18, see allow-garage-s3-from-harbor.yaml's own comment: this
 # ingress-side rule was missing even though harbor's egress-side rule existed,
 # silently dropping every Harbor blob upload). Also allows Envoy
 # (envoy-gateway-system) to reach s3manager on TCP 8080 for the
@@ -21,6 +20,5 @@ resources:
   - ../../network/policies/allow-dns-and-apiserver.yaml
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-garage-s3-from-observability.yaml
-  - allow-garage-s3-from-inkless.yaml
   - allow-garage-s3-from-harbor.yaml
   - allow-s3manager-ingress.yaml

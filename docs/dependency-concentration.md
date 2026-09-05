@@ -40,7 +40,7 @@ above, since nothing in the always-on baseline depends on this org.
 (gruntwork-io) are two different orgs sharing one register row; Garage (Deuxfleurs);
 Envoy Gateway (envoyproxy); RabbitMQ (rabbitmq); Istio (istio) and Kiali (kiali) are
 two different orgs despite sharing one ADR (ADR-0012); Longhorn (longhorn); Cilium
-(cilium); Aiven Inkless (aiven); Valkey (valkey-io); Kyverno (kyverno); Velero
+(cilium); Valkey (valkey-io); Kyverno (kyverno); Velero
 (vmware-tanzu); Trivy Operator (aquasecurity); Kargo (akuity); Harbor (goharbor);
 Oracle Cloud Infrastructure (not GitHub-hosted — cloud.oracle.com); k3s (k3s-io);
 cert-manager (cert-manager); KEDA (kedacore); Forgejo (not GitHub-hosted —

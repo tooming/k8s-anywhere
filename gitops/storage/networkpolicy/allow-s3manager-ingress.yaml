@@ -4,9 +4,10 @@
 #
 # Found missing live 2026-08-05 while recovering an unrelated resource-exhaustion
 # incident: the `storage` namespace only had ingress allows for Garage
-# (allow-garage-s3-from-observability/inkless) — nothing at all covered s3manager,
-# so under the default-deny floor the front-door UI has likely never actually
-# worked. Same bug class as the harbor carve-out documented in
+# (allow-garage-s3-from-observability, plus Harbor's own) — nothing at all
+# covered s3manager, so under the default-deny floor the front-door UI has
+# likely never actually worked. Same bug class as the harbor carve-out
+# documented in
 # gitops/envoy-gateway-system/networkpolicy/allow-envoy-proxy-backend-egress.yaml.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

@@ -1,8 +1,16 @@
 # ADR-0015 — Aiven Inkless (diskless Kafka) on-demand
 
-**Status.** Adopted. Manifests live in `gitops/inkless/` and `gitops/platform/inkless.yaml`
-(non-auto-synced ArgoCD `Application`). Bring up with `make inkless-up`, tear down with
-`make inkless-down`.
+**Status.** Removed 2026-09-05 (maintainer decision — component dropped from the lab
+entirely, no replacement). All `gitops/inkless/` manifests, `gitops/platform/inkless.yaml`,
+the `lab-inkless.json` dashboard, and every inkless-up/inkless-down Makefile
+target, test, and cross-reference were deleted in the same change. The decision record
+below is kept for history (why Inkless was adopted, what it demonstrated) but no longer
+describes anything live in the repo — do not treat any manifest path or Makefile target
+named below as still existing.
+
+~~**Status.** Adopted. Manifests live in `gitops/inkless/` and `gitops/platform/inkless.yaml`
+(non-auto-synced ArgoCD Application). Bring up with the (now-removed) inkless-up target,
+tear down with inkless-down.~~
 
 ---
 
@@ -138,7 +146,7 @@ make inkless-down # cascade-deletes all inkless resources
 | ADR-0002 (Garage) | Garage is Inkless's S3 backend — the existing `garage-bootstrap.sh` adds the inkless bucket |
 | ADR-0003 (no needless SPOF) | Single-node per ADR-0005 trade-off; production would add replicas |
 | ADR-0004 (real metrics) | Grafana dashboard uses real KSM/cAdvisor metrics; no fabricated data |
-| ADR-0005 (recreate-over-HA) | 1 broker + 1 postgres; `make inkless-up` recreates from manifests |
+| ADR-0005 (recreate-over-HA) | 1 broker + 1 postgres; the (since-removed) inkless-up target recreated from manifests |
 | ADR-0009/0010 (RabbitMQ/Redis) | Complementary data-layer patterns; different interfaces and durability models |
 
 ---
@@ -294,7 +302,7 @@ not binary-compatible across majors — they require `pg_upgrade` or a
 dump/restore against the existing on-disk data directory, not just a fresh
 container start. `inkless-postgres` is a single-replica StatefulSet
 (ADR-0005) backed by a real PersistentVolume holding live batch-metadata
-state whenever Inkless is brought up (`make inkless-up`). A remote
+state whenever Inkless was brought up (the since-removed inkless-up target). A remote
 clusterless session cannot verify a `17`→`18` data-directory upgrade path
 succeeds without data loss, nor confirm the Inkless broker's own SQL/driver
 usage is 18-compatible — mirrors this same log's own `apache/kafka` hold

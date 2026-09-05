@@ -571,7 +571,7 @@ dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=c
 
 .PHONY: dr-restore
 dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
-	@./scripts/dr-restore.sh data tidb capstone vault observability inkless
+	@./scripts/dr-restore.sh data tidb capstone vault observability
 
 .PHONY: dr-chaos
 dr-chaos: ## Chaos drill: kill a random capstone pod, assert self-heal within budget (DORA Pillar 3 TLPT concept)
@@ -636,7 +636,7 @@ define argocd-delete
 endef
 
 # Blocking pre-flight for on-demand `-up` targets (2026-08-05 incident: Harbor, Istio,
-# Kiali, Longhorn, Kargo, TiDB, and Inkless all ended up running simultaneously across
+# Kiali, Longhorn, Kargo, and TiDB all ended up running simultaneously across
 # several unrelated debugging sessions that each brought one up and never back down,
 # exhausting the 12 GB VM and taking down every front-door UI). Docs/00-architecture.md's
 # own stated tolerance is ONE heavy unit at a time. Override: ONDEMAND_BUDGET_FORCE=1.
@@ -648,7 +648,7 @@ define ondemand-guard
 endef
 
 .PHONY: ondemand-budget-check
-ondemand-budget-check: ## Report which on-demand units (Harbor/Istio/Kiali/Longhorn/Kargo/TiDB/Inkless) are live + flag orphaned namespaces
+ondemand-budget-check: ## Report which on-demand units (Harbor/Istio/Kiali/Longhorn/Kargo/TiDB) are live + flag orphaned namespaces
 	@bash scripts/ondemand-budget-check.sh
 
 .PHONY: k3s-datastore-health-check
@@ -766,15 +766,6 @@ longhorn-up: ## Deploy Longhorn distributed block storage via ArgoCD manual sync
 longhorn-down: ## Remove Longhorn and its Envoy route (reclaims ~350-400 MB)
 	$(call argocd-delete,longhorn-extras)
 	$(call argocd-delete,longhorn)
-
-.PHONY: inkless-up
-inkless-up: ## Deploy Aiven Inkless (diskless Kafka) via ArgoCD manual sync (~1.1 GB; requires garage-bootstrap; do after make up)
-	$(call ondemand-guard,inkless)
-	$(call argocd-sync,inkless)
-
-.PHONY: inkless-down
-inkless-down: ## Remove Aiven Inkless and PostgreSQL (reclaims ~1.1 GB RAM; does not delete Garage bucket)
-	$(call argocd-delete,inkless)
 
 .PHONY: kargo-up
 kargo-up: ## Deploy Kargo promotion-orchestration engine via ArgoCD manual sync (~250-450 MB; do after make up)

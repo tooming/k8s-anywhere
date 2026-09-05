@@ -22,7 +22,7 @@ rationale travels with the code.
   - [ADR-0012](adr-0012-istio-ambient-not-sidecar.md) — Istio ambient mesh + Kiali on-demand (not sidecar)
   - [ADR-0013](adr-0013-longhorn-block-storage.md) — Longhorn distributed block storage on-demand
   - [ADR-0014](adr-0014-cilium-not-flannel-policy.md) — Cilium CNI, not k3s's bundled Flannel + NetworkPolicy controller
-  - [ADR-0015](adr-0015-inkless-diskless-kafka.md) — Aiven Inkless (diskless Kafka) on-demand, backed by Garage S3
+  - [ADR-0015](adr-0015-inkless-diskless-kafka.md) — Aiven Inkless (diskless Kafka) on-demand, backed by Garage S3 — **Removed 2026-09-05, no replacement**
   - [ADR-0016](adr-0016-default-deny-networkpolicy.md) — Default-deny NetworkPolicy per namespace (Cilium-enforced)
   - [ADR-0017](adr-0017-pod-security-standards-restricted.md) — Pod Security Standards `restricted` profile across all namespaces
   - [ADR-0018](adr-0018-valkey-not-redis.md) — Valkey as the lab's cache / key-value store (supersedes ADR-0010)

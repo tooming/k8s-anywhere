@@ -10,7 +10,7 @@
 #   * Job-owned pods (Trivy scans, hook jobs, …) — ephemeral by design; their
 #     Completion is what matters, not steady Readiness.
 #   * On-demand components — the manual `make *-up` targets (TiDB, Harbor, Istio,
-#     Kiali, Longhorn, Inkless, Kargo) + the capstone demo (needs the on-demand
+#     Kiali, Longhorn, Kargo) + the capstone demo (needs the on-demand
 #     Harbor registry). `make up` never starts them, so a missing/unhealthy one isn't a
 #     `make up` failure. Override the set with LAB_ONDEMAND_NS="ns1 ns2 …".
 #
@@ -24,7 +24,7 @@ set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 WAIT="${HEALTH_WAIT:-90}"
 IV="${HEALTH_INTERVAL:-10}"
-ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo istio-system kiali longhorn-system inkless kargo ack-system capstone harbor}"
+ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo istio-system kiali longhorn-system kargo ack-system capstone harbor}"
 # Front-door UIs to probe (HTTP, from the host) — readiness of the pods behind Envoy
 # isn't enough: if the Envoy data plane is down, every :8000 UI is unreachable while the
 # pods still look fine. Probes the stable front door (:8000), not a per-cluster Envoy

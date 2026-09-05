@@ -5,7 +5,6 @@
 #   tidb-daily      (tidb)     02:30 UTC  — PD/TiKV/TiDB PVCs (on-demand ns)
 #   capstone-daily  (capstone) 03:00 UTC  — end-to-end demo app
 #   vault-daily     (vault)    03:30 UTC  — Vault file-backend PVC
-#   inkless-daily   (inkless)  04:00 UTC  — Inkless + Postgres PVCs (on-demand ns, added 2026-07-29)
 # `storage` (Garage) is deliberately NOT scheduled — see ADR-0021 §Scope &
 # exceptions (Garage is both the workload and the backup target).
 #

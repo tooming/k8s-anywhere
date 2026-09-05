@@ -245,7 +245,7 @@ setup() {
 }
 
 # --- scripts/ondemand-budget-check.sh ------------------------------------------
-# 2026-08-05 incident: Harbor, Istio, Kiali, Longhorn, Kargo, TiDB, and Inkless all
+# 2026-08-05 incident: Harbor, Istio, Kiali, Longhorn, Kargo, and TiDB all
 # ended up running simultaneously across unrelated debugging sessions (each brought
 # one up, none brought it back down), exhausting the 12 GB Colima VM's documented
 # budget (docs/00-architecture.md "Why on-demand for heavy components") and taking
@@ -258,8 +258,8 @@ setup() {
   [ -x "$BUDGET" ]
 }
 
-@test "ondemand-budget-check.sh tracks all seven documented heavy on-demand units" {
-  for unit in harbor istio kiali longhorn inkless kargo tidb; do
+@test "ondemand-budget-check.sh tracks all six documented heavy on-demand units" {
+  for unit in harbor istio kiali longhorn kargo tidb; do
     run grep -q "\[$unit\]=" "$BUDGET"
     [ "$status" -eq 0 ]
   done
@@ -294,8 +294,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "ondemand-budget-check.sh maps all seven units to a namespace for the Pod check" {
-  for unit in harbor istio kiali longhorn inkless kargo tidb; do
+@test "ondemand-budget-check.sh maps all six units to a namespace for the Pod check" {
+  for unit in harbor istio kiali longhorn kargo tidb; do
     run bash -c "grep -A10 'declare -A UNIT_NS=' '$BUDGET' | grep -q '\[$unit\]='"
     [ "$status" -eq 0 ]
   done
@@ -317,7 +317,7 @@ setup() {
 }
 
 @test "Makefile guards every heavy *-up target with ondemand-guard" {
-  for t in harbor-up istio-up kiali-up longhorn-up inkless-up kargo-up tidb-up; do
+  for t in harbor-up istio-up kiali-up longhorn-up kargo-up tidb-up; do
     run grep -A2 "^$t:" "$MAKEFILE"
     [ "$status" -eq 0 ]
     [[ "$output" == *"ondemand-guard"* ]]

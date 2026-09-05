@@ -31,7 +31,7 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
 - **Recreate-from-code.** `make up` rebuilds the whole lab; DR is verified, not assumed
   (`make dr-verify` / `dr-test` / blue-green). (ADR-0005)
 - **Stateful DR is exercised.** Every stateful namespace (`data`, `tidb`, `capstone`,
-  `vault`, `observability`, `inkless`) has a Velero schedule and a `make dr-restore`
+  `vault`, `observability`) has a Velero schedule and a `make dr-restore`
   path that recovers it from the latest backup — not just re-creates the workload
   from manifest.
 - **Images are signed and verified.** Every image deployed into the cluster is signed
@@ -70,7 +70,7 @@ states the meta-choices the ADRs encode, so the *why* sits above the *what*.
   ArgoCD `Application`s. No `helm install`, no `kubectl apply` to live state.
   (ADR-0001)
 - **On-demand over always-on for heavy components.** The 12 GB VM holds a ~7 GB
-  always-on core; heavy components (TiDB, Harbor, Istio, Longhorn, Inkless) come
+  always-on core; heavy components (TiDB, Harbor, Istio, Longhorn) come
   up by `make <name>-up`. Never two full stacks at once. (ADR-0003)
 - **Recreate-from-code over pretend-HA.** A single host has SPOFs; we don't pretend
   otherwise. Recovery is via `make up` rebuilds + Velero restores, not multi-replica HA
@@ -124,10 +124,10 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   *Measured by:* `tests/networkpolicy.bats` + `tests/securitycontext.bats` cover every
   namespace in `gitops/`.
 - **O3 — Stateful DR is exercised.** By **2026-12-31**, `make dr-restore` recovers
-  every stateful namespace (`data`, `tidb`, `capstone`, `vault`, `observability`,
-  `inkless`) from its latest Velero backup in under 10 minutes wall-clock on the
-  maintainer's hardware. (`observability` and `inkless` added 2026-07-29 — a
-  gap audit found both held real PVCs with no Schedule; `storage`/Garage is a
+  every stateful namespace (`data`, `tidb`, `capstone`, `vault`, `observability`)
+  from its latest Velero backup in under 10 minutes wall-clock on the
+  maintainer's hardware. (`observability` added 2026-07-29 — a
+  gap audit found it held real PVCs with no Schedule; `storage`/Garage is a
   deliberate, documented carve-out — see ADR-0021 §Scope & exceptions.) **RPO ≤ 24
   hours** — every stateful namespace's `gitops/velero/schedules/*.yaml` Schedule
   runs once daily (staggered 01:00–04:00) with `ttl: 168h` (7-day retention), so the

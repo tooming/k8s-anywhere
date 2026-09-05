@@ -24,11 +24,13 @@ setup() {
   [ "$claimed_total" -eq "$real_total" ]
 }
 
-@test "docs/00-architecture.md's Grafana row cites the real always-on lab-dashboard count (total minus the 7 on-demand-tied dashboards)" {
+@test "docs/00-architecture.md's Grafana row cites the real always-on lab-dashboard count (total minus the 6 on-demand-tied dashboards)" {
   [ -f "$DOC" ]
   real_total="$(find "$DASHBOARD_DIR" -maxdepth 1 -name '*.json' | wc -l | tr -d ' ')"
-  # The 7 on-demand/heavy-tied dashboards the doc's own prose names explicitly.
-  ondemand_count=7
+  # The 6 on-demand/heavy-tied dashboards the doc's own prose names explicitly
+  # (Harbor, Istio, Kargo, Longhorn, TiDB x2 — was 7 until Inkless's dashboard
+  # was deleted alongside the rest of the component, 2026-09-06).
+  ondemand_count=6
   real_always_on=$((real_total - ondemand_count))
   run grep -oE '[0-9]+ lab dashboards' "$DOC"
   [ "$status" -eq 0 ]
