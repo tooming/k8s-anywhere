@@ -1553,62 +1553,9 @@ there is no point where the lab loses a working git source or CI path.
   (auto/k3d-registry-mirror-harbor; PR #1080)
 
 - [x] 🟢 **Bump Terraform-bootstrapped `argo-cd` chart `10.2.3` → `10.3.0`**
-  (CHARTER **Core Values** §"Everything as code" + general hardening;
-  planner-fallback upstream check 2026-08-06, reached via
-  `executor.prompt.md` STEP 6b after Now/next's three standing items were
-  found gated (unchanged) on unconfirmed maintainer-confirmation issues
-  #631/#633. **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): `git ls-remote --tags
-  argoproj/argo-helm` shows `argo-cd-10.3.0` one release ahead of
-  `infra/modules/argocd/variables.tf`'s pinned `chart_version` default
-  `"10.2.3"` (the bump this same file's `auto/argocd-chart-10-2-3` item
-  landed 2026-08-05). A full clone diff (`git diff argo-cd-10.2.3
-  argo-cd-10.3.0 -- charts/argo-cd/`) touches exactly three lines across
-  three files: `Chart.yaml` (`version` 10.2.3→10.3.0 only — `appVersion`
-  stays `v3.5.0`, so this is **not** an ArgoCD version bump, only a chart
-  packaging bump) and its `artifacthub.io/changes` annotation; `README.md`'s
-  auto-generated table; and `values.yaml`'s bundled `redis.image.tag`
-  (`8.2.3-alpine` → `8.6.4-alpine`, the chart's own mandatory Redis
-  dependency used for ArgoCD's API-server cache — unrelated to ADR-0018's
-  Valkey decision per the existing header comment in
-  `infra/modules/argocd/values.yaml`, which this bump doesn't touch). Zero
-  CRD changes, zero other `values.yaml` changes — confirmed RFC #785's
-  `global.networkPolicy.create: false` companion override
-  (`infra/modules/argocd/values.yaml`) stays correct: the chart's own
-  `global.networkPolicy.create` default is unchanged (`true`) in both
-  10.2.3 and 10.3.0, so the repo's override is still needed and still
-  applies untouched.
-
-  Because `appVersion` doesn't move, there is no ArgoCD upgrade guide to
-  re-check (unlike the 10.2.2→10.2.3 minor bump, which required reading
-  ArgoCD's `3.4-3.5` upgrade doc) — this is the smallest possible currency
-  delta: a same-appVersion chart repackage bumping one bundled dependency's
-  patch tag.
-
-  Bump `infra/modules/argocd/variables.tf`'s `chart_version` default
-  `"10.2.3"` → `"10.3.0"` (inline comment already reads `"10.2.3 => ArgoCD
-  v3.5.0"` — update only the chart-version half to `"10.3.0 => ArgoCD
-  v3.5.0"`, appVersion unchanged). Update both
-  `infra/live/local/argocd/terragrunt.hcl` and
-  `infra/live/oracle/argocd/terragrunt.hcl`'s `chart_version = "10.2.3"`
-  input to `"10.3.0"` (both must move together with the module default —
-  RFC #785's own recurrence-guard rationale for why all three sites are
-  checked in the same bats file). Update `tests/argocd-chart-pin.bats`'s
-  three assertions (`chart_version` default, both terragrunt.hcl inputs)
-  from `10.2.3` to `10.3.0`. No `docs/dependency-tree.md` or `context.md`
-  update needed — neither cites this chart's specific version (checked
-  directly). Update `docs/dependency-register.md`'s ArgoCD row "Last
-  reviewed" cell to cite this bump. `make ci` (specifically `terraform
-  validate`/`fmt`, clusterless — this Terraform-bootstrap seam needs no live
-  OCI/cloud credentials per ADR-0001) must pass. PR body must document the
-  three-line upstream diff above and the ADR-0004 caveat that this remote
-  clusterless session cannot verify a real `terraform apply` against this
-  pin succeeds end-to-end — call out the rollback path (revert the three
-  pins; the next `terraform apply` re-installs the prior chart version;
-  ArgoCD's own state — Applications, RBAC, repo credentials — lives in the
-  `argocd` namespace's Secrets/ConfigMaps on the cluster, untouched by a
-  chart-version revert in the bootstrap module). `docs/done/` entry
-  required. (auto/argocd-chart-10-3-0)
+  — full verification writeup:
+  [docs/done/2026-08-07-argocd-chart-10-3-0.md](docs/done/2026-08-07-argocd-chart-10-3-0.md).
+  (auto/argocd-chart-10-3-0; PR #1056)
 
 - [x] 🟢 **Bump Trivy Operator chart `0.34.0` → `0.35.0` (appVersion `0.32.0` →
   `0.33.0`, bundled Trivy scanner `0.72.0` → `0.73.0`)** — full verification
@@ -2320,64 +2267,9 @@ there is no point where the lab loses a working git source or CI path.
   re-derive from this summary alone. Closes #580. (auto/dora-metrics)
 
 - [x] 🟢 **Replace the dead "idle issue" fallback across every routine prompt with a
-  `[Action needed]` PR** (CHARTER **Core Values** §"Docs & dashboards don't drift" +
-  governance correctness; user-filed issue #569 — **no prerequisites, executor may pick
-  up immediately**; this is a workflow/governance fix per CLAUDE.md's "governance...
-  and workflow (routines, CI, Makefile, hooks) are all yours to propose, implement, and
-  merge", not an ADR/RFC-gated technical choice). Verified directly against the actual
-  repo state (not assumed, ADR-0004): `scripts/idle-issue-guard-check.sh`, wired as a
-  `PostToolUse` hook on `mcp__github__issue_write`/`mcp__github__add_issue_comment` in
-  `.claude/settings.json` (matcher block ~line 147), unconditionally flags **any** issue
-  title/body containing the standalone word "idle" (regex `\bidle\b|\bno work\b|nothing
-  to do|no actionable`) and instructs the routine to close the issue and undo the
-  action. Every routine's own documented "never end empty-handed" terminal fallback
-  creates or refreshes an issue whose title contains "idle" as a standalone word —
-  `executor.prompt.md` STEP 6b ("executor idle — needs work"), `planner.prompt.md`
-  STEP 4 (same title), `janitor.prompt.md` STEP 6 ("janitor idle — no cleanup found"),
-  `triager.prompt.md` STEP 6 ("triager idle — no untriaged issues"),
-  `doc-drift-author.prompt.md` STEP 7 ("doc-drift idle — docs are in sync"),
-  `upgrade-drafter.prompt.md` STEP 7 ("upgrade idle — everything at latest"),
-  `learning-post-writer.prompt.md` STEP 7 ("learning idle — quiet week, no post") —
-  every one of these is dead code: the moment a routine executes its own documented
-  last resort, the hook fires and tells it to reverse the very action its own prompt
-  just told it to take. This is the concrete gap issue #569 names ("If there are some
-  actions needed from the repo owner, then leave an open PR, starting with
-  [Action needed]...").
-
-  Fix, applied uniformly to all seven prompt files above: replace each "file/refresh a
-  `<role> idle — ...` GitHub issue" terminal step with — open (or refresh, if a
-  matching one is already open: search `gh pr list --state open --search "in:title
-  [Action needed]"` first) a PR on a new branch (the role's own existing prefix, e.g.
-  `auto/action-needed-<slug>` from the executor, `chore/action-needed-<slug>` from the
-  janitor, etc. — never a new dedicated prefix) whose only content is a new
-  `docs/backlog/YYYY-MM-DD-action-needed-<slug>.md` file stating precisely what is
-  blocked and, if applicable, exactly what maintainer action (outside the repo, e.g.
-  confirming a live-cluster state, setting a CI secret) would unblock it. Title the PR
-  `[Action needed] <one-line summary>` (never containing the word "idle" — the guard's
-  scrub only strips hyphenated `idle-*` compounds, so keep the word out of both title
-  and body entirely). Run the normal self-review + self-merge contract on it
-  (WAYS-OF-WORKING.md §0.1/§3/§4 apply to every PR, no exception) — it is a real,
-  reviewable, `make ci`-trivial diff (a single new markdown file), so it merges the
-  same run; the `[Action needed]` prefix makes it a low-noise, filterable signal in the
-  maintainer's normal PR list, not a blocked state. This satisfies rule #9's "every run
-  ships a PR" **literally** (a PR, not an issue) instead of relying on a mechanism the
-  repo's own hook already disables.
-
-  Recurrence guard: extend `tests/drift-detectors.bats` (or add a dedicated
-  `scripts/idle-issue-hook-coverage-check.sh` wired into `make ci` if a bats-only
-  assertion can't reach across all seven files cleanly — check the existing pattern
-  first) asserting no `routines/*.prompt.md` file pairs `gh issue create` or
-  `mcp__github__issue_write` with the standalone word "idle" in the same step — a
-  grep-based structural check mirroring this repo's other `scripts/<thing>-check.sh`
-  drift detectors. This is the mechanical guard per CLAUDE.md's bugfix-prevents-
-  recurrence rule, preventing a future edit from reintroducing a fallback path the hook
-  will immediately undo. `make ci` must pass. `docs/done/` entry required. **Delivered
-  as PR 1 of 2:** the combined seven-file diff crossed the ~400 changed-line budget
-  (WAYS-OF-WORKING.md §3), so this PR fixes `executor.prompt.md` + `planner.prompt.md`
-  only (the two roles STEP 6b's fallback chain actually reaches) plus
-  `tests/action-needed-fallback.bats` covering those two files. The remaining five
-  roles are split into the follow-up item directly below. Closes #569.
-  (auto/action-needed-pr-fallback)
+  `[Action needed]` PR** — full verification writeup:
+  [docs/done/2026-07-19-action-needed-pr-fallback.md](docs/done/2026-07-19-action-needed-pr-fallback.md).
+  (auto/action-needed-pr-fallback; PR #578) Closes #569.
 
 - [x] 🟢 **`[Action needed]` PR fallback — remaining five routine prompts** (CHARTER
   **Core Values** §"Docs & dashboards don't drift"; PR 2 of 2, follow-up to the item
@@ -4987,65 +4879,10 @@ there is no point where the lab loses a working git source or CI path.
   note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
   required. (auto/capstone-deployment-removal)
 
-- [x] 🟢 **Chaos / fault-injection drill — `make dr-chaos`** (CHARTER **Goals**
-  §"operational-resilience discipline" + §"DR / blue-green on a single host" — DORA's
-  Pillar 3 "digital operational resilience testing" (TLPT — threat-led penetration
-  testing — concept); planner-fallback gap analysis 2026-08-04, reached via
-  `executor.prompt.md` STEP 6b after all three standing "Now / next" items were found
-  gated on unconfirmed maintainer-confirmation issues #631/#633 (unchanged since the
-  prior planner-fallback pass this same run — re-checked both issues' comments, no new
-  confirmation) with no live-state-safe slice to split off. **No prerequisites —
-  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004):
-  `docs/dora-audit-readiness.md`'s Q12 ("Is there an adversarial/penetration-style test
-  (DORA's TLPT concept)?") answers "No fault-injection or chaos-engineering scenario
-  exists... the closest analog — blue/green cutover — tests *planned* failover, not an
-  *injected* failure" and its own "Gap" line names the exact scoped fix: "a `make
-  dr-chaos` that kills a random capstone pod during `make capstone-demo` and asserts
-  the Rollout/ArgoCD self-heals within budget." Grepping ROADMAP.md for "chaos"/
-  "fault-inject" turns up nothing already tracking this (the only hit is this same
-  gap's own PR #973 follow-up note). This is real gap-analysis output the audit doc
-  itself flags as "a reasonable, scoped future ROADMAP item if you want to close it" —
-  not manufactured filler.
-
-  Add `scripts/dr-chaos.sh` mirroring `scripts/dr-restore.sh`'s style (sources
-  `lib/colors.sh` + `lib/budget-check.sh`; a `BUDGET_S` constant — pick one consistent
-  with the Rollout's own canary/self-heal timing, e.g. 300s, and justify the number in
-  the PR body against `gitops/apps/capstone/rollout.yaml`'s actual canary steps/
-  `progressDeadlineSeconds`, not a guessed value): picks one running capstone pod at
-  random (`kubectl get pods -n capstone -l <rollout label> -o name | shuf -n1`, or the
-  active ReplicaSet's pod if `shuf` isn't guaranteed available — check), deletes it
-  (`kubectl delete pod`), then polls until either (a) a replacement pod reaches Ready
-  and the Rollout/Deployment's available-replica count is back to its pre-injection
-  value within budget (self-heal confirmed, exit 0) or (b) the budget is exceeded
-  (exit 1, mirroring `dr-restore.sh`'s `budget_warn_if_exceeded`/`budget_final_line`
-  pattern). Follow `dr-destroy.sh`'s confirmation-prompt precedent for a destructive
-  action — since this deletes a live capstone pod, gate it the same way (`DR_ASSUME_YES=1`
-  bypass for non-interactive/scripted use, an explicit typed confirmation otherwise).
-  Add `dr-chaos: ## Chaos drill: kill a random capstone pod, assert self-heal within
-  budget (DORA Pillar 3 TLPT concept)` to the Makefile's DR section (on-demand only —
-  do NOT wire into `make up`, `make dr-test`, or `make ci`, same on-demand pattern as
-  `dr-bluegreen`). New `tests/dr-chaos.bats` (clusterless structural, mirrors
-  `tests/dr-bluegreen.bats`'s shape exactly — no live cluster required): script exists
-  + is executable; sources both shared libs; declares a `BUDGET_S` constant; has a
-  `DR_ASSUME_YES`-style non-interactive guard (grep for the same pattern
-  `dr-destroy.sh` uses); Makefile declares the `dr-chaos` target; the target is NOT
-  invoked from `up`, `ci`, or `dr-test`'s own block (mirrors the existing "target is
-  NOT invoked from X (on-demand only)" assertions in `tests/dora-metrics.bats`).
-  Update `docs/DR.md` with a new "Chaos / fault-injection drill" subsection under the
-  existing DR sections explaining what it does, why (TLPT concept, distinct from
-  blue/green's *planned* failover), and its budget. Update
-  `docs/dora-audit-readiness.md`'s Q12 answer from "No fault-injection... exists" to
-  describe the new drill (cite `docs/DR.md` + the script), updating its "Gap" line
-  accordingly — do not overclaim a live-cluster run happened; this remote clusterless
-  session can author and structurally verify the script but cannot execute it against
-  a real cluster (ADR-0004 caveat, same pattern as every other DR-script PR). PR body
-  must state the chosen `BUDGET_S` value's justification and the rollback/safety story
-  (worst case: the deleted pod's ReplicaSet/Rollout recreates it exactly as ArgoCD/
-  Kubernetes already guarantee for any pod deletion — this script only *observes and
-  times* that self-heal, it doesn't change cluster behavior itself, so there is no
-  new failure mode beyond "one capstone pod restarts," an event the lab already
-  tolerates routinely). `make ci` must pass. `docs/done/` entry required.
-  (auto/dr-chaos-fault-injection)
+- [x] 🟢 **Chaos / fault-injection drill — `make dr-chaos`** — full verification
+  writeup:
+  [docs/done/2026-08-04-dr-chaos-fault-injection.md](docs/done/2026-08-04-dr-chaos-fault-injection.md).
+  (auto/dr-chaos-fault-injection; PR #975)
 
 - [x] 🟢 **Third-party dependency register — `docs/dependency-register.md`** (CHARTER
   **Goals** §"operational-resilience discipline" — DORA Pillar 4 (ICT third-party risk
@@ -5382,62 +5219,9 @@ there is no point where the lab loses a working git source or CI path.
   (auto/cilium-1-18-12-bump)
 
 - [x] 🟢 **DR/capstone-demo results-history log — track pass/fail + elapsed
-  time per run over time** (CHARTER **Goals** §"operational-resilience
-  discipline" — DORA Pillar 3 concept, testing-results tracking;
-  planner-fallback gap analysis 2026-08-11, reached via
-  `executor.prompt.md` STEP 6b PLANNER role after all six standing Now/next
-  items were re-confirmed gated (the three GitLab→Forgejo migration items
-  need live verification; the `verifyImages` Enforce flip / O4 CI gate /
-  capstone `Deployment` removal are all gated on unconfirmed
-  maintainer-confirmation issues #631/#633, re-checked this run — both still
-  open, no new confirmation comment), the architect lane held no un-RFC'd 🟡
-  item, and this run's own external chart-currency sweep (Vault, KEDA,
-  TiDB Operator, kube-state-metrics, Envoy Gateway all confirmed already at
-  latest stable via direct upstream release checks) and a janitor-style
-  dead-code/duplication sweep (no orphaned scripts — every `scripts/*.sh` is
-  referenced by the Makefile/CI/tests; every script has bats coverage) both
-  came up clean. **No prerequisites — executor may pick up immediately.**)
-
-  Verified directly (not assumed, ADR-0004): `docs/dora-audit-readiness.md`'s
-  Q13 ("Are test results tracked with remediation deadlines?") answers
-  "Pass/fail is enforced by exit codes... but there's no historical log of
-  *past* run results over time — only the current pass/fail, not a trend"
-  and names the exact gap this item closes: "a results log would let you see
-  if the 10-minute RTO is trending up as the lab grows, not just whether it
-  passed today." Grepping ROADMAP.md and `docs/` for "results log"/"RTO
-  trend" finds nothing already tracking this.
-
-  Add `scripts/lib/dr-results-log.sh` (new shared lib, mirrors the existing
-  `budget-check.sh` extraction precedent — same header-comment convention
-  crediting why it's shared): one function
-  `dr_log_result <script_name> <status> <elapsed_s> <budget_s> <objective_tag>`
-  that appends one row to `docs/dr-results-log.md` — creating the file with
-  a header (`| Date (UTC) | Script | Status | Elapsed (s) | Budget (s) |
-  Objective |`) on first write if it doesn't exist yet. `status` is the
-  literal string `PASS` or `FAIL`; the date is `date -u
-  +%Y-%m-%dT%H:%M:%SZ`. Wire the call into every DR/capstone script's pass
-  AND fail exit path — `scripts/dr-restore.sh` (Objective O3),
-  `scripts/dr-bluegreen.sh` (blue/green), `scripts/dr-chaos.sh` (chaos),
-  `scripts/capstone-demo.sh` (Objective O6) — so a real invocation (this
-  remote session cannot trigger one, ADR-0004) appends exactly one row per
-  run, pass or fail; never fabricate a row.
-
-  Update `docs/DR.md` linking to the new log; update
-  `docs/dora-audit-readiness.md` Q13's Gap line to note the mechanism now
-  exists (pending real data — an empty/near-empty log is truthful, not a
-  placeholder). New `tests/dr-results-log.bats` (clusterless, structural):
-  the lib file exists and defines `dr_log_result`; each of the four scripts
-  sources the lib and calls `dr_log_result` on both its pass and fail paths
-  (grep-based assertions, mirroring `tests/hook-scripts-*.bats`'s style); a
-  scratch-dir integration test that sources the lib, calls it twice, and
-  asserts the file grows by exactly two well-formed rows under a single
-  header (recurrence guard: the header must not be re-written on subsequent
-  appends). `make ci` must pass. PR body must document the ADR-0004 caveat:
-  this remote clusterless session cannot generate a real logged run (no
-  cluster), so `docs/dr-results-log.md` ships as an empty table (header
-  only) — real rows only accumulate once a maintainer or a live-cluster
-  session actually runs one of the four scripts. `docs/done/` entry
-  required. (auto/dr-results-log)
+  time per run over time** — full verification writeup:
+  [docs/done/2026-08-11-dr-results-log.md](docs/done/2026-08-11-dr-results-log.md).
+  (auto/dr-results-log; PR #1125)
 
 - [x] 🟢 **Vault internal telemetry — `sys/metrics` scrape + dashboard depth** —
   full verification writeup:
@@ -5450,60 +5234,9 @@ there is no point where the lab loses a working git source or CI path.
   (auto/lgtmp-health-dashboards; PR #1131)
 
 - [x] 🟢 **Stateless-surface criticality tiering — closes DORA audit Q2's named gap**
-  (CHARTER **Core Values** §"Everything as code" / operational-resilience discipline;
-  planner-fallback gap analysis 2026-08-12, reached via `executor.prompt.md` STEP 6b
-  PLANNER role after this run's Now/next lane was found fully gated — all six
-  remaining items are either an explicit live-cluster-only flip (`auto/
-  forgejo-argocd-repo-secret`'s successor) or gated on the still-unconfirmed standing
-  `[Action required]` issues #631/#633 (re-checked this cycle: both still open, most
-  recent comments 2026-08-11, neither confirms the gate). A currency sweep this same
-  cycle (ArgoCD, Trivy Operator, Grafana, Loki/Tempo/Pyroscope, Kargo, RabbitMQ,
-  Cilium, cert-manager, Velero, KEDA all checked directly against upstream tags —
-  Longhorn deliberately held at `1.11.3` per ADR-0013's own binding flip condition,
-  re-confirmed unfired) found nothing stale enough to bump. **No prerequisites —
-  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004):
-  `docs/dora-audit-readiness.md` Q2 ("Are critical functions/assets identified and
-  mapped to supporting ICT systems?") answers yes for the *stateful* surface only —
-  CHARTER Objective O3 names the six stateful namespaces (`data`, `tidb`, `capstone`,
-  `vault`, `observability`, `inkless`) as critical — and its own "Gap" line states
-  plainly: "no equivalent criticality tiering for the *stateless* surface (e.g., is
-  Envoy Gateway more critical than Kiali? Implicit from always-on/on-demand split,
-  never stated as a tier)." `docs/incident-log.md` already has a binding P0–P3
-  severity scheme (whole-lab-down/data-loss; single always-on component down/
-  security gap; on-demand component broken; cosmetic) used for every real incident
-  logged there — grepped directly, confirmed no existing doc maps each *component*
-  to which tier its own outage would trigger, only individual past incidents.
-
-  Add a new "Stateless component criticality tiers" section to
-  `docs/dora-audit-readiness.md` directly under Q2 (or a new `docs/criticality-
-  tiers.md` if the table grows unwieldy inline — executor's call, cite whichever in
-  Q2's Evidence line), reusing `docs/incident-log.md`'s existing P0–P3 scheme rather
-  than inventing a new one (avoids two competing severity taxonomies). One row per
-  always-on stateless component from CHARTER's "Target end-state" section (Envoy
-  Gateway, Cilium, ArgoCD, Vault, External Secrets, GitLab, Garage, the LGTMP stack
-  components individually — Alloy/Grafana/Mimir/Loki/Tempo/Pyroscope/KSM/
-  node-exporter, moto/ACK/KRO, RabbitMQ, Valkey, Kyverno, Argo Rollouts, Velero,
-  Trivy Operator, cert-manager, KEDA — cross-reference `docs/dependency-tree.md` for
-  the authoritative list, don't hand-enumerate from memory) plus a one-line
-  justification per row grounded in what the component's outage actually breaks
-  (e.g. Cilium → P0, cites the real 2026-07-29 `docs/incident-log.md` entry where a
-  Cilium apiserver-connectivity loss was cluster-wide; Vault/External Secrets → P0,
-  cites the real repeated "ExternalSecrets break cluster-wide" incidents already in
-  that same log; Kiali/on-demand components are explicitly out of scope for this
-  table — they're already covered by O3's on-demand P2 tier, this item is additive
-  for the always-on set only). Update Q2's "Gap" line to point at the new
-  section/file instead of stating the gap as open. New `tests/dora-audit-
-  readiness.bats` (verified directly: no file by this name exists yet — only the
-  unrelated `tests/dora-metrics.bats`, which covers CHARTER O7's `make dora-metrics`
-  delivery-metrics feature, a different doc — do not append there) asserting the new
-  section/file exists and names at minimum Envoy Gateway, Cilium,
-  ArgoCD, and Vault (the four components with a real documented P0 incident already
-  in `docs/incident-log.md`, so this is a recurrence guard against the tiering
-  silently omitting a component that has already caused a real outage). `make ci`
-  must pass. `docs/done/` entry required. PR body must document which components got
-  which tier and why, per-row, not just assert the table exists (ADR-0004 — a table
-  of unjustified tier labels would itself be a form of fabricated/unverified
-  content). (auto/stateless-criticality-tiers)
+  — full verification writeup:
+  [docs/done/2026-08-12-stateless-criticality-tiers.md](docs/done/2026-08-12-stateless-criticality-tiers.md).
+  (auto/stateless-criticality-tiers; PR #1133)
 
 - [x] 🟢 **Third-party dependency concentration-risk rollup — closes DORA audit Q16's
   named gap** — full verification writeup:
