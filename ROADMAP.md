@@ -2067,31 +2067,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-08-18-cosign-enforce-flip.md](docs/done/2026-08-18-cosign-enforce-flip.md).
   (auto/cosign-enforce-flip; PR #1223) Closes #631.
 
-- [x] 🟢 **Lab — Grafana Alloy self-monitoring dashboard + self-scrape** (CHARTER
-  **Objective O5**, due **2026-09-30**; O5 gap — `observability-alloy` is
-  auto-synced in `gitops/bootstrap/root-app.yaml` but has no scrape job for
-  its own metrics and no Grafana dashboard. The Alloy chart exposes metrics at
-  port 12345 via the default `listenAddr`; the chart also creates a ClusterIP
-  Service so a static scrape target is stable). Add `prometheus.scrape "alloy_self"`
-  block to `gitops/platform/observability-alloy.yaml` (static target
-  `alloy.observability.svc.cluster.local:12345`; `scrape_interval = "30s"`;
-  mirrors the adjacent `external_secrets` / `kyverno` / `argo_rollouts` pattern).
-  New `grafana/dashboards/lab-alloy.json` ("Lab — Grafana Alloy (Collector)")
-  modelled on `lab-kyverno.json` stat-row: Alloy pod running (KSM
-  `kube_deployment_status_replicas_available{namespace="observability",deployment=~"alloy.*"}`);
-  ArgoCD sync state (`argocd_app_info{name="alloy"}`); active scrape targets
-  (`prometheus_sd_discovered_targets{job="alloy"}`); samples ingested rate
-  (`rate(prometheus_tsdb_head_samples_appended_total[5m]){job="alloy"}`);
-  remote_write component health (`prometheus_remote_storage_sent_bytes_total{job="alloy"}`);
-  Alloy component errors (`alloy_component_evaluation_seconds_sum` filtered by
-  `namespace="observability"`). All panels real Mimir data with `X-Scope-OrgID: lab`
-  (ADR-0004 — any panel whose metric has not yet emitted a series shows "No data"
-  naturally). No HTTPRoute (Alloy has no web UI; port 12345 is metrics-only; `make
-  lab-ui-check` unaffected). Extend `tests/observability.bats`: scrape block
-  `"alloy_self"` exists in `observability-alloy.yaml`; `lab-alloy.json` exists;
-  dashboard references `prometheus_sd_discovered_targets`; no fabricated data.
-  Update `docs/dependency-tree.md` with Alloy self-scrape + dashboard note.
-  `docs/done/` entry required. (auto/alloy-self-monitoring)
+- [x] 🟢 **Lab — Grafana Alloy self-monitoring dashboard + self-scrape** —
+  full verification writeup:
+  [docs/done/2026-06-20-auto-alloy-self-monitoring.md](docs/done/2026-06-20-auto-alloy-self-monitoring.md).
+  (auto/alloy-self-monitoring; PR #241)
 
 - [x] 🟢 **Lab — Kube State Metrics cluster-health dashboard** (CHARTER
   **Objective O5**, due **2026-09-30**; O5 gap — `observability-ksm` is
@@ -2252,44 +2231,10 @@ there is no point where the lab loses a working git source or CI path.
   after later removal, same as every other retired component).
   (auto/pss-np-inkless; PR #260)
 
-- [x] 🟢 **Lab — `demo` + `data-demo` dashboards (O5 completion)** (CHARTER **Objective O5**,
-  due **2026-09-30**; O5 gap — `demo` (HotROD in `lab-demo` namespace) and `data-demo`
-  (data-layer traffic generators in `data` namespace) are the last two auto-synced
-  always-on Applications without a `grafana/dashboards/lab-<name>.json`, leaving O5
-  incomplete before its 2026-09-30 deadline. Two small dashboards bundled (same
-  KSM/cAdvisor stat-row pattern — no new scrape jobs needed; Alloy already scrapes
-  KSM and cAdvisor):
-  (a) New `grafana/dashboards/lab-demo.json` ("Lab — demo (HotROD)") modelled on
-  `lab-kyverno.json` stat-row: demo pod running (KSM
-  `kube_deployment_status_replicas_available{namespace="lab-demo",deployment="hello"}`);
-  ArgoCD sync state (`argocd_app_info{name="demo"}`); memory usage (cAdvisor
-  `container_memory_working_set_bytes{namespace="lab-demo",container="hello"}`); CPU
-  usage rate (cAdvisor
-  `rate(container_cpu_usage_seconds_total{namespace="lab-demo",container="hello"}[5m])`).
-  Note: `jaegertracing/example-hotrod` does not expose Prometheus metrics; span/trace
-  data is visible in `lab-traces.json` (Tempo). Document this in the dashboard's
-  about-text panel (ADR-0004 — no fabricated data; any panel not yet emitting shows
-  "No data" naturally). No HTTPRoute row in the Lab UIs panel (HotROD is not exposed
-  via Envoy Gateway); `make lab-ui-check` unaffected.
-  (b) New `grafana/dashboards/lab-data-demo.json` ("Lab — data-demo (Traffic
-  Generators)") modelled on the same stat-row: rabbitmq-load pod running (KSM
-  `kube_deployment_status_replicas_available{namespace="data",deployment="rabbitmq-load"}`);
-  valkey-load pod running
-  (`kube_deployment_status_replicas_available{namespace="data",deployment="valkey-load"}`);
-  ArgoCD sync state (`argocd_app_info{name="data-demo"}`); memory for rabbitmq-load
-  (cAdvisor
-  `container_memory_working_set_bytes{namespace="data",container="rabbitmq-load"}`).
-  Note: these workloads exist to drive real traffic into RabbitMQ and Valkey so those
-  dashboards show non-zero metrics; document this in the about-text panel. No HTTPRoute.
-  Extend `tests/observability.bats` with four assertions: `lab-demo.json` exists;
-  references `kube_deployment_status_replicas_available` with `namespace="lab-demo"`;
-  no fabricated/placeholder data; `lab-data-demo.json` exists; references
-  `kube_deployment_status_replicas_available` with `deployment="rabbitmq-load"` in
-  namespace `data`; no fabricated/placeholder data. Update `docs/dependency-tree.md`
-  with brief `demo` and `data-demo` dashboard notes. `docs/done/` entry required.
-  `make ci` must pass. **Executor note:** if the PR crosses ~400 lines per
-  WAYS-OF-WORKING.md §3, ship `lab-demo.json` first and file `lab-data-demo.json` as
-  a follow-up. (auto/demo-data-demo-dashboards)
+- [x] 🟢 **Lab — `demo` + `data-demo` dashboards (O5 completion)** — full
+  verification writeup:
+  [docs/done/2026-06-24-demo-data-demo-dashboards.md](docs/done/2026-06-24-demo-data-demo-dashboards.md).
+  (auto/demo-data-demo-dashboards; PR #264)
 
 - [x] 🟢 **`docs/00-architecture.md` — current-state rewrite** (CHARTER **Core Values**
   §"Docs & dashboards don't drift"; docs-only). The file is 70 lines and was written when
@@ -2694,44 +2639,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-05-auto-longhorn-dashboard.md](docs/done/2026-07-05-auto-longhorn-dashboard.md).
   (auto/longhorn-dashboard; PR #333)
 
-- [x] 🟢 **O2 measurement — per-scope PSS bats for 5 Tier-1 wave namespaces**
-  (CHARTER **Objective O2**, due **2026-09-30**; O2 PSS coverage gap — five
-  namespaces (`argo-rollouts`, `velero`, `harbor`, `trivy-system`,
-  `node-exporter`) each have a `namespace.yaml` with all four PSA labels in
-  place, but their component bats files (`tests/argo-rollouts.bats`,
-  `tests/velero.bats`, `tests/harbor.bats`, `tests/trivy-operator.bats`,
-  `tests/node-exporter.bats`) only assert two of the four labels. O2's
-  measurement criterion requires `tests/securitycontext.bats` + per-scope
-  files to cover every namespace. Per `scripts/securitycontext-tests-check.sh`,
-  new per-scope tests must go in their own `tests/securitycontext-<scope>.bats`
-  file, not the frozen monolith. **No prerequisites — executor may pick up
-  immediately.** Create five new files following the
-  `tests/securitycontext-kargo.bats` / `tests/securitycontext-longhorn.bats`
-  pattern (namespace PSA labels: all 4 + safety checks + extras Application
-  exists):
-  `tests/securitycontext-argo-rollouts.bats` — PSA `restricted` (enforce:
-  restricted, enforce-version: latest, warn: restricted, audit: restricted) +
-  safety checks (NOT baseline, NOT privileged) + extras Application
-  `gitops/platform/argo-rollouts-extras.yaml` exists;
-  `tests/securitycontext-velero.bats` — PSA `restricted` (all 4 labels) +
-  safety checks (NOT baseline, NOT privileged) + extras Application
-  `gitops/platform/velero-extras.yaml` exists;
-  `tests/securitycontext-harbor.bats` — PSA `restricted` (all 4 labels) +
-  safety checks (NOT baseline, NOT privileged) + extras Application
-  `gitops/platform/harbor-extras.yaml` exists (harbor is on-demand but the
-  namespace PSA floor is always-on via the extras Application; test the
-  namespace manifest as committed);
-  `tests/securitycontext-trivy-system.bats` — PSA `baseline` (enforce:
-  baseline, enforce-version: latest, warn: baseline, audit: baseline) +
-  safety checks (NOT restricted, NOT privileged) + extras Application
-  `gitops/platform/trivy-extras.yaml` exists;
-  `tests/securitycontext-node-exporter.bats` — PSA `privileged` (enforce:
-  privileged, enforce-version: latest, warn: privileged, audit: privileged)
-  + safety checks (NOT restricted, NOT baseline) + extras Application
-  `gitops/platform/node-exporter-extras.yaml` exists.
-  All 5 new files are additive — the partial checks in the component bats
-  files remain untouched. `make ci` must pass. `docs/done/` entry required.
-  (auto/securitycontext-tier1-bats)
+- [x] 🟢 **O2 measurement — per-scope PSS bats for 5 Tier-1 wave namespaces** —
+  full verification writeup:
+  [docs/done/2026-07-06-auto-securitycontext-tier1-bats.md](docs/done/2026-07-06-auto-securitycontext-tier1-bats.md).
+  (auto/securitycontext-tier1-bats; PR #335)
 
 - [x] 🟢 **O2 measurement — per-scope NP bats for 3 late-addition namespaces**
   (CHARTER **Objective O2**, due **2026-09-30**; O2 NP coverage gap — three
@@ -2936,31 +2847,10 @@ there is no point where the lab loses a working git source or CI path.
   pass. `docs/done/` entry required.
   (auto/capstone-pipeline-networkpolicy)
 
-- [x] 🟢 **Cilium agent Prometheus metrics + O5 CNI dashboard** (CHARTER **Objective O5**,
-  RFC #358 — architect decision 2026-07-11). Enable `prometheus.enabled: true` and
-  `prometheus.port: 9962` in `gitops/platform/cilium.yaml` `valuesObject` (Hubble stays
-  disabled; `hubble.enabled: false` unchanged — 250-400 MB cost excluded from the 12 GB
-  budget). Add `discovery.kubernetes "cilium_agent"` + `discovery.relabel "cilium_agent"`
-  + `prometheus.scrape "cilium_agent"` blocks to `gitops/platform/observability-alloy.yaml`
-  (Cilium DaemonSet uses `hostNetwork: true` in `kube-system`; kubernetes_sd pod discovery
-  with `k8s-app=cilium` selector + relabel `__address__` to port 9962; scrape_interval
-  30s; inline comment noting target is idle until `make cilium-up` has run at least once).
-  Extend `gitops/observability/networkpolicy/allow-alloy-egress-external.yaml` with TCP
-  9962 egress to `ipBlock: cidr: 0.0.0.0/0` (mirrors the existing TCP 9100 node-exporter
-  and TCP 10250 kubelet/cAdvisor ipBlock rules). New `grafana/dashboards/lab-cilium.json`
-  ("Lab — Cilium (CNI)") with five real Mimir-datasource panels: (1) Cilium agent DaemonSet
-  ready replicas (`kube_daemonset_status_number_ready{namespace="kube-system",daemonset="cilium"}`);
-  (2) ArgoCD sync state (`argocd_app_info{name="cilium"}`); (3) total endpoint count
-  (`sum(cilium_endpoint_state)`); (4) policy count stat (`cilium_policy_count`); (5) packet
-  drop rate timeseries (`rate(cilium_drop_count_total[5m])` by `reason`). All panels use
-  `X-Scope-OrgID: lab` (ADR-0004 — no fabricated data). Extend `tests/dashboard-coverage.bats`
-  with Cilium assertion (`lab-cilium.json` exists; `"uid": "mimir"` present). Add bats
-  assertions to `tests/observability.bats` or a new `tests/cilium.bats`: `cilium_agent`
-  scrape block present in `observability-alloy.yaml`; `lab-cilium.json` exists; dashboard
-  references `cilium_policy_count`; no placeholder data. Update `docs/dependency-tree.md`
-  with a one-line Cilium metrics scrape note. `docs/done/` entry required. `make ci` must
-  pass. Single-PR preferred; split only if PR exceeds ~400 lines.
-  (auto/cilium-agent-metrics)
+- [x] 🟢 **Cilium agent Prometheus metrics + O5 CNI dashboard** — full
+  verification writeup:
+  [docs/done/2026-07-12-auto-cilium-agent-metrics.md](docs/done/2026-07-12-auto-cilium-agent-metrics.md).
+  (auto/cilium-agent-metrics; PR #367)
 
 - [x] 🟢 **`docs/00-architecture.md` — add learning-path steps for DR/blue-green and GitOps promotion (Kargo)** (CHARTER **Goals** gap — "DR / blue-green on a single host" is an explicit Goal that does not appear in the current learning-path steps 0–9; Kargo promotion pipelines are deployed and documented in the Who-does-what table but are absent from the learning-path narrative; **no prerequisites — executor may pick up immediately**; docs-only). Two small additions to the `## Suggested learning path` section in `docs/00-architecture.md`:
   (a) **Step 10 — DR / blue-green**: after step 8 (Velero backup & restore), add a step explaining `make dr-bluegreen` — it stands up a second k3d 'green' cluster that sources the *same* `gitops/` repo via `gitops/bluegreen/green-root.yaml`, cuts Envoy Gateway traffic over to green, and verifies service continuity before retiring blue with `make dr-bluegreen-promote`. `make dr-bluegreen-down` reclaims the green cluster's RAM when the exercise is done. Cross-reference `docs/DR.md §Zero-downtime blue/green` for the full runbook. Explain that steps 8 and 10 test *two distinct recovery modes*: Velero restores data from backup on the same cluster; blue-green rebuilds the platform on a fresh cluster with live traffic cut over, proving the "recreate-from-code" CHARTER Core Value under real traffic.
