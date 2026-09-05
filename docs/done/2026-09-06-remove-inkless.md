@@ -76,4 +76,4 @@ still-kept `argocd` carve-out regression guard right above it.
 
 ## PR
 
-https://github.com/tooming/k8s-anywhere/pull/REPLACE_ME
+https://github.com/tooming/k8s-anywhere/pull/1424
