@@ -1812,34 +1812,10 @@ there is no point where the lab loses a working git source or CI path.
   note. `docs/done/2026-06-15-argocd-pss-warn-audit.md` required.
   (auto/argocd-pss-warn-audit)
 
-- [x] 🟢 **External Secrets dashboard + Alloy scrape** (CHARTER **Objective O5**,
-  due **2026-09-30**; O5 gap — `external-secrets` is auto-synced in
-  `gitops/bootstrap/root-app.yaml` but has no Alloy scrape job and no Grafana
-  dashboard. The ESO controller exposes Prometheus metrics at `:8080/metrics`
-  by default via controller-runtime; no chart `valuesObject` change needed to
-  enable metrics collection). Add `prometheus.scrape "external_secrets"` block
-  to `gitops/platform/observability-alloy.yaml` targeting
-  `external-secrets.external-secrets.svc.cluster.local:8080`; `scrape_interval =
-  "30s"`; mirrors the adjacent `kyverno` / `trivy_operator` / `velero` /
-  `argo_rollouts` scrape pattern. New `grafana/dashboards/lab-external-secrets.json`
-  ("Lab — External Secrets") modelled on `lab-kyverno.json` stat-row: ESO
-  controller running (KSM
-  `kube_deployment_status_replicas_available{namespace="external-secrets"}`);
-  ArgoCD sync state (`argocd_app_info{name="external-secrets"}`); ExternalSecret
-  sync success rate timeseries
-  (`externalsecret_sync_calls_total{status="success"}` by namespace); sync error
-  count stat (`externalsecret_sync_calls_total{status="error"}`); sync duration
-  p95 (`externalsecret_sync_calls_duration_seconds_bucket`). All panels use real
-  Mimir data with `X-Scope-OrgID: lab` tenant header (ADR-0004 — no fabricated
-  data; if a metric has not yet emitted a series, the panel shows "No data"
-  naturally). No HTTPRoute — ESO has no web UI, so no Lab UIs panel row needed
-  (`make lab-ui-check` unaffected). Extend `tests/observability.bats` with four
-  assertions: scrape job block `"external_secrets"` exists in
-  `observability-alloy.yaml`; `lab-external-secrets.json` exists; dashboard
-  references `externalsecret_sync_calls_total`; no fabricated/placeholder data.
-  Update `docs/dependency-tree.md` with External Secrets dashboard note (parallel
-  to the Argo Rollouts / Trivy dashboard notes added in recent runs). `docs/done/`
-  entry required. (auto/external-secrets-dashboard)
+- [x] 🟢 **External Secrets dashboard + Alloy scrape** — full verification
+  writeup:
+  [docs/done/2026-06-19-external-secrets-dashboard.md](docs/done/2026-06-19-external-secrets-dashboard.md).
+  (auto/external-secrets-dashboard; PR #234)
 
 - [x] 🟢 **ArgoCD PSS Phase 2 — securityContext hardening + enforce
   flip** (CHARTER **Objective O2**, RFC #205 — Phase 2; buildable after
@@ -2039,34 +2015,9 @@ there is no point where the lab loses a working git source or CI path.
   already-accepted single-node recreate-over-HA risk posture). `docs/done/` entry
   required. Closes #522. (auto/rabbitmq-bump-4x)
 
-- [x] 🟢 **Bump Longhorn `1.7.3` → `1.11.x`** (CHARTER **Core Values** §"Everything as
-  code" + general hardening; RFC #528 — architect decision 2026-07-18). Longhorn's
-  `1.7.x` line reached end-of-life 2025-09-04 (one year after its first stable
-  release, under the pre-1.8 12-month support policy); this lab's pinned
-  `targetRevision: 1.7.3` (`gitops/platform/longhorn.yaml`) has received no security
-  patches for roughly a year — a version-currency gap, not a single named CVE.
-  Lower urgency than a typical bump since Longhorn is **on-demand** (ADR-0013,
-  never auto-synced) — zero exposure unless the maintainer runs `make longhorn-up`.
-  **No prerequisites — executor may pick up immediately**, but per RFC #528's
-  acceptance criteria the executor MUST independently re-verify the exact target
-  version at pickup time (Longhorn ships on a fast 4-month cadence; "latest stable
-  one line behind newest" may have moved) rather than assume this RFC's `1.11.x`
-  pin is still current. Bump `gitops/platform/longhorn.yaml`'s `targetRevision`;
-  diff the chart's `values.yaml` between old and new pins for every key this repo
-  sets (mirror the Velero bump's verification method); confirm the V2 Data Engine
-  stays opt-in, not default, at the new pin. Update
-  `docs/decisions/adr-0013-longhorn-block-storage.md` with the new pin + a
-  `## Re-evaluation log` entry (trigger: 1.7.x EOL, not a CVE). Update or add a
-  chart-pin assertion in `tests/longhorn.bats`. Fix `docs/dependency-tree.md`'s
-  stale "v1.7.2" Longhorn reference to the new pin while touching that doc. `make
-  ci` must pass. PR body must document the EOL trigger, the version chosen and why,
-  the values.yaml diff performed, and the ADR-0004 caveat that this remote
-  clusterless session cannot verify Longhorn's CSI driver/UI start cleanly on a
-  live cluster post-bump — call out the rollback path (revert `targetRevision`;
-  on-demand and not currently synced, so no live-cluster risk unless the
-  maintainer already has it running with real volumes — note that caveat
-  explicitly). `docs/done/` entry required. Closes #528.
-  (auto/longhorn-bump-1-11)
+- [x] 🟢 **Bump Longhorn `1.7.3` → `1.11.x`** — full verification writeup:
+  [docs/done/2026-07-18-longhorn-bump-1-11.md](docs/done/2026-07-18-longhorn-bump-1-11.md).
+  (auto/longhorn-bump-1-11; PR #531) Closes #528.
 
 - [x] 🟢 **Bump KRO chart `0.4.1` → `0.9.x` — verify CRD/instance-scope compatibility
   first** (CHARTER **Core Values** §"Everything as code" + general hardening; RFC #534
@@ -2382,39 +2333,14 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-tree.md` with `lab-demo` PSA + NP note. `docs/done/` entry
   required. `make ci` must pass. (auto/pss-np-lab-demo)
 
-- [x] 🟢 **PSA baseline + NetworkPolicy — `inkless` namespace** (CHARTER **Objective O2**,
-  due **2026-09-30**; RFC #257 — architect decision 2026-06-23; closes O2 fan-out for the
-  last on-demand namespace missing PSA labels and a NetworkPolicy floor). Two changes
-  bundled (both small, same shape as `auto/pss-np-lab-demo`): (a) **PSA labels** — add
-  `gitops/inkless/namespace.yaml` with all four PSA labels at `baseline` (`enforce:
-  baseline`, `enforce-version: latest`, `warn: baseline`, `audit: baseline`). The Aiven
-  Inkless broker (`ghcr.io/aiven/inkless:latest`) runs as root UID 0 (no USER directive
-  in the base image); `baseline` is the correct profile. Add new auto-synced `Application`
-  `gitops/platform/inkless-extras.yaml` (sync-wave 0, `ServerSideApply=true`,
-  `CreateNamespace=false` — namespace pre-created by `make inkless-up`; follows the
-  `argocd-extras` / `kyverno-extras` naming convention). Add `inkless → baseline` row to
-  ADR-0017 §"Per-namespace profile" table citing RFC #257; document flip condition to
-  `restricted` (when `ghcr.io/aiven/inkless` ships with explicit non-root USER directive).
-  (b) **NetworkPolicy** — add
-  `gitops/inkless/networkpolicy/kustomization.yaml` referencing the two shared baseline
-  templates (`../../network/policies/default-deny.yaml`,
-  `../../network/policies/allow-dns-and-apiserver.yaml`) plus three allow files:
-  `allow-inkless-intra-namespace.yaml` (ingress+egress `podSelector: {}` within the
-  `inkless` namespace — covers broker↔postgres JDBC on TCP 5432, kafka-load→broker on TCP
-  9092, KRaft internal TCP 19092/29090); `allow-inkless-garage-egress.yaml` (egress TCP
-  3900 to `namespaceSelector: kubernetes.io/metadata.name: storage` — inkless broker
-  streams topic segments to Garage S3 per ADR-0002); `allow-inkless-metrics-ingress.yaml`
-  (ingress TCP 9308 from `namespaceSelector: kubernetes.io/metadata.name: observability`
-  — Alloy kafka-exporter scrape already wired in `observability-alloy.yaml`). Add
-  `inkless-networkpolicy` entry to `networkpolicy-appset.yaml` list generator (`gitPath:
-  gitops/inkless/networkpolicy`, `destNamespace: inkless`); sync policy is `automated:
-  {prune: true, selfHeal: true}` via the appset template (same as tidb pattern — NP is
-  cheap; in place before `make inkless-up` brings pods up). Extend
-  `tests/securitycontext.bats`: `gitops/inkless/namespace.yaml` exists; `enforce:
-  baseline` present; `enforce: restricted` absent (safety check). Extend
-  `tests/networkpolicy.bats`: kustomization exists; baseline refs present; each allow file
-  exists targeting the documented port + selector; appset entry `inkless-networkpolicy`
-  present. `docs/done/` entry required. `make ci` must pass. (auto/pss-np-inkless)
+- [x] 🟢 **PSA baseline + NetworkPolicy — `inkless` namespace** — full
+  verification writeup:
+  [docs/done/2026-06-23-pss-np-inkless.md](docs/done/2026-06-23-pss-np-inkless.md)
+  (component later removed entirely, PR #1424, per Aiven Inkless's retirement
+  — this is a historical record of completed work, not live state; kept per
+  this repo's convention of leaving completed-item history accurate even
+  after later removal, same as every other retired component).
+  (auto/pss-np-inkless; PR #260)
 
 - [x] 🟢 **Lab — `demo` + `data-demo` dashboards (O5 completion)** (CHARTER **Objective O5**,
   due **2026-09-30**; O5 gap — `demo` (HotROD in `lab-demo` namespace) and `data-demo`
