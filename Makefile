@@ -718,6 +718,11 @@ harbor-up: ## Deploy Harbor CNCF OCI registry via ArgoCD manual sync (Garage S3 
 	$(call ondemand-guard,harbor)
 	$(call argocd-sync,harbor)
 	$(call argocd-sync,harbor-extras)
+	@$(MAKE) forgejo-harbor-secret-sync
+
+.PHONY: forgejo-harbor-secret-sync
+forgejo-harbor-secret-sync: ## Sync Forgejo's CI HARBOR_USER/HARBOR_PASSWORD secrets from Harbor's live admin credential (recurrence guard for #631/#633's credential-drift bug)
+	@./scripts/forgejo-harbor-secret-sync.sh
 
 .PHONY: harbor-down
 harbor-down: ## Remove Harbor OCI registry and namespace floor (reclaims resources)
