@@ -2028,38 +2028,9 @@ there is no point where the lab loses a working git source or CI path.
   (PR #439). (auto/cert-manager-engine)
 
 - [x] 🟢 **Gateway HTTPS listener + wildcard Certificate + frontdoor `:8443` port
-  mapping** (follow-up to the cert-manager engine item above, scoped in ADR-0028
-  §"Scope & exceptions" — depends on `k8s-lab-ca` ClusterIssuer, sync-wave 5,
-  already shipped). Added an `https`/443 listener to the shared `Gateway`
-  (`gitops/network/gateway.yaml`) alongside (never replacing) the existing `http`/80
-  one — HTTPRoutes with no `sectionName` (all of them today) attach to both, so every
-  existing HTTP URL keeps working unchanged and HTTPS becomes available, not
-  mandatory. New wildcard `Certificate` for `*.127.0.0.1.nip.io` +
-  `127.0.0.1.nip.io` at `gitops/network/certificates/wildcard-certificate.yaml`,
-  issued by `k8s-lab-ca`, in the `lab-gateway` namespace (same namespace as the
-  Gateway, so its Secret needs no `ReferenceGrant`). New auto-synced `Application`
-  `gitops/platform/lab-gateway-certificate.yaml` at sync-wave 6 (one after
-  `cert-manager-root-ca`, wave 5, whose `ClusterIssuer` this Certificate
-  references) — until that Secret exists the HTTPS listener simply stays
-  not-Programmed and self-heals once it lands, same eventual-consistency pattern
-  the root-CA chain itself already relies on. Extended
-  `scripts/bluegreen-frontdoor.sh`'s `gen_conf`/`apply_conf` with an nginx `stream {}`
-  TCP-passthrough block: host `:8443` (new `FRONTDOOR_HTTPS_PORT`, default `8443` —
-  matches the k3d `https_port` Terraform variable's existing host-port convention) →
-  the active cluster's serverlb container port `443` directly (TLS terminates inside
-  Envoy at the Gateway, not at the frontdoor — passthrough, not a second
-  termination), so the DR front door's HTTPS entry point survives a blue/green
-  cutover exactly like its existing `:8000` HTTP one. `up` now also publishes
-  `-p $HTTPS_PORT:$HTTPS_PORT` and recreates a leftover container that predates
-  this change (detected via `docker port … 8443/tcp`) so the new mapping actually
-  takes effect. New `tests/frontdoor-https.bats` covering the generated nginx conf's
-  `stream`/`listen 8443`/`proxy_pass $1:443` shape and the port-republish/recreate
-  logic; extended `tests/cert-manager.bats` with the wildcard Certificate + new
-  Application's shape. `tests/networkpolicy-lab-gateway.bats` is unaffected
-  (`lab-gateway` holds no pods — Certificates are API objects, not network
-  endpoints). Updated `docs/dependency-tree.md` and flipped CHARTER's "TLS
-  certificate lifecycle" target entry from "(planned)" to built. `make ci` must
-  pass. `docs/done/` entry required. (auto/cert-manager-gateway-https)
+  mapping** — full verification writeup:
+  [docs/done/2026-07-16-cert-manager-gateway-https.md](docs/done/2026-07-16-cert-manager-gateway-https.md).
+  (auto/cert-manager-gateway-https; PR #440)
 
 - [x] 🟢 **KEDA event-driven autoscaling engine** — full verification writeup:
   [docs/done/2026-07-16-keda-engine.md](docs/done/2026-07-16-keda-engine.md).
@@ -2363,39 +2334,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-08-10-grafana-alerting-rules.md](docs/done/2026-08-10-grafana-alerting-rules.md).
   (auto/grafana-alerting-rules; PR #1087) Closes #1084.
 
-- [x] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
-  RFC #214 Item 3; executor pickup 2026-08-18, third cycle this run — reached via
-  `executor.prompt.md` STEP 6b after UPGRADE-DRAFTER (PR #1221) and JANITOR (PR #1222)
-  fallback deliverables, when STEP 1's fresh open-issues check found the gating
-  `[Action required]` issue #631 had just received its confirmation comment mid-run.
-  **Prerequisites satisfied:** `auto/cosign-ci-sign-step` was already merged (the
-  `sign-image` job exists in `.forgejo/workflows/build-sign-push.yml`, carried over from
-  the ADR-0035 CI-source migration) and the maintainer's live-cluster confirmation landed
-  in issue #631 at 2026-08-18T05:32:37Z: a Forgejo Actions run (#29 attempt 2, commit
-  `b388df5c`) completed the `sign-image` job green, independently verified (not just the
-  workflow's own status, ADR-0004) via Harbor's own artifact API showing a real
-  `type: signature.cosign` accessory attached to `harbor.127.0.0.1.nip.io/library/hello`
-  (digest `sha256:2f9ca51a...`, subject `sha256:91d52ea9...`, created
-  `2026-08-18T05:30:10Z`). This is a genuinely different verification path than the
-  item's original `crane ls`/curl suggestion, but satisfies the same underlying ask (a
-  real signed image confirmed in Harbor) — the confirming comment is the maintainer's own
-  interactive-session finding, not this executor's own live-cluster check (this remote
-  session remains clusterless).
-
-  Edited `gitops/kyverno/policies/verify-image-signatures.yaml`:
-  `validationFailureAction: Audit` → `Enforce`; `failurePolicy: Ignore` → `Fail`; updated
-  the file's header comment and the `policies.kyverno.io/description` annotation to
-  describe the new Enforce state and cite the confirming evidence. Extended
-  `tests/kyverno.bats` (this repo's existing convention keeps `verify-image-signatures`
-  coverage there, not a separate `kyverno-policies.bats`): retitled the Audit/Ignore
-  assertions to assert `Enforce`/`Fail`, and added two "does not pin the stale
-  Audit/Ignore" recurrence guards (mirroring this repo's own bump-guard convention).
-  `make ci` must pass. PR body documents the flip condition, the confirming evidence
-  chain, and the rollback path (revert both fields to `Audit` + `Ignore`, push → ArgoCD
-  syncs within 30s, no cluster downtime per RFC #214 §"Rollback path") — this remote
-  clusterless session cannot verify a live admission-controller reload behaves as
-  expected post-flip (ADR-0004 caveat). Closes #631 in this item's PR. `docs/done/` entry
-  required. (auto/cosign-enforce-flip)
+- [x] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** — full
+  verification writeup:
+  [docs/done/2026-08-18-cosign-enforce-flip.md](docs/done/2026-08-18-cosign-enforce-flip.md).
+  (auto/cosign-enforce-flip; PR #1223) Closes #631.
 
 - [x] 🟢 **Lab — Grafana Alloy self-monitoring dashboard + self-scrape** (CHARTER
   **Objective O5**, due **2026-09-30**; O5 gap — `observability-alloy` is
@@ -2693,34 +2635,10 @@ there is no point where the lab loses a working git source or CI path.
   parenthetical. No code changes. `make ci` must pass. `docs/done/` entry required.
   (auto/adr0017-velero-row-depTree-fix)
 
-- [x] 🟢 **PSS `privileged` labels + NetworkPolicy — `longhorn-system`** (CHARTER
-  **Objective O2**, due **2026-09-30**; O2 fan-out completion — ADR-0017
-  §"Per-namespace profile" already lists `longhorn-system → privileged` (longhorn-manager
-  and longhorn-csi-plugin require `SYS_ADMIN`, mount propagation, host `/dev`; per
-  ADR-0013) but no `gitops/longhorn/namespace.yaml` with PSA labels exists yet. Two
-  changes bundled: (a) **PSA labels** — add `gitops/longhorn/namespace.yaml` with all
-  four PSA labels at `privileged` (`enforce: privileged`, `enforce-version: latest`,
-  `warn: privileged`, `audit: privileged`); add new auto-synced `Application`
-  `gitops/platform/longhorn-extras.yaml` (sync-wave 0, `ServerSideApply=true`,
-  `CreateNamespace=true` — an empty `longhorn-system` namespace with privileged labels
-  before `make longhorn-up` is harmless; follows the `kargo-extras` / `argocd-extras`
-  naming convention). (b) **NetworkPolicy** — add
-  `gitops/longhorn/networkpolicy/kustomization.yaml` referencing the two shared baseline
-  templates plus allow files: `allow-longhorn-intra-namespace.yaml` (intra-namespace
-  `podSelector: {}` — longhorn-manager ↔ longhorn-engine + csi-plugin communication);
-  `allow-longhorn-metrics-ingress.yaml` (ingress TCP 9500 from `observability` — Longhorn
-  exposes Prometheus metrics at `:9500/metrics`); egress to kube-apiserver via baseline.
-  Add `longhorn-networkpolicy` entry to `networkpolicy-appset.yaml` list generator
-  (`gitPath: gitops/longhorn/networkpolicy`, `destNamespace: longhorn-system`); sync
-  policy `automated: {prune: true, selfHeal: true}` via the appset template — same
-  on-demand NP pattern as `tidb-networkpolicy` (NP floor is in place before
-  `make longhorn-up` brings pods up). New `tests/securitycontext-longhorn.bats`:
-  `gitops/longhorn/namespace.yaml` exists; `enforce: privileged` present; `enforce:
-  restricted` absent (safety check). Extend `tests/networkpolicy.bats` with longhorn
-  overlay assertions (kustomization exists, baseline refs present, metrics-ingress on TCP
-  9500, appset entry `longhorn-networkpolicy` present). Update `docs/dependency-tree.md`
-  with a Longhorn PSS + NP note. `docs/done/` entry required. `make ci` must pass.
-  (auto/pss-np-longhorn)
+- [x] 🟢 **PSS `privileged` labels + NetworkPolicy — `longhorn-system`** — full
+  verification writeup:
+  [docs/done/2026-06-27-pss-np-longhorn.md](docs/done/2026-06-27-pss-np-longhorn.md).
+  (auto/pss-np-longhorn; PR #284)
 
 - [x] 🟢 **PSS `privileged` labels + NetworkPolicy — `istio-system`** (CHARTER
   **Objective O2**, due **2026-09-30**; O2 fan-out completion — ADR-0017
@@ -2772,65 +2690,15 @@ there is no point where the lab loses a working git source or CI path.
   added in `auto/pss-kro-namespace`). `docs/done/` entry required. `make ci` must
   pass. (auto/adr-0017-kargo-row)
 
-- [x] 🟢 **PSA `baseline` labels + NetworkPolicy — `artifactory` namespace** (CHARTER
-  **Objective O2**, due **2026-09-30**; RFC #287 — architect decision 2026-06-27). O2
-  fan-out completion for the on-demand Artifactory namespace. Two changes bundled:
-  (a) **PSA labels** — add `gitops/artifactory/namespace.yaml` with all four PSA labels
-  at `baseline` (`enforce: baseline`, `enforce-version: latest`, `warn: baseline`,
-  `audit: baseline`). JVM init containers run as root UID 0 for `chown`; main JVM
-  process runs as UID 1030; `restricted` is not viable without upstream chart changes
-  (`jfrog/artifactory-oss`); `baseline` blocks privileged containers and host namespaces
-  while permitting the init root UID. Update `gitops/platform/artifactory-extras.yaml`:
-  add `automated: {prune: true, selfHeal: true}` to `syncPolicy` + `argocd.argoproj.io/sync-wave:
-  "0"` annotation (mirrors `longhorn-extras` / `istio-system-extras` — pre-creates the
-  namespace with PSA floor before `make artifactory-up` admits pods). (b) **NetworkPolicy** —
-  add `gitops/artifactory/networkpolicy/kustomization.yaml` referencing the two shared
-  baseline templates (`../../network/policies/default-deny.yaml`,
-  `../../network/policies/allow-dns-and-apiserver.yaml`) plus
-  `allow-artifactory-ingress.yaml` (ingress TCP 8082 from `namespaceSelector:
-  kubernetes.io/metadata.name: envoy-gateway-system` — Envoy HTTPRoute proxies to the
-  `artifactory-oss` Service on port 8082 per `gitops/artifactory/route.yaml`) and
-  `allow-artifactory-garage-egress.yaml` (egress TCP 3900 to `namespaceSelector:
-  kubernetes.io/metadata.name: storage` — Garage S3 binary store per ADR-0002). Add
-  `artifactory-networkpolicy` entry to `gitops/platform/networkpolicy-appset.yaml`
-  (`gitPath: gitops/artifactory/networkpolicy`, `destNamespace: artifactory`); sync
-  policy is `automated: {prune: true, selfHeal: true}` via the appset template. Add
-  `artifactory → baseline` row to ADR-0017 §"Per-namespace profile" table with RFC
-  citation and flip condition (when upstream `jfrog/artifactory-oss` chart documents
-  `restricted`-compatible initContainers). New `tests/securitycontext-artifactory.bats`:
-  `gitops/artifactory/namespace.yaml` exists; `enforce: baseline` present; `enforce:
-  restricted` absent (safety check); `artifactory-extras` Application has `automated:`
-  block (auto-sync present). New `tests/networkpolicy-artifactory.bats`: kustomization
-  exists; baseline templates referenced; `allow-artifactory-ingress.yaml` exists
-  targeting TCP 8082 from `envoy-gateway-system`; `allow-artifactory-garage-egress.yaml`
-  exists targeting TCP 3900 to `storage`; appset entry `artifactory-networkpolicy`
-  present. `make ci` must pass. `docs/done/` entry required. (auto/pss-np-artifactory)
+- [x] 🟢 **PSA `baseline` labels + NetworkPolicy — `artifactory` namespace** —
+  full verification writeup:
+  [docs/done/2026-06-29-auto-pss-np-artifactory.md](docs/done/2026-06-29-auto-pss-np-artifactory.md).
+  (auto/pss-np-artifactory; PR #298)
 
-- [x] 🟢 **NetworkPolicy extensions — Kiali allows in `istio-system`** (CHARTER
-  **Objective O2**, due **2026-09-30**; RFC #288 — architect decision 2026-06-27;
-  dependency **already met**: `auto/pss-np-istio-system` (PR #285) is merged in main —
-  `gitops/istio-system/networkpolicy/` and the `istio-system-networkpolicy` appset entry
-  are confirmed present). Kiali co-resides in `istio-system` (no separate namespace per
-  RFC #288); its PSA profile is already covered by `istio-system → privileged` (PR #285).
-  This item adds two Kiali-specific per-pod NetworkPolicy allows to the existing overlay.
-  Add `gitops/istio-system/networkpolicy/allow-kiali-ingress.yaml` — ingress TCP 20001
-  from `namespaceSelector: kubernetes.io/metadata.name: envoy-gateway-system`; `podSelector:
-  app.kubernetes.io/name: kiali` (Envoy HTTPRoute `kiali.127.0.0.1.nip.io` per
-  `gitops/kiali/route.yaml`). Add
-  `gitops/istio-system/networkpolicy/allow-kiali-observability-egress.yaml` — egress TCP
-  9009 to `namespaceSelector: kubernetes.io/metadata.name: observability`; `podSelector:
-  app.kubernetes.io/name: kiali` (Kiali queries Mimir Prometheus at port 9009 per
-  `gitops/platform/kiali.yaml` `valuesObject.external_services.prometheus.url`). Update
-  `gitops/istio-system/networkpolicy/kustomization.yaml` to reference both new allow
-  files. Update ADR-0017 `istio-system → privileged` row to add parenthetical: "(Kiali
-  co-resides in this namespace; no separate `kiali` row needed.)". No new ArgoCD
-  Application or appset entry needed — the `istio-system-networkpolicy` appset entry from
-  PR #285 covers the full overlay directory (auto-synced via the appset template).
-  Extend `tests/networkpolicy-istio-system.bats`: `allow-kiali-ingress.yaml` exists and
-  targets TCP 20001 from `envoy-gateway-system`; `allow-kiali-observability-egress.yaml`
-  exists and targets TCP 9009 to `observability`; both are referenced in
-  `kustomization.yaml`. `make ci` must pass. `docs/done/` entry required.
-  (auto/kiali-np-istio-system)
+- [x] 🟢 **NetworkPolicy extensions — Kiali allows in `istio-system`** — full
+  verification writeup:
+  [docs/done/2026-06-29-kiali-np-istio-system.md](docs/done/2026-06-29-kiali-np-istio-system.md).
+  (auto/kiali-np-istio-system; PR #299)
 
 - [x] 🟢 **O4 CI gate — `verify-image-rejection` job** — full verification
   writeup:
