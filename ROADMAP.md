@@ -1422,69 +1422,10 @@ there is no point where the lab loses a working git source or CI path.
   (auto/tidb-demo-nginx-explicit-pin)
 
 - [x] 🟢 **Bump Terraform-bootstrapped `argo-cd` chart `10.3.2` → `10.3.3` (appVersion
-  `v3.5.0` → `v3.5.1`, real ArgoCD security/reliability fixes)** (CHARTER **Core
-  Values** §"Everything as code" + general hardening; planner-fallback currency
-  sweep 2026-08-13, third pass this run, reached via `executor.prompt.md` STEP 6b
-  — every Now/next item is still gated (the three standing GitLab→Forgejo migration
-  items plus the three items gated on maintainer-confirmation issues #631/#633,
-  re-checked, unchanged) and this run's prior two PLANNER-fallback passes (sidecar
-  version currency, then floating-tag sweep) already claimed the gaps those angles
-  found. This cycle's fresh angle, per STEP 8's "widen the lens" guidance (a third,
-  distinct pass): checked `infra/modules/**/*.tf` + `infra/live/**/*.hcl` — the
-  Terraform-bootstrap seam (ADR-0001) — which is a genuinely separate enumeration
-  surface from `gitops/**/*.yaml` (per `routines/upgrade-drafter.prompt.md` STEP 2's
-  own explicit note: a source pinned only under `infra/` is invisible to a
-  `gitops/`-only sweep and can go stale across multiple cycles undetected — this is
-  exactly the same file this repo's own history already caught drifting once
-  before, `docs/done/2026-07-23-argocd-chart-bump-9-5-20-to-9-7-1.md`). **No
-  prerequisites — executor may pick up immediately.**) Verified directly (not
-  assumed, ADR-0004): a real clone's `git ls-remote --tags argoproj/argo-helm`
-  shows `argo-cd-10.3.3` one release ahead of
-  `infra/modules/argocd/variables.tf`'s pinned `chart_version` default `"10.3.2"`
-  (the bump this same file's `auto/argocd-chart-10-3-2` item landed 2026-08-10). A
-  full clone diff (`git diff argo-cd-10.3.2 argo-cd-10.3.3 -- charts/argo-cd/`)
-  touches **only** `Chart.yaml`'s `version`/`appVersion` fields (`10.3.2`→`10.3.3`,
-  `appVersion` `v3.5.0`→`v3.5.1`) and its `artifacthub.io/changes` annotation — zero
-  `values.yaml`/template changes, so RFC #785's `global.networkPolicy.create: false`
-  companion override (`infra/modules/argocd/values.yaml`) needs no re-verification
-  beyond confirming the diff doesn't touch it (confirmed: it doesn't). Unlike the
-  prior 10.2.3→10.3.0 chart-only repackage, this bump **does** move ArgoCD's real
-  `appVersion` — a real clone's `git log v3.5.0..v3.5.1` (9 commits, ArgoCD's own
-  repo, not the chart repo) shows real security- and reliability-relevant fixes:
-  `fix(server): prevent SSD CLI secret mask spoofing` and `fix(ssd): hide secret in
-  last-applied-configuration annotation` (both close a real Secret-data-exposure
-  gap in ArgoCD's server-side-diff masking path), plus `fix(appset): stop
-  progressive sync reconciling in a tight loop` (a real reliability fix) and four
-  more real bugfixes (diff-cache reconciliation-timeout handling, terminating-
-  Application verification, manifest-generate-paths cache-key consistency). This
-  satisfies the "ships with a real fix" bar this repo's other non-CVE currency
-  bumps use — not a blind patch assumption, and stronger than most (an actual
-  upstream security fix, not just a dependency-CVE suppression).
-
-  Bump `infra/modules/argocd/variables.tf`'s `chart_version` default `"10.3.2"` →
-  `"10.3.3"` (update the inline comment's chart-version half only, matching the
-  existing `"10.3.2 => ArgoCD v3.5.0"` → `"10.3.3 => ArgoCD v3.5.1"` shape — this
-  time appVersion DOES move, unlike the 10.3.0/10.3.2 chart-only repackages).
-  Update both `infra/live/local/argocd/terragrunt.hcl` and
-  `infra/live/oracle/argocd/terragrunt.hcl`'s `chart_version = "10.3.2"` input to
-  `"10.3.3"` (both must move together with the module default — RFC #785's own
-  recurrence-guard rationale). Update `tests/argocd-chart-pin.bats`'s three
-  assertions (`chart_version` default, both terragrunt.hcl inputs) from `10.3.2` to
-  `10.3.3`. No `docs/dependency-tree.md`/`context.md` update needed — neither cites
-  this chart's specific version (checked directly). Update
-  `docs/dependency-register.md`'s ArgoCD row "Last reviewed" cell citing this bump
-  and the real appVersion move (distinct from the two prior chart-only-repackage
-  entries it currently cites). `make ci` (specifically `terraform validate`/`fmt`,
-  clusterless — this Terraform-bootstrap seam needs no live OCI/cloud credentials
-  per ADR-0001) must pass. PR body must document the real-appVersion-move finding
-  and the security-fix commits above (name which ones, not just "security commits
-  exist") and the ADR-0004 caveat that this remote clusterless session cannot
-  verify a real `terraform apply` against this pin succeeds end-to-end — call out
-  the rollback path (revert the three pins; the next `terraform apply` re-installs
-  the prior chart/appVersion; ArgoCD's own state — Applications, RBAC, repo
-  credentials — lives in the `argocd` namespace's Secrets/ConfigMaps on the
-  cluster, untouched by a chart-version revert in the bootstrap module).
-  `docs/done/` entry required. (auto/argocd-chart-10-3-3)
+  `v3.5.0` → `v3.5.1`, real ArgoCD security/reliability fixes)** — full
+  verification writeup:
+  [docs/done/2026-08-13-argocd-chart-10-3-3.md](docs/done/2026-08-13-argocd-chart-10-3-3.md).
+  (auto/argocd-chart-10-3-3; PR #1182)
 
 - [x] 🟢 **Bump Tempo's pinned image `2.10.7` → `2.10.8` (real Go-stdlib + gRPC/otel
   security fixes)** (CHARTER **Core Values** §"Everything as code" + general
@@ -1597,66 +1538,9 @@ there is no point where the lab loses a working git source or CI path.
   `docs/done/` entry required. (auto/gitlab-tls-nginx-explicit-pin)
 
 - [x] 🟢 **Vault pod-readiness alert rule — extend Grafana Unified Alerting (RFC #1084)**
-  (CHARTER **Core Values** §"operational-resilience discipline"; planner-fallback gap
-  analysis 2026-08-11, reached via `executor.prompt.md` STEP 6b, PLANNER role — the
-  three standing Now/next migration items above remain gated on unconfirmed
-  maintainer-confirmation issues #631/#633, and this run's own sweep found no
-  un-RFC'd 🟡 item and no other lane holding an unpromoted item. **No prerequisites —
-  executor may pick up immediately.**) `docs/dora-audit-readiness.md` Q7's own gap
-  line names this exact hole: "Vault sealed has no metric to alert on at all, since
-  Vault isn't currently scraped by Alloy... A future item could add a Vault-health
-  scrape job + alert rule if that gap is worth closing." Verified directly (not
-  assumed, ADR-0004): `gitops/platform/observability-alloy.yaml` has no
-  `prometheus.scrape "vault"` block (grepped every `prometheus.scrape` name in the
-  file — 25 jobs, none named vault); RFC #1084's four rules
-  (`gitops/platform/observability-grafana.yaml` `valuesObject.alerting`) cover
-  ArgoCD health/sync, `kube_deployment_*` replica availability, and PVC phase — none
-  scoped to Vault, and Vault runs as a `StatefulSet` (`server.statefulSet` in
-  `gitops/platform/vault.yaml`), which `DeploymentReplicasUnavailable`'s
-  `kube_deployment_*` metric family structurally cannot match regardless of label
-  selectors. This is a real, previously-lived incident, not speculative: the
-  `vault-unsealer`'s own header comment (`gitops/vault/unsealer.yaml`) documents
-  Vault staying sealed for 4+ days after a 2026-07-29 outage, "silently breaking
-  every ExternalSecret refresh cluster-wide... but nothing surfaced that anywhere
-  visible" — exactly the detection gap this item closes, using a metric already
-  scraped today (no new scrape job needed, unlike the audit doc's own suggested
-  shape): `kube_state_metrics` already emits `kube_pod_status_ready` for every pod
-  via the existing `ksm` scrape job (`observability-alloy.yaml`).
-
-  Add a fifth rule to `gitops/platform/observability-grafana.yaml`'s existing
-  `alerting.rules.yaml.groups[0].rules` list (same `lab-alerts` group, same
-  threshold-over-instant-Mimir-query shape as the other four — refId A queries
-  Mimir, refId B is a `threshold` expression `gt 0`, `noDataState: NoData`,
-  `execErrState: Error`, `datasourceUid: mimir`): `uid: vault-pod-not-ready`,
-  `title: VaultPodNotReady`, `for: 10m` (matches the other three non-OutOfSync
-  rules' cadence), `expr: kube_pod_status_ready{namespace="vault",
-  pod=~"vault-[0-9]+", condition="true"} == 0` — the `pod=~"vault-[0-9]+"` regex
-  scopes the rule to the Vault server StatefulSet pod (`vault-0`) specifically,
-  excluding the separate `vault-unsealer` Deployment pod in the same namespace
-  (label `app: vault-unsealer`, pod name prefix `vault-unsealer-`, which the regex
-  does not match) — alerting on the unsealer's own liveness would be a different,
-  narrower signal than "is Vault itself serving," and conflating the two would
-  misattribute which component actually failed. `annotations.summary`: "The Vault
-  server pod has not been Ready for 10+ minutes (sealed, crashed, or otherwise
-  unreachable)." No `contactPoints`/notification receiver — stays visual-only per
-  RFC #1084's own decision, unchanged by this item.
-
-  Extend `tests/observability-alerting.bats` (the per-scope alerting file, not the
-  frozen `observability.bats` monolith): new assertion for
-  `title: VaultPodNotReady` + its exact `expr:`; bump the existing `'for: 10m'`
-  count assertion from `3` to `4` (this rule adds a fourth 10m-duration rule) and
-  the existing `'datasourceUid: mimir'` count assertion from `4` to `5` — both
-  existing count-based tests, not new ones, so this is a real regression risk if
-  left unbumped (`make ci` would fail red on the count mismatch, catching it).
-  Update `docs/dependency-tree.md`'s Vault sub-graph with a one-line note that
-  Vault's pod-readiness is now alerted on via the existing KSM scrape (no new
-  scrape target). `make ci` must pass — this is a structural YAML + bats change,
-  no live cluster needed to confirm the rule's shape matches the other four.
-  PR body must document the ADR-0004 caveat that this remote clusterless session
-  cannot verify the rule actually fires against a live sealed Vault, and note the
-  rollback path (delete the `vault-pod-not-ready` rule block; ArgoCD syncs the
-  removal within 30s, same as any other alerting.yaml edit, per RFC #1084's own
-  rollback precedent). `docs/done/` entry required. (auto/vault-pod-readiness-alert)
+  — full verification writeup:
+  [docs/done/2026-08-11-vault-pod-readiness-alert.md](docs/done/2026-08-11-vault-pod-readiness-alert.md).
+  (auto/vault-pod-readiness-alert; PR #1119)
 
 - [x] 🟢 **Fix two Grafana Unified Alerting rules that can never fire — threshold-vs-stateSet-metric bug (RFC #1084 follow-up)**
   — full verification writeup:
@@ -1727,66 +1611,10 @@ there is no point where the lab loses a working git source or CI path.
   required. (auto/argocd-chart-10-3-0)
 
 - [x] 🟢 **Bump Trivy Operator chart `0.34.0` → `0.35.0` (appVersion `0.32.0` →
-  `0.33.0`, bundled Trivy scanner `0.72.0` → `0.73.0`)** (CHARTER **Objective O1**
-  + **Core Values** §"Everything as code" + general hardening; executor-fallback
-  currency sweep 2026-08-07, reached via `executor.prompt.md` STEP 6b after
-  Now/next's three standing items were re-checked and found still gated
-  (unchanged) on unconfirmed maintainer-confirmation issues #631/#633, and this
-  same run's first cycle (`auto/argocd-chart-10-3-0`) already claimed the
-  ArgoCD chart gap a prior planner-fallback cycle surfaced. This cycle's fresh
-  angle: `docs/dependency-register.md`'s per-component "Last reviewed" column
-  flagged Trivy Operator's 2026-07-28 entry as the most stale among the four
-  CHARTER O1 next-wave components (Kyverno 07-29, Argo Rollouts 07-20 flip-met,
-  Velero 07-29, Trivy Operator 07-28 — all older than this run's date). **No
-  prerequisites — executor may pick up immediately.**) Verified directly (not
-  assumed, ADR-0004): `aquasecurity/helm-charts`' `main` branch no longer
-  carries chart source (the repo migrated to a chart-releaser flow that
-  publishes packaged `.tgz` release assets + a `gh-pages` Helm-repo index
-  instead of per-tag directories) — verification here downloaded and
-  `diff -ru`'d the two real release tarballs
-  (`trivy-operator-0.34.0.tgz`/`trivy-operator-0.35.0.tgz`) directly rather
-  than a git-tag diff. The `gh-pages` index shows `trivy-operator-0.35.0`
-  published 2026-08-06T03:12:49Z, one release past the pinned `0.34.0`.
-
-  The tarball diff touches exactly: `Chart.yaml`'s `version`/`appVersion`
-  fields (`0.34.0`→`0.35.0`, `appVersion` `0.32.0`→`0.33.0`), the generated
-  `README.md` badges/table for the same, and the bundled `trivy.image.tag`
-  default (`0.72.0`→`0.73.0`, in both `values.yaml` and the README row) — plus
-  the same version-label bump repeated across five `templates/specs/*.yaml`
-  compliance-scan CronJob manifests (label only, not behavior). No other
-  `values.yaml` key changed shape — every key this lab's `valuesObject` sets
-  (`operator.*`, `trivy.resources`/`storageClassName`/`storageSize`,
-  `nodeCollector.*`) is present and unchanged. A real clone's `git log
-  v0.32.0..v0.33.0` (trivy-operator app repo) shows 4 commits: 2 routine
-  dependency bumps and the `trivy` scanner version bump itself. The bundled
-  scanner bump (`v0.72.0`→`v0.73.0`, `aquasecurity/trivy`) carries two real
-  detection-accuracy fixes: `fix(vuln): don't skip packages covered by a
-  driver's own advisory feed` (#10980) and `fix(vex): reject non-local VEX
-  repository names` (#10987) — the same "ships with a real fix" bar this
-  repo's other non-CVE currency bumps (e.g. Loki's ingester flush-race fix)
-  use. Does not affect ADR-0022's existing March-2026 Trivy supply-chain
-  compromise finding (`v0.69.4` is still the only affected tag; `0.73.0`
-  postdates it by many releases).
-
-  Bump `gitops/platform/trivy-operator.yaml`'s `targetRevision: 0.34.0` →
-  `0.35.0`. Update `tests/trivy-operator.bats`'s pin assertion to `0.35.0` and
-  add a "does not pin the stale `0.34.0` chart" recurrence guard (mirrors this
-  repo's other exact-version-pin test pairs). Update
-  `docs/dependency-tree.md`'s Trivy Operator citation (`v0.34.0`→`v0.35.0`).
-  Update `docs/dependency-register.md`'s Trivy Operator row "Last reviewed"
-  cell. Add a new dated entry to
-  [ADR-0022](docs/decisions/adr-0022-trivy-operator-supply-chain.md)'s `##
-  Re-evaluation log` documenting the findings above and reconfirming the
-  supply-chain-compromise finding is unaffected. No `context.md` update
-  needed — it doesn't cite this chart's specific version (checked directly).
-  `make ci` must pass. PR body must document the tarball-diff findings above
-  and the ADR-0004 caveat that this remote clusterless session cannot verify
-  the operator reconciles cleanly and continues scanning post-bump on a live
-  cluster — call out the rollback path (revert `targetRevision`; ArgoCD
-  re-syncs the prior chart version on next reconciliation; the operator is
-  stateless apart from its ephemeral vuln-DB cache PVC, so a rollback recovers
-  immediately with no data loss). `docs/done/` entry required.
-  (auto/trivy-operator-chart-0-35-0)
+  `0.33.0`, bundled Trivy scanner `0.72.0` → `0.73.0`)** — full verification
+  writeup:
+  [docs/done/2026-08-07-trivy-operator-chart-0-35-0.md](docs/done/2026-08-07-trivy-operator-chart-0-35-0.md).
+  (auto/trivy-operator-chart-0-35-0; PR #1057)
 
 - [x] 🟢 **Bump Grafana image tag `13.0.3` → `13.0.5` (security fix) + correct
   ADR-0006's stale Tempo pin citation** — full verification writeup:
@@ -2168,68 +1996,9 @@ there is no point where the lab loses a working git source or CI path.
   stateless UI/API service reading from Prometheus, so a revert recovers immediately
   with no data loss). `docs/done/` entry required. (auto/kiali-chart-2-30-0)
 
-- [x] 🟢 **Bump Harbor chart `1.19.1` → `1.19.2`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; planner gap-analysis sweep 2026-08-03 —
-  the architect-fallback ADR upstream sweep (`routines/architect.prompt.md` STEP 1)
-  checked all 17 checklist components plus Harbor/Garage directly; every other
-  component was already current, this was the one real delta. **No prerequisites —
-  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004): a
-  full clone of `github.com/goharbor/harbor-helm` shows `v1.19.2` tagged and
-  published 2026-08-03 (same day), one patch ahead of this lab's pinned `1.19.1`
-  (`gitops/platform/harbor.yaml`). `git diff v1.19.1 v1.19.2 -- Chart.yaml
-  values.yaml` on that real clone shows: `appVersion: 2.15.1` → `2.15.2` (every
-  component image tag bumped `v2.15.1` → `v2.15.2` — `nginx`, `portal`, `core`,
-  `jobservice`, `registry`/`registryctl`, `trivy` adapter, `database`, `redis`,
-  `exporter`); and one structural change — the bundled cache's image repository
-  changed from `docker.io/goharbor/redis-photon` to
-  `docker.io/goharbor/valkey-photon` (upstream's own bundled-cache image switching
-  base, unrelated to this lab's separate ADR-0018 Valkey-not-Redis choice for the
-  platform-wide cache — this is Harbor's *own* internal instance, `redis.type:
-  internal`, per the ADR-0024 exception documented in `harbor.yaml`'s header
-  comment). No `values.yaml` key was added, removed, or renamed — every key this
-  Application's `valuesObject` sets (`expose`, `trivy.enabled`, `notary.enabled`,
-  `persistence.imageChartStorage`, `database.type`, `redis.type`, `registry`,
-  `core`, `jobservice`, `portal`, `metrics.enabled`) is unchanged in shape. ADR-0024's
-  Re-evaluation log's most recent entry (audit #774, 2026-07-28) confirmed
-  `1.19.1`/`appVersion 2.15.1` already sat past CVE-2026-4404's fix floor
-  (`2.15.1`+) with a flip condition of "a future chart bump ever drops or
-  overrides `existingSecretAdminPassword`, or a new CVE is disclosed against
-  `2.15.1`+" — neither triggers here (no CVE against `2.15.2`; the diff above
-  shows `existingSecretAdminPassword`/`existingSecretAdminPasswordKey` untouched
-  by the chart bump), so this is a routine currency bump, not a CVE response —
-  same "smallest safe delta, bug-fix-only" pattern as the `kro 0.9.2→0.9.3` bump.
-
-  Bump `gitops/platform/harbor.yaml`'s `targetRevision: 1.19.1` → `1.19.2`.
-  Update `docs/dependency-tree.md`'s harbor bullet (line ~318), which cites the
-  chart version explicitly (`v1.19.1` → `v1.19.2`) — **while there, also fix a
-  separate, pre-existing inaccuracy in the same sentence found during this
-  verification**: it currently says Harbor uses "platform Valkey for cache",
-  which contradicts `harbor.yaml`'s own header comment and `redis.type: internal`
-  setting (Harbor uses its own bundled internal cache instance, not the lab's
-  shared `data`-namespace Valkey — the ADR-0018 exception documented in
-  `harbor.yaml` since 2026-07-21 because ArgoCD's template-only rendering can't
-  resolve the chart's `lookup()`-based external-Valkey wiring); correct the
-  phrase to describe the bundled internal cache instead (e.g. "bundled internal
-  cache, `redis.type: internal` — an ADR-0018 exception, ADR-0024 §recorded").
-  Tighten `tests/harbor.bats`'s existing chart-pin assertion (`"harbor
-  Application pins a specific 1.19.x chart version"`, currently the loose regex
-  `1\.19\.`) to assert the specific patch `targetRevision: 1\.19\.2` — a
-  recurrence guard mirroring this repo's other per-component exact-version pin
-  assertions (matches the kro/cert-manager precedent). Add a new dated entry to
-  ADR-0024's `## Re-evaluation log` (after the existing 2026-07-28 audit #774
-  entry) recording this bump, citing the appVersion bump + the redis→valkey
-  bundled-image change, with a new flip condition for the next audit (e.g.
-  "revisit when a Harbor security advisory names a version at or above
-  `2.15.2` as affected"). `make ci` must pass. PR body must document the diff
-  findings above, why `1.19.2` (smallest safe delta, non-security), and the
-  ADR-0004 caveat that this remote clusterless session cannot verify Harbor
-  starts cleanly post-bump on a live cluster (Harbor is on-demand/never
-  auto-synced per ADR-0024, so this bump has zero live-cluster blast radius
-  until the maintainer next runs `make harbor-up`) — call out the rollback path
-  (revert `targetRevision`; next `make harbor-up` picks up the reverted chart;
-  no data loss since Harbor's registry/database state lives in Garage S3 plus
-  a PVC-backed internal Postgres, both untouched by a chart-version revert).
-  `docs/done/` entry required. (auto/harbor-chart-1-19-2)
+- [x] 🟢 **Bump Harbor chart `1.19.1` → `1.19.2`** — full verification writeup:
+  [docs/done/2026-08-03-harbor-chart-1-19-2.md](docs/done/2026-08-03-harbor-chart-1-19-2.md).
+  (auto/harbor-chart-1-19-2; PR #963)
 
 - [x] 🟢 **Bump cert-manager chart `1.21.0` → `1.21.1`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC #933 — architect decision
@@ -3944,67 +3713,9 @@ there is no point where the lab loses a working git source or CI path.
   entry required. (auto/dependency-register-adr-0033-0034-rows)
 
 - [x] 🟢 **Bump External Secrets Operator chart `2.8.0` → `2.9.0` (real CVE fixes)**
-  (CHARTER **Core Values** §"Everything as code" + general hardening; executor-fallback
-  currency sweep 2026-08-10, reached via `executor.prompt.md` STEP 6b — the only three
-  unchecked items anywhere in ROADMAP.md (the standing Now/next trio) remain gated on
-  unconfirmed maintainer-confirmation issues #631/#633/#1034 (re-checked this cycle:
-  all three issues' full comment threads read directly, latest comments 2026-08-07,
-  still reporting live-cluster host-capacity/Harbor-stability blockers, no confirmation).
-  PLANNER-fallback intake pass found nothing to groom — `gh issue list` equivalent (GitHub
-  MCP tools, no `gh` CLI in this remote session) shows exactly the same three standing
-  `[Action required]` issues, already correctly labeled; `docs/roadmap/incoming/` holds
-  only its README; no un-RFC'd 🟡 item exists anywhere in ROADMAP.md (all prior 🟡 entries
-  are struck through/resolved, confirmed by grepping the file). This cycle's fresh angle
-  (3 days after the prior sweep on 2026-08-07, which had already checked ArgoCD, Trivy
-  Operator, Grafana, Tempo, Loki, kube-state-metrics, Harbor, Kiali, kro, envoy-gateway,
-  pyroscope, node-exporter, velero, ack-s3, cilium): a fresh `git ls-remote --tags` sweep
-  of chart repos not re-checked in that pass — cilium (current), argo-rollouts (current),
-  harbor (current), istio (current), kro (current), longhorn (a `v1.11.4` tag exists but
-  is a `-dev-*` prerelease only, no real release past `1.11.3`, false-positive ruled out
-  by checking the raw tag) — surfaced External Secrets Operator one minor version behind.
-  **No prerequisites — executor may pick up immediately.**) Verified directly (not
-  assumed, ADR-0004): `git ls-remote --tags external-secrets/external-secrets` shows
-  `helm-chart-2.9.0` as the newest tag on the chart's own tagging scheme, one release
-  past the pinned `2.8.0` (both `version` and `appVersion` move together in `Chart.yaml`,
-  confirming this is a real upstream app release, not a same-appVersion repackage). A full
-  clone diff (`git diff helm-chart-2.8.0 helm-chart-2.9.0 -- deploy/charts/external-secrets/`)
-  is purely additive: two new optional pod-scheduling fields (`schedulerName`,
-  `runtimeClassName`, each `{{- if .Values.X }}`-gated, default empty — no behavior change
-  unless explicitly set) across all three Deployments; a new `certController.enablePartialCache`
-  toggle (defaults `true`, scopes the cert-controller's informer cache to CRDs/
-  ValidatingWebhookConfigurations carrying the `external-secrets.io/component` label — a
-  narrowing, not a widening, of watch scope); the CRD bundle diff is schema-field
-  reordering only, nothing removed. The upstream release notes name two real CVE fixes:
-  `grpc-go` bumped addressing GHSA-hrxh-6v49-42gf, and `golang.org/x/text` bumped to
-  `v0.40` addressing CVE-2026-56852 — the same "ships with a real security fix" bar this
-  repo's other non-major currency bumps use, not a blind patch assumption. Also plus
-  real bug fixes (Akeyless provider error-handling + a data-race fix, AWS Secrets Manager
-  replicated-region detach-before-delete, webhook event-format standardization, an
-  ExternalSecret strategy-field over-defaulting fix) — none of which touch this lab's own
-  `valuesObject` keys (`installCRDs`, `podSecurityContext`, `securityContext`, `webhook.*`,
-  `certController.*`, `resources`), all of which are present and unchanged in the new
-  schema.
-
-  Bump `gitops/platform/external-secrets.yaml`'s `targetRevision: 2.8.0` → `2.9.0`. New
-  `tests/external-secrets-chart-pin.bats` (clusterless structural, mirrors this repo's
-  other exact-version-pin test pairs, e.g. `tests/observability-loki.bats`): asserts the
-  Application pins `targetRevision: 2.9.0`; asserts it does NOT pin the stale `2.8.0`
-  (recurrence guard). No `docs/dependency-tree.md` or `docs/decisions/context.md` update
-  needed — neither cites this chart's specific version (checked directly). **Honest note
-  for a future planner/architect cycle:** External Secrets Operator has no row in
-  `docs/dependency-register.md` and no dedicated ADR of its own (unlike RabbitMQ/Valkey/
-  Kyverno/etc., each with a decision ADR) — the register's own construction rule
-  ("every row cites the ADR that decided it") structurally excludes it, the same gap
-  shape GitLab/LGTMP had before RFC #1073 closed it with ADR-0033/ADR-0034. Not fixed in
-  this PR (out of scope — one item per cycle, and authoring a new ADR is architect-role
-  work per WAYS-OF-WORKING.md), but flagged here so it isn't lost. `make ci` must pass.
-  PR body must document the CVE findings above and the ADR-0004 caveat that this remote
-  clusterless session cannot verify the ESO controller/webhook/cert-controller start
-  cleanly and continue syncing secrets post-bump on a live cluster — call out the
-  rollback path (revert `targetRevision`; ArgoCD re-syncs the prior chart version on its
-  next reconciliation; ESO holds no persistent state of its own — secrets it manages
-  live as native k8s Secrets, untouched by a chart-version revert). `docs/done/` entry
-  required. (auto/external-secrets-chart-2-9-0)
+  — full verification writeup:
+  [docs/done/2026-08-10-external-secrets-chart-2-9-0.md](docs/done/2026-08-10-external-secrets-chart-2-9-0.md).
+  (auto/external-secrets-chart-2-9-0; PR #1081)
 
 - [x] 🟢 **Bump Pyroscope chart `2.2.0` → `2.2.1` (upstream security release)**
   (CHARTER **Core Values** §"Everything as code" + general hardening; executor-fallback
