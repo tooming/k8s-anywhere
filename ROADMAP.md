@@ -1727,54 +1727,9 @@ there is no point where the lab loses a working git source or CI path.
   pass. `docs/done/` entry required. (auto/kro-cve-bump-0-9-3)
 
 - [x] 🟢 **Lab — Istio ambient mesh (`istio-system`) observability wiring: Alloy
-  scrape + Grafana dashboard** (CHARTER **Objective O5**, due **2026-09-30**; O5 gap
-  — planner gap-analysis sweep 2026-07-28, all five prior "Now / next" items being
-  gated on maintainer-confirmation issues #631/#632/#633. `istio-system-extras`
-  (`gitops/platform/istio-system-extras.yaml`) is auto-synced under
-  `gitops/bootstrap/root-app.yaml`'s recursive `gitops/platform/` watch — the same
-  ALWAYS-ON PSA-floor pattern as `kargo-extras`/`longhorn-extras` (namespace +
-  privileged PSA labels pre-created ahead of `make istio-up`, the empty namespace
-  itself cheap to keep auto-synced) — but unlike those two it has **no Grafana
-  dashboard and no Alloy scrape wiring at all**: verified directly, zero
-  `grafana/dashboards/lab-istio*.json` files exist and `grep -rl "lab-istio"
-  tests/` returns nothing. `docs/dependency-tree.md`'s istio-system NetworkPolicy
-  note already anticipates this gap: `allow-istio-metrics-ingress.yaml` opens
-  ingress TCP 15014 from `observability` "for future istiod Prometheus scrape" —
-  that scrape was never actually added to `observability-alloy.yaml`. **No
-  prerequisites — executor may pick up immediately.**)
-
-  Mirror the `auto/longhorn-dashboard` / `auto/kargo-observability-dashboard`
-  precedent exactly (same always-present-namespace-but-component-may-be-off shape):
-  add a `prometheus.scrape "istiod"` block to
-  `gitops/platform/observability-alloy.yaml` (static target
-  `istiod.istio-system.svc.cluster.local:15014`, `scrape_interval = "30s"`,
-  mirroring the adjacent `longhorn`/`kargo` blocks) — the scrape naturally returns
-  no series until `make istio-up` actually runs istiod (ADR-0004-compliant "No
-  data" until then, same as every other on-demand component's always-on scrape
-  job). New `grafana/dashboards/lab-istio.json` (`uid: "lab-istio"`, title "Lab —
-  Istio Ambient Mesh") modelled on `lab-longhorn.json`'s stat-row: ArgoCD sync
-  state (`argocd_app_info{name="istio-system-extras", sync_status="Synced"}`);
-  namespace-present stat via KSM (`kube_pod_info{namespace="istio-system"}` count
-  or `kube_namespace_created{namespace="istio-system"}`) so at least one panel
-  returns real data via the always-on KSM scrape even before Istio's own
-  components ever run; istiod control-plane health once the scrape target exists
-  (verify istiod's actual exposed metric names against the pinned `istio/istiod`
-  chart version before committing an `expr` — e.g. `pilot_xds` push/connection
-  counters — ADR-0004: check the real metric name, don't guess one); ztunnel/
-  istio-cni pod readiness via KSM
-  (`kube_daemonset_status_number_ready{namespace="istio-system",
-  daemonset=~"ztunnel.*|istio-cni.*"}`). No HTTPRoute (istiod has no web UI of its
-  own; Kiali already has its own separate on-demand dashboard/route). New
-  `tests/istio-observability.bats` (clusterless structural, mirrors
-  `tests/longhorn.bats`'s shape): scrape block `"istiod"` exists in
-  `observability-alloy.yaml`; scrape target references port 15014; `lab-istio.json`
-  exists; has uid `lab-istio`; references the `istio-system` namespace in a real
-  KSM/ArgoCD query; no fabricated/placeholder content (ADR-0004 grep guard: `grep
-  -iE '"(fake|mock|placeholder|dummy|todo|fixme)"'`). Update
-  `docs/dependency-tree.md`'s istio-system entry to note the new dashboard + scrape
-  wiring (the existing NetworkPolicy note's "future istiod Prometheus scrape"
-  becomes real — update that sentence too). `make ci` must pass. `docs/done/` entry
-  required. (auto/istio-observability-dashboard)
+  scrape + Grafana dashboard** — full verification writeup:
+  [docs/done/2026-07-28-istio-observability-dashboard.md](docs/done/2026-07-28-istio-observability-dashboard.md).
+  (auto/istio-observability-dashboard; PR #824)
 
 - [x] 🟢 **Bump Envoy Gateway chart `v1.8.2` → `v1.8.3`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC #671 — architect decision
@@ -1920,54 +1875,9 @@ there is no point where the lab loses a working git source or CI path.
   (auto/dora-resilience-mapping)
 
 - [x] 🟢 **`scripts/dora-metrics.sh` + `make dora-metrics` — DORA metrics from git/CI
-  history** (CHARTER new **Objective O7**; RFC #580 — architect decision 2026-07-19.
-  **No prerequisites — executor may pick up immediately.**) Implement RFC #580's
-  binding spec exactly — do not re-derive the definitions, they are already decided:
-
-  1. **Deployment frequency** = count of merge commits to `main` per calendar week,
-     across every agent branch prefix (`auto/*`, `plan/*`, `arch/*`, `upgrade/*`,
-     `sync/*`, `chore/*`) plus human `feat/*`/`fix/*`. Compute via `git log --merges
-     --since=<start> --until=<end> main` (default window: trailing 90 days).
-  2. **Lead time for changes** = median wall-clock time between a merged PR's first
-     commit's author-date and its merge-commit date on `main`, per PR in the window.
-  3. **Change failure rate** = (reverts + same-area fix-forwards) / total deployments
-     in the window. A "failure" is either (a) a merge commit whose message contains
-     "revert" referencing an earlier in-window commit, or (b) a `fix:`-titled PR
-     merged within 72h of a prior merge that touched at least one overlapping file
-     path (compare `git show --name-only` file lists between the two merge commits).
-  4. **Time to restore service** = for each red→green transition of `main`'s
-     `ci.yml` workflow (GitHub Actions API, `branch=main`, `workflow=ci.yml`), the
-     wall-clock delta between the first failing run's `created_at` and the next
-     successful run's `updated_at`.
-
-  New `scripts/dora-metrics.sh` (clusterless — no `kubectl`/`argocd`/`vault`/
-  `colima`; reads `git log` directly + calls the GitHub Actions API the same way
-  other routines already do) computes all four for the default 90-day window
-  (overridable via a `DORA_SINCE`/`DORA_UNTIL` env var pair) and regenerates
-  `docs/dora-metrics.md` as a plain markdown table. **Per ADR-0004: any metric that
-  cannot be computed for lack of evidence (e.g. zero CI runs in the window) MUST
-  render as the literal string "insufficient data" — never a fabricated or
-  extrapolated number.** New `dora-metrics` `.PHONY` Makefile target invoking the
-  script (mirror the `dr-verify` target's on-demand, non-`make up`-wired shape —
-  this is explicitly NOT registered in any auto-run path). Commit
-  `docs/dora-metrics.md` with one real generated snapshot from this repo's actual
-  history (not a stub/template — run the script for real and commit its output).
-
-  New `tests/dora-metrics.bats` (clusterless structural — no live git-log/API calls
-  required to run in CI beyond what this repo's own history already provides):
-  script exists + is executable; `Makefile` declares the `dora-metrics` target and
-  it is NOT invoked from the `up`/`ci` targets (on-demand only, mirroring the
-  `dr-verify` pattern); the script handles a synthetic zero-data window (e.g.
-  `DORA_SINCE`/`DORA_UNTIL` set to a date range with no commits) by printing
-  "insufficient data" and exiting 0, not crashing or fabricating a number.
-
-  Add **Objective O7** cross-reference: this item alone satisfies O7's `make ci`
-  presence check (script exists + executable + Makefile target wired) — O7 itself
-  was already added to CHARTER.md by RFC #580's own architect PR (#581), no further
-  CHARTER edit needed here. `make ci` must pass. `docs/done/` entry required.
-  **Executor note:** RFC #580's full spec (rationale, scope & exceptions, exact
-  acceptance criteria) is the binding source — read it before starting, don't
-  re-derive from this summary alone. Closes #580. (auto/dora-metrics)
+  history** — full verification writeup:
+  [docs/done/2026-07-19-dora-metrics.md](docs/done/2026-07-19-dora-metrics.md).
+  (auto/dora-metrics; PR #584) Closes #580.
 
 - [x] 🟢 **Replace the dead "idle issue" fallback across every routine prompt with a
   `[Action needed]` PR** — full verification writeup:
@@ -3177,53 +3087,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-08-10-pyroscope-chart-2-2-1.md](docs/done/2026-08-10-pyroscope-chart-2-2-1.md).
   (auto/pyroscope-chart-2-2-1; PR #1082)
 
-- [x] 🟢 **Grafana Unified Alerting — four rules for known failure conditions** (RFC
-  #1084 — architect decision 2026-08-10; closes `docs/dora-audit-readiness.md` Q7's
-  "no alerting" gap; planner-groomed 2026-08-10 — the RFC's own Acceptance criteria
-  is the spec below, no further sizing needed. **No prerequisites — executor may
-  pick up immediately.**) Add an alerting-provisioning ConfigMap to
-  `gitops/platform/observability-grafana.yaml`'s `valuesObject` (Grafana's chart
-  supports mounting extra provisioning files the same way dashboards/datasources
-  are already provisioned — check the chart's own `extraConfigmapMounts` or
-  equivalent `valuesObject` key, mirroring whatever mechanism the existing
-  datasource provisioning in this same file already uses) defining exactly these
-  four rules, each `for:` the duration below, in Grafana's file-based alerting
-  provisioning YAML format (`apiVersion: 1`, a `groups:` list under the
-  provisioning `alerting` kind):
-  1. **ArgoCDAppUnhealthy** — `argocd_app_info{health_status!="Healthy"} == 1`,
-     `for: 10m`.
-  2. **ArgoCDAppOutOfSync** — `argocd_app_info{sync_status="OutOfSync"} == 1`,
-     `for: 30m`.
-  3. **DeploymentReplicasUnavailable** —
-     `kube_deployment_status_replicas_available < kube_deployment_spec_replicas`,
-     `for: 10m`.
-  4. **PVCStuckPendingOrLost** —
-     `kube_persistentvolumeclaim_status_phase{phase=~"Pending|Lost"} == 1`,
-     `for: 10m`.
-  All four query the existing Mimir datasource (already configured with
-  `X-Scope-OrgID: lab`) — no new datasource, no new scrape target. Do **not** add
-  any `receivers:`/contact-point/notification config — per the RFC, this is
-  visual-only (Grafana's Alerting UI shows firing state; no external channel
-  exists in this lab to wire one to). New `tests/observability-alerting.bats`
-  (clusterless structural, mirrors the `tests/observability-<scope>.bats`
-  per-component pattern): asserts all four rule names + their exact PromQL
-  expressions + `for:` durations are present in the provisioning config; asserts
-  no `receivers:`/webhook/SMTP/contact-point key exists anywhere in the same
-  block (recurrence guard — per the RFC, adding a notification channel later
-  needs its own fresh decision, not a silent addition). Update
-  `docs/dependency-tree.md` with a short note that Grafana Unified Alerting is
-  wired, querying Mimir, visual-only, four rules. Update
-  `docs/dora-audit-readiness.md`'s Q7 answer to record this closes the "no
-  alerting" half of the gap (the escalation/paging half stays an explicit
-  non-goal per the RFC — state that plainly, don't silently drop it). `make ci`
-  must pass — this is config-only and clusterless-verifiable (structural
-  assertions on the provisioning YAML; no live Grafana instance needed to
-  confirm the rules are well-formed and present). PR body must document the
-  ADR-0004 caveat that this remote clusterless session cannot verify the rules
-  actually evaluate correctly or fire on a live cluster — call out the rollback
-  path (revert the provisioning block; Grafana re-syncs via ArgoCD on next
-  reconciliation; no other component depends on these rules existing). Closes
-  #1084. `docs/done/` entry required. (auto/grafana-alerting-rules)
+- [x] 🟢 **Grafana Unified Alerting — four rules for known failure conditions** —
+  full verification writeup:
+  [docs/done/2026-08-10-grafana-alerting-rules.md](docs/done/2026-08-10-grafana-alerting-rules.md).
+  (auto/grafana-alerting-rules; PR #1087) Closes #1084.
 
 - [x] 🟢 **verifyImages ClusterPolicy — Audit → Enforce flip** (CHARTER **Objective O4**,
   RFC #214 Item 3; executor pickup 2026-08-18, third cycle this run — reached via
@@ -4349,29 +4216,10 @@ there is no point where the lab loses a working git source or CI path.
   `make ci` must pass. `docs/done/` entry required.
   (auto/o2-pss-coverage-loop)
 
-- [x] 🟢 **PSA `restricted` labels — `capstone-pipeline` namespace** (CHARTER
-  **Objective O2**, due **2026-09-30**; O2 hardening gap — the `capstone-pipeline`
-  namespace (created by Kargo's Project CRD per ADR-0023) has no `namespace.yaml`
-  in `gitops/kargo-project/` carrying PSA `restricted` labels; the O2 PSS coverage
-  loop added in `auto/o2-pss-coverage-loop` only flags namespaces whose
-  `namespace.yaml` already exists, so this gap is silent but real; no workloads
-  currently run in `capstone-pipeline` but the floor is defense-in-depth.
-  **No prerequisites — executor may pick up immediately.**) Add
-  `gitops/kargo-project/namespace.yaml` with four PSA `restricted` labels
-  (`pod-security.kubernetes.io/enforce: restricted`,
-  `pod-security.kubernetes.io/enforce-version: latest`,
-  `pod-security.kubernetes.io/warn: restricted`,
-  `pod-security.kubernetes.io/audit: restricted`; `metadata.name: capstone-pipeline`)
-  — mirrors the `gitops/apps/capstone/namespace.yaml` pattern. The kargo-project
-  ArgoCD Application sources the `gitops/kargo-project/` path in directory mode
-  (see `gitops/platform/kargo-project.yaml`); ArgoCD applies the new
-  `namespace.yaml` via SSA against the namespace the Kargo Project CRD already
-  created. Add a `capstone-pipeline → restricted` row to ADR-0017's
-  per-namespace profile table noting no workloads run there (defense-in-depth
-  floor; Kargo itself runs in the `kargo` namespace). Extend `tests/kargo.bats`
-  with two assertions: `gitops/kargo-project/namespace.yaml` exists; it carries
-  all four PSA `restricted` labels. `make ci` must pass. `docs/done/` entry
-  required. (auto/capstone-pipeline-psa)
+- [x] 🟢 **PSA `restricted` labels — `capstone-pipeline` namespace** — full
+  verification writeup:
+  [docs/done/2026-07-09-auto-capstone-pipeline-psa.md](docs/done/2026-07-09-auto-capstone-pipeline-psa.md).
+  (auto/capstone-pipeline-psa; PR #354)
 
 - [ ] 🟢 **Remove legacy capstone `Deployment` — Rollout is now the sole workload
   owner** (CHARTER **Core Values** §"Production-shaped designs"; promised follow-up
