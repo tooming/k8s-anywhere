@@ -1595,57 +1595,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-08-05-argocd-chart-10-2-3.md](docs/done/2026-08-05-argocd-chart-10-2-3.md).
   (auto/argocd-chart-10-2-3; PR #993)
 
-- [x] 🟢 **Bump `grafana` chart `12.10.2` → `12.10.3`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; planner-fallback upstream check
-  2026-08-05, reached via `executor.prompt.md` STEP 6b, Now/next starved by
-  #631/#633. **No prerequisites — executor may pick up immediately.**) Verified
-  directly (not assumed, ADR-0004): a real clone of
-  `github.com/grafana-community/helm-charts` (the actual `repoURL` this lab's
-  `gitops/platform/observability-grafana.yaml` Application uses — note this is
-  the community-maintained fork, a **different** repo than `grafana/helm-charts`,
-  which is stale/archived upstream and does not carry recent tags) shows
-  `grafana-12.10.3` as a genuine tag past the currently-pinned
-  `grafana-12.10.2`. `git diff grafana-12.10.2 grafana-12.10.3 -- charts/grafana/`
-  on that real clone touches **only** `charts/grafana/Chart.yaml` — `version:
-  12.10.2` → `12.10.3` and `appVersion: 13.1.1` → `13.1.2` — zero changes to
-  `values.yaml` or any template. This chart bump does **not** change the Grafana
-  binary this lab actually runs: `observability-grafana.yaml`'s
-  `valuesObject.image.tag` override (currently `13.0.3`) and the matching
-  ca-bundle init-container image both pin the running Grafana version
-  independently of the chart's own `appVersion` default, per ADR-0006's
-  CVE-driven re-evaluation log (last audited 2026-07-28, kept at `13.0.3` — this
-  bump doesn't touch or reset that pin, and does not itself constitute a new
-  audit of it). `git log grafana-12.10.2..grafana-12.10.3 -- charts/grafana` on
-  the real clone shows one commit, a routine renovate-bot Docker-tag bump
-  (`Update docker.io/grafana/grafana Docker tag to v13.1.2`) — packaging-only,
-  same smallest-safe-delta pattern as the Harbor/cert-manager/Kiali/kro bumps
-  already in `## Done`.
-
-  Bump `gitops/platform/observability-grafana.yaml`'s `targetRevision: 12.10.2`
-  → `12.10.3`. Re-verify directly at pickup time that the `12.10.3` chart's
-  `values.yaml` still contains every key this Application's `valuesObject` sets
-  unchanged in shape (`image.tag`, `persistence.*`, `provisioning.*`,
-  `grafana.ini.*`, `resources.*` — whatever the Application actually sets;
-  confirm against a fresh clone, don't trust this note's cached read). Add a new
-  `tests/observability-grafana.bats` assertion (that file currently only guards
-  the `image.tag`/ca-bundle pins, RFC #563 — no test guards the chart
-  `targetRevision` at all yet) asserting
-  `targetRevision: 12.10.3` is present in `observability-grafana.yaml` — a
-  recurrence guard mirroring this repo's other per-component exact-version pin
-  assertions (Harbor/cert-manager/Kiali/kro precedent). No ADR re-evaluation-log
-  entry is needed — ADR-0006's log tracks the CVE-driven `image.tag` pin, not
-  chart packaging currency, and this bump doesn't touch that pin. No
-  `docs/dependency-tree.md` or `docs/decisions/context.md` update needed —
-  neither cites the chart's `targetRevision` (checked directly: only the image
-  tag `13.0.3` is cited, in `context.md`, and that citation is unaffected).
-  `make ci` must pass. PR body must document the diff findings above, why
-  `12.10.3` (smallest safe delta, packaging-only, non-security), and the
-  ADR-0004 caveat that this remote clusterless session cannot verify Grafana's
-  Git Sync / dashboard provisioning starts cleanly post-bump on a live cluster
-  — call out the rollback path (revert `targetRevision`; ArgoCD self-heals
-  within its sync interval; Grafana's DB lives on a PVC untouched by a chart
-  revert, so a rollback recovers immediately with no data loss). `docs/done/`
-  entry required. (auto/grafana-chart-12-10-3)
+- [x] 🟢 **Bump `grafana` chart `12.10.2` → `12.10.3`** — full verification
+  writeup:
+  [docs/done/2026-08-05-grafana-chart-12-10-3.md](docs/done/2026-08-05-grafana-chart-12-10-3.md).
+  (auto/grafana-chart-12-10-3; PR #991)
 
 - [x] 🟢 **Bump `kiali-server` chart `2.29.0` → `2.30.0`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; ADR-0012's own Re-evaluation log flip
@@ -2762,55 +2715,10 @@ there is no point where the lab loses a working git source or CI path.
   present and `enforce: restricted` absent (safety check). `make ci` must pass. `docs/done/`
   entry required. (auto/pss-envoy-gateway-system)
 
-- [x] 🟢 **zz-dns-clusterip-bridge — bring out-of-band CNPs under GitOps** (CHARTER
-  **Core Values** §"Everything as code; GitOps deploys it" + ADR-0004 §"never fabricate
-  or hold safety-relevant state out-of-band"; issue #315 — 2026-07-01; **no
-  prerequisites — executor may pick up immediately**). The
-  `zz-dns-clusterip-bridge` CiliumNetworkPolicy (egress to `10.43.0.0/16`, the Service
-  ClusterIP CIDR — required for any default-deny pod to reach a ClusterIP service before
-  Cilium's socket-LB translates it to a backend pod IP) exists only as manually-applied
-  live-cluster state in 15+ namespaces; `gitops/harbor/networkpolicy/` is the sole
-  GitOps-managed copy (added as `allow-harbor-clusterip-egress.yaml` in the
-  `auto/harbor-application` PR — this file is the canonical reference shape). Without
-  it in GitOps, `make up` rebuilds silently break ClusterIP egress for every default-deny
-  namespace; any new namespace added via the NP fan-out pattern also inherits the gap.
-  Implementation (three sub-tasks):
-  (a) **Shared template** — add
-  `gitops/network/policies/zz-dns-clusterip-bridge.yaml` (a `CiliumNetworkPolicy`,
-  `endpointSelector: {}`, `egress: toCIDR: 10.43.0.0/16` — no port restriction, because
-  per-service pod-selector egress rules still gate which backends a pod may reach; this
-  only permits the ClusterIP frontend to be evaluated before Cilium's socket-LB
-  translates it). Copy the body verbatim from
-  `gitops/harbor/networkpolicy/allow-harbor-clusterip-egress.yaml`, updating the inline
-  comment to say "shared template" instead of harbor-specific; keep `metadata.name:
-  zz-dns-clusterip-bridge` (matches the live out-of-band name).
-  (b) **Per-overlay reference** — add the bridge template reference to every existing
-  per-namespace kustomization overlay (top-level namespaces use
-  `../../network/policies/zz-dns-clusterip-bridge.yaml`; `apps/*` namespaces use
-  `../../../network/policies/zz-dns-clusterip-bridge.yaml`). Affected overlays (24
-  total, listed by `gitops/*/networkpolicy/kustomization.yaml` and
-  `gitops/apps/*/networkpolicy/kustomization.yaml` at executor pickup — excludes harbor,
-  which already has `allow-harbor-clusterip-egress.yaml`; keep that harbor-specific file
-  but ALSO add the shared template reference so it is adopted consistently). For the
-  `gitops/argocd/networkpolicy/kustomization.yaml`, check if the existing
-  `allow-argocd-service-frontends.yaml` already covers `10.43.0.0/16` without port
-  restriction; if so, skip argocd to avoid a duplicate CNP; if it covers only specific
-  ports, add the bridge. For namespaces with no workloads today (`lab-gateway`, `network`
-  namespace overlay), still add the reference — the policy is a no-op when no pods exist
-  and prevents the gap recurring when pods are eventually added.
-  (c) **CI drift guard** — extend `tests/networkpolicy.bats` with a loop assertion: for
-  every `kustomization.yaml` under `gitops/` that references `default-deny.yaml`, assert
-  that the same `kustomization.yaml` also references `zz-dns-clusterip-bridge` (either
-  the shared template or an equivalent per-namespace file). This prevents a new namespace
-  being added via the NP fan-out pattern without the bridge — the same failure mode that
-  caused #315 originally. Update `docs/dependency-tree.md` with a one-line note that
-  `zz-dns-clusterip-bridge` is now a shared baseline template alongside `default-deny`
-  and `allow-dns-and-apiserver`. `docs/done/` entry required. `make ci` must pass.
-  **Executor note:** if the 24-file fan-out crosses ~400 lines per WAYS-OF-WORKING.md
-  §3, ship the shared template + always-on namespace overlays in PR 1 and the on-demand
-  namespace overlays (tidb, tidb-admin, inkless, longhorn, istio-system, artifactory,
-  harbor) in PR 2. The CI drift guard must land with PR 1. Closes #315.
-  (auto/gitops-clusterip-bridge)
+- [x] 🟢 **zz-dns-clusterip-bridge — bring out-of-band CNPs under GitOps** —
+  full verification writeup:
+  [docs/done/2026-07-02-gitops-clusterip-bridge.md](docs/done/2026-07-02-gitops-clusterip-bridge.md).
+  (auto/gitops-clusterip-bridge; PR #324) Closes #315.
 
 - [x] 🟢 **`tests/dr-bluegreen.bats` — structural test gate for zero-downtime blue/green DR
   scripts** (CHARTER Goal "DR / blue-green on a single host"; `make ci` coverage gap —
@@ -3173,55 +3081,10 @@ there is no point where the lab loses a working git source or CI path.
   entry required. Closes #785. (auto/argocd-chart-10x-bump or upgrade/argocd-chart-10x-bump)
 
 - [x] 🟢 **`tests/frozen-monolith-lib.bats` — direct unit coverage for
-  `scripts/lib/frozen-monolith-check.sh` + `frozen-monolith-sync-hook.sh`**
-  (CHARTER **Core Values** §"Everything as code" + CLAUDE.md's bugfix-prevents-
-  recurrence rule; planner gap-analysis sweep 2026-07-31 — all three standing
-  "Now / next" items are still gated on unconfirmed maintainer-confirmation
-  issues #631/#633 (checked directly this run: neither issue has a comment
-  confirming its ask; `gitops/kyverno/policies/verify-image-signatures.yaml`
-  still reads `validationFailureAction: Audit` / `failurePolicy: Ignore`, so
-  the gate is accurate, not stale), so this is rule #9 coverage/hardening
-  filler, not CHARTER-objective progress — call this out explicitly in the PR
-  body. **No prerequisites — executor may pick up immediately.**) Verified
-  directly (not assumed, ADR-0004): every other shared `scripts/lib/*.sh`
-  helper extracted from repeated copy-paste (`colors.sh`, `hook-payload.sh`,
-  `yq-variant.sh`, `budget-check.sh`) has its own dedicated
-  `tests/<name>-lib.bats` asserting the shared function's behavior directly
-  (`colors-lib.bats`, `hook-payload-lib.bats`, `lib-yq-variant.bats`,
-  `budget-check-lib.bats`) — `frozen-monolith-check.sh` and
-  `frozen-monolith-sync-hook.sh` are the only two `scripts/lib/*.sh` files with
-  no bats file exercising them directly (`grep -rl "lib/frozen-monolith-check"
-  tests/*.bats` and the `-sync-hook` equivalent both return nothing); they are
-  only exercised transitively through the four wrapper scripts they back
-  (`securitycontext-tests-check.sh`, `observability-tests-check.sh`,
-  `drift-detectors-tests-check.sh`, `hook-scripts-coverage-tests-check.sh`) via
-  `tests/drift-frozen-monolith-checks.bats`. Not a functional bug — behavior is
-  covered indirectly — but it's the one lib extraction that skipped the
-  pattern's own direct-unit-test half, and per CLAUDE.md every extracted
-  helper should carry its own recurrence guard rather than relying solely on
-  transitive coverage through callers.
-
-  New `tests/frozen-monolith-lib.bats` mirroring `hook-payload-lib.bats`'s
-  shape exactly: (1) both lib files exist; (2) both are valid, sourceable bash
-  (`bash -n`); (3) `frozen-monolith-check.sh` defines `frozen_monolith_check()`
-  and `frozen-monolith-sync-hook.sh` defines `frozen_monolith_sync_hook()`;
-  (4) exercise `frozen_monolith_check()` directly against two small fixture
-  files under a temp dir — one case where the live `@test` title set matches
-  the snapshot (expect success, drift=0) and one where it's been edited to
-  differ (expect the function to report drift and print the
-  "put NEW tests in <scope_hint>" guidance) — no need for `bats`-style fixture
-  files beyond plain heredocs written to `$BATS_TEST_TMPDIR`; (5) exercise
-  `frozen_monolith_sync_hook()` directly with a synthetic JSON hook payload
-  (via `hook_file_path`'s existing stdin contract) targeting the monolith path
-  vs. a non-monolith path, asserting it only fires (exit 2) on the former;
-  (6) a recurrence guard: assert every `scripts/lib/*.sh` file has at least one
-  `tests/*.bats` file whose content references its basename by name (the same
-  structural check this item is fixing, turned into a permanent gate so a
-  future fifth lib extraction can't silently skip its own direct-unit-test
-  half again). `make ci` must pass. No topology change, so no
-  README/`docs/dependency-tree.md` update is expected — note that explicitly
-  in the PR body. `docs/done/` entry required.
-  (auto/frozen-monolith-lib-test-coverage)
+  `scripts/lib/frozen-monolith-check.sh` + `frozen-monolith-sync-hook.sh`** —
+  full verification writeup:
+  [docs/done/2026-07-31-auto-frozen-monolith-lib-test-coverage.md](docs/done/2026-07-31-auto-frozen-monolith-lib-test-coverage.md).
+  (auto/frozen-monolith-lib-test-coverage; PR #954)
 
 - [x] 🟢 **Name O3's RPO target explicitly in CHARTER.md** (CHARTER **Objective O3**;
   planner gap-analysis 2026-08-07, reached via `executor.prompt.md` STEP 6b after
@@ -3310,54 +3173,9 @@ there is no point where the lab loses a working git source or CI path.
   (auto/external-secrets-chart-2-9-0; PR #1081)
 
 - [x] 🟢 **Bump Pyroscope chart `2.2.0` → `2.2.1` (upstream security release)**
-  (CHARTER **Core Values** §"Everything as code" + general hardening; executor-fallback
-  currency sweep 2026-08-10, second pass this run, reached via `executor.prompt.md`
-  STEP 6b — the same three standing Now/next items remain gated on unconfirmed
-  maintainer-confirmation issues #631/#633/#1034 (re-checked this cycle, #1034
-  unchanged since 2026-08-07). This cycle's fresh angle (continuing the prior cycle's
-  `git ls-remote --tags` sweep to charts not yet checked this run): cert-manager, keda,
-  vault, ack-s3, kargo, envoy-gateway, node-exporter, and alloy all confirmed current
-  against their real chart-publishing repos; Pyroscope's chart (published from
-  `grafana/pyroscope`'s own `operations/pyroscope/helm/pyroscope`, not the
-  `grafana/helm-charts` monorepo — the source moved out of that repo, though release
-  tags still land there too) turned up one minor version behind. **No prerequisites —
-  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004):
-  `git ls-remote --tags grafana/pyroscope` shows `pyroscope-2.2.1` as the newest tag,
-  one release past the pinned `2.2.0`; both `version` and `appVersion` move together in
-  `Chart.yaml`. A full source diff (`git diff pyroscope-2.2.0 pyroscope-2.2.1 --
-  operations/pyroscope/helm/pyroscope/`) shows `values.yaml` and every template
-  byte-identical — only version-label churn in the rendered manifests (`helm.sh/chart`,
-  `app.kubernetes.io/version`). The upstream chart-bump PR (grafana/pyroscope#5474)
-  states this explicitly: "updates the Helm chart to align with the v2.2.1 **security
-  release** of Pyroscope." The v2.2.1 app release fixes: `github.com/getkin/kin-openapi`
-  (**GHSA-r277-6w6q-xmqw**, critical), `google.golang.org/grpc` (**GHSA-hrxh-6v49-42gf**),
-  `golang.org/x/text` (**CVE-2026-56852**), `golang.org/x/net` (**CVE-2026-46600**), plus
-  a `klauspost/compress` bump and UI-dependency fixes (tar/js-yaml/brace-expansion/
-  ip-address) — well past this repo's "ships with a real security fix" bar. This repo's
-  existing `readOnlyRootFilesystem: true` verification (checked against the pinned chart
-  source, cited inline in `observability-pyroscope.yaml`) carries forward unchanged
-  since the template is byte-identical.
-
-  Bump `gitops/platform/observability-pyroscope.yaml`'s `targetRevision: 2.2.0` →
-  `2.2.1`; update its inline comment citing the verified chart tag. New
-  `tests/observability-pyroscope.bats` (clusterless structural, mirrors
-  `tests/observability-loki.bats`'s per-scope pattern): asserts the Application pins
-  `targetRevision: 2.2.1`; asserts it does NOT pin the stale `2.2.0` (recurrence guard).
-  Update `docs/decisions/context.md`'s "Pyroscope (chart 2.2.0" citation to `2.2.1`
-  (required — `make context-doc-version-sync-check` mechanically enforces this). Update
-  `docs/dependency-register.md`'s Pyroscope row "Last reviewed" cell. Add a new dated
-  entry to [ADR-0034](docs/decisions/adr-0034-lgtmp-observability-stack.md)'s
-  `## Re-evaluation log` (its first, alongside updating its own "What's actually
-  running" table's Pyroscope row to `2.2.1`) documenting the security findings above —
-  **Keep**, no reason to reconsider the component itself. No `docs/dependency-tree.md`
-  update needed — it doesn't cite Pyroscope's specific chart version (checked directly).
-  `make ci` must pass. PR body must document the security findings above and the
-  ADR-0004 caveat that this remote clusterless session cannot verify Pyroscope starts
-  cleanly and continues ingesting profiles post-bump on a live cluster — call out the
-  rollback path (revert `targetRevision`; ArgoCD re-syncs the prior chart version on its
-  next reconciliation; Pyroscope's profile data lives on Garage S3 + its PVC, untouched
-  by a chart-version revert). `docs/done/` entry required.
-  (auto/pyroscope-chart-2-2-1)
+  — full verification writeup:
+  [docs/done/2026-08-10-pyroscope-chart-2-2-1.md](docs/done/2026-08-10-pyroscope-chart-2-2-1.md).
+  (auto/pyroscope-chart-2-2-1; PR #1082)
 
 - [x] 🟢 **Grafana Unified Alerting — four rules for known failure conditions** (RFC
   #1084 — architect decision 2026-08-10; closes `docs/dora-audit-readiness.md` Q7's
@@ -4584,57 +4402,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-08-04-dr-chaos-fault-injection.md](docs/done/2026-08-04-dr-chaos-fault-injection.md).
   (auto/dr-chaos-fault-injection; PR #975)
 
-- [x] 🟢 **Third-party dependency register — `docs/dependency-register.md`** (CHARTER
-  **Goals** §"operational-resilience discipline" — DORA Pillar 4 (ICT third-party risk
-  management); planner-fallback gap analysis 2026-08-04, reached via
-  `executor.prompt.md` STEP 6b after all three standing "Now / next" items were found
-  gated on unconfirmed maintainer-confirmation issues #631/#633 (re-checked, no new
-  confirmation) with no live-state-safe slice to split off. **No prerequisites —
-  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004):
-  `docs/dora-audit-readiness.md`'s Q14 ("Is there a register of ICT third-party
-  dependencies?") answers "Not as a single consolidated register — but the information
-  exists, scattered across the ADRs in `docs/decisions/`" and its own "Gap" line calls
-  this "real but cheap to close — a `docs/dependency-register.md` tabulating (tool,
-  criticality, upstream source, ADR, last-reviewed date) would turn the existing ADR
-  content into a queryable register **without gathering new information**." Grepping
-  ROADMAP.md for "dependency-register"/"dependency register" turns up nothing already
-  tracking this (distinct from the existing `docs/dependency-tree.md`, which maps
-  GitOps sync topology/namespaces, not third-party risk fields like criticality or
-  license tier). This is real gap-analysis output the audit doc itself names as the
-  cheapest-to-close gap in the whole document — a pure re-indexing task, not new
-  investigation, so it fits a single clusterless PR cleanly.
-
-  Add `docs/dependency-register.md`: one row per ADR-backed dependency in
-  `docs/decisions/README.md`'s index (skip **Superseded** ADRs — ADR-0010, ADR-0011 —
-  list only their superseding replacement, per that index's own convention), columns
-  **Tool | Criticality | Upstream source | ADR | Last reviewed**. Populate purely from
-  each ADR's existing content (per Q14's own framing — "without gathering new
-  information"): *Criticality* — always-on core vs. next-wave vs. heavy/on-demand
-  (already a documented distinction in ROADMAP.md's "Target end-state" section and
-  CHARTER's own "Always-on core"/"Always-on next wave"/"Heavy / on-demand" initiative
-  groupings — reuse that existing categorization, don't invent a new scheme);
-  *Upstream source* — the project's real repo/chart source as cited in its own ADR
-  (e.g. Kyverno → `github.com/kyverno/kyverno`); *ADR* — a link to the deciding ADR
-  file; *Last reviewed* — the most recent dated entry in that ADR's own
-  "Re-evaluation log" section if it has one, else the ADR's own decision date. Add a
-  short intro paragraph explaining the register's purpose (Q14) and its two companion
-  artifacts (`docs/decisions/` for the *why*, `docs/dependency-tree.md` for the GitOps
-  *topology*, this file for the third-party-risk *rollup*) so the three don't read as
-  redundant. Update `docs/dora-audit-readiness.md`'s Q14 answer from "Not as a single
-  consolidated register" to "Yes" (cite the new file), updating its "Gap" line
-  accordingly. New `tests/dependency-register.bats` (clusterless structural, mirrors
-  the shape of `tests/incident-log.bats`): file exists; has the five-column header row;
-  contains at least N rows (pick N ≥ 20, sized to the real non-superseded ADR count at
-  pickup time — count `docs/decisions/adr-*.md` files minus superseded ones, don't
-  guess); spot-checks a couple of specific, stable entries (e.g. a row citing ADR-0002/
-  Garage, a row citing ADR-0018/Valkey); no fabricated/placeholder content (ADR-0004
-  grep guard). `make ci` must pass. PR body must note this is a pure re-indexing task
-  (no new dependency-risk judgment made, no new criticality tier invented) and that
-  keeping it in sync with future ADRs is a manual/best-effort convention for now (note
-  in the PR body whether a drift-guard mechanical check is worth a follow-up item, per
-  CLAUDE.md's bugfix-recurrence-guard spirit — though this is a new-doc gap-fill, not a
-  bugfix, so a follow-up guard is a judgment call for the PR body to make, not a hard
-  requirement). `docs/done/` entry required. (auto/dependency-register)
+- [x] 🟢 **Third-party dependency register — `docs/dependency-register.md`**
+  — full verification writeup:
+  [docs/done/2026-08-04-dependency-register.md](docs/done/2026-08-04-dependency-register.md).
+  (auto/dependency-register; PR #977)
 
 - [x] 🟢 **Incident classification (severity) scheme + incident log** — full
   verification writeup:
