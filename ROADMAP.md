@@ -1312,114 +1312,14 @@ there is no point where the lab loses a working git source or CI path.
   confirmed `merged: true`.)
 
 - [x] 🟢 **Bump Valkey's `redis_exporter` sidecar `v1.88.0-alpine` → `v1.89.0-alpine`**
-  (CHARTER **Core Values** §"Everything as code" + general hardening; planner-fallback
-  currency sweep 2026-08-13, reached via `executor.prompt.md` STEP 6b — every unchecked
-  ROADMAP item (the three standing Now/next GitLab→Forgejo migration items plus the
-  three items gated on maintainer-confirmation issues #631/#633) was re-checked this
-  cycle and confirmed still gated (both issues' latest comments, 2026-08-11 13:09 UTC,
-  report the same live-cluster blockers, no maintainer confirmation), with no
-  live-state-safe slice to split off any of them. Fresh angle this cycle: a full
-  inventory of every plain `image:` line under `gitops/` not yet cross-checked against
-  its own upstream source (the always-on-stack chart/image pins in
-  `docs/dependency-register.md` were all re-verified current on 2026-08-12/13 by prior
-  cycles — Terraform, ArgoCD, Garage, Grafana, Envoy Gateway, RabbitMQ, Cilium,
-  Valkey itself, Kyverno, Argo Rollouts, Velero, Trivy Operator, Kargo, Harbor,
-  cert-manager, KEDA, GitLab, and the LGTMP internals — but sidecar/helper images that
-  ride alongside a tracked component, not tracked as their own register row, hadn't
-  been swept this run. **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): Docker Hub's tags API
-  (`hub.docker.com/v2/repositories/oliver006/redis_exporter/tags`) shows
-  `v1.89.0-alpine` (and plain `v1.89.0`) published 2026-08-09, one release ahead of
-  this lab's pinned `v1.88.0-alpine` (pinned 2026-07-25 per the pin's own inline
-  comment) — matching `github.com/oliver006/redis_exporter`'s own `v1.89.0` git tag.
-  A real clone's `git log v1.88.0..v1.89.0` (3 commits, not the published
-  `CHANGELOG.md`) shows: `fix: avoid COMMANDLOG error spam on targets without
-  COMMANDLOG support (#1156)` — directly relevant to this lab, since Valkey (unlike
-  Redis 8+) does not implement the newer `COMMANDLOG` command this exporter started
-  probing for, so today's sidecar is almost certainly emitting spurious error-level
-  log noise on every scrape; `ensure a change in label keys doesn't vanish the metric
-  (#1151)` — a real metric-correctness fix; and a routine dependency bump
-  (`prometheus/client_golang` 1.23.2 → 1.24.1). This satisfies the "ships with a real
-  fix" bar this repo's other non-CVE currency bumps (e.g. Loki's ingester flush-race
-  fix, redis_exporter's own prior `v1.87.0`→`v1.88.0` bump) use — not a blind patch
-  assumption.
-
-  Bump `gitops/data/valkey/statefulset.yaml`'s `image:
-  oliver006/redis_exporter:v1.88.0-alpine` → `:v1.89.0-alpine`. Update the file's
-  existing header comment block (lines ~7–12, which documents the prior
-  `v1.87.0`→`v1.88.0` bump) to describe this bump instead: cite the COMMANDLOG-spam
-  fix (and why it's relevant to Valkey specifically), the label-key metric fix, and
-  that no flag/env-var surface changed (this container still sets only
-  `REDIS_ADDR`/`REDIS_PASSWORD`, both long-stable — confirmed against the exporter's
-  own `--help` output in its Dockerfile `ENTRYPOINT`, unchanged in the diff). Update
-  `tests/data-layer.bats`'s pin assertion (currently titled `"valkey's redis_exporter
-  sidecar is pinned to v1.88.0-alpine (patch bump from v1.87.0)"`) to assert
-  `v1.89.0-alpine` and retitle it to describe this bump. No `docs/dependency-tree.md`
-  or `docs/dependency-register.md`/ADR-0018 update needed — none of the three cites
-  this sidecar's specific version (checked directly; the register's Valkey row and
-  ADR-0018 both mention `redis_exporter` only by name, never a pinned tag). `make ci`
-  must pass. PR body must document the COMMANDLOG-relevance finding and the label-key
-  fix above, and the ADR-0004 caveat that this remote clusterless session cannot
-  verify the sidecar starts cleanly and the "Lab — Valkey" dashboard keeps populating
-  post-bump on a live cluster — call out the rollback path (revert the `image:` tag;
-  Valkey's `StatefulSet` is a plain manifest, not an ArgoCD-templated Helm release, so
-  a revert takes effect on the next GitOps sync; the exporter is stateless, so a
-  rollback recovers immediately with no data loss). `docs/done/` entry required.
-  (auto/redis-exporter-1-89-0)
+  — full verification writeup:
+  [docs/done/2026-08-13-redis-exporter-1-89-0.md](docs/done/2026-08-13-redis-exporter-1-89-0.md).
+  (auto/redis-exporter-1-89-0; PR #1178)
 
 - [x] 🟢 **Pin the TiDB demo's floating `nginx:alpine` tag to `nginx:1.31.3-alpine`**
-  (CHARTER **Core Values** §"Everything as code" + general hardening; planner-fallback
-  currency sweep 2026-08-13, second pass this run, reached via `executor.prompt.md`
-  STEP 6b — every Now/next item is still gated (the three standing GitLab→Forgejo
-  migration items plus the three items gated on maintainer-confirmation issues
-  #631/#633, re-checked, unchanged) and this run's first PLANNER-fallback pass
-  (`auto/redis-exporter-1-89-0`, merged) already claimed the one sidecar-image gap
-  that sweep found. This cycle's fresh angle, per STEP 8's "widen the lens" guidance
-  (a different pass than the one just used): rather than continuing the
-  version-currency sweep, checked every `image:` line under `gitops/` for a
-  **floating** (non-exact-patch) tag — the same class of gap the 2026-08-05
-  `postgres:17` → `postgres:17.10` Inkless fix (issue #1013,
-  `docs/done/2026-08-05-inkless-postgres-explicit-pin.md`) closed for that
-  component, applied here as a fresh sweep across the rest of the repo. Found one
-  remaining instance: `gitops/tidb-demo/deployment.yaml`'s demo web server is pinned
-  to the bare floating tag `nginx:alpine`, unlike every other version-sensitive pin
-  in this repo (Vault, Grafana, Argo Rollouts, Envoy Gateway, Kiali, k3s, and now
-  Inkless's Postgres), which all pin an exact patch explicitly. **No prerequisites —
-  executor may pick up immediately.**) Verified directly (not assumed, ADR-0004):
-  Docker Hub's tags API for `library/nginx` shows the floating `alpine` tag's
-  content digest (`sha256:4a73073b...`) is byte-identical to the `mainline-alpine`
-  tag's digest, which in turn matches the exact-version tags `1.31.3-alpine` and
-  `1.31-alpine` (same digest for all four) — so `nginx:alpine` currently resolves to
-  nginx's **mainline** line at patch `1.31.3`, not the `stable` line (`1.30.4-alpine`,
-  a distinct, older digest, confirmed separately). This is a **pin-what's-already-
-  running** change, not a version bump — the floating tag already resolves to
-  `1.31.3-alpine` on any fresh pull today; explicit pinning only makes that fact
-  durable and inspectable, mirroring the Inkless-Postgres and 2026-07-24 Vault
-  server-image-pin precedents exactly.
-
-  Bump `gitops/tidb-demo/deployment.yaml`'s `image: nginx:alpine` → `image:
-  nginx:1.31.3-alpine`. Add a header comment above the `containers:` block (this
-  file currently has none for the image pin) documenting the pin-what's-running
-  finding above, including the mainline-vs-stable digest disambiguation (a future
-  reader shouldn't have to re-derive which nginx release line `alpine` meant on this
-  date). Add a new `tests/tidb-cluster.bats` assertion (this file already covers
-  `tidb-demo.json`'s dashboard, so the demo Deployment's own image pin belongs
-  alongside it, same file, not a new one): assert `image: nginx:1.31.3-alpine` is
-  present in `gitops/tidb-demo/deployment.yaml`, and a second assertion that the
-  bare floating `image: nginx:alpine` (no version suffix) is NOT present — same
-  shape as this repo's other per-component exact-version pin recurrence guards
-  (mirrors `tests/inkless.bats`'s postgres pin pair). No
-  `docs/dependency-tree.md`/`docs/dependency-register.md` update needed — neither
-  cites this demo workload's image (checked directly; TiDB's own dependency-register
-  row tracks the TiDB/TiDB-Operator products, not this unrelated demo sidecar). `make
-  ci` must pass. PR body must document the digest-comparison finding above and the
-  ADR-0004 caveat that this remote clusterless session cannot verify the demo pod
-  starts cleanly post-pin on a live cluster — call out the rollback path (revert the
-  tag; `tidb-demo` is part of the on-demand `tidb` unit, never auto-synced, so this
-  has zero live-cluster blast radius until the maintainer next runs `make tidb-up`;
-  no data-loss risk either way since `1.31.3-alpine` and floating `alpine` are the
-  same actual image content today). `docs/done/` entry required.
-  (auto/tidb-demo-nginx-explicit-pin)
+  — full verification writeup:
+  [docs/done/2026-08-13-tidb-demo-nginx-explicit-pin.md](docs/done/2026-08-13-tidb-demo-nginx-explicit-pin.md).
+  (auto/tidb-demo-nginx-explicit-pin; PR #1180)
 
 - [x] 🟢 **Bump Terraform-bootstrapped `argo-cd` chart `10.3.2` → `10.3.3` (appVersion
   `v3.5.0` → `v3.5.1`, real ArgoCD security/reliability fixes)** — full
@@ -1428,114 +1328,14 @@ there is no point where the lab loses a working git source or CI path.
   (auto/argocd-chart-10-3-3; PR #1182)
 
 - [x] 🟢 **Bump Tempo's pinned image `2.10.7` → `2.10.8` (real Go-stdlib + gRPC/otel
-  security fixes)** (CHARTER **Core Values** §"Everything as code" + general
-  hardening; planner-fallback currency sweep 2026-08-13, reached via
-  `executor.prompt.md` STEP 6b — every Now/next item is still gated (the three
-  standing GitLab→Forgejo migration items, plus the `verifyImages` Enforce flip,
-  the O4 CI-rejection-gate, and the legacy capstone `Deployment` removal, all
-  gated on unconfirmed maintainer-confirmation issues #631/#633 — both re-checked
-  this cycle, no new comment since 2026-08-13 05:57 UTC). This cycle's fresh
-  angle: a batch `git ls-remote --tags` currency check across observability-stack
-  components not yet re-checked this run (Istio, Harbor chart, the Grafana/Loki/
-  Mimir/Tempo chart+image lines, KEDA, Kiali, Trivy Operator, TiDB Operator,
-  External Secrets) found Tempo's pin one patch behind — every other component
-  checked matched its newest upstream tag exactly. **No prerequisites — executor
-  may pick up immediately.**) Verified directly (not assumed, ADR-0004): `git
-  ls-remote --tags grafana/tempo` shows `v2.10.8` as the newest tag on the
-  `2.10.x` line pinned in `gitops/observability/tempo/deployment.yaml` (no major/
-  minor jump). A real clone's `git log v2.10.7..v2.10.8` contains a real security
-  fix, not just routine chores: `chore: update Go to 1.26.5 to fix stdlib CVEs
-  (#7725)` — fixing CVE-2026-39822, CVE-2026-27145, CVE-2026-42504,
-  CVE-2026-42505, and CVE-2026-42507 in the Go standard library — plus five
-  further `[security]`-tagged dependency bumps landed the same release:
-  `google.golang.org/grpc` → `v1.82.1` (High severity), `golang.org/x/net` →
-  `v0.56.0`, `golang.org/x/text` → `v0.39.0`, `go.opentelemetry.io/otel` →
-  `v1.44.0`, and `github.com/klauspost/compress` → `v1.18.7`. Docker Hub's tags
-  API confirms the `grafana/tempo:2.10.8` multi-arch image is published (pushed
-  2026-08-13T17:14 UTC, the same day as this sweep). This satisfies the "ships
-  with a real fix" bar this repo's other non-CVE currency bumps use — and is
-  stronger than most (actual CVE fixes, not just a dependency-version nudge).
-  `git diff v2.10.7 v2.10.8 -- cmd/tempo/Dockerfile packaging/` is **empty** — no
-  packaging/entrypoint change, so `deployment.yaml`'s existing
-  `readOnlyRootFilesystem`/securityContext analysis carries forward unchanged.
-
-  Bump `gitops/observability/tempo/deployment.yaml`'s `image: grafana/tempo:2.10.7`
-  → `:2.10.8`. Update `tests/observability-tempo.bats`'s pin assertion (currently
-  titled `"tempo deployment pins image tag 2.10.7"`) to assert `2.10.8` and
-  retitle it to describe this bump; add a paired "does not pin the superseded
-  2.10.7 tag" negative assertion, mirroring this repo's other exact-version-pin
-  recurrence-guard pairs (e.g. `tests/inkless.bats`'s postgres pin pair,
-  `tests/observability-loki.bats`'s own present/absent pair from its prior
-  bumps). Add a dated entry to
-  [ADR-0006](docs/decisions/adr-0006-grafana-native-git-sync.md)'s Re-evaluation
-  log documenting the CVE findings and packaging-diff check above (this ADR is
-  Tempo's closest documented home per its own log's note: "No dedicated ADR
-  exists for Loki/Tempo individually"). Update
-  `docs/dependency-register.md`'s Grafana row "Last reviewed" cell to cite this
-  bump. `make ci` must pass. PR body must document the CVE findings above and the
-  ADR-0004 caveat that this remote clusterless session cannot verify Tempo starts
-  cleanly and continues ingesting/querying traces post-bump on a live cluster —
-  call out the rollback path (revert the `image:` tag; Tempo is a plain
-  `Deployment`, not an ArgoCD-templated Helm release, so a revert takes effect on
-  the next manual apply/GitOps sync of `gitops/observability/`; no data loss
-  either way since Tempo's trace storage lives in Garage S3, untouched by an
-  image-tag change). `docs/done/` entry required. (auto/tempo-2-10-8)
+  security fixes)** — full verification writeup:
+  [docs/done/2026-08-13-tempo-2-10-8.md](docs/done/2026-08-13-tempo-2-10-8.md).
+  (auto/tempo-2-10-8; PR #1189)
 
 - [x] 🟢 **Pin `gitlab/docker-compose.yml`'s `gitlab-tls` sidecar to `nginx:1.27.5-alpine`
-  (currently the floating `1.27-alpine` tag)** (CHARTER **Core Values** §"Everything as
-  code" + general hardening; planner-fallback currency/hardening sweep 2026-08-13,
-  reached via `executor.prompt.md` STEP 6b — every Now/next item is still gated (the
-  three standing GitLab→Forgejo migration items, plus the `verifyImages` Enforce flip,
-  the O4 CI-rejection-gate, and the legacy capstone `Deployment` removal, all gated on
-  unconfirmed maintainer-confirmation issues #631/#633 — both re-checked this cycle, no
-  new comment since 2026-08-13 05:57 UTC). This cycle's fresh angle: the last two
-  currency sweeps this run covered `gitops/**/*.yaml` image lines and the
-  Terraform-bootstrap seam; this cycle instead swept the two out-of-cluster
-  `docker-compose.yml` stacks (`gitlab/`, `forgejo/`) — a third, genuinely distinct
-  enumeration surface neither prior sweep touched. **No prerequisites — executor may
-  pick up immediately.**) Verified directly (not assumed, ADR-0004):
-  `tests/gitlab-compose.bats`'s own docstring documents the exact bug class this repo
-  already fixed once for this same file — `gitlab`/`gitlab-runner` used to float on
-  `:latest` until pinned to `19.2.1-ce.0`/`v19.2.1` — but the `gitlab-tls` nginx
-  sidecar (added later, for ADR-0006's Grafana Git Sync HTTPS requirement) was missed:
-  it still floats on `nginx:1.27-alpine` (a minor-version tag, not an exact patch),
-  unlike every other image in this file. Docker Hub's tags API confirms
-  `nginx:1.27-alpine`'s current digest (`sha256:65645c7b...`) is byte-identical to the
-  exact-patch tag `nginx:1.27.5-alpine`'s digest (checked against `1.27.5`/`1.27.4`/
-  `1.27.3`/`1.27.2`/`1.27.1`/`1.27.0`-alpine individually — only `1.27.5-alpine`
-  matches). `forgejo/docker-compose.yml` was checked too and has no equivalent gap —
-  both its `forgejo` and `forgejo-runner` images are already exact-pinned. This is a
-  **pin-what's-already-running** change, not a version bump — the floating tag already
-  resolves to `1.27.5-alpine` on any fresh pull today; explicit pinning only makes that
-  fact durable and inspectable, mirroring this run's own `tidb-demo` nginx pin
-  precedent (`docs/done/2026-08-13-tidb-demo-nginx-explicit-pin.md`) and the Inkless
-  Postgres precedent it in turn followed.
-
-  Bump `gitlab/docker-compose.yml`'s `gitlab-tls` service `image: nginx:1.27-alpine` →
-  `image: nginx:1.27.5-alpine`. Add a short header comment above the `image:` line
-  (this service currently has none for its own pin, unlike the `gitlab` service two
-  blocks above it in the same file) documenting the digest-match finding above,
-  mirroring the `gitlab` service's own adjacent comment style. Extend
-  `tests/gitlab-compose.bats` with two new assertions (same file — this is exactly the
-  bug class its own docstring names, not a new scope needing a new file): `gitlab-tls`
-  service is pinned to `nginx:1.27.5-alpine`; the bare floating `nginx:1.27-alpine`
-  (no patch suffix) is NOT present — same present/absent recurrence-guard shape as
-  this run's own `tidb-demo`/`tests/tidb-cluster.bats` pair from earlier this run. No
-  `docs/dependency-tree.md`/`docs/dependency-register.md`/ADR-0033 update needed —
-  none of the three tracks this specific sidecar's pinned patch version (checked
-  directly; ADR-0033's own "Specifics" section is a point-in-time description that
-  already doesn't track the `gitlab`/`gitlab-runner` pin bumps either, an existing,
-  accepted pattern for this superseded ADR — not something this item's scope should
-  fix). `make ci` must pass. PR body must document the digest-comparison finding above
-  and the ADR-0004 caveat that this remote clusterless session cannot verify the
-  `gitlab-tls` container starts cleanly and Grafana's Git Sync HTTPS path keeps working
-  post-pin on a live cluster (or rather, on the maintainer's Colima host — this
-  service runs outside the cluster entirely) — call out the rollback path (revert the
-  `image:` tag; `docker compose --profile tls up -d` on the next
-  `gitlab-tls-bootstrap.sh` run picks up the change; zero data-loss risk either way
-  since `nginx:1.27-alpine` and `1.27.5-alpine` are the same actual image content
-  today, and this container is stateless TLS termination with no volumes).
-  `docs/done/` entry required. (auto/gitlab-tls-nginx-explicit-pin)
+  (currently the floating `1.27-alpine` tag)** — full verification writeup:
+  [docs/done/2026-08-13-gitlab-tls-nginx-explicit-pin.md](docs/done/2026-08-13-gitlab-tls-nginx-explicit-pin.md).
+  (auto/gitlab-tls-nginx-explicit-pin; PR #1191)
 
 - [x] 🟢 **Vault pod-readiness alert rule — extend Grafana Unified Alerting (RFC #1084)**
   — full verification writeup:
@@ -1649,60 +1449,10 @@ there is no point where the lab loses a working git source or CI path.
   Garage S3, untouched by an image-tag change). `docs/done/` entry required.
   (auto/loki-image-3-7-5)
 
-- [x] 🟢 **Bump `kube-state-metrics` chart `8.0.0` → `8.1.3`** (CHARTER **Core
-  Values** §"Everything as code" + general hardening; planner-fallback upstream
-  check 2026-08-05, reached via `executor.prompt.md` STEP 6b, Now/next starved
-  by #631/#633 (re-checked this run, no new comment) — this run's chart-currency
-  sweeps to date had checked `harbor`, `kiali`, `kro`, `argo-rollouts`,
-  `envoy-gateway`, `pyroscope`, `node-exporter`, `velero`, `grafana`, `ack-s3`,
-  `argo-cd`, `cilium` but never `kube-state-metrics` — this pass closed that
-  gap. **No prerequisites — executor may pick up immediately.**) Verified
-  directly (not assumed, ADR-0004): a real clone of
-  `github.com/prometheus-community/helm-charts` (the `repoURL`
-  `gitops/platform/observability-ksm.yaml` actually uses) shows
-  `kube-state-metrics-8.1.3` as the newest stable tag, three minor/patch
-  releases past this lab's pinned `8.0.0` (`8.1.0`, `8.1.1`, `8.1.2`, `8.1.3`,
-  no pre-release beyond it). `git diff kube-state-metrics-8.0.0
-  kube-state-metrics-8.1.3 -- charts/kube-state-metrics/Chart.yaml` shows
-  `appVersion: 2.19.1` **unchanged** at both tags — the underlying
-  kube-state-metrics binary this lab runs does not change at all; this is a
-  packaging-only bump, the same smallest-safe-delta pattern as the
-  Grafana/Harbor/cert-manager/Kiali/kro precedents already in `## Done`.
-  `git log kube-state-metrics-8.0.0..kube-state-metrics-8.1.3 --
-  charts/kube-state-metrics/` shows 4 commits: two purely additive
-  (`collectorsExclude`/`collectorsExtra` values + a `nameOverride`/
-  `fullnameOverride` doc comment) and one CI-testing-only change — no `values.yaml`
-  key this lab's `valuesObject` sets (`fullnameOverride`, `securityContext.*`,
-  `containerSecurityContext.*`, `resources.*`) was renamed or removed. The
-  `role.yaml`/`deployment.yaml` diff (`$.Values.collectors` →
-  `$activeCollectors`, a helper that layers the new
-  `collectorsExclude`/`collectorsExtra` on top of `.Values.collectors`) is a
-  behavior-preserving refactor: this lab's Application sets neither new key, so
-  `$activeCollectors` resolves to the exact same list `.Values.collectors` did
-  before — RBAC rules and the `--resources` flag are unchanged for this lab's
-  config. No breaking changes in the range.
-
-  Bump `gitops/platform/observability-ksm.yaml`'s `targetRevision: 8.0.0` →
-  `8.1.3`. Re-verify directly at pickup time that the `8.1.3` chart's
-  `values.yaml` still contains every key this Application's `valuesObject` sets
-  unchanged in shape — confirm against a fresh clone, don't trust this note's
-  cached read. Add a new chart-pin recurrence-guard assertion to
-  `tests/securitycontext-observability.bats` (or a new
-  `tests/observability-ksm.bats` if that file's scope doesn't fit) asserting
-  `targetRevision: 8.1.3` is present in `observability-ksm.yaml` — mirrors the
-  `ack-s3.bats`/`observability-grafana.bats` per-component exact-version pin
-  pattern (no such assertion exists for this chart yet). No
-  `docs/dependency-tree.md`/`context.md` update needed — neither cites this
-  chart's specific version (checked directly). `make ci` must pass. PR body
-  must document the diff/commit findings above (appVersion unchanged, packaging
-  + additive-only diff, why `8.1.3` is the smallest safe delta) and the
-  ADR-0004 caveat that this remote clusterless session cannot verify
-  kube-state-metrics reconciles cleanly and the stack-health/KSM dashboards
-  keep populating post-bump on a live cluster — call out the rollback path
-  (revert `targetRevision`; ArgoCD re-syncs the prior chart version on next
-  reconciliation; kube-state-metrics is stateless, so a rollback recovers
-  immediately with no data loss). `docs/done/` entry required.
-  (auto/ksm-chart-8-1-3)
+- [x] 🟢 **Bump `kube-state-metrics` chart `8.0.0` → `8.1.3`** — full
+  verification writeup:
+  [docs/done/2026-08-05-ksm-chart-8-1-3.md](docs/done/2026-08-05-ksm-chart-8-1-3.md).
+  (auto/ksm-chart-8-1-3; PR #1023)
 
 - [x] 🟢 **Pin Inkless's batch-coordinator `postgres` image explicitly —
   `postgres:17` → `postgres:17.10`** (CHARTER **Core Values** §"Everything as
@@ -3396,60 +3146,10 @@ there is no point where the lab loses a working git source or CI path.
   `make ci` must pass. `docs/done/` entry required. Closes #544.
   (auto/grafana-chart-source-migration)
 
-- [x] 🟢 **Pin Vault's server image tag explicitly** (CHARTER **Core Values**
-  §"Everything as code" + §"Recreate-from-code" + general hardening; planner
-  gap-analysis finding, 2026-07-24 — **no prerequisites, executor may pick up
-  immediately; no ADR change needed**, same reasoning as the Grafana image-tag
-  override item above: no ADR governs Vault as a technology/version choice, only
-  the delivery mechanism). Verified directly against the repo (not assumed, per
-  ADR-0004): `gitops/platform/vault.yaml` pins the `vault` chart at
-  `targetRevision: 0.34.0` but never sets an explicit `server.image.tag` —
-  unlike every other version-sensitive component in this repo (Grafana, Argo
-  Rollouts, Valkey, Envoy Gateway, Kiali, k3s/ADR-0030), the actual Vault
-  **binary** version running in this lab is only ever recorded in a prose
-  comment ("chart v0.34.0 defaults to a Vault 2.0.3 image", line 49) — not a
-  field a `bats` test or a future architect ADR-audit sweep can check
-  mechanically. This is the same class of gap RFC #558 (ADR-0030) fixed for
-  k3s: an implicitly-inherited version with no recorded pin means "what
-  version are we actually running" is unanswerable from the repo alone, and a
-  future unrelated chart-patch bump (still `0.34.0` → `0.34.x`) could silently
-  change the running Vault major version with nobody noticing.
-
-  Verified live upstream (not training-data recall, ADR-0004): fetched
-  `raw.githubusercontent.com/hashicorp/vault-helm/v0.34.0/values.yaml` directly
-  — confirms the chart's actual default is `server.image: {repository:
-  hashicorp/vault, tag: "2.0.3"}` (the `injector`/`agentImage` defaults are
-  irrelevant here since this Application sets `injector.enabled: false`).
-  Cross-checked `2.0.3` against every Vault CVE/security-bulletin disclosed in
-  2026 findable from this sandbox (`CVE-2026-3605` KVv2 wildcard-delete DoS,
-  `CVE-2026-5807` unauthenticated root-token/rekey DoS, `CVE-2026-5052` ACME
-  SSRF, `HCSEC-2026-07` token-exposure-to-auth-plugins, `HCSEC-2026-16` audit
-  device directory-guard bypass): every one of these is fixed in Vault CE
-  `2.0.0` or `2.0.1` at the latest — `2.0.3` (our chart's current default)
-  already ships every fix. This is a pin-what's-already-running change, not a
-  version bump — the running Vault does not change.
-
-  Add `image: {repository: "hashicorp/vault", tag: "2.0.3"}` under the existing
-  `server:` block in `gitops/platform/vault.yaml`'s `valuesObject` (sibling to
-  `standalone`/`dataStorage`/`resources`/`statefulSet`), matching the chart's
-  own default exactly so this is a no-op for the running cluster. Update the
-  existing line-49 comment to note the version is now an explicit pin, not an
-  inherited default. Add a `## Re-evaluation log`-style dated note (a comment
-  block above the `server:` key is fine — no dedicated Vault ADR exists to host
-  a real `## Re-evaluation log` section) recording this pin, citing the five
-  CVE/bulletin IDs above and their fixed versions, with a flip condition for
-  the next audit (e.g. "revisit when a bulletin names a version above `2.0.3`
-  as affected, or when bumping the chart `targetRevision` past `0.34.0`").
-  Extend `tests/securitycontext-vault.bats` with a new assertion alongside the
-  existing `"vault Application chart bumped to 0.34.0"` test —
-  `"vault Application server image pinned to 2.0.3"` via `yqs
-  '.spec.source.helm.valuesObject.server.image.tag' "$APP"` equals `"2.0.3"` —
-  a recurrence guard mirroring this repo's other per-component image-tag pin
-  assertions (Grafana, Argo Rollouts, Valkey). No topology change and the
-  running image is identical to today's chart-default, so no
-  README/`docs/dependency-tree.md` update is expected — note that explicitly in
-  the PR body. `make ci` must pass. `docs/done/` entry required.
-  (auto/vault-server-image-tag-pin)
+- [x] 🟢 **Pin Vault's server image tag explicitly** — full verification
+  writeup:
+  [docs/done/2026-07-24-vault-server-image-tag-pin.md](docs/done/2026-07-24-vault-server-image-tag-pin.md).
+  (auto/vault-server-image-tag-pin; PR #699)
 
 - [x] 🟢 **`argo-cd` Helm chart major bump — `9.7.1` → `10.2.1`** (RFC #785 — architect
   decision 2026-07-28: **Approve**, with a required `global.networkPolicy.create: false`
