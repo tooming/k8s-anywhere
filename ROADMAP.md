@@ -2019,33 +2019,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-18-longhorn-bump-1-11.md](docs/done/2026-07-18-longhorn-bump-1-11.md).
   (auto/longhorn-bump-1-11; PR #531) Closes #528.
 
-- [x] 🟢 **Bump KRO chart `0.4.1` → `0.9.x` — verify CRD/instance-scope compatibility
-  first** (CHARTER **Core Values** §"Everything as code" + general hardening; RFC #534
-  — architect decision 2026-07-18). KRO's latest stable release is `v0.9.2` — five minor
-  versions ahead of this lab's `0.4.1` chart pin (`gitops/platform/kro.yaml`). KRO is
-  pre-1.0 (`0.x` semver — every minor version is allowed to be breaking), and the
-  `v0.9.0` release notes specifically flag "cluster-scoped instance CRDs" — a change
-  that may affect the exact mechanism this lab depends on (the `ResourceGraphDefinition`
-  in `gitops/kro/rgd-s3bucketclaim.yaml` that generates the `S3BucketClaim` CRD
-  `gitops/platform/kro-resources.yaml` instantiates into the `ack-system` namespace).
-  **No prerequisites — executor may pick up immediately**, but per RFC #534's
-  acceptance criteria the executor MUST fetch the actual KRO CRD definitions at the
-  target tag and directly verify whether the generated instance CRD's scope changed
-  from `Namespaced` to `Cluster` before bumping — do not assume a clean drop-in, same
-  bar the Kargo `1.2.3 → 1.6.4` bump already applied to its own multi-minor jump. If
-  the scope did change, update `gitops/platform/kro-resources.yaml`'s
-  `destination.namespace` (and any other namespace-scoped assumption) accordingly and
-  document exactly what changed. If verification finds the breaking change is real and
-  non-trivial to accommodate cleanly, split the actual version bump into a smaller
-  documented item rather than force a risky bump in one PR (ROADMAP rule #9). Diff the
-  chart's `values.yaml` for any key this repo's Application sets; add/extend bats
-  coverage pinning the chart version. `make ci` must pass. PR body must document the
-  specific CRD/scope verification performed and the ADR-0004 caveat that this remote
-  clusterless session cannot verify the `S3BucketClaim` instance actually reconciles
-  cleanly against a live ACK S3 Bucket + moto backend post-bump — call out the
-  rollback path (revert the chart pin; note a scope-related `kro-resources.yaml` edit
-  must revert in lockstep if one was needed). `docs/done/` entry required. Closes #534.
-  (auto/kro-bump-0-9)
+- [x] 🟢 **Bump KRO chart `0.4.1` → `0.9.x` — verify CRD/instance-scope
+  compatibility first** — full verification writeup:
+  [docs/done/2026-07-18-kro-bump-0-9.md](docs/done/2026-07-18-kro-bump-0-9.md).
+  (auto/kro-bump-0-9; PR #537) Closes #534.
 
 - [x] 🟢 **Migrate Grafana chart source off the deprecated
   `grafana.github.io/helm-charts` repo** — full verification writeup:
@@ -2084,33 +2061,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-31-auto-frozen-monolith-lib-test-coverage.md](docs/done/2026-07-31-auto-frozen-monolith-lib-test-coverage.md).
   (auto/frozen-monolith-lib-test-coverage; PR #954)
 
-- [x] 🟢 **Name O3's RPO target explicitly in CHARTER.md** (CHARTER **Objective O3**;
-  planner gap-analysis 2026-08-07, reached via `executor.prompt.md` STEP 6b after
-  every standing "Now / next" item was found gated (unchanged) on unconfirmed
-  maintainer-confirmation issues #631/#633, with no ungroomed intake issues and no
-  un-RFC'd 🟡 items to promote instead — `docs/dora-audit-readiness.md` Q3 ("What are
-  the recovery targets (RTO/RPO) for critical functions?") already answers "RPO ≤ 24
-  hours (Velero daily schedules, 168h retention) — true today but never labeled 'RPO'
-  anywhere in the docs before this file" and names the fix directly: "Cheap fix: add
-  an explicit RPO line to O3 in CHARTER.md." **No prerequisites — executor may pick
-  up immediately.**) Verified directly (not assumed, ADR-0004): all six
-  `gitops/velero/schedules/*.yaml` Schedules (`data`, `tidb`, `capstone`, `vault`,
-  `observability`, `inkless`) run once daily (staggered 01:00–04:00,
-  `schedule: "<min> <hour> * * *"`) each with `ttl: 168h` (7-day retention) — the
-  worst-case gap between a change and its next backup is the ≤24h window this item
-  names, not a guessed number.
-
-  Add an explicit RPO line to CHARTER.md's O3 bullet, immediately after its existing
-  RTO sentence ("...under 10 minutes wall-clock on the maintainer's hardware."):
-  state RPO ≤ 24 hours, citing Velero's daily schedules across all six stateful
-  namespaces and their 168h/7-day retention (`gitops/velero/schedules/*.yaml`).
-  Update `docs/dora-audit-readiness.md`'s Q3 "Gap" line to record that CHARTER now
-  states the RPO explicitly (closing the "never labeled 'RPO' anywhere" gap) — correct
-  the row honestly rather than deleting it, matching this doc's existing pattern for
-  gaps closed elsewhere in the file. No manifest/code change — CHARTER.md plus one doc
-  line only, so no README/`docs/dependency-tree.md` drift is expected; note that
-  explicitly in the PR body. `make ci` must pass. `docs/done/` entry required.
-  (auto/charter-o3-rpo-target)
+- [x] 🟢 **Name O3's RPO target explicitly in CHARTER.md** — full
+  verification writeup:
+  [docs/done/2026-08-07-charter-o3-rpo-target.md](docs/done/2026-08-07-charter-o3-rpo-target.md).
+  (auto/charter-o3-rpo-target; PR #1060)
 
 - [x] 🟢 **Pin `gitlab-ce`/`gitlab-runner` to explicit versions (currently
   `:latest`)** — full verification writeup:
@@ -2686,32 +2640,9 @@ there is no point where the lab loses a working git source or CI path.
   this lands and the footprint gate is on record.
   (auto/harbor-artifactory-decommission)
 
-- [x] 🟢 **Harbor governance LimitRange** (CHARTER **Core Values** §"Fits the
-  16 GB reality" + §"Everything as code; GitOps deploys it"; RFC #294 /
-  RFC #297 — follow-up; **no prerequisites — executor may pick up
-  immediately**). The `gitops/platform/governance-appset.yaml` already
-  carries an explicit TODO comment: "A harbor governance overlay is added
-  once its namespace lands." The harbor namespace landed in
-  `auto/harbor-application` (checked off above). Close that gap now:
-  add `gitops/governance/harbor/kustomization.yaml` (listing
-  `resources: [limitrange.yaml]`) and
-  `gitops/governance/harbor/limitrange.yaml` using the **standard** tier
-  profile from RFC #294 (`type: Container`; `default.cpu: "500m"`,
-  `default.memory: "512Mi"`; `defaultRequest.cpu: "50m"`,
-  `defaultRequest.memory: "64Mi"`; `max.cpu: "2000m"`,
-  `max.memory: "4Gi"`) — same values as every other standard-tier
-  namespace (argocd, capstone, kyverno, etc.). Add the
-  `harbor-governance` entry to the list-generator in
-  `gitops/platform/governance-appset.yaml`:
-  `appName: harbor-governance`, `gitPath: gitops/governance/harbor`,
-  `destNamespace: harbor` (insert after the `kiali-governance` entry,
-  before the `# heavy tier` comment, consistent with the existing
-  ordering). Extend `tests/governance.bats` with two assertions:
-  `gitops/governance/harbor/limitrange.yaml` exists; the `harbor`
-  entry appears in `gitops/platform/governance-appset.yaml`.
-  Update `docs/dependency-tree.md` with a one-line note that the
-  `harbor` namespace now has a LimitRange. `make ci` must pass.
-  `docs/done/` entry required. (auto/harbor-governance-limitrange)
+- [x] 🟢 **Harbor governance LimitRange** — full verification writeup:
+  [docs/done/2026-07-03-auto-harbor-governance-limitrange.md](docs/done/2026-07-03-auto-harbor-governance-limitrange.md).
+  (auto/harbor-governance-limitrange; PR #327)
 
 - [x] 🟢 **O5 dashboard-coverage bats — always-on service apps** (CHARTER
   **Objective O5**, due **2026-09-30**; O5 says "measured by a drift
@@ -3146,32 +3077,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-20-github-actions-node24-bump.md](docs/done/2026-07-20-github-actions-node24-bump.md).
   (auto/github-actions-node24-bump; PR #614) Closes #611.
 
-- [x] 🟢 **Velero chart major bump `8.7.2` → `12.1.0`** (RFC #617 — architect
-  decision 2026-07-20, actioning ADR-0021's 2026-07-18 Re-evaluation log flip
-  condition. **No prerequisites — executor may pick up immediately.**)
-  Implement RFC #617's binding spec exactly: bump
-  `gitops/platform/velero.yaml`'s `targetRevision` from `8.7.2` to `12.1.0`
-  (`appVersion` `1.15.2` → `1.18.1`). RFC #617 already verified, field-for-field
-  against the real chart source at that tag, that every key this repo's
-  `valuesObject` sets (`credentials.{useSecret,existingSecret}`,
-  `configuration.{defaultVolumesToFsBackup,features,uploaderType,
-  backupStorageLocation}`, `deployNodeAgent`, `resources`,
-  `nodeAgent.resources`) is unchanged across the `8.x` → `12.x` jump — no
-  `valuesObject` schema change is required, this is a version-number-only bump.
-  Update `gitops/platform/velero.yaml`'s own in-file comment (documents the
-  prior `8.4.0`→`8.7.2` bump) with the new bump's rationale. Extend
-  `tests/velero.bats`'s chart-pin assertion (add one if none exists — check
-  first) to the new version. Append the RFC #617 acceptance-criteria's required
-  dated entry to ADR-0021's `## Re-evaluation log` (the architect PR already
-  added the 2026-07-20 "actioned as RFC #617" entry; add one more recording the
-  bump itself landing, mirroring the two-entry pattern ADR-0020 used for its
-  Argo Rollouts chart bump). PR body must document the ADR-0004 caveat: this
-  remote clusterless session cannot verify Velero actually starts cleanly or
-  that a real backup+restore cycle succeeds post-bump on a live cluster — call
-  out the rollback path (revert `targetRevision`; ArgoCD self-heals; Velero
-  backups are content-addressed in Garage so a revert doesn't lose existing
-  backup data). `make ci` must pass. `docs/done/` entry required. Closes #617.
-  (auto/velero-chart-bump-12-1-0)
+- [x] 🟢 **Velero chart major bump `8.7.2` → `12.1.0`** — full verification
+  writeup:
+  [docs/done/2026-07-20-velero-chart-bump-12-1-0.md](docs/done/2026-07-20-velero-chart-bump-12-1-0.md).
+  (auto/velero-chart-bump-12-1-0; PR #620) Closes #617.
 
 - [x] 🟢 **Bump Cilium chart `1.17.18` → `1.18.12`** — full verification
   writeup:
