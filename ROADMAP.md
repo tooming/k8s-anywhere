@@ -1569,37 +1569,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-18-kargo-cve-bump-1-10-9.md](docs/done/2026-07-18-kargo-cve-bump-1-10-9.md).
   (auto/kargo-cve-bump-1-10-9; PR #549)
 
-- [x] 🟢 **`kyverno` PSA `baseline` → `restricted` flip** (CHARTER **Objective
-  O2** hardening, RFC #483 — architect decision 2026-07-17, converting audit
-  #482). Kyverno's own official docs (`kyverno.io/docs/installation/platform-notes/`)
-  state the chart's default securityContext "conforms to the upstream Pod
-  Security Standards' restricted profile" (the only documented incompatibility
-  is OpenShift SCCs, irrelevant to this plain-k3d/k3s lab); independently
-  verified against the actual pinned `kyverno-chart-3.3.4` tag that all four
-  controllers (admission/background/cleanup/reports) already default to the
-  full restricted container securityContext with no hostPath/host-namespace
-  usage. No chart bump needed. **Executor must independently re-verify the
-  pinned chart's rendered manifests before flipping — not just trust the
-  RFC's citation — and flag rather than force the flip if a gap surfaces**
-  (higher blast radius than the vault flip: Kyverno is the cluster-wide
-  admission controller — a bad flip risks breaking admission for every
-  namespace). Flip `gitops/kyverno/namespace.yaml`'s four PSA labels
-  `baseline` → `restricted` only after that verification passes clean; if a
-  gap is found, add the minimal `valuesObject` override needed to close it,
-  or leave `kyverno` at `baseline` with the gap documented in the PR (per
-  RFC #483's acceptance criteria — don't force the flip over an unresolved
-  finding). Update the `kyverno` row in both ADR-0017's §Per-namespace
-  profile table and ADR-0019's equivalent note/table to `restricted`; append
-  a dated entry to ADR-0017's §Re-evaluation log. Extend
-  `tests/securitycontext-kyverno.bats` (or similar) with the four PSA labels
-  (and any `valuesObject` securityContext fields added). `make ci` must pass
-  — PR body must document HOW the executor verified the chart (source fetch,
-  not assumption) and note the ADR-0004 caveat that this remote clusterless
-  session cannot confirm the admission webhook stays healthy under
-  `restricted` on a live cluster; call out the rollback path (revert PSA
-  labels, ArgoCD self-heals) prominently given the higher stakes.
-  `docs/done/` entry required. Closes #483.
-  (auto/kyverno-psa-restricted)
+- [x] 🟢 **`kyverno` PSA `baseline` → `restricted` flip** — full verification
+  writeup:
+  [docs/done/2026-07-17-kyverno-psa-restricted.md](docs/done/2026-07-17-kyverno-psa-restricted.md).
+  (auto/kyverno-psa-restricted; PR #486) Closes #483.
 
 - [x] 🟢 **`vault` PSA `baseline` → `restricted` flip** (CHARTER **Objective
   O2** hardening, RFC #478 — architect decision 2026-07-17, converting audit
@@ -1890,38 +1863,10 @@ there is no point where the lab loses a working git source or CI path.
   RFC IS the approval; no additional human sign-off needed before
   building. (auto/argocd-pss-enforce)
 
-- [x] 🟢 **NetworkPolicy fan-out — `envoy-gateway-system` namespace**
-  (CHARTER **Objective O2**, due **2026-09-30**; RFC #206 — ADR-0016 §4
-  fan-out completion; closes the last always-on namespace without a
-  NetworkPolicy floor). Two pod types need distinct policies
-  (differentiated by `podSelector`). Create
-  `gitops/envoy-gateway-system/networkpolicy/kustomization.yaml`
-  referencing the two baseline templates
-  (`../../network/policies/default-deny.yaml`,
-  `../../network/policies/allow-dns-and-apiserver.yaml`) plus four allow
-  files: `allow-envoy-controller-metrics-ingress.yaml` (ingress TCP 19001
-  from `namespaceSelector: kubernetes.io/metadata.name: observability`;
-  `podSelector: app.kubernetes.io/name: envoy-gateway`);
-  `allow-envoy-proxy-metrics-ingress.yaml` (ingress TCP 19000 from
-  `observability`; `podSelector: app.kubernetes.io/name: envoy-proxy`);
-  `allow-envoy-proxy-listener-ingress.yaml` (ingress TCP 10080 from
-  `ipBlock: cidr: 0.0.0.0/0`; `podSelector: app.kubernetes.io/name:
-  envoy-proxy` — **executor must verify the actual proxy container port
-  before finalizing**; RFC #206 §Decision notes the lab maps Service
-  port 80 → container 10080, but verify against the pod spec);
-  `allow-envoy-proxy-backend-egress.yaml` (egress from proxy pods to the
-  twelve named backend namespaces via `namespaceSelector` with
-  `matchExpressions: operator: In`, no port restriction — backend list
-  per RFC #206: `argocd`, `capstone`, `vault`, `observability`, `data`,
-  `storage`, `moto`, `ack-system`, `argo-rollouts`, `kyverno`, `velero`,
-  `trivy-system`). New auto-synced `Application`
-  `gitops/platform/envoy-gateway-system-networkpolicy.yaml` (sync-wave 4,
-  `LoadRestrictionsNone`) — same pattern as all other `*-networkpolicy`
-  Applications. Extend `tests/networkpolicy.bats`: kustomization exists;
-  baseline refs present; each allow file exists and targets the correct
-  port + selector per above; Application file present. Update
-  `docs/dependency-tree.md` with envoy-gateway-system NP note.
-  `docs/done/` entry required. (auto/envoy-gateway-system-networkpolicy)
+- [x] 🟢 **NetworkPolicy fan-out — `envoy-gateway-system` namespace** — full
+  verification writeup:
+  [docs/done/2026-06-16-envoy-gateway-system-networkpolicy.md](docs/done/2026-06-16-envoy-gateway-system-networkpolicy.md).
+  (auto/envoy-gateway-system-networkpolicy; PR #219)
 
 - [x] 🟢 **cosign-bootstrap wiring into `make up`** — full verification
   writeup:
@@ -2266,38 +2211,10 @@ there is no point where the lab loses a working git source or CI path.
   explicitly in the PR body. `make ci` must pass. `docs/done/` entry required.
   (auto/charter-o3-rpo-target)
 
-- [x] 🟢 **Pin `gitlab-ce`/`gitlab-runner` to explicit versions (currently `:latest`)**
-  (CHARTER **Core Values** §"Everything as code" + general hardening, mirroring
-  [ADR-0030](docs/decisions/adr-0030-pin-k3s-version-explicitly.md)'s explicit-pin
-  precedent; architect-fallback finding 2026-08-07, surfaced while researching
-  [ADR-0033](docs/decisions/adr-0033-gitlab-git-source-and-ci.md) — RFC #1073. **No
-  prerequisites — executor may pick up immediately.**) Verified directly (not assumed,
-  ADR-0004): `gitlab/docker-compose.yml` pins both the `gitlab` service
-  (`image: gitlab/gitlab-ce:latest`) and the `gitlab-runner` service
-  (`image: gitlab/gitlab-runner:latest`) to the floating `:latest` tag — the only two
-  always-on lab components still doing this; every other pinned dependency in this repo
-  (RabbitMQ, Valkey, Grafana, Tempo, Mimir, Loki, k3s itself per ADR-0030, etc.) uses an
-  explicit version tag. Un-pinned `:latest` means a routine `docker compose pull` +
-  `make gitlab-up` cycle can silently jump GitLab CE major versions with no PR, no
-  changelog review, and no rollback path recorded anywhere — the exact failure mode
-  ADR-0030 exists to prevent for k3s.
-
-  Pin `gitlab/docker-compose.yml`'s `gitlab` service to the current GitLab CE release at
-  time of the PR (check `https://gitlab.com/gitlab-org/omnibus-gitlab/-/releases` or
-  `docker manifest inspect gitlab/gitlab-ce:latest` for the concrete tag actually
-  running, since this remote clusterless session cannot itself run `docker compose pull`
-  against a live daemon — ADR-0004 caveat, note this explicitly in the PR body) and the
-  `gitlab-runner` service similarly. Add a `tests/gitlab-compose.bats` (or extend
-  `tests/gitlab-push.bats` if more natural) assertion that neither image reference in
-  `gitlab/docker-compose.yml` is `:latest` — a recurrence guard per CLAUDE.md's
-  bug-fix-prevents-recurrence rule, mirroring `tests/argocd-chart-pin.bats`'s exact-pin
-  assertion pattern. Update `docs/dependency-register.md`'s eventual GitLab row (or this
-  item's own follow-up) to cite the pinned version. `make ci` must pass — this is a
-  docker-compose/test-only change, no cluster needed. PR body must note the rollback
-  path (revert the pin; `make gitlab-up` re-pulls the prior tag) and that this remote
-  session cannot verify the pinned tag actually starts healthy end-to-end (that's the
-  next `make gitlab-up` run's job, same caveat pattern as every other currency-bump PR
-  in this repo). `docs/done/` entry required. (auto/gitlab-version-pin)
+- [x] 🟢 **Pin `gitlab-ce`/`gitlab-runner` to explicit versions (currently
+  `:latest`)** — full verification writeup:
+  [docs/done/2026-08-07-gitlab-version-pin.md](docs/done/2026-08-07-gitlab-version-pin.md).
+  (auto/gitlab-version-pin; PR #1075)
 
 - [x] 🟢 **`docs/dependency-register.md` — add rows for ADR-0033 (GitLab) and ADR-0034
   (LGTMP observability internals)** (CHARTER **Core Values** §"Decisions written down";
@@ -2799,38 +2716,15 @@ there is no point where the lab loses a working git source or CI path.
   namespace manifest). Pure docs. `make ci` must pass. `docs/done/` entry
   required. (auto/harbor-pss-adr0017-row)
 
-- [x] 🟢 **Lab — Harbor OCI registry dashboard + observability metrics** (CHARTER
-  **Core Values** §"Real observability only"; ADR-0024 §observability; follows
-  the on-demand dashboard precedent from `lab-inkless.json`;
-  **prerequisite: `auto/harbor-application` merged ✓**). Harbor exposes
-  Prometheus metrics via its built-in exporter. Enable metrics by patching
-  `gitops/platform/harbor.yaml` `valuesObject` with `metrics.enabled: true`
-  (creates a `harbor-metrics` Service; executor must verify the exact port
-  at pickup — chart v1.16.x uses port 9090 on the `harbor-metrics` Service by
-  default, but check `kubectl get svc harbor-metrics -n harbor` or the chart
-  source). Add `allow-harbor-metrics-ingress.yaml` to
-  `gitops/harbor/networkpolicy/kustomization.yaml` (ingress TCP from
-  `namespaceSelector: kubernetes.io/metadata.name: observability` on the
-  verified metrics port; mirrors the existing `allow-trivy-metrics-from-observability`
-  NP pattern). Add `prometheus.scrape "harbor"` block to
-  `gitops/platform/observability-alloy.yaml` (static target
-  `harbor-metrics.harbor.svc.cluster.local:<port>` where `<port>` is the
-  verified metrics port; `scrape_interval = "30s"`; mirrors the adjacent
-  `inkless` / `trivy_operator` scrape pattern). New
-  `grafana/dashboards/lab-harbor.json` ("Lab — Harbor (OCI Registry)") modelled
-  on `lab-kyverno.json` stat-row: harbor-core pod running (KSM
-  `kube_deployment_status_replicas_available{namespace="harbor",deployment=~"harbor-core.*"}`);
-  ArgoCD sync state (`argocd_app_info{name="harbor-extras"}`); image artifact
-  total (`harbor_artifact_total` by project); image push/pull counts
-  (`harbor_artifact_total{operation=~"push|pull"}`). All panels real Mimir data
-  with `X-Scope-OrgID: lab` (ADR-0004 — panels not yet emitting series show
-  "No data" naturally; Harbor is on-demand). No new HTTPRoute row needed —
-  `harbor.127.0.0.1.nip.io` row already exists; `make lab-ui-check`
-  unaffected. Extend `tests/harbor.bats`: scrape block `"harbor"` present in
-  `observability-alloy.yaml`; `lab-harbor.json` exists; dashboard references
-  `harbor_artifact_total`; no fabricated data. Update
-  `docs/dependency-tree.md` with Harbor observability note. `docs/done/`
-  entry required. `make ci` must pass. (auto/harbor-observability-dashboard)
+- [x] 🟢 **Lab — Harbor OCI registry dashboard + observability metrics** —
+  full verification writeup:
+  [docs/done/2026-07-01-auto-harbor-observability-dashboard.md](docs/done/2026-07-01-auto-harbor-observability-dashboard.md)
+  (corrected 2026-09-05: that file's own `## PR` section cited the wrong
+  number, #318 — the actual, real, `merged: true` PR is #316, verified via
+  the GitHub API and cross-checked against #318's own body, which is a
+  distinct, unrelated planner PR; the mirror file has been fixed in the same
+  commit as this trim).
+  (auto/harbor-observability-dashboard; PR #316)
 
 - [x] 🟢 **Lab — Kargo promotion-pipeline dashboard + observability metrics**
   (CHARTER **Core Values** §"Real observability only"; ADR-0023; follows the
@@ -3105,38 +2999,10 @@ there is no point where the lab loses a working git source or CI path.
   `auto/kargo-observability-dashboard`). `docs/done/` entry required. `make ci`
   must pass. (auto/tidb-dashboard)
 
-- [x] 🟢 **Lab — Longhorn on-demand Alloy scrape + dashboard** (CHARTER **Core
-  Values** §"Real observability only"; O5 gap-fill for on-demand components —
-  follows the `lab-kargo.json` / `lab-inkless.json` precedent; **no
-  prerequisites — executor may pick up immediately**). The Longhorn namespace
-  NetworkPolicy already permits ingress TCP 9500 from `observability`
-  (`gitops/longhorn/networkpolicy/allow-longhorn-metrics-ingress.yaml`) but no
-  Alloy scrape job or Grafana dashboard has been added yet. Add
-  `prometheus.scrape "longhorn"` block to
-  `gitops/platform/observability-alloy.yaml` (static target
-  `longhorn-manager.longhorn-system.svc.cluster.local:9500`;
-  `scrape_interval = "30s"`; add an inline comment explaining this target is
-  idle unless `make longhorn-up` is active — mirror the `kargo` scrape block
-  comment). New `grafana/dashboards/lab-longhorn.json` ("Lab — Longhorn (Block
-  Storage)") modelled on `lab-kargo.json` stat-row: longhorn-manager DaemonSet
-  ready (KSM
-  `kube_daemonset_status_number_ready{namespace="longhorn-system",daemonset=~"longhorn-manager.*"}`);
-  ArgoCD sync state (`argocd_app_info{name="longhorn-extras"}`); attached volume
-  count (`count(longhorn_volume_state{state="attached"})` or
-  `longhorn_volume_state` aggregated — executor must verify exact label values
-  at pickup against Longhorn docs); volume robustness healthy count
-  (`count(longhorn_volume_robustness{robustness="Healthy"})`); total volume
-  capacity (`sum(longhorn_volume_capacity_bytes)`) gauge. All panels real Mimir
-  data with `X-Scope-OrgID: lab` (panels show "No data" naturally when Longhorn
-  is not running — it is on-demand per ADR-0004). No new NP changes needed (TCP
-  9500 allow is pre-wired). No new HTTPRoute row needed (Longhorn UI row at
-  `longhorn.127.0.0.1.nip.io:8000` is in the Lab UIs panel; `make
-  lab-ui-check` unaffected). Extend `tests/longhorn.bats` with four assertions:
-  scrape block `"longhorn"` present in `observability-alloy.yaml`;
-  `lab-longhorn.json` exists; dashboard references `longhorn-system` namespace
-  in at least one KSM query; no fabricated/placeholder data. Update
-  `docs/dependency-tree.md` with Longhorn observability note. `docs/done/`
-  entry required. `make ci` must pass. (auto/longhorn-dashboard)
+- [x] 🟢 **Lab — Longhorn on-demand Alloy scrape + dashboard** — full
+  verification writeup:
+  [docs/done/2026-07-05-auto-longhorn-dashboard.md](docs/done/2026-07-05-auto-longhorn-dashboard.md).
+  (auto/longhorn-dashboard; PR #333)
 
 - [x] 🟢 **O2 measurement — per-scope PSS bats for 5 Tier-1 wave namespaces**
   (CHARTER **Objective O2**, due **2026-09-30**; O2 PSS coverage gap — five
