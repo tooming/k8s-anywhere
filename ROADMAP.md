@@ -1597,32 +1597,10 @@ there is no point where the lab loses a working git source or CI path.
   carries). `docs/done/` entry required. Closes #478.
   (auto/vault-psa-restricted)
 
-- [x] 🟢 **Governance LimitRange fan-out — `cert-manager` + `keda`** (CHARTER
-  **Core Values** §"Fits the 16 GB reality" + §"Everything as code; GitOps
-  deploys it"; RFC #294 / RFC #293 follow-up — **no prerequisites, executor may
-  pick up immediately**). `gitops/platform/governance-appset.yaml`'s
-  list-generator fans out a standard-tier LimitRange to every always-on
-  namespace, but `cert-manager` (ADR-0028) and `keda` (ADR-0029) both landed
-  after RFC #294's fan-out completed and were never added — each already has
-  its own namespace + default-deny NetworkPolicy overlay, just no governance
-  leaf (same gap `auto/harbor-governance-limitrange` closed for `harbor`).
-  Add `gitops/governance/cert-manager/kustomization.yaml` and
-  `gitops/governance/keda/kustomization.yaml` (each: `namespace: <ns>` +
-  `resources: [../base/limitrange-standard.yaml]`, mirroring
-  `gitops/governance/harbor/kustomization.yaml` exactly — no new
-  `limitrange.yaml`; both use the shared standard-tier base). Add
-  `cert-manager-governance` and `keda-governance` entries to the
-  list-generator in `gitops/platform/governance-appset.yaml` (insert after the
-  `node-exporter-governance` entry, before the `# heavy tier` comment, same
-  ordering convention as every existing entry). Extend `tests/governance.bats`:
-  add `cert-manager` and `keda` to the `STANDARD_NS` list (both checks that
-  iterate it — leaf-dir-exists and appset-lists-every-standard-namespace —
-  then cover both automatically), plus two dedicated test pairs mirroring the
-  existing harbor block (kustomization exists + references the shared base;
-  appset has the `<ns>-governance` entry, one pair per namespace). Update
-  `docs/dependency-tree.md`'s wave-3 governance note (the `governance` AppSet
-  parenthetical namespace list) to add `cert-manager` and `keda`. `make ci`
-  must pass. `docs/done/` entry required. (auto/governance-cert-manager-keda)
+- [x] 🟢 **Governance LimitRange fan-out — `cert-manager` + `keda`** — full
+  verification writeup:
+  [docs/done/2026-07-16-governance-cert-manager-keda.md](docs/done/2026-07-16-governance-cert-manager-keda.md).
+  (auto/governance-cert-manager-keda; PR #451)
 
 - [x] 🟢 **`observability` readOnlyRootFilesystem tighten — Alloy** (CHARTER
   **Objective O2** hardening, ADR-0017 §"Per-workload field carve-outs"; split from the
@@ -1741,32 +1719,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-14-networkpolicy-tidb-fanout.md](docs/done/2026-06-14-networkpolicy-tidb-fanout.md)
   (PR #203). (auto/networkpolicy-tidb-fanout)
 
-- [x] 🟢 **Argo Rollouts dashboard + Alloy scrape job** (CHARTER **Objective O1** +
-  **O5**; deferred from `auto/argo-rollouts-controller` per the 400-line budget rule
-  — see `docs/done/2026-06-13-argo-rollouts-controller.md` and the
-  `docs/dependency-tree.md` Argo Rollouts note). The NetworkPolicy ingress on TCP
-  8090 from `observability` is pre-wired; the scrape job and dashboard are the only
-  missing pieces. Add `prometheus.scrape "argo_rollouts"` block to
-  `gitops/platform/observability-alloy.yaml` (single static target
-  `argo-rollouts-metrics.argo-rollouts.svc.cluster.local:8090`; `scrape_interval =
-  "30s"`; mirrors the adjacent `trivy_operator` / `velero` scrape pattern). New
-  `grafana/dashboards/lab-argo-rollouts.json` ("Lab — Argo Rollouts (Progressive
-  Delivery)") modelled on `lab-kyverno.json` stat-row: stat panels for controller
-  running + rollouts-dashboard running (KSM
-  `kube_deployment_status_replicas_available{namespace="argo-rollouts"}`); ArgoCD
-  sync state (`argocd_app_info{name=~"argo-rollouts.*"}`); reconcile rate timeseries
-  (`controller_runtime_reconcile_total{controller="rollout"}`); Rollout phase
-  distribution stat panels from `rollout_phase{phase=~"Healthy|Paused|Degraded"}`;
-  canary weight gauge (`rollout_canary_weight`). All panels real Mimir data with
-  `X-Scope-OrgID: lab` tenant header (ADR-0004 — no fabricated data; if a metric
-  is not yet emitted before a Rollout runs, document it in the panel description and
-  do NOT substitute a placeholder). The `rollouts.127.0.0.1.nip.io:8000` row in the
-  stack-health Lab UIs panel was added in the controller PR — no new row needed.
-  Extend `tests/argo-rollouts.bats`: scrape job block for `"argo_rollouts"` exists
-  in `observability-alloy.yaml`; `lab-argo-rollouts.json` exists; dashboard
-  references `controller_runtime_reconcile_total`; no fabricated/placeholder data.
-  Update `docs/dependency-tree.md` Argo Rollouts note to confirm Alloy scrape and
-  dashboard are now present. (auto/argo-rollouts-dashboard)
+- [x] 🟢 **Argo Rollouts dashboard + Alloy scrape job** — full verification
+  writeup:
+  [docs/done/2026-06-15-argo-rollouts-dashboard.md](docs/done/2026-06-15-argo-rollouts-dashboard.md).
+  (auto/argo-rollouts-dashboard; PR #211)
 
 - [x] 🟢 **Trivy Operator dashboard** (CHARTER **Objective O1** + **O5**; deferred
   from `auto/trivy-operator` per the 400-line budget rule — see
@@ -2387,32 +2343,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-27-pss-np-longhorn.md](docs/done/2026-06-27-pss-np-longhorn.md).
   (auto/pss-np-longhorn; PR #284)
 
-- [x] 🟢 **PSS `privileged` labels + NetworkPolicy — `istio-system`** (CHARTER
-  **Objective O2**, due **2026-09-30**; O2 fan-out completion — ADR-0017
-  §"Per-namespace profile" already lists `istio-system → privileged` (istio-cni DaemonSet
-  mutates host CNI config; ztunnel requires `NET_ADMIN`; per ADR-0012) but no
-  `gitops/istio-system/namespace.yaml` exists. The istiod, istio-base, ztunnel, and
-  istio-cni Applications (all on-demand via `make istio-up`) deploy into this namespace.
-  Two changes bundled: (a) **PSA labels** — create `gitops/istio-system/namespace.yaml`
-  with all four PSA labels at `privileged` (`enforce: privileged`, `enforce-version:
-  latest`, `warn: privileged`, `audit: privileged`); add new auto-synced `Application`
-  `gitops/platform/istio-system-extras.yaml` (sync-wave 0, `ServerSideApply=true`,
-  `CreateNamespace=true` — harmless empty namespace before `make istio-up`; follows the
-  `kargo-extras` / `argocd-extras` naming convention). Confirm the ADR-0017
-  `istio-system → privileged` row cites ADR-0012 §"PSA profile" (add citation if
-  absent). (b) **NetworkPolicy** — add
-  `gitops/istio-system/networkpolicy/kustomization.yaml` referencing the two shared
-  baseline templates plus allow files: `allow-istio-intra-namespace.yaml`
-  (intra-namespace `podSelector: {}` — istiod control-plane internal traffic);
-  `allow-istio-metrics-ingress.yaml` (ingress TCP 15014 from `observability` — istiod
-  Prometheus scrape port); egress to kube-apiserver via baseline. Add
-  `istio-system-networkpolicy` entry to `networkpolicy-appset.yaml` (`gitPath:
-  gitops/istio-system/networkpolicy`, `destNamespace: istio-system`); sync policy
-  `automated: {prune: true, selfHeal: true}`. New `tests/securitycontext-istio.bats`:
-  `gitops/istio-system/namespace.yaml` exists; `enforce: privileged` present;
-  `enforce: restricted` absent. Extend `tests/networkpolicy.bats` with istio-system
-  overlay assertions. Update `docs/dependency-tree.md` with istio-system PSS + NP note.
-  `docs/done/` entry required. `make ci` must pass. (auto/pss-np-istio-system)
+- [x] 🟢 **PSS `privileged` labels + NetworkPolicy — `istio-system`** — full
+  verification writeup:
+  [docs/done/2026-06-27-pss-np-istio-system.md](docs/done/2026-06-27-pss-np-istio-system.md).
+  (auto/pss-np-istio-system; PR #285)
 
 - [x] 🟢 **ADR-0017 amendment — add `kargo` namespace row** (CHARTER **Objective O2**,
   due **2026-09-30**; docs-only O2 gap — surfaced 2026-06-27 planner run). The
