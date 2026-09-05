@@ -306,11 +306,20 @@ spec:
             timeoutSeconds: 5
           readinessProbe:
             timeoutSeconds: 5
-          # GOMAXPROCS=1 — see core's identical comment above (same emulated-host
-          # root cause, same fix, same live verification).
+          # GOMAXPROCS=1 + GODEBUG=asyncpreemptoff=1 — see core's identical comment
+          # above (same emulated-host root cause, same fix). Live-verified 2026-09-06
+          # (#633): jobservice crashed with `fatal error: sweep increased allocation
+          # count` (a GC-invariant violation, not the SIGSEGV core hit — a different
+          # symptom of the same QEMU-emulation memory-corruption class) from a
+          # goroutine created by `runtime.defaultGOMAXPROCSUpdateEnable`, which is
+          # signal-driven the same way async preemption is. jobservice only ever
+          # carried GOMAXPROCS=1 here, not the GODEBUG half — an oversight, since the
+          # comment already claimed parity with core.
           extraEnvVars:
             - name: GOMAXPROCS
               value: "1"
+            - name: GODEBUG
+              value: "asyncpreemptoff=1"
         portal:
           resources:
             requests:
