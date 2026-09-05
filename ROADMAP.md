@@ -1828,51 +1828,10 @@ there is no point where the lab loses a working git source or CI path.
   place per ADR-0018's "Single node" section). `make ci` must pass. `docs/done/`
   entry required. Closes #655. (auto/valkey-cve-bump-8-0-10)
 
-- [x] 🟢 **`docs/dora-resilience-mapping.md` — DORA (EU regulation) pillar mapping,
-  explicitly not a compliance claim** (RFC #586 — architect decision 2026-07-19.
-  **No prerequisites — executor may pick up immediately.**) Implement RFC #586's
-  binding spec exactly — the applicability question is already decided, do not
-  re-litigate it: this lab is not an EU-regulated "financial entity" or a
-  designated critical ICT third-party provider under Regulation (EU) 2022/2554
-  Article 2, so it must never claim DORA regulatory compliance anywhere in the
-  repo.
-
-  New `docs/dora-resilience-mapping.md`. Opens with an explicit, prominent
-  disclaimer naming DORA's real Article 2 scope and this lab's non-membership in
-  it — do not bury or soften this. Then one section per pillar:
-  1. **ICT risk management framework** → cite this repo's ADR process
-     (`docs/decisions/`) + CHARTER Core Values, naming at least
-     [ADR-0016](docs/decisions/adr-0016-default-deny-networkpolicy.md)
-     (default-deny NetworkPolicy),
-     [ADR-0017](docs/decisions/adr-0017-pod-security-standards-restricted.md)
-     (PSS-restricted), and
-     [ADR-0022](docs/decisions/adr-0022-trivy-operator-supply-chain.md) (Trivy
-     continuous scanning) as concrete evidence.
-  2. **ICT incident management/classification/reporting** → cite
-     `docs/dora-metrics.md`'s real "Time to restore service" row (RFC #580 /
-     Objective O7, `make dora-metrics`) directly — do not re-derive or duplicate
-     that computation.
-  3. **Digital operational resilience testing** → cite `make dr-verify`,
-     `make dr-test`, `make dr-bluegreen` by name as real, exercised recovery
-     drills (see `docs/DR.md`).
-  4. **ICT third-party risk management** → cite Trivy Operator continuous
-     scanning ([ADR-0022](docs/decisions/adr-0022-trivy-operator-supply-chain.md)),
-     `scripts/helm-chart-pin-check.sh`, and
-     [ADR-0025](docs/decisions/adr-0025-free-oss-tiers-only.md)'s free/OSS-tier
-     policy.
-  5. **Information-sharing arrangements** → explicit **"not applicable"** note
-     (one line: this pillar concerns inter-financial-entity threat-intel
-     consortiums; nothing in a solo personal lab maps to it honestly) — do not
-     omit this section or stretch a mapping onto it.
-
-  Every citation must point at something that actually exists in the repo today —
-  verify each ADR number, script path, and `make` target resolves before
-  committing (ADR-0004; `make markdown-links-check` will catch broken relative
-  links but not a wrong ADR *number* cited in prose, so check by hand). Add the
-  CHARTER Goals-section sentence only if it isn't already present — verify first,
-  it may already have landed via RFC #586's own architect PR (#587). `make ci`
-  must pass. `docs/done/` entry required. Closes #586.
-  (auto/dora-resilience-mapping)
+- [x] 🟢 **`docs/dora-resilience-mapping.md` — DORA (EU regulation) pillar
+  mapping, explicitly not a compliance claim** — full verification writeup:
+  [docs/done/2026-07-19-dora-resilience-mapping.md](docs/done/2026-07-19-dora-resilience-mapping.md).
+  (auto/dora-resilience-mapping; PR #589) Closes #586.
 
 - [x] 🟢 **`scripts/dora-metrics.sh` + `make dora-metrics` — DORA metrics from git/CI
   history** — full verification writeup:
@@ -1920,100 +1879,15 @@ there is no point where the lab loses a working git source or CI path.
   drop the "tracked follow-up, not yet covered" note once all seven files are done.
   `make ci` must pass. `docs/done/` entry required. (auto/action-needed-pr-fallback-2)
 
-- [x] 🟢 **Bump Grafana image tag `13.0.1` → `13.0.3`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; RFC/issue #563 — architect decision
-  2026-07-19, ADR audit #562 resolved as **Convert**. **No prerequisites — executor
-  may pick up immediately.**) `13.0.1` (our current pin, released 2026-04-17) is
-  vulnerable to seven CVEs fixed in `13.0.2` (2026-06-09): `CVE-2026-9029`,
-  `CVE-2026-33382`, `CVE-2026-42127`, `CVE-2026-42129`, `CVE-2026-10601`,
-  `CVE-2026-8609`, `CVE-2026-8595` — confirmed directly from Grafana's own
-  `CHANGELOG.md` fetched at the real `v13.0.2` git tag via
-  `raw.githubusercontent.com` (not inferred; `github.com`/`api.github.com` are
-  proxy-blocked in this environment but the raw CDN host is not), and via a real,
-  `active` `13.0.2` Docker Hub image (confirmed against Docker Hub's real tags
-  API). A distinct `v13.0.1+security-01` tag (different commit SHA than plain
-  `v13.0.1`) further confirms Grafana Labs shipped an out-of-band security
-  backport for exactly our pinned version. No ADR governs Grafana as a
-  technology/version choice (ADR-0006 only covers the git-sync delivery
-  mechanism), so this needs no ADR file change — same shape as the Kargo CVE
-  bumps.
+- [x] 🟢 **Bump Grafana image tag `13.0.1` → `13.0.3`** — full verification
+  writeup:
+  [docs/done/2026-07-19-grafana-cve-bump-13-0-3.md](docs/done/2026-07-19-grafana-cve-bump-13-0-3.md).
+  (auto/grafana-cve-bump-13-0-3; PR #566) Closes #563.
 
-  Bump `gitops/platform/observability-grafana.yaml`'s `image.tag` override from
-  `"13.0.1"` to `"13.0.3"` — the newest patch on the `13.0.x` line (no distinct
-  new CVEs documented for it beyond `13.0.2`'s, likely a base-image maintenance
-  rebuild; it is the smallest safe delta that carries every known fix without
-  jumping to the `13.1.x` minor line, same reasoning as the Cilium 1.17.18 pick,
-  RFC #501). Do **not** change the chart `targetRevision` (`12.7.2` stays — the
-  CVEs are in Grafana's own binary, not the chart's templating; this is an
-  image-tag-only override, identical technique to the Argo Rollouts bump,
-  RFC #552). Grep the file for every literal `13.0.1` occurrence (the
-  `valuesObject.image.tag` field and the informational
-  `docker.io/grafana/grafana:13.0.1` reference) and update all of them.
-
-  Extend the relevant `tests/observability*.bats` file (check for an existing
-  Grafana image-tag pin assertion first; add one if none exists) asserting
-  `tag: "13.0.3"` / `grafana:13.0.3` is present — a recurrence guard mirroring
-  `tests/argo-rollouts.bats`'s image-tag assertions. No topology change, so no
-  README/`docs/dependency-tree.md` update is expected — note that explicitly in
-  the PR body. PR body must document: the seven CVE IDs, why `13.0.3` (smallest
-  safe delta), and the ADR-0004 caveat that this remote clusterless session
-  cannot verify Grafana actually starts cleanly post-bump on a live cluster —
-  call out the rollback path (revert the `image.tag` override; ArgoCD self-heals;
-  Grafana is a single Deployment so a revert re-rolls the same way the bump did).
-  Note explicitly that full CVSS/description detail for the seven CVE IDs could
-  not be fetched from this sandbox (`grafana.com/security/...` and
-  `github.com/advisories/...` were both unreachable/blocked) — the CVE IDs and
-  fixed-version mapping are grounded in Grafana's own official CHANGELOG.md, not
-  fabricated severity detail (ADR-0004). `make ci` must pass. `docs/done/` entry
-  required. Closes #563. (auto/grafana-cve-bump-13-0-3)
-
-- [x] 🟢 **Pin k3s to an explicit version on every backend** (CHARTER **Core Values**
-  §"Recreate-from-code" + §"Clusterless gates stay green"; RFC/issue #558 — architect
-  decision 2026-07-19, new [ADR-0030](docs/decisions/adr-0030-pin-k3s-version-explicitly.md)
-  (no existing ADR governed k3s's version — adopted directly per WAYS-OF-WORKING.md
-  §0.1/§2). **No prerequisites — executor may pick up immediately.**) Neither backend
-  pins a k3s version today: `infra/modules/k3d-cluster/k3d-config.yaml.tftpl` has no
-  `image:` key (k3d uses whatever's bundled with the installed CLI), and
-  `infra/modules/oracle-k3s-cluster/cloud-init.yaml` installs via
-  `curl -sfL https://get.k3s.io | sh -` with no `INSTALL_K3S_VERSION` (always fetches
-  current `stable`). This broke CHARTER's "recreate-from-code" Core Value (two `make up`
-  runs months apart aren't reproducing the same lab) and meant k3s — the most privileged
-  layer in the stack — had no recorded version for the architect's weekly CVE sweep to
-  check against (the concrete trigger this pass: CVE-2026-54250, K3s ZIP path traversal
-  in etcd-snapshot decompression, fixed in `1.33.10`/`1.34.6`/`1.35.3` — whether this lab
-  was affected was unanswerable with no pin on record).
-
-  Pin **`v1.36.2+k3s1`** on both backends — verified directly (not assumed, ADR-0004):
-  the git tag is real (corroborated via a second independent source alongside the
-  latest `1.34.x`/`1.35.x` patches, confirming `1.36.2` is genuinely the current stable
-  line), and the `rancher/k3s:v1.36.2-k3s1` Docker Hub image was **positively confirmed**
-  via Docker Hub's real tags API (`tag_status: active`, multi-arch, real digest and
-  `last_updated` timestamp) — a direct registry check, not an indirect inference.
-  Comfortably past CVE-2026-54250's fix lines on every supported branch.
-
-  Add `image: rancher/k3s:v1.36.2-k3s1` (hyphen tag format) as a new top-level key in
-  `infra/modules/k3d-cluster/k3d-config.yaml.tftpl` — `image` is a documented top-level
-  field of k3d's own `k3d.io/v1alpha5` `Simple` config schema, sibling to the existing
-  `servers`/`agents`/`kubeAPI`/`ports`/`options` keys already in that file. Change
-  `infra/modules/oracle-k3s-cluster/cloud-init.yaml`'s install line to
-  `curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.36.2+k3s1 sh -` — note the
-  **different tag format** (`+` here vs. the Docker Hub tag's hyphen — a real footgun,
-  see ADR-0030's "Tag-format note"). Update `docs/decisions/context.md`'s stale
-  "k3s v1.33.6, 2 nodes" line to reflect the pin. Add `tests/k3s-version-pin.bats`
-  (clusterless — no `terraform apply`, no cluster) asserting both backends reference
-  `v1.36.2+k3s1`/`v1.36.2-k3s1` respectively (the correct format each) — a recurrence
-  guard so a future bump that updates one backend and forgets the other's different tag
-  format fails `make ci`, mirroring this repo's existing per-component pin-assertion
-  pattern (`argo-rollouts.bats`'s `targetRevision` checks, etc.).
-
-  **ADR-0004 caveat, carry into the PR body:** this is a Terraform-bootstrap-seam change
-  (ADR-0001's boundary — never workload/GitOps) that this remote clusterless session
-  cannot verify against a live `make up` or a real Oracle instance launch (the Oracle
-  path is separately still blocked on an unrelated Always Free capacity constraint per
-  `infra/live/README.md`). State plainly in the PR that live verification is pending the
-  maintainer's next local `make up` / cloud apply — do not claim it was exercised.
-  `make ci` (terraform fmt/validate, no live apply) must pass. `docs/done/` entry
-  required. Closes #558. (auto/k3s-version-pin)
+- [x] 🟢 **Pin k3s to an explicit version on every backend** — full verification
+  writeup:
+  [docs/done/2026-07-19-k3s-version-pin.md](docs/done/2026-07-19-k3s-version-pin.md).
+  (auto/k3s-version-pin; PR #561) Closes #558.
 
 - [x] 🟢 **Bump Argo Rollouts image tag `v1.9.0` → `v1.9.1`** (CHARTER **Core Values**
   §"Everything as code" + general hardening; RFC/issue #552 — architect decision
@@ -2711,51 +2585,9 @@ there is no point where the lab loses a working git source or CI path.
   certificate lifecycle" target entry from "(planned)" to built. `make ci` must
   pass. `docs/done/` entry required. (auto/cert-manager-gateway-https)
 
-- [x] 🟢 **KEDA event-driven autoscaling engine** (CHARTER new Goal "event-driven
-  autoscaling" — ADR-0029 for the binding chart values, PSA profile, and footprint
-  controls. **No prerequisites — executor may pick up immediately; purely additive,
-  no existing workload is touched.**) Found during a coverage/hardening fallback pass
-  (ROADMAP rule #9) after every gated `Now / next` item and every doc-drift/coverage
-  gap turned up empty — re-read CHARTER's Vision/Goals for a genuinely uncovered CNCF
-  pattern rather than defaulting to smaller filler, same discipline that found
-  cert-manager. Added `gitops/platform/keda.yaml` (auto-synced ArgoCD `Application`,
-  chart `keda` v2.18.0 from `https://kedacore.github.io/charts`, namespace `keda`;
-  version confirmed via the chart source repo's `release/v2.18` branch since the
-  chart index itself is proxy-blocked in this environment, same class of limitation as
-  `charts.jetstack.io`). `valuesObject` per ADR-0029 §"Footprint controls": tightened
-  memory limits (operator/metricServer 128Mi, webhooks 64Mi) below the chart's
-  generous 1000Mi-per-component default. Added `gitops/keda/namespace.yaml` with all
-  four PSA labels at `restricted` (verified zero carve-out needed against the pinned
-  chart's `values.yaml`, second component after cert-manager to land at `restricted`
-  out of the box). Default-deny NetworkPolicy overlay at
-  `gitops/keda/networkpolicy/kustomization.yaml` referencing the shared baseline
-  templates + ingress TCP 9443 from kube-apiserver (admission webhook callback,
-  confirmed against the pinned chart's `values.yaml`) + ingress TCP 8080 from
-  `observability` (metrics scrape). New auto-synced `Application`
-  `gitops/platform/keda-networkpolicy.yaml` (sync-wave 4, `LoadRestrictionsNone`). New
-  `keda` scrape job in `gitops/platform/observability-alloy.yaml` targeting the
-  operator Service (`keda-operator.keda.svc.cluster.local:8080` — where
-  `keda_scaler_active`/`keda_scaled_object_paused`/`keda_scaler_metrics_value` are
-  actually emitted, verified against the pinned tag's Go source, not guessed from
-  docs). New `grafana/dashboards/lab-keda.json` ("Lab — KEDA (Event-Driven
-  Autoscaling)") modelled on `lab-cert-manager.json`'s stat-row: pod running per
-  component (KSM), ArgoCD sync state, active-scaler count, ScaledObject error rate —
-  panels show "No data" naturally until the follow-up `ScaledObject` demo exists
-  (ADR-0004). No HTTPRoute — KEDA has no web UI; document in the PR body. Updated
-  `docs/dependency-tree.md` with a KEDA subgraph + Alloy scrape edge and
-  `tests/dashboard-coverage.bats` with the O5 sweep entry in the same PR (closing the
-  gap #442 fixed for cert-manager immediately, not as a follow-up this time). New
-  `tests/keda.bats`: Application shape, chart source + version pin, `crds.install:
-  true`, namespace PSA labels, NetworkPolicy overlay structure, scrape job target,
-  dashboard file + required panels, and an additive-only proof (no `ScaledObject`/
-  `ScaledJob` references any workload yet). Added a `keda: restricted` row to
-  ADR-0017's per-namespace profile table in the same PR (zero carve-out, nothing to
-  amend later — same reasoning as the cert-manager row). **Two explicit follow-up
-  items, not bundled here** (ADR-0029 §"Scope & exceptions"): wiring the admission
-  webhook's TLS to cert-manager's `k8s-lab-ca` ClusterIssuer (the chart supports this
-  natively via `certificates.certManager`), and a real `ScaledObject` demo scaling a
-  workload on the `data` namespace's RabbitMQ queue depth. `make ci` must pass.
-  `docs/done/` entry required. (auto/keda-engine)
+- [x] 🟢 **KEDA event-driven autoscaling engine** — full verification writeup:
+  [docs/done/2026-07-16-keda-engine.md](docs/done/2026-07-16-keda-engine.md).
+  (auto/keda-engine; PR #444)
 
 - [x] 🟢 **KEDA admission webhook TLS — wire to cert-manager's `k8s-lab-ca`** (CHARTER
   new Goal "event-driven autoscaling" follow-up; ADR-0029 §"Scope & exceptions" — the
@@ -3561,51 +3393,10 @@ there is no point where the lab loses a working git source or CI path.
   `kustomization.yaml`. `make ci` must pass. `docs/done/` entry required.
   (auto/kiali-np-istio-system)
 
-- [x] 🟢 **O4 CI gate — `verify-image-rejection` job** (CHARTER **Objective O4**, due
-  **2026-12-31**; RFC #289 — architect decision 2026-06-27; executor pickup 2026-08-18,
-  fourth cycle this run, immediately after `auto/cosign-enforce-flip` (PR #1223) merged
-  in the prior cycle — the prerequisite check `grep -q "validationFailureAction: Enforce"
-  gitops/kyverno/policies/verify-image-signatures.yaml` returns 0. **Retargeted from this
-  item's original spec**, which named the prior CI pipeline file and registry host this
-  repo has since moved off of (ADR-0024/ADR-0035) — building that text verbatim would add
-  dead config that never runs against the actual live pipeline, an ADR-0004 violation.
-  Added the `verify-rejection` job directly to `.forgejo/workflows/build-sign-push.yml`
-  (the real live pipeline) after `sign-image`, using Harbor (not the retired registry
-  host) throughout.
-
-  **PSS-restricted interaction found live while authoring this job** (not present in the
-  original spec): the `capstone` namespace enforces Pod Security `restricted`
-  (`gitops/apps/capstone/namespace.yaml`) — a bare `kubectl run` without a compliant
-  `securityContext` would be rejected by Kubernetes' own admission *before* Kyverno's
-  `verifyImages` rule ever evaluates the image, silently making the test pass for the
-  wrong reason. The test Pod mirrors `gitops/apps/capstone/rollout.yaml`'s own
-  PSS-restricted `securityContext` exactly (`runAsNonRoot`, `runAsUser: 10001`,
-  `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem: true`,
-  `capabilities.drop: [ALL]`) plus its `harbor-registry` `imagePullSecret`, so the *only*
-  thing that can block admission is the missing signature. Used a full `kubectl apply -f
-  -` Pod manifest (not `kubectl run --overrides`) for a clear, unambiguous spec. The
-  Pod's `image:` field intentionally omits the `:8080` port the CI job's own `docker
-  push` needs (matches `rollout.yaml`'s own no-port image reference — the cluster
-  resolves the registry host directly, unlike the CI job's own network position).
-
-  New maintainer prerequisite (documented in the workflow file's own header comment,
-  same pattern as the existing `HARBOR_USER`/`HARBOR_PASSWORD`/`COSIGN_KEY`/
-  `CHECKOUT_TOKEN` secrets): a `KUBECONFIG` Forgejo Actions secret (a service-account
-  kubeconfig scoped to at least create/delete Pod in `capstone`) — generating and
-  verifying this is a live-cluster action this remote session cannot perform (ADR-0004);
-  left as an explicit, undone prerequisite, not asserted as already configured.
-
-  Extended `tests/forgejo-ci.bats` (this repo's existing convention already covers
-  `build-sign-push.yml` there — no separate `gitlab-ci.bats`, that file name itself would
-  have named the retired CI host): 9 new assertions covering the job's existence/
-  ordering, timeout, the distinct unsigned test-image tag, the PSS-compliant
-  securityContext, the `harbor-registry` imagePullSecret, the rejection-reason grep, the
-  wrongly-admitted failure path, the `KUBECONFIG` secret reference, and cleanup-on-
-  failure. `make ci` must pass. PR body must document the retargeting rationale, the PSS
-  finding, and the ADR-0004 caveat that this remote clusterless session cannot execute a
-  real Forgejo Actions run to confirm the job behaves correctly end-to-end (same caveat
-  this file's own header comment already carries for `build-and-push`/`sign-image`).
-  `docs/done/` entry required. (auto/o4-ci-rejection-gate)
+- [x] 🟢 **O4 CI gate — `verify-image-rejection` job** — full verification
+  writeup:
+  [docs/done/2026-08-18-o4-ci-rejection-gate.md](docs/done/2026-08-18-o4-ci-rejection-gate.md).
+  (auto/o4-ci-rejection-gate; PR #1224)
 
 - [x] 🟢 **Platform Governance appset — `gitops/governance/` structure +
   ApplicationSet** (CHARTER **Core Values** §"Everything as code; GitOps deploys
