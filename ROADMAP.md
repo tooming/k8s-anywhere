@@ -1003,69 +1003,7 @@ You review and merge plan PRs, same as implementation PRs.
   found live in PR #1323 — extend `scripts/coredns-host-alias.sh`** — full
   verification writeup:
   [docs/done/2026-08-25-coredns-nip-io-gitops-tracking.md](docs/done/2026-08-25-coredns-nip-io-gitops-tracking.md).
-  (auto/coredns-nip-io-gitops-tracking) (CHARTER
-  **Core Values** §"Everything as code; GitOps deploys it" (ADR-0001);
-  planner-fallback gap analysis 2026-08-25, reached via `executor.prompt.md`
-  STEP 6b after the "Now / next" lane was re-confirmed fully gated this cycle —
-  both standing GitLab→Forgejo migration items below (rename, decommission) are
-  blocked on the same live-cluster-design prerequisite the 2026-08-17
-  investigation already found (`make up`'s bootstrap sequence and `make
-  rebase-prs`' push path both still call the GitLab targets directly — a blind
-  rename/removal would break `make up`), and the capstone-`Deployment`-removal
-  item further below is still gated on unconfirmed issue #633 (re-checked this
-  cycle: latest comment 2026-08-25 09:34 UTC still reports it unresolved). No
-  un-groomed intake issue exists (only the two standing `[Action required]`
-  issues, #633 and #1229, neither new work) and every later ROADMAP section is
-  already fully `[x]`, so this is genuine new gap-analysis output, not a
-  promoted item. **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): merged PR #1323 (2026-08-25,
-  `fix(kargo): egress NetworkPolicy targeted wrong namespace+port (#633)`)'s own
-  body states `harbor.127.0.0.1.nip.io` has **no in-cluster DNS answer** —
-  nip.io's real wildcard DNS resolves any of its subdomains to the literal IP
-  in the name, `127.0.0.1`, which is a *pod's own loopback* for any in-cluster
-  client, not the Envoy Gateway — and that the fix was a `coredns-custom`
-  ConfigMap patch applied **live, out-of-band**, with the PR body itself
-  flagging: "This isn't gitops-tracked yet... follow-up issue warranted to
-  bring it under GitOps management with a drift guard." Grepping `gitops/`
-  confirms 12 distinct `*.127.0.0.1.nip.io` hostnames (`argocd`, `capstone`,
-  `grafana`, `harbor`, `kargo`, `kiali`, `longhorn`, `moto`, `rabbitmq`,
-  `rollouts`, `s3`, `tidb-demo`, `vault`) all route through the single shared
-  Envoy Gateway (ADR-0008) and share this exact same unresolvable-in-cluster-DNS
-  problem — none has this rewrite committed anywhere in the repo today. Only a
-  *different* hostname, `host.k3d.internal` (for GitLab's `repoURL`), is
-  captured today, by `scripts/coredns-host-alias.sh` + its `coredns-custom`
-  ConfigMap pattern (`docs/done/2026-07-15-coredns-host-alias-bats-coverage.md`)
-  — this is the established, already-`make up`-wired mechanism to extend, not a
-  new script.
-
-  Extend `scripts/coredns-host-alias.sh` (same idempotent,
-  `make up`-wired, `coredns-custom`-ConfigMap-in-`kube-system` pattern already
-  used for `host.k3d.internal` — do not create a second parallel script) to add
-  a second server-block key (e.g. `nip-io-rewrite.server`) rewriting
-  `*.127.0.0.1.nip.io` to the Envoy Gateway's real in-cluster Service DNS name.
-  Confirm the exact generated Service name/namespace against
-  `gitops/network/gateway.yaml` (the `Gateway` resource, name `eg`, namespace
-  `lab-gateway`) and Envoy Gateway's own generated-Service naming convention —
-  `gitops/envoy-gateway-system/networkpolicy/allow-envoy-proxy-listener-ingress.yaml`
-  and PR #1323's own NetworkPolicy fix confirm the actual proxy pods run in the
-  `envoy-gateway-system` namespace on containerPort 10080 — before hardcoding
-  it; do not guess. The current single-key `kubectl create configmap ...
-  --from-literal=host-k3d-internal.server="$DESIRED" --dry-run=client -o yaml`
-  call fully replaces the ConfigMap's `data` on every apply — add the new key
-  as a second `--from-literal` in the *same* command (verify this explicitly in
-  the diff/PR body) or the two keys will clobber each other instead of
-  coexisting. Update `tests/coredns-host-alias.bats` with new structural
-  assertions mirroring its existing `host-k3d-internal` ones (both keys present
-  in the desired ConfigMap data; the `*.127.0.0.1.nip.io` rewrite target is
-  correct; idempotency still holds for the two-key ConfigMap). Add a "CoreDNS
-  nip.io rewrite" row/section to `docs/DR.md`'s bootstrap-steps table (next to
-  the existing CoreDNS host-alias row) explaining why this exists, citing PR
-  #1323's finding. `make ci` must pass. PR body must state the ADR-0004 caveat
-  that this remote clusterless session cannot verify the rewrite resolves
-  correctly against a live cluster (same caveat pattern as
-  `coredns-host-alias.sh`'s own original PR) and must cite PR #1323 as the
-  source of the finding. `docs/done/` entry required.
-  (auto/coredns-nip-io-gitops-tracking)
+  (auto/coredns-nip-io-gitops-tracking; PR #1326)
 
 - [x] 🟢 **Bump Vault Helm chart `0.34.0` → `0.34.1`** — full verification
   writeup: [docs/done/2026-08-19-vault-chart-0-34-0-to-0-34-1.md](docs/done/2026-08-19-vault-chart-0-34-0-to-0-34-1.md)
@@ -1721,74 +1659,9 @@ there is no point where the lab loses a working git source or CI path.
   rollback precedent). `docs/done/` entry required. (auto/vault-pod-readiness-alert)
 
 - [x] 🟢 **Fix two Grafana Unified Alerting rules that can never fire — threshold-vs-stateSet-metric bug (RFC #1084 follow-up)**
-  (CHARTER **Core Values** §"operational-resilience discipline" + §"Real observability
-  only" (ADR-0004 — a rule that structurally can never fire is a worse-than-nothing
-  false sense of coverage); planner-fallback gap analysis 2026-08-13, reached via
-  `executor.prompt.md` STEP 6b, PLANNER role — Now/next's remaining items are all
-  still gated (the three standing GitLab→Forgejo migration items on live-cluster
-  verification, `auto/cosign-enforce-flip` and `auto/capstone-deployment-removal` on
-  unconfirmed maintainer-confirmation issues #631/#633, re-checked this cycle,
-  unchanged) and this run's own sweep found no un-RFC'd 🟡 item and no ungroomed
-  issue to promote. **No prerequisites — executor may pick up immediately.**) Found
-  while re-reading `docs/dora-audit-readiness.md` Q7 for further gap-analysis
-  angles, then verifying the alerting rules it cites are actually correct (ADR-0004
-  discipline — don't just trust a doc's prior "closed" claim without re-checking the
-  underlying mechanism). Verified directly against Grafana's own Unified Alerting
-  semantics (not assumed): a `type: threshold` expression (refId B) applies its
-  `evaluator` (here, always `gt 0`) **directly to refId A's own returned numeric
-  value** — it does not coerce "the query matched a series" into a boolean 1.
-  `kube-state-metrics` publishes several metrics as a *stateSet* — one series **per
-  enum value** every scrape, each literally 0 or 1 (confirmed against this repo's
-  own dashboard usage pattern, e.g. every `kube_pod_status_phase{phase="Running"}`
-  stat panel across `grafana/dashboards/*.json` assumes exactly this "1 in the
-  matching case" shape). Two of the five existing rules got this backwards:
-  - `VaultPodNotReady`'s `expr: kube_pod_status_ready{namespace="vault",
-    pod=~"vault-[0-9]+", condition="true"} == 0` filters to the `condition="true"`
-    series and keeps it only when its value **is** 0 (pod not Ready) — so the
-    returned value is always exactly 0 in the firing case, and downstream `gt 0`
-    on 0 is always false. **This rule — the one `auto/vault-pod-readiness-alert`
-    (2026-08-11) added specifically to close the real "Vault sealed 4+ days,
-    nothing surfaced" incident gap named in Q7 — could never have fired, in any
-    state, since the day it merged.**
-  - `DeploymentReplicasUnavailable`'s `expr:
-    kube_deployment_status_replicas_available < kube_deployment_spec_replicas`
-    returns the *available* replica count wherever the comparison holds — so the
-    worst case (`available == 0`, total outage) evaluates `0 gt 0` = false and
-    never fires; only a *partial* shortfall (available > 0 but < desired) was ever
-    caught.
-  The other three rules (`ArgoCDAppUnhealthy`, `ArgoCDAppOutOfSync`,
-  `PVCStuckPendingOrLost`) don't have this bug: `argocd_app_info` is a plain "info"
-  metric always valued 1 (not a stateSet), and `PVCStuckPendingOrLost` filters to
-  `== 1` (the stateSet's *true* value), so both already return a nonzero value in
-  the firing case.
-
-  Fix: `VaultPodNotReady`'s expr now uses PromQL's `bool` modifier —
-  `kube_pod_status_ready{namespace="vault", pod=~"vault-[0-9]+", condition="true"}
-  == bool 0` — which always evaluates to 1/0 for the matched series regardless of
-  the raw metric's own value, correctly pairing with the downstream `gt 0`.
-  `DeploymentReplicasUnavailable`'s expr now computes the deficit directly —
-  `kube_deployment_spec_replicas - kube_deployment_status_replicas_available` —
-  whose value is exactly what "greater than zero" should mean, correctly firing at
-  any shortfall including total outage. Added a `GOTCHA` comment block directly
-  above `alerting.rules.yaml` in `gitops/platform/observability-grafana.yaml`
-  documenting this trap (threshold-evaluates-the-raw-value + stateSet-metrics'
-  per-enum-value shape) so a future rule author doesn't reintroduce it — the
-  mechanical-recurrence-guard CLAUDE.md's bugfix rule calls for, since a live
-  PromQL-evaluation test isn't possible from this clusterless session (ADR-0004).
-  Extended `tests/observability-alerting.bats`: updated the two rules' existing
-  expr assertions to the fixed strings; added two explicit regression-guard
-  assertions asserting the old broken expr strings are **absent** (mirrors this
-  repo's existing "does NOT use the dead X" pattern, e.g.
-  `tests/kargo.bats`/`tests/kyverno.bats`); added an assertion the new `GOTCHA`
-  comment is present. `for:`/`datasourceUid: mimir` count assertions are unchanged
-  (edits touched only the `expr:` lines, not rule count/shape). `make ci` passes.
-  PR body documents the ADR-0004 caveat that this remote clusterless session
-  verified the fix via PromQL/Grafana-Alerting semantics reasoning, not a live
-  firing test, and the rollback path (revert the two `expr:` lines; ArgoCD syncs
-  the revert within 30s, same as any other `alerting.yaml` edit — reverting only
-  restores the *prior*, already-broken-in-production behavior, so there is no new
-  risk from rolling back). `docs/done/` entry required.
-  (auto/alerting-threshold-bool-fix)
+  — full verification writeup:
+  [docs/done/2026-08-13-alerting-threshold-bool-fix.md](docs/done/2026-08-13-alerting-threshold-bool-fix.md).
+  (auto/alerting-threshold-bool-fix; PR #1187)
 
 - [x] 🟢 **k3d containerd registry mirror — resolve `harbor.127.0.0.1.nip.io` in-cluster**
   — full verification writeup:
@@ -1916,74 +1789,9 @@ there is no point where the lab loses a working git source or CI path.
   (auto/trivy-operator-chart-0-35-0)
 
 - [x] 🟢 **Bump Grafana image tag `13.0.3` → `13.0.5` (security fix) + correct
-  ADR-0006's stale Tempo pin citation** (CHARTER **Core Values** §"Everything as
-  code" + general hardening; planner-fallback currency sweep 2026-08-06,
-  second pass this run, reached via `executor.prompt.md` STEP 6b — Now/next's
-  three standing items remain gated on unconfirmed maintainer-confirmation
-  issues #631/#633 (re-checked this cycle, unchanged). This cycle's angle
-  (deliberately different from the immediately-prior cycle's Loki-only
-  re-check, per rule #9/STEP 8's "widen the lens" guidance): a batch
-  `git ls-remote --tags` sweep of every GitHub-hosted `image:` pin under
-  `gitops/` not yet re-checked this run (Mimir, Grafana's `image.tag` override,
-  RabbitMQ, Valkey) — Mimir (`3.1.4`), RabbitMQ (`4.3.4`), and Valkey (`8.0.10`)
-  are all already the newest tag on their respective pinned lines (no gap);
-  Grafana's `image.tag` override (`13.0.3`, tracked separately from the chart's
-  own `targetRevision` per ADR-0006) is one line behind. **No prerequisites —
-  executor may pick up immediately.**) Verified directly (not assumed,
-  ADR-0004): a real clone of `github.com/grafana/grafana` shows `v13.0.5` as
-  the newest tag on the `13.0.x` line (no minor/major jump — `13.1.x` exists
-  but per ADR-0006's own precedent a chart/version-line jump needs its own
-  deeper diligence, not bundled into a routine patch bump). `git log
-  v13.0.3..v13.0.5 --no-merges` (37 commits) contains one explicitly
-  `[release-13.0.4] Security:` tagged commit: "Bump go-pkcs12 to v0.7.2
-  (GO-2026-5052)" — fixes GHSA-mpwr-8vm7-h73f, a PKCS#12 password
-  authentication bypass in `software.sslmate.com/src/go-pkcs12` (affected
-  v0.6.0–v0.7.2-minus-fix, pulled in transitively via `grafana-azure-sdk-go`).
-  This satisfies ADR-0006's own Grafana flip condition ("advisory naming a
-  version at or above the current pin") the same way the 2026-07-19 CVE bump
-  did. `git diff v13.0.3 v13.0.5 -- packaging/docker/` is **empty** — the
-  Docker image's `run.sh`/`Dockerfile` are byte-identical across the whole
-  range, so the existing ADR-0006 packaging-verification analysis (read-only-root
-  write paths, entrypoint behavior) carries forward unchanged, no re-diffing
-  needed beyond confirming the diff is empty (which it is).
-
-  Also corrects a **log-drift gap** found while re-checking Tempo as part of
-  this same sweep (mirrors the exact pattern the 2026-08-06 Loki entry caught
-  for its own pin): ADR-0006's last two dated entries (2026-07-28, 2026-08-06)
-  both still cite Tempo's pin as `2.10.5`, but the live pin in
-  `gitops/observability/tempo/deployment.yaml` is already `2.10.7` — confirmed
-  via `git ls-remote --tags grafana/tempo` that `2.10.7` is the current newest
-  `2.10.x` tag, so the **live pin itself is correct and current**, only the
-  ADR's own tracking log lagged behind an earlier, undocumented bump (same
-  class of gap as Loki's `3.7.2`→`3.7.4` catch-up note). No code change needed
-  for Tempo — this is a pure record correction, noted honestly in the new ADR
-  entry rather than silently re-dating the old ones.
-
-  Bump `gitops/platform/observability-grafana.yaml`'s
-  `valuesObject.image.tag: "13.0.3"` → `"13.0.5"` **and** the `ca-bundle`
-  `extraInitContainers` entry's `image: docker.io/grafana/grafana:13.0.3` →
-  `:13.0.5` (both must move together — same pin, same CVE analysis, mirrors
-  how the 2026-07-19 bump kept them in lockstep). Update the adjacent comment
-  block (lines ~29–34) to cite `13.0.5` and this bump's CVE. Update
-  `tests/observability-grafana.bats`'s two exact-version-pin assertions
-  (`image.tag` + ca-bundle init container) to `13.0.5`. Update
-  `docs/decisions/context.md`'s "Grafana 13.0.3 on `kubernetesDashboards`"
-  citation to `13.0.5` (required — `make context-doc-version-sync-check`
-  mechanically enforces this). Add a new dated entry to
-  [ADR-0006](docs/decisions/adr-0006-grafana-native-git-sync.md)'s
-  `## Re-evaluation log` documenting both the Grafana CVE bump and the Tempo
-  log-drift correction above, with a new flip condition ("revisit when a new
-  advisory names a version at or above `13.0.5`"). No `docs/dependency-tree.md`
-  update needed — it doesn't cite Grafana's specific image tag (checked
-  directly). `make ci` must pass. PR body must document the CVE finding, the
-  empty packaging diff, the Tempo log-drift correction, and the ADR-0004
-  caveat that this remote clusterless session cannot verify Grafana starts
-  cleanly and Git Sync/dashboard provisioning continues working post-bump on a
-  live cluster — call out the rollback path (revert both `image:` references;
-  Grafana's chart Application syncs via ArgoCD, so a revert takes effect on
-  the next automated sync; Grafana's session/dashboard state lives on its PVC,
-  untouched by an image-tag change). `docs/done/` entry required.
-  (auto/grafana-image-13-0-5)
+  ADR-0006's stale Tempo pin citation** — full verification writeup:
+  [docs/done/2026-08-06-grafana-image-13-0-5.md](docs/done/2026-08-06-grafana-image-13-0-5.md).
+  (auto/grafana-image-13-0-5; PR #1044)
 
 - [x] 🟢 **Bump Loki image `grafana/loki:3.7.5` → `3.7.6`** (CHARTER **Core
   Values** §"Everything as code" + general hardening; planner-fallback currency
@@ -2166,72 +1974,9 @@ there is no point where the lab loses a working git source or CI path.
   `docs/done/` entry required. (auto/inkless-postgres-explicit-pin)
 
 - [x] 🟢 **Bump Vault's pinned image `hashicorp/vault:2.0.3` → `2.0.4` (server +
-  unsealer)** (CHARTER **Core Values** §"Everything as code" + general hardening;
-  planner-fallback upstream check 2026-08-05, reached via `executor.prompt.md`
-  STEP 6b — Now/next re-confirmed still gated on #631/#633, no new comment; this
-  run's first PLANNER-fallback pass (ack-s3, merged as #1008/#1009) exhausted the
-  chart-`targetRevision` currency angle (every other pin in `gitops/**/*.yaml`
-  re-verified current against real upstream tags: harbor, kiali, kro,
-  argo-rollouts, envoy-gateway, pyroscope, node-exporter, velero — all clean),
-  so this pass checked plain container `image:` tags instead — a lens today's
-  earlier cycles hadn't used. **No prerequisites — executor may pick up
-  immediately.**) Verified directly (not assumed, ADR-0004): `git ls-remote
-  --tags hashicorp/vault` shows `v2.0.4` as the newest tag on the `2.0.x` line
-  this lab already runs (`gitops/platform/vault.yaml`'s
-  `server.image.tag: "2.0.3"` and `gitops/vault/unsealer.yaml`'s
-  `image: hashicorp/vault:2.0.3` — both pinned 2026-07-24, RFC/audit trail in
-  `vault.yaml`'s own inline `## Re-evaluation log`-style comment, mirroring an
-  ADR's re-evaluation log since Vault itself has no dedicated numbered ADR).
-  A full clone (`git clone hashicorp/vault`) + `git log v2.0.3..v2.0.4`
-  (real commit history, not the published `CHANGELOG.md`, which has no `2.0.x`
-  section at either tag — a pre-existing gap in HashiCorp's own changelog
-  publishing for this release line, flagged here per ADR-0004 rather than
-  silently worked around) shows the real fix set: three "security:" commits
-  turn out to be **false-positive suppressions**, not real vulnerabilities —
-  `git log --grep` on the suppressed IDs finds their origin commits titled
-  "Suppress false positive for GO-2026-5856 & 4970" and (same shape) for
-  GO-2026-5298; these do NOT count toward the flip condition. Two more ARE
-  real: `go.mod`/`go.sum` bump `klauspost/compress` → `v1.18.7` and
-  `go.opentelemetry.io/otel` → `v1.44.0`, resolving GO-2026-5158 and
-  GO-2026-5841 (real dependency CVEs, not suppressions — commit
-  `e6dfd6375b`, "security: bump klauspost/compress to v1.18.7 and otel to
-  v1.44.0"). Separately, `af5fd5a1cc` ("Fix Goroutine Leak in Seal
-  Encryption") touches `vault/seal/seal.go` — the shared encrypt/decrypt path
-  every seal type (including this lab's Shamir/file-storage seal) goes
-  through, a real reliability fix, not seal-type-specific. This satisfies
-  this pin's own flip condition in spirit (a real security-relevant fix past
-  `2.0.3`) even though no public CVE bulletin names `2.0.3` itself as
-  affected — same "ships with a security fix" standard this run's earlier
-  k3s bump (RFC #995) used, not a blind patch assumption.
-
-  Bump `gitops/platform/vault.yaml`'s `server.image.tag: "2.0.3"` → `"2.0.4"`
-  (server) AND `gitops/vault/unsealer.yaml`'s `image: hashicorp/vault:2.0.3`
-  → `hashicorp/vault:2.0.4` (unsealer CLI) — both must move together, same
-  footgun-avoidance pattern as k3s's two-tag-format note (RFC #995) and
-  ADR-0030's own history. Update `tests/securitycontext-vault.bats`'s two
-  pin assertions (`"vault Application server image pinned to 2.0.3"` →
-  `2.0.4`; `"vault-unsealer image bumped to hashicorp/vault:2.0.3"` →
-  `2.0.4`). Extend `vault.yaml`'s inline `## Re-evaluation log`-style comment
-  with a new dated entry (after the existing 2026-07-24 entry) recording this
-  bump: cite the false-positive-suppression findings (GO-2026-5856/4970/5298),
-  the two real dependency-CVE fixes (GO-2026-5158/5841 via
-  klauspost/compress + otel bumps), and the goroutine-leak fix, with a new
-  flip condition for the next audit (e.g. "revisit when a bulletin names a
-  version above `2.0.4` as affected, or when bumping the chart
-  `targetRevision` past `0.34.0`"). No ADR-0017 edit needed — its `2.0.3`
-  mentions are historical narrative describing the 2026-07-17 PSS-flip
-  decision, not a live pin the drift checks track (confirmed directly:
-  `scripts/adr-image-pin-sync-check.sh` does not reference vault/2.0.3 at
-  all — only `adr-0009-rabbitmq-message-broker.md` is wired into that check).
-  `make ci` must pass. PR body must document the false-positive-vs-real
-  finding above (don't just cite "three security commits exist" — say which
-  ones are noise) and the ADR-0004 caveat that this remote clusterless
-  session cannot verify Vault starts cleanly / unseals correctly post-bump on
-  a live cluster — call out the rollback path (revert both tags; ArgoCD
-  re-syncs the server image on next reconciliation; the unsealer Deployment
-  picks up the reverted tag on its next rollout; no data-loss risk — Vault's
-  file-storage PVC data is untouched by an image-tag revert).
-  `docs/done/` entry required. (auto/vault-image-2-0-4)
+  unsealer)** — full verification writeup:
+  [docs/done/2026-08-05-vault-image-2-0-4.md](docs/done/2026-08-05-vault-image-2-0-4.md).
+  (auto/vault-image-2-0-4; PR #1011)
 
 - [x] 🟢 **Bump `ack-s3` (AWS Controllers for Kubernetes S3 chart) `1.8.2` → `1.9.0`**
   (CHARTER **Core Values** §"Everything as code" + general hardening;
@@ -5643,74 +5388,10 @@ there is no point where the lab loses a working git source or CI path.
   bugfix, so a follow-up guard is a judgment call for the PR body to make, not a hard
   requirement). `docs/done/` entry required. (auto/dependency-register)
 
-- [x] 🟢 **Incident classification (severity) scheme + incident log** (CHARTER
-  **Goals** §"operational-resilience discipline" — DORA's incident-management pillar
-  mapped onto concrete practice; planner-fallback gap analysis 2026-08-04, reached via
-  `executor.prompt.md` STEP 6b after all three standing "Now / next" items were found
-  gated on unconfirmed maintainer-confirmation issues #631/#633 with no live-state-safe
-  slice to split off. **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): `docs/dora-audit-readiness.md`'s Q6
-  ("Is there a documented incident classification (severity) scheme?") answers "No...
-  Gap: real" and Q7 notes the same absence; the file's closing summary (¶ after
-  "## Overall summary") names this the one *structural* (non-cadence) DORA gap left —
-  "neither [`make dora-metrics`'s MTTR row nor its change-failure-rate row] is a
-  substitute for a severity scheme or a root-cause incident log for live-cluster
-  events." `docs/dora-resilience-mapping.md`'s Pillar 2 section cites only the
-  CI-health MTTR metric, nothing about classification or a log. Grepping ROADMAP.md
-  and `docs/` for "incident classification"/"incident log" turns up nothing already
-  tracking this. This is genuine, real gap-analysis output (Core Value/Goal not
-  covered), not manufactured filler — and unlike the three gated items above it, it
-  mutates no live-synced cluster state at all (pure docs), so it carries zero blast
-  radius risk.
-
-  Add `docs/incident-log.md`: (1) a severity scheme sized for this lab's actual
-  solo-operator, clusterless-by-default shape — explicitly name "no paging, no
-  escalation path" as an intentional non-goal (mirroring Q7's own gap note) rather
-  than a silent absence, e.g. P0 (whole-lab-down / data-loss risk — fix same session),
-  P1 (single always-on component down or a security-relevant gap — fix same session
-  or next), P2 (on-demand/heavy component or non-blocking defect — backlog item), P3
-  (cosmetic/doc drift — filler-lane item); (2) a "How to log a new incident" template
-  row shape (mirror the existing `| Field | Content |` template already used in
-  `docs/dora-audit-readiness.md`'s own "Template for a new question" — Date,
-  Severity, Component(s), Detection, Root cause, Fix, Time to resolve, Follow-up);
-  (3) backfill the real, already-observed incidents narrated in issue #631/#633's own
-  comment history (verified directly against those comments, not fabricated,
-  ADR-0004) — at minimum: Cilium agents losing apiserver connectivity after a k3d
-  node IP reshuffle (fixed live via `make cilium-up`, #631 comment 2026-07-29);
-  `artifactory` namespace's default-deny NetworkPolicy missing an intra-namespace
-  allow so `artifactory-oss` could never reach its own bundled `postgresql` (fixed in
-  PR #884, `allow-artifactory-intra-namespace.yaml`); Harbor's HTTPRoute unreachable
-  because `allow-envoy-proxy-backend-egress` never allowlisted the `harbor` backend
-  namespace (fixed in PR #968); Harbor's Vault-held admin credential never matching
-  Harbor's real password so CI `docker login` could never succeed (fixed live,
-  Vault/GitLab-CI-variable data, not GitOps-managed, no PR); and the still-open
-  finding that no GitLab Runner has ever been registered against this lab's GitLab
-  instance, so no `.gitlab-ci.yml` pipeline has ever executed here (#631/#633,
-  2026-08-04 comments — log this one with no "Fix"/"Time to resolve" yet, an
-  explicitly unresolved row, not a fabricated resolution).
-
-  Update `docs/dora-audit-readiness.md`'s Q6 answer from "No" to describe the new
-  scheme (cite `docs/incident-log.md`), updating its "Gap" line accordingly; leave
-  Q7's alerting/escalation gap language intact (this item adds classification +
-  logging, not automated paging — don't overclaim). Update the closing summary
-  paragraph to reflect that classification + a real incident log now exist, while
-  keeping the honest residual gap (no automated detection/alerting) explicit. Add one
-  sentence to `docs/dora-resilience-mapping.md`'s Pillar 2 section pointing to the new
-  doc alongside the existing MTTR metric citation. Add a one-line pointer to
-  `docs/incident-log.md` from `docs/DR.md`'s "Recovery cookbook" section for
-  severity triage. New `tests/incident-log.bats` (clusterless structural,
-  mirrors the shape of other doc-presence bats files): `docs/incident-log.md`
-  exists; contains a severity scheme referencing `P0`/`P1`/`P2`/`P3`; contains at
-  least the five backfilled incidents above (grep for `#884`, `#968`, `cilium`,
-  `GitLab Runner`); `dora-audit-readiness.md`'s Q6 answer no longer contains the
-  literal string "**Answer:** No" for Q6 specifically; no fabricated/placeholder
-  content (ADR-0004 grep guard: `grep -iE '"(fake|mock|placeholder|dummy)"'`).
-  `make ci` must pass (in particular `markdown-links-check.sh` for the new
-  cross-references). PR body must note this only closes Q6, not Q7 (alerting/
-  escalation remains a real, separately-scoped gap — Q12's chaos-testing idea
-  already named in the audit doc is a reasonable follow-up planner item if wanted,
-  not bundled into this one to stay within WAYS-OF-WORKING.md §3's size cap).
-  `docs/done/` entry required. (auto/incident-severity-scheme-log)
+- [x] 🟢 **Incident classification (severity) scheme + incident log** — full
+  verification writeup:
+  [docs/done/2026-08-04-incident-severity-scheme-log.md](docs/done/2026-08-04-incident-severity-scheme-log.md).
+  (auto/incident-severity-scheme-log; PR #973)
 
 - [x] 🟢 **Standardize scripts/*.sh's `bad()` failure-flag variable to `drift`**
   (janitor finding, issue #957 — a duplication sweep found `ok()`/`bad()` printf
