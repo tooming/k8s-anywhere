@@ -2009,35 +2009,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-17-keda-scaledobject-demo.md](docs/done/2026-07-17-keda-scaledobject-demo.md).
   (auto/keda-scaledobject-demo; PR #459)
 
-- [x] 🟢 **`disallow-latest-tag` ClusterPolicy — exclude the `capstone` namespace**
-  (RFC/issue #498 — architect decision 2026-07-18, implementing in the same PR as the
-  RFC issue, mirrors the inkless ADR-0017 audit pattern from issue #494 / PR #495.
-  **No prerequisites — executor may pick up immediately.**)
-  `gitops/kyverno/policies/disallow-latest-tag.yaml` is a hard, unconditional
-  `Enforce` rejection of any Pod whose image ends in `:latest` or carries no tag, with
-  no `exclude:` block. `gitops/apps/capstone/deployment.yaml` and `rollout.yaml` both
-  hardcode `image: artifactory.127.0.0.1.nip.io/docker-local/hello:latest` — on a
-  from-scratch `make up`, `capstone` syncs at wave 4, before `kyverno-policies` at
-  wave 5, so the initial Pod admits fine, but any *subsequent* Pod creation
-  (crash/restart, node evict, a Rollout scale event, or the exact "CI builds a new
-  image, roll the workload" flow capstone exists to demonstrate) is rejected — and
-  `capstone`'s `selfHeal: true` means ArgoCD keeps retrying and failing the same
-  reconcile. Add a narrow, explicitly-commented `exclude:` block to
-  `disallow-latest-tag.yaml` scoped to the `capstone` namespace only (mirror the exact
-  `exclude: any: - resources: namespaces: [...]` shape
-  `require-pod-security-restricted.yaml` already uses), with a comment stating the
-  flip condition: remove the exclusion once
-  `gitops/apps/capstone/{deployment,rollout}.yaml` reference a real, CI-pinned tag
-  instead of the floating `:latest` placeholder (depends on wiring Kargo's promotion
-  pipeline to capstone's image ref — a separate, larger item this issue's flip
-  condition points at, not built here). Do **not** hardcode a guessed "real" tag
-  instead (ADR-0004 — this remote clusterless session cannot know what tags actually
-  exist in the live Artifactory registry). Update ADR-0019's policy table row for
-  `disallow-latest-tag` to document the carve-out + flip condition (mirroring how the
-  `verify-image-signatures` Audit-mode carve-out is already documented there). Extend
-  `tests/kyverno.bats` (or `tests/kyverno-policies.bats`): exclude block present,
-  scoped to the `capstone` namespace only (not a blanket exclusion). `make ci` must
-  pass. `docs/done/` entry required. Closes #498. (auto/capstone-latest-tag-exclude)
+- [x] 🟢 **`disallow-latest-tag` ClusterPolicy — exclude the `capstone`
+  namespace** — full verification writeup:
+  [docs/done/2026-07-18-capstone-latest-tag-exclude.md](docs/done/2026-07-18-capstone-latest-tag-exclude.md).
+  (auto/capstone-latest-tag-exclude; PR #500) Closes #498.
 
 - [x] 🟢 **Bump RabbitMQ `3.13` → `4.3.x`** (CHARTER **Core Values** §"Everything as
   code" + general hardening; RFC #522 — architect decision 2026-07-18. **No
@@ -2121,35 +2096,10 @@ there is no point where the lab loses a working git source or CI path.
   must revert in lockstep if one was needed). `docs/done/` entry required. Closes #534.
   (auto/kro-bump-0-9)
 
-- [x] 🟢 **Migrate Grafana chart source off the deprecated `grafana.github.io/helm-charts`
-  repo** (RFC #544 — architect decision 2026-07-18. **No prerequisites — executor may
-  pick up immediately.**) `gitops/platform/observability-grafana.yaml`'s chart source
-  (`repoURL: https://grafana.github.io/helm-charts`, `targetRevision: 10.5.15`) is
-  deprecated: the chart's own `Chart.yaml` at that exact pinned tag carries
-  `deprecated: true`, and its README states migration to
-  `grafana-community/helm-charts` completed 2026-01-30. Migrate to
-  `repoURL: https://grafana-community.github.io/helm-charts`,
-  `targetRevision: 12.7.2` (verified current at the new source,
-  `appVersion: 13.1.0`, no deprecation flag). Do **not** bump the running Grafana
-  image itself in the same PR — `valuesObject.image.tag` stays pinned at `"13.0.1"`
-  per the file's own documented history (ADR-0006's Git Sync provider + a known
-  13.0.0 unified-storage migration bug for Git Sync users); the chart-source
-  migration only picks up newer Helm templates/schema, not a newer running binary.
-  Diff the old (chart 10.5.15) vs new (chart 12.7.2) chart's `values.yaml` /
-  `templates/_pod.tpl` for every key the `valuesObject` sets (`securityContext`,
-  `containerSecurityContext`, `initChownData`, `persistence`, `deploymentStrategy`,
-  `extraConfigmapMounts`, `extraEmptyDirMounts`, `extraInitContainers`, `grafana.ini`
-  — especially the `provisioning`/`unified_storage` feature-toggle keys ADR-0006
-  depends on — `datasources`, `dashboardProviders`, `dashboards.community`,
-  `extraObjects`) and confirm none were renamed/removed; document the verification
-  in the `docs/done/` entry per ADR-0004. Update in-file comments referencing
-  "grafana-10.5.15" as the verified chart tag to "grafana-12.7.2". Update any bats
-  assertion pinning the `grafana` chart's `targetRevision`/`repoURL`, and
-  `docs/dependency-tree.md` if it references either. `observability-alloy.yaml` and
-  `observability-pyroscope.yaml` also use the old repoURL but showed no deprecation
-  signal at their own dedicated source repos when checked — out of scope here.
-  `make ci` must pass. `docs/done/` entry required. Closes #544.
-  (auto/grafana-chart-source-migration)
+- [x] 🟢 **Migrate Grafana chart source off the deprecated
+  `grafana.github.io/helm-charts` repo** — full verification writeup:
+  [docs/done/2026-07-18-grafana-chart-source-migration.md](docs/done/2026-07-18-grafana-chart-source-migration.md).
+  (auto/grafana-chart-source-migration; PR #547) Closes #544.
 
 - [x] 🟢 **Pin Vault's server image tag explicitly** — full verification
   writeup:
@@ -2726,36 +2676,10 @@ there is no point where the lab loses a working git source or CI path.
   commit as this trim).
   (auto/harbor-observability-dashboard; PR #316)
 
-- [x] 🟢 **Lab — Kargo promotion-pipeline dashboard + observability metrics**
-  (CHARTER **Core Values** §"Real observability only"; ADR-0023; follows the
-  on-demand dashboard precedent from `lab-inkless.json`). Kargo api, controller,
-  and webhooks-server expose controller-runtime Prometheus metrics (default port
-  8080 per chart v1.2.0; executor must verify the actual port by checking the
-  `kargo-api` and `kargo-controller` Services before finalizing). The kargo
-  NetworkPolicy currently has no observability ingress allow. Add
-  `allow-kargo-metrics-ingress.yaml` to
-  `gitops/kargo/networkpolicy/kustomization.yaml` (ingress TCP 8080 from
-  `namespaceSelector: kubernetes.io/metadata.name: observability`; `podSelector:
-  {}` covers all kargo pods; mirrors the existing kyverno/trivy NP allow
-  pattern). Add `prometheus.scrape "kargo"` block to
-  `gitops/platform/observability-alloy.yaml` (static target
-  `kargo-api.kargo.svc.cluster.local:8080`; `scrape_interval = "30s"`; mirrors
-  the adjacent `velero` / `argo_rollouts` scrape pattern). New
-  `grafana/dashboards/lab-kargo.json` ("Lab — Kargo (GitOps Promotion)") modelled
-  on `lab-kyverno.json` stat-row: kargo-api pod running (KSM
-  `kube_deployment_status_replicas_available{namespace="kargo",deployment=~"kargo-api.*"}`);
-  ArgoCD sync state (`argocd_app_info{name="kargo-extras"}`); Stage promotion
-  count timeseries (`controller_runtime_reconcile_total{controller=~"stage.*"}`);
-  Freight creation rate (`controller_runtime_reconcile_total{controller=~"freight.*"}`);
-  Warehouse reconcile count (`controller_runtime_reconcile_total{controller=~"warehouse.*"}`).
-  All panels real Mimir data with `X-Scope-OrgID: lab` (ADR-0004 — panels not
-  yet emitting series show "No data" naturally; Kargo is on-demand). No HTTPRoute
-  row needed (Kargo UI at `kargo.127.0.0.1.nip.io` row already exists in the Lab
-  UIs panel); `make lab-ui-check` unaffected. Extend `tests/kargo.bats`: scrape
-  block `"kargo"` present in `observability-alloy.yaml`; `lab-kargo.json` exists;
-  dashboard references `controller_runtime_reconcile_total`; no fabricated data.
-  Update `docs/dependency-tree.md` with Kargo observability note. `docs/done/`
-  entry required. `make ci` must pass. (auto/kargo-observability-dashboard)
+- [x] 🟢 **Lab — Kargo promotion-pipeline dashboard + observability metrics** —
+  full verification writeup:
+  [docs/done/2026-07-01-auto-kargo-observability-dashboard.md](docs/done/2026-07-01-auto-kargo-observability-dashboard.md).
+  (auto/kargo-observability-dashboard; PR #317)
 
 - [x] 🟢 **Harbor day-0 credential seam — admin + CI registry secrets** (RFC #297
   / ADR-0024 — architect decision 2026-06-30; **no prerequisites — executor may
@@ -2810,35 +2734,10 @@ there is no point where the lab loses a working git source or CI path.
   (not replaced), and the new harbor selector is present. `make ci` must pass.
   `docs/done/` entry required. (auto/harbor-kargo-egress-prep)
 
-- [x] 🟢 **Capstone pipeline re-wire — Artifactory → Harbor registry host**
-  (CHARTER **Objective O4** + capstone RFC #62, RFC #297 / ADR-0024 — architect
-  decision 2026-06-30; **CI / security-adjacent changes pre-approved by ADR-0024
-  per WAYS-OF-WORKING.md §2**; **maintainer-confirmation prerequisite: pick up
-  ONLY after the maintainer confirms on #297 that the minimal Harbor profile was
-  measured on the live cluster and fits the 12 GB budget on-demand — the
-  ADR-0024 go/no-go gate, tracked as a standing `[Action required]` issue (#632,
-  stays open until confirmed); check it for a confirmation comment before
-  treating this as satisfied; skip to the next item if it cannot be verified this
-  run**). The registry-credential Secret (`auto/harbor-registry-secret-prep`)
-  and the Kargo egress NetworkPolicy widen (`auto/harbor-kargo-egress-prep`) are
-  already prepped, both above — this item is now scoped to the actual
-  live-state-mutating cutover only: `.gitlab-ci.yml` (registry host +
-  login — note the GitLab CI/CD variables it reads must be repointed at Harbor
-  creds by the maintainer outside this repo, since they're not GitOps-managed),
-  `gitops/kargo-project/project.yaml` (Warehouse `repoURL` — this is what
-  triggers Kargo's `argocd-update` promotion step against the live capstone
-  Application, so it stays gated alongside the image refs below, not split out),
-  `gitops/apps/capstone/rollout.yaml` + `deployment.yaml` (image refs +
-  `imagePullSecrets: harbor-registry`, now that the Secret exists),
-  `gitops/kyverno/policies/verify-image-signatures.yaml` (verifyImages scope
-  `artifactory.127.0.0.1.nip.io/**` → `harbor.127.0.0.1.nip.io/**` — independent
-  of the separate Audit→Enforce flip item, coordinate if both are open), and the
-  README / `docs/dependency-tree.md` references (and, once this lands, removing
-  the now-unused legacy-registry `namespaceSelector` from the NetworkPolicy the
-  prep item above widened). Update the relevant bats (capstone / kargo / kyverno)
-  for the new host. `make ci` must pass. `docs/done/` entry required.
-  **Executor note:** if this crosses ~400 lines, split the CI/registry-credential
-  cutover from the GitOps app/image-ref cutover. (auto/harbor-capstone-rewire)
+- [x] 🟢 **Capstone pipeline re-wire — Artifactory → Harbor registry host** —
+  full verification writeup:
+  [docs/done/2026-07-29-harbor-capstone-rewire.md](docs/done/2026-07-29-harbor-capstone-rewire.md).
+  (auto/harbor-capstone-rewire; PR #885)
 
 - [x] 🟢 **Decommission Artifactory manifests** (RFC #297 / ADR-0024 — architect
   decision 2026-06-30; **maintainer-confirmation prerequisite: pick up ONLY
