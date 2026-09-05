@@ -1417,95 +1417,19 @@ there is no point where the lab loses a working git source or CI path.
   (auto/ksm-chart-8-1-3; PR #1023)
 
 - [x] 🟢 **Pin Inkless's batch-coordinator `postgres` image explicitly —
-  `postgres:17` → `postgres:17.10`** (CHARTER **Core Values** §"Everything as
-  code" + general hardening; planner-fallback finding 2026-08-05, surfaced
-  during this run's ARCHITECT-fallback audit of ADR-0015 (issue #1013/PR
-  #1014, which held Inkless's Postgres at the `17.x` line rather than jump to
-  the released `18.x` major) — that audit's body flagged this as a separate,
-  non-architectural gap: `postgres:17` is a **floating tag**, unlike every
-  other version-sensitive pin in this repo (Vault, Grafana, Argo Rollouts,
-  Envoy Gateway, Kiali, k3s), which all pin an exact patch explicitly. **No
-  prerequisites — executor may pick up immediately** (Now/next's three
-  standing items remain gated on #631/#633, no new comment). Verified
-  directly (not assumed, ADR-0004): Docker Hub's tags API
-  (`hub.docker.com/v2/repositories/library/postgres/tags?name=17.`) shows
-  `17.10` as the newest patch on the `17.x` line (`17.0` through `17.10`, no
-  `17.11` yet), matching `postgres/postgres`'s own `REL_17_10` git tag. This
-  is a **pin-what's-already-running** change, not a version bump — the
-  floating `postgres:17` tag already resolves to `17.10` on any fresh image
-  pull today; explicit pinning only makes that fact durable and inspectable,
-  mirroring the 2026-07-24 Vault server-image-pin precedent
-  (`docs/done/2026-07-24-vault-server-image-tag-pin.md`) exactly.
-
-  Bump `gitops/inkless/postgres-statefulset.yaml`'s `image: postgres:17` →
-  `image: postgres:17.10`. Add a new recurrence-guard assertion to
-  `tests/inkless.bats` (currently that file only asserts the StatefulSet
-  manifest *exists* — `"postgres StatefulSet manifest exists"` — no test
-  guards the image tag at all yet): assert `image: postgres:17.10` is
-  present in `postgres-statefulset.yaml`, and a second assertion that the
-  bare floating `image: postgres:17` (no patch suffix) is NOT present, same
-  shape as this repo's other per-component exact-version pin recurrence
-  guards (mirrors `ack-s3.bats`/`envoy-gateway.bats`). No ADR-0015 edit
-  needed beyond what PR #1014 already added — that re-evaluation log entry
-  already documents the `17.x` vs `18.x` major-line decision; this item only
-  makes the *current* `17.x` patch explicit, it doesn't re-litigate the
-  major-version hold. No `docs/dependency-tree.md`/`context.md` update
-  needed — neither cites this image's specific version (checked directly).
-  `make ci` must pass. PR body must document the Docker Hub tag-currency
-  finding above and the ADR-0004 caveat that this remote clusterless session
-  cannot verify `inkless-postgres` starts cleanly post-pin on a live cluster
-  — call out the rollback path (revert the tag; Inkless is on-demand/never
-  auto-synced, so this has zero live-cluster blast radius until the
-  maintainer next runs `make inkless-up`; no data-loss risk either way since
-  `17.10` and floating `17` are the same actual image content today).
-  `docs/done/` entry required. (auto/inkless-postgres-explicit-pin)
+  `postgres:17` → `postgres:17.10`** — full verification writeup:
+  [docs/done/2026-08-05-inkless-postgres-explicit-pin.md](docs/done/2026-08-05-inkless-postgres-explicit-pin.md).
+  (auto/inkless-postgres-explicit-pin; PR #1016)
 
 - [x] 🟢 **Bump Vault's pinned image `hashicorp/vault:2.0.3` → `2.0.4` (server +
   unsealer)** — full verification writeup:
   [docs/done/2026-08-05-vault-image-2-0-4.md](docs/done/2026-08-05-vault-image-2-0-4.md).
   (auto/vault-image-2-0-4; PR #1011)
 
-- [x] 🟢 **Bump `ack-s3` (AWS Controllers for Kubernetes S3 chart) `1.8.2` → `1.9.0`**
-  (CHARTER **Core Values** §"Everything as code" + general hardening;
-  planner-fallback upstream check 2026-08-05, reached via `executor.prompt.md`
-  STEP 6b after all three standing Now/next items were re-confirmed gated on
-  unconfirmed maintainer-confirmation issues #631/#633 (both re-checked this
-  run, no new comment) with no live-state-safe slice to split off, and Planner
-  STEP 2's own intake pass found zero ungroomed issues and zero un-RFC'd 🟡
-  items to promote — this is a genuine upstream-currency gap-analysis finding,
-  not manufactured filler. **No prerequisites — executor may pick up
-  immediately.**) Verified directly (not assumed, ADR-0004): `git ls-remote
-  --tags aws-controllers-k8s/s3-controller` shows `v1.9.0` as the newest stable
-  tag (no pre-release beyond it), one **minor** release ahead of this lab's
-  pinned `1.8.2` (`gitops/platform/ack-s3.yaml`) — not a major bump, so within
-  this routine's mandate. A full clone diff (`git diff v1.8.2 v1.9.0 --
-  helm/`) touches **only** three files: `helm/Chart.yaml` (`version`/
-  `appVersion` `1.8.2` → `1.9.0`), `helm/templates/NOTES.txt`, and
-  `helm/values.yaml`'s `image.tag` — all three are just the version-string
-  bump itself. `git log v1.8.2..v1.9.0 -- helm/` shows exactly one commit:
-  "Update to ACK runtime `v0.62.0`, code-generator `v0.62.0`" (#240) — a
-  routine ACK-framework dependency bump, not a behavioral change to the S3
-  controller's own reconciliation logic. Every key this lab's
-  `ack-s3.yaml` Application sets in `valuesObject` (`aws.*`, `installScope`,
-  `podSecurityContext.*`, `securityContext.*`, `resources.*`) is unchanged in
-  the new chart's `values.yaml` — confirmed directly, not assumed.
-
-  Bump `gitops/platform/ack-s3.yaml`'s `targetRevision: 1.8.2` → `1.9.0`.
-  Update `tests/ack-s3.bats`'s two chart-pin assertions (the "pins chart
-  version" assertion to `1.9.0`, the "does not pin the stale ... version"
-  assertion to the now-stale `1.8.2`) — this is the existing recurrence-guard
-  pattern, mirroring `envoy-gateway.bats`/`harbor.bats`. No
-  `docs/dependency-tree.md` or `context.md` update needed — neither cites this
-  chart's specific version number (checked directly; the dependency-tree's
-  wave-3 table row lists `ack-s3` by name only, no version). `make ci` must
-  pass. PR body must document the diff/commit findings above, why `1.9.0`
-  (smallest safe delta past a routine framework bump, not a blind assumption),
-  and the ADR-0004 caveat that this remote clusterless session cannot verify
-  the ACK S3 controller reconciles a live `Bucket` CR against moto
-  post-bump on a real cluster — call out the rollback path (revert
-  `targetRevision`; ArgoCD re-syncs the prior chart version on next
-  reconciliation; no CRD/CR schema change in this bump, so no data-loss risk).
-  `docs/done/` entry required. (auto/ack-s3-chart-1-9-0)
+- [x] 🟢 **Bump `ack-s3` (AWS Controllers for Kubernetes S3 chart) `1.8.2` →
+  `1.9.0`** — full verification writeup:
+  [docs/done/2026-08-05-ack-s3-chart-1-9-0.md](docs/done/2026-08-05-ack-s3-chart-1-9-0.md).
+  (auto/ack-s3-chart-1-9-0; PR #1009)
 
 - [x] 🟢 **Bump k3s pin `v1.36.2+k3s1` → `v1.36.3+k3s1` on both backends** —
   full verification writeup:
@@ -1531,46 +1455,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-08-03-harbor-chart-1-19-2.md](docs/done/2026-08-03-harbor-chart-1-19-2.md).
   (auto/harbor-chart-1-19-2; PR #963)
 
-- [x] 🟢 **Bump cert-manager chart `1.21.0` → `1.21.1`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; RFC #933 — architect decision
-  2026-07-31, ADR-0028 audit #931 resolved as **Convert**. **No prerequisites —
-  executor may pick up immediately.**) `v1.21.1` exists — confirmed directly via
-  `git ls-remote --tags https://github.com/cert-manager/cert-manager.git` (not
-  training knowledge, ADR-0004) and a shallow clone at that tag showing the
-  commit dates to 2026-07-29, two days after ADR-0028's most recent audit
-  (#763, 2026-07-27). `git log refs/tags/v1.21.0..refs/tags/v1.21.1` on that
-  real clone shows: a fix for a controller panic/incorrect-renewal bug
-  (`fix(renew): Do not renew a certificate if its renewPolicy=Disabled`), and
-  four dependency bumps cert-manager's own renovate automation tagged
-  `[security]`: `golang.org/x/text` → `v0.40.0`, `google.golang.org/grpc` →
-  `v1.82.1`, `github.com/google/cel-go` → `v0.29.0`, `go.opentelemetry.io/otel`
-  → `v1.44.0`.
-
-  Bump `gitops/platform/cert-manager.yaml`'s `targetRevision: 1.21.0` →
-  `1.21.1` (same source, same major.minor line — patch bump only). Re-verify
-  directly at pickup time that the `1.21.1` chart's `values.yaml` still
-  contains every key this Application's `valuesObject` sets unchanged in shape
-  (`crds.enabled`, `resources.limits.memory`, `webhook.resources.limits.memory`,
-  `cainjector.resources.limits.memory`). Add a new dated entry to ADR-0028's
-  `## Re-evaluation log` (after the existing 2026-07-27 audit #763 entry)
-  recording this bump, citing audit #931, the four security-tagged dependency
-  bumps, and the renewal-policy panic fix, with a new flip condition for the
-  next audit (e.g. "revisit when a cert-manager security advisory names a
-  version at or above `1.21.1` as affected"). Extend `tests/cert-manager.bats`'s
-  existing chart-pin assertion (`"cert-manager Application pins chart version
-  1.21.0"`) to assert `1.21.1` instead — a recurrence guard mirroring this
-  repo's other per-component exact-version pin assertions. Update
-  `docs/dependency-tree.md`'s cert-manager bullet, which cites the chart
-  version explicitly (`v1.21.0` → `v1.21.1`). `make ci` must pass. PR body must
-  document the security-tagged dependency bumps + panic fix, why `1.21.1`
-  (smallest safe delta), and the ADR-0004 caveat that this remote clusterless
-  session cannot verify cert-manager issues/renews certificates cleanly
-  post-bump on a live cluster — call out the rollback path (revert
-  `targetRevision`; ArgoCD self-heals within its sync interval; cert-manager is
-  a stateless controller Deployment, so a revert recovers immediately with no
-  data loss — existing `Certificate`/`ClusterIssuer` objects and their Secrets
-  are untouched by a controller-image rollback). `docs/done/` entry required.
-  Closes #933. (auto/cert-manager-chart-1-21-1)
+- [x] 🟢 **Bump cert-manager chart `1.21.0` → `1.21.1`** — full verification
+  writeup:
+  [docs/done/2026-07-31-auto-cert-manager-chart-1-21-1.md](docs/done/2026-07-31-auto-cert-manager-chart-1-21-1.md).
+  (auto/cert-manager-chart-1-21-1; PR #937) Closes #933.
 
 - [x] 🟢 **Bump `kro` chart `0.9.2` → `0.9.3`** (CHARTER **Core Values** §"Everything as
   code" + general hardening; planner gap-analysis sweep 2026-07-30 — all three
@@ -1834,130 +1722,17 @@ there is no point where the lab loses a working git source or CI path.
   Makefile line is confirmed present — optional, not required to land this fix). `make
   ci` must pass. `docs/done/` entry required. (auto/adr-0006-stale-followup-note)
 
-- [x] 🟢 **Bump Cilium `1.16.6` → `1.17.18`** (CHARTER **Core Values** §"Everything
-  as code" + general hardening; RFC/issue #501 — architect decision 2026-07-18,
-  ADR audit resolved as **Convert**. **No prerequisites — executor may pick up
-  immediately.**)
-  [CVE-2026-49445](https://github.com/cilium/cilium/security/advisories/GHSA-3fcv-jvfp-m4q9)
-  (disclosed 2026-07-15): Cilium's Envoy proxy creates a world-accessible
-  `admin.sock` on cluster nodes when Envoy runs — a local attacker on the node
-  can reach Envoy's admin endpoints (expose TLS secrets, disrupt traffic, kill
-  the Envoy process). Affects all versions before 1.17.14, 1.18.0–1.18.7, and
-  1.19.0–1.19.1; fixed in 1.17.14, 1.18.8, 1.19.2. This lab pins Cilium at
-  `1.16.6` (`gitops/platform/cilium.yaml`, ADR-0014) — in the affected range.
-  Verified applicability against the actual deployed config (not just the
-  version number, per ADR-0004): the pinned chart's `values.yaml` at tag
-  `v1.16.6` defaults `envoy.enabled: ~` (null), and the chart's own comment
-  states this means Envoy's standalone DaemonSet "is enabled by default for
-  new installation" — i.e. Envoy (and its admin.sock) runs in this lab's
-  cluster today regardless of whether any L7 `CiliumNetworkPolicy` is
-  authored. `gitops/platform/cilium.yaml` does not override `envoy.enabled`,
-  so the default applies. (A second CVE found in the same sweep,
-  CVE-2026-56742 — Gateway API traffic mirroring — does NOT apply: it requires
-  Cilium's own Gateway API implementation, which this lab does not use;
-  ingress is Envoy Gateway per ADR-0008, a separate product. No action needed
-  for that one.)
+- [x] 🟢 **Bump Cilium `1.16.6` → `1.17.18`** — full verification writeup:
+  [docs/done/2026-07-18-cilium-cve-bump.md](docs/done/2026-07-18-cilium-cve-bump.md).
+  (auto/cilium-cve-bump-1-17-18; PR #505) Closes #501.
 
-  Bump `gitops/platform/cilium.yaml`'s `targetRevision` from `1.16.6` to
-  `1.17.18` (the latest patch on the 1.17.x line — includes the CVE-2026-49445
-  fix at the smallest version delta from the current pin, deliberately not
-  jumping to 1.18.x/1.19.x). No `valuesObject` change is required — the fix is
-  internal to the bundled Envoy binary, not a values-schema change. ADR-0014
-  already states "chart `cilium/cilium` ≥ v1.16" so no ADR text change is
-  needed; 1.17.18 still satisfies that floor. Extend `tests/cilium.bats` (or
-  add a chart-pin assertion if none exists yet — check first) asserting the
-  new pinned version. PR body must document: the CVE, why it's applicable to
-  this lab's actual config (Envoy runs by default), why 1.17.18 was chosen
-  (smallest safe delta), and the ADR-0004 caveat that this remote clusterless
-  session cannot verify pod networking stays healthy post-bump on a live
-  cluster — call out the rollback path prominently (revert `targetRevision`,
-  ArgoCD self-heals; Cilium is a DaemonSet so a revert re-rolls the same way
-  the bump did) given Cilium is the CNI and the highest-blast-radius bump in
-  the stack. `make ci` must pass. `docs/done/` entry required. Closes #501.
-  (auto/cilium-cve-bump-1-17-18)
+- [x] 🟢 **Bump Kargo `1.2.3` → `1.6.4`** — full verification writeup:
+  [docs/done/2026-07-18-kargo-cve-bump-and-fixes.md](docs/done/2026-07-18-kargo-cve-bump-and-fixes.md).
+  (auto/kargo-cve-bump-1-6-4; PR #511) Closes #508.
 
-- [x] 🟢 **Bump Kargo `1.2.3` → `1.6.4`** (CHARTER **Core Values** §"Everything as
-  code" + general hardening; RFC/issue #508 — architect decision 2026-07-18,
-  ADR audit resolved as **Convert**. **No prerequisites — executor may pick up
-  immediately.**)
-  [CVE-2026-24748](https://github.com/akuity/kargo/security/advisories/GHSA-w5wv-wvrp-v5m5)
-  (medium, CVSS 6.9): Kargo's `GetConfig()` and `RefreshResource()` API
-  endpoints have a broken authentication check — an unauthenticated caller can
-  access them by supplying a non-empty (even invalid) `Bearer` token,
-  exfiltrating sensitive configuration data including connected ArgoCD cluster
-  endpoints, and enabling denial-of-service against `RefreshResource`.
-  Affected: all versions up to and including v1.8.6. Fixed in three parallel
-  branch releases: `v1.6.3`, `v1.7.7`, `v1.8.7`. This lab pins Kargo at `1.2.3`
-  (`gitops/platform/kargo.yaml`) — well inside the affected range.
-  Two other Kargo CVEs found in the same sweep do NOT apply to our current pin
-  (both require code introduced at 1.7.0+ or 1.9.0+, above our current
-  version): [CVE-2026-27112](https://github.com/akuity/kargo/security/advisories/GHSA-7g9x-cp9g-92mr)
-  (critical, affects >=1.7.0 <1.7.8/<1.8.11/<1.9.3) and
-  [CVE-2026-27111](https://github.com/akuity/kargo/security/advisories/GHSA-5vvm-67pj-72g4)
-  (affects only 1.9.0–1.9.2). Bump to `1.6.4` (latest patch on the `1.6.x`
-  line — one better than the `1.6.3` minimum fix) deliberately to resolve
-  CVE-2026-24748 **without** entering the 1.7.0+ range the other two CVEs
-  cover — the smallest safe delta, same reasoning as the Cilium bump
-  (RFC #501) above.
-  **Important — this is a 4-minor-version jump, not a routine patch bump.**
-  `gitops/kargo-project/project.yaml`'s `Warehouse`/`Project` resources are
-  still on `kargo.akuity.io/v1alpha1` (pre-stable API, no cross-minor-version
-  compatibility guarantee). The executor picking this up MUST verify the
-  actual CRD schema for `Warehouse`/`Project`/any `PromotionTask` fields this
-  repo uses is unchanged (or update accordingly) at the `v1.6.4` tag before
-  landing this — fetch the real CRD definitions (sparse git clone of
-  `akuity/kargo` at that tag; `ghcr.io`'s OCI registry doesn't expose an easy
-  diff), do not assume a clean drop-in the way the Cilium/Kyverno bumps were
-  (those only crossed one minor version each with a stable, well-documented
-  values schema). Document what was checked in the PR body. Extend
-  `tests/kargo.bats` asserting the new pin. PR body must document the CVE, why
-  `1.6.4`, the CRD-compatibility verification performed, and the ADR-0004
-  caveat that this remote clusterless session cannot verify Kargo actually
-  starts cleanly on a live cluster post-bump — note the rollback path (revert
-  `targetRevision`; Kargo is on-demand and not currently synced anywhere, so
-  rollback carries zero live-cluster risk beyond what a `make kargo-up` would
-  encounter). `make ci` must pass. `docs/done/` entry required. Closes #508.
-  (auto/kargo-cve-bump-1-6-4)
-
-- [x] 🟢 **Bump Kargo `1.6.4` → `1.10.9`** (CHARTER **Core Values** §"Everything
-  as code" + general hardening; same-day follow-up to the `1.2.3`→`1.6.4`
-  bump above, executor-initiated — **no prerequisites, no RFC needed**: this
-  is a same-source patch/minor bump within upgrade-drafter's normal scope,
-  just requiring the same CRD-compatibility rigor as the prior Kargo bump
-  because of its pre-1.0-caliber API surface). A fresh audit of every
-  published `github.com/akuity/kargo/security/advisories` entry against the
-  `1.6.4` pin (chosen by the item above) found **four** advisories affecting
-  it with no `1.6.x`-branch fix available (that branch is EOL upstream):
-  [GHSA-xx8h-gw9m-m95p](https://github.com/akuity/kargo/security/advisories/GHSA-xx8h-gw9m-m95p)
-  and [GHSA-f72x-6fm6-94rq](https://github.com/akuity/kargo/security/advisories/GHSA-f72x-6fm6-94rq)
-  (privilege escalation / missing authorization via Generic Resource Creation
-  API endpoints, affected `>=v0.1.0 <v1.11.0`, fixed `1.9.10`/`1.10.9`);
-  [GHSA-wp4p-hr79-q4g8](https://github.com/akuity/kargo/security/advisories/GHSA-wp4p-hr79-q4g8)
-  / CVE-2026-61850 (privilege escalation via Project RBAC management,
-  affected `>=0.6.0`, fixed `1.8.14`/`1.9.9`/`1.10.8`); and
-  [GHSA-g7gw-m874-7rmf](https://github.com/akuity/kargo/security/advisories/GHSA-g7gw-m874-7rmf)
-  / CVE-2026-42350 (open redirect in the UI OIDC login flow, affected
-  `<=v1.10.1`, fixed `1.10.2`+). The two CVEs the `1.6.4` bump deliberately
-  stayed below (GHSA-7g9x critical, affects `>=1.7.0 <=1.9.2`; GHSA-5vvm,
-  affects `1.9.0-1.9.2`) and the original CVE-2026-24748 remain correctly
-  not-applicable/already-fixed at any version `>= 1.6.4` — that prior
-  reasoning still holds, it was just stale relative to advisories disclosed
-  since (three of the four newly-closed ones were published after the
-  `1.6.4` pin was chosen). `1.10.9` is the highest stable release (verified
-  against the real tag list, not inferred) and closes every open advisory.
-  CRD/values compatibility re-verified the same way as the prior bump:
-  `global.securityContext`, `api.{replicas,resources,tls.selfSignedCert,secret}`
-  and `controller`/`webhooksServer` `resources` are all unchanged in path
-  (only new, unrelated optional fields added elsewhere in `values.yaml`); the
-  `Warehouse` `ImageSubscription` type (`RepoURL`/`ImageSelectionStrategy`/
-  `DiscoveryLimit`, json tags unchanged) moved from `warehouse_types.go` to a
-  new `zz_subscription_types.go` file, and the `argocd-update` step's config
-  schema moved from `internal/promotion/runner/builtin/schemas/` to
-  `pkg/promotion/runner/builtin/schemas/` (`internal/` was restructured into
-  `pkg/` across this version range) — both are pure code-reorganization
-  moves verified field-for-field, not schema changes. `make ci` must pass.
-  `docs/done/` entry required.
-  (auto/kargo-cve-bump-1-10-9)
+- [x] 🟢 **Bump Kargo `1.6.4` → `1.10.9`** — full verification writeup:
+  [docs/done/2026-07-18-kargo-cve-bump-1-10-9.md](docs/done/2026-07-18-kargo-cve-bump-1-10-9.md).
+  (auto/kargo-cve-bump-1-10-9; PR #549)
 
 - [x] 🟢 **`kyverno` PSA `baseline` → `restricted` flip** (CHARTER **Objective
   O2** hardening, RFC #483 — architect decision 2026-07-17, converting audit
