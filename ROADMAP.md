@@ -1427,40 +1427,9 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-31-auto-cert-manager-chart-1-21-1.md](docs/done/2026-07-31-auto-cert-manager-chart-1-21-1.md).
   (auto/cert-manager-chart-1-21-1; PR #937) Closes #933.
 
-- [x] 🟢 **Bump `kro` chart `0.9.2` → `0.9.3`** (CHARTER **Core Values** §"Everything as
-  code" + general hardening; planner gap-analysis sweep 2026-07-30 — all three
-  standing "Now / next" items gated on maintainer-confirmation issues #631/#633, no
-  ADR/RFC decision required for this one. **No prerequisites — executor may pick up
-  immediately.**) Verified directly (not assumed, ADR-0004): `git ls-remote --tags
-  https://github.com/kro-run/kro.git` (git protocol — this sandbox's proxy blocks the
-  `ghcr.io`/chart-index HTTPS host directly, same constraint noted on prior chart-pin
-  bumps) shows `v0.9.3` as the newest stable tag, one patch ahead of this lab's pinned
-  `0.9.2` (`gitops/platform/kro.yaml`). `v0.9.3`'s release notes (fetched from the real
-  GitHub release page) describe bug fixes only — a nil-pointer dereference fix in
-  ExternalDocs conversion, a fix for instance deletion getting stuck when SSA field
-  managers owned finalizers, panic recovery during dynamic-controller reconciliation,
-  and a dependency bump (OpenTelemetry to a version addressing a CVE in that
-  dependency) — with no breaking changes noted. This is the same smallest-safe-delta
-  pattern as this lab's other chart-pin bumps (patch-only, no minor/major jump).
-
-  Bump `gitops/platform/kro.yaml`'s `targetRevision: 0.9.2` → `0.9.3`. Also update
-  `docs/decisions/context.md`'s "KRO chart version: 0.9.2" line to `0.9.3` — `make ci`'s
-  context.md-version-sync check (`scripts/`, the "context.md version sync" gate)
-  cross-checks this literal citation against `gitops/platform/kro.yaml`'s live pin and
-  fails the PR if they drift, same mechanism already catching Grafana/Pyroscope
-  version citations. Update `tests/securitycontext-kro.bats`'s `"kro Application chart
-  pin is 0.9.x (not the old 0.4.1)"` test to also assert the specific patch
-  (`targetRevision: 0\.9\.3` alongside or replacing the looser `0\.9\.` match) — a
-  recurrence guard mirroring this repo's other per-component exact-version pin
-  assertions. No topology change, so no README/`docs/dependency-tree.md` update is
-  expected — note that explicitly in the PR body, which must also document: the fix
-  summary above, why `0.9.3` (smallest safe delta), and the ADR-0004 caveat that this
-  remote clusterless session cannot verify
-  `kro` starts cleanly post-bump on a live cluster — call out the rollback path (revert
-  `targetRevision`; ArgoCD self-heals within its sync interval; `kro` is a stateless
-  controller Deployment, so a revert recovers immediately with no data loss, same
-  pattern as the Envoy Gateway/Vault/Valkey/Grafana chart-pin bumps). `make ci` must
-  pass. `docs/done/` entry required. (auto/kro-cve-bump-0-9-3)
+- [x] 🟢 **Bump `kro` chart `0.9.2` → `0.9.3`** — full verification writeup:
+  [docs/done/2026-07-30-kro-cve-bump-0-9-3.md](docs/done/2026-07-30-kro-cve-bump-0-9-3.md).
+  (auto/kro-cve-bump-0-9-3; PR #901)
 
 - [x] 🟢 **Lab — Istio ambient mesh (`istio-system`) observability wiring: Alloy
   scrape + Grafana dashboard** — full verification writeup:
@@ -1716,25 +1685,10 @@ there is no point where the lab loses a working git source or CI path.
   `readOnlyRootFilesystem: true` assertion. `make ci` passes. `docs/done/` entry
   required. (auto/observability-readonlyrootfs-grafana)
 
-- [x] 🟢 **`observability` readOnlyRootFilesystem tighten — Pyroscope** (CHARTER
-  **Objective O2** hardening, ADR-0017 §"Per-workload field carve-outs"; split from the
-  combined item filed 2026-07-14). Verified against the pinned chart source
-  (`grafana/pyroscope` repo — the chart lives in the app's own repo, not
-  `grafana/helm-charts` — tag `pyroscope-2.0.3`,
-  `operations/pyroscope/helm/pyroscope/templates/deployments-statefulsets.yaml`): with
-  this config (v1 storage disabled, v2 enabled — the chart default — single "all"
-  component), the container mounts the same `data` PVC (our existing
-  `persistence.enabled: true, size: 4Gi`) twice — at `/data` (no subPath) and at
-  `/data-metastore` (subPath `.metastore`, the chart default, since `$isMetastore` is
-  true for the `all` component under v2) — confirmed via the image's Dockerfile
-  (`cmd/pyroscope/Dockerfile`, no `WORKDIR` override so `./data-metastore/...` CLI args
-  resolve to `/data-metastore/...`) that both are the only local write paths; actual
-  profile blocks go to the S3 backend (Garage) per `structuredConfig.storage.backend:
-  s3`. No new mount was needed — flipped `readOnlyRootFilesystem: false` → `true`
-  directly and replaced the stale comment with the verified rationale. Extended
-  `tests/securitycontext-observability.bats` with a `readOnlyRootFilesystem: true`
-  assertion. `make ci` passes. `docs/done/` entry required.
-  (auto/observability-readonlyrootfs-pyroscope)
+- [x] 🟢 **`observability` readOnlyRootFilesystem tighten — Pyroscope** — full
+  verification writeup:
+  [docs/done/2026-07-15-observability-readonlyrootfs-pyroscope.md](docs/done/2026-07-15-observability-readonlyrootfs-pyroscope.md).
+  (auto/observability-readonlyrootfs-pyroscope; PR #415)
 
   > **Network-access note (found 2026-07-15, resolving the 2026-07-14 filing's
   > "proxy-restricted" blocker):** `https://grafana.github.io/helm-charts` (the Helm
@@ -3629,45 +3583,9 @@ there is no point where the lab loses a working git source or CI path.
 
 - [x] 🟢 **GitHub Actions major-version bumps — `actions/checkout` v4.3.0→v7.0.0,
   `actions/cache` v4.3.0→v6.1.0, `actions/github-script` v7.0.1→v9.0.0,
-  `hashicorp/setup-terraform` v3.1.2→v4.0.1** (CHARTER **Core Values**
-  §"Clusterless gates stay green" + general CI hardening; RFC #611 — architect
-  decision 2026-07-20, resolving issue #608's open Node-runtime question.
-  **No prerequisites — executor may pick up immediately.**) RFC #611's binding
-  decision, verified against real sources (ADR-0004): GitHub-hosted
-  `ubuntu-latest` runners cache both Node.js 22.23.1 and 24.18.0 today
-  (`actions/runner-images`' `Ubuntu2404-Readme.md`, fetched directly), and
-  GitHub now requires actions to run on Node ≥24 (`github.blog` changelog,
-  2025-09-19 Node 20 deprecation). None of this repo's workflows use the
-  `pull_request_target`/`workflow_run` triggers checkout v7.0.0 restricts
-  (confirmed by grep across `.github/workflows/`), and the repo's one
-  github-script step (`auto-update-prs.yml`) uses only the injected
-  `github`/`context` globals and `require('child_process')`, never
-  `require('@actions/github')` or a `getOctokit` redeclaration — so v9.0.0's
-  ESM migration is a non-issue.
-
-  Update all 15 `uses:` lines across `.github/workflows/*.yml` to the exact
-  commit SHAs below (verified directly via `git ls-remote --tags`, not
-  inferred): **note the github-script SHA is the annotated tag's *peeled*
-  commit, not the tag-object SHA `git ls-remote` lists first** — a real
-  footgun, since the other three are lightweight tags where the listed SHA
-  already is the commit:
-  - `actions/checkout` → `9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0` # v7.0.0
-  - `actions/cache` → `55cc8345863c7cc4c66a329aec7e433d2d1c52a9` # v6.1.0
-  - `actions/github-script` → `3a2844b7e9c422d3c10d287c895573f7108da1b3` # v9.0.0
-    (peeled commit — do NOT use `d746ffe35508b1917358783b479e04febd2b8f71`,
-    the tag object itself)
-  - `hashicorp/setup-terraform` → `dfe3c3f87815947d99a8997f908cb6525fc44e9e` # v4.0.1
-
-  Mirror the exact `# vX.Y.Z` comment format `chore/github-actions-sha-pinning`
-  (#609) established. Extend or add a bats file (check for existing
-  GitHub-Actions-pin coverage first, else add `tests/github-actions-pins.bats`)
-  asserting the four new SHAs/version comments are present — a recurrence
-  guard mirroring this repo's other per-component pin-assertion pattern.
-  `make ci` must pass — and per RFC #611, the PR's own GitHub Actions run
-  (lint/unit/drift/manifests/terraform/kustomize/up-to-date, all executing on
-  the bumped actions) IS the live verification here; call that out explicitly
-  in the PR body instead of the usual clusterless-caveat framing. `docs/done/`
-  entry required. Closes #611. (auto/github-actions-node24-bump)
+  `hashicorp/setup-terraform` v3.1.2→v4.0.1** — full verification writeup:
+  [docs/done/2026-07-20-github-actions-node24-bump.md](docs/done/2026-07-20-github-actions-node24-bump.md).
+  (auto/github-actions-node24-bump; PR #614) Closes #611.
 
 - [x] 🟢 **Velero chart major bump `8.7.2` → `12.1.0`** (RFC #617 — architect
   decision 2026-07-20, actioning ADR-0021's 2026-07-18 Re-evaluation log flip
@@ -3696,44 +3614,10 @@ there is no point where the lab loses a working git source or CI path.
   backup data). `make ci` must pass. `docs/done/` entry required. Closes #617.
   (auto/velero-chart-bump-12-1-0)
 
-- [x] 🟢 **Bump Cilium chart `1.17.18` → `1.18.12`** (CHARTER **Core Values**
-  §"Everything as code" + general hardening; RFC #917 — architect decision
-  2026-07-30, ADR-0014 audit #916 resolved as **Convert**. **No prerequisites —
-  executor may pick up immediately.**) Cilium's `SECURITY.md` support table now
-  marks every version `< 1.18.0` as unsupported (verified directly, not
-  training knowledge — ADR-0004); this lab's `1.17.18` pin
-  (`gitops/platform/cilium.yaml`) is on that unsupported line. This is the
-  exact flip condition ADR-0014's 2026-07-28 Re-evaluation log entry (audit
-  #772) recorded in advance. Cilium's own upgrade path is sequential
-  minor-by-minor, so this item is deliberately one step (`1.17.18` →
-  `1.18.12`, the latest `1.18.x` patch per `git ls-remote --tags
-  https://github.com/cilium/cilium.git`), not the full jump to the current
-  `1.20.0` — a future item covers the next step once this one has landed.
-
-  Bump `gitops/platform/cilium.yaml`'s `targetRevision: 1.17.18` →
-  `1.18.12`. Re-verify at pickup time (not just this RFC's cached read) that
-  the `1.18.12` chart's `values.yaml` still contains every key this
-  Application's `valuesObject` sets (`kubeProxyReplacement`,
-  `prometheus.enabled`/`port`, `hubble.enabled`, `operator.replicas`/
-  `resources`, `resources`) — same due-diligence pattern as the
-  Grafana/Pyroscope/ArgoCD chart bumps. Add a new dated entry to ADR-0014's
-  `## Re-evaluation log` (after the 2026-07-30 audit #916 entry) recording
-  this bump landing, with a new flip condition for the next step (e.g.
-  "revisit when `1.18.x` itself reaches end-of-support, or a CVE lands against
-  `1.18.12` specifically"). Extend or add a `tests/*.bats` chart-pin assertion
-  for Cilium (check for an existing one first) asserting `1.18.12` is present
-  in `cilium.yaml` — a recurrence guard mirroring this repo's other
-  per-component exact-version pin assertions. Update
-  `docs/dependency-tree.md` only if it cites the pinned Cilium version
-  explicitly (verify first). PR body must document: the EOL trigger, why
-  `1.18.12` (smallest safe delta / sequential-upgrade step), and the
-  ADR-0004 caveat that this remote clusterless session cannot verify Cilium
-  continues routing pod traffic cleanly post-bump on a live cluster — call
-  out the rollback path (revert `targetRevision`; ArgoCD self-heals; Cilium
-  is a DaemonSet, so a revert re-rolls the same way the bump did, per the
-  existing rollback note already in `cilium.yaml`'s header comment). `make ci`
-  must pass. `docs/done/` entry required. Closes #917.
-  (auto/cilium-1-18-12-bump)
+- [x] 🟢 **Bump Cilium chart `1.17.18` → `1.18.12`** — full verification
+  writeup:
+  [docs/done/2026-07-30-cilium-1-18-12-bump.md](docs/done/2026-07-30-cilium-1-18-12-bump.md).
+  (auto/cilium-1-18-12-bump; PR #920) Closes #917.
 
 - [x] 🟢 **DR/capstone-demo results-history log — track pass/fail + elapsed
   time per run over time** — full verification writeup:
