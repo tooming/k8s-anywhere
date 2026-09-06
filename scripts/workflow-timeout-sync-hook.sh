@@ -3,7 +3,7 @@
 # file, check whether every job still sets an explicit timeout-minutes and, if not,
 # surface a reminder so it's fixed in the same change (the local companion to the CI
 # workflow-timeout-check 'drift' gate). Reads the Claude Code hook payload on
-# stdin; non-blocking. Mirrors envoy-egress-allowlist-sync-hook.sh's shape.
+# stdin; non-blocking. Mirrors readme-sync-hook.sh's shape.
 #   exit 0 = nothing to say   |   exit 2 = stderr shown to Claude as a reminder
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

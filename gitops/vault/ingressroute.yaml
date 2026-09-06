@@ -1,0 +1,19 @@
+# Vault UI via Traefik. Uses a nip.io hostname (vault.127.0.0.1.nip.io resolves to
+# 127.0.0.1) so we get a per-app hostname WITHOUT editing /etc/hosts. Reach it at
+# http://vault.127.0.0.1.nip.io:8080  (root token is in the vault-keys Secret).
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: vault-ui
+  namespace: vault
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`vault.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
+        - name: vault
+          port: 8200
+  tls: {}

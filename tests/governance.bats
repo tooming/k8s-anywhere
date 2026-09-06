@@ -136,15 +136,6 @@ cert-manager capstone-pipeline"
   done
 }
 
-@test "envoy-gateway-system governance leaf dir has kustomization.yaml" {
-  [ -f "$GOV/envoy-gateway-system/kustomization.yaml" ]
-}
-
-@test "envoy-gateway-system kustomization references the shared base limitrange" {
-  run grep -q 'base/limitrange-standard.yaml' "$GOV/envoy-gateway-system/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
 @test "node-exporter governance leaf dir has kustomization.yaml" {
   [ -f "$GOV/node-exporter/kustomization.yaml" ]
 }

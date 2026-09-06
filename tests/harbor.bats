@@ -53,12 +53,12 @@ setup() {
   [[ "$output" == *"enabled: false"* ]]
 }
 
-@test "harbor Application uses clusterIP expose type (Envoy fronts ingress, ADR-0008)" {
+@test "harbor Application uses clusterIP expose type (Traefik fronts ingress, ADR-0040)" {
   run grep -q 'type: clusterIP' "$REPO/gitops/platform/harbor.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "harbor Application disables TLS (Envoy HTTPRoute fronts plain HTTP, ADR-0008)" {
+@test "harbor Application disables TLS (Traefik IngressRoute fronts plain HTTP, ADR-0040)" {
   run grep -q 'tls:' "$REPO/gitops/platform/harbor.yaml"
   [ "$status" -eq 0 ]
 }
@@ -137,39 +137,46 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Envoy HTTPRoute (ADR-0008) -----------------------------------------------
-@test "harbor HTTPRoute manifest exists" {
-  [ -f "$REPO/gitops/harbor/route.yaml" ]
+# --- Traefik IngressRoute (ADR-0040, supersedes Envoy Gateway/ADR-0008) -------
+@test "harbor IngressRoute manifest exists" {
+  [ -f "$REPO/gitops/harbor/ingressroute.yaml" ]
 }
 
-@test "harbor HTTPRoute uses host harbor.127.0.0.1.nip.io" {
-  run grep -q '"harbor.127.0.0.1.nip.io"' "$REPO/gitops/harbor/route.yaml"
+@test "harbor IngressRoute uses host harbor.127.0.0.1.nip.io" {
+  run grep -q 'harbor.127.0.0.1.nip.io' "$REPO/gitops/harbor/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "harbor HTTPRoute backendRef targets harbor service port 80" {
-  run grep -q 'port: 80' "$REPO/gitops/harbor/route.yaml"
+@test "harbor IngressRoute service targets harbor service port 80" {
+  run grep -q 'port: 80' "$REPO/gitops/harbor/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "harbor HTTPRoute parentRef targets the lab-gateway (eg)" {
-  run grep -q 'namespace: lab-gateway' "$REPO/gitops/harbor/route.yaml"
+@test "harbor IngressRoute is a traefik.io/v1alpha1 object" {
+  run grep -q 'apiVersion: traefik.io/v1alpha1' "$REPO/gitops/harbor/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 
 # Found live 2026-08-13 (#631): every `docker push` blob-upload session
-# consistently 504'd on its first POST to /v2/<repo>/blobs/uploads/ — Envoy
-# Gateway's ~15s default request timeout is too tight for harbor-core proxying
-# to a cold registry connection under this host's real load. Recurrence guard
-# for a fix that landed as a direct live-verified commit (no PR) — without this
-# assertion, a future edit could silently drop the `timeouts:` block and
+# consistently 504'd on its first POST to /v2/<repo>/blobs/uploads/ — the
+# gateway's default request timeout is too tight for harbor-core proxying to a
+# cold registry connection under this host's real load. Recurrence guard for a
+# fix that landed as a direct live-verified commit (no PR) — without this
+# assertion, a future edit could silently drop the ServersTransport and
 # reintroduce the near-100%-failure-rate push timeout with no gate catching it.
-@test "harbor HTTPRoute sets a 60s request/backendRequest timeout (chart default too tight under load)" {
-  run grep -q 'timeouts:' "$REPO/gitops/harbor/route.yaml"
+# Migrated 2026-09-06 from HTTPRoute's per-route `timeouts:` field (ADR-0008) to
+# Traefik's ServersTransport CRD (ADR-0040) — same intent, different mechanism.
+@test "harbor IngressRoute references a ServersTransport for the slow backend" {
+  run grep -q 'serversTransport: harbor-slow-backend' "$REPO/gitops/harbor/ingressroute.yaml"
   [ "$status" -eq 0 ]
-  run grep -q 'request: 60s' "$REPO/gitops/harbor/route.yaml"
+}
+
+@test "harbor ServersTransport sets a 60s dial/response-header timeout (chart default too tight under load)" {
+  run grep -q 'kind: ServersTransport' "$REPO/gitops/harbor/ingressroute.yaml"
   [ "$status" -eq 0 ]
-  run grep -q 'backendRequest: 60s' "$REPO/gitops/harbor/route.yaml"
+  run grep -q 'dialTimeout: 60s' "$REPO/gitops/harbor/ingressroute.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'responseHeaderTimeout: 60s' "$REPO/gitops/harbor/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -258,8 +265,8 @@ setup() {
   [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-ingress.yaml" ]
 }
 
-@test "harbor ingress allow targets port 80 from envoy-gateway-system" {
-  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' \
+@test "harbor ingress allow targets port 80 from kube-system (Traefik, ADR-0040)" {
+  run grep -q 'kubernetes.io/metadata.name: kube-system' \
     "$REPO/gitops/harbor/networkpolicy/allow-harbor-ingress.yaml"
   [ "$status" -eq 0 ]
 }

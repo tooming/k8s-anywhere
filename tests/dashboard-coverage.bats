@@ -24,7 +24,7 @@ setup() {
 }
 
 # Always-on service applications whose dashboard uses the Mimir datasource.
-MIMIR_DASHBOARDS="lab-argo-rollouts lab-capstone lab-data-demo lab-demo lab-envoy \
+MIMIR_DASHBOARDS="lab-argo-rollouts lab-capstone lab-data-demo lab-demo \
 lab-external-secrets lab-garage lab-cloud-control-plane lab-kyverno lab-alloy \
 lab-grafana lab-ksm lab-mimir lab-node-exporter lab-rabbitmq lab-s3manager \
 lab-trivy lab-valkey lab-vault lab-velero lab-cilium lab-argocd lab-gitsync \

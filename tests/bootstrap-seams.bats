@@ -67,7 +67,7 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   [ "$output" -ge 1 ]
 }
 
-@test "grafana-gitsync-bootstrap.sh defaults GRAFANA_URL to the stable front door :8000, not a per-cluster Envoy port" {
+@test "grafana-gitsync-bootstrap.sh defaults GRAFANA_URL to the stable front door :8000, not a per-cluster Traefik port" {
   run grep -oE 'GRAFANA_URL="\$\{GRAFANA_URL:-[^}]+\}"' "$REPO/scripts/grafana-gitsync-bootstrap.sh"
   [ "$status" -eq 0 ]
   [[ "$output" != *":8080"* ]]

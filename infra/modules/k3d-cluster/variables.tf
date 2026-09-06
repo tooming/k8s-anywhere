@@ -24,19 +24,19 @@ variable "api_port" {
 variable "http_port" {
   type        = number
   default     = 8080
-  description = "Host port mapped to the k3d loadbalancer :80 (ingress via Envoy)"
+  description = "Host port mapped to the k3d loadbalancer :80 (ingress via Traefik)"
 }
 
 variable "https_port" {
   type        = number
   default     = 8446
-  description = "Host port mapped to the k3d loadbalancer :443 (ingress via Envoy). NOT 8443 — the DR frontdoor's HTTPS TCP passthrough (scripts/bluegreen-frontdoor.sh) owns that port as the stable, blue/green-independent entry point."
+  description = "Host port mapped to the k3d loadbalancer :443 (ingress via Traefik). NOT 8443 — the DR frontdoor's HTTPS TCP passthrough (scripts/bluegreen-frontdoor.sh) owns that port as the stable, blue/green-independent entry point."
 }
 
 variable "disable_traefik" {
   type        = bool
-  default     = true
-  description = "Disable the bundled Traefik ingress — we use Envoy Gateway instead"
+  default     = false
+  description = "Disable the bundled Traefik ingress. Kept as an escape hatch (e.g. a future alternate ingress experiment) but Traefik is now the lab's sole north-south ingress controller (ADR-0040, supersedes ADR-0008) — leave false."
 }
 
 variable "disable_default_cni" {

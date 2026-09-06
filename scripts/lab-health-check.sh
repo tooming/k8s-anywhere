@@ -25,9 +25,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 WAIT="${HEALTH_WAIT:-90}"
 IV="${HEALTH_INTERVAL:-10}"
 ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo istio-system kiali longhorn-system kargo ack-system capstone harbor}"
-# Front-door UIs to probe (HTTP, from the host) — readiness of the pods behind Envoy
-# isn't enough: if the Envoy data plane is down, every :8000 UI is unreachable while the
-# pods still look fine. Probes the stable front door (:8000), not a per-cluster Envoy
+# Front-door UIs to probe (HTTP, from the host) — readiness of the pods behind Traefik
+# isn't enough: if the Traefik data plane is down, every :8000 UI is unreachable while the
+# pods still look fine. Probes the stable front door (:8000), not a per-cluster Traefik
 # port (:8080 blue / :8082 green) — those go away entirely once the cluster they belong
 # to is torn down after a blue/green cutover (docs/DR.md), so hardcoding one here would
 # make `make health` silently probe the wrong (or a since-removed) backend post-cutover.
@@ -88,7 +88,7 @@ scan() {
   for p in $UI_PROBES; do
     url=${p%|*}; name=${p#*|}
     code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 6 "$url" 2>/dev/null)"
-    case "$code" in 2*|3*|401|403) ;; *) F+="$name unreachable via the Envoy front door (HTTP $code) — $url"$'\n' ;; esac
+    case "$code" in 2*|3*|401|403) ;; *) F+="$name unreachable via the Traefik front door (HTTP $code) — $url"$'\n' ;; esac
   done
 
   [ -z "$A_POD" ] && [ -z "$A_WL" ] && [ -z "$F" ]
@@ -104,11 +104,11 @@ done
 
 fail=0
 if [ -z "$A_POD" ] && [ -z "$A_WL" ] && [ -z "${F:-}" ]; then
-  ok "every always-on pod Running+Ready, every workload's replicas Ready, and the Envoy front-door UIs answer"
+  ok "every always-on pod Running+Ready, every workload's replicas Ready, and the Traefik front-door UIs answer"
 else
   [ -n "$A_POD" ] && { bad "always-on pods NOT Running+Ready:"; printf '%s' "$A_POD" | while read -r l; do [ -n "$l" ] && note "$l"; done; }
   [ -n "$A_WL" ]  && { bad "always-on workloads with replicas not Ready:"; printf '%s' "$A_WL" | while read -r l; do [ -n "$l" ] && note "$l"; done; }
-  [ -n "${F:-}" ] && { bad "front-door UIs unreachable (Envoy data path down even if pods look Ready):"; printf '%s' "$F" | while read -r l; do [ -n "$l" ] && note "$l"; done; }
+  [ -n "${F:-}" ] && { bad "front-door UIs unreachable (Traefik data path down even if pods look Ready):"; printf '%s' "$F" | while read -r l; do [ -n "$l" ] && note "$l"; done; }
   fail=1
 fi
 if [ -n "${O_POD:-}" ]; then

@@ -1,0 +1,48 @@
+# Route the Harbor UI and OCI registry endpoint through Traefik at
+# http://harbor.127.0.0.1.nip.io:8000 (front door). Listed in the Grafana
+# "Lab UIs" panel (stack-health.json) — kept in sync by `make lab-ui-check`.
+# ON-DEMAND: synced as part of harbor-extras Application (auto-synced, wave 0).
+# The harbor-extras Application pre-creates this IngressRoute before `make harbor-up`
+# brings up the Harbor pods, so the front door exists as soon as the Application is
+# deployed regardless of whether Harbor is currently running.
+# Harbor exposes a unified HTTP endpoint on port 80 when expose.type=clusterIP and
+# expose.tls.enabled=false (ADR-0024 §"Minimal profile").
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: harbor
+  namespace: harbor
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`harbor.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
+        - name: harbor
+          port: 80
+          # Found live 2026-08-13 (#631): every `docker push` blob-upload session
+          # consistently 504'd on its very first POST to /v2/<repo>/blobs/uploads/ —
+          # not intermittent flakiness like the base-image-pull issue, a *structural*
+          # timeout, previously fixed under Envoy Gateway (ADR-0008) with a per-route
+          # `timeouts.request`/`timeouts.backendRequest: 60s`. Traefik's IngressRoute
+          # has no equivalent per-route request-timeout field — the ServersTransport
+          # below is the Traefik-native way to extend the *backend*-facing timeouts
+          # (dial + response-header wait) for exactly this slow-upstream case.
+          serversTransport: harbor-slow-backend
+  tls: {}
+---
+# Backend-facing timeout extension for the harbor Service above (see the IngressRoute
+# comment). 60s matches the convention used elsewhere in this repo for the same
+# "chart/gateway default too tight for this host" failure mode (Harbor, Kyverno,
+# ArgoCD, cert-manager, KEDA probe-timeout bumps).
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: harbor-slow-backend
+  namespace: harbor
+spec:
+  forwardingTimeouts:
+    dialTimeout: 60s
+    responseHeaderTimeout: 60s

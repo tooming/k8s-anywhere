@@ -64,13 +64,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-vault-from-gateway allows ingress from envoy-gateway-system namespace" {
-  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$VAULT_NP/allow-vault-from-gateway.yaml"
+@test "allow-vault-from-gateway allows ingress from kube-system namespace" {
+  run grep -q 'kubernetes.io/metadata.name: kube-system' "$VAULT_NP/allow-vault-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "allow-vault-from-gateway allows ingress from Envoy proxy pods" {
-  run grep -q 'app.kubernetes.io/component: proxy' "$VAULT_NP/allow-vault-from-gateway.yaml"
+@test "allow-vault-from-gateway allows ingress from Traefik pods" {
+  run grep -q 'app.kubernetes.io/name: traefik' "$VAULT_NP/allow-vault-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 

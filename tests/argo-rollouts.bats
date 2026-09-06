@@ -47,24 +47,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "argo-rollouts Application declares the gatewayAPI traffic-router plugin" {
-  run grep -q 'argoproj-labs/gatewayAPI' "$REPO/gitops/platform/argo-rollouts.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "argo-rollouts Application pins the gatewayAPI plugin at v0.5.0" {
-  run grep -q 'v0.5.0' "$REPO/gitops/platform/argo-rollouts.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "argo-rollouts trafficRouterPlugins is a YAML list, not a string (else the controller crashloops)" {
-  # A "|" block scalar double-encodes into the ConfigMap and the controller dies with
-  # "cannot unmarshal string into Go value of type []types.PluginItem". Guard: it must
-  # be a sequence. See scripts/rollouts-plugin-list-check.sh.
-  # `| tag` is a mikefarah-only operator (no jq/python-yq equivalent) — real CI
-  # always has mikefarah/yq; a local run without it skips rather than false-failing.
-  require_mikefarah_yq_or_skip
-  [ "$(yqs '.spec.source.helm.valuesObject.controller.trafficRouterPlugins | tag' "$REPO/gitops/platform/argo-rollouts.yaml")" = "!!seq" ]
+@test "argo-rollouts Application no longer declares a traffic-router plugin (Traefik is built into core, ADR-0040)" {
+  run grep -q 'name: argoproj-labs/gatewayAPI' "$REPO/gitops/platform/argo-rollouts.yaml"
+  [ "$status" -ne 0 ]
 }
 
 @test "argo-rollouts Application enables the dashboard" {
@@ -145,28 +130,28 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- HTTPRoute (rollouts.127.0.0.1.nip.io → dashboard :3100) -----------------
-@test "argo-rollouts HTTPRoute file exists" {
-  [ -f "$REPO/gitops/argo-rollouts/route.yaml" ]
+# --- IngressRoute (rollouts.127.0.0.1.nip.io → dashboard :3100, ADR-0040) ----
+@test "argo-rollouts IngressRoute file exists" {
+  [ -f "$REPO/gitops/argo-rollouts/ingressroute.yaml" ]
 }
 
-@test "argo-rollouts HTTPRoute exposes rollouts.127.0.0.1.nip.io" {
-  run grep -q 'rollouts.127.0.0.1.nip.io' "$REPO/gitops/argo-rollouts/route.yaml"
+@test "argo-rollouts IngressRoute exposes rollouts.127.0.0.1.nip.io" {
+  run grep -q 'rollouts.127.0.0.1.nip.io' "$REPO/gitops/argo-rollouts/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "argo-rollouts HTTPRoute routes to the dashboard service on port 3100" {
-  run grep -q 'port: 3100' "$REPO/gitops/argo-rollouts/route.yaml"
+@test "argo-rollouts IngressRoute routes to the dashboard service on port 3100" {
+  run grep -q 'port: 3100' "$REPO/gitops/argo-rollouts/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "argo-rollouts HTTPRoute attaches to the lab-gateway Gateway" {
-  run grep -q 'namespace: lab-gateway' "$REPO/gitops/argo-rollouts/route.yaml"
+@test "argo-rollouts IngressRoute is a traefik.io/v1alpha1 object" {
+  run grep -q 'apiVersion: traefik.io/v1alpha1' "$REPO/gitops/argo-rollouts/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "argo-rollouts HTTPRoute backend is the argo-rollouts-dashboard service" {
-  run grep -q 'argo-rollouts-dashboard' "$REPO/gitops/argo-rollouts/route.yaml"
+@test "argo-rollouts IngressRoute backend is the argo-rollouts-dashboard service" {
+  run grep -q 'argo-rollouts-dashboard' "$REPO/gitops/argo-rollouts/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -200,23 +185,17 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Controller plugin-download egress (controller → GitHub :443) ------------
-# The controller fetches its gatewayAPI traffic-router plugin from GitHub on boot;
-# default-deny blocks it ("dial tcp …:443: i/o timeout") and the controller exits.
-@test "argo-rollouts NetworkPolicy kustomization references the controller plugin-egress allow file" {
-  run grep -q 'allow-argo-rollouts-controller-egress-plugins.yaml' "$REPO/gitops/argo-rollouts/networkpolicy/kustomization.yaml"
-  [ "$status" -eq 0 ]
+# --- Controller plugin-download egress REMOVED 2026-09-06 (ADR-0040, supersedes
+# Envoy Gateway/ADR-0008): the controller no longer downloads any traffic-router
+# plugin binary at boot — Traefik's traffic routing is built into Argo Rollouts
+# core (see gitops/apps/capstone/rollout.yaml's trafficRouting.traefik).
+@test "argo-rollouts NetworkPolicy kustomization no longer references a controller plugin-egress allow file" {
+  run grep -q '^  - allow-argo-rollouts-controller-egress-plugins.yaml$' "$REPO/gitops/argo-rollouts/networkpolicy/kustomization.yaml"
+  [ "$status" -ne 0 ]
 }
 
-@test "controller plugin-egress allow file exists" {
-  [ -f "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-controller-egress-plugins.yaml" ]
-}
-
-@test "controller plugin-egress opens HTTPS (TCP 443) to external IPs, controller pods only" {
-  F="$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-controller-egress-plugins.yaml"
-  run grep -q 'port: 443' "$F"; [ "$status" -eq 0 ]
-  run grep -q 'app.kubernetes.io/component: rollouts-controller' "$F"; [ "$status" -eq 0 ]
-  run grep -q 'cidr: 0.0.0.0/0' "$F"; [ "$status" -eq 0 ]
+@test "controller plugin-egress allow file no longer exists" {
+  [ ! -f "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-controller-egress-plugins.yaml" ]
 }
 
 # --- Metrics ingress allow (Alloy → controller :8090) ------------------------
@@ -234,7 +213,7 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Dashboard ingress allow (Envoy proxy → dashboard :3100) -----------------
+# --- Dashboard ingress allow (Traefik → dashboard :3100) -----------------
 @test "dashboard gateway allow file exists" {
   [ -f "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-dashboard-from-gateway.yaml" ]
 }
@@ -244,8 +223,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dashboard allow file scopes ingress to envoy-gateway-system proxy pods" {
-  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-dashboard-from-gateway.yaml"
+@test "dashboard allow file scopes ingress to Traefik pods in kube-system" {
+  run grep -q 'kubernetes.io/metadata.name: kube-system' "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-dashboard-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 

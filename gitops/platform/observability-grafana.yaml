@@ -1,4 +1,4 @@
-# Grafana — visualizes the real metrics in Mimir. Routed through Envoy at
+# Grafana — visualizes the real metrics in Mimir. Routed through Traefik at
 # localhost:8080. Lab dashboards sync from GitLab via Grafana native Git Sync (ADR-0006).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -536,23 +536,27 @@ spec:
         # (ADR-0006). The community dashboards above (gnetId) use a separate file
         # provider and are unaffected.
         extraObjects:
-          - apiVersion: gateway.networking.k8s.io/v1
-            kind: HTTPRoute
+          - apiVersion: traefik.io/v1alpha1
+            kind: IngressRoute
             metadata:
               name: grafana
               namespace: observability
             spec:
-              parentRefs:
-                - name: eg
-                  namespace: lab-gateway
-              rules:
-                - matches:
-                    - path:
-                        type: PathPrefix
-                        value: /
-                  backendRefs:
+              entryPoints:
+                - web
+                - websecure
+              routes:
+                # No Host() match, same catch-all shape the former HTTPRoute had
+                # (no hostnames: field) — Grafana is the root/default UI at
+                # localhost:8080, not a *.127.0.0.1.nip.io subdomain. A bare
+                # PathPrefix has the lowest match priority, so every other
+                # app's Host()-scoped IngressRoute still wins for its own host.
+                - kind: Rule
+                  match: PathPrefix(`/`)
+                  services:
                     - name: grafana
                       port: 80
+              tls: {}
   destination:
     server: https://kubernetes.default.svc
     namespace: observability

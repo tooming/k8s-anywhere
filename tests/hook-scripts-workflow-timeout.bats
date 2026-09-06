@@ -3,7 +3,7 @@
 # PostToolUse hook, per the hook-scripts-coverage-tests-check convention
 # (tests/hook-scripts-coverage.bats itself is frozen; new hook-script coverage
 # goes in its own tests/hook-scripts-<scope>.bats file). Mirrors the existing
-# envoy-egress-allowlist-sync-hook.sh coverage exactly (same payload shape, same
+# readme-sync-hook.sh coverage exactly (same payload shape, same
 # filtered/unfiltered/in-sync assertions).
 
 setup() {

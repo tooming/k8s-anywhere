@@ -92,25 +92,24 @@ configs:
     # doesn't need per-Application overrides that may not propagate through
     # ApplicationSet template rendering.
     #
-    # --enable-helm added 2026-08-25 (gitops/envoy-gateway/): the live
-    # Application CRD (checked: argocd v3.5.0, `kubectl get crd
+    # The live Application CRD (checked: argocd v3.5.0, `kubectl get crd
     # applications.argoproj.io`) does NOT expose a `source.kustomize.
     # buildOptions` field at all — every Application in this repo that sets it
     # per-Application (argo-rollouts-networkpolicy.yaml,
-    # cert-manager-networkpolicy.yaml, envoy-gateway-system-networkpolicy.yaml,
-    # kargo-networkpolicy.yaml, kargo-project-networkpolicy.yaml,
-    # keda-networkpolicy.yaml, kyverno-networkpolicy.yaml,
-    # velero-networkpolicy.yaml, trivy-system-networkpolicy.yaml,
-    # governance-appset.yaml, networkpolicy-appset.yaml) has that field
-    # silently ignored by kubectl's strict-decode/ArgoCD's own schema — it
-    # only "works" for those because THIS global setting already covers the
-    # same LoadRestrictionsNone need. Needed here because
-    # gitops/envoy-gateway/kustomization.yaml vendors the envoy-gateway Helm
-    # chart via Kustomize's helmCharts inflator (to patch a probe timeout the
-    # chart hardcodes with no values.yaml hook) — `--enable-helm` is required
-    # for the repo-server to actually run that inflator (both `helm` and
-    # `kustomize` binaries are already present in the repo-server image).
-    kustomize.buildOptions: --load-restrictor LoadRestrictionsNone --enable-helm
+    # cert-manager-networkpolicy.yaml, kargo-networkpolicy.yaml,
+    # kargo-project-networkpolicy.yaml, keda-networkpolicy.yaml,
+    # kyverno-networkpolicy.yaml, velero-networkpolicy.yaml,
+    # trivy-system-networkpolicy.yaml, governance-appset.yaml,
+    # networkpolicy-appset.yaml) has that field silently ignored by kubectl's
+    # strict-decode/ArgoCD's own schema — it only "works" for those because
+    # THIS global setting already covers the same LoadRestrictionsNone need.
+    #
+    # --enable-helm REMOVED 2026-09-06 (ADR-0040, supersedes Envoy Gateway/
+    # ADR-0008): it was needed only for gitops/envoy-gateway/kustomization.yaml,
+    # which vendored the envoy-gateway Helm chart via Kustomize's helmCharts
+    # inflator; that overlay is gone and nothing else in this repo uses the
+    # inflator, so the flag is dead weight now.
+    kustomize.buildOptions: --load-restrictor LoadRestrictionsNone
 
 # Components we don't need in the lab — trimmed to save RAM.
 dex:

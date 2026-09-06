@@ -13,7 +13,7 @@ ONS=observability
 VNS=vault
 source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 
-# Grafana front-door (the stable :8000 proxy, not a per-cluster Envoy port —
+# Grafana front-door (the stable :8000 proxy, not a per-cluster Traefik port —
 # scripts/bluegreen-frontdoor.sh, docs/DR.md). Override for port-forward / a
 # different route.
 GRAFANA_URL="${GRAFANA_URL:-http://localhost:8000}"

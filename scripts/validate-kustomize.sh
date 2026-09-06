@@ -17,23 +17,17 @@ if ! command -v kustomize >/dev/null 2>&1; then
   printf '  %s·%s kustomize not installed — skipping (install: brew install kustomize)\n' "$Y" "$Z"; exit 0
 fi
 
-# --enable-helm added 2026-08-25: gitops/envoy-gateway/ vendors a Helm chart
-# via Kustomize's helmCharts inflator (mirrors the global argocd-cm
-# kustomize.buildOptions this script's own header comment already promises to
-# mirror — see infra/modules/argocd/values.yaml). Needs the `helm` binary,
-# same as ArgoCD's repo-server image already has.
-if ! command -v helm >/dev/null 2>&1; then
-  if [ "${CI:-}" = "true" ]; then
-    printf '  %s✗%s helm not installed (required in CI for --enable-helm)\n' "$R" "$Z"; exit 1
-  fi
-  printf '  %s·%s helm not installed — skipping (install: brew install helm)\n' "$Y" "$Z"; exit 0
-fi
+# --enable-helm (needed 2026-08-25 through 2026-09-06: gitops/envoy-gateway/
+# vendored a Helm chart via Kustomize's helmCharts inflator) REMOVED 2026-09-06
+# (ADR-0040, supersedes Envoy Gateway/ADR-0008): that overlay is gone and no
+# other kustomization.yaml in this repo uses the helmCharts inflator, so the
+# flag (and the `helm` binary this script used to require) is dead weight now.
 
 rc=0
 while IFS= read -r kfile; do
   dir="$(dirname "$kfile")"
   reldir="${dir#"$ROOT"/}"
-  if kustomize build --enable-helm --load-restrictor LoadRestrictionsNone "$dir" >/dev/null 2>/tmp/kustomize-err; then
+  if kustomize build --load-restrictor LoadRestrictionsNone "$dir" >/dev/null 2>/tmp/kustomize-err; then
     printf '  %s✓%s %s\n' "$G" "$Z" "$reldir"
   else
     printf '  %s✗%s %s\n' "$R" "$Z" "$reldir"

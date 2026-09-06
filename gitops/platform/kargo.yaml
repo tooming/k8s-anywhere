@@ -5,7 +5,7 @@
 # Plain HTTP inside the cluster (api.tls.enabled: false — see that key's own
 # comment below: selfSignedCert: false alone, this file's setting before
 # 2026-08-18, does NOT disable TLS and left kargo-api's pod permanently stuck
-# in ContainerCreating). TLS terminated at Envoy Gateway (ADR-0008). Admin
+# in ContainerCreating). TLS terminated at Traefik (ADR-0040, supersedes Envoy Gateway/ADR-0008). Admin
 # credentials from Vault via ESO
 # (ExternalSecret kargo-admin-credentials, Vault path secret/kargo/admin),
 # wired in wholesale via api.secret.name — the chart has no secretKeyRef-style

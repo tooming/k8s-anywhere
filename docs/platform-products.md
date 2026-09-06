@@ -70,7 +70,7 @@ graph TD
   end
   subgraph T1["Tier 1 — Platform primitives (every product needs these)"]
     secrets["Secrets: Vault + ESO"]:::prim
-    ingress["Ingress: Envoy Gateway"]:::prim
+    ingress["Ingress: Traefik"]:::prim
   end
   subgraph T2["Tier 2 — Data services"]
     s3["Object storage: Garage S3 (+ s3manager)"]:::data
@@ -98,7 +98,7 @@ graph TD
 | Tier | What | Build priority | Why this order |
 |------|------|----------------|----------------|
 | **0 Substrate** | Compute (Colima/k3d), TF state (off-cluster Garage), SCM (GitLab), GitOps (ArgoCD) | **P0** | Nothing exists without compute + a state store + a git source + a reconciler. This is the day-0 imperative seam. |
-| **1 Primitives** | Secrets (Vault+ESO), Ingress (Envoy Gateway) | **P0** | Every product needs to hold credentials and be reachable. Provisioned first by ArgoCD (sync-waves 0–1). |
+| **1 Primitives** | Secrets (Vault+ESO), Ingress (Traefik) | **P0** | Every product needs to hold credentials and be reachable. Provisioned first by ArgoCD (sync-waves 0–1). |
 | **2 Data** | Object storage (Garage) | **P1** | Stateful backends for observability and apps. |
 | **3 Observability** | LGTMP + Grafana | **P1** | You can ship without it, but you can't *operate* without it. Depends on object storage. |
 | **4 Self-service** | KRO + ACK + moto claims | **P2** | The "internal API" layer that turns primitives into one-line self-service. |
@@ -127,7 +127,7 @@ The paved road for shipping. Substrate that's also offered as a "deploy here" pr
 ### C. Connectivity / ingress
 | Product | Consumer contract | Backed by | Depends on | Maturity |
 |---------|-------------------|-----------|------------|----------|
-| **Ingress / north-south routing** | `kind: HTTPRoute` (Gateway API) on the shared gateway | Envoy Gateway (+ off-cluster front door) | ArgoCD | ✅ self-service |
+| **Ingress / north-south routing** | `kind: IngressRoute` (Traefik CRD) on the shared TLSStore | Traefik, bundled with k3s (+ off-cluster front door) | k3s | ✅ self-service |
 | **Service mesh (east-west)** | sidecarless `PeerAuthentication`/traffic policy + Kiali topology (`make istio-up`) | Istio ambient + Kiali | ingress | 🟡 on-demand (heavy) |
 
 ### D. Data & storage
@@ -210,7 +210,7 @@ one team, treating them as distinct product lines keeps ownership and the roadma
 |--------|-----------------|------------------------|
 | **Platform core / paved road** | Continuous Delivery, Cluster/env | k3d, Terraform/Terragrunt, **off-cluster Garage (state)**, GitLab, ArgoCD |
 | **Security & secrets** | Secrets | Vault, ESO |
-| **Connectivity** | Ingress, (mesh) | Envoy Gateway, front door |
+| **Connectivity** | Ingress, (mesh) | Traefik, front door |
 | **Data & storage** | Object storage, (DB/registry/PV) | Garage, (Longhorn/TiDB/Harbor) |
 | **Observability** | Metrics/Logs/Traces/Profiles | LGTMP, Grafana |
 | **Developer self-service** | Cloud Resources Service | KRO, ACK, moto |

@@ -38,7 +38,7 @@ above, since nothing in the always-on baseline depends on this org.
 
 **Every other row is a distinct org** — Terraform (hashicorp) and Terragrunt
 (gruntwork-io) are two different orgs sharing one register row; Garage (Deuxfleurs);
-Envoy Gateway (envoyproxy); RabbitMQ (rabbitmq); Istio (istio) and Kiali (kiali) are
+Traefik (traefik, bundled with k3s — no separate org row of its own to track since ADR-0040); RabbitMQ (rabbitmq); Istio (istio) and Kiali (kiali) are
 two different orgs despite sharing one ADR (ADR-0012); Longhorn (longhorn); Cilium
 (cilium); Valkey (valkey-io); Kyverno (kyverno); Velero
 (vmware-tanzu); Trivy Operator (aquasecurity); Kargo (akuity); Harbor (goharbor);

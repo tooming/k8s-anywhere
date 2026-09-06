@@ -23,7 +23,7 @@ spec:
         persistence:
           defaultClassReplicaCount: 1
         ingress:
-          enabled: false                 # Envoy HTTPRoute handles ingress (ADR-0008)
+          enabled: false                 # Traefik IngressRoute handles ingress (ADR-0040)
         longhornUI:
           replicas: 1
           resources:

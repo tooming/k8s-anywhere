@@ -22,8 +22,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "criticality tiering names Envoy Gateway at P0 (recurrence guard: highest-severity row can't silently drop)" {
-  run grep -q '| Envoy Gateway | \*\*P0\*\*' "$DOC"
+@test "criticality tiering names Traefik at P0 (recurrence guard: highest-severity row can't silently drop)" {
+  run grep -q '| Traefik | \*\*P0\*\*' "$DOC"
   [ "$status" -eq 0 ]
 }
 
@@ -78,7 +78,7 @@ setup() {
   [ "$status" -eq 0 ]
   run grep -q '^\*\*Garage\*\*' "$RUNBOOKS"
   [ "$status" -eq 0 ]
-  run grep -q '^\*\*Envoy Gateway\*\*' "$RUNBOOKS"
+  run grep -q '^\*\*Traefik\*\*' "$RUNBOOKS"
   [ "$status" -eq 0 ]
   run grep -q '^\*\*cert-manager\*\*' "$RUNBOOKS"
   [ "$status" -eq 0 ]

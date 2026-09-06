@@ -30,7 +30,7 @@ grouping appears in the README stack table.
 ┌────────────────────────────────────────────────────────────────────────────┐
 │  Always-on in-cluster workloads                                            │
 │                                                                            │
-│  INGRESS      Envoy Gateway  (Gateway API; north-south traffic)            │
+│  INGRESS      Traefik        (bundled with k3s; north-south traffic)       │
 │  TLS          cert-manager  (auto-renewed certs from a self-signed CA)    │
 │  SECRETS      Vault  ──►  External Secrets Operator  ──►  k8s Secrets     │
 │  CNI / POLICY Cilium  (NetworkPolicy enforcement; default-deny per ns)     │
@@ -86,7 +86,7 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **Envoy Gateway** | North-south ingress. External traffic enters via the Kubernetes Gateway API (`HTTPRoute`s); Envoy routes it to in-cluster Services. `envoy-gateway-system-networkpolicy` default-deny overlay applies ADR-0016 to the namespace. (ADR-0008) |
+| **Traefik** | North-south ingress, bundled with k3s. External traffic enters via Traefik's own `IngressRoute` CRD; Traefik routes it to in-cluster Services. Per-app `allow-*-from-gateway` NetworkPolicy rules (sourced from kube-system) apply ADR-0016. (ADR-0040) |
 
 ### TLS / certificates
 
@@ -106,7 +106,7 @@ Rows are grouped by layer, matching the README stack table.
 | Tool | Role in the platform |
 |------|----------------------|
 | **Garage** | S3-compatible object store running in-cluster. Buckets: `mimir`, `mimir-ruler`, `loki`, `tempo`, `pyroscope`. Also the Velero backup target and Terraform-state backend. (ADR-0002, ADR-0007) |
-| **s3manager** | Read-only web UI for browsing Garage buckets — visible on the Envoy front door. |
+| **s3manager** | Read-only web UI for browsing Garage buckets — visible on the Traefik front door. |
 
 ### Backup & restore
 
@@ -166,7 +166,7 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **Argo Rollouts** | Controller that replaces Kubernetes `Deployment` with a `Rollout` for the capstone app. Implements blue/green and Mimir-SLO-gated canary steps via Envoy Gateway traffic-split. `argo-rollouts-networkpolicy` default-deny overlay. (ADR-0020) |
+| **Argo Rollouts** | Controller that replaces Kubernetes `Deployment` with a `Rollout` for the capstone app. Implements blue/green and Mimir-SLO-gated canary steps via Traefik's built-in traffic-split. `argo-rollouts-networkpolicy` default-deny overlay. (ADR-0020) |
 
 ### On-demand (heavy)
 
@@ -198,7 +198,7 @@ GitLab CI
                                                 │
                                          ArgoCD syncs
                                                 │
-                                      Envoy Gateway routes
+                                      Traefik routes
                                        capstone.127.0.0.1.nip.io
                                                 │
                                Kyverno verifyImages (admission gate)
@@ -210,21 +210,21 @@ GitLab CI
                             Vault ExternalSecret (DB/registry creds)
 ```
 
-On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`harbor.127.0.0.1.nip.io`, `make harbor-up`; per ADR-0024). ArgoCD updates the capstone `Rollout`; Kyverno's `verifyImages` policy blocks admission of any unsigned image (`Enforce` mode since 2026-08-18, CHARTER Objective O4). Once admitted, Argo Rollouts canaries traffic using Envoy's weighted-backend split, gating on a Mimir success-rate AnalysisTemplate. All activity is observable in Grafana.
+On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`harbor.127.0.0.1.nip.io`, `make harbor-up`; per ADR-0024). ArgoCD updates the capstone `Rollout`; Kyverno's `verifyImages` policy blocks admission of any unsigned image (`Enforce` mode since 2026-08-18, CHARTER Objective O4). Once admitted, Argo Rollouts canaries traffic using Traefik's weighted-backend split, gating on a Mimir success-rate AnalysisTemplate. All activity is observable in Grafana.
 
 ## Suggested learning path
 
 0. **Toolchain + Colima** — container runtime VM. Set up first.
 1. **Foundation** — `make up` (k3d + ArgoCD + GitLab wiring — see the "GitOps engine" table above for why this still says GitLab, not Forgejo). The whole lab rebuilds from this one command.
-2. **Core platform** — Envoy Gateway routes traffic; cert-manager issues and auto-renews the TLS certs the Gateway's HTTPS listener serves from a self-signed root CA; Vault + External Secrets manage secrets; Garage + s3manager store objects.
+2. **Core platform** — Traefik routes traffic; cert-manager issues and auto-renews the TLS certs Traefik's TLSStore serves from a self-signed root CA; Vault + External Secrets manage secrets; Garage + s3manager store objects.
 3. **Observability** — Alloy ships telemetry to Mimir (metrics), Loki (logs), Tempo (traces), and Pyroscope (profiles). Grafana displays all four. KSM and node-exporter add cluster and host vitals.
 4. **Data layer** — RabbitMQ messages and Valkey key-value, kept busy by data-demo. Real activity means real dashboard data. KEDA scales the `rabbitmq-load` Deployment on the queue's real depth — event-driven autoscaling, not a timer or a hand-set replica count.
 5. **Cloud control-plane patterns** — moto mocks AWS; ACK reconciles `Bucket` CRs against it; KRO composes the CRs into a higher-level claim.
 6. **Supply-chain security** — GitLab CI signs images with cosign; Kyverno's `verifyImages` ClusterPolicy blocks unsigned images at admission; Trivy Operator continuously scans what's running.
-7. **Progressive delivery** — Argo Rollouts replaces the capstone `Deployment` with a canary `Rollout`; Envoy weights traffic; a Mimir AnalysisTemplate gates the canary steps on real SLO data — not timers.
+7. **Progressive delivery** — Argo Rollouts replaces the capstone `Deployment` with a canary `Rollout`; Traefik weights traffic; a Mimir AnalysisTemplate gates the canary steps on real SLO data — not timers.
 8. **Stateful backup & restore** — Velero schedules back up `data`, `tidb`, `capstone`, `vault`, and `observability` to Garage S3. `make dr-restore` drives a verified restore drill; `make dr-verify` asserts end-to-end health.
 9. **Continuous scanning** — Trivy Operator produces `VulnerabilityReport` and `SbomReport` CRs for every running image; the Lab — Trivy Operator dashboard surfaces CVE findings and SBOM counts.
-10. **DR / blue-green** — `make dr-bluegreen` stands up a second k3d "green" cluster that sources the *same* `gitops/` repo via `gitops/bluegreen/green-root.yaml`, cuts Envoy Gateway traffic over to green, and verifies service continuity before retiring blue with `make dr-bluegreen-promote`; `make dr-bluegreen-down` reclaims green's RAM once the exercise is done (see [docs/DR.md §Zero-downtime blue/green](DR.md) for the full runbook). Steps 8 and 10 test two distinct recovery modes: Velero restores data from backup *on the same cluster*; blue-green rebuilds the whole platform on a *fresh* cluster with live traffic cut over — proving the "recreate-from-code" CHARTER Core Value under real traffic, not just a data restore.
+10. **DR / blue-green** — `make dr-bluegreen` stands up a second k3d "green" cluster that sources the *same* `gitops/` repo via `gitops/bluegreen/green-root.yaml`, cuts Traefik traffic over to green, and verifies service continuity before retiring blue with `make dr-bluegreen-promote`; `make dr-bluegreen-down` reclaims green's RAM once the exercise is done (see [docs/DR.md §Zero-downtime blue/green](DR.md) for the full runbook). Steps 8 and 10 test two distinct recovery modes: Velero restores data from backup *on the same cluster*; blue-green rebuilds the whole platform on a *fresh* cluster with live traffic cut over — proving the "recreate-from-code" CHARTER Core Value under real traffic, not just a data restore.
 11. **GitOps promotion pipelines** — Kargo's `Warehouse` CRD watches Harbor for new image digests pushed by GitLab CI; a `dev` `Stage` auto-promotes; a `prod` `Stage` requires a manual gate approval in the Kargo UI (`kargo.127.0.0.1.nip.io`, `make kargo-up` / `make kargo-down` when done). Promotion history is visible in the Lab — Kargo dashboard (`lab-kargo.json`). See [ADR-0023](decisions/adr-0023-kargo-promotion-pipeline.md). This layer adds *multi-stage, Warehouse-gated* promotion on top of the Argo Rollouts canary at step 7 — the two complement each other: Argo Rollouts controls in-cluster traffic shaping during a release; Kargo controls which image digest gets promoted across environment stages in the first place.
 12. **Cloud-agnostic infrastructure design** — read [`infra/live/README.md`](../infra/live/README.md): the `argocd`/`gitlab` Terragrunt units depend only on the `cluster` unit's `kube_context`/`cluster_name`/`api_endpoint` outputs, never on which backend produced them, which is why steps 1–11 above run identically whether `cluster/` is `local/` (k3d, this lab's default) or `oracle/` (Oracle Cloud Always Free + k3s, see [ADR-0026](decisions/adr-0026-cloud-agnostic-infrastructure.md) and [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md)). The lesson: portability is a property of *where the Terraform bootstrap seam sits*, not something bolted on afterward — GitOps state in `gitops/` never needs to know or care where the cluster runs.
 

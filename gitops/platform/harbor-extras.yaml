@@ -1,5 +1,5 @@
 # harbor-extras — pre-creates the harbor namespace with PSA restricted labels and
-# applies the Envoy HTTPRoute for harbor.127.0.0.1.nip.io (ADR-0008, ADR-0017, ADR-0024).
+# applies the Traefik IngressRoute for harbor.127.0.0.1.nip.io (ADR-0040, ADR-0017, ADR-0024).
 # Running at sync-wave 0 ensures the namespace with restricted labels and the HTTPRoute
 # are in place before `make harbor-up` admits any Harbor pod. The empty namespace with
 # PSA labels is harmless when Harbor is not running.

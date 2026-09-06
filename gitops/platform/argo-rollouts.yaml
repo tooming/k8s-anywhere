@@ -1,10 +1,12 @@
 # Argo Rollouts progressive delivery controller (ADR-0020, CHARTER Objective O1).
 # Helm chart argo/argo-rollouts from https://argoproj.github.io/argo-helm.
 # Single controller replica + 1 dashboard replica (ADR-0005 lab trade-off).
-# Dashboard enabled — visualises canary steps in real time; exposed via HTTPRoute
-# rollouts.127.0.0.1.nip.io (gitops/argo-rollouts/route.yaml, via argo-rollouts-extras).
-# Traffic-router plugin: argoproj-labs/gatewayAPI v0.5.0 integrates with Envoy Gateway
-# HTTPRoute weight rewrites for canary traffic splitting (ADR-0008 + ADR-0020 §Traffic-router).
+# Dashboard enabled — visualises canary steps in real time; exposed via IngressRoute
+# rollouts.127.0.0.1.nip.io (gitops/argo-rollouts/ingressroute.yaml, via argo-rollouts-extras).
+# Traffic routing: Argo Rollouts' built-in Traefik integration (trafficRouting.traefik,
+# ADR-0020 §Traffic-router + ADR-0040) drives canary weight rewrites via a TraefikService
+# CRD — no external traffic-router plugin needed (unlike the former Envoy Gateway
+# integration's argoproj-labs/gatewayAPI plugin, ADR-0008, removed with it below).
 # ALWAYS-ON: automated sync; argo-rollouts-extras (wave 0) pre-creates the namespace
 # with PSA restricted labels before the Helm release schedules pods.
 apiVersion: argoproj.io/v1alpha1
@@ -53,15 +55,12 @@ spec:
           resources:
             limits:
               memory: 128Mi
-          # Must be a YAML *list*, not a block-scalar string: the chart runs the
-          # value through `toYaml` into the argo-rollouts-config ConfigMap, and the
-          # controller unmarshals that key as []types.PluginItem. A "|" string
-          # double-encodes (the rendered value becomes a nested "|" scalar), so the
-          # controller dies with "cannot unmarshal string into Go value of type
-          # []types.PluginItem" on boot.
-          trafficRouterPlugins:
-            - name: argoproj-labs/gatewayAPI
-              location: https://github.com/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi/releases/download/v0.5.0/gatewayapi-plugin-linux-amd64
+          # trafficRouterPlugins (argoproj-labs/gatewayAPI) REMOVED 2026-09-06
+          # (ADR-0040, supersedes Envoy Gateway/ADR-0008): Traefik's traffic
+          # routing (trafficRouting.traefik, see gitops/apps/capstone/rollout.yaml)
+          # is built into Argo Rollouts core — no external plugin binary to
+          # download/register at all, unlike the Gateway API integration this
+          # replaced.
         dashboard:
           enabled: true
           replicas: 1

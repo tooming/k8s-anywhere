@@ -15,7 +15,7 @@ rationale travels with the code.
   - [ADR-0005](adr-0005-spof-recreate-over-ha.md) — On one host, choose recoverability over (impossible) HA
   - [ADR-0006](adr-0006-grafana-native-git-sync.md) — Dashboards via Grafana native Git Sync (not the sidecar)
   - [ADR-0007](adr-0007-off-cluster-garage-tfstate-backend.md) — Off-cluster Garage as the Terraform-state backend
-  - [ADR-0008](adr-0008-envoy-gateway-not-traefik.md) — Envoy Gateway for north-south ingress (Gateway API, not Traefik)
+  - [ADR-0008](adr-0008-envoy-gateway-not-traefik.md) — Envoy Gateway for north-south ingress (Gateway API, not Traefik) — **Superseded by ADR-0040**
   - [ADR-0009](adr-0009-rabbitmq-message-broker.md) — RabbitMQ as the lab's message broker (plain manifests, always-on)
   - [ADR-0010](adr-0010-redis-cache.md) — Redis as the lab's cache / key-value store — **Superseded by ADR-0018**
   - [ADR-0011](adr-0011-artifactory-not-nexus.md) — Artifactory as the on-demand artifact registry (not Nexus) — **Superseded by ADR-0024**
@@ -27,7 +27,7 @@ rationale travels with the code.
   - [ADR-0017](adr-0017-pod-security-standards-restricted.md) — Pod Security Standards `restricted` profile across all namespaces
   - [ADR-0018](adr-0018-valkey-not-redis.md) — Valkey as the lab's cache / key-value store (supersedes ADR-0010)
   - [ADR-0019](adr-0019-kyverno-admission-engine.md) — Kyverno as the lab's admission policy engine (not OPA Gatekeeper)
-  - [ADR-0020](adr-0020-argo-rollouts-progressive-delivery.md) — Argo Rollouts for progressive delivery (SLO-gated canaries via Envoy Gateway API)
+  - [ADR-0020](adr-0020-argo-rollouts-progressive-delivery.md) — Argo Rollouts for progressive delivery (SLO-gated canaries via Traefik's native traffic-routing, ADR-0040)
   - [ADR-0021](adr-0021-velero-backup-restore.md) — Velero for cluster + PVC backup/restore to Garage S3
   - [ADR-0022](adr-0022-trivy-operator-supply-chain.md) — Trivy Operator for continuous vulnerability + SBOM scanning
   - [ADR-0023](adr-0023-kargo-promotion-pipeline.md) — Kargo for GitOps promotion pipelines (multi-stage, Warehouse-gated)
@@ -47,3 +47,4 @@ rationale travels with the code.
   - [ADR-0037](adr-0037-vault-secrets-management.md) — HashiCorp Vault for secrets management (retroactive governance record)
   - [ADR-0038](adr-0038-ack-kro-moto-cloud-control-plane.md) — moto + ACK (S3) + KRO for the cloud-control-plane demo pattern (retroactive governance record)
   - [ADR-0039](adr-0039-s3manager-garage-browser-ui.md) — s3manager as the lab's Garage (S3) browser UI (retroactive governance record)
+  - [ADR-0040](adr-0040-traefik-not-envoy-gateway.md) — Traefik for north-south ingress (supersedes ADR-0008)

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Ensure the lab's stable FRONT DOOR is up on :8000, pointing at the active cluster's
-# Envoy load balancer. The front door is the lab's canonical entry point: every UI is
+# Traefik load balancer. The front door is the lab's canonical entry point: every UI is
 # reached via it (http://<name>.127.0.0.1.nip.io:8000) regardless of which cluster
 # (blue/green) currently backs the lab. That's what keeps the Lab UIs URLs correct
 # across a blue/green cutover. Idempotent. See docs/DR.md, ADR-0005.

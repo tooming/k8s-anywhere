@@ -104,9 +104,9 @@ env:
   # means the job container itself — "connection refused", nothing listens there),
   # so a first attempt renamed REGISTRY to host.docker.internal. That built and
   # "pushed" without error, but the artifact silently never landed in Harbor:
-  # Envoy Gateway's HTTPRoute for Harbor matches on the `Host` header
+  # Traefik's IngressRoute for Harbor matches on the `Host` header
   # (harbor.127.0.0.1.nip.io), and swapping the hostname changed that header too —
-  # every push request fell through to Envoy's wildcard/default route (Grafana, as
+  # every push request fell through to Traefik's wildcard/default route (Grafana, as
   # it happened) instead, which happily 302-redirected the PUTs and made docker
   # push exit 0 with nothing ever reaching Harbor. The `Host` header the client
   # sends and the address it dials are two different things — this only needed
@@ -146,7 +146,7 @@ jobs:
         # /etc/hosts entries win over nip.io's own DNS answer, so this overrides
         # harbor.127.0.0.1.nip.io's resolution *without* changing the hostname
         # itself — the Host header docker/cosign send has to stay
-        # harbor.127.0.0.1.nip.io for Envoy Gateway's HTTPRoute to match it (see
+        # harbor.127.0.0.1.nip.io for Traefik's IngressRoute to match it (see
         # the REGISTRY env var's own comment for the full story of getting this
         # wrong the first time). Parses /proc/net/route directly instead of
         # shelling out to `ip route` — portable across both job containers in this
@@ -285,7 +285,7 @@ jobs:
       # still tried `https://harbor.127.0.0.1.nip.io:8080/v2/` and got `server gave
       # HTTP response to HTTPS client`. --allow-http-registry is the distinct flag
       # that actually speaks plain HTTP, matching how docker login/build/push
-      # already talk to this same plain-HTTP-behind-Envoy-Gateway route elsewhere
+      # already talk to this same plain-HTTP-behind-Traefik route elsewhere
       # in this workflow.
       - name: Sign the pushed image
         run: |

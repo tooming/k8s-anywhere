@@ -1,14 +1,18 @@
-# Allow ingress to the s3manager pod from the envoy-gateway-system namespace
-# (ADR-0016). `gitops/storage/s3manager/route.yaml` proxies
-# s3.127.0.0.1.nip.io through it to the s3manager Service on port 8080.
+# Allow ingress to the s3manager pod from Traefik's data-plane pods (ADR-0016,
+# ADR-0040 — supersedes Envoy Gateway/ADR-0008). `gitops/storage/s3manager/ingressroute.yaml`
+# proxies s3.127.0.0.1.nip.io through it to the s3manager Service on port 8080.
 #
 # Found missing live 2026-08-05 while recovering an unrelated resource-exhaustion
 # incident: the `storage` namespace only had ingress allows for Garage
 # (allow-garage-s3-from-observability, plus Harbor's own) — nothing at all
 # covered s3manager, so under the default-deny floor the front-door UI has
-# likely never actually worked. Same bug class as the harbor carve-out
-# documented in
-# gitops/envoy-gateway-system/networkpolicy/allow-envoy-proxy-backend-egress.yaml.
+# likely never actually worked.
+#
+# Scoped to Traefik's own pods (not the whole kube-system namespace) via the
+# podSelector below — added on the ADR-0040 migration; the namespace-only
+# selector this rule used under Envoy Gateway (whose envoy-gateway-system
+# namespace held nothing but proxy pods) would be too broad for a shared
+# system namespace like kube-system.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -27,4 +31,7 @@ spec:
       from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: envoy-gateway-system
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik

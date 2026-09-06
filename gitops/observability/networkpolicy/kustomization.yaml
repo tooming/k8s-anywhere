@@ -3,9 +3,9 @@
 # for the LGTMP stack's network flows:
 #   - intra-namespace traffic (Alloy → Mimir/Loki/Pyroscope writes, Grafana → backends,
 #     KSM ← Alloy scrape, LGTMP self-metric scrapes);
-#   - Grafana HTTPRoute ingress from Envoy Gateway proxy pods (TCP 3000);
+#   - Grafana IngressRoute ingress from Traefik's data-plane pods (TCP 3000, ADR-0040);
 #   - Tempo OTLP HTTP ingress from capstone + lab-demo trace producers (TCP 4318);
-#   - Alloy external scrape egress (argocd, data, envoy-gateway-system, nodes);
+#   - Alloy external scrape egress (argocd, data, nodes);
 #   - LGTMP S3-backend writes + Alloy metrics scrape to storage namespace (TCP 3900/3903).
 # Wired into gitops/platform/observability-networkpolicy.yaml (auto-synced, wave 4).
 apiVersion: kustomize.config.k8s.io/v1beta1

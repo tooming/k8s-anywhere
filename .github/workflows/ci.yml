@@ -116,15 +116,11 @@ jobs:
             https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.1/kustomize_v5.8.1_linux_amd64.tar.gz
           tar -xzf /tmp/kustomize.tar.gz -C /tmp kustomize
           sudo install /tmp/kustomize /usr/local/bin/kustomize
-      # Needed for `kustomize build --enable-helm` (gitops/envoy-gateway/ vendors
-      # a Helm chart via Kustomize's helmCharts inflator, 2026-08-25). Pinned
-      # the same way kustomize is above, not the moving get-helm-3 script.
-      - name: Install helm
-        run: |
-          curl -fsSL -o /tmp/helm.tar.gz \
-            https://get.helm.sh/helm-v4.2.0-linux-amd64.tar.gz
-          tar -xzf /tmp/helm.tar.gz -C /tmp linux-amd64/helm
-          sudo install /tmp/linux-amd64/helm /usr/local/bin/helm
+      # The `--enable-helm` install-helm step this job used to need (for
+      # `kustomize build --enable-helm`, 2026-08-25) was REMOVED 2026-09-06
+      # (ADR-0040, supersedes Envoy Gateway/ADR-0008): gitops/envoy-gateway/
+      # was the only kustomization vendoring a Helm chart via the helmCharts
+      # inflator, and it's gone now.
       - run: bash scripts/validate-kustomize.sh
 
   unit:
@@ -173,7 +169,6 @@ jobs:
       - run: bash scripts/readme-check.sh
       - run: bash scripts/lab-ui-check.sh
       - run: bash scripts/o5-dashboard-coverage-check.sh
-      - run: bash scripts/envoy-egress-allowlist-check.sh
       - run: bash scripts/appset-list-coverage-check.sh
       - run: bash scripts/workflow-timeout-check.sh
       - run: bash scripts/roadmap-check.sh

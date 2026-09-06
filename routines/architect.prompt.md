@@ -7,7 +7,6 @@ Next, directly check upstream for releases in the past 7 days for each ADR'd com
   - ArgoCD: `argoproj/argo-cd`
   - Cilium: `cilium/cilium`
   - Vault: `hashicorp/vault`
-  - Envoy Gateway: `envoyproxy/gateway`
   - Grafana: `grafana/grafana`
   - Longhorn: `longhorn/longhorn`
   - Valkey: `valkey-io/valkey`

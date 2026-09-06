@@ -1,23 +1,20 @@
-# Route the Kiali service mesh UI through Envoy at
+# Route the Kiali service mesh UI through Traefik at
 # http://kiali.127.0.0.1.nip.io:8000 (front door). Listed in the Grafana
 # "Lab UIs" panel (stack-health.json) — kept in sync by `make lab-ui-check`.
 # ON-DEMAND: synced as part of make kiali-up (via kiali-extras Application).
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
   name: kiali
   namespace: istio-system
 spec:
-  parentRefs:
-    - name: eg
-      namespace: lab-gateway
-  hostnames:
-    - "kiali.127.0.0.1.nip.io"
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`kiali.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
         - name: kiali
           port: 20001
+  tls: {}

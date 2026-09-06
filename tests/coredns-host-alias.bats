@@ -1,8 +1,8 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for scripts/coredns-host-alias.sh, which manages two
 # independent rewrites in the coredns-custom ConfigMap (kube-system): host.k3d.internal
-# (docker host gateway, needed for ArgoCD's GitLab repoURL) and *.127.0.0.1.nip.io
-# (Envoy Gateway's in-cluster proxy Service, needed by any in-cluster client resolving
+# (docker host gateway, needed for ArgoCD's Forgejo repoURL) and *.127.0.0.1.nip.io
+# (Traefik's in-cluster Service, ADR-0040 — needed by any in-cluster client resolving
 # a lab hostname — found live-patched out-of-band in PR #1323/issue #633). No running
 # cluster required: these tests verify declared structure/behaviour only, never execute
 # docker/kubectl against a live target.
@@ -69,25 +69,23 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "coredns-host-alias.sh nip-io-rewrite mode discovers the Envoy Gateway proxy Service via its owning-gateway labels" {
-  run grep -q 'gateway.envoyproxy.io/owning-gateway-namespace=\$GW_NS,gateway.envoyproxy.io/owning-gateway-name=\$GW_NAME' "$SCRIPT"
+@test "coredns-host-alias.sh nip-io-rewrite mode targets Traefik's well-known Service (ADR-0040, no owning-gateway label discovery needed)" {
+  run grep -q 'TRAEFIK_NS=kube-system' "$SCRIPT"
   [ "$status" -eq 0 ]
-  run grep -q 'GW_NAME=eg' "$SCRIPT"
+  run grep -q 'TRAEFIK_SVC=traefik' "$SCRIPT"
   [ "$status" -eq 0 ]
-  run grep -q 'GW_NS=lab-gateway' "$SCRIPT"
-  [ "$status" -eq 0 ]
-  run grep -q 'EG_NS=envoy-gateway-system' "$SCRIPT"
-  [ "$status" -eq 0 ]
+  run grep -q 'gateway.envoyproxy.io' "$SCRIPT"
+  [ "$status" -ne 0 ]
 }
 
 @test "coredns-host-alias.sh nip-io-rewrite mode polls with a budget instead of failing on the first check" {
   run grep -q 'COREDNS_NIPIO_WAIT:-300' "$SCRIPT"
   [ "$status" -eq 0 ]
-  run grep -q 'until \[ -n "\$PROXY_SVC" \]' "$SCRIPT"
+  run grep -q 'until kubectl -n "\$TRAEFIK_NS" get svc "\$TRAEFIK_SVC"' "$SCRIPT"
   [ "$status" -eq 0 ]
 }
 
-@test "coredns-host-alias.sh rewrites *.127.0.0.1.nip.io to the discovered proxy Service via the nip-io-rewrite.server key" {
+@test "coredns-host-alias.sh rewrites *.127.0.0.1.nip.io to Traefik's Service via the nip-io-rewrite.server key" {
   run grep -q 'nip-io-rewrite\\.server' "$SCRIPT"
   [ "$status" -eq 0 ]
   run grep -q 'rewrite name regex (\.\*)\\\.127\\\.0\\\.0\\\.1\\\.nip\\\.io' "$SCRIPT"
@@ -116,7 +114,7 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "make up runs coredns-nip-io-rewrite after root-app (Envoy Gateway's proxy Service doesn't exist before that)" {
+@test "make up runs coredns-nip-io-rewrite after root-app (Traefik's Service needs a moment to appear on cluster boot)" {
   run bash -c "sed -n '/^up:/,/^\.PHONY: down/p' '$REPO/Makefile' | grep -n 'root-app\\|coredns-nip-io-rewrite'"
   [ "$status" -eq 0 ]
   root_line="$(echo "$output" | grep 'root-app' | head -1 | cut -d: -f1)"

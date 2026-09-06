@@ -72,7 +72,7 @@ severity scheme itself, and they carry no always-on blast radius by design.
 | Component | Tier | Why |
 |---|---|---|
 | Cilium | **P0** | CNI/network dataplane — the *only* documented P0 in `docs/incident-log.md` to date (2026-07-29: apiserver connectivity loss, cluster-wide). Without it, no pod can reach the apiserver or any other pod. |
-| Envoy Gateway | **P0** | Sole north-south ingress front door (ADR-0008) — every lab UI, the capstone endpoint, and the DR front door all route through it. An outage of the gateway itself (not a NetworkPolicy gap, which is what the two logged 2026-08-04/08-07 incidents actually were, both P1) means total external unreachability — whole-lab-down by the scheme's own P0 definition, even though no incident has hit this specific failure mode yet. |
+| Traefik | **P0** | Sole north-south ingress front door (ADR-0040, supersedes ADR-0008) — every lab UI, the capstone endpoint, and the DR front door all route through it. An outage of the gateway itself (not a NetworkPolicy gap, which is what the two logged 2026-08-04/08-07 incidents actually were, both P1, against the prior Envoy Gateway) means total external unreachability — whole-lab-down by the scheme's own P0 definition, even though no incident has hit this specific failure mode yet. |
 | ArgoCD | **P1** | GitOps control plane. Already-running pods keep serving on outage — this is not immediate lab-down — but no new deploys land and drift stops self-healing, matching the P1 definition ("a single always-on component is down or degraded"). |
 | Vault | **P1** | Secrets backend. Documented real incident (`gitops/vault/unsealer.yaml`'s header comment): sealed for 4+ days, silently breaking every ExternalSecrets refresh cluster-wide. Already-synced K8s `Secret` objects are untouched — new/rotated secrets stop flowing. Matches P1's "security-relevant gap" language directly. |
 | External Secrets Operator | **P1** | Shares Vault's exact blast radius — the two fail together functionally (ESO is the sync mechanism, Vault is the source). |
@@ -91,7 +91,7 @@ severity scheme itself, and they carry no always-on blast radius by design.
 | Trivy Operator | **P2** | Continuous vulnerability/SBOM scanner. Outage stops new scan reports; it's a detection-visibility gap, not an active exploit path — no already-running workload is affected. |
 
 **Recurrence guard:** `tests/dora-audit-readiness.bats` asserts this table exists and
-names Cilium and Envoy Gateway specifically — the two components tiered P0 here,
+names Cilium and Traefik specifically — the two components tiered P0 here,
 so a future edit can't silently drop the highest-severity rows without failing
 `make ci`.
 
@@ -363,7 +363,7 @@ concentration)?**
 - **Gap:** narrower still (as of 2026-09-02) — the lab's three named concentration
   groups (Q16) each have a written runbook, and so now do the four
   highest-blast-radius remaining `always-on-core` single-tool rows (Cilium, Garage,
-  Envoy Gateway, cert-manager). Seven lower-blast-radius single-tool rows still
+  Traefik, cert-manager). Seven lower-blast-radius single-tool rows still
   don't (Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo,
   kube-state-metrics, node-exporter) — a real, separately-scoped future item if
   wanted. A written runbook existing in advance also doesn't mean the effort of an

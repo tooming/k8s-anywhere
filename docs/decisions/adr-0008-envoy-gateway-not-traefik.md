@@ -1,7 +1,11 @@
 # ADR-0008 — Envoy Gateway for north-south ingress (Gateway API, not Traefik / Kubernetes Ingress)
 
-**Status.** Adopted. Shipped at cluster creation; active in `gitops/platform/envoy-gateway.yaml`,
-`gitops/platform/lab-gateway.yaml`, and all `gitops/**/route.yaml` HTTPRoute objects.
+**Status.** Superseded by [ADR-0040](adr-0040-traefik-not-envoy-gateway.md). Envoy Gateway
+is removed as a workload entirely; k3s's bundled Traefik is the lab's north-south ingress
+controller. See ADR-0040 for the full rationale — this ADR's own re-evaluation log below
+(the chronic single-replica leader-election outage class, the month-long CRD-breaking
+`v1.9.0` hold, the backend-egress-allowlist maintenance burden) is what tipped that
+decision.
 
 ---
 

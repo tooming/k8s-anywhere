@@ -40,8 +40,8 @@ if [ -n "$readme_tools" ]; then
 fi
 
 # --- 3. (hint, non-failing) gitops/platform components not named in the README ---
-# Skip infra/glue apps; match on alphanumerics-only (so "envoy-gateway" matches
-# "Envoy Gateway", "external-secrets" matches "External Secrets", etc).
+# Skip infra/glue apps; match on alphanumerics-only (so "cert-manager" matches
+# "cert-manager", "external-secrets" matches "External Secrets", etc).
 norm_readme="$(tr -dc 'a-zA-Z0-9' < "$README" | tr 'A-Z' 'a-z')"
 missing=""
 for f in "$ROOT"/gitops/platform/*.yaml; do

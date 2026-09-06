@@ -38,8 +38,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-grafana-ingress-from-gateway allows ingress from envoy-gateway-system namespace" {
-  run grep -q 'envoy-gateway-system' "$OBS_NP/allow-grafana-ingress-from-gateway.yaml"
+@test "allow-grafana-ingress-from-gateway allows ingress from kube-system namespace" {
+  run grep -q 'kube-system' "$OBS_NP/allow-grafana-ingress-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 

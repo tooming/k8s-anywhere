@@ -1,10 +1,16 @@
 # NetworkPolicy Kustomize overlay for the argo-rollouts namespace (ADR-0016 §4 fan-out).
 # Pulls the two shared baseline templates and adds argo-rollouts-specific allow rules
-# for: Alloy metrics scrape from observability on TCP 8090; Envoy proxy dashboard
-# access on TCP 3100; egress to Mimir on TCP 8080 for AnalysisTemplate SLO queries;
-# controller HTTPS egress (TCP 443) to fetch its traffic-router plugin from GitHub.
+# for: Alloy metrics scrape from observability on TCP 8090; Traefik dashboard
+# access on TCP 3100; egress to Mimir on TCP 8080 for AnalysisTemplate SLO queries.
 # The allow-dns-and-apiserver baseline covers the controller's k8s API calls (Rollout
 # and AnalysisTemplate reconciliation, leader election, and canary weight patching).
+#
+# allow-argo-rollouts-controller-egress-plugins.yaml REMOVED 2026-09-06 (ADR-0040,
+# supersedes Envoy Gateway/ADR-0008): that rule existed only so the controller could
+# fetch the argoproj-labs/gatewayAPI traffic-router plugin binary from GitHub at
+# boot. Traefik's traffic routing is built into Argo Rollouts core (no plugin to
+# download), so the egress path no longer exists.
+#
 # Wired into gitops/platform/argo-rollouts-networkpolicy.yaml (auto-synced, wave 4).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -18,4 +24,3 @@ resources:
   - allow-argo-rollouts-metrics-from-observability.yaml
   - allow-argo-rollouts-dashboard-from-gateway.yaml
   - allow-argo-rollouts-egress-mimir.yaml
-  - allow-argo-rollouts-controller-egress-plugins.yaml

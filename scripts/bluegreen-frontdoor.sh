@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Stable front door for the blue/green DR drill: an nginx reverse proxy on host
-# port :8000 that forwards to whichever cluster's Envoy load balancer is "active".
+# port :8000 that forwards to whichever cluster's Traefik load balancer is "active".
 # Cutover = rewrite the upstream + `nginx -s reload`, which is graceful (the master
 # keeps the listening socket and drains old workers) -> zero dropped connections.
 # It runs on its OWN port, so blue's own :8080 is never touched. The availability
 # probe targets :8000 with Host: argocd.127.0.0.1.nip.io (the canary).
 #
 # Also proxies HTTPS on host :8443 (ADR-0028 follow-up), as a plain TCP passthrough
-# to the upstream's :443 — TLS terminates inside Envoy at the Gateway (cert-manager's
+# to the upstream's :443 — TLS terminates inside Traefik (cert-manager's
 # wildcard Certificate), not here, so this stays a second listener alongside the HTTP
 # one rather than a second termination point. Same cutover story as :8000: `point`
 # rewrites both the http proxy_pass and the stream passthrough in one `nginx -s reload`.
@@ -74,7 +74,7 @@ EOF
 stream {
   server {
     listen $HTTPS_PORT;
-    # TCP passthrough — Envoy at the Gateway terminates TLS, not us.
+    # TCP passthrough — Traefik terminates TLS, not us.
     proxy_pass $1:443;
     proxy_connect_timeout 2s;
   }

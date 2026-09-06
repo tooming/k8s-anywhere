@@ -68,9 +68,10 @@ spec:
           - appName: harbor-governance
             gitPath: gitops/governance/harbor
             destNamespace: harbor
-          - appName: envoy-gateway-system-governance
-            gitPath: gitops/governance/envoy-gateway-system
-            destNamespace: envoy-gateway-system
+          # envoy-gateway-system-governance REMOVED 2026-09-06 (ADR-0040, supersedes
+          # Envoy Gateway/ADR-0008): the envoy-gateway-system namespace no longer
+          # exists — Traefik replaced it and ships with k3s, no ArgoCD-managed
+          # namespace of its own.
           - appName: node-exporter-governance
             gitPath: gitops/governance/node-exporter
             destNamespace: node-exporter

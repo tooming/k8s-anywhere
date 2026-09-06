@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Bring up the GREEN cluster for the blue/green DR drill: a second k3d cluster on
 # its own host ports, with its own ArgoCD syncing the always-available SERVING tier
-# (envoy-gateway, lab-gateway, demo) from the SAME GitLab repo. Blue is never
+# (lab-gateway, demo) from the SAME Forgejo repo (ADR-0035). Blue is never
 # touched (different cluster, ports, and docker network). See docs/DR.md.
 set -euo pipefail
 
@@ -31,12 +31,14 @@ if k3d cluster list 2>/dev/null | grep -q "^${GREEN}[[:space:]]"; then
   echo "[green] cluster $GREEN already exists"
 else
   echo "[green] creating k3d cluster $GREEN (api $API_PORT, http $HTTP_PORT, https $HTTPS_PORT)..."
+  # No --k3s-arg '--disable=traefik...' here (ADR-0040, supersedes Envoy
+  # Gateway/ADR-0008) -- k3s's bundled Traefik is green's ingress controller too,
+  # same as blue.
   k3d cluster create "$GREEN" \
     --servers 1 --agents 1 \
     --api-port "$API_PORT" \
     --port "$HTTP_PORT:80@loadbalancer" \
     --port "$HTTPS_PORT:443@loadbalancer" \
-    --k3s-arg '--disable=traefik@server:*' \
     --kubeconfig-switch-context=false \
     --wait
 fi
@@ -73,7 +75,7 @@ g apply -f "$GREEN_ROOT"
 # 5. wait for the canary (ArgoCD UI) to actually serve through green's gateway
 echo "[green] waiting for ArgoCD server..."
 g -n argocd rollout status deploy/argocd-server --timeout=300s >/dev/null 2>&1 || true
-echo "[green] waiting up to ${CANARY_WAIT}s for the canary to serve via green :$HTTP_PORT (Envoy gateway + route must sync first)..."
+echo "[green] waiting up to ${CANARY_WAIT}s for the canary to serve via green :$HTTP_PORT (Traefik's IngressRoute must sync first)..."
 end=$((SECONDS + CANARY_WAIT))
 while :; do
   code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 4 -H 'Host: argocd.127.0.0.1.nip.io' "http://localhost:$HTTP_PORT/" 2>/dev/null || echo 000)

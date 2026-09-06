@@ -158,7 +158,7 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 
 ## Target end-state (initiatives — the platform we're growing toward)
 
-- **Always-on core** (built): k3d + ArgoCD + GitLab + Envoy Gateway + Vault + External
+- **Always-on core** (built): k3d + ArgoCD + GitLab + Traefik + Vault + External
   Secrets + Garage + the full LGTMP observability stack + moto/ACK + a demo app
   (~32 ArgoCD `Application`s, re-derived 2026-08-25 — KRO's own controller
   Application was converted to on-demand for cluster-load reduction (ADR-0029's
@@ -185,7 +185,7 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   > applied to this repo's other architecture-description docs.
 - **Always-on next wave** (built, ~500 MB total within budget): **Kyverno** (admission
   policy — validation, mutation, image verification); **Argo Rollouts** (SLO-driven
-  canary delivery via Envoy traffic-splitting); **Velero** (cluster + PVC backup to
+  canary delivery via Traefik traffic-splitting); **Velero** (cluster + PVC backup to
   Garage); **Trivy Operator** (continuous vulnerability + SBOM scanning). All four are
   auto-synced ArgoCD `Application`s with their own ADR, real-metric Grafana dashboard,
   and bats coverage (Objective O1, met ahead of its 2026-12-31 date).
@@ -196,7 +196,7 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   budget. None run always-on; each is code-complete but not continuously deployed.
 - **Capstone — the full inner loop**: GitLab CI builds *and signs* an image (cosign) →
   Kyverno verifies the signature on admit → ArgoCD deploys it → Argo Rollouts canaries it
-  on real Mimir SLOs → Envoy routes it → Grafana shows its metrics & logs → Vault holds
+  on real Mimir SLOs → Traefik routes it → Grafana shows its metrics & logs → Vault holds
   its secrets → Velero backs up its state.
 - **Cloud backend** (built, partially verified against a real account): a second
   Terragrunt backend module (`infra/live/oracle/`) targeting Oracle Cloud's Always Free

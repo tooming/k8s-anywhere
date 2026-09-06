@@ -11,12 +11,17 @@
 #
 # Two real components can share one dashboard (e.g. kro/moto/ack-s3 all land in
 # lab-cloud-control-plane.json) and a Grafana-managed self app's dashboard name
-# doesn't always match its Application name 1:1 (envoy-gateway -> lab-envoy.json).
-# Because of that, this is an explicit allowlist (mirrors tests/governance.bats's
-# STANDARD_NS pattern), not a name-guessing heuristic — plus a coverage-loop pass
-# that fails if a *new* auto-synced, non-plumbing Application shows up in
-# gitops/platform/ that isn't in the map, so a future component can't silently
-# skip its O5 dashboard the way this run's gap-hunt found the check itself missing.
+# doesn't always match its Application name 1:1. Because of that, this is an
+# explicit allowlist (mirrors tests/governance.bats's STANDARD_NS pattern), not
+# a name-guessing heuristic — plus a coverage-loop pass that fails if a *new*
+# auto-synced, non-plumbing Application shows up in gitops/platform/ that isn't
+# in the map, so a future component can't silently skip its O5 dashboard the way
+# this run's gap-hunt found the check itself missing.
+#
+# [envoy-gateway]=envoy REMOVED 2026-09-06 (ADR-0040, supersedes Envoy Gateway/
+# ADR-0008): the envoy-gateway Application and grafana/dashboards/lab-envoy.json
+# are both gone — Traefik replaced it and ships with k3s, with no ArgoCD
+# Application (and so no O5 dashboard obligation) of its own.
 #
 # Exit 0 = in sync; 1 = drift (findings printed).
 set -uo pipefail
@@ -30,7 +35,7 @@ drift=0
 # Add a new component here (or, if it's genuinely plumbing with no metrics of its
 # own — an *-extras/-networkpolicy/-config/-resources/-certificate/-schedules/
 # -policies/-root-ca/-scaling companion Application, or lab-gateway's bare
-# Gateway/GatewayClass CR — extend the exclusion pattern below) whenever a new
+# TLSStore CR — extend the exclusion pattern below) whenever a new
 # auto-synced Application lands in gitops/platform/.
 declare -A COMPONENT_DASHBOARD=(
   [alloy]=alloy
@@ -41,7 +46,6 @@ declare -A COMPONENT_DASHBOARD=(
   [cert-manager]=cert-manager
   [data-demo]=data-demo
   [demo]=demo
-  [envoy-gateway]=envoy
   [external-secrets]=external-secrets
   [garage]=garage
   [grafana]=grafana

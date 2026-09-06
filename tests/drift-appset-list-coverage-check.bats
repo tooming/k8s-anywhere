@@ -3,7 +3,7 @@
 # the drift-detectors-tests-check convention (tests/drift-detectors.bats itself is
 # frozen; new scopes go in their own tests/drift-<scope>.bats file). A preventative
 # guard for the same "hardcoded list drifts from the real thing it enumerates"
-# footgun shape as scripts/envoy-egress-allowlist-check.sh, applied to
+# footgun shape as the former scripts/envoy-egress-allowlist-check.sh (retired ADR-0040), applied to
 # networkpolicy-appset.yaml and governance-appset.yaml's list-generators.
 
 setup() {

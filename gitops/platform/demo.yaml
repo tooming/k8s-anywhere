@@ -1,6 +1,6 @@
 # First child Application, picked up by the root app-of-apps.
 # Proves the full chain works: root -> demo -> actual workloads in the cluster.
-# Real platform components (Envoy, Vault, ...) will land here next, alongside this.
+# Real platform components (Traefik, Vault, ...) will land here next, alongside this.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

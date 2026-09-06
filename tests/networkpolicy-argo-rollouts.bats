@@ -50,7 +50,7 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- dashboard allow (Envoy proxy → rollouts-dashboard TCP 3100) ------------------
+# --- dashboard allow (Traefik → rollouts-dashboard TCP 3100) ------------------
 @test "allow-argo-rollouts-dashboard-from-gateway.yaml exists in argo-rollouts/networkpolicy/" {
   [ -f "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-dashboard-from-gateway.yaml" ]
 }
@@ -65,13 +65,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-argo-rollouts-dashboard-from-gateway restricts source to envoy-gateway-system namespace" {
-  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-dashboard-from-gateway.yaml"
+@test "allow-argo-rollouts-dashboard-from-gateway restricts source to kube-system namespace" {
+  run grep -q 'kubernetes.io/metadata.name: kube-system' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-dashboard-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 
 @test "allow-argo-rollouts-dashboard-from-gateway restricts source to proxy component pods" {
-  run grep -q 'app.kubernetes.io/component: proxy' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-dashboard-from-gateway.yaml"
+  run grep -q 'app.kubernetes.io/name: traefik' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-dashboard-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -100,29 +100,16 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- plugin egress allow (controller → GitHub CDN TCP 443) -----------------------
-@test "allow-argo-rollouts-controller-egress-plugins.yaml exists in argo-rollouts/networkpolicy/" {
-  [ -f "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-controller-egress-plugins.yaml" ]
+# --- plugin egress allow REMOVED 2026-09-06 (ADR-0040, supersedes Envoy Gateway/
+# ADR-0008): the controller no longer downloads any traffic-router plugin binary
+# at boot — Traefik's traffic routing is built into Argo Rollouts core.
+@test "allow-argo-rollouts-controller-egress-plugins.yaml no longer exists in argo-rollouts/networkpolicy/" {
+  [ ! -f "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-controller-egress-plugins.yaml" ]
 }
 
-@test "argo-rollouts kustomization references the controller plugin-egress allow file" {
-  run grep -q 'allow-argo-rollouts-controller-egress-plugins.yaml' "$ARGO_ROLLOUTS_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argo-rollouts-controller-egress-plugins allows egress on port 443" {
-  run grep -q 'port: 443' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-controller-egress-plugins.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argo-rollouts-controller-egress-plugins uses ipBlock for external CDN" {
-  run grep -q 'ipBlock:' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-controller-egress-plugins.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argo-rollouts-controller-egress-plugins scopes to rollouts-controller pods" {
-  run grep -q 'app.kubernetes.io/component: rollouts-controller' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-controller-egress-plugins.yaml"
-  [ "$status" -eq 0 ]
+@test "argo-rollouts kustomization no longer references a controller plugin-egress allow file" {
+  run grep -q '^  - allow-argo-rollouts-controller-egress-plugins.yaml$' "$ARGO_ROLLOUTS_NP/kustomization.yaml"
+  [ "$status" -ne 0 ]
 }
 
 # --- argo-rollouts-networkpolicy Application (wave 4) ----------------------------

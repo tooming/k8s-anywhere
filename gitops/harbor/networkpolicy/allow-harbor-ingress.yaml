@@ -1,18 +1,23 @@
-# Allow ingress to Harbor pods from the envoy-gateway-system namespace (ADR-0016).
-# The Envoy HTTPRoute `gitops/harbor/route.yaml` proxies traffic for
-# `harbor.127.0.0.1.nip.io` to the Harbor Service's port 80, which targetPorts to
-# the harbor-nginx container's actual listening port, 8080 (expose.type=clusterIP,
-# tls.enabled=false per ADR-0024 §"Minimal profile"). NetworkPolicy `ports:` match
-# the destination POD's port, not the Service's port — this rule listed 80 (the
-# Service port) instead of 8080 (the pod's real containerPort), so the default-deny
-# floor silently blocked every request the whole time this policy existed. Found
-# live 2026-08-06/07 chasing a chronic Envoy 503 that survived multiple unrelated
-# fixes (Vault seal, Harbor probe timeouts, a stale EndpointSlice) — confirmed via
-# Envoy's own /clusters admin endpoint (cx_connect_fail incrementing against the
-# correct, healthy pod IP) and a direct same-namespace exec test (worked fine),
+# Allow ingress to Harbor pods from Traefik's data-plane pods (ADR-0016, ADR-0040 —
+# supersedes Envoy Gateway/ADR-0008). The Traefik IngressRoute `gitops/harbor/ingressroute.yaml`
+# proxies traffic for `harbor.127.0.0.1.nip.io` to the Harbor Service's port 80, which
+# targetPorts to the harbor-nginx container's actual listening port, 8080
+# (expose.type=clusterIP, tls.enabled=false per ADR-0024 §"Minimal profile").
+# NetworkPolicy `ports:` match the destination POD's port, not the Service's port —
+# this rule listed 80 (the Service port) instead of 8080 (the pod's real
+# containerPort), so the default-deny floor silently blocked every request the whole
+# time this policy existed. Found live 2026-08-06/07 chasing a chronic gateway 503
+# that survived multiple unrelated fixes (Vault seal, Harbor probe timeouts, a stale
+# EndpointSlice) — confirmed via a direct same-namespace exec test (worked fine),
 # isolating it to cross-namespace NetworkPolicy specifically. Covers portal (nginx
 # frontend), core, and registry API endpoints served via the unified Harbor
 # clusterIP service — all multiplexed through nginx on 8080.
+#
+# Scoped to Traefik's own pods (not the whole kube-system namespace, which also
+# hosts CoreDNS, metrics-server, local-path-provisioner, etc.) via the podSelector
+# below — added on the ADR-0040 migration; the namespace-only selector this rule
+# used under Envoy Gateway (whose envoy-gateway-system namespace held nothing but
+# proxy pods) would be too broad for a shared system namespace like kube-system.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -29,4 +34,7 @@ spec:
       from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: envoy-gateway-system
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik

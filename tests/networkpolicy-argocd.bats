@@ -43,13 +43,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-argocd-server-from-gateway allows ingress from envoy-gateway-system namespace" {
-  run grep -q 'envoy-gateway-system' "$ARGOCD_NP/allow-argocd-server-from-gateway.yaml"
+@test "allow-argocd-server-from-gateway allows ingress from kube-system namespace" {
+  run grep -q 'kube-system' "$ARGOCD_NP/allow-argocd-server-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "allow-argocd-server-from-gateway allows ingress from Envoy proxy pods" {
-  run grep -q 'app.kubernetes.io/component: proxy' "$ARGOCD_NP/allow-argocd-server-from-gateway.yaml"
+@test "allow-argocd-server-from-gateway allows ingress from Traefik pods" {
+  run grep -q 'app.kubernetes.io/name: traefik' "$ARGOCD_NP/allow-argocd-server-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 

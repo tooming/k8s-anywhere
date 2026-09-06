@@ -62,8 +62,8 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-# --- Envoy HTTPRoute wiring --------------------------------------------------
-@test "Kiali HTTPRoute declares kiali.127.0.0.1.nip.io" {
+# --- Traefik IngressRoute wiring ----------------------------------------------
+@test "Kiali IngressRoute declares kiali.127.0.0.1.nip.io" {
   run grep -r 'kiali\.127\.0\.0\.1\.nip\.io' "$REPO/gitops/"
   [ "$status" -eq 0 ]
 }
@@ -86,7 +86,7 @@ setup() {
 }
 
 # longhorn-extras IS auto-synced — it only pre-creates the longhorn-system
-# namespace with PSA privileged labels (ADR-0017) + the Envoy HTTPRoute, so the
+# namespace with PSA privileged labels (ADR-0017) + the Traefik IngressRoute, so the
 # privileged PSA floor is in place before `make longhorn-up` admits any pod.
 # (The heavy longhorn.yaml chart stays manual-sync, asserted above.)
 @test "longhorn-extras Application is auto-synced (namespace floor before longhorn-up)" {
@@ -94,8 +94,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Envoy HTTPRoute wiring --------------------------------------------------
-@test "Longhorn HTTPRoute declares longhorn.127.0.0.1.nip.io" {
+# --- Traefik IngressRoute wiring ----------------------------------------------
+@test "Longhorn IngressRoute declares longhorn.127.0.0.1.nip.io" {
   run grep -r 'longhorn\.127\.0\.0\.1\.nip\.io' "$REPO/gitops/"
   [ "$status" -eq 0 ]
 }
