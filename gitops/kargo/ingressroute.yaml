@@ -5,6 +5,11 @@
 # `make lab-ui-check`. The kargo-api Service is kargo-api (Helm release name
 # "kargo" + chart suffix), port 80 (plain HTTP; TLS terminated at Traefik).
 # ON-DEMAND: synced by the kargo-extras Application (wave 0).
+#
+# Split into two IngressRoute objects (2026-09-06 fix) — see
+# gitops/network/argocd-ingressroute.yaml's header comment for the full finding:
+# a `tls: {}` stanza on an object that also lists `web` silently breaks plain-HTTP
+# matching on `web` entirely.
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -13,6 +18,20 @@ metadata:
 spec:
   entryPoints:
     - web
+  routes:
+    - kind: Rule
+      match: Host(`kargo.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
+        - name: kargo-api
+          port: 80
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kargo-tls
+  namespace: kargo
+spec:
+  entryPoints:
     - websecure
   routes:
     - kind: Rule

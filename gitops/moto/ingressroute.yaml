@@ -1,4 +1,9 @@
 # moto dashboard/UI via Traefik: http://moto.127.0.0.1.nip.io:8080/moto-api/
+#
+# Split into two IngressRoute objects (2026-09-06 fix) — see
+# gitops/network/argocd-ingressroute.yaml's header comment for the full finding:
+# a `tls: {}` stanza on an object that also lists `web` silently breaks plain-HTTP
+# matching on `web` entirely.
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -7,6 +12,20 @@ metadata:
 spec:
   entryPoints:
     - web
+  routes:
+    - kind: Rule
+      match: Host(`moto.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
+        - name: moto
+          port: 5000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: moto-tls
+  namespace: moto
+spec:
+  entryPoints:
     - websecure
   routes:
     - kind: Rule

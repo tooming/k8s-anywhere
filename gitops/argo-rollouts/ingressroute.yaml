@@ -4,6 +4,11 @@
 # "see the canary" learning artifact per ADR-0020. Listed in the Grafana "Lab UIs"
 # panel (stack-health.json) — kept in sync by `make lab-ui-check`.
 # ALWAYS-ON: synced by the argo-rollouts-extras Application (wave 0).
+#
+# Split into two IngressRoute objects (2026-09-06 fix) — see
+# gitops/network/argocd-ingressroute.yaml's header comment for the full finding:
+# a `tls: {}` stanza on an object that also lists `web` silently breaks plain-HTTP
+# matching on `web` entirely.
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -12,6 +17,20 @@ metadata:
 spec:
   entryPoints:
     - web
+  routes:
+    - kind: Rule
+      match: Host(`rollouts.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
+        - name: argo-rollouts-dashboard
+          port: 3100
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: argo-rollouts-tls
+  namespace: argo-rollouts
+spec:
+  entryPoints:
     - websecure
   routes:
     - kind: Rule

@@ -1,0 +1,16 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: vault-ui
+  namespace: vault
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`vault.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
+        - name: vault
+          port: 8200
+  tls: {}
