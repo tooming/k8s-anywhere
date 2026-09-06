@@ -87,7 +87,7 @@ Adopt all three as the lab's cloud-control-plane demo stack.
 
 ### KRO
 
-- **Chart:** `kro` `0.9.3` (`ghcr.io/kro-run/kro`, OCI registry ref).
+- **Chart:** `kro` `0.9.4` (`ghcr.io/kro-run/kro`, OCI registry ref).
 - **Namespace:** `kro`, `rbac.mode: unrestricted` (default — KRO needs this to
   manage arbitrary resource kinds its RGDs reference, including ACK `Bucket`s),
   PSA `restricted` at the pod level (uid 65534, full profile).
@@ -258,3 +258,22 @@ controller, and KRO in this same cycle.
 GHSA status on the next full-sweep pass; re-check whether KRO's suspension can
 lift once a live-cluster session confirms the apiserver/datastore write
 pressure that caused the 2026-08-24 crash-loop has real headroom again.
+
+### 2026-09-06 — KRO chart bumped `0.9.3` → `0.9.4` (upgrade-drafter fallback)
+
+The 2026-09-03 entry above confirmed `v0.9.3` was still the newest KRO tag at
+that time. Re-checked directly (ADR-0004, not assumed):
+`github.com/kro-run/kro/releases/tag/v0.9.4` is a real, published (non-draft,
+non-prerelease) release, published 2026-09-04 by `github-actions` — genuinely
+newer than the prior check, not a stale read. No published GHSA advisory
+forced this; routine same-line patch currency only (`0.9.x`, no major bump).
+Bumped `gitops/platform/kro.yaml`'s `targetRevision` `0.9.3` → `0.9.4`.
+
+KRO stays SUSPENDED as-is (no `automated:` sync block, cluster-load
+reduction since 2026-08-24) — this bump only updates the pinned version for
+whenever it's re-enabled; it does not itself resync anything live.
+
+**Flip condition (next re-evaluation).** Unchanged from the entry above:
+re-check moto/ACK-S3/KRO currency and GHSA status on the next full-sweep
+pass; re-check whether KRO's suspension can lift once a live-cluster session
+confirms the apiserver/datastore write pressure has real headroom again.
