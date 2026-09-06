@@ -54,9 +54,13 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-# --- Chart currency pin (upgrade-drafter fallback, 2026-08-10) --------------
-@test "observability-grafana.yaml pins grafana chart to 12.10.4" {
-  [ "$(yqs '.spec.source.targetRevision' "$GRAFANA")" = "12.10.4" ]
+# --- Chart currency pin (upgrade-drafter fallback, 2026-08-10; bumped 2026-09-06) ---
+@test "observability-grafana.yaml pins grafana chart to 12.11.2" {
+  [ "$(yqs '.spec.source.targetRevision' "$GRAFANA")" = "12.11.2" ]
+}
+
+@test "observability-grafana.yaml does not pin the stale 12.10.4 chart" {
+  [ "$(yqs '.spec.source.targetRevision' "$GRAFANA")" != "12.10.4" ]
 }
 
 # --- lab-grafana.json dashboard metric-drift fix (2026-08-12, 5th audit batch) ---
