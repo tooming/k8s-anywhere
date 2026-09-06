@@ -62,9 +62,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "kro Application chart pin is exactly 0.9.3" {
-  run grep -q 'targetRevision: 0\.9\.3' "$APP"
+@test "kro Application chart pin is exactly 0.9.4" {
+  run grep -q 'targetRevision: 0\.9\.4' "$APP"
   [ "$status" -eq 0 ]
+}
+
+@test "kro Application does not pin the stale 0.9.3 chart" {
+  run grep -q 'targetRevision: 0\.9\.3' "$APP"
+  [ "$status" -eq 1 ]
 }
 
 # --- namespace PSA restricted labels -----------------------------------------
