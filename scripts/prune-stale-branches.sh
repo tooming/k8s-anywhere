@@ -55,7 +55,20 @@ REMOTE=$(git for-each-ref --format='%(upstream:remotename)' refs/heads/main 2>/d
 [[ -z "$REMOTE" ]] && REMOTE=$(git remote -v | grep 'github\.com' | awk '{print $1}' | head -1)
 REMOTE=${REMOTE:-origin}
 
-git fetch "$REMOTE" --prune -q || { echo "fetch from $REMOTE failed" >&2; exit 1; }
+# Reset any global credential.helper (e.g. osxkeychain) for every git call against
+# $REMOTE and use only the repo's own gitlab-credential-helper.sh — mirrors the
+# footgun mitigation the Makefile's `gitlab-push` target already applies. osxkeychain
+# caches a token across local GitLab/Forgejo rebuilds; run non-interactively (this
+# script is invoked by the post-merge git hook after every push), a stale or absent
+# cached credential fails hard ("could not read Password ...: Device not configured")
+# instead of falling through to a working one. The repo helper itself gates on
+# host==localhost:8929 && username==root and no-ops for anything else (e.g. the
+# SSH-based github remote never consults a credential helper at all), so applying
+# this unconditionally to every fetch/push below is safe. Found live 2026-09-06: the
+# post-merge hook's `make rebase-prs` failed this exact way right after merging #1452.
+GIT_CRED_OPTS=(-c credential.helper= -c credential.helper="$ROOT/scripts/gitlab-credential-helper.sh")
+
+git "${GIT_CRED_OPTS[@]}" fetch "$REMOTE" --prune -q || { echo "fetch from $REMOTE failed" >&2; exit 1; }
 MAIN=$(git rev-parse "$REMOTE/main") || { echo "$REMOTE/main not found" >&2; exit 1; }
 echo "$REMOTE/main HEAD: ${MAIN:0:12}"
 
@@ -133,12 +146,12 @@ failed=0
 batch=()
 flush() {
   [[ ${#batch[@]} -eq 0 ]] && return 0
-  if git push "$REMOTE" --no-verify --delete "${batch[@]}" 2>/dev/null; then
+  if git "${GIT_CRED_OPTS[@]}" push "$REMOTE" --no-verify --delete "${batch[@]}" 2>/dev/null; then
     printf '  → deleted: %s\n' "${batch[*]}"
   else
     echo "  ✗ batch delete failed; retrying individually"
     for one in "${batch[@]}"; do
-      git push "$REMOTE" --no-verify --delete "$one" 2>/dev/null \
+      git "${GIT_CRED_OPTS[@]}" push "$REMOTE" --no-verify --delete "$one" 2>/dev/null \
         && echo "    → deleted $one" \
         || { echo "    ✗ could not delete $one"; failed=$((failed+1)); }
     done

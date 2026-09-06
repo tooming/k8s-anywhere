@@ -221,3 +221,14 @@ make_orphan_fixture() {
     [[ "$output" == *"[stale:merged]    ${prefix}/merged-test"* ]]
   done
 }
+
+@test "prune-stale-branches: every git fetch/push against \$REMOTE goes through the repo credential helper, never the bare global one" {
+  # Same regression guard as rebase-open-prs.bats — see that test's comment for
+  # the live 2026-09-06 failure this prevents from recurring.
+  run grep -c 'git "\${GIT_CRED_OPTS\[@\]}" \(fetch\|push\) "\$REMOTE"' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 3 ]
+
+  run grep -cE '^[[:space:]]*git (fetch|push) "\$REMOTE"' "$SCRIPT"
+  [ "$status" -ne 0 ] || [ "$output" -eq 0 ]
+}
