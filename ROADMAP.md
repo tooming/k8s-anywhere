@@ -1994,6 +1994,27 @@ there is no point where the lab loses a working git source or CI path.
   wired into `.claude/settings.json` with valid JSON preserved. `make ci` must pass.
   `docs/done/` entry required. (auto/ensure-manifest-tools-hook)
 
+- [x] 🟢 **Fix a stale namespace list in `gitops/platform/velero-networkpolicy.yaml`'s
+  header comment (post-TiDB-removal drift)** — full verification writeup:
+  [docs/done/2026-09-06-velero-networkpolicy-tidb-comment-fix.md](docs/done/2026-09-06-velero-networkpolicy-tidb-comment-fix.md).
+  (auto/velero-networkpolicy-tidb-comment-fix)
+  (ADR-0004; JANITOR-fallback coverage sweep 2026-09-06, following up on PR #1452's
+  TiDB/Istio/Kiali/Longhorn removal — checked every `gitops/` file for lingering
+  references to the removed components and found this one stale header comment; the
+  child `NetworkPolicy` file itself (`gitops/velero/networkpolicy/
+  allow-velero-egress-kopia-pv.yaml`) had already been correctly updated by PR #1452,
+  but the parent `Application` wrapper's own header comment, listing the same
+  namespace set independently in prose, was missed.)
+
+  `gitops/platform/velero-networkpolicy.yaml`'s header comment still listed
+  "backed-up namespaces (data/tidb/capstone/vault)" — `tidb` no longer exists as a
+  namespace since PR #1452. Corrected to the real, current set
+  (data/capstone/vault/observability, matching the child `NetworkPolicy`'s actual
+  `values:` list exactly) with an inline note on when/why it changed. No test
+  depended on the stale text (checked `tests/networkpolicy-velero.bats`/
+  `tests/velero.bats` directly). `make ci` must pass. `docs/done/` entry required.
+  (auto/velero-networkpolicy-tidb-comment-fix)
+
 - ~~🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
   sync strategy**~~ (issue #1335; RFC #1340 — architect decision 2026-08-25:
   build a scheduled, pull-based, fast-forward-only Forgejo Actions sync job
