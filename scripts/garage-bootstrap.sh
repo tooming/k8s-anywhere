@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Idempotent Garage bootstrap: assign layout -> create the velero-key access key +
-# bucket -> store its S3 credentials in Vault (ESO then syncs them to the
-# cloud-credentials Secret Velero consumes).
+# Idempotent Garage bootstrap: assign layout -> create the velero-key/harbor-key/
+# s3manager-key access keys + buckets -> store their S3 credentials in Vault (ESO
+# then syncs them to the Secrets each consumer reads: Velero's cloud-credentials,
+# Harbor's registry S3 env vars, s3manager's garage-s3).
 # Safe to re-run. Used by `make garage-bootstrap` and the DR flow (docs/DR.md).
 set -euo pipefail
 
@@ -110,5 +111,49 @@ else
 fi
 g bucket create harbor-registry >/dev/null 2>&1 || true
 g bucket allow --read --write harbor-registry --key harbor-key >/dev/null 2>&1 || true
+
+# s3manager key (always-on; ADR-0039's Garage S3 browser UI). Found live 2026-09-06:
+# this Vault path used to be written by the mimir-key block above, removed 2026-09-06
+# (ADR-0041, observability stack removed with no replacement) — but
+# gitops/secrets/garage-s3-storage-externalsecret.yaml (s3manager's own
+# ExternalSecret, unrelated to Mimir) still reads secret/garage/s3, so s3manager broke
+# on the first genuinely fresh bootstrap after that removal (`SecretSyncedError:
+# Secret does not exist`, caught live rebuilding for issue #633). Grants read+write on
+# every bucket this script creates, same as the ADR's original "same Garage key other
+# in-cluster consumers use" design intent — new on-demand buckets created elsewhere
+# (e.g. `make harbor-up` before this script's own harbor-registry bucket exists yet)
+# won't be visible to s3manager until re-granted, same limitation velero-key/
+# harbor-key already have for buckets outside their own scope.
+if ! g key info s3manager-key >/dev/null 2>&1; then
+  echo "[garage] creating access key s3manager-key"
+  g key create s3manager-key >/dev/null 2>&1
+fi
+SKOUT=$(g key info --show-secret s3manager-key 2>/dev/null || true)
+SKID=$(printf '%s\n' "$SKOUT" | awk -F': *' '
+  BEGIN { IGNORECASE = 1 }
+  $1 ~ /^(access[ _-]?key([ _-]?id)?|key[ _-]?id)$/ {
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+    print $2
+    exit
+  }' | tr -d '"' || true)
+SKSEC=$(printf '%s\n' "$SKOUT" | awk -F': *' '
+  BEGIN { IGNORECASE = 1 }
+  $1 ~ /^(secret[ _-]?access[ _-]?key|secret[ _-]?key)$/ {
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+    print $2
+    exit
+  }' | tr -d '"' || true)
+[ -n "$SKID" ]  || SKID=$(printf '%s'  "$SKOUT" | grep -oiE 'GK[0-9a-f]{20,}' | head -1 || true)
+[ -n "$SKSEC" ] || SKSEC=$(printf '%s' "$SKOUT" | grep -oiE '[0-9a-f]{64}'     | head -1 || true)
+[[ "$(echo "$SKSEC" | tr '[:upper:]' '[:lower:]')" == redacted* || "$SKSEC" == "*" ]] && SKSEC=""
+if [ -n "$SKID" ] && [ -n "$SKSEC" ]; then
+  TOKEN=$(kubectl -n "$VNS" get secret vault-keys -o jsonpath='{.data.root-token}' | base64 -d)
+  kubectl -n "$VNS" exec vault-0 -- env VAULT_TOKEN="$TOKEN" vault kv put secret/garage/s3 access-key-id="$SKID" secret-access-key="$SKSEC" >/dev/null
+  echo "[garage] ensured secret/garage/s3 in Vault (key $SKID)"
+else
+  echo "[garage] WARNING: could not resolve s3manager-key id/secret — secret/garage/s3 not written"
+fi
+g bucket allow --read --write velero --key s3manager-key >/dev/null 2>&1 || true
+g bucket allow --read --write harbor-registry --key s3manager-key >/dev/null 2>&1 || true
 
 echo "[garage] bootstrap complete (buckets: velero, harbor-registry)"
