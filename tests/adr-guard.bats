@@ -57,3 +57,40 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [ "$status" -eq 2 ]
   [[ "$output" == *"adr-0002"* ]]
 }
+
+# --- Supersession-aware behavior (ADR-0040 supersedes ADR-0008, reversing it) -------
+#
+# ADR-0008 is "envoy-gateway-not-traefik" (chosen=envoy-gateway, rejected=traefik) and
+# its Status line says "Superseded by [ADR-0040]". ADR-0040 is
+# "traefik-not-envoy-gateway" (chosen=traefik, rejected=envoy-gateway) — the exact
+# same pair, flipped. So ADR-0008's "traefik" rejection must no longer fire, and
+# ADR-0040's own "-not-" filename must now flag "envoy-gateway" instead (self-
+# maintaining — no extra code needed for that half).
+
+@test "adr-guard: reversed rejection (traefik, ADR-0008 superseded by ADR-0040) no longer fires" {
+  TRAEFIK="$BATS_TEST_TMPDIR/traefik.yaml"
+  printf 'kind: Deployment\nspec:\n  ingressClassName: traefik\n' >"$TRAEFIK"
+  run bash "$REPO/scripts/adr-guard-hook.sh" <<<"$(mk_payload "$TRAEFIK")"
+  [ "$status" -eq 0 ]
+}
+
+@test "adr-guard: the supersession's own rejection (envoy-gateway, ADR-0040) still fires" {
+  ENVOY="$BATS_TEST_TMPDIR/envoy.yaml"
+  printf 'kind: Deployment\nspec:\n  gatewayClassName: envoy-gateway\n' >"$ENVOY"
+  run bash "$REPO/scripts/adr-guard-hook.sh" <<<"$(mk_payload "$ENVOY")"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"envoy-gateway"* ]]
+  [[ "$output" == *"adr-0040"* ]]
+}
+
+@test "adr-guard: a chain supersession that does not flip the pair still rejects the original term" {
+  # ADR-0011 (artifactory-not-nexus) is superseded by ADR-0024 (harbor-not-artifactory):
+  # the comparison moved on to a different tech, it didn't reverse artifactory-vs-nexus.
+  # "nexus" must still be rejected.
+  NEXUS="$BATS_TEST_TMPDIR/nexus.yaml"
+  printf 'kind: Deployment\nspec:\n  image: nexus:latest\n' >"$NEXUS"
+  run bash "$REPO/scripts/adr-guard-hook.sh" <<<"$(mk_payload "$NEXUS")"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"nexus"* ]]
+  [[ "$output" == *"adr-0011"* ]]
+}
