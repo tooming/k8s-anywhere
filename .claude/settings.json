@@ -35,6 +35,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/ensure-yq-hook.sh",
+            "timeout": 60,
+            "statusMessage": "Ensuring mikefarah/yq is on PATH (so make ci's yq-only steps run for real)"
+          },
+          {
+            "type": "command",
             "command": "make install-hooks",
             "timeout": 10,
             "statusMessage": "Wiring git pre-push hook"

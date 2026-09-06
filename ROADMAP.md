@@ -1998,6 +1998,40 @@ there is no point where the lab loses a working git source or CI path.
   wired into `.claude/settings.json` with valid JSON preserved. `make ci` must pass.
   `docs/done/` entry required. (auto/ensure-manifest-tools-hook)
 
+- [x] 🟢 **`scripts/ensure-yq-hook.sh` — auto-install `mikefarah/yq` so `make ci`'s
+  yq-only gates can't self-skip either** — full verification writeup:
+  [docs/done/2026-09-06-ensure-yq-session-start-hook.md](docs/done/2026-09-06-ensure-yq-session-start-hook.md).
+  (auto/ensure-yq-hook)
+  (CLAUDE.md's bugfix-recurrence-prevention rule; fourth JANITOR-fallback follow-up
+  this same run to `auto/ensure-bats-hook` (#1448), `auto/ensure-lint-tools-hook`
+  (#1456), and `auto/ensure-manifest-tools-hook` (#1460) — same footgun class, this
+  time `scripts/lib/yq-variant.sh`'s `require_mikefarah_yq()`, which soft-skips any
+  mikefarah-yq-only gate when the `yq` on `PATH` isn't that variant. Found live while
+  validating PR #1461 (Traefik web/tls split): this sandbox's apt-installed
+  `/usr/bin/yq` is the Python/jq-wrapper variant (`yq 0.0.0`, no "mikefarah" in its
+  version string), so `tests/ingressroute-web-tls-check.bats`'s own violation-detection
+  assertion silently soft-skipped locally even though the identical commit's real
+  GitHub Actions run reported success — confirmed by reading `.github/workflows/
+  ci.yml`'s own "Install yq + helm" step, which installs mikefarah/yq to this exact
+  path already, so main was never actually broken, purely a local-sandbox validation
+  gap.)
+
+  Added `scripts/ensure-yq-hook.sh`, using the identical install command
+  `.github/workflows/ci.yml`'s own "Install yq + helm" step uses (minus `sudo`, since
+  this session already runs as root) to install mikefarah/yq to `/usr/local/bin/yq`
+  (ahead of `/usr/bin` on `PATH`), so a local pass means the same thing a CI pass
+  means. Verified live both branches: already-installed (no-op, reports success) and
+  fresh-install (downloads, `chmod +x`, verifies the binary reports "mikefarah" in its
+  version string) both work; re-ran `tests/ingressroute-web-tls-check.bats` afterward
+  and all 4 assertions passed for real instead of soft-skipping. Added
+  `tests/hook-scripts-ensure-yq.bats` (its own file per `tests/hook-scripts-
+  coverage.bats`'s frozen-monolith rule): script exists/executable, reports "already
+  installed" when mikefarah/yq is present (the actual path this bats run itself
+  exercises), never fails even with no network/yq reachable (a minimal `PATH`
+  exercising only the hook's own non-network calls), and is wired into
+  `.claude/settings.json` with valid JSON preserved. `make ci` must pass. `docs/done/`
+  entry required. (auto/ensure-yq-hook)
+
 - [x] 🟢 **Fix a stale namespace list in `gitops/platform/velero-networkpolicy.yaml`'s
   header comment (post-TiDB-removal drift)** — full verification writeup:
   [docs/done/2026-09-06-velero-networkpolicy-tidb-comment-fix.md](docs/done/2026-09-06-velero-networkpolicy-tidb-comment-fix.md).
