@@ -23,6 +23,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/ensure-lint-tools-hook.sh",
+            "timeout": 60,
+            "statusMessage": "Ensuring shellcheck/yamllint are installed (so make ci's lint step runs for real)"
+          },
+          {
+            "type": "command",
             "command": "make install-hooks",
             "timeout": 10,
             "statusMessage": "Wiring git pre-push hook"
