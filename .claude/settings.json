@@ -29,6 +29,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/ensure-manifest-tools-hook.sh",
+            "timeout": 120,
+            "statusMessage": "Ensuring kustomize/terraform/tflint/kubeconform are installed (so make ci's validate steps run for real)"
+          },
+          {
+            "type": "command",
             "command": "make install-hooks",
             "timeout": 10,
             "statusMessage": "Wiring git pre-push hook"

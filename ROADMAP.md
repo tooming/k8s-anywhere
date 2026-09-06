@@ -1959,6 +1959,41 @@ there is no point where the lab loses a working git source or CI path.
   `.claude/settings.json` (valid JSON preserved). `make ci` must pass. `docs/done/`
   entry required. (auto/ensure-lint-tools-hook)
 
+- [x] 🟢 **`scripts/ensure-manifest-tools-hook.sh` — auto-install
+  `kustomize`/`terraform`/`tflint`/`kubeconform` so `make ci`'s validate gates can't
+  self-skip either** — full verification writeup:
+  [docs/done/2026-09-06-ensure-manifest-tools-session-start-hook.md](docs/done/2026-09-06-ensure-manifest-tools-session-start-hook.md).
+  (auto/ensure-manifest-tools-hook)
+  (CLAUDE.md's bugfix-recurrence-prevention rule; third JANITOR-fallback follow-up
+  this same run to `auto/ensure-bats-hook` (#1448) and `auto/ensure-lint-tools-hook`
+  (#1456) — same footgun class, the remaining validate-*.sh tool dependencies.
+  Verified live none of `kustomize`/`terraform`/`tflint`/`kubeconform` was installed
+  either, meaning `make ci`'s kustomize/terraform/manifests steps had all been
+  silently self-skipping the whole run too.)
+
+  Added `scripts/ensure-manifest-tools-hook.sh`, pinning each tool's version to
+  exactly match `.github/workflows/ci.yml`'s own pins (`kustomize` v5.8.1,
+  `kubeconform` v0.8.0, `terraform` 1.15.9, `tflint` via CI's own install script) so
+  a local pass means the same thing CI's pass means. `helm` is deliberately excluded
+  and the script says why: its official binaries are hosted exclusively on
+  `get.helm.sh`, which this sandbox's egress proxy blocks (verified live — the
+  official `get-helm-3` install script failed with `connect_rejected`); this only
+  costs `helm-chart-pin-check.sh`'s local run (that gate's own soft-skip message
+  already says so) since `validate-kustomize.sh` no longer needs `helm` at all as of
+  2026-09-06 (ADR-0040's Envoy Gateway removal deleted the only kustomization that
+  vendored a Helm chart via the `helmCharts` inflator). Verified live: running the
+  freshly-enabled `kustomize`/`terraform`/`manifests` `make ci` steps found **zero
+  pre-existing failures** — the GitHub Actions backstop had genuinely been keeping
+  all three clean; enabling them locally didn't surface hidden drift needing a
+  separate fix. Added `tests/hook-scripts-ensure-manifest-tools.bats` (its own file
+  per `tests/hook-scripts-coverage.bats`'s frozen-monolith rule): script
+  exists/executable, reports "already installed" for all four tools when present
+  (the actual path this bats run itself exercises), never fails even with no
+  network/tools reachable (a minimal `PATH` exercising only the hook's own
+  non-network coreutils calls), explicitly documents the `helm` exclusion, and is
+  wired into `.claude/settings.json` with valid JSON preserved. `make ci` must pass.
+  `docs/done/` entry required. (auto/ensure-manifest-tools-hook)
+
 - ~~🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
   sync strategy**~~ (issue #1335; RFC #1340 — architect decision 2026-08-25:
   build a scheduled, pull-based, fast-forward-only Forgejo Actions sync job
