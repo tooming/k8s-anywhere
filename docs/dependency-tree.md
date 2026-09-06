@@ -227,8 +227,8 @@ graph TD
 
 ## Day-0 bootstrap chain (`make up` — the only imperative steps)
 
-Everything below step 6 is reconciled by ArgoCD from Forgejo (live since PR #1205);
-steps 1–8 are the non-GitOps seam (you can't GitOps the GitOps engine or its git
+Everything below step 8 is reconciled by ArgoCD from Forgejo (live since PR #1205);
+steps 1–9 are the non-GitOps seam (you can't GitOps the GitOps engine or its git
 source into being).
 
 ```
@@ -237,29 +237,36 @@ make up
    └─ 2 tfstate-up       off-cluster Garage for TF state              [docker compose]
       └─ 3 cluster-up       k3d cluster                               [Terragrunt → s3 backend]
          └─ 4 argocd        ArgoCD (GitOps engine)                    [Terraform/Helm]
-            └─ 5 gitlab-up  GitLab omnibus (git source)               [docker compose]
-               └─ 6 gitlab-configure  project + ArgoCD repo deploy-token + git push   [Terraform + git]
-                  └─ 7 root-app       app-of-apps planted             [kubectl apply]
-                     ├─ 8 vault-bootstrap   init/unseal; seed secret/garage/server,
-                     │                      aws/moto, grafana/admin,
-                     │                      rabbitmq/default, valkey/default;
-                     │                      k8s auth + eso role; kick ESO
-                     └─ 9 garage-bootstrap  layout + S3 key + buckets → writes vault:garage/s3
+            └─ 5 forgejo-up  Forgejo (git source)                     [docker compose]
+               └─ 6 forgejo-repo-secret  repo + ArgoCD SSH deploy-key secret  [scripts/forgejo-repo-secret.sh]
+                  ├─ 7 gitlab-up  GitLab omnibus (legacy, kept for rollback)  [docker compose]
+                  │  └─ 8 gitlab-configure  legacy project + repo deploy-token + git push [Terraform + git]
+                  └─ 9 root-app       app-of-apps planted             [kubectl apply]
+                     ├─ 10 vault-bootstrap   init/unseal; seed secret/garage/server,
+                     │                       aws/moto, grafana/admin,
+                     │                       rabbitmq/default, valkey/default;
+                     │                       k8s auth + eso role; kick ESO
+                     └─ 11 garage-bootstrap  layout + S3 key + buckets → writes vault:garage/s3
                         └─ ESO syncs Vault→Secrets ⇒ Garage, Mimir, Loki, Tempo,
                            Pyroscope, ACK, Grafana converge on their own
 ```
 
-> **Known gap, not yet reconciled (tracked in ROADMAP.md):** steps 5–6 above are
-> `make up`'s literal, current behavior — a fresh bootstrap still brings up and
-> configures GitLab, unchanged. The currently-running lab's ArgoCD, however, was
-> re-pointed at Forgejo directly on the live cluster (PR #1205, 2026-08-17) without
-> going back through `make up`. So today there are two different truths depending on
-> which you ask: a fresh `make up` run still wires GitLab as steps 5–6 describe; the
-> already-running lab's steady-state (the integration graph above, and the "Everything
-> below step 6 is reconciled by ArgoCD from Forgejo" line) reflects the live,
-> post-cutover state. Updating `make up`'s bootstrap sequence to match is its own
-> ROADMAP item, not yet picked up — this note exists so this doc doesn't silently
-> imply that gap is already closed.
+> **Gap closed 2026-09-06 (was: "Known gap, not yet reconciled").** Until this date, a
+> fresh `make up` still only brought up and configured GitLab (steps 5–6 in the
+> previous version of this diagram) while the live lab's ArgoCD had actually been
+> re-pointed at Forgejo directly on the cluster (PR #1205, 2026-08-17) — so a from-
+> scratch rebuild's `root-app` would fail its very first sync (`error creating SSH
+> agent: SSH_AUTH_SOCK not-specified`, no `repo-forgejo-gitops` Secret existed yet).
+> `forgejo-up` + `forgejo-repo-secret` (steps 5–6 above, `scripts/forgejo-repo-secret.sh`)
+> now close that: idempotently ensures the `lab/k8s-lab` org+repo exist and the SSH
+> deploy-key Secret is loaded before `root-app` runs. GitLab (steps 7–8) still runs too,
+> but only because its own decommission (`gitlab/docker-compose.yml` +
+> `infra/modules/gitlab-config`) is a separate, still-open ROADMAP item kept as a
+> rollback path — no live `Application` reads from it. Still open: this script doesn't
+> push repo content into a genuinely empty Forgejo (no `forgejo-push` mechanism exists
+> yet) — harmless today because Forgejo's docker volume persists across `make down`/
+> `make up` cycles on the same machine, but a true first-time bootstrap on a new
+> machine would still need that content pushed by hand once.
 
 > **Why a second, off-cluster Garage?** The in-cluster Garage is created *by* the
 > Terraform in steps 3–6, so it can't also be that Terraform's state backend without a

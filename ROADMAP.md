@@ -580,6 +580,19 @@ there is no point where the lab loses a working git source or CI path.
   findings and recommendation:
   [docs/roadmap/investigations/2026-08-17-gitlab-forgejo-rename.md](docs/roadmap/investigations/2026-08-17-gitlab-forgejo-rename.md).
   Left unchecked rather than shipping a same-shaped-but-wrong rename (ADR-0004).
+
+  **Update 2026-09-06 (live-cluster session) — the credential-wiring half of "`make
+  up`'s bootstrap sequence still calls the GitLab targets outright" is now closed**,
+  independently of this item: a fresh `make up` was reproduced live failing
+  `root-app`'s very first sync (missing `repo-forgejo-gitops` Secret — the exact gap
+  this investigation flagged). Fixed with `scripts/forgejo-repo-secret.sh` +
+  `make forgejo-repo-secret`, wired into `up` right after `forgejo-up` and before
+  `gitlab-up`/`root-app` — full writeup:
+  [docs/done/2026-09-06-forgejo-repo-secret-bootstrap-gap.md](docs/done/2026-09-06-forgejo-repo-secret-bootstrap-gap.md).
+  This item stays open: the SSH-based `forgejo-push`/`forgejo-force-push` replacement,
+  the TLS-layer question, and the actual `gitlab-*.sh` → `forgejo-*.sh` rename are
+  still undone — GitLab's targets still run in `up` (legacy, harmless) and no
+  automated push exists yet for a genuinely empty Forgejo repo.
 - [ ] 🟢 **Decommission `gitlab/docker-compose.yml` + `infra/modules/gitlab-config`** —
   GitLab is **stopped** as of 2026-08-17 (`make gitlab-down`, volumes kept for
   rollback) but not yet removed from the repo — deliberately kept a beat longer than
