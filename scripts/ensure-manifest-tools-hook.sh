@@ -42,7 +42,7 @@ set -uo pipefail
 
 KUSTOMIZE_VERSION="v5.8.1"   # matches .github/workflows/ci.yml's kustomize job
 KUBECONFORM_VERSION="v0.8.0" # matches .github/workflows/ci.yml's manifests job
-TERRAFORM_VERSION="1.15.9"   # matches .github/workflows/ci.yml's terraform job
+TERRAFORM_VERSION="1.16.1"   # matches .github/workflows/ci.yml's terraform job
 
 install_kustomize() {
   command -v kustomize >/dev/null 2>&1 && { echo "kustomize already installed ($(command -v kustomize))"; return 0; }
