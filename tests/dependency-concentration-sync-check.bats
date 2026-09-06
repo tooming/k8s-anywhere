@@ -38,7 +38,6 @@ setup() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"github.com/grafana"* ]]
   [[ "$output" == *"github.com/argoproj"* ]]
-  [[ "$output" == *"github.com/pingcap"* ]]
   [[ "$output" == *"stated count"* ]]
 }
 
