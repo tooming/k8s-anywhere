@@ -1855,6 +1855,38 @@ there is no point where the lab loses a working git source or CI path.
 > — both need an architect go/no-go call, not a mechanical bump, per
 > `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
 
+- [x] 🟢 **`scripts/ensure-bats-hook.sh` — auto-install `bats` at session start so
+  `make ci`'s unit-test gate can't silently self-skip in an autonomous session** —
+  full verification writeup:
+  [docs/done/2026-09-06-ensure-bats-session-start-hook.md](docs/done/2026-09-06-ensure-bats-session-start-hook.md).
+  (auto/ensure-bats-hook)
+  (CLAUDE.md's bugfix-recurrence-prevention rule; JANITOR-fallback cleanup 2026-09-06,
+  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
+  re-confirmed fully gated this cycle (issues #633/#1229 unchanged) and
+  PLANNER/ARCHITECT/TRIAGER/DOC-DRIFT-AUTHOR all came up empty again. Found live this
+  same run: two `upgrade/*` version-bump PRs
+  (`upgrade/kro-0.9.3-to-0.9.4`, `upgrade/grafana-12.10.4-to-12.11.2`) both passed a
+  local `make ci` that silently skipped `tests/securitycontext-kro.bats`'s hard-coded
+  exact-chart-pin assertion because `bats` wasn't installed in this remote clusterless
+  sandbox — `scripts/test.sh`'s existing local-vs-CI skip is a fair convenience for a
+  human contributor, but this session's *entire* self-review contract IS `make ci`
+  (WAYS-OF-WORKING.md §0.1's self-merge model, no other backstop) — recurring twice in
+  one run makes it a real class of bug, not a one-off, per CLAUDE.md's own
+  bugfix-recurrence rule.)
+
+  Added `scripts/ensure-bats-hook.sh`, a best-effort `SessionStart` hook (installs
+  `bats` via `apt-get` if missing, silently no-ops if `apt-get`/network/permission
+  isn't available — never blocks the session) wired into `.claude/settings.json`.
+  Once `bats` is on `PATH`, `scripts/test.sh`'s own existing local/CI branch naturally
+  takes the "run the real suite" path for the rest of the session — no change needed
+  to `test.sh` itself. Added `tests/hook-scripts-ensure-bats.bats` (its own file per
+  `tests/hook-scripts-coverage.bats`'s frozen-monolith rule) covering: script
+  exists/executable, exits 0 + reports "already installed" when `bats` is present
+  (the actual path this bats run itself exercises), exits 0 even with no `apt-get` on
+  `PATH` (never blocks), and is actually wired into `.claude/settings.json` (valid
+  JSON preserved). `make ci` must pass. `docs/done/` entry required.
+  (auto/ensure-bats-hook)
+
 - ~~🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
   sync strategy**~~ (issue #1335; RFC #1340 — architect decision 2026-08-25:
   build a scheduled, pull-based, fast-forward-only Forgejo Actions sync job

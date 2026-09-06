@@ -17,6 +17,12 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/ensure-bats-hook.sh",
+            "timeout": 60,
+            "statusMessage": "Ensuring bats is installed (so make ci's unit-test step runs for real)"
+          },
+          {
+            "type": "command",
             "command": "make install-hooks",
             "timeout": 10,
             "statusMessage": "Wiring git pre-push hook"
