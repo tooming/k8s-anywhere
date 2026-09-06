@@ -581,26 +581,7 @@ You review and merge plan PRs, same as implementation PRs.
   condition still not triggered, kept at `1.11.3`** — full verification
   writeup:
   [docs/done/2026-09-03-longhorn-currency-recheck-kept.md](docs/done/2026-09-03-longhorn-currency-recheck-kept.md).
-  (auto/longhorn-currency-recheck-kept)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004;
-  JANITOR-fallback coverage sweep 2026-09-03, this run's seventeenth cycle,
-  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated again and PLANNER/ARCHITECT/TRIAGER all came up
-  empty. Fresh angle: a pinned-chart currency sweep (distinct from the
-  GHSA-advisory-sweep lens already used heavily this run) found Longhorn's
-  `1.12.x` line — the line ADR-0013's own 2026-07-18 entry deliberately
-  stayed one minor line behind — went stable (`v1.12.1`, 2026-08-14) since
-  the last check. Verified this is an ADR-guarded case, not an unswept
-  currency gap: CLAUDE.md's "never silently violate an ADR" rule applies —
-  neither of ADR-0013's own named flip conditions (EOL window, a filed CVE)
-  has fired, so the pin correctly stays put; the check itself, with its
-  fresh verification, is the deliverable. **No prerequisites — executor may
-  pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): `v1.12.1`'s existence confirmed
-  via two independent sources (the release page and a real, resolving raw
-  image-list file at that tag); ADR-0013's Re-evaluation log and
-  `docs/dependency-register.md`'s row updated with the fresh check. No
-  `gitops/` change. `make ci` must pass. `docs/done/` entry required.
+  (auto/longhorn-currency-recheck-kept; PR #1398)
 
 - [x] 🟢 **dependency-concentration-sync-check: close the reverse-direction gap
   + fix a stale comment** — full verification writeup:
@@ -1533,29 +1514,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-19-argo-rollouts-cve-image-tag.md](docs/done/2026-07-19-argo-rollouts-cve-image-tag.md).
   (auto/argo-rollouts-cve-image-tag; PR #555) Closes #552.
 
-- [x] 🟢 **ADR-0006 — remove stale "Follow-up: wire both bootstraps into `make up`/DR"
-  note** (CHARTER **Core Values** §"Docs & dashboards don't drift"; planner gap-analysis
-  finding, 2026-07-18 — **no prerequisites, executor may pick up immediately**). The
-  ADR-0006 `## Decision` §Status paragraph ends with "(Follow-up: wire both bootstraps
-  into `make up`/DR.)" — but both bootstraps are already wired: `Makefile`'s `up` target
-  calls `$(MAKE) gitlab-tls-bootstrap` (line 187) and `$(MAKE) grafana-gitsync-bootstrap`
-  (line 191), both between `vault-bootstrap` and `frontdoor`/root-app sync, and both
-  `.PHONY` targets (`gitlab-tls-bootstrap` line 371, `grafana-gitsync-bootstrap` line 375)
-  exist and run their respective scripts. Verified directly against the current
-  `Makefile` (not assumed, per ADR-0004) before filing this item. This is stale-doc
-  drift, not a missing feature: the ADR's own claim about its still-open follow-up no
-  longer matches the repo's actual state. Fix: delete the parenthetical
-  "(Follow-up: wire both bootstraps into `make up`/DR.)" sentence from ADR-0006's
-  `## Decision` §Status paragraph (`docs/decisions/adr-0006-grafana-native-git-sync.md`)
-  — the preceding sentences in that paragraph ("Implemented + verified live... The
-  Repository connection is bootstrapped imperatively... Community (gnetId) dashboards
-  are unaffected.") already stand on their own without it, so no replacement text is
-  needed. No `make ci` gate exercises ADR prose today; if the executor wants a mechanical
-  recurrence guard, a lightweight one is welcome (e.g. extend
-  `scripts/adr-guard-hook.sh` or add a small `tests/` assertion that no ADR under
-  `docs/decisions/` contains the literal string "Follow-up:" once its named target
-  Makefile line is confirmed present — optional, not required to land this fix). `make
-  ci` must pass. `docs/done/` entry required. (auto/adr-0006-stale-followup-note)
+- [x] 🟢 **ADR-0006 — remove stale "Follow-up: wire both bootstraps into
+  `make up`/DR" note** — full verification writeup:
+  [docs/done/2026-07-18-adr-0006-stale-followup-note.md](docs/done/2026-07-18-adr-0006-stale-followup-note.md).
+  (auto/adr-0006-stale-followup-note; PR #551)
 
 - [x] 🟢 **Bump Cilium `1.16.6` → `1.17.18`** — full verification writeup:
   [docs/done/2026-07-18-cilium-cve-bump.md](docs/done/2026-07-18-cilium-cve-bump.md).
@@ -2399,29 +2361,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-01-auto-kargo-observability-dashboard.md](docs/done/2026-07-01-auto-kargo-observability-dashboard.md).
   (auto/kargo-observability-dashboard; PR #317)
 
-- [x] 🟢 **Harbor day-0 credential seam — admin + CI registry secrets** (RFC #297
-  / ADR-0024 — architect decision 2026-06-30; **no prerequisites — executor may
-  pick up immediately**; **unblocks `auto/harbor-capstone-rewire`**). The Harbor
-  ArgoCD Application (`gitops/platform/harbor.yaml`) currently uses the
-  hard-coded default password `Harbor12345` with no `existingSecretAdminPassword`
-  reference, and `vault-bootstrap.sh` seeds no Harbor credential path (only
-  `secret/artifactory/registry` exists). This item adds the missing day-0 seam,
-  parallel to the velero-key + inkless-key pattern already in
-  `garage-bootstrap.sh`: (1) extend `scripts/vault-bootstrap.sh` to seed
-  `secret/harbor/admin` (`admin-user=admin`, `admin-password=<rand-hex-16>`) and
-  `secret/harbor/registry` (`username=admin`, `password=<rand-hex-16>`) — both
-  idempotent (`kv get ... || kv put ...`), exact parallel to the existing
-  `secret/artifactory/registry` block at line 79; (2) add
-  `gitops/secrets/harbor-admin-externalsecret.yaml` (namespace `harbor`, target
-  Secret `harbor-admin-creds`, keys `HARBOR_ADMIN_PASSWORD` + `HARBOR_ADMIN_USER`
-  from `secret/harbor/admin`); (3) patch `gitops/platform/harbor.yaml` to set
-  `existingSecretAdminPassword: harbor-admin-creds` and
-  `existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD`; (4) add
-  `tests/harbor-bootstrap.bats` (clusterless structural: `vault-bootstrap.sh`
-  seeds both paths, `harbor-admin-externalsecret.yaml` exists, `harbor.yaml`
-  references `existingSecretAdminPassword`); (5) note `secret/harbor/registry`
-  in the `docs/dependency-tree.md` Day-0 bootstrap section. `docs/done/` entry
-  required. `make ci` must pass. (auto/harbor-bootstrap-credentials)
+- [x] 🟢 **Harbor day-0 credential seam — admin + CI registry secrets** — full
+  verification writeup:
+  [docs/done/2026-07-08-harbor-bootstrap-credentials.md](docs/done/2026-07-08-harbor-bootstrap-credentials.md).
+  (auto/harbor-bootstrap-credentials; PR #347)
 
 - [x] 🟢 **Harbor registry ExternalSecret — capstone imagePullSecret prep**
   (CHARTER **Objective O4** + capstone RFC #62, RFC #297 / ADR-0024; split-the-gate
@@ -2698,32 +2641,9 @@ there is no point where the lab loses a working git source or CI path.
   (auto/architecture-doc-cloud-agnostic-step)
 
 - [x] 🟢 **Hook-scripts negative-path coverage — `argocd-crd-ssa-sync-hook.sh` +
-  `helm-chart-pin-sync-hook.sh`** (CLAUDE.md's "every bugfix/gap prevents recurrence"
-  ethos + ROADMAP rule #9's coverage/hardening sweep; follow-up flagged by
-  `docs/done/2026-07-16-hook-scripts-bats-coverage.md`, which closed bats coverage for
-  13 previously-untested hook scripts but left these two with only filter + real-repo
-  happy-path coverage, noting their underlying checks are "network-tolerant with no
-  hook-level file-scoped override for injecting a broken fixture." That note is
-  incomplete: both underlying `*-check.sh` scripts already have offline test seams used
-  by `tests/drift-detectors.bats` — `helm-chart-pin-check.sh` supports
-  `CHARTPINCHECK_ROOT` + a `CHARTPIN_RESOLVER` stub (fixtures already exist at
-  `tests/fixtures/helm-chart-pin/{drift,in-sync}/`); `argocd-crd-ssa-check.sh` supports
-  `CRDSSA_CHECK_ROOT` + a `CRDSSA_RENDERER` stub (fixtures already exist at
-  `tests/fixtures/argocd-crd-ssa/{drift,in-sync}/`). Since each hook simply
-  `bash`-invokes its check script in the same shell (no `env -i`), exported
-  `CHARTPIN_RESOLVER`/`CRDSSA_RENDERER` env vars propagate straight through — no new
-  fixtures need to be built, just two more `@test` cases in
-  `tests/hook-scripts-coverage.bats`: (1) for `argocd-crd-ssa-sync-hook.sh`, run with
-  `CRDSSA_RENDERER="$REPO/tests/fixtures/argocd-crd-ssa/renderer-stub.sh"` and a payload
-  pointing at `tests/fixtures/argocd-crd-ssa/drift/big-app.yaml` (oversized CRD, no
-  `ServerSideApply=true`) — assert exit 2 and that stderr names the offending
-  Application; (2) for `helm-chart-pin-sync-hook.sh`, run with
-  `CHARTPIN_RESOLVER="$REPO/tests/fixtures/helm-chart-pin/resolver-stub.sh"` and a
-  payload pointing at `tests/fixtures/helm-chart-pin/drift/gitops/apps.yaml` (a
-  `*-missing` pinned version) — assert exit 2 and that stderr names the bad pin. No
-  script changes — tests only. `make ci` must pass. `docs/done/` entry required.
-  **No prerequisites — executor may pick up immediately.**
-  (auto/hook-scripts-negative-path-coverage)
+  `helm-chart-pin-sync-hook.sh`** — full verification writeup:
+  [docs/done/2026-07-16-hook-scripts-negative-path-coverage.md](docs/done/2026-07-16-hook-scripts-negative-path-coverage.md).
+  (auto/hook-scripts-negative-path-coverage; PR #432)
 
 - [x] 🟢 **Fix stale `(follow-up item)` markers in ADR-0028/ADR-0029 + widen
   `scripts/adr-followup-check.sh` to catch the parenthetical form** — full
