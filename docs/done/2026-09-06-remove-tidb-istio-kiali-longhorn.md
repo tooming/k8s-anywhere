@@ -113,3 +113,7 @@ work entirely. Flagged as a separate background task rather than folded into thi
   `Makefile` now only matches illustrative/historical comments — no live config,
   ArgoCD Application, NetworkPolicy rule, or test asserts anything about these three
   components still existing.
+
+## PR
+
+https://github.com/tooming/k8s-anywhere/pull/1452
