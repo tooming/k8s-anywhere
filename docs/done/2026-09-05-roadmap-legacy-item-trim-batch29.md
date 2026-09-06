@@ -62,4 +62,4 @@ claim blindly):
 
 ## PR
 
-(placeholder — backfilled after `create_pull_request` returns)
+https://github.com/tooming/k8s-anywhere/pull/1443
