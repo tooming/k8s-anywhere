@@ -58,4 +58,4 @@ mirror first, rather than inventing one this cycle didn't verify end-to-end.
 
 ## PR
 
-(placeholder — backfilled after `create_pull_request` returns)
+https://github.com/tooming/k8s-anywhere/pull/1447
