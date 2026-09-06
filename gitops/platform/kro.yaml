@@ -27,6 +27,20 @@
 # Manual sync only now; live
 # replicas scaled to 0 directly. Re-enable by restoring the automated block
 # below once the cluster has real headroom again.
+#
+# Bumped 0.9.3 -> 0.9.4 (upgrade-drafter fallback, 2026-09-06): ADR-0038's
+# 2026-09-03 currency check confirmed 0.9.3 was still the newest tag at that
+# time (a v0.9.4 fetch at the chart's Chart.yaml path 404'd, same as the
+# known-current v0.9.3 tag at that path -- this chart's Chart.yaml isn't
+# under a flat repo-root path, so the GitHub releases list is the reliable
+# signal, not a raw path fetch). Re-checked directly (ADR-0004, not assumed):
+# github.com/kro-run/kro/releases/tag/v0.9.4 is a real, published (non-draft,
+# non-prerelease) release, published 2026-09-04 by github-actions -- newer
+# than the ADR's 2026-09-03 check, so this is a genuinely new tag, not a
+# stale read. No published GHSA advisory forced this; routine same-line
+# patch currency only, no major bump. Left SUSPENDED as-is (no automated
+# block) -- this bump doesn't touch the suspension, only the pinned version
+# for whenever it's re-enabled.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -39,7 +53,7 @@ spec:
   source:
     repoURL: ghcr.io/kro-run/kro
     chart: kro
-    targetRevision: 0.9.3
+    targetRevision: 0.9.4
     helm:
       releaseName: kro
       valuesObject:
