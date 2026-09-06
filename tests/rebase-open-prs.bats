@@ -141,3 +141,21 @@ make_fixture() {
     [[ "$output" == *"[rebase] ${prefix}/behind-test"* ]]
   done
 }
+
+@test "rebase-open-prs: every git fetch/push against \$REMOTE goes through the repo credential helper, never the bare global one" {
+  # Regression guard for the 2026-09-06 live failure: the post-merge hook's
+  # `make rebase-prs` failed with "could not read Password for
+  # 'http://root@localhost:8929': Device not configured" right after merging #1452
+  # — a plain `git fetch "$REMOTE"` fell through to the host's global
+  # credential.helper (osxkeychain), which serves a stale/absent token for the
+  # local GitLab remote non-interactively instead of the repo's own
+  # gitlab-credential-helper.sh (the same footgun the Makefile's `gitlab-push`
+  # target already mitigates this way). Structural check: every git fetch/push
+  # invocation must carry the credential-helper reset, none may call git bare.
+  run grep -c 'git "\${GIT_CRED_OPTS\[@\]}" \(fetch\|push\) "\$REMOTE"' "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [ "$output" -ge 3 ]
+
+  run grep -cE '^[[:space:]]*git (fetch|push) "\$REMOTE"' "$SCRIPT"
+  [ "$status" -ne 0 ] || [ "$output" -eq 0 ]
+}
