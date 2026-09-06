@@ -586,3 +586,48 @@ check was 2026-08-13.
 `2.10.9` nor `2.11.0` exist for `grafana/tempo` (both 404) — `2.10.8` is still
 the newest tag. **Decision: kept.** No currency or security gap. Flip
 condition unchanged from the 2026-08-13 entry above.
+
+### 2026-09-06 — Grafana chart bumped `12.10.4` → `12.11.2` (upgrade-drafter fallback)
+
+**Trigger.** Routine currency sweep across `gitops/` chart sources (this
+run's executor cycle, `Now / next` fully gated on issues #633/#1229, PLANNER/
+ARCHITECT came up empty). `github.com/grafana-community/helm-charts/tags`
+shows `grafana-12.11.2` as the newest tag on the `12.x` line — no major bump
+(chart stays `12.x`).
+
+**Verified directly (ADR-0004):** Fetched `charts/grafana/templates/_pod.tpl`
+at both the `grafana-12.10.4` and `grafana-12.11.2` tags directly from GitHub
+and compared the security-relevant blocks: the pod-level `securityContext`
+block, the container-level `containerSecurityContext` block, the
+`init-chown-data` init container (still gated by
+`.Values.initChownData.enabled`, still runs the same `chown -R
+{{ .Values.securityContext.runAsUser }}:{{ .Values.securityContext.runAsGroup }}`
+command), and the `search` `emptyDir: {}` volume are all unchanged in shape
+between the two tags — this ADR's existing `readOnlyRootFilesystem`/PSS-
+restricted analysis (recorded further up this file) carries forward
+unchanged. The chart's own `Chart.yaml` `appVersion` moved to `13.2.0`
+between these tags, but this repo pins the running Grafana image
+independently via `valuesObject.image.tag` (currently `13.0.8`, tracked and
+audited separately in this ADR's own Re-evaluation log above) — the chart
+bump does not change which Grafana binary actually runs, only the chart's
+packaging/templates, matching the decoupled chart-version/app-image pattern
+this file has used since the RFC #544 chart-source migration
+(10.5.15 → 12.7.2).
+
+**Decision: bump `grafana` chart `12.10.4` → `12.11.2`** (the newest `12.x`
+tag, no major bump, no CVE — routine packaging currency only).
+`gitops/platform/observability-grafana.yaml`'s `spec.source.targetRevision`
+updated; `tests/observability-grafana.bats` updated to assert `12.11.2`
+present and `12.10.4` absent (recurrence guard, mirrors this repo's other
+exact-chart-pin tests). `valuesObject.image.tag` (`13.0.8`) is unaffected by
+this change.
+
+**ADR-0004 caveat.** This remote, clusterless session verified the template
+facts above directly against the real chart source at both tags, but cannot
+verify Grafana starts cleanly and Git Sync/dashboard provisioning continues
+working post-bump on a live cluster. Rollback is a one-line revert of
+`targetRevision`; ArgoCD reconciles the change on its next sync.
+
+**Flip condition (next re-evaluation).** Revisit when the next scheduled
+currency sweep finds a newer `12.x` chart tag, or when Grafana's own image
+pin (tracked separately above) needs its next bump.

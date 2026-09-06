@@ -22,7 +22,18 @@ spec:
     # sources before bumping.
     repoURL: https://grafana-community.github.io/helm-charts
     chart: grafana
-    targetRevision: 12.10.4
+    # Bumped 12.10.4 -> 12.11.2 (upgrade-drafter fallback, 2026-09-06): chart-only
+    # currency bump, no CVE. Verified directly (ADR-0004): charts/grafana/templates/
+    # _pod.tpl's securityContext/containerSecurityContext blocks, the init-chown-data
+    # container, and the "search" emptyDir volume are all unchanged in shape between
+    # grafana-12.10.4 and grafana-12.11.2 (fetched both tags' raw template content and
+    # compared) -- this repo's existing PSS-restricted/readOnlyRootFilesystem analysis
+    # (comment block below) carries forward unchanged. The chart's own appVersion moved
+    # to 13.2.0, but the running Grafana binary is pinned independently via
+    # valuesObject.image.tag below (13.0.8, unaffected by this bump -- same
+    # chart-version/app-image decoupling this file has used since the 10.5.15 -> 12.7.2
+    # chart-source migration, RFC #544). No major bump (chart stays on the 12.x line).
+    targetRevision: 12.11.2
     helm:
       releaseName: grafana
       valuesObject:
