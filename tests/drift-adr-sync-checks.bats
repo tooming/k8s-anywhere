@@ -104,11 +104,10 @@ setup() {
   [[ "$output" == *"no ADR uses the self-tracking"* ]]
 }
 
-@test "adr-image-pin-sync-check: passes on the real repo's ADRs (ADR-0009/0018 match their live image tags)" {
+@test "adr-image-pin-sync-check: passes on the real repo's ADRs (no self-tracking image-pin ADR left, since RabbitMQ/ADR-0009, Valkey/ADR-0018, and the observability stack/ADR-0034 were all removed 2026-09-06)" {
   run bash "$REPO/scripts/adr-image-pin-sync-check.sh"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"adr-0009"* ]]
-  [[ "$output" == *"adr-0018"* ]]
+  [[ "$output" == *"no ADR uses the self-tracking"* ]]
 }
 
 @test "adr-image-pin-sync-check: passes when a self-tracking table-row ADR matches its live image tag" {

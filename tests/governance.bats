@@ -85,13 +85,14 @@ setup() {
 # excluded from governance as an on-demand-heavy namespace too variable for static
 # defaults — a `kiali` governance leaf would create an empty, unused namespace no
 # workload ever runs in (removed in the chore that added this comment).
-# `keda` is likewise now absent (REMOVED 2026-08-25): KEDA converted to fully
-# on-demand for cluster-load reduction (ADR-0029's Re-evaluation log) — its
-# own namespace-creating Application went on-demand too, so a `keda` governance
-# leaf would recreate an otherwise-empty namespace on every reconciliation,
-# the same dead-config shape the kiali removal above already established.
+# `keda` is likewise now absent (REMOVED 2026-09-06): KEDA was dropped from
+# the lab entirely, no replacement (ADR-0029) — same dead-config shape the
+# kiali removal above already established.
+# `data` is likewise now absent (REMOVED 2026-09-06): RabbitMQ/ADR-0009 and
+# Valkey/ADR-0018 were dropped from the lab entirely, no replacement — the
+# `data` namespace held nothing else, so it went with them.
 STANDARD_NS="argocd capstone kyverno external-secrets velero argo-rollouts \
-trivy-system moto ack-system kro kargo lab-demo data storage vault lab-gateway harbor \
+trivy-system moto ack-system kro kargo lab-demo storage vault lab-gateway harbor \
 cert-manager capstone-pipeline"
 
 @test "every standard-tier namespace has a governance leaf overlay" {
