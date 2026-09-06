@@ -2013,51 +2013,15 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-20-auto-alloy-self-monitoring.md](docs/done/2026-06-20-auto-alloy-self-monitoring.md).
   (auto/alloy-self-monitoring; PR #241)
 
-- [x] 🟢 **Lab — Kube State Metrics cluster-health dashboard** (CHARTER
-  **Objective O5**, due **2026-09-30**; O5 gap — `observability-ksm` is
-  auto-synced in `gitops/bootstrap/root-app.yaml` but has no Grafana dashboard.
-  KSM metrics are already scraped via the `prometheus.scrape "ksm"` block in
-  `gitops/platform/observability-alloy.yaml` — no new scrape job needed). New
-  `grafana/dashboards/lab-ksm.json` ("Lab — Cluster Health (KSM)") providing a
-  K8s resource state overview: pod phase distribution stat panels
-  (`kube_pod_status_phase{phase=~"Running|Pending|Failed|Succeeded"}` across all
-  namespaces); deployment replica health (sum of
-  `kube_deployment_status_replicas_available` vs
-  `kube_deployment_spec_replicas`); PersistentVolumeClaim phase
-  (`kube_persistentvolumeclaim_status_phase` by namespace + claim); node
-  readiness (`kube_node_status_condition{condition="Ready",status="true"}`);
-  KSM self-health stat (`kube_state_metrics_build_info` version label +
-  `kube_state_metrics_watch_total` by resource for watch health). Modelled on
-  `lab-kyverno.json` stat-row: KSM pod running (KSM
-  `kube_deployment_status_replicas_available{namespace="observability",deployment=~"ksm.*"}`);
-  ArgoCD sync state. All panels real Mimir data (ADR-0004). No HTTPRoute. Extend
-  `tests/observability.bats`: `lab-ksm.json` exists; dashboard references
-  `kube_pod_status_phase`; references `kube_state_metrics_build_info`; no
-  fabricated data. Update `docs/dependency-tree.md` with KSM dashboard note.
-  `docs/done/` entry required. (auto/ksm-cluster-health-dashboard)
+- [x] 🟢 **Lab — Kube State Metrics cluster-health dashboard** — full
+  verification writeup:
+  [docs/done/auto-ksm-cluster-health-dashboard.md](docs/done/auto-ksm-cluster-health-dashboard.md).
+  (auto/ksm-cluster-health-dashboard; PR #242)
 
-- [x] 🟢 **Lab — Node Exporter cluster-vitals dashboard** (CHARTER
-  **Objective O5**, due **2026-09-30**; O5 gap — `observability-node-exporter`
-  is auto-synced in `gitops/bootstrap/root-app.yaml` but has no Grafana
-  dashboard. Node Exporter metrics are already scraped via the
-  `prometheus.scrape "node_exporter"` block — no new scrape job needed). New
-  `grafana/dashboards/lab-node-exporter.json` ("Lab — Node Vitals") showing
-  host-level infrastructure metrics: CPU usage gauge
-  (`1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))`); memory pressure
-  gauge (`1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)`);
-  disk usage per mount
-  (`1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} /
-  node_filesystem_size_bytes)` by device); network throughput timeseries
-  (`rate(node_network_receive_bytes_total[5m])` +
-  `rate(node_network_transmit_bytes_total[5m])` by interface, excluding
-  `lo`); node uptime stat (`time() - node_boot_time_seconds`);
-  node-exporter pod running (KSM); ArgoCD sync state. Modelled on
-  `lab-kyverno.json` stat-row format. All panels real Mimir data (ADR-0004).
-  No HTTPRoute. Extend `tests/observability.bats`: `lab-node-exporter.json`
-  exists; dashboard references `node_cpu_seconds_total`; references
-  `node_memory_MemAvailable_bytes`; no fabricated data. Update
-  `docs/dependency-tree.md` with node-exporter dashboard note.
-  `docs/done/` entry required. (auto/node-exporter-vitals-dashboard)
+- [x] 🟢 **Lab — Node Exporter cluster-vitals dashboard** — full verification
+  writeup:
+  [docs/done/2026-06-21-node-exporter-vitals-dashboard.md](docs/done/2026-06-21-node-exporter-vitals-dashboard.md).
+  (auto/node-exporter-vitals-dashboard; PR #245)
 
 - [x] 🟢 **NetworkPolicy fan-out — `external-secrets` namespace** (CHARTER
   **Objective O2**, due **2026-09-30**; ADR-0016 §4 fan-out completion —
@@ -2214,28 +2178,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-27-pss-np-istio-system.md](docs/done/2026-06-27-pss-np-istio-system.md).
   (auto/pss-np-istio-system; PR #285)
 
-- [x] 🟢 **ADR-0017 amendment — add `kargo` namespace row** (CHARTER **Objective O2**,
-  due **2026-09-30**; docs-only O2 gap — surfaced 2026-06-27 planner run). The
-  `kargo` namespace already carries `restricted` PSA labels in
-  `gitops/kargo/namespace.yaml` (Kargo api/controller/webhooks-server all run as
-  UID 65532, `restricted`-compatible) and a full default-deny NetworkPolicy overlay
-  in `gitops/kargo/networkpolicy/`, but the namespace is **absent** from ADR-0017
-  §"Per-namespace profile" — the table records every other PSA-labelled namespace
-  except kargo. Two changes bundled (both tiny): (a) **ADR-0017 table row** — add
-  `kargo → restricted | Kargo api/controller/webhooks-server all run as UID 65532
-  (non-root); no host volumes, no special capabilities. Per ROADMAP
-  auto/pss-kro-namespace pattern.` to the per-namespace profile table, placed after
-  the `kro → restricted` row (same non-root controller pattern, share the citation
-  convention). (b) **New `tests/securitycontext-kargo.bats`** — per-scope file
-  (NOT the frozen monolith per `scripts/securitycontext-tests-check.sh`): assert
-  `gitops/kargo/namespace.yaml` exists; `enforce: restricted` present;
-  `enforce: baseline` and `enforce: privileged` absent (safety checks);
-  `gitops/platform/kargo-extras.yaml` exists and its `syncPolicy` includes
-  `automated:` (auto-synced). No Makefile change, no new Application — the
-  `kargo-extras` Application already exists and is already auto-synced. Update
-  `docs/dependency-tree.md` with a kargo PSS note (parallel to the kro PSS note
-  added in `auto/pss-kro-namespace`). `docs/done/` entry required. `make ci` must
-  pass. (auto/adr-0017-kargo-row)
+- [x] 🟢 **ADR-0017 amendment — add `kargo` namespace row** — full
+  verification writeup:
+  [docs/done/2026-06-27-adr-0017-kargo-row.md](docs/done/2026-06-27-adr-0017-kargo-row.md).
+  (auto/adr-0017-kargo-row; PR #291)
 
 - [x] 🟢 **PSA `baseline` labels + NetworkPolicy — `artifactory` namespace** —
   full verification writeup:
@@ -2476,28 +2422,9 @@ there is no point where the lab loses a working git source or CI path.
   must pass. `docs/done/` entry required.
   (auto/architecture-doc-harbor-update)
 
-- [x] 🟢 **O2 NP per-scope coverage loop bats** (CHARTER **Objective O2**,
-  due **2026-09-30**; O2 recurrence guard — prevents a future namespace from
-  gaining an NP overlay without a corresponding per-scope bats file; mirrors
-  the `zz-dns-clusterip-bridge` presence loop added in
-  `auto/gitops-clusterip-bridge`. **No prerequisites — executor may pick up
-  immediately.** Add a new `@test` to `tests/networkpolicy.bats` (NOT the
-  frozen monolith — `tests/networkpolicy.bats` is the shared NP file and
-  accepts new tests): title `"every NP overlay dir has a per-scope
-  networkpolicy-<ns>.bats file"`; the body iterates all
-  `gitops/*/networkpolicy/kustomization.yaml` and
-  `gitops/apps/*/networkpolicy/kustomization.yaml` paths; for each path
-  derives the namespace name from the parent directory name (e.g.
-  `gitops/harbor/networkpolicy/kustomization.yaml` → namespace `harbor`,
-  expected bats `tests/networkpolicy-harbor.bats`; for `apps/` paths the
-  namespace comes from the grandparent directory — e.g.
-  `gitops/apps/capstone/networkpolicy/` → `capstone`); asserts
-  `tests/networkpolicy-<ns>.bats` exists; fails with a clear message naming
-  the missing file. This bats loop is the O2 NP completeness gate: it fails
-  `make ci` if a future NP-fan-out PR skips the per-scope bats. Verify at
-  executor pickup that the assertion passes for every existing overlay before
-  committing (all per-scope files are present after #336 merges). `make ci`
-  must pass. `docs/done/` entry required. (auto/o2-np-coverage-loop)
+- [x] 🟢 **O2 NP per-scope coverage loop bats** — full verification writeup:
+  [docs/done/2026-07-07-o2-np-coverage-loop.md](docs/done/2026-07-07-o2-np-coverage-loop.md).
+  (auto/o2-np-coverage-loop; PR #343)
 
 - [x] 🟢 **O2 PSS per-scope coverage loop bats** (CHARTER **Objective O2**,
   due **2026-09-30**; O2 PSS recurrence guard — prevents a future namespace
@@ -2603,28 +2530,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-11-auto-governance-envoy-node-exporter.md](docs/done/2026-07-11-auto-governance-envoy-node-exporter.md).
   (auto/governance-envoy-node-exporter)
 
-- [x] 🟢 **NetworkPolicy overlay — `capstone-pipeline` namespace** (**blocked
-  on PR #354 `auto/capstone-pipeline-psa` merging first** — the
-  `capstone-pipeline` `namespace.yaml` must exist before this NP overlay is
-  applied; skip to the next item until #354 merges; CHARTER **Objective O2**,
-  due **2026-09-30**; ADR-0016 defense-in-depth gap — the `capstone-pipeline`
-  namespace created by Kargo's Project CRD (ADR-0023) currently has no
-  default-deny NetworkPolicy overlay; Kargo promotion-step pods run in this
-  namespace during pipeline executions). Add
-  `gitops/kargo-project/networkpolicy/kustomization.yaml` referencing the
-  shared baseline templates (`default-deny.yaml` + `allow-dns-and-apiserver.yaml`
-  + `zz-dns-clusterip-bridge.yaml`) plus the allow rules needed by promotion
-  jobs (verify at executor pickup against actual Kargo promotion-pod egress
-  requirements — at minimum: DNS, apiserver, and egress to the `kargo`
-  namespace for the Kargo controller callback). Add a new Application
-  `gitops/platform/kargo-project-networkpolicy.yaml` (non-auto-synced, wave
-  4, `LoadRestrictionsNone`; pairs with `kargo-project.yaml`). Add
-  `tests/networkpolicy-capstone-pipeline.bats` covering the three shared
-  baseline template references (mirrors the pattern of any existing per-scope
-  bats file). The O2 NP coverage loop in `tests/networkpolicy.bats` will
-  guard this namespace automatically once the overlay exists. `make ci` must
-  pass. `docs/done/` entry required.
-  (auto/capstone-pipeline-networkpolicy)
+- [x] 🟢 **NetworkPolicy overlay — `capstone-pipeline` namespace** — full
+  verification writeup:
+  [docs/done/2026-07-11-auto-capstone-pipeline-networkpolicy.md](docs/done/2026-07-11-auto-capstone-pipeline-networkpolicy.md).
+  (auto/capstone-pipeline-networkpolicy; PR #363)
 
 - [x] 🟢 **Cilium agent Prometheus metrics + O5 CNI dashboard** — full
   verification writeup:
