@@ -15,14 +15,19 @@ setup() {
 }
 
 @test "forgejo service is pinned to an explicit version" {
-  run grep -F 'image: codeberg.org/forgejo/forgejo:' "$COMPOSE"
+  run grep -F 'image: code.forgejo.org/forgejo/forgejo:' "$COMPOSE"
   [ "$status" -eq 0 ]
   [[ "$output" != *':latest'* ]]
 }
 
 @test "forgejo service is pinned to 16.0.2" {
-  run grep -F 'image: codeberg.org/forgejo/forgejo:16.0.2' "$COMPOSE"
+  run grep -F 'image: code.forgejo.org/forgejo/forgejo:16.0.2' "$COMPOSE"
   [ "$status" -eq 0 ]
+}
+
+@test "forgejo service uses code.forgejo.org, not codeberg.org (2026-09-06: codeberg.org registry unreachable from the Colima VM)" {
+  run grep -F 'image: codeberg.org/forgejo/forgejo:' "$COMPOSE"
+  [ "$status" -eq 1 ]
 }
 
 @test "forgejo-runner service is pinned to an explicit version" {
@@ -42,14 +47,12 @@ setup() {
 }
 
 @test "forgejo service defines a healthcheck (image ships none of its own)" {
-  # -A80, not -A70: the environment: block grew past 70 lines once the
-  # 2026-08-18 arm64-image-swap comment landed (found live that session — see
-  # docker-compose.yml's own comment on it, replacing the GOMAXPROCS/GODEBUG
-  # QEMU-mitigation env vars with an explanation of why they're gone). Same
-  # reason as the -A60 -> -A70 bump before it: keep bumping this window
-  # whenever a new env var + explanatory comment lands above healthcheck:,
-  # rather than switching to a less brittle match.
-  run grep -A80 '^  forgejo:' "$COMPOSE"
+  # A fixed -A<N> line count here was bumped three times (60 -> 70 -> 80) as
+  # explanatory comments accumulated above `healthcheck:` (most recently the
+  # 2026-09-06 codeberg.org-registry-swap comment pushed it past 80) — switched
+  # to an awk range bounded by the *next* top-level service key instead, so this
+  # can never go stale again regardless of how many comment lines land above it.
+  run awk '/^  forgejo:/,/^  forgejo-runner:/' "$COMPOSE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"healthcheck:"* ]]
 }

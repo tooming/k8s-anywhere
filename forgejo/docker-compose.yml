@@ -16,7 +16,19 @@ services:
     # Pinned explicit version (not `:latest` — Forgejo doesn't even publish that tag)
     # per ADR-0030's precedent. v16.0.2 is the newest stable release as of 2026-08-11
     # (confirmed via the Codeberg API tags list). Bump deliberately via a future PR.
-    image: codeberg.org/forgejo/forgejo:16.0.2
+    #
+    # Registry: code.forgejo.org, not codeberg.org (both mirror the same image).
+    # Found live 2026-09-06 (issue #633 rebuild session): `docker pull
+    # codeberg.org/forgejo/forgejo:16.0.2` failed hard from inside the Colima VM —
+    # "failed to copy: httpReadSeeker: failed open: content at
+    # https://codeberg.org/v2/.../manifests/sha256:... not found: not found" —
+    # reproduced consistently (not transient), while the *same tag* pulled cleanly
+    # and fast from code.forgejo.org (Forgejo's own first-party registry) seconds
+    # later. This is the same codeberg.org-from-this-VM connectivity class already
+    # documented below (the 2026-08-18 IPv6/NAT finding) — code.forgejo.org sidesteps
+    # it entirely rather than needing a manual crane-pull workaround. forgejo-runner
+    # below already used code.forgejo.org; this just makes both consistent.
+    image: code.forgejo.org/forgejo/forgejo:16.0.2
     container_name: forgejo
     hostname: forgejo.local
     restart: unless-stopped
