@@ -14,7 +14,7 @@ Harbor precedent; this only writes the steps down before an exit is forced.
 those three plus, as of 2026-09-02, the four highest-blast-radius of the eleven
 single-tool rows in [`docs/dependency-register.md`](dependency-register.md) (Cilium —
 the CNI every pod's traffic depends on; Garage — the only stateful S3-compatible
-store; Envoy Gateway — the sole ingress path for every UI in this lab; cert-manager —
+store; Traefik — the sole ingress path for every UI in this lab; cert-manager —
 TLS issuance, a silent failure mode if it stops), and, as of 2026-09-03, the remaining
 seven (Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo, kube-state-metrics,
 node-exporter) — closing out full coverage of every single-tool row named in the
@@ -150,17 +150,18 @@ data migration (every bucket's real content), not a repoint — the S3 API surfa
 portable, the data behind it is not. ADR-0002 rejected MinIO at adoption time; no
 exit-direction alternative has been separately evaluated since.
 
-**Envoy Gateway** (ingress — [ADR-0008](decisions/adr-0008-envoy-gateway-not-traefik.md)).
-`gitops/platform/envoy-gateway.yaml` (Kustomize-vendored per its own probe-timeout
-fix) is the sole `Gateway API` implementation fronting every `HTTPRoute` in this lab
-— the front door for every UI in README.md's Endpoints table. A real exit means
-picking a replacement Gateway API implementation and re-verifying every existing
-`HTTPRoute`/`Gateway` resource against it (Gateway API is a spec multiple
-implementations share, so this is closer to fork-and-repoint than Cilium's CNI-level
-exit — but the specific `EnvoyGateway`/`EnvoyProxy` CRD tuning this lab already
-needed, e.g. the disabled leader-election fix, would need re-discovering against the
-new implementation). ADR-0008 rejected Traefik at adoption time; no exit-direction
-alternative has been separately evaluated since.
+**Traefik** (ingress — [ADR-0040](decisions/adr-0040-traefik-not-envoy-gateway.md),
+supersedes [ADR-0008](decisions/adr-0008-envoy-gateway-not-traefik.md)). Bundled
+with k3s itself (no separate `Application` to point at — `infra/modules/k3d-cluster/`
+just leaves it enabled) and fronts every `IngressRoute` in this lab — the front door
+for every UI in README.md's Endpoints table. A real exit means picking a replacement
+ingress controller and re-authoring every existing `IngressRoute`/`TLSStore`/
+`TraefikService` into the new tool's shape (`IngressRoute` is a Traefik-proprietary
+CRD, not a portable spec the way Gateway API's `HTTPRoute` was under the prior Envoy
+Gateway choice — ADR-0040 names this trade-off explicitly — so this exit is closer
+to a full fork-and-repoint than Cilium's CNI-level exit). ADR-0040 itself supersedes
+ADR-0008's choice of Envoy Gateway; no further exit-direction alternative has been
+separately evaluated since.
 
 **cert-manager** (TLS lifecycle — [ADR-0028](decisions/adr-0028-cert-manager-tls-lifecycle.md)).
 `gitops/platform/cert-manager.yaml` + `cert-manager-root-ca.yaml` issue every

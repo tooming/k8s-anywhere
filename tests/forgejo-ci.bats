@@ -101,7 +101,7 @@ setup() {
   grep -q 'secrets.CHECKOUT_TOKEN' "$WF"
 }
 
-@test "REGISTRY keeps the real harbor.127.0.0.1.nip.io hostname (Envoy Gateway's HTTPRoute matches on the Host header — swapping the hostname breaks routing even if the TCP connection itself succeeds, found live 2026-08-18)" {
+@test "REGISTRY keeps the real harbor.127.0.0.1.nip.io hostname (Traefik's IngressRoute matches on the Host header — swapping the hostname breaks routing even if the TCP connection itself succeeds, found live 2026-08-18)" {
   grep -q 'REGISTRY: harbor.127.0.0.1.nip.io:8080' "$WF"
   run grep -q 'REGISTRY:.*host\.docker\.internal' "$WF"
   [ "$status" -eq 1 ]

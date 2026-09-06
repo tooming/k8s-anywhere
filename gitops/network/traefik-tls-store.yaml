@@ -1,0 +1,22 @@
+# Shared TLS termination for the lab (ADR-0040, supersedes ADR-0008's
+# GatewayClass/Gateway). A single TLSStore named "default" is Traefik's
+# documented convention for a cluster-wide default certificate — every
+# IngressRoute opts in with an empty `tls: {}` stanza (no per-route
+# certificateRef needed), the same "shared gateway, no per-route TLS config"
+# ergonomics the old shared Gateway's HTTPS listener provided. References the
+# same wildcard certificate Secret ADR-0028's Certificate produces
+# (gitops/network/certificates/wildcard-certificate.yaml), unchanged.
+#
+# Lives in the lab-gateway namespace, same as before — that namespace's own
+# default-deny NetworkPolicy, PSA restricted labels (ADR-0017), and governance
+# LimitRange (all pre-existing, gitops/network/namespace.yaml et al.) are
+# reused as-is: a TLSStore is a CRD object with no running pods, same as the
+# GatewayClass/Gateway it replaces, so nothing there needed to change.
+apiVersion: traefik.io/v1alpha1
+kind: TLSStore
+metadata:
+  name: default
+  namespace: lab-gateway
+spec:
+  defaultCertificate:
+    secretName: wildcard-127-0-0-1-nip-io-tls

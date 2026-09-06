@@ -97,10 +97,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-s3manager-ingress allows port 8080 from envoy-gateway-system" {
+@test "allow-s3manager-ingress allows port 8080 from kube-system" {
   run grep -q 'port: 8080' "$STORAGE_NP/allow-s3manager-ingress.yaml"
   [ "$status" -eq 0 ]
-  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$STORAGE_NP/allow-s3manager-ingress.yaml"
+  run grep -q 'kubernetes.io/metadata.name: kube-system' "$STORAGE_NP/allow-s3manager-ingress.yaml"
   [ "$status" -eq 0 ]
 }
 

@@ -8,30 +8,31 @@
 #     points at the local GitLab via http://host.k3d.internal:8929/...)
 #     silently fails to fetch on refresh and drifts away from desired state.
 #
-#  2. *.127.0.0.1.nip.io -> the Envoy Gateway's in-cluster proxy Service.
-#     nip.io's real wildcard DNS resolves any of its subdomains to the literal
-#     IP embedded in the name, 127.0.0.1 — which is a *pod's own loopback* for
-#     any in-cluster client, not the gateway. Every HTTPRoute hostname in this
-#     lab (argocd, capstone, grafana, harbor, kargo, kiali, longhorn, moto,
-#     rabbitmq, rollouts, s3, tidb-demo, vault — all route through the one
-#     shared Gateway, ADR-0008) needs this to be reachable from another pod —
-#     e.g. Kargo's Warehouse polling Harbor for image digests. Found live and
-#     first patched out-of-band (not committed anywhere) in PR #1323 while
+#  2. *.127.0.0.1.nip.io -> Traefik's in-cluster Service (ADR-0040, supersedes
+#     Envoy Gateway/ADR-0008). nip.io's real wildcard DNS resolves any of its
+#     subdomains to the literal IP embedded in the name, 127.0.0.1 — which is
+#     a *pod's own loopback* for any in-cluster client, not the ingress
+#     controller. Every IngressRoute hostname in this lab (argocd, capstone,
+#     grafana, harbor, kargo, kiali, longhorn, moto, rabbitmq, rollouts, s3,
+#     tidb-demo, vault) needs this to be reachable from another pod — e.g.
+#     Kargo's Warehouse polling Harbor for image digests. Found live and first
+#     patched out-of-band (not committed anywhere) in PR #1323 while
 #     investigating issue #633; this brings that fix under GitOps/`make up`
 #     management instead of living only as a manual live kubectl patch.
 #
 # Usage: coredns-host-alias.sh [host-alias|nip-io-rewrite]
 #   host-alias (default)  — (re)compute ONLY the host.k3d.internal key, from
 #                            the docker network gateway. Run early in `make up`
-#                            (step 5, `make coredns-host-alias`) — before
-#                            ArgoCD has synced anything, so Envoy Gateway's
-#                            proxy Service does not exist yet.
-#   nip-io-rewrite         — (re)compute ONLY the *.nip.io key, by discovering
-#                            Envoy Gateway's generated proxy Service via its
-#                            documented `gateway.envoyproxy.io/owning-gateway-
-#                            {name,namespace}` labels. Run later in `make up`
-#                            (`make coredns-nip-io-rewrite`, after `root-app`
-#                            has had time to sync Envoy Gateway).
+#                            (step 5, `make coredns-host-alias`).
+#   nip-io-rewrite         — (re)compute ONLY the *.nip.io key, rewriting to
+#                            Traefik's well-known Service (`traefik.kube-system`,
+#                            k3s's bundled HelmChart release name — NOT
+#                            dynamically discovered via labels the way Envoy
+#                            Gateway's per-Gateway proxy Service was; Traefik
+#                            ships with k3s itself, so this Service exists from
+#                            cluster boot with no ArgoCD-sync dependency at
+#                            all. Not live-cluster-verified against this exact
+#                            k3s version's chart — see ADR-0040's "Known risk").
 #
 # Whichever mode runs carries the OTHER key's current live value forward
 # unchanged, rather than omitting it: `kubectl apply` replaces a ConfigMap's
@@ -46,9 +47,8 @@ set -euo pipefail
 
 NS=kube-system
 NET=k3d-k8s-lab
-EG_NS=envoy-gateway-system
-GW_NAME=eg
-GW_NS=lab-gateway
+TRAEFIK_NS=kube-system
+TRAEFIK_SVC=traefik
 
 MODE="${1:-host-alias}"
 case "$MODE" in
@@ -85,26 +85,21 @@ if [ "$MODE" = "host-alias" ]; then
     }
 }"
 else
-  # root-app (make up step) only plants the app-of-apps and returns immediately —
-  # ArgoCD's own sync of envoy-gateway (and its generation of this proxy Service)
-  # can still be in flight when this runs, so poll rather than check once.
+  # Traefik ships with k3s itself (ADR-0040) — no ArgoCD-sync dependency the way
+  # Envoy Gateway's per-Gateway proxy Service had, but k3s still takes a moment to
+  # schedule it after cluster creation, so a short existence-wait is kept rather
+  # than assuming it's already up.
   WAIT="${COREDNS_NIPIO_WAIT:-300}"
-  echo "[coredns] waiting up to ${WAIT}s for Envoy Gateway's proxy Service (owning-gateway=$GW_NS/$GW_NAME) to be created by ArgoCD..."
+  echo "[coredns] waiting up to ${WAIT}s for Traefik's Service ($TRAEFIK_NS/$TRAEFIK_SVC) to exist..."
   end=$((SECONDS + WAIT))
-  PROXY_SVC=""
-  until [ -n "$PROXY_SVC" ]; do
-    PROXY_SVC="$(kubectl -n "$EG_NS" get svc \
-      -l "gateway.envoyproxy.io/owning-gateway-namespace=$GW_NS,gateway.envoyproxy.io/owning-gateway-name=$GW_NAME" \
-      -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
-    if [ -z "$PROXY_SVC" ]; then
-      if [ "$SECONDS" -ge "$end" ]; then
-        echo "[coredns] ERROR: no Envoy Gateway proxy Service appeared in $EG_NS within ${WAIT}s (owning-gateway=$GW_NS/$GW_NAME) — has Envoy Gateway synced?" >&2
-        exit 1
-      fi
-      sleep 5
+  until kubectl -n "$TRAEFIK_NS" get svc "$TRAEFIK_SVC" >/dev/null 2>&1; do
+    if [ "$SECONDS" -ge "$end" ]; then
+      echo "[coredns] ERROR: no Traefik Service $TRAEFIK_NS/$TRAEFIK_SVC appeared within ${WAIT}s — has k3s finished bootstrapping?" >&2
+      exit 1
     fi
+    sleep 5
   done
-  TARGET="$PROXY_SVC.$EG_NS.svc.cluster.local."
+  TARGET="$TRAEFIK_SVC.$TRAEFIK_NS.svc.cluster.local."
   echo "[coredns] rewriting *.127.0.0.1.nip.io -> $TARGET"
   NEW_NIPIO="nip-io-rewrite.server {
     rewrite name regex (.*)\.127\.0\.0\.1\.nip\.io $TARGET answer auto

@@ -11,5 +11,5 @@ resources:
   - namespace.yaml
   - deployment.yaml
   - rollout.yaml
-  - route.yaml
+  - ingressroute.yaml
   - ci-verify-rejection-rbac.yaml

@@ -29,7 +29,7 @@ data:
             <code>Secret tidb-demo-creds</code> in namespace <code>tidb</code>.</li>
         <li>This pod receives <code>TIDB_USER</code> and <code>TIDB_PASSWORD</code>
             as environment variables from that Secret.</li>
-        <li><strong>Envoy Gateway</strong> routes traffic here via
+        <li><strong>Traefik</strong> routes traffic here via
             <code>tidb-demo.127.0.0.1.nip.io:8000</code>.</li>
       </ol>
       <p>The credential values are <em>not</em> shown here.

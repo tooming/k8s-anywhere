@@ -1,7 +1,8 @@
-# Allow Envoy Gateway proxy pods to reach the Argo Rollouts dashboard on TCP 3100
-# (ADR-0016). The Envoy proxy pods serve the rollouts.127.0.0.1.nip.io HTTPRoute
-# by forwarding to the argo-rollouts-dashboard Service on port 3100. The proxy
-# component label selects the Envoy data-plane pods in envoy-gateway-system only.
+# Allow Traefik's data-plane pods to reach the Argo Rollouts dashboard on TCP 3100
+# (ADR-0016, ADR-0040 — supersedes Envoy Gateway/ADR-0008). Traefik pods serve the
+# rollouts.127.0.0.1.nip.io IngressRoute by forwarding to the argo-rollouts-dashboard
+# Service on port 3100. The name label selects Traefik's own pods in kube-system only
+# (not the whole namespace, which also hosts CoreDNS, metrics-server, etc.).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -18,7 +19,7 @@ spec:
       from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: envoy-gateway-system
+              kubernetes.io/metadata.name: kube-system
           podSelector:
             matchLabels:
-              app.kubernetes.io/component: proxy
+              app.kubernetes.io/name: traefik

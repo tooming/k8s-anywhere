@@ -1,6 +1,6 @@
 # NetworkPolicy Kustomize overlay for the kargo namespace (ADR-0016 §4 fan-out).
 # Pulls the two shared baseline templates and adds kargo-specific allow rules for:
-# Envoy Gateway → kargo-api on TCP 80 (Kargo UI access);
+# Traefik → kargo-api on TCP 80 (Kargo UI access, ADR-0040);
 # kube-apiserver → webhooks-server on TCP 9443 (Kargo CRD admission webhooks);
 # kargo controller → argocd-server on TCP 80 (argocd-update promotion step);
 # kargo controller → image registry on TCP 443 (image digest discovery for Warehouse);

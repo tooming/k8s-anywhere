@@ -65,7 +65,7 @@ setup() {
 # pinned tags), NOT an object with a nested `generate` key. The old
 # `generate: false` shape was a silent no-op (Helm would template the
 # non-empty map as truthy, generating a cert-manager Certificate the lab's
-# ADR-0008 Envoy Gateway TLS termination never needed). Path-aware via
+# ADR-0040 Traefik TLS termination never needed). Path-aware via
 # yqs() so a regression back to the dead shape fails this test.
 @test "kargo Application disables TLS self-signed cert (plain HTTP inside cluster)" {
   P="$REPO/gitops/platform/kargo.yaml"
@@ -207,20 +207,20 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- HTTPRoute ---------------------------------------------------------------
-@test "kargo HTTPRoute exists" {
-  [ -f "$REPO/gitops/kargo/route.yaml" ]
+# --- IngressRoute (ADR-0040, supersedes Envoy Gateway/ADR-0008) -------------
+@test "kargo IngressRoute exists" {
+  [ -f "$REPO/gitops/kargo/ingressroute.yaml" ]
 }
 
-@test "kargo HTTPRoute exposes kargo.127.0.0.1.nip.io" {
-  run grep -q 'kargo.127.0.0.1.nip.io' "$REPO/gitops/kargo/route.yaml"
+@test "kargo IngressRoute exposes kargo.127.0.0.1.nip.io" {
+  run grep -q 'kargo.127.0.0.1.nip.io' "$REPO/gitops/kargo/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "kargo HTTPRoute targets the kargo-api Service on port 80" {
-  run grep -q 'name: kargo-api' "$REPO/gitops/kargo/route.yaml"
+@test "kargo IngressRoute targets the kargo-api Service on port 80" {
+  run grep -q 'name: kargo-api' "$REPO/gitops/kargo/ingressroute.yaml"
   [ "$status" -eq 0 ]
-  run grep -q 'port: 80' "$REPO/gitops/kargo/route.yaml"
+  run grep -q 'port: 80' "$REPO/gitops/kargo/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -239,7 +239,7 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "kargo NetworkPolicy allows Envoy Gateway ingress to API server" {
+@test "kargo NetworkPolicy allows Traefik ingress to API server" {
   [ -f "$REPO/gitops/kargo/networkpolicy/allow-kargo-api-from-gateway.yaml" ]
 }
 

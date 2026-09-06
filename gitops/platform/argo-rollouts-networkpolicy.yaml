@@ -2,7 +2,7 @@
 # argo-rollouts namespace (ADR-0016 §4 fan-out; progressive delivery controller).
 # Applies the shared baseline templates (default-deny-all, allow-dns-and-apiserver)
 # plus per-workload allow rules: Alloy metrics scrape from observability on TCP 8090;
-# Envoy proxy dashboard access on TCP 3100; egress to Mimir on TCP 8080 for
+# Traefik dashboard access on TCP 3100 (ADR-0040); egress to Mimir on TCP 8080 for
 # AnalysisTemplate success-rate queries (ADR-0020 §AnalysisTemplate from Mimir).
 # ALWAYS-ON: automated sync alongside the argo-rollouts Application.
 # The kustomization references templates from ../../network/policies/ — the

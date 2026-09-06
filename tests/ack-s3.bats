@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 # Clusterless structural check: ack-s3 chart-pin recurrence guard, mirroring the
-# existing pin-assertion pattern (cilium.bats, envoy-gateway.bats, etc.).
+# existing pin-assertion pattern (cilium.bats, harbor.bats, etc.).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"

@@ -30,7 +30,7 @@ setup() {
 }
 
 
-# --- ingress allow (Envoy Gateway → Harbor TCP 8080) -------------------------------
+# --- ingress allow (Traefik → Harbor TCP 8080) -------------------------------
 @test "allow-harbor-ingress.yaml exists in harbor/networkpolicy/" {
   [ -f "$HARBOR_NP/allow-harbor-ingress.yaml" ]
 }
@@ -43,8 +43,8 @@ setup() {
 # 2026-08-06/07: this rule listed port 80 (the Harbor Service's port) instead of
 # 8080 (the harbor-nginx container's actual containerPort, which NetworkPolicy
 # `ports:` must match) — the default-deny floor silently blocked every request the
-# whole time this policy existed. Found live chasing a chronic Envoy 503 that
-# survived several unrelated fixes; confirmed via Envoy's /clusters admin endpoint
+# whole time this policy existed. Found live chasing a chronic gateway 503 that
+# survived several unrelated fixes; confirmed via a direct same-namespace exec test
 # (cx_connect_fail against a correct, healthy pod IP) plus a same-namespace exec
 # test that worked fine, isolating it to this cross-namespace policy specifically.
 # Exact match (not substring) so this can't silently pass against "8080" too.
@@ -55,8 +55,8 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-@test "allow-harbor-ingress restricts source to envoy-gateway-system namespace" {
-  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$HARBOR_NP/allow-harbor-ingress.yaml"
+@test "allow-harbor-ingress restricts source to kube-system namespace" {
+  run grep -q 'kubernetes.io/metadata.name: kube-system' "$HARBOR_NP/allow-harbor-ingress.yaml"
   [ "$status" -eq 0 ]
 }
 

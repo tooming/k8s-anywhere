@@ -1,5 +1,10 @@
-# The shared lab Gateway (GatewayClass + Gateway). sync-wave 1 so it runs after
-# envoy-gateway (wave 0) has installed the Gateway API CRDs. retry covers any race.
+# The shared lab TLS termination (Traefik TLSStore, ADR-0040 — supersedes the
+# GatewayClass/Gateway this used to hold under Envoy Gateway/ADR-0008) plus the
+# ArgoCD IngressRoute. No CRD-install ordering dependency any more: Traefik and
+# its CRDs (traefik.io/v1alpha1) ship as part of k3s itself, installed at cluster
+# boot rather than by an ArgoCD-synced Application — sync-wave 1 is kept only for
+# parity with this Application's own retry/creation-order history, not a real
+# dependency. retry covers any race.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

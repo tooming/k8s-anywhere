@@ -35,7 +35,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 |-------|-------|
 | **Bootstrap (IaC)** | Terraform · Terragrunt · k3d (k3s-in-Docker) |
 | **GitOps** | GitLab (git source, omnibus container) · ArgoCD (engine, app-of-apps) |
-| **Ingress** | Envoy Gateway (north-south, Gateway API · `envoy-gateway-system-networkpolicy` default-deny overlay; ADR-0008, ADR-0016) |
+| **Ingress** | Traefik (north-south, bundled with k3s · `IngressRoute`/`TLSStore`/`TraefikService` CRDs; ADR-0040, ADR-0016) |
 | **Secrets** | Vault (KV v2) · External Secrets Operator |
 | **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
 | **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · `velero-schedules` daily Schedules for data / tidb / capstone / vault / observability · `velero-networkpolicy` default-deny overlay; ADR-0021) |
@@ -45,7 +45,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **CNI (bootstrap)** | Cilium (`make cilium-up` — run before `make argocd` on fresh clusters; ADR-0014) |
 | **Policy & supply chain** | Kyverno (NetworkPolicy default-deny fan-out · `kyverno-policies` ClusterPolicies: PSS-restricted validate + seccomp mutate + verifyImages; ADR-0016, ADR-0019) · Trivy Operator (`trivy-system-networkpolicy` default-deny overlay; continuous CVE scanning + SBOM generation; ADR-0022) · `governance` ApplicationSet (per-namespace LimitRange resource defaults fan-out; RFC #293) |
 | **TLS / certificates** | cert-manager (`cert-manager-root-ca` self-signed root CA bootstrap chain — `selfsigned-bootstrap` → root `Certificate` → `k8s-lab-ca` `ClusterIssuer` · `lab-gateway-certificate` wildcard `*.127.0.0.1.nip.io` Certificate terminating the shared Gateway's `https`/443 listener, alongside the original `http`/80 one · DR front door proxies `:8443` through as a TCP passthrough · `cert-manager-networkpolicy` default-deny overlay; ADR-0028) |
-| **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller + `capstone-rollout` AnalysisTemplate — Mimir SLO-gated canary steps via Envoy Gateway traffic-split · `argo-rollouts-networkpolicy` default-deny overlay; ADR-0020) |
+| **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller + `capstone-rollout` AnalysisTemplate — Mimir SLO-gated canary steps via Traefik's built-in traffic-split (`TraefikService`) · `argo-rollouts-networkpolicy` default-deny overlay; ADR-0020, ADR-0040) |
 | **Autoscaling** | KEDA (`make keda-up` / `make keda-down` — on-demand as of 2026-08-25, cluster-load reduction; event-driven autoscaling — 60+ built-in scalers including RabbitMQ queue depth and Prometheus expressions, augments the stock HPA · `data-demo-keda-scaling` `ScaledObject` demo scaling `rabbitmq-load` 1→5 replicas on the `demo` queue's real depth via the RabbitMQ management API · `keda-networkpolicy` default-deny overlay; ADR-0029) |
 | **Promotion pipelines** | Kargo (`make kargo-up` / `make kargo-down` — Warehouse detects new image digests → Stage dev auto-promote → Stage prod manual gate · `kargo-project` capstone-pipeline Project · `kargo-networkpolicy` default-deny overlay · `kargo-project-networkpolicy` capstone-pipeline NetworkPolicy overlay; ADR-0023) |
 | **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Harbor CNCF OCI registry (`make harbor-up` / `make harbor-down` — Garage S3 backend; ADR-0024) · Istio ambient mesh — istio-base · istio-cni · istiod · ztunnel (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn distributed block storage (`make longhorn-up` / `make longhorn-down`) · Kargo promotion engine (`make kargo-up` / `make kargo-down`) |
@@ -86,7 +86,7 @@ for the full command list.
 Lab dashboards (`grafana/dashboards/*.json`) are managed by Grafana
 native Git Sync (Pure Git), not a k8s sidecar. Current dashboards:
 `Lab — Argo Rollouts (Progressive Delivery)` · `Lab — ArgoCD (GitOps)` · `Lab — Capstone` ·
-`Lab — Cloud Control Plane (moto / ACK / KRO)` · `Lab — Envoy Gateway (Ingress)` ·
+`Lab — Cloud Control Plane (moto / ACK / KRO)` ·
 `Lab — Garage S3 (Object Storage)` · `Lab — Git Sync` · `Lab — Grafana` ·
 `Lab — Kyverno (Admission Policy)` · `Lab — Logs` ·
 `Lab — Mimir` · `Lab — Profiles` · `Lab — RabbitMQ` · `Lab — Stack Health` ·
@@ -127,7 +127,7 @@ After `make up`, UIs are served via the stable front door on **`:8000`**
 | TiDB demo *(on-demand)* | http://tidb-demo.127.0.0.1.nip.io:8000 |
 
 `make argocd-password` prints the ArgoCD admin password. `:8080` is a per-cluster
-Envoy LB port used underneath the front door and is not the canonical UI entrypoint.
+Traefik LB port used underneath the front door and is not the canonical UI entrypoint.
 
 ## Disaster recovery & blue/green
 

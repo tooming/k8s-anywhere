@@ -57,13 +57,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-moto-from-gateway allows ingress from envoy-gateway-system namespace" {
-  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$MOTO_NP/allow-moto-from-gateway.yaml"
+@test "allow-moto-from-gateway allows ingress from kube-system namespace" {
+  run grep -q 'kubernetes.io/metadata.name: kube-system' "$MOTO_NP/allow-moto-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "allow-moto-from-gateway allows ingress from Envoy proxy pods" {
-  run grep -q 'app.kubernetes.io/component: proxy' "$MOTO_NP/allow-moto-from-gateway.yaml"
+@test "allow-moto-from-gateway allows ingress from Traefik pods" {
+  run grep -q 'app.kubernetes.io/name: traefik' "$MOTO_NP/allow-moto-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 

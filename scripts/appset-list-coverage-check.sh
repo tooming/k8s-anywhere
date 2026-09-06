@@ -4,10 +4,11 @@
 # every real `gitops/**/networkpolicy/` (resp. `gitops/governance/<ns>/`) leaf
 # directory, or that directory's manifests are never wired to any ArgoCD
 # Application and silently never reach the cluster -- structurally the same
-# "hardcoded list drifts from the real thing it enumerates" footgun shape as
-# allow-envoy-proxy-backend-egress.yaml's namespace list (harbor incident, PR
-# #968; recurred for tidb/longhorn-system/istio-system/kargo, fixed 2026-08-07,
-# scripts/envoy-egress-allowlist-check.sh). Closing this proactively, before a
+# "hardcoded list drifts from the real thing it enumerates" footgun shape as the
+# former allow-envoy-proxy-backend-egress.yaml's namespace list (harbor incident,
+# PR #968; recurred for tidb/longhorn-system/istio-system/kargo, fixed
+# 2026-08-07 by a dedicated drift-check script, retired along with Envoy
+# Gateway itself, ADR-0040). Closing this proactively, before a
 # future namespace addition repeats the same class of gap. Both lists are
 # currently in sync (verified directly, ADR-0004) -- this is a preventative
 # guard, not a fix for a live drift. Runs in CI (the 'drift' job, a required

@@ -107,8 +107,8 @@ setup() {
 }
 
 # --- ingress: RabbitMQ management UI is routed ------------------------------
-@test "RabbitMQ management UI has an HTTPRoute on the nip.io host" {
-  run grep -q 'rabbitmq.127.0.0.1.nip.io' "$REPO/gitops/data/rabbitmq/route.yaml"
+@test "RabbitMQ management UI has an IngressRoute on the nip.io host (ADR-0040)" {
+  run grep -q 'rabbitmq.127.0.0.1.nip.io' "$REPO/gitops/data/rabbitmq/ingressroute.yaml"
   [ "$status" -eq 0 ]
 }
 

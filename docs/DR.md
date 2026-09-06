@@ -98,8 +98,8 @@ make capstone-demo
   argocd login localhost:8080 --username admin --password <password> --insecure
   ```
 - `kubectl` configured to the active cluster context.
-- The capstone Application deployed and the `capstone.127.0.0.1.nip.io` HTTPRoute
-  reachable through Envoy on port 8000.
+- The capstone Application deployed and the `capstone.127.0.0.1.nip.io` IngressRoute
+  reachable through Traefik on port 8000.
 
 ### What it checks (four steps)
 
@@ -171,7 +171,7 @@ make dr-bluegreen-down   # remove the green cluster + front door (blue is untouc
 How it works (blue = the running cluster, green = a second one):
 
 1. **Front door** — a small nginx proxy on host **:8000** forwards to whichever
-   cluster's Envoy load balancer is *active* (`scripts/bluegreen-frontdoor.sh`). It
+   cluster's Traefik load balancer is *active* (`scripts/bluegreen-frontdoor.sh`). It
    runs on its own port, so blue's `:8080` is **never touched**. Cutover = rewrite
    the upstream + `nginx -s reload`, which is graceful (keeps the listening socket,
    drains old workers) → **no dropped connections**.
@@ -179,8 +179,9 @@ How it works (blue = the running cluster, green = a second one):
    which both clusters serve, so "is it up?" is a real end-to-end signal.
 3. **Green** (`scripts/bluegreen-up.sh`) — a second k3d cluster `k8s-lab-green` on
    its own ports (8082/8444/6446) and docker network, with its own ArgoCD that
-   syncs the **serving tier only** (`envoy-gateway`, `lab-gateway`, `demo`) from the
-   *same* GitLab repo via `gitops/bluegreen/green-root.yaml` (`directory.include`).
+   syncs the **serving tier only** (`lab-gateway`, `demo` — no separate ingress-controller
+   Application needed, Traefik ships with k3s itself, ADR-0040) from the
+   *same* Forgejo repo (ADR-0035) via `gitops/bluegreen/green-root.yaml` (`directory.include`).
    Two **full** LGTMP stacks don't fit 16 GB, so green recovers the always-available
    edge; the point of this drill is the **cutover**, not duplicating observability.
    (Blue+green peaks ~9.4 GB used of the 12 GB VM — fits.)
@@ -254,7 +255,7 @@ make dr-network-partition   # delete capstone's ingress NetworkPolicy, assert Ar
 What it does: deletes the `allow-capstone-ingress-from-gateway` NetworkPolicy
 live in the `capstone` namespace (`scripts/dr-network-partition.sh`) — since
 capstone's default-deny floor (ADR-0016) then has no matching allow left,
-every Envoy-Gateway-routed request to the app is dropped for the duration of
+every Traefik-routed request to the app is dropped for the duration of
 the drill — then polls until the object reappears (ArgoCD's `selfHeal: true`
 on `gitops/platform/networkpolicy-appset.yaml`'s `syncPolicy.automated`
 reconciling the live drift back to git's declared state) or the 300 s budget
@@ -383,7 +384,7 @@ is reconciled by ArgoCD from GitLab.
 | 7 | GitLab omnibus | `gitlab-up` | yes (docker) | the git **source** — can't be created by ArgoCD (chicken-and-egg, ADR-0001) |
 | 8 | GitLab project + repo secret + push | `gitlab-configure` | yes (Terraform + git) | mints root token (`scripts/gitlab-pat.sh`), creates the project + ArgoCD repo deploy-token, pushes the repo |
 | 9 | App-of-apps | `root-app` | yes (`kubectl apply`) | the single seed; ArgoCD now syncs **everything else** |
-| 10 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | yes (`scripts/coredns-host-alias.sh nip-io-rewrite`) | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Envoy Gateway's in-cluster proxy Service (nip.io's real DNS otherwise resolves it to a pod's own loopback); must run after `root-app` since it discovers the proxy Service ArgoCD's sync of `envoy-gateway` generates — polls up to `COREDNS_NIPIO_WAIT` (default 300s) rather than assuming it exists immediately |
+| 10 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | yes (`scripts/coredns-host-alias.sh nip-io-rewrite`) | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Traefik's in-cluster Service (nip.io's real DNS otherwise resolves it to a pod's own loopback); must run after `root-app` since Traefik (bundled with k3s, ADR-0040) needs a moment to be scheduled on cluster boot — polls up to `COREDNS_NIPIO_WAIT` (default 300s) rather than assuming it exists immediately |
 | 11 | Vault bootstrap | `vault-bootstrap` | yes (`scripts/vault-bootstrap.sh`) | init/unseal, store keys in `vault-keys`, enable KV, **generate+write secrets**, enable k8s auth + `eso` role |
 | 12 | GitLab TLS bootstrap | `gitlab-tls-bootstrap` | yes (`scripts/gitlab-tls-bootstrap.sh`) | mint mkcert cert + start nginx TLS proxy + publish `gitlab-tls-ca` ConfigMap; must run after Vault (the observability namespace is created by ArgoCD by this point) and before Garage, so the CA is in place before Grafana's init container bakes its CA bundle |
 | 13 | Garage bootstrap | `garage-bootstrap` | yes (`scripts/garage-bootstrap.sh`) | assign layout, create S3 key + buckets, push the S3 key to Vault |
@@ -392,7 +393,7 @@ is reconciled by ArgoCD from GitLab.
 | 16 | Grafana Git Sync bootstrap | `grafana-gitsync-bootstrap` | yes (`scripts/grafana-gitsync-bootstrap.sh`) | create the Pure Git `Repository` in Grafana's unified storage + set the home dashboard; must run once Grafana is healthy (waits up to 5 min) |
 
 Once 9–10 are done, **External Secrets** syncs Vault → k8s Secrets, and the
-workloads (Garage, Mimir, Grafana, Alloy, Envoy, moto, …) come up on their own.
+workloads (Garage, Mimir, Grafana, Alloy, Traefik, moto, …) come up on their own.
 
 ### Secret dependency chain (subtle bit)
 - Vault must hold `secret/garage/server` **before** Garage starts (ESO → `garage-secrets` → Garage). `vault-bootstrap` generates it.

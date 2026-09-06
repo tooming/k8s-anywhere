@@ -1,0 +1,17 @@
+# moto dashboard/UI via Traefik: http://moto.127.0.0.1.nip.io:8080/moto-api/
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: moto
+  namespace: moto
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`moto.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
+        - name: moto
+          port: 5000
+  tls: {}

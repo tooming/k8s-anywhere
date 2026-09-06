@@ -1,4 +1,4 @@
-# Kiali extras — Envoy HTTPRoute and any supporting in-repo manifests.
+# Kiali extras — Traefik IngressRoute and any supporting in-repo manifests.
 # ON-DEMAND: pairs with the kiali Application. No auto-sync block.
 # Bring up with: make kiali-up
 # Tear down with: make kiali-down

@@ -6,10 +6,12 @@
 #
 # Canary strategy: two weight gates (10% → 50% → 100%), each preceded by a 60s pause and
 # followed by a Mimir-backed success-rate analysis (≥ 95% http_requests_total 2xx ratio,
-# ADR-0020 §"AnalysisTemplate"). The gatewayAPI traffic-router plugin rewrites the
-# capstone HTTPRoute's backendRefs weight field on each step (Envoy Gateway / ADR-0008).
-# The capstone-stable and capstone-canary Services below are managed by the Rollout
-# controller — it updates their selectors to point at the stable / canary ReplicaSets.
+# ADR-0020 §"AnalysisTemplate"). Argo Rollouts' built-in Traefik integration rewrites
+# the capstone TraefikService's weighted.services[].weight field on each step
+# (ingressroute.yaml; Traefik / ADR-0040, supersedes the Envoy Gateway gatewayAPI
+# plugin this used before). The capstone-stable and capstone-canary Services below
+# are managed by the Rollout controller — it updates their selectors to point at the
+# stable / canary ReplicaSets.
 #
 # To trigger a canary: kubectl argo rollouts set image capstone capstone=<new-image>
 # The Rollout will not produce live traffic splits until that command is run on a cluster.
@@ -77,11 +79,8 @@ spec:
       canaryService: capstone-canary
       stableService: capstone-stable
       trafficRouting:
-        plugins:
-          argoproj-labs/gatewayAPI:
-            httpRoute:
-              name: capstone
-              namespace: capstone
+        traefik:
+          weightedTraefikServiceName: capstone
       steps:
       - setWeight: 10
       - pause:

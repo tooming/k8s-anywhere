@@ -5,7 +5,7 @@
 # appset list-generators drifted out of sync and, if so, surface a reminder so it's
 # fixed in the same change (the local companion to the CI appset-list-coverage-check
 # 'drift' gate). Reads the Claude Code hook payload on stdin; non-blocking. Mirrors
-# envoy-egress-allowlist-sync-hook.sh's shape exactly.
+# readme-sync-hook.sh's shape exactly.
 #   exit 0 = nothing to say   |   exit 2 = stderr shown to Claude as a reminder
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

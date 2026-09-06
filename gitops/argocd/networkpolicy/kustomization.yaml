@@ -1,7 +1,7 @@
 # NetworkPolicy Kustomize overlay for the argocd namespace (ADR-0016 §4 fan-out).
 # ArgoCD is the entire GitOps reconcile plane — the highest blast-radius non-secrets
 # namespace. Pulls the two shared baseline templates and adds argocd-specific allow rules:
-# ingress from Envoy Gateway proxy (argocd.127.0.0.1.nip.io HTTPRoute on TCP 8080);
+# ingress from Traefik's data-plane pods (argocd.127.0.0.1.nip.io IngressRoute on TCP 8080, ADR-0040);
 # ingress from Alloy (metrics scrape on ports 8080/8082/8083/8084);
 # intra-namespace allow-all (controller ↔ repo-server ↔ argocd-cache ↔ server ↔ appset);
 # egress to ArgoCD ClusterIP service frontends (TCP 6379/7000/8080/8081);

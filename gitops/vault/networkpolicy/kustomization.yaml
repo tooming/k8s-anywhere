@@ -1,7 +1,7 @@
 # NetworkPolicy Kustomize overlay for the vault namespace (ADR-0016 §4 fan-out).
 # Pulls the two shared baseline templates and adds vault-specific allow rules for
 # the real ingress flows: ingress from ESO controller (k8s auth + secret reads
-# on TCP 8200), ingress from Envoy Gateway proxy (UI HTTPRoute on TCP 8200),
+# on TCP 8200), ingress from Traefik's data-plane pods (UI IngressRoute on TCP 8200, ADR-0040),
 # ingress from the same-namespace vault-unsealer pod (TCP 8200 — found missing
 # live 2026-08-06, see allow-vault-from-unsealer.yaml's own header for the story),
 # and ingress from Alloy in observability (TCP 8200 — Vault's own internal

@@ -1,7 +1,8 @@
-# Allow ingress to the capstone pod from Envoy Gateway proxy pods (ADR-0016).
-# Envoy proxy pods (app.kubernetes.io/component=proxy) in envoy-gateway-system
-# forward requests from the HTTPRoute capstone.127.0.0.1.nip.io to TCP 8080.
-# Without this allow, the default-deny-all floor blocks the proxied traffic.
+# Allow ingress to the capstone pod from Traefik's data-plane pods (ADR-0016,
+# ADR-0040 — supersedes Envoy Gateway/ADR-0008). Traefik pods
+# (app.kubernetes.io/name=traefik) in kube-system forward requests from the
+# IngressRoute capstone.127.0.0.1.nip.io to TCP 8080. Without this allow, the
+# default-deny-all floor blocks the proxied traffic.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -20,7 +21,7 @@ spec:
       from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: envoy-gateway-system
+              kubernetes.io/metadata.name: kube-system
           podSelector:
             matchLabels:
-              app.kubernetes.io/component: proxy
+              app.kubernetes.io/name: traefik

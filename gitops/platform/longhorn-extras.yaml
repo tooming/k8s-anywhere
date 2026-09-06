@@ -1,5 +1,5 @@
 # longhorn-extras — pre-creates the longhorn-system namespace with PSA privileged labels
-# (ADR-0017 §Per-namespace profile, ADR-0013) and applies the Longhorn Envoy HTTPRoute.
+# (ADR-0017 §Per-namespace profile, ADR-0013) and applies the Longhorn Traefik IngressRoute (ADR-0040).
 # Running at sync-wave 0 ensures the privileged namespace labels are in place before
 # `make longhorn-up` admits the longhorn-manager DaemonSet + CSI driver pods.
 # The namespace with privileged labels is harmless until Longhorn pods are scheduled;

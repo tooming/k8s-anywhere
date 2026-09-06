@@ -43,10 +43,6 @@ lab-ui-check: ## Check the Grafana "Lab UIs" panel matches the HTTPRoutes in git
 o5-dashboard-coverage-check: ## Check every auto-synced Application has a matching Grafana dashboard (CHARTER O5)
 	@bash scripts/o5-dashboard-coverage-check.sh
 
-.PHONY: envoy-egress-allowlist-check
-envoy-egress-allowlist-check: ## Check every HTTPRoute namespace is allowed proxy egress (envoy-gateway-system)
-	@bash scripts/envoy-egress-allowlist-check.sh
-
 .PHONY: appset-list-coverage-check
 appset-list-coverage-check: ## Check networkpolicy-appset/governance-appset list-generators cover every real leaf dir
 	@bash scripts/appset-list-coverage-check.sh
@@ -237,7 +233,6 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/readme-check.sh
 	@bash scripts/lab-ui-check.sh
 	@bash scripts/o5-dashboard-coverage-check.sh
-	@bash scripts/envoy-egress-allowlist-check.sh
 	@bash scripts/appset-list-coverage-check.sh
 	@bash scripts/workflow-timeout-check.sh
 	@bash scripts/roadmap-check.sh

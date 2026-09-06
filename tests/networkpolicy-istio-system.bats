@@ -72,8 +72,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-kiali-ingress targets the envoy-gateway-system namespace" {
-  run grep -q 'kubernetes.io/metadata.name: envoy-gateway-system' "$ISTIO_SYSTEM_NP/allow-kiali-ingress.yaml"
+@test "allow-kiali-ingress targets the kube-system namespace" {
+  run grep -q 'kubernetes.io/metadata.name: kube-system' "$ISTIO_SYSTEM_NP/allow-kiali-ingress.yaml"
   [ "$status" -eq 0 ]
 }
 

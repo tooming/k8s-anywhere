@@ -1,8 +1,13 @@
-# Allow ingress to Kiali pods from Envoy Gateway so the HTTPRoute
-# kiali.127.0.0.1.nip.io:8000 (gitops/kiali/route.yaml) can reach the Kiali
+# Allow ingress to Kiali pods from Traefik so the IngressRoute
+# kiali.127.0.0.1.nip.io:8000 (gitops/kiali/ingressroute.yaml) can reach the Kiali
 # Service on TCP 20001. Scoped to Kiali pods via podSelector so other
 # istio-system pods (istiod, ztunnel, istio-cni) are not affected.
 # Kiali co-resides in istio-system per RFC #288 / ADR-0012 §"Kiali namespace".
+#
+# Source scoped to Traefik's own pods in kube-system (ADR-0040, supersedes Envoy
+# Gateway/ADR-0008) — added on this migration; the namespace-only selector this
+# rule used under Envoy Gateway (whose envoy-gateway-system namespace held nothing
+# but proxy pods) would be too broad for a shared system namespace like kube-system.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -21,4 +26,7 @@ spec:
       from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: envoy-gateway-system
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik

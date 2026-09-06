@@ -5,7 +5,7 @@
 # NetworkPolicy... still real, separately-scoped future drills if wanted").
 #
 # Deletes capstone's ingress-allow NetworkPolicy live (cutting off all
-# Envoy-Gateway-routed traffic to the app, since ADR-0016's default-deny
+# Traefik-routed traffic to the app, since ADR-0016's default-deny
 # floor then applies with no allow left), and asserts ArgoCD's own selfHeal
 # reconciliation restores it within budget — this exercises ArgoCD's
 # drift-correction path specifically, distinct from dr-chaos.sh's test of

@@ -39,16 +39,13 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: data
-    # Envoy Gateway controller (:19001) and data-plane proxy (:19000).
-    - ports:
-        - port: 19000
-          protocol: TCP
-        - port: 19001
-          protocol: TCP
-      to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: envoy-gateway-system
+    # Envoy Gateway's controller/proxy metrics scrape rule (:19000/:19001) removed
+    # 2026-09-06 (ADR-0040, supersedes Envoy Gateway/ADR-0008) — Traefik replaced
+    # it as the ingress controller. k3s's bundled Traefik does not expose a
+    # Prometheus /metrics endpoint by default (needs an explicit HelmChartConfig
+    # enabling `metrics.prometheus`), so there is no equivalent scrape target to
+    # wire up yet — tracked as an explicit gap in ADR-0040 rather than silently
+    # dropped; a follow-up can add this rule back once that config lands.
     # Kyverno admission engine metrics (:8000) — four controller Services.
     - ports:
         - port: 8000

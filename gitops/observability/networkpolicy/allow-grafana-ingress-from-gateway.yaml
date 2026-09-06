@@ -1,8 +1,8 @@
-# Allow ingress to Grafana pods from Envoy Gateway proxy pods (ADR-0016).
-# The Grafana HTTPRoute (defined as an extraObject in observability-grafana.yaml)
-# routes grafana.127.0.0.1.nip.io traffic through Envoy proxy pods in
-# envoy-gateway-system to Grafana pods on TCP 3000 (the container port;
-# the Service maps port 80 → container port 3000).
+# Allow ingress to Grafana pods from Traefik's data-plane pods (ADR-0016, ADR-0040 —
+# supersedes Envoy Gateway/ADR-0008). The Grafana IngressRoute (defined as an
+# extraObject in observability-grafana.yaml) routes grafana.127.0.0.1.nip.io
+# traffic through Traefik pods in kube-system to Grafana pods on TCP 3000 (the
+# container port; the Service maps port 80 → container port 3000).
 # Without this allow, the default-deny floor blocks the proxied HTTP traffic.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -22,7 +22,7 @@ spec:
       from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: envoy-gateway-system
+              kubernetes.io/metadata.name: kube-system
           podSelector:
             matchLabels:
-              app.kubernetes.io/component: proxy
+              app.kubernetes.io/name: traefik

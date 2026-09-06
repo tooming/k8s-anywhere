@@ -128,12 +128,12 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "lab-health-check.sh probes the Envoy front door over HTTP, not just pod readiness" {
+@test "lab-health-check.sh probes the Traefik front door over HTTP, not just pod readiness" {
   run grep -q "UI_PROBES" "$HEALTHCHECK"
   [ "$status" -eq 0 ]
 }
 
-@test "lab-health-check.sh default UI_PROBES uses the stable front door :8000, not a per-cluster Envoy port" {
+@test "lab-health-check.sh default UI_PROBES uses the stable front door :8000, not a per-cluster Traefik port" {
   # :8080/:8082 are blue/green's own direct ports — they disappear when that
   # cluster is torn down after a blue/green cutover (docs/DR.md), so a
   # hardcoded per-cluster port here would make `make health` silently probe a
@@ -223,7 +223,7 @@ setup() {
   done
 }
 
-# --- creds/argocd-ui print the stable front door, not a per-cluster Envoy port ----
+# --- creds/argocd-ui print the stable front door, not a per-cluster Traefik port --
 # `make up`'s own completion banner already advertises :8000 as the canonical entry
 # point (docs/DR.md, scripts/bluegreen-frontdoor.sh); `creds`/`argocd-ui` printing
 # :8080 instead was a real inconsistency a fresh-bootstrap user would hit immediately,

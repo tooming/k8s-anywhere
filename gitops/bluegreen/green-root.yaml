@@ -1,11 +1,14 @@
 # Blue/green DR: the app-of-apps planted (from local disk, like bootstrap/root-app)
 # on the GREEN cluster's ArgoCD. While blue runs the full stack, green recovers only
-# the always-available SERVING tier from the same GitLab repo — the Envoy gateway,
-# the lab Gateway (which includes the ArgoCD HTTPRoute), and the demo app — so two
-# environments fit the 16 GB budget. The drill's canary is the ArgoCD UI
-# (argocd.127.0.0.1.nip.io), served by both clusters; the point is the zero-downtime
-# cluster CUTOVER, not duplicating the heavy LGTMP tier. Reuses gitops/platform via
-# directory.include (no copies); green's ArgoCD itself is helm-installed by the script.
+# the always-available SERVING tier from the same Forgejo repo (ADR-0035) — the lab-gateway
+# Application (Traefik's shared TLSStore + the ArgoCD IngressRoute, ADR-0040), and
+# the demo app — so two environments fit the 16 GB budget. No separate ingress-
+# controller Application is needed any more: Traefik ships with k3s itself, so it's
+# already present on green the moment the cluster boots. The drill's canary is the
+# ArgoCD UI (argocd.127.0.0.1.nip.io), served by both clusters; the point is the
+# zero-downtime cluster CUTOVER, not duplicating the heavy LGTMP tier. Reuses
+# gitops/platform via directory.include (no copies); green's ArgoCD itself is
+# helm-installed by the script.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -20,7 +23,7 @@ spec:
     targetRevision: main
     path: gitops/platform
     directory:
-      include: '{envoy-gateway,lab-gateway,demo}.yaml'
+      include: '{lab-gateway,demo}.yaml'
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

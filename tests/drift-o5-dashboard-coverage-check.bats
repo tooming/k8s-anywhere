@@ -2,7 +2,7 @@
 # Tests for scripts/o5-dashboard-coverage-check.sh — a new drift-check scope, per
 # the drift-detectors-tests-check convention (tests/drift-detectors.bats itself is
 # frozen; new scopes go in their own tests/drift-<scope>.bats file, mirroring
-# tests/drift-envoy-egress-allowlist-check.bats). Added because CHARTER Objective
+# tests/drift-appset-list-coverage-check.bats). Added because CHARTER Objective
 # O5 promised "Measured by: a drift check wired into make ci" with no such check
 # actually existing (found live 2026-08-13).
 

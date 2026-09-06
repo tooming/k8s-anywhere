@@ -8,7 +8,7 @@
 # Minimal profile (ADR-0024 §"Minimal profile"):
 #   - trivy disabled: cluster scanning already handled by Trivy Operator (ADR-0022)
 #   - notary disabled: out of scope for first cut (OCI push/pull only)
-#   - expose.type=clusterIP + tls.enabled=false: Envoy HTTPRoute fronts ingress (ADR-0008)
+#   - expose.type=clusterIP + tls.enabled=false: Traefik IngressRoute fronts ingress (ADR-0040)
 #   - persistence.imageChartStorage.type=s3: Garage S3 backend (ADR-0002)
 #   - database.type=internal: bundled Postgres acceptable for first cut
 #

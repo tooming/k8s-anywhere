@@ -18,11 +18,14 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 39 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0039), two are **Superseded** and fully excluded per the index's own
+Of the 40 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0040), three are **Superseded** and fully excluded per the index's own
 convention (only their replacement is listed): ADR-0010 (Redis, superseded by
-ADR-0018/Valkey) and ADR-0011 (Artifactory, superseded by ADR-0024/Harbor). A third,
-ADR-0033 (GitLab, superseded by ADR-0035/Forgejo), was **not** excluded the same way
+ADR-0018/Valkey), ADR-0011 (Artifactory, superseded by ADR-0024/Harbor), and ADR-0008
+(Envoy Gateway, superseded by ADR-0040/Traefik — the workload is removed outright, not
+a staged cutover, so it's excluded the same immediate way as the other two rather than
+the GitLab/Forgejo carve-out below). A fourth, ADR-0033 (GitLab, superseded by
+ADR-0035/Forgejo), was **not** excluded the same way
 for most of its life: unlike the other two's fully-decommissioned predecessors,
 GitLab stayed the live, running component through most of the migration. That
 changed 2026-08-17 — an accelerated, live-cluster cutover (PR #1205) flipped every
@@ -102,7 +105,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | ArgoCD | always-on-core | argoproj.github.io, github.com/argoproj/argo-cd | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | 2026-09-03 (full GHSA sweep: all 8 published `argoproj/argo-cd` advisories checked — highest severity Critical (GHSA-3v3m-wc6v-x4x3/CVE-2026-42880, ServerSideDiff secret extraction, fixed `3.2.11`/`3.3.9`) — every affected range tops out at `3.4.2` or lower; current pin's appVersion `v3.5.2` is past every floor. Prior entry: 2026-09-01, chart `10.4.0`→`10.5.0`, appVersion `v3.5.1`→`v3.5.2`, routine currency) |
 | Garage | always-on-core (in-cluster S3, ADR-0002) + bootstrap substrate (off-cluster Terraform-state backend, ADR-0007) | github.com/deuxfleurs-org/garage | [ADR-0002](decisions/adr-0002-garage-not-minio.md), [ADR-0007](decisions/adr-0007-off-cluster-garage-tfstate-backend.md) | 2026-09-04 (currency re-check: `v2.3.0` still the newest tag, zero published security advisories — unchanged. Prior entry: 2026-08-19 org-slug fix) |
 | Grafana | always-on-core (observability stack) | grafana.com, github.com/grafana/grafana | [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md) | 2026-09-06 (upgrade-drafter fallback: chart bumped `12.10.4`→`12.11.2`, routine packaging currency, no CVE — image pin stays `13.0.8`, unaffected. Prior entry: 2026-09-04, no new finding for Grafana itself, still current at `13.0.8`/chart `12.10.4`) |
-| Envoy Gateway | always-on-core | github.com/envoyproxy/gateway | [ADR-0008](decisions/adr-0008-envoy-gateway-not-traefik.md) | 2026-09-03 (full GHSA sweep: all 10 published advisories checked, every affected range tops out at `1.8.1` — current pin `v1.8.3` is past every floor, including the lone Critical (Lua `EnvoyExtensionPolicy` path-validation bypass, not exploitable here either way since this lab defines no such policy); `v1.8.3` kept for the same breaking-change reason as the 2026-08-18 entry, unaffected by this security-clean finding; see ADR-0008's own Re-evaluation log) |
+| Traefik (supersedes Envoy Gateway, ADR-0008) | always-on-core (bundled with k3s, no separate chart/version to track — see [ADR-0030](decisions/adr-0030-pin-k3s-version-explicitly.md)) | github.com/traefik/traefik (bundled by github.com/k3s-io/k3s) | [ADR-0040](decisions/adr-0040-traefik-not-envoy-gateway.md) | 2026-09-06 (decision date; not yet live-cluster-verified, see ADR-0040's own "Known risk" section) |
 | RabbitMQ | always-on-core | github.com/rabbitmq/rabbitmq-server | [ADR-0009](decisions/adr-0009-rabbitmq-message-broker.md) | 2026-09-04 (currency re-check: `4.3.5-management` still the newest patch on the `4.3.x` line — unchanged. Prior entry: 2026-08-19 patch bump, fixes 10 GHSAs) |
 | Istio (ambient mode) | heavy-on-demand (`make istio-up`/`istio-down`) | istio.io, github.com/istio/istio | [ADR-0012](decisions/adr-0012-istio-ambient-not-sidecar.md) | 2026-09-01 (bumped all four charts `1.30.3` → `1.30.4`, routine currency, no CVE — includes a real template-quoting hardening fix in istiod's injection templates; GHSA sweep from 2026-08-19 unaffected, `1.30.4` still past every floor) |
 | Kiali | heavy-on-demand (`make kiali-up`/`kiali-down`) | kiali.io, github.com/kiali/kiali | [ADR-0012](decisions/adr-0012-istio-ambient-not-sidecar.md) | 2026-09-01 (bumped `2.30.0` → `2.31.0`: 5 named CVE fixes in `kiali/kiali`'s `git log` — axios/undici/immutable, OpenTelemetry-Go CVE-2026-41178, browserslist CVE-2026-73089/-73088, golang.org/x/text CVE-2026-56852, brace-expansion/ip-address/postcss; chart directory itself byte-for-byte unchanged between the two tags) |

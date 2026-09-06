@@ -91,13 +91,15 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "capstone Rollout references the gatewayAPI traffic-router plugin" {
-  run grep -q 'argoproj-labs/gatewayAPI' "$REPO/gitops/apps/capstone/rollout.yaml"
+@test "capstone Rollout uses Traefik's built-in traffic-routing, not a plugin (ADR-0040)" {
+  run grep -q 'traefik:' "$REPO/gitops/apps/capstone/rollout.yaml"
   [ "$status" -eq 0 ]
+  run grep -q 'argoproj-labs/gatewayAPI' "$REPO/gitops/apps/capstone/rollout.yaml"
+  [ "$status" -ne 0 ]
 }
 
-@test "capstone Rollout gatewayAPI plugin points at the capstone HTTPRoute" {
-  run grep -q 'name: capstone' "$REPO/gitops/apps/capstone/rollout.yaml"
+@test "capstone Rollout points at the capstone TraefikService" {
+  run grep -q 'weightedTraefikServiceName: capstone' "$REPO/gitops/apps/capstone/rollout.yaml"
   [ "$status" -eq 0 ]
 }
 

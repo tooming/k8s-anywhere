@@ -43,13 +43,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-capstone-ingress-from-gateway allows ingress from envoy-gateway-system namespace" {
-  run grep -q 'envoy-gateway-system' "$CAPSTONE_NP/allow-capstone-ingress-from-gateway.yaml"
+@test "allow-capstone-ingress-from-gateway allows ingress from kube-system namespace" {
+  run grep -q 'kube-system' "$CAPSTONE_NP/allow-capstone-ingress-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "allow-capstone-ingress-from-gateway allows ingress from Envoy proxy pods" {
-  run grep -q 'app.kubernetes.io/component: proxy' "$CAPSTONE_NP/allow-capstone-ingress-from-gateway.yaml"
+@test "allow-capstone-ingress-from-gateway allows ingress from Traefik pods" {
+  run grep -q 'app.kubernetes.io/name: traefik' "$CAPSTONE_NP/allow-capstone-ingress-from-gateway.yaml"
   [ "$status" -eq 0 ]
 }
 

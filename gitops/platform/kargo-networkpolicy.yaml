@@ -1,7 +1,7 @@
 # kargo-networkpolicy — default-deny + allowlist NetworkPolicies for the kargo
 # namespace (ADR-0016 §4 fan-out; promotion-orchestration engine).
 # Applies the shared baseline templates (default-deny-all, allow-dns-and-apiserver)
-# plus per-workload allow rules: Envoy Gateway → kargo-api on TCP 80 (Kargo UI);
+# plus per-workload allow rules: Traefik → kargo-api on TCP 80 (Kargo UI, ADR-0040);
 # kube-apiserver → webhooks on TCP 9443 (admission webhook callbacks for Kargo CRDs);
 # kargo → argocd-server on TCP 80 (argocd-update promotion step);
 # kargo → Harbor on TCP 443 (image digest discovery from Warehouse).

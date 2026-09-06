@@ -1,0 +1,16 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: s3manager
+  namespace: storage
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`s3.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
+        - name: s3manager
+          port: 8080
+  tls: {}

@@ -1,5 +1,5 @@
 # RabbitMQ service: amqp for clients (the demo publisher/consumer), management for the
-# UI/HTTP API (routed by Envoy + used by the demo), prometheus for Alloy scraping.
+# UI/HTTP API (routed by Traefik + used by the demo), prometheus for Alloy scraping.
 apiVersion: v1
 kind: Service
 metadata:

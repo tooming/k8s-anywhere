@@ -13,7 +13,7 @@
 # Pre-requisites (runs against a live cluster):
 #   - argocd CLI logged in  (run make argocd-password, then argocd login ...)
 #   - kubectl configured to the active cluster context
-#   - capstone Application deployed and HTTPRoute reachable via Envoy
+#   - capstone Application deployed and IngressRoute reachable via Traefik
 #
 # Usage:
 #   ./scripts/capstone-demo.sh
