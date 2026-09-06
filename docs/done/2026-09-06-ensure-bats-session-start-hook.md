@@ -55,4 +55,4 @@ remains valid JSON. No `gitops/` change — this is tooling/session-config only.
 
 ## PR
 
-https://github.com/tooming/k8s-anywhere/pull/1447
+https://github.com/tooming/k8s-anywhere/pull/1448
