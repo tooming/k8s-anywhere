@@ -448,6 +448,39 @@ You review and merge plan PRs, same as implementation PRs.
   [docs/done/2026-09-03-kyverno-3-8-2-to-3-9-0-cve-bump.md](docs/done/2026-09-03-kyverno-3-8-2-to-3-9-0-cve-bump.md).
   (auto/kyverno-3-8-2-to-3-9-0; PR #1388)
 
+- [x] 🟢 **Bump Terraform `1.15.9`→`1.16.1` + Terragrunt `v1.1.3`→`v1.1.4` — first-ever
+  review of a previously-undated dependency-register row** — full verification
+  writeup:
+  [docs/done/2026-09-06-terraform-terragrunt-currency-bump.md](docs/done/2026-09-06-terraform-terragrunt-currency-bump.md).
+  (auto/terraform-terragrunt-currency-bump)
+  (CLAUDE.md coverage/hardening sweep, ROADMAP rule #9's fallback chain —
+  `docs/dependency-register.md`'s Terraform/Terragrunt row was the one remaining
+  active row still reading "not dated in ADR (no Re-evaluation log)"; every other
+  active row already had a recent, dated review by this point in the run.)
+
+  Terraform: confirmed the latest stable release directly (`v1.16.1`, 2026-09-02)
+  vs. the pinned `1.15.9`. Checked `hashicorp/terraform`'s only-ever published GitHub
+  security advisory (GHSA-4rvg-555h-r626, an Azure-backend cleartext-state issue from
+  2019) — not applicable, this repo has never used an Azure backend (state lives in
+  Garage S3, ADR-0007). Checked `v1.16.0`'s one breaking-change note
+  (`bastion_host_key` provisioner behavior) against every `infra/modules/*/main.tf`
+  directly — none use `bastion_host`/SSH connection blocks, only `local-exec`
+  provisioners; not applicable. Terragrunt: confirmed latest stable (`v1.1.4`,
+  2026-08-27) vs. pinned `v1.1.3` — real security hardening (generated files/dirs get
+  restricted `0600`/`0700` permissions, registry credentials no longer duplicated
+  into generated CLI config files), no breaking change in the real release notes.
+  Bumped both pins everywhere they're carried (`.github/workflows/ci.yml` +
+  `oracle-cluster-apply.yml` + `oracle-cluster-apply-retry.yml` +
+  `scripts/ensure-manifest-tools-hook.sh`), updated `tests/ci-tool-pins.bats`'s
+  exact-pin assertions and added the matching pre-bump negative tests (mirroring the
+  file's own established drift-guard shape). Installed Terraform `1.16.1` directly
+  in this sandbox and re-ran `make ci`'s `terraform` step against it: zero
+  pre-existing failures. Terragrunt itself isn't exercised in this clusterless
+  sandbox (no OCI credentials reachable here) — this workflow's own next real run
+  against Oracle Cloud is the actual verification, same standing caveat every prior
+  terragrunt bump in these workflows' own comments has recorded. `make ci` must
+  pass. `docs/done/` entry required. (auto/terraform-terragrunt-currency-bump)
+
 - [x] 🟢 **Bump k3s `v1.36.3+k3s1` → `v1.36.4+k3s1` on both backends** — full
   verification writeup:
   [docs/done/2026-09-03-k3s-1-36-3-to-1-36-4-currency-bump.md](docs/done/2026-09-03-k3s-1-36-3-to-1-36-4-currency-bump.md).

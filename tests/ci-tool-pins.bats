@@ -43,8 +43,8 @@ setup() {
   ! grep -q 'kustomize%2Fv5.4.3' "$CI_YML"
 }
 
-@test "terraform is pinned to 1.15.9 via hashicorp/setup-terraform (upgrade-drafter, 2026-08-19, CVE-2026-14978)" {
-  grep -q 'terraform_version: "1.15.9"' "$CI_YML"
+@test "terraform is pinned to 1.16.1 via hashicorp/setup-terraform (JANITOR-fallback currency sweep, 2026-09-06)" {
+  grep -q 'terraform_version: "1.16.1"' "$CI_YML"
 }
 
 @test "no workflow references the pre-bump terraform 1.9.8 pin" {
@@ -53,6 +53,10 @@ setup() {
 
 @test "no workflow references the pre-bump terraform 1.15.8 pin" {
   ! grep -rq 'terraform_version: "1.15.8"' "$WORKFLOWS"/*.yml
+}
+
+@test "no workflow references the pre-bump terraform 1.15.9 pin" {
+  ! grep -rq 'terraform_version: "1.15.9"' "$WORKFLOWS"/*.yml
 }
 
 @test "every infra/ terraform module's required_version floor still admits the pinned CI terraform version" {
@@ -65,14 +69,18 @@ setup() {
 
 # --- oracle-cluster-apply.yml / oracle-cluster-apply-retry.yml tool pins ------
 
-@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terraform_version 1.15.9 (2026-08-19, in sync with ci.yml)" {
-  grep -q 'terraform_version: "1.15.9"' "$ORACLE_APPLY"
-  grep -q 'terraform_version: "1.15.9"' "$ORACLE_RETRY"
+@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terraform_version 1.16.1 (2026-09-06, in sync with ci.yml)" {
+  grep -q 'terraform_version: "1.16.1"' "$ORACLE_APPLY"
+  grep -q 'terraform_version: "1.16.1"' "$ORACLE_RETRY"
 }
 
-@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terragrunt v1.1.3 (2026-08-19)" {
-  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.3/terragrunt_linux_amd64' "$ORACLE_APPLY"
-  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.3/terragrunt_linux_amd64' "$ORACLE_RETRY"
+@test "no workflow references the pre-bump terragrunt v1.1.3 pin" {
+  ! grep -rq 'gruntwork-io/terragrunt/releases/download/v1.1.3/terragrunt_linux_amd64' "$WORKFLOWS"/*.yml
+}
+
+@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terragrunt v1.1.4 (2026-09-06)" {
+  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.4/terragrunt_linux_amd64' "$ORACLE_APPLY"
+  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.4/terragrunt_linux_amd64' "$ORACLE_RETRY"
 }
 
 @test "no workflow references the pre-bump terragrunt v0.67.0 pin" {
