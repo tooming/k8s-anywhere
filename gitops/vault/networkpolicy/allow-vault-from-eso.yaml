@@ -2,7 +2,9 @@
 # The External Secrets Operator controller authenticates to Vault via k8s auth
 # and reads KV secrets over TCP 8200. Without this allow, the default-deny-all
 # floor blocks ESO from reaching Vault, breaking secret sync for all ExternalSecrets
-# in the cluster (garage, rabbitmq, valkey, harbor, kargo, …).
+# in the cluster (garage, harbor, kargo, velero, capstone, …). RabbitMQ and Valkey
+# were also consumers here until both were removed entirely 2026-09-06 (ADR-0009,
+# ADR-0018 — no replacement).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

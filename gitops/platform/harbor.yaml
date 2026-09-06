@@ -32,6 +32,13 @@
 # store) is otherwise unaffected. The extra pod's footprint is exactly what the
 # §"12 GB gate" measurement below accounts for.
 #
+# Update 2026-09-06: the "platform Valkey" referenced in both paragraphs above no
+# longer exists — ADR-0018 was removed entirely (no replacement), alongside
+# RabbitMQ/ADR-0009 and KEDA/ADR-0029 in the same change. This Harbor-bundled
+# cache pod is unaffected by that removal since it was never the platform
+# instance to begin with; the two paragraphs above remain accurate as a
+# historical record of why Harbor never reused it.
+#
 # S3 credentials (ADR-0002 — never inline): registry reads REGISTRY_STORAGE_S3_ACCESSKEY
 # and REGISTRY_STORAGE_S3_SECRETKEY from harbor-s3-creds Secret (ESO-rendered from
 # Vault secret/harbor/s3, seeded by garage-bootstrap.sh). Docker Distribution registry2
