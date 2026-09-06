@@ -1887,6 +1887,31 @@ there is no point where the lab loses a working git source or CI path.
   JSON preserved). `make ci` must pass. `docs/done/` entry required.
   (auto/ensure-bats-hook)
 
+- [x] 🟢 **Fix a stale ADR-0004 violation in `docs/dora-audit-readiness.md`'s Kyverno
+  criticality-tier row** — full verification writeup:
+  [docs/done/2026-09-06-dora-kyverno-failurepolicy-fix.md](docs/done/2026-09-06-dora-kyverno-failurepolicy-fix.md).
+  (auto/dora-kyverno-failurepolicy-fix)
+  (ADR-0004 (no fabricated content — dashboards/outputs must show real,
+  auto-discovered state); JANITOR-fallback cleanup 2026-09-06, reached via
+  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
+  gated this cycle (issues #633/#1229 unchanged) and PLANNER/ARCHITECT/TRIAGER/
+  DOC-DRIFT-AUTHOR/UPGRADE-DRAFTER all came up empty or too risky this cycle
+  (ArgoCD's chart 10.5.0 → 10.8.0 spanned multiple minor releases and this remote
+  session's page-fetch tooling could not reliably diff its large `values.yaml`
+  across tags — skipped rather than asserting safety it couldn't verify).)
+
+  `docs/dora-audit-readiness.md`'s Kyverno criticality-tier row claimed "Every
+  policy in `gitops/kyverno/policies/` sets `failurePolicy: Ignore` ... confirmed
+  directly in `verify-image-signatures.yaml`" — verified directly against the real
+  file (ADR-0004) and found this false: `verify-image-signatures.yaml` explicitly
+  sets `failurePolicy: Fail` (flipped from `Ignore` 2026-08-18, per that file's own
+  header comment). Corrected the row to state the real, current fact and to
+  honestly flag what the other 4 `ClusterPolicy` files' unset `failurePolicy`
+  actually resolves to as unverified from this clusterless session (not asserted
+  either way), rather than repeating a blanket claim that was already wrong for at
+  least one of the five files. `make ci` must pass. `docs/done/` entry required.
+  (auto/dora-kyverno-failurepolicy-fix)
+
 - ~~🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
   sync strategy**~~ (issue #1335; RFC #1340 — architect decision 2026-08-25:
   build a scheduled, pull-based, fast-forward-only Forgejo Actions sync job
