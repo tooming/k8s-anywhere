@@ -31,10 +31,25 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [ "$status" -eq 0 ]
 }
 
+@test "dependency-exit-runbooks-sync-hook: docs/dependency-register.md is matched by the filter, currently in sync, exits 0" {
+  run bash "$REPO/scripts/dependency-exit-runbooks-sync-hook.sh" \
+    <<<"$(mk_payload "$REPO/docs/dependency-register.md")"
+  [ "$status" -eq 0 ]
+}
+
 @test "dependency-exit-runbooks-sync-hook: a drifted runbooks file (missing group) exits 2" {
   run env DEPRUNBOOKCHECK_ROOT="$REPO/tests/fixtures/dependency-exit-runbooks-sync-check/drift" \
       bash "$REPO/scripts/dependency-exit-runbooks-sync-hook.sh" \
       <<<"$(mk_payload "docs/dependency-concentration.md")"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"missing a section"* ]]
+  [[ "$output" == *"missing a section/mention"* ]]
+}
+
+@test "dependency-exit-runbooks-sync-hook: a drifted register row (missing runbook mention) fires on a register.md edit, exits 2" {
+  run env DEPRUNBOOKCHECK_ROOT="$REPO/tests/fixtures/dependency-exit-runbooks-sync-check/register-drift" \
+      bash "$REPO/scripts/dependency-exit-runbooks-sync-hook.sh" \
+      <<<"$(mk_payload "docs/dependency-register.md")"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"missing a section/mention"* ]]
+  [[ "$output" == *"Tool C is a row in dependency-register.md's table"* ]]
 }
