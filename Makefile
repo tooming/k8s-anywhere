@@ -500,8 +500,6 @@ creds: ## Print all lab UI logins (reads live secrets; needs the cluster/Forgejo
 	@fp=$$(grep -E '^FORGEJO_ADMIN_PASSWORD=' forgejo/.env 2>/dev/null | cut -d= -f2-); echo "Forgejo  lab-admin / $${fp:-<forgejo/.env missing>}    http://localhost:3300 (git source of truth, ADR-0035)"
 	@if docker ps --filter name=^gitlab$$ --format '{{.Names}}' 2>/dev/null | grep -q gitlab; then r=$$(grep -E '^GITLAB_ROOT_PASSWORD=' gitlab/.env 2>/dev/null | cut -d= -f2-); echo "GitLab   root  / $${r:-<gitlab/.env missing>}    http://localhost:8929 (stopped by default since 2026-08-17 — Forgejo is the live source; make gitlab-up to bring back)"; fi
 	@t=$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); echo "Vault    token / $${t:-<cluster down>}    http://vault.127.0.0.1.nip.io:8000"
-	@ru=$$(kubectl -n data get secret rabbitmq-creds -o jsonpath='{.data.username}' 2>/dev/null | base64 -d); rp=$$(kubectl -n data get secret rabbitmq-creds -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "RabbitMQ $${ru:-<cluster down>} / $${rp:-<cluster down>}    http://rabbitmq.127.0.0.1.nip.io:8000"
-	@dp=$$(kubectl -n data get secret valkey-creds -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "Valkey   (requirepass) / $${dp:-<cluster down>}    valkey://valkey.data.svc:6379"
 	@hu=$$(kubectl -n harbor get secret harbor-admin-creds -o jsonpath='{.data.HARBOR_ADMIN_USER}' 2>/dev/null | base64 -d); hp=$$(kubectl -n harbor get secret harbor-admin-creds -o jsonpath='{.data.HARBOR_ADMIN_PASSWORD}' 2>/dev/null | base64 -d); if [ -n "$$hu" ]; then echo "Harbor   $$hu / $$hp    http://harbor.127.0.0.1.nip.io:8080 (on-demand; make harbor-up)"; fi
 
 .PHONY: argocd-ui

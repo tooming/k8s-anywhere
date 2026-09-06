@@ -23,9 +23,8 @@ spec:
           - appName: capstone-networkpolicy
             gitPath: gitops/apps/capstone/networkpolicy
             destNamespace: capstone
-          - appName: data-networkpolicy
-            gitPath: gitops/data/networkpolicy
-            destNamespace: data
+          # data-networkpolicy REMOVED 2026-09-06 (RabbitMQ/ADR-0009, Valkey/
+          # ADR-0018): the data namespace no longer exists — it held nothing else.
           - appName: external-secrets-networkpolicy
             gitPath: gitops/external-secrets/networkpolicy
             destNamespace: external-secrets

@@ -59,19 +59,12 @@ v secrets list 2>/dev/null | grep -q '^secret/' || { echo "[vault] enabling kv-v
 #   secret/aws/moto       -> ack-aws-creds (ACK->moto, dummy creds) [here]
 #   secret/garage/s3      -> garage-s3 (s3manager)                  [garage-bootstrap]
 #   secret/velero/s3      -> cloud-credentials (Velero S3 key)      [garage-bootstrap]
-#   secret/rabbitmq/default -> rabbitmq-creds (RabbitMQ default user) [here]
-#   secret/valkey/default   -> valkey-creds (Valkey requirepass)     [here]
-#   secret/redis/default    -> redis-creds (transition alias, one release) [here]
 #   secret/capstone/app   -> capstone-app-creds (capstone app credential) [here]
 #   secret/harbor/admin   -> harbor-admin-creds (Harbor admin user + password)        [here]
 #   secret/harbor/registry -> CI registry creds for harbor (username + password)       [here]
 #   secret/kargo/admin    -> kargo-admin-credentials (Kargo admin password hash + JWT signing key) [here]
 v kv get secret/garage/server >/dev/null 2>&1 || { echo "[vault] writing secret/garage/server"; v kv put secret/garage/server rpc-secret="$(openssl rand -hex 32)" admin-token="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/aws/moto >/dev/null 2>&1 || { echo "[vault] writing secret/aws/moto (dummy creds; moto ignores them)"; v kv put secret/aws/moto access-key-id=test secret-access-key=test >/dev/null; }
-v kv get secret/rabbitmq/default >/dev/null 2>&1 || { echo "[vault] writing secret/rabbitmq/default"; v kv put secret/rabbitmq/default username=lab password="$(openssl rand -hex 16)" >/dev/null; }
-v kv get secret/valkey/default >/dev/null 2>&1 || { echo "[vault] writing secret/valkey/default"; v kv put secret/valkey/default password="$(openssl rand -hex 16)" >/dev/null; }
-# Keep secret/redis/default for one release to avoid stalling in-flight deployments during transition.
-v kv get secret/redis/default >/dev/null 2>&1 || { echo "[vault] writing secret/redis/default (transition alias)"; v kv put secret/redis/default password="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/capstone/app >/dev/null 2>&1 || { echo "[vault] writing secret/capstone/app"; v kv put secret/capstone/app app-key="$(openssl rand -hex 32)" >/dev/null; }
 v kv get secret/harbor/admin >/dev/null 2>&1 || { echo "[vault] writing secret/harbor/admin"; v kv put secret/harbor/admin admin-user=admin admin-password="$(openssl rand -hex 16)" >/dev/null; }
 v kv get secret/harbor/registry >/dev/null 2>&1 || { echo "[vault] writing secret/harbor/registry"; v kv put secret/harbor/registry username=admin password="$(openssl rand -hex 16)" >/dev/null; }

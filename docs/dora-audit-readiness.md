@@ -83,8 +83,6 @@ severity scheme itself, and they carry no always-on blast radius by design.
 | Garage | **P1** | S3-compatible object store — backs Velero's backup target and Harbor's registry storage. An outage stops all backups landing — a real, compounding gap even though nothing already-running crashes. |
 | GitLab | **P2** | Git source + CI runner (host-level Docker Compose, outside the cluster per ADR-0033/ADR-0035). Matches the real 2026-08-04 incident-log entry for "no GitLab Runner ever registered," logged P2 there — no deploys/CI, but the already-running cluster is unaffected. |
 | cert-manager | **P2** | TLS lifecycle. Existing certs keep working until their own expiry; only renewal stops — a slow-burn gap, not an immediate one. |
-| KEDA | **P2** | Event-driven autoscaling. Workloads simply stop receiving new scale events and stay at their current replica count — no crash, no traffic loss. |
-| RabbitMQ / Valkey | **P2** each | Data layer backing the always-on demo app and the KEDA scaling demo only — no core-lab component depends on either. |
 | moto / ACK / KRO | **P2** each | Cloud-control-plane emulation for AWS-resource demos — outage breaks the cloud-demo path only, no core-lab impact. |
 | Argo Rollouts | **P2** | Progressive-delivery controller for the capstone canary. Outage freezes new canary rollouts; the currently-active capstone `Rollout` pods keep serving traffic unaffected. |
 | Velero | **P2** | Backup engine. Outage means no *new* backups land (a growing RPO risk, not an immediate one) — restoring from the last-known-good backup is still possible until the gap grows past O3's 24h RPO bar. |
@@ -355,16 +353,17 @@ concentration)?**
 - **Evidence:** [docs/dependency-exit-runbooks.md](dependency-exit-runbooks.md);
   ADR-0024 (executed migration); ADR-0001 (structural exit-ability).
 - **Gap:** the two live concentration groups (Q16) each have a written runbook, and
-  so do nine `always-on-core` single-tool rows (Cilium, Garage, Traefik,
-  cert-manager, Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo). Fifteen
-  newer register rows (Istio, Kiali, Longhorn, Velero, Trivy Operator, Kargo,
-  Harbor, Oracle Cloud Infrastructure, k3s, moto, ACK S3 controller, KRO,
-  s3manager, Vault, External Secrets Operator) don't yet have one — a real,
-  separately-scoped gap, flagged as its own follow-up rather than silently
-  claimed complete. A written runbook existing in advance also doesn't mean the
-  effort of an actual exit is smaller, only that the first-response steps are
-  already identified — exits still happen reactively via a new ADR when actually
-  triggered.
+  so do six `always-on-core` single-tool rows (Cilium, Garage, Traefik,
+  cert-manager, Terraform/Terragrunt, Forgejo). RabbitMQ, Valkey, and KEDA had
+  runbooks too until all three were removed from the lab entirely 2026-09-06, with
+  no replacement — a removed dependency needs no exit runbook. Several newer
+  register rows (Velero, Trivy Operator, Kargo, Harbor, Oracle Cloud Infrastructure,
+  k3s, moto, ACK S3 controller, KRO, s3manager, Vault, External Secrets Operator)
+  don't yet have one — a real, separately-scoped gap, flagged as its own follow-up
+  rather than silently claimed complete. A written runbook existing in advance also
+  doesn't mean the effort of an actual exit is smaller, only that the first-response
+  steps are already identified — exits still happen reactively via a new ADR when
+  actually triggered.
 
 ---
 

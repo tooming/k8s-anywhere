@@ -53,9 +53,8 @@ spec:
           - appName: lab-demo-governance
             gitPath: gitops/governance/lab-demo
             destNamespace: lab-demo
-          - appName: data-governance
-            gitPath: gitops/governance/data
-            destNamespace: data
+          # data-governance REMOVED 2026-09-06 (RabbitMQ/ADR-0009, Valkey/ADR-0018):
+          # the data namespace no longer exists — it held nothing else.
           - appName: storage-governance
             gitPath: gitops/governance/storage
             destNamespace: storage

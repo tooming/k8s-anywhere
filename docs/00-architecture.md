@@ -37,8 +37,6 @@ grouping appears in the README stack table.
 │  POLICY       Kyverno  (admission validation · mutation · verifyImages)    │
 │  STORAGE      Garage (S3)  ──►  s3manager (bucket browser UI)             │
 │  BACKUP       Velero  (cluster + PVC snapshots → Garage S3)               │
-│  DATA         RabbitMQ  ·  Valkey (cache/KV)  ·  data-demo (generator)   │
-│  AUTOSCALE    KEDA  (scales rabbitmq-load on real RabbitMQ queue depth)  │
 │  CLOUD        moto (AWS mock)  ·  ACK (S3 controller)  ·  KRO             │
 │  SUPPLY CHAIN Trivy Operator  (CVE scanning · SBOM generation)            │
 │  PROG. DELIV. Argo Rollouts  (staged weight/pause canary steps)           │
@@ -117,21 +115,10 @@ Rows are grouped by layer, matching the README stack table.
 > [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md)) has the full
 > reasoning. There is no dashboard/metrics/logs/traces layer in this lab any more.
 > (TiDB, Istio ambient mesh + Kiali, and Longhorn were also removed entirely the
-> same day, no replacement — see ADR-0031/ADR-0032, ADR-0012, and ADR-0013.)
-
-### Data layer
-
-| Tool | Role in the platform |
-|------|----------------------|
-| **RabbitMQ** | Message broker with management UI. (ADR-0009) |
-| **Valkey** | In-memory cache / key-value store; drop-in Redis replacement. (ADR-0018) |
-| **data-demo** | Traffic generator that publishes messages to RabbitMQ and reads/writes Valkey — keeps the data-layer dashboards alive with real activity. |
-
-### Autoscaling
-
-| Tool | Role in the platform |
-|------|----------------------|
-| **KEDA** | Event-driven autoscaling — scales a workload on a real signal (a RabbitMQ queue's depth, a Prometheus expression), augmenting the stock HPA rather than replacing it. A `ScaledObject` demo (`gitops/data/demo/keda-scaling/`) scales the `rabbitmq-load` Deployment on the `data` namespace's RabbitMQ queue depth. Its admission webhook's TLS is wired to cert-manager's `k8s-lab-ca` — a second real consumer beyond the Gateway. `restricted` PSA, zero carve-out. On-demand as of 2026-08-25 (`make keda-up` / `make keda-down`, cluster-load reduction — was always-on before). (ADR-0029) |
+> same day, no replacement — see ADR-0031/ADR-0032, ADR-0012, and ADR-0013. RabbitMQ,
+> Valkey, and KEDA — the lab's message broker, cache, and event-driven-autoscaling
+> demo — were removed the same day too, no replacement — see ADR-0009, ADR-0018, and
+> ADR-0029.)
 
 ### Cloud / platform-engineering
 
@@ -211,7 +198,10 @@ On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`har
 3. ~~Observability~~ — removed 2026-09-06, no replacement (ADR-0041). This step no
    longer exists; the learning path below renumbers around the gap rather than
    reusing the number.
-4. **Data layer** — RabbitMQ messages and Valkey key-value, kept busy by data-demo. KEDA scales the `rabbitmq-load` Deployment on the queue's real depth — event-driven autoscaling, not a timer or a hand-set replica count.
+4. ~~Data layer~~ — removed 2026-09-06, no replacement (RabbitMQ/ADR-0009, Valkey/
+   ADR-0018, and the KEDA/ADR-0029 autoscaling demo they fed). This step no longer
+   exists; the learning path below renumbers around the gap rather than reusing the
+   number.
 5. **Cloud control-plane patterns** — moto mocks AWS; ACK reconciles `Bucket` CRs against it; KRO composes the CRs into a higher-level claim.
 6. **Supply-chain security** — GitLab CI signs images with cosign; Kyverno's `verifyImages` ClusterPolicy blocks unsigned images at admission; Trivy Operator continuously scans what's running.
 7. **Progressive delivery** — Argo Rollouts replaces the capstone `Deployment` with a canary `Rollout`; Traefik weights traffic in staged steps (the Mimir AnalysisTemplate that used to auto-gate each step on real SLO data was removed alongside the rest of the observability stack, ADR-0041).

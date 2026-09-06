@@ -232,19 +232,24 @@ setup() {
 # point (docs/DR.md, scripts/bluegreen-frontdoor.sh); `creds`/`argocd-ui` printing
 # :8080 instead was a real inconsistency a fresh-bootstrap user would hit immediately,
 # and a real breakage post-blue/green-cutover once :8080 stops existing.
-@test "Makefile creds target prints the front door :8000 for ArgoCD/Vault/RabbitMQ, not :8080" {
+@test "Makefile creds target prints the front door :8000 for ArgoCD/Vault, not :8080" {
   run grep -A6 '^creds:' "$MAKEFILE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"argocd.127.0.0.1.nip.io:8000"* ]]
   [[ "$output" == *"vault.127.0.0.1.nip.io:8000"* ]]
-  [[ "$output" == *"rabbitmq.127.0.0.1.nip.io:8000"* ]]
-  [[ "$output" != *":8080"* ]]
 }
 
 @test "Makefile creds target no longer prints a Grafana line (ADR-0041)" {
   run grep -A6 '^creds:' "$MAKEFILE"
   [ "$status" -eq 0 ]
   [[ "$output" != *"Grafana"* ]]
+}
+
+@test "Makefile creds target no longer prints RabbitMQ/Valkey lines (removed 2026-09-06)" {
+  run grep -A6 '^creds:' "$MAKEFILE"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"RabbitMQ"* ]]
+  [[ "$output" != *"Valkey"* ]]
 }
 
 @test "Makefile argocd-ui target's comment offers the front door :8000, not :8080" {

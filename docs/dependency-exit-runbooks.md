@@ -167,34 +167,10 @@ re-authoring, not just one Application's source. No alternative has been evaluat
 ADR-0001's decision was GitOps-over-imperative, not a bake-off among IaC tools for the
 bootstrap seam itself.
 
-**RabbitMQ** (message broker —
-[ADR-0009](decisions/adr-0009-rabbitmq-message-broker.md)). `gitops/data/rabbitmq/` is
-a normal auto-synced `Application`; KEDA's own `ScaledObject` demo and the `data`
-namespace's queue-depth demo both depend on it as their real event source. A real exit
-is a genuine data-loss risk for in-flight messages, not just a repoint — the AMQP
-protocol surface is portable to most brokers, but queue state itself isn't. ADR-0009
-doesn't record a rejected alternative (RabbitMQ was this lab's first and only message
-broker choice) — no exit-direction alternative has ever been evaluated.
-
-**Valkey** (cache / key-value store, supersedes Redis —
-[ADR-0018](decisions/adr-0018-valkey-not-redis.md)). `gitops/data/valkey/` is a normal
-auto-synced `Application`; the `data` namespace's demo load generator targets it
-directly. Valkey speaks the Redis wire protocol, so a real exit to any
-Redis-protocol-compatible target is close to fork-and-repoint; exiting to a
-non-compatible store would be a real client-side rewrite everywhere Valkey is
-addressed. ADR-0018 itself *is* an executed exit (away from Redis, over its license
-change) — the most directly relevant precedent in this file, alongside the
-Artifactory→Harbor migration, for what a real exit here would actually look like.
-
-**KEDA** (event-driven autoscaling —
-[ADR-0029](decisions/adr-0029-keda-event-driven-autoscaling.md)). Converted from
-always-on-core to on-demand 2026-08-25 (`make keda-up`/`keda-down`) — the lowest blast
-radius in this file of any row with an ADR of its own, since nothing runs continuously
-against it between demos. `gitops/platform/keda.yaml` is a manual-sync `Application`;
-a real exit means picking a different event-driven-autoscaling controller and
-rewriting the capstone `ScaledObject` demo into its CRD shape — narrow (one demo
-consumer) and closer to fork-and-repoint than any row above. No rejected alternative
-is recorded in ADR-0029 (KEDA was this lab's first and only choice for this role).
+**RabbitMQ, Valkey, and KEDA** each had a runbook here (message broker/ADR-0009, cache
+supersedes Redis/ADR-0018, event-driven autoscaling/ADR-0029 respectively) until all
+three were removed from the lab entirely 2026-09-06, with no replacement — see each
+ADR's own Status. No exit runbook is needed for a component that no longer exists.
 
 **Forgejo** (self-hosted git source + CI runner —
 [ADR-0035](decisions/adr-0035-forgejo-not-gitlab.md), supersedes
