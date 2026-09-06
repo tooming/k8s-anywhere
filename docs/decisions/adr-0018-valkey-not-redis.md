@@ -1,8 +1,16 @@
 # ADR-0018 — Valkey as the lab's cache / key-value store (supersedes ADR-0010)
 
-**Status.** Adopted. Active in `gitops/platform/valkey.yaml` (ArgoCD Application,
+**Status.** Removed 2026-09-06 (maintainer decision — component dropped from the lab
+entirely, no replacement, alongside RabbitMQ/ADR-0009 and KEDA/ADR-0029 in the same
+change). All `gitops/data/valkey/`, `gitops/platform/valkey.yaml` manifests, the
+`lab-valkey.json` dashboard, and every valkey test and cross-reference were deleted. The
+decision record below is kept for history (why Valkey was adopted, what it demonstrated)
+but no longer describes anything live in the repo — do not treat any manifest path or
+Makefile target named below as still existing.
+
+~~**Status.** Adopted. Active in `gitops/platform/valkey.yaml` (ArgoCD Application,
 auto-synced) and `gitops/data/valkey/` (StatefulSet with a redis_exporter sidecar +
-Service + ExternalSecret). Demo traffic from `gitops/data/demo/valkey-load.yaml`.
+Service + ExternalSecret). Demo traffic from `gitops/data/demo/valkey-load.yaml`.~~
 
 ---
 
@@ -49,10 +57,10 @@ what they will encounter in cloud-managed services.
 
 ## Plain manifests over a Helm chart
 
-Same reasoning as ADR-0009 and ADR-0010: a pinned official `valkey/valkey:8.1.10-alpine`
-image in a plain `StatefulSet` is fully reproducible, transparent, and validated by
-`kubeconform` (see [§Re-evaluation log](#re-evaluation-log) for the CVE-driven bump
-history from the original `8.0-alpine` pin).
+Same reasoning as ADR-0009 and ADR-0010: the official `valkey/valkey:8.1.10-alpine`
+image it ran in a plain `StatefulSet` was fully reproducible, transparent, and validated
+by `kubeconform` (see [§Re-evaluation log](#re-evaluation-log) for the CVE-driven bump
+history from the original `8.0-alpine` pin) — no longer live, per the Status line above.
 
 ## Single node — the ADR-0005 trade-off
 

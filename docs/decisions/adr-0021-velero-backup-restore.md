@@ -89,7 +89,6 @@ node isn't snapshotting two namespaces concurrently:
 | Schedule | Namespace | Cron | TTL | Includes |
 |----------|-----------|------|-----|----------|
 | `observability-daily` | `observability` | `0 1 * * *` | 168h | All resources + PVCs (Loki + Mimir + Tempo, 5Gi each) |
-| `data-daily` | `data` | `0 2 * * *` | 168h (7d) | All resources + PVCs (RabbitMQ + Valkey) |
 | `capstone-daily` | `capstone` | `0 3 * * *` | 168h | All resources (no PVCs in pilot) |
 | `vault-daily` | `vault` | `30 3 * * *` | 168h | All resources + Vault PVC (file backend) |
 
@@ -106,7 +105,7 @@ Velero 1.14; Kopia is the replacement).
 
 ```makefile
 dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
-	@./scripts/dr-restore.sh data tidb capstone vault observability
+	@./scripts/dr-restore.sh capstone vault observability
 ```
 
 `scripts/dr-restore.sh` (new) iterates `velero restore create --from-schedule

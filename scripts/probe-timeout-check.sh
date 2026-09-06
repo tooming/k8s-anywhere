@@ -100,16 +100,13 @@ else
   declare -a REQUIRED=(
     "gitops/platform/cert-manager.yaml|spec.source.helm.valuesObject.webhook.livenessProbe"
     "gitops/platform/cert-manager.yaml|spec.source.helm.valuesObject.webhook.readinessProbe"
-    "gitops/platform/keda.yaml|spec.source.helm.valuesObject.operator.livenessProbe"
-    "gitops/platform/keda.yaml|spec.source.helm.valuesObject.operator.readinessProbe"
-    "gitops/platform/keda.yaml|spec.source.helm.valuesObject.metricsServer.livenessProbe"
-    "gitops/platform/keda.yaml|spec.source.helm.valuesObject.metricsServer.readinessProbe"
-    "gitops/platform/keda.yaml|spec.source.helm.valuesObject.webhooks.livenessProbe"
-    "gitops/platform/keda.yaml|spec.source.helm.valuesObject.webhooks.readinessProbe"
     # Alloy / node-exporter probe-timeout requirements REMOVED 2026-09-06
     # (ADR-0041): both components (and gitops/platform/observability-alloy.yaml,
     # gitops/platform/observability-node-exporter.yaml) are gone — the entire
     # observability stack was removed with no replacement.
+    # KEDA probe-timeout requirements REMOVED 2026-09-06 (ADR-0029): the
+    # component (and gitops/platform/keda.yaml) is gone — dropped from the lab
+    # entirely, no replacement.
     "infra/modules/argocd/values.yaml|server.livenessProbe"
     "infra/modules/argocd/values.yaml|server.readinessProbe"
     "infra/modules/argocd/values.yaml|applicationSet.livenessProbe"

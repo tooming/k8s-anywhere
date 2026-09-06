@@ -541,7 +541,7 @@ dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=c
 
 .PHONY: dr-restore
 dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
-	@./scripts/dr-restore.sh data capstone vault
+	@./scripts/dr-restore.sh capstone vault
 
 .PHONY: dr-chaos
 dr-chaos: ## Chaos drill: kill a random capstone pod, assert self-heal within budget (DORA Pillar 3 TLPT concept)
