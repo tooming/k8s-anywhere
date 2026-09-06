@@ -656,8 +656,20 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-09-06-forgejo-repo-secret-bootstrap-gap.md](docs/done/2026-09-06-forgejo-repo-secret-bootstrap-gap.md).
   This item stays open: the SSH-based `forgejo-push`/`forgejo-force-push` replacement,
   the TLS-layer question, and the actual `gitlab-*.sh` → `forgejo-*.sh` rename are
-  still undone — GitLab's targets still run in `up` (legacy, harmless) and no
-  automated push exists yet for a genuinely empty Forgejo repo.
+  still undone — GitLab's targets still run in `up`, and no automated push exists yet
+  for a genuinely empty Forgejo repo.
+
+  **Update 2026-09-06 (live-cluster session, issue #633) — "legacy, harmless" was
+  wrong about the resource cost, even though the correctness call was right.**
+  `docker stats` showed the `gitlab` container alone holding ~3.1 GiB (27% of the
+  12 GB VM) for the entire rest of a session after a `make up`, because nothing in
+  the `up` sequence ever brought it back down — `gitlab-configure` only needs GitLab
+  reachable for its own one-shot Terraform-state import + initial push, and nothing
+  later in `up` (`root-app` now tracks Forgejo, per the repoURL flip already
+  mentioned above) depends on it staying up. Added `$(MAKE) gitlab-down` right after
+  `gitlab-configure` in the `up` target — GitLab still gets configured every fresh
+  bootstrap, it just doesn't sit there afterward burning a quarter of the VM. This is
+  a narrow, safe addition, not the full decommission this item is still tracking.
 - [ ] 🟢 **Decommission `gitlab/docker-compose.yml` + `infra/modules/gitlab-config`** —
   GitLab is **stopped** as of 2026-08-17 (`make gitlab-down`, volumes kept for
   rollback) but not yet removed from the repo — deliberately kept a beat longer than

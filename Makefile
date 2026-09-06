@@ -273,6 +273,7 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) forgejo-repo-secret
 	$(MAKE) gitlab-up
 	$(MAKE) gitlab-configure
+	$(MAKE) gitlab-down
 	$(MAKE) root-app
 	$(MAKE) coredns-nip-io-rewrite
 	$(MAKE) vault-bootstrap
@@ -297,9 +298,16 @@ down: ## Stop everything (cluster + GitLab + Colima). Data on PVCs/volumes is ke
 
 ##@ Runtime (Colima)
 
+# vm-type qemu, not vz (Apple Virtualization.framework): vz's networking degrades
+# under sustained load — pod egress to the internet (Harbor/Helm-chart-repo fetches,
+# argo-rollouts' Helm repo) intermittently black-holes 10-20+ minutes into a session,
+# even though the same targets are instant from the Mac host itself. Reproduced
+# 2026-09-06 investigating issue #633 (docs/incident-log.md) and matches known,
+# unresolved upstream reports (abiosoft/colima#952, #552, lima-vm/lima#1333) — "VZ is
+# flagged as experimental and causes problems," qemu is the documented workaround.
 .PHONY: colima-up
 colima-up: ## Start the Colima VM (docker runtime) + raise inotify limits
-	colima status >/dev/null 2>&1 || colima start --cpu $(COLIMA_CPU) --memory $(COLIMA_MEM) --disk $(COLIMA_DISK) --vm-type vz --mount-type virtiofs
+	colima status >/dev/null 2>&1 || colima start --cpu $(COLIMA_CPU) --memory $(COLIMA_MEM) --disk $(COLIMA_DISK) --vm-type qemu --mount-type virtiofs
 	@colima ssh -- sudo sysctl -w fs.inotify.max_user_instances=8192 fs.inotify.max_user_watches=1048576 >/dev/null 2>&1 || true
 
 .PHONY: colima-down
@@ -622,6 +630,10 @@ ondemand-budget-check: ## Report which on-demand units (Harbor/Istio/Kiali/Longh
 .PHONY: k3s-datastore-health-check
 k3s-datastore-health-check: ## Report k3s embedded datastore (SQLite/kine) health: size, compaction gap, Slow SQL volume (2026-08-11 incident, docs/incident-log.md)
 	@bash scripts/k3s-datastore-health-check.sh
+
+.PHONY: cilium-drift-check
+cilium-drift-check: ## Report whether cilium-agent's baked-in apiserver host:port has drifted from the live endpoint (fix: make cilium-up) — 2026-07-29/2026-09-06 recurrence, issue #633
+	@bash scripts/cilium-apiserver-drift-check.sh
 
 # --- Cilium CNI (always-on once enabled; run before ArgoCD on fresh clusters) ----
 # Cilium replaces k3s-bundled Flannel (disable_default_cni=true — ADR-0014).

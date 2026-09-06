@@ -90,8 +90,12 @@ those workloads are pulled from, so it structurally cannot be one of them).
 
 ### Target shape (mirrors what ADR-0033 documented for GitLab)
 
-- **`forgejo` service** — `codeberg.org/forgejo/forgejo` (verified multi-arch: amd64,
-  arm64, arm/v6 — runs natively on this host, no emulation).
+- **`forgejo` service** — `code.forgejo.org/forgejo/forgejo` (verified multi-arch: amd64,
+  arm64, arm/v6 — runs natively on this host, no emulation). Originally pulled from
+  `codeberg.org/forgejo/forgejo` (same image, mirrored registry); switched 2026-09-06
+  after `codeberg.org`'s registry returned a hard "manifest ... not found" for this tag
+  from inside the Colima VM (reproduced consistently, not transient) while
+  `code.forgejo.org` served the identical tag/digest cleanly.
 - **`forgejo-runner` service** — `code.forgejo.org/forgejo/runner`, registered against
   the Forgejo instance so `.forgejo/workflows/*.yml` pipelines (the same build → sign →
   push chain, ADR-0011/ADR-0024) actually execute. ADR-0033's own history is the

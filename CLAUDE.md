@@ -130,6 +130,18 @@ that change *what* gets built — and even then prefer picking the sensible defa
 saying so over interrupting. Never end a turn on a question when there's an obvious next
 action to take instead. This binds every role, including the autonomous routines.
 
+**"Irreversible" means irreversible for the user or the outside world, not "wipes local
+lab state."** `colima delete`, a full cluster recreate, a PVC/volume wipe, `k3d cluster
+delete` — none of these are a genuine fork requiring confirmation, no matter how
+destructive they look. This lab is disposable by design (clusterless CI, ADR-0005
+"recoverability over impossible HA", `make down`/`make up` as documented normal
+operations) and GitHub is the source of truth for everything that actually matters —
+rebuilding the VM/cluster from git is routine maintenance, not data loss. Found live
+2026-09-06 (issue #633 session): a session paused to ask before `colima delete` while
+chasing a real upstream networking bug, and was told plainly it didn't need to ask.
+Treat any "looks scary but is actually just this lab's own disposable infra" action the
+same as opening a PR — just do it and report.
+
 ## Always open a PR
 After pushing changes to the feature branch, **always open a pull request** for them
 (unless the user says otherwise). Don't wait to be asked.
