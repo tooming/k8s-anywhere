@@ -65,4 +65,4 @@ tooling/session-config only.
 
 ## PR
 
-https://github.com/tooming/k8s-anywhere/pull/1451
+https://github.com/tooming/k8s-anywhere/pull/1456
