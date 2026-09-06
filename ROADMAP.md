@@ -291,291 +291,74 @@ You review and merge plan PRs, same as implementation PRs.
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 6** — full verification
   writeup:
   [docs/done/2026-09-04-roadmap-legacy-item-trim-batch6.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch6.md).
-  (auto/roadmap-legacy-item-trim-batch6)
-  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
-  scale); JANITOR-fallback cleanup 2026-09-04, this run's fifth cycle,
-  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated (issues #633 and #1229 both re-checked, no new
-  confirmation comment on either since cycle 2) and PLANNER/TRIAGER
-  re-confirmed empty (zero new/ungroomed issues; no new open PRs).
-  Continues the legacy-item-trim JANITOR fallback from batch 5. **No
-  prerequisites — executor may pick up immediately.**)
-  Trimmed 3 more legacy items (a smaller batch — the easy-to-verify
-  candidate lens is thinning), each verified against its real
-  `docs/done/` mirror before touching the ROADMAP text; deliberately left
-  2 other candidates untouched (one has no `docs/done/` mirror to point
-  to at all, the other is a planner resolution note spanning multiple
-  PRs/ADRs, not a single-mirror executor spec — see the `docs/done/`
-  writeup for the full reasoning). No information lost, 45 lines saved.
-  `ROADMAP.md` 6944→6899 lines. `make ci` must pass. `docs/done/` entry
-  required.
+  (auto/roadmap-legacy-item-trim-batch6; PR #1415)
 
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 5** — full verification
   writeup:
   [docs/done/2026-09-04-roadmap-legacy-item-trim-batch5.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch5.md).
-  (auto/roadmap-legacy-item-trim-batch5)
-  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
-  scale); JANITOR-fallback cleanup 2026-09-04, this run's fourth cycle,
-  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated (unchanged since cycle 2/3 — issues #633 and
-  #1229 both re-checked, no new confirmation) and PLANNER/TRIAGER
-  re-confirmed empty (zero new/ungroomed issues; no new open PRs).
-  Continues the legacy-item-trim JANITOR fallback from batch 4.
-  **No prerequisites — executor may pick up immediately.**)
-  Trimmed 5 more legacy items — the cloud-control-plane dashboard,
-  PSS/NetworkPolicy fan-out, and cosign CI-signing sequence — each
-  verified against its real `docs/done/` mirror before touching the
-  ROADMAP text; added a proper `## PR` section (with the real merged-PR
-  link, found via GitHub search) to 4 of those 5 mirrors that had none.
-  No information lost, 111 lines saved. `ROADMAP.md` 7055→6944 lines.
-  `make ci` must pass. `docs/done/` entry required.
+  (auto/roadmap-legacy-item-trim-batch5; PR #1414)
 
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 4** — full verification
   writeup:
   [docs/done/2026-09-04-roadmap-legacy-item-trim-batch4.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch4.md).
-  (auto/roadmap-legacy-item-trim-batch4)
-  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
-  scale); JANITOR-fallback cleanup 2026-09-04, this run's third cycle,
-  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated (unchanged since cycle 2 — issues #633 and
-  #1229 both re-checked, no new confirmation) and PLANNER/TRIAGER
-  re-confirmed empty (zero new/ungroomed issues; `make ci` zero drift).
-  Continues the legacy-item-trim JANITOR fallback from batch 3.
-  **No prerequisites — executor may pick up immediately.**)
-  Trimmed 5 more legacy items — the Kyverno + cosign + Trivy Operator +
-  ADR-0017 sequence — each verified against its real `docs/done/` mirror
-  before touching the ROADMAP text; backfilled 4 of those 5 mirrors' own
-  missing/placeholder `## PR` sections with the real merged-PR link first
-  (#170, #177, #178, #183 — one still carried a literal `PR #TBD`). No
-  information lost, 153 lines saved. `ROADMAP.md` 7187→7034 lines.
-  `make ci` must pass. `docs/done/` entry required.
+  (auto/roadmap-legacy-item-trim-batch4; PR #1413)
 
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 3** — full verification
   writeup:
   [docs/done/2026-09-04-roadmap-legacy-item-trim-batch3.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch3.md).
-  (auto/roadmap-legacy-item-trim-batch3)
-  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
-  scale); JANITOR-fallback cleanup 2026-09-04, this run's second cycle,
-  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  found fully gated (all three unchecked items re-confirmed still blocked —
-  issues #633 and #1229 both re-checked, neither has a new confirmation
-  comment) and PLANNER (zero ungroomed intake, zero un-RFC'd 🟡 items, zero
-  `docs/roadmap/incoming/` files)/ARCHITECT (zero open `adr-audit` issues,
-  no 🟡 items to RFC)/DOC-DRIFT-AUTHOR (`make ci` had zero drift warnings)
-  all came up empty. TRIAGER found and labeled one genuinely untriaged issue
-  (#1385, missing domain/readiness/priority) as this run's first cycle —
-  a real, complete labels-only deliverable in its own right, not a PR. This
-  cycle continues the legacy-item-trim JANITOR fallback from batch 2.
-  **No prerequisites — executor may pick up immediately.**)
-  Trimmed 5 more legacy items, each verified against its real `docs/done/`
-  mirror before touching the ROADMAP text — no information lost, 156 lines
-  saved. Also fixed each mirror's own placeholder PR link
-  (`(see GitHub)`/`(autonomous scheduled run — executor routine)`) with the
-  real merged-PR URL found via GitHub search, verifying `merged: true`
-  since two of the five components had an earlier closed-unmerged attempt
-  under the same title. `ROADMAP.md` 7297→7141 lines. `make ci` must pass.
-  `docs/done/` entry required.
+  (auto/roadmap-legacy-item-trim-batch3; PR #1412)
 
 - [x] 🟢 **docs/done/ PR-link integrity fix — 80 files + mechanical guard
   hardened** — full verification writeup:
   [docs/done/2026-09-04-docs-done-pr-link-integrity-fix.md](docs/done/2026-09-04-docs-done-pr-link-integrity-fix.md).
-  (auto/docs-done-pr-link-integrity-fix)
-  (CHARTER "Everything as code; GitOps deploys it" + the repo's own docs/done/
-  convention; JANITOR-fallback finding 2026-09-04, this run's thirtieth cycle,
-  surfaced while verifying trimmed ROADMAP items' `docs/done/` mirrors during
-  the batch-2 trim below. **No prerequisites — executor may pick up
-  immediately.**)
-  `scripts/docs-done-pr-link-check.sh`'s existing placeholder-wording
-  allowlist missed dozens of other unresolved `## PR` shapes (bare branch
-  names, unnamed-PR prose, un-substituted `PR #NNN`/`pull/TBD` templates).
-  Backfilled all 80 with real, GitHub-API-verified PR links found via
-  `git log --diff-filter=A` + last-`#NNN`-in-subject extraction. Hardened the
-  guard with a second, broader pass: any file with a `## PR` heading must now
-  contain a real `github.com/.../pull/NNN` URL or bare `#NNN` — not an
-  allowlist of known-bad wordings. 3 new bats fixtures/cases cover the new
-  logic (bare-branch-name failure, no-heading skip, README.md exclusion).
-  `make ci` must pass. `docs/done/` entry required.
+  (auto/docs-done-pr-link-integrity-fix; PR #1411)
 
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 2** — full verification
   writeup:
   [docs/done/2026-09-04-roadmap-legacy-item-trim-batch2.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch2.md).
-  (auto/roadmap-legacy-item-trim-batch2)
-  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
-  scale); JANITOR-fallback cleanup 2026-09-04, this run's twenty-ninth cycle,
-  continuing the pilot batch from the previous cycle. **No prerequisites —
-  executor may pick up immediately.**)
-  Trimmed 4 more legacy items, each verified against its real `docs/done/`
-  mirror before touching the ROADMAP text — no information lost, 54 lines
-  saved. `ROADMAP.md` 7351→7297 lines. `make ci` must pass. `docs/done/`
-  entry required.
+  (auto/roadmap-legacy-item-trim-batch2; PR #1410)
 
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — pilot batch (RFC #377 Oracle
   items)** — full verification writeup:
   [docs/done/2026-09-04-roadmap-legacy-item-trim-pilot.md](docs/done/2026-09-04-roadmap-legacy-item-trim-pilot.md).
-  (auto/roadmap-legacy-item-trim-pilot)
-  (CHARTER **Core Values** §"Everything as code" (tooling stays usable at
-  scale); JANITOR-fallback pilot cleanup 2026-09-04, this run's twenty-eighth
-  cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next" lane
-  was re-confirmed fully gated and PLANNER/ARCHITECT/TRIAGER all came up
-  empty, and the dependency-currency lens (cycles 24-27) was found exhausted.
-  Fresh angle: this ROADMAP's own 2026-08-25 note explicitly named the
-  ~180-item legacy-writeup trim as deferred future work — picked up a small,
-  fully-verified pilot batch rather than the whole backlog at once.
-  **No prerequisites — executor may pick up immediately.**)
-  Trimmed 4 RFC #377 (Oracle backend) items, each verified against its real
-  `docs/done/` mirror before touching the ROADMAP text — no information
-  lost, ~31 lines saved. `ROADMAP.md` 7382→7351 lines. `make ci` must pass
-  (2976/2976 bats tests this cycle, with shellcheck/yamllint also installed
-  and run clean). `docs/done/` entry required.
+  (auto/roadmap-legacy-item-trim-pilot; PR #1409)
 
 - [x] 🟢 **Oldest dependency-register rows re-swept — Garage, RabbitMQ, Tempo
   confirmed clean; Forgejo unreachable** — full verification writeup:
   [docs/done/2026-09-04-oldest-register-rows-resweep-clean.md](docs/done/2026-09-04-oldest-register-rows-resweep-clean.md).
-  (auto/oldest-register-rows-resweep-clean)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004;
-  JANITOR-fallback coverage sweep 2026-09-04, this run's twenty-sixth
-  cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next"
-  lane was re-confirmed fully gated and PLANNER/ARCHITECT/TRIAGER all came
-  up empty. Fresh angle: continuing the prior cycle's "rank by
-  Last-reviewed date" lens to the next three oldest untouched rows.
-  **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): Garage, RabbitMQ, Tempo all
-  confirmed still current via direct tag/advisory checks; Forgejo attempted
-  but `codeberg.org` is egress-blocked from this sandbox, noted explicitly
-  rather than assumed current. `docs/decisions/adr-0002-garage-not-minio.md`,
-  `adr-0009-rabbitmq-message-broker.md`, `adr-0006-grafana-native-git-sync.md`
-  and `docs/dependency-register.md` updated. No `gitops/` change. `make ci`
-  must pass. `docs/done/` entry required.
+  (auto/oldest-register-rows-resweep-clean; PR #1407)
 
 - [x] 🟢 **Pyroscope currency re-check — app `v2.3.0` exists, no matching
   chart release yet, kept at `2.2.1`** — full verification writeup:
   [docs/done/2026-09-04-pyroscope-currency-recheck-kept.md](docs/done/2026-09-04-pyroscope-currency-recheck-kept.md).
-  (auto/pyroscope-currency-recheck-kept)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004;
-  JANITOR-fallback coverage sweep 2026-09-04, this run's twenty-fifth
-  cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next"
-  lane was re-confirmed fully gated (unchanged from cycle 24's exhaustive
-  re-check) and PLANNER/ARCHITECT/TRIAGER all came up empty. Fresh angle:
-  ranked every dependency-register row by "Last reviewed" date and checked
-  the oldest untouched one (Pyroscope, 2026-08-10) rather than re-checking
-  an already-recently-verified component. **No prerequisites — executor
-  may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): app `v2.3.0` confirmed real
-  with genuine security content, but the chart release (what this repo
-  actually pins) hasn't caught up yet — confirmed via a direct tag-404
-  check, not assumed from a release-list summary. `docs/decisions/
-  adr-0034-lgtmp-observability-stack.md`'s Re-evaluation log and
-  `docs/dependency-register.md`'s row updated. No `gitops/` change.
-  `make ci` must pass. `docs/done/` entry required.
+  (auto/pyroscope-currency-recheck-kept; PR #1406)
 
 - [x] 🟢 **Issue #1229 wrongly closed alongside PR #1403 — reopened, ROADMAP
   rule #11 hardened** — full verification writeup:
   [docs/done/2026-09-04-issue-1229-wrongly-closed-reopened.md](docs/done/2026-09-04-issue-1229-wrongly-closed-reopened.md).
-  (auto/issue-1229-reopen-rule-11-hardened)
-  (CHARTER **Core Values** §"Dashboards/outputs show real, auto-discovered
-  state" (ADR-0004); self-caught correction 2026-09-04, this run's
-  twenty-third cycle, found on session resume while re-orienting on
-  open issues per STEP 1/2 — a prior cycle's PR #1403 closed issue #1229
-  despite its own comment saying it should stay open, with no closing
-  keyword anywhere in the PR to explain it. **No prerequisites — this is a
-  correction, not a gated item.**)
-  Reopened #1229 via the GitHub API, posted a comment naming the exact
-  mistake and re-confirming what's still needed, and hardened ROADMAP rule
-  #11 with an explicit procedural guard against recurrence (no code-level
-  guard is possible for a wrong `issue_write` call — see the docs/done
-  entry's own "why procedural, not mechanical" section, per CLAUDE.md's
-  escape hatch for genuinely unguardable classes). No `gitops/` or code
-  change. `make ci` must pass. `docs/done/` entry required.
+  (auto/issue-1229-reopen-rule-11-hardened; PR #1404)
 
 - [x] 🟢 **Restore the silently-dropped `verify-rejection` CI job (O4 gate) +
   mechanical recurrence guard** — full verification writeup:
   [docs/done/2026-09-03-forgejo-ci-verify-rejection-restored.md](docs/done/2026-09-03-forgejo-ci-verify-rejection-restored.md).
-  (auto/forgejo-ci-verify-rejection-restored)
-  (CHARTER **Objective O4** ("every image is signed and verified") /
-  **Core Values** §"Clusterless gates stay green"; JANITOR-fallback
-  coverage sweep 2026-09-03, this run's twenty-first cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed
-  fully gated and PLANNER/ARCHITECT/TRIAGER all came up empty. Fresh angle:
-  re-reading issue #1229's own comment history (not just its title) found it
-  had already root-caused something deeper than a missing secret — the
-  entire `verify-rejection` job was silently dropped by a rewrite (#1238)
-  with no test pinning its presence, and the issue's own comment explicitly
-  named the executor-buildable slice ("the job restored... a
-  `tests/forgejo-ci.bats` regression pinning its presence... *then* the
-  KUBECONFIG secret") per ROADMAP rule #9's "split the gate" guidance.
-  **No prerequisites for the restoration — executor may pick up
-  immediately; the KUBECONFIG secret + live run stay gated on #1229, left
-  open.**)
-  Restored the job re-adapted to the file's post-rewrite conventions
-  (retry_cmd wrapping, shared host-resolution step, its own checkout);
-  restored + extended `tests/forgejo-ci.bats`'s coverage (12 original + 3
-  new assertions). Full local bats run: 2970/2970 pass. `make ci` must
-  pass. `docs/done/` entry required. Issue #1229 stays open.
+  (auto/forgejo-ci-verify-rejection-restored; PR #1402)
 
 - [x] 🟢 **Inkless kafka-exporter sidecar — document in ADR-0015,
   currency-check clean** — full verification writeup:
   [docs/done/2026-09-03-inkless-kafka-exporter-documented.md](docs/done/2026-09-03-inkless-kafka-exporter-documented.md).
-  (auto/inkless-kafka-exporter-documented)
-  (CHARTER **Core Values** §"Everything as code" (governance completeness);
-  JANITOR-fallback coverage sweep 2026-09-03, this run's twentieth cycle,
-  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated and PLANNER/ARCHITECT/TRIAGER all came up empty.
-  Fresh angle: a full `gitops/`-wide image inventory (distinct from the
-  per-ADR sweeps done so far) found `danielqsj/kafka-exporter:v1.9.0` — live
-  in the Inkless broker's StatefulSet since Inkless first landed — had zero
-  mention in ADR-0015, unlike Valkey's equivalent `redis_exporter` sidecar in
-  ADR-0018. Small enough to close as a section addition rather than a new
-  ADR (an observability sidecar, not an independent architectural choice).
-  **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): `v1.9.0` reconfirmed the newest
-  real tag via Docker Hub's tags API; zero GHSA advisories exist. No
-  `gitops/` change. `docs/dependency-register.md`'s Inkless row updated.
-  `make ci` must pass. `docs/done/` entry required.
+  (auto/inkless-kafka-exporter-documented; PR #1401)
 
 - [x] 🟢 **Author ADR-0039 — s3manager as the lab's Garage (S3) browser UI
   (retroactive record); bump `v0.8.0` → `v0.9.0`** — full verification
   writeup:
   [docs/done/2026-09-03-adr-0039-s3manager-retroactive-record.md](docs/done/2026-09-03-adr-0039-s3manager-retroactive-record.md).
-  (auto/adr-0039-s3manager-retroactive-record)
-  (CHARTER **Core Values** §"Everything as code" (governance completeness);
-  ARCHITECT-fallback gap analysis 2026-09-03, this run's nineteenth cycle,
-  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated and PLANNER/ARCHITECT/TRIAGER all came up empty.
-  Fresh angle: continuing this run's retroactive-ADR-authorship pattern
-  (ADR-0036 ESO, ADR-0037 Vault, ADR-0038 moto+ACK+KRO) found s3manager — a
-  real, live, always-on Garage-browser UI with a genuine version-bump
-  history — also had zero governing ADR and zero dependency-register row.
-  **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): `v0.9.0` confirmed real via
-  Docker Hub's tags API and a real commit-history diff; zero GHSA advisories
-  exist. ADR-0004 caveat noted explicitly (cannot visually verify the
-  CSS-framework migration renders correctly; stateless + digest-pinned, so
-  rollback is a one-line revert with zero data-loss risk).
-  `docs/decisions/README.md` and `docs/dependency-register.md` (1 new row +
-  fixed scope-note arithmetic) updated. `make ci` must pass. `docs/done/`
-  entry required.
+  (auto/adr-0039-s3manager-retroactive-record; PR #1400)
 
 - [x] 🟢 **Author ADR-0038 — moto + ACK (S3) + KRO for the cloud-control-plane
   demo pattern (retroactive record); bump moto `5.2.2` → `5.2.3`** — full
   verification writeup:
   [docs/done/2026-09-03-adr-0038-ack-kro-moto-retroactive-record.md](docs/done/2026-09-03-adr-0038-ack-kro-moto-retroactive-record.md).
-  (auto/adr-0038-ack-kro-moto-retroactive-record)
-  (CHARTER **Core Values** §"Everything as code" (governance completeness);
-  ARCHITECT-fallback gap analysis 2026-09-03, this run's eighteenth cycle,
-  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated and PLANNER/ARCHITECT/TRIAGER all came up empty.
-  Fresh angle: extending this run's retroactive-ADR-authorship pattern
-  (ADR-0036 ESO, ADR-0037 Vault) to moto/ACK-S3/KRO — three real, live,
-  already-hardened always-on components (KRO currently suspended) with their
-  own dashboard and bats coverage, yet zero governing ADR and zero
-  dependency-register row, unlike every other component in the lab.
-  **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): moto bumped to a confirmed-real
-  newer patch (Docker Hub tags API); ACK-S3 (`1.11.0`) and KRO (`0.9.3`) both
-  reconfirmed already current via direct tag/release checks; zero GHSA
-  advisories exist for any of the three. `docs/decisions/README.md` and
-  `docs/dependency-register.md` (3 new rows + fixed scope-note arithmetic)
-  updated. `make ci` must pass. `docs/done/` entry required.
+  (auto/adr-0038-ack-kro-moto-retroactive-record; PR #1399)
 
 - [x] 🟢 **Longhorn currency re-check — `v1.12.1` now stable, ADR's own flip
   condition still not triggered, kept at `1.11.3`** — full verification
@@ -586,365 +369,78 @@ You review and merge plan PRs, same as implementation PRs.
 - [x] 🟢 **dependency-concentration-sync-check: close the reverse-direction gap
   + fix a stale comment** — full verification writeup:
   [docs/done/2026-09-03-dependency-concentration-reverse-check.md](docs/done/2026-09-03-dependency-concentration-reverse-check.md).
-  (auto/dependency-concentration-reverse-check)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / DORA audit readiness
-  Q14/Q16/Q17; JANITOR-fallback coverage sweep 2026-09-03, this run's sixteenth
-  cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated (3 items, all still blocked on live-cluster
-  verification or maintainer confirmation — issues #633/#1229/#1345 re-checked,
-  none confirmed) and PLANNER/ARCHITECT/TRIAGER all came up empty (zero
-  ungroomed intake/rfc issues, zero un-RFC'd 🟡 items, zero untriaged open
-  issues). Fresh angle: a coverage/hardening sweep of the mechanical drift
-  guards themselves (not their subjects) found `scripts/
-  dependency-concentration-sync-check.sh`'s own header comment claiming an
-  already-closed gap (docs/dependency-exit-runbooks.md's downstream sync,
-  actually closed by #1380 the same day #1379 landed) was still open, plus a
-  genuinely still-open gap (the reverse direction: a concentration.md group
-  whose stated data has drifted from the register) named in the same comment.
-  **No prerequisites — executor may pick up immediately.**)
-  Fixed the stale comment; added a second check pass verifying every
-  concentration.md group still backs 2+ register rows and its stated count
-  still matches. New bats fixtures + tests exercise both new failure modes.
-  `make ci` must pass. `docs/done/` entry required.
+  (auto/dependency-concentration-reverse-check; PR #1397)
 
 - [x] 🟢 **KEDA + Velero full GHSA sweep — confirm both pins security-clean** —
   full verification writeup:
   [docs/done/2026-09-03-keda-velero-full-ghsa-sweep-clean.md](docs/done/2026-09-03-keda-velero-full-ghsa-sweep-clean.md).
-  (auto/keda-velero-full-ghsa-sweep-clean)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
-  security sweep 2026-09-03, this run's fifteenth cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again. Fresh angle: extending this run's full-advisory-sweep technique
-  (Envoy Gateway, Cilium, ArgoCD, cert-manager) to KEDA (3 advisories) and Velero
-  (2 advisories) — both small enough to sweep exhaustively in one PR, after an
-  attempted RabbitMQ sweep (~80-90 advisories across 9 pages) was abandoned as
-  disproportionate. **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): all 3 KEDA advisories and both
-  Velero advisories checked; one previously-unchecked advisory found per
-  project (KEDA's CI-workflow-only GHSA-w92x-gx4w-j5f2, not applicable to the
-  deployed operator; Velero's GHSA-72xg-3mcq-52v4, current pin many majors
-  past the fixed floor). No code change; `docs/decisions/
-  adr-0029-keda-event-driven-autoscaling.md` and `docs/decisions/
-  adr-0021-velero-backup-restore.md`'s Re-evaluation logs and
-  `docs/dependency-register.md`'s rows updated. `make ci` must pass. `docs/done/`
-  entry required.
+  (auto/keda-velero-full-ghsa-sweep-clean; PR #1396)
 
 - [x] 🟢 **cert-manager full GHSA sweep — confirm `1.21.1` pin security-clean** —
   full verification writeup:
   [docs/done/2026-09-03-cert-manager-full-ghsa-sweep-clean.md](docs/done/2026-09-03-cert-manager-full-ghsa-sweep-clean.md).
-  (auto/cert-manager-full-ghsa-sweep-clean)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
-  security sweep 2026-09-03, this run's fourteenth cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again. Fresh angle: extending this run's full-advisory-sweep technique
-  (Envoy Gateway, Cilium, ArgoCD) to cert-manager — only 3 advisories total, a
-  small enough set to sweep exhaustively and confirm two already-tracked findings
-  plus one previously-unchecked Low advisory. **No prerequisites — executor may
-  pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): all 3 published advisories checked;
-  current pin `1.21.1` is past every floor including the newly-checked
-  GHSA-r4pg-vg54-wxx4. No code change; `docs/decisions/
-  adr-0028-cert-manager-tls-lifecycle.md`'s Re-evaluation log and
-  `docs/dependency-register.md`'s row updated. `make ci` must pass. `docs/done/`
-  entry required.
+  (auto/cert-manager-full-ghsa-sweep-clean; PR #1395)
 
 - [x] 🟢 **Author ADR-0037 — HashiCorp Vault for secrets management (retroactive
   record); bump server image `2.0.4` → `2.1.0`** — full verification writeup:
   [docs/done/2026-09-03-vault-adr-0037-retroactive-record.md](docs/done/2026-09-03-vault-adr-0037-retroactive-record.md).
-  (auto/vault-adr-0037-retroactive-record)
-  (CHARTER **Core Values** §"Everything as code" / CHARTER **Goals** §"the secrets
-  flow (Vault → External Secrets → workload)"; architect-fallback gap analysis
-  2026-09-03, this run's thirteenth cycle, reached via `executor.prompt.md`
-  STEP 6b after the "Now / next" lane was re-confirmed fully gated again. Fresh
-  angle: extending this run's GHSA-sweep pass (Envoy Gateway, Cilium, ArgoCD) to
-  Vault surfaced a much bigger gap than "is the pin current" — Vault had no ADR
-  at all and no register row, exactly the same class of gap ADR-0036 (External
-  Secrets Operator) closed on 2026-08-19, and worse: its version-audit trail
-  lived only as inline YAML comments in `vault.yaml`, the sole component in this
-  repo doing that instead of pointing at its own ADR. **No prerequisites —
-  executor may pick up immediately.**)
-  Mirrors ADR-0036's established retroactive-record structure and migrates all
-  four pre-existing Re-evaluation log entries verbatim from `vault.yaml`'s inline
-  comments. While authoring it, re-checked currency and found `v2.1.0`
-  (2026-09-01) fixes two real Go-vulnerability-database dependency issues;
-  bumped the server image and its `vault-unsealer` lockstep image together.
-  Caught and corrected a WebFetch ambiguity mid-research (a `main`-branch
-  CHANGELOG.md fetch resolved to an unrelated section) by cross-checking against
-  the real releases list instead of trusting the first result. `docs/dependency-
-  register.md`'s Scope-note arithmetic updated and verified via
-  `make dependency-register-check`, not hand-counted. `make ci` must pass.
-  `docs/done/` entry required.
+  (auto/vault-adr-0037-retroactive-record; PR #1394)
 
 - [x] 🟢 **ArgoCD full GHSA sweep — confirm `v3.5.2` pin security-clean** — full
   verification writeup:
   [docs/done/2026-09-03-argocd-full-ghsa-sweep-clean.md](docs/done/2026-09-03-argocd-full-ghsa-sweep-clean.md).
-  (auto/argocd-full-ghsa-sweep-clean)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
-  security sweep 2026-09-03, this run's twelfth cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again. Fresh angle: extending the same full-advisory-sweep technique
-  (Envoy Gateway, Cilium) to ArgoCD itself — this lab's actual GitOps deployment
-  mechanism and, per `docs/dependency-exit-runbooks.md`, its single largest
-  possible dependency exit — completing all 8 published advisories this time
-  (a small enough total to sweep exhaustively, unlike Cilium's multi-page
-  history). Complements this run's earlier chart-currency check (10.5.0→10.7.0
-  exists, template-only, no appVersion change, judged not worth the risk for
-  zero functional gain) by confirming that decision wasn't hiding an unpatched
-  security gap. **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): every advisory's affected range
-  tops out at `3.4.2` or lower; current pin's appVersion `v3.5.2` is past every
-  floor, including the highest severity (Critical, a `ServerSideDiff` secret
-  extraction this lab's own `Application` manifests don't trigger the
-  precondition for anyway). No code change; `docs/dependency-register.md`'s
-  ArgoCD row updated (no dedicated ADR/Re-evaluation log exists for ArgoCD
-  specifically — its register row cites ADR-0001, which has no such section —
-  so the finding is recorded in the register row itself). `make ci` must pass.
-  `docs/done/` entry required.
+  (auto/argocd-full-ghsa-sweep-clean; PR #1393)
 
 - [x] 🟢 **Cilium: Critical advisory GHSA-3fcv-jvfp-m4q9 found unaudited, confirmed
   not applicable** — full verification writeup:
   [docs/done/2026-09-03-cilium-critical-ghsa-gap-closed.md](docs/done/2026-09-03-cilium-critical-ghsa-gap-closed.md).
-  (auto/cilium-critical-ghsa-gap-closed)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
-  security sweep 2026-09-03, this run's eleventh cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again. Fresh angle: extending the same "full advisory listing, not just
-  currency" technique from this run's Envoy Gateway sweep to Cilium — the other
-  highest-blast-radius always-on-core component per `docs/dependency-exit-runbooks.md`
-  — and finding a real gap this time: a Critical advisory ADR-0014's own prior
-  audit (scoped only to advisories published on one specific date) never recorded.
-  **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): the advisory's affected/patched
-  ranges confirm this lab's pin (`1.18.13`) is five patches past the `1.18.x`
-  fix floor (`1.18.8`) — not affected. Explicitly scoped as a targeted
-  Critical-advisory check plus a partial spot-check (one of several advisory
-  pages), not an exhaustive full-history re-audit — said plainly rather than
-  overclaiming completeness. No code change; `docs/decisions/
-  adr-0014-cilium-not-flannel-policy.md`'s Re-evaluation log and
-  `docs/dependency-register.md`'s row updated. `make ci` must pass. `docs/done/`
-  entry required.
+  (auto/cilium-critical-ghsa-gap-closed; PR #1392)
 
 - [x] 🟢 **Envoy Gateway full GHSA sweep — confirm `v1.8.3` pin security-clean** —
   full verification writeup:
   [docs/done/2026-09-03-envoy-gateway-ghsa-sweep-clean.md](docs/done/2026-09-03-envoy-gateway-ghsa-sweep-clean.md).
-  (auto/envoy-gateway-ghsa-sweep-clean)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
-  security sweep 2026-09-03, this run's tenth cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again and every remaining register row's version-currency was already
-  re-confirmed exhausted this run. Fresh angle: rather than "is a newer version
-  available" (already asked twice this run), asked a different question —
-  "does any published advisory affect the version we're deliberately holding at" —
-  for ADR-0008's Envoy Gateway hold specifically, since that ADR's own log had
-  only ever answered the first question, never the second. **No prerequisites —
-  executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): fetched all 10 published GitHub
-  security advisories for `envoyproxy/gateway` and their affected/patched
-  version ranges. Every affected range tops out at `1.8.1` or lower — current
-  pin `v1.8.3` is past every floor, including the lone Critical. No code
-  change; `docs/decisions/adr-0008-envoy-gateway-not-traefik.md`'s
-  Re-evaluation log and `docs/dependency-register.md`'s row updated to record
-  the sweep. `make ci` must pass. `docs/done/` entry required.
+  (auto/envoy-gateway-ghsa-sweep-clean; PR #1391)
 
 - [x] 🟢 **Refresh `docs/dora-metrics.md` (stale since 2026-07-30)** — full
   verification writeup:
   [docs/done/2026-09-03-dora-metrics-refresh.md](docs/done/2026-09-03-dora-metrics-refresh.md).
-  (auto/dora-metrics-refresh)
-  (CHARTER **Objective O7**; planner-fallback gap analysis 2026-09-03, this run's
-  ninth cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next"
-  lane was re-confirmed fully gated again, no ungroomed intake/`rfc` issue existed
-  to groom, and a second full currency sweep across every remaining register row
-  (Istio, Argo Rollouts, Trivy Operator, Kargo, Valkey, ACK-S3, TiDB, Mimir) found
-  nothing further to bump — all already at their newest stable version. Fresh
-  angle: `docs/dora-metrics.md` itself was over a month stale (2026-07-30) and
-  this run alone had already landed 8 merged PRs, meaningfully changing the real
-  trailing-90-day numbers a stale snapshot was misreporting. **No prerequisites —
-  executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): confirmed this session's clone is
-  not shallow before trusting `make dora-metrics`' output — the script's own
-  header comment documents a real prior bug where a shallow clone silently
-  undercounted with no warning. Deployment frequency and change failure rate
-  both updated with real, freshly computed numbers; lead time / restore time
-  remain honestly "insufficient data" (this session lacks `gh` CLI, same
-  limitation as whichever prior session computed the stale snapshot — not a
-  script bug). `make ci` must pass. `docs/done/` entry required.
+  (auto/dora-metrics-refresh; PR #1390)
 
 - [x] 🟢 **De-duplicate `scripts/dependency-register-check.sh`'s row-parsing logic
   into `scripts/lib/dependency-register.sh`** — full verification writeup:
   [docs/done/2026-09-03-dependency-register-check-lib-dedup.md](docs/done/2026-09-03-dependency-register-check-lib-dedup.md).
-  (auto/dependency-register-check-lib-dedup)
-  (CHARTER **Core Values** §"Everything as code" (CLAUDE.md de-duplication
-  principle); JANITOR-fallback codebase-health sweep 2026-09-03, this run's eighth
-  cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated again (issues #633/#1229 unchanged), no ungroomed
-  intake/`rfc` issue existed to groom, and this run's currency sweep had checked
-  every remaining register row with no further bump found (RabbitMQ, cert-manager,
-  Cilium, Velero, Harbor, KEDA, Longhorn all already current; ArgoCD's chart has a
-  newer template-only release with no appVersion/CVE change, judged not worth the
-  risk to the repo's highest-blast-radius component for zero functional gain).
-  Delegated a broad codebase-health scan (untested scripts, Makefile/script
-  orphans, stale TODOs, broken doc cross-refs, oversized files, duplicate bats
-  assertions) to a sub-agent — six of seven categories came back clean (this repo
-  has already been heavily janitor-swept), but found one real gap: `scripts/lib/
-  dependency-register.sh`'s own extraction (2026-09-02) missed a third pre-existing
-  copy of the same row-parser in `dependency-register-check.sh`, exactly the
-  duplication class it was extracted to stop. **No prerequisites — executor may
-  pick up immediately.**)
-  Verified behavior-preserving (not just structurally similar): ran the refactored
-  script directly against all 8 existing fixture scenarios in
-  `tests/fixtures/dependency-register-check/` — every one produced the identical
-  exit code as before the refactor (bats isn't installed in this clusterless
-  session, so fixtures were exercised directly rather than assumed unaffected).
-  `make ci` must pass. `docs/done/` entry required.
+  (auto/dependency-register-check-lib-dedup; PR #1389)
 
 - [x] 🟢 **Bump Kyverno chart `3.8.2` → `3.9.0` (2 CVEs, 2 GHSAs, minor bump)** —
   full verification writeup:
   [docs/done/2026-09-03-kyverno-3-8-2-to-3-9-0-cve-bump.md](docs/done/2026-09-03-kyverno-3-8-2-to-3-9-0-cve-bump.md).
-  (auto/kyverno-3-8-2-to-3-9-0)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
-  currency sweep 2026-09-03, this run's seventh cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again (issues #633/#1229 unchanged) and no ungroomed intake/`rfc` issue
-  existed to groom. Fresh angle: continuing the currency-sweep pattern (Loki,
-  Grafana, Inkless, k3s), this cycle found Kyverno's chart had real fixes
-  available only on a minor bump (no 3.8.x patch backport exists) — a bigger,
-  riskier change than the patch bumps so far this run, so extra verification was
-  done: fetched the real chart values.yaml at the target tag directly to confirm
-  this Application's specific override keys and PSA-restricted-critical
-  securityContext defaults are unchanged before proceeding. **No prerequisites —
-  executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): GitHub's release notes for
-  `v1.19.0` cite CVE-2026-32280, CVE-2026-39836, GHSA-79gf-7frw-68m9, and
-  GHSA-gcjh-h69q-9w9g under a Security heading. `raw.githubusercontent.com`'s
-  real `values.yaml` at `kyverno-chart-3.9.0` confirmed unchanged
-  override-key shape and identical PSA-restricted securityContext defaults.
-  Noted (not acted on): four new policy CRDs this lab doesn't use, and a
-  deprecation warning on the legacy `kyverno.io` policy types this lab's
-  `ClusterPolicy` resources actually use (still functional, just warns).
-  `gitops/platform/kyverno.yaml`, `tests/kyverno.bats`, a new ADR-0019
-  Re-evaluation log entry, and `docs/dependency-register.md`'s row all
-  updated. `make ci` must pass. `docs/done/` entry required.
+  (auto/kyverno-3-8-2-to-3-9-0; PR #1388)
 
 - [x] 🟢 **Bump k3s `v1.36.3+k3s1` → `v1.36.4+k3s1` on both backends** — full
   verification writeup:
   [docs/done/2026-09-03-k3s-1-36-3-to-1-36-4-currency-bump.md](docs/done/2026-09-03-k3s-1-36-3-to-1-36-4-currency-bump.md).
-  (auto/k3s-1-36-3-to-1-36-4)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
-  currency sweep 2026-09-03, this run's sixth cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again (issues #633/#1229 unchanged) and no ungroomed intake/`rfc` issue
-  existed to groom. Fresh angle: continuing the currency-sweep pattern (Loki,
-  Grafana, Inkless), this cycle checked RabbitMQ/cert-manager/Cilium/Velero/Harbor
-  (all confirmed already current, no bump needed) before finding k3s genuinely due.
-  **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): GitHub's release notes for `v1.36.4+k3s1`
-  confirmed; a release-list summary's CVE-2025-54410 claim was independently
-  checked and found unconfirmed by the release's own detailed notes and unlikely
-  to apply to k3s's actual runtime (containerd, not Docker Engine) — flagged as
-  such rather than asserted. Docker Hub confirms `rancher/k3s:v1.36.4-k3s1` is
-  real and published. Both backends (`k3d-config.yaml.tftpl`,
-  `oracle-k3s-cluster/cloud-init.yaml`) bumped together per ADR-0030's own
-  discipline; `tests/k3s-version-pin.bats`, `docs/decisions/context.md`, a new
-  ADR-0030 Re-evaluation log entry, and `docs/dependency-register.md`'s row all
-  updated. `make ci` must pass. `docs/done/` entry required.
+  (auto/k3s-1-36-3-to-1-36-4; PR #1387)
 
 - [x] 🟢 **Bump Aiven Inkless broker `4.2.1-0.46` → `4.2.1-0.47`** — full
   verification writeup:
   [docs/done/2026-09-03-inkless-4-2-1-0-46-to-0-47-bump.md](docs/done/2026-09-03-inkless-4-2-1-0-46-to-0-47-bump.md).
-  (auto/inkless-4-2-1-0-46-to-0-47)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
-  currency sweep 2026-09-03, this run's fifth cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again (issues #633/#1229 unchanged) and no ungroomed intake/`rfc` issue
-  existed to groom. Fresh angle: continuing the currency-sweep pattern (Loki,
-  Grafana), this cycle re-checked Aiven Inkless, the oldest-reviewed row not yet
-  covered this run (2026-08-18). **No prerequisites — executor may pick up
-  immediately.**)
-  Verified directly (not assumed, ADR-0004): GitHub's release list confirms
-  `inkless-release-0.47`; the exact image tag confirmed real and pullable via an
-  anonymous-token GHCR manifest query (with the correct multi-arch `Accept`
-  header — a first attempt with the wrong header returned a misleading 404).
-  No named CVE this release, but real bug fixes. **Flagged, not silently
-  absorbed:** the release includes PostgreSQL migrations (two requiring
-  table-level locks) whose execution mechanism (automatic on startup vs.
-  human-triggered) this session could not confirm — filed as a `[Manual step]`
-  issue for the next live `make inkless-up`. `gitops/inkless/inkless-statefulset.yaml`,
-  `tests/inkless.bats`, ADR-0015's Re-evaluation log, and
-  `docs/dependency-register.md`'s row all updated. `make ci` must pass.
-  `docs/done/` entry required.
+  (auto/inkless-4-2-1-0-46-to-0-47; PR #1386)
 
 - [x] 🟢 **Bump Grafana image tag `13.0.7` → `13.0.8` (3 named CVEs:
   CVE-2026-12704, CVE-2026-14199, CVE-2026-19475)** — full verification writeup:
   [docs/done/2026-09-03-grafana-13-0-7-to-13-0-8-cve-bump.md](docs/done/2026-09-03-grafana-13-0-7-to-13-0-8-cve-bump.md).
-  (auto/grafana-13-0-7-to-13-0-8)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
-  currency sweep 2026-09-03, this run's fourth cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again (issues #633/#1229 unchanged) and no ungroomed intake/`rfc` issue
-  existed to groom. Fresh angle: continuing the currency-sweep pattern from this
-  run's third cycle (Loki), this cycle re-checked Grafana specifically — its own
-  last real check (2026-08-19) was due per ADR-0006's own flip condition — and
-  found a genuine security release with three named CVEs, a stronger priority
-  than a routine patch per upgrade-drafter's own priority rule (CVE-mentioning
-  release > patch > minor). **No prerequisites — executor may pick up
-  immediately.**)
-  Verified directly (not assumed, ADR-0004): GitHub's release notes for `v13.0.8`
-  cite three named CVEs under a `Security` heading; Docker Hub confirms
-  `grafana/grafana:13.0.8` is a real published multi-arch image. Per-CVE
-  applicability to this lab's specific configuration analyzed and documented
-  (Auth Proxy not used, no PostgreSQL datasource, Enterprise-only CVE likely N/A)
-  — patched regardless since the binary ships the fix either way.
-  `gitops/platform/observability-grafana.yaml` (both image references),
-  `tests/observability-grafana.bats`, `docs/decisions/context.md`'s version
-  citation, a new ADR-0006 Re-evaluation log entry, and
-  `docs/dependency-register.md`'s Grafana row all updated. `make ci` must pass.
-  `docs/done/` entry required.
+  (auto/grafana-13-0-7-to-13-0-8; PR #1384)
 
 - [x] 🟢 **Bump Loki image tag `3.7.6` → `3.7.7` (security-relevant dependency
   bumps)** — full verification writeup:
   [docs/done/2026-09-03-loki-3-7-6-to-3-7-7-security-bump.md](docs/done/2026-09-03-loki-3-7-6-to-3-7-7-security-bump.md).
-  (auto/loki-3-7-6-to-3-7-7)
-  (CHARTER **Core Values** §"Clusterless gates stay green" / ADR-0004; planner-fallback
-  currency sweep 2026-09-03, this run's third cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again (issues #633/#1229 unchanged) and no ungroomed intake/`rfc` issue
-  existed to groom. Fresh angle: rather than a third dependency-docs-prose pass,
-  this cycle re-checked `grafana/loki` specifically as the oldest-reviewed row
-  (2026-08-06) across all 33 `docs/dependency-register.md` rows and found a real,
-  security-relevant patch published since. **No prerequisites — executor may pick
-  up immediately.**)
-  Verified directly (not assumed, ADR-0004): GitHub's tags list confirms `v3.7.7`
-  (2026-08-27) is the newest `3.7.x` tag; its release notes cite three
-  security-relevant dependency bumps (`containerd`, `etcd` client,
-  `golang.org/x/mod`); Docker Hub confirms `grafana/loki:3.7.7` is a real
-  published multi-arch image. `gitops/observability/loki/deployment.yaml` and
-  `tests/observability-loki.bats` updated; new ADR-0006 Re-evaluation log entry
-  added; `docs/dependency-register.md`'s Loki row updated (Grafana's row also
-  collaterally date-bumped, honestly worded, per `dependency-register-check.sh`'s
-  documented shared-ADR global-latest limitation). `make ci` must pass. `docs/done/`
-  entry required.
+  (auto/loki-3-7-6-to-3-7-7; PR #1383)
 
 - [x] 🟢 **Extend `docs/dependency-exit-runbooks.md` to the remaining seven
   single-tool rows (Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo,
   kube-state-metrics, node-exporter)** — full verification writeup:
   [docs/done/2026-09-03-dependency-exit-runbooks-remaining-seven.md](docs/done/2026-09-03-dependency-exit-runbooks-remaining-seven.md).
-  (auto/dependency-exit-runbooks-remaining-seven)
-  (CHARTER **Core Values** §"Docs & dashboards don't drift" (ADR-0004,
-  `docs/dora-audit-readiness.md` Q17); planner-fallback gap analysis 2026-09-03, this
-  run's second cycle, reached via `executor.prompt.md` STEP 6b after the "Now / next"
-  lane was re-confirmed fully gated again this cycle (issues #633/#1229 unchanged,
-  no new comments) and no ungroomed intake/`rfc` issue existed to groom. Fresh angle:
-  `docs/dependency-exit-runbooks.md`'s own "Scope of this slice" note already named
-  this exact remaining work as real, separately-scoped, deferred only for PR-size
-  discipline — this cycle picked it up directly rather than re-mining
-  `docs/dora-audit-readiness.md` for a new gap. **No prerequisites — executor may pick
-  up immediately.**)
-  Verified directly (not assumed, ADR-0004): confirmed each of the seven tools' real
-  `gitops/` manifest path, owning ADR, and register criticality row before writing its
-  runbook paragraph (no invented claims about what depends on what). `make ci` must
-  pass — the `dependency-exit-runbooks-sync-check.sh` concentration-group check is
-  unaffected (it only checks concentration-group coverage, not single-tool-row
-  coverage). `docs/done/` entry required.
+  (auto/dependency-exit-runbooks-remaining-seven; PR #1382)
 
 - [x] 🟢 **Fix stale "Keeping this in sync" claims in `docs/dependency-register.md`,
   `docs/dependency-concentration.md`, and `docs/dependency-exit-runbooks.md`** — full
@@ -1100,150 +596,26 @@ there is no point where the lab loses a working git source or CI path.
   honestly flag in their own "Keeping this in sync" sections** — full verification
   writeup:
   [docs/done/2026-09-02-dependency-concentration-sync-check.md](docs/done/2026-09-02-dependency-concentration-sync-check.md).
-  (auto/dependency-concentration-sync-check)
-  (CHARTER **Core Values** §"Everything as code" (DORA audit readiness Q14/Q16/Q17);
-  planner-fallback gap analysis 2026-09-02, this run's fifth cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again this cycle and PLANNER/ARCHITECT/UPGRADE-DRAFTER/DOC-DRIFT-AUTHOR/
-  TRIAGER all came up empty again. Fresh angle: rather than a fourth pass mining
-  `docs/dora-audit-readiness.md` for another named prose gap, this cycle closed the
-  "no mechanical drift guard yet" limitation those three docs each honestly
-  self-flag — the exact CLAUDE.md bugfix-recurrence-prevention pattern (mechanical
-  guard over a note to remember). **No prerequisites — executor may pick up
-  immediately.**)
-
-  Unlike `dependency-maintenance-check.sh` (network-dependent, deliberately kept
-  out of `make ci`), this check is pure text-parsing over two already-committed
-  docs — fast, deterministic, network-free — so it's wired directly into `make ci`
-  and `.github/workflows/ci.yml`'s `drift` job. It counts how many
-  `docs/dependency-register.md` rows share each `github.com` upstream org and fails
-  if any org backing 2+ rows isn't named in `docs/dependency-concentration.md`.
-  Extracted the shared table-parsing logic (`depreg_rows`/`depreg_github_match`)
-  into `scripts/lib/dependency-register.sh` first, refactoring
-  `dependency-maintenance-check.sh` to use it too, rather than let a second
-  near-identical parser copy exist — the exact "two copies of a parser" class
-  CLAUDE.md's de-duplication principle exists to catch, closed proactively before a
-  third copy could appear. Added a matching `dependency-concentration-sync-hook.sh`
-  (PostToolUse nudge, mirrors `dependency-register-sync-hook.sh`) plus bats coverage
-  for the check, the shared lib, and the hook (`tests/dependency-concentration-sync-check.bats`,
-  `tests/dependency-register-lib.bats`, `tests/hook-scripts-dependency-concentration-sync.bats`).
-  `make ci` must pass. `docs/done/` entry required.
-  (auto/dependency-concentration-sync-check)
+  (auto/dependency-concentration-sync-check; PR #1379)
 
 - [x] 🟢 **Add `make dependency-exit-runbooks-sync-check` — a mechanical `make ci`
   guard closing the second half of the "no mechanical drift guard yet" gap between
   `docs/dependency-concentration.md` and `docs/dependency-exit-runbooks.md`** — full
   verification writeup:
   [docs/done/2026-09-02-dependency-exit-runbooks-sync-check.md](docs/done/2026-09-02-dependency-exit-runbooks-sync-check.md).
-  (auto/dependency-exit-runbooks-sync-check)
-  (CHARTER **Core Values** §"Everything as code" (DORA audit readiness Q14/Q16/Q17);
-  planner-fallback gap analysis 2026-09-02, this run's sixth cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated again this cycle and PLANNER/ARCHITECT/UPGRADE-DRAFTER/DOC-DRIFT-AUTHOR/
-  TRIAGER all came up empty again. Fresh angle: the fifth cycle's
-  `dependency-concentration-sync-check.sh` closed only half of the "no mechanical
-  drift guard yet" gap (register rows -> named concentration groups); this cycle
-  closes the other half (named concentration groups -> matching exit-runbook
-  sections), rather than re-mining `docs/dora-audit-readiness.md` a fourth time.
-  **No prerequisites — executor may pick up immediately.**)
-
-  `scripts/dependency-exit-runbooks-sync-check.sh` parses every named
-  `` `github.com/ORG` `` concentration-group header out of
-  `docs/dependency-concentration.md` (currently three) and fails if
-  `docs/dependency-exit-runbooks.md` has no matching section for one. Deliberately
-  scoped to the three named concentration *groups* only, not the eleven-minus-four
-  remaining single-tool rows the fourth cycle already documented as an intentional
-  partial slice (not drift) — checking those would conflate "not yet covered by
-  choice" with "out of sync by accident". Pure text-parsing, no network calls, wired
-  directly into `make ci` and `.github/workflows/ci.yml`'s `drift` job. Added a
-  matching `dependency-exit-runbooks-sync-hook.sh` (PostToolUse nudge, mirrors
-  `dependency-concentration-sync-hook.sh`) plus bats coverage
-  (`tests/dependency-exit-runbooks-sync-check.bats`,
-  `tests/hook-scripts-dependency-exit-runbooks-sync.bats`). `make ci` must pass.
-  `docs/done/` entry required. (auto/dependency-exit-runbooks-sync-check)
+  (auto/dependency-exit-runbooks-sync-check; PR #1380)
 
 - [x] 🟢 **Extend `docs/dependency-exit-runbooks.md` (DORA audit Q17) to the four
   highest-blast-radius remaining single-tool rows — Cilium, Garage, Envoy Gateway,
   cert-manager** — full verification writeup:
   [docs/done/2026-09-02-dependency-exit-runbooks-single-tool-slice.md](docs/done/2026-09-02-dependency-exit-runbooks-single-tool-slice.md).
-  (auto/dependency-exit-runbooks-single-tool-slice)
-  (CHARTER **Core Values** §"Everything as code" (DORA audit readiness Q17);
-  planner-fallback gap analysis 2026-09-02, this run's fourth cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated this cycle (same blockers as the three prior cycles this run) and
-  PLANNER/ARCHITECT/UPGRADE-DRAFTER/DOC-DRIFT-AUTHOR/TRIAGER all came up empty
-  again. Fresh angle: continued mining `docs/dora-audit-readiness.md` — this run's
-  third pass over it — for another real, previously-untouched, explicitly-named
-  gap. `docs/dependency-exit-runbooks.md`'s own "Scope of this slice" note already
-  named the eleven remaining `always-on-core` single-tool rows as "real,
-  separately-scoped future work if wanted" — picked the four highest actual
-  blast-radius ones (CNI, storage, ingress, TLS) rather than all eleven, to stay
-  within WAYS-OF-WORKING.md §3's size discipline, matching this file's own existing
-  scoping precedent. **No prerequisites — executor may pick up immediately.**)
-
-  Added four single-paragraph runbook entries (Cilium, Garage, Envoy Gateway,
-  cert-manager) to `docs/dependency-exit-runbooks.md`, each covering the same
-  ground as the existing three group entries (what a real exit changes
-  mechanically, fork-and-repoint-or-a-real-migration, whether an exit-direction
-  alternative has been evaluated — honestly "no" for all four, distinct from each
-  ADR's own original rejected-alternative record) in a leaner one-paragraph shape
-  since each is a single tool, not a multi-tool group. Verified each citation
-  directly against the real gitops manifests and ADRs (not assumed): Cilium is
-  Terraform-bootstrapped like ArgoCD, not a `gitops/` Application; Envoy Gateway is
-  sourced via a Kustomize-vendored chart per its own header comment (the
-  probe-timeout fix); cert-manager's ADR-0028 explicitly states no prior ADR
-  evaluated or rejected an alternative (verified directly, not assumed). Updated
-  the file's "Scope of this slice" note to name the four newly-covered rows and
-  the seven still remaining. Added a bats assertion
-  (`tests/dora-audit-readiness.bats`) confirming all four new entries are present.
-  Updated `docs/dora-audit-readiness.md`'s own Q17 gap text (it previously listed
-  all eleven remaining single-tool rows as un-covered — now stale/inaccurate for
-  four of them, caught and fixed in the same pass rather than left stale,
-  ADR-0004) to name the four newly-covered rows and the seven still remaining.
-  `make ci` must
-  pass. `docs/done/` entry required. (auto/dependency-exit-runbooks-single-tool-slice)
+  (auto/dependency-exit-runbooks-single-tool-slice; PR #1378)
 
 - [x] 🟢 **Close DORA audit Q7's named future-candidate gap — add a
   `VaultSealedDegraded` Grafana alert rule reading `vault_core_unsealed` directly** —
   full verification writeup:
   [docs/done/2026-09-02-vault-sealed-degraded-alert.md](docs/done/2026-09-02-vault-sealed-degraded-alert.md).
-  (auto/vault-sealed-degraded-alert)
-  (CHARTER **Core Values** §"Real observability only" (DORA audit readiness Q7);
-  planner-fallback gap analysis 2026-09-02, this run's third cycle, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated this cycle (same GitLab→Forgejo/capstone-`Deployment` blockers as the two
-  prior cycles this run) and PLANNER/ARCHITECT/UPGRADE-DRAFTER/DOC-DRIFT-AUTHOR/
-  TRIAGER all came up empty (no ungroomed intake, no un-RFC'd 🟡 item, digest already
-  fresh from yesterday, register already current, `make ci` clean with no drift
-  signal, all 3 open issues already fully labeled). Fresh angle this cycle: continued
-  mining `docs/dora-audit-readiness.md` (the same document Q15's gap-closure came
-  from two cycles ago) for another still-open, previously-untouched gap — Q7's own
-  text explicitly named a concrete future candidate: "a new alert rule reading the
-  now-scraped `vault_core_unsealed` directly could catch that gap if it proves worth
-  closing." **No prerequisites — executor may pick up immediately.**)
-
-  Added a sixth Grafana Unified Alerting rule (RFC #1084,
-  `gitops/platform/observability-grafana.yaml`'s existing `valuesObject.alerting`
-  block, immediately after `VaultPodNotReady`): `VaultSealedDegraded`, `for: 10m`,
-  expr `vault_core_unsealed{job="vault"} == bool 0` (the `== bool 0` form is
-  required, not just `== 0` — mirrors the file's own documented stateSet-metric
-  gotcha: a plain `== 0` filter returns the matched sample's own value, which is 0,
-  so a `gt 0` threshold could never fire; `bool` forces it to emit 1 on match). This
-  is a direct, independent seal-state signal alongside `VaultPodNotReady`'s
-  pod-readiness one — reads `vault_core_unsealed` from Vault's own telemetry
-  (already scraped by `auto/vault-telemetry-scrape`, no new Alloy job needed), not
-  dependent on whatever the pod's readiness probe happens to reflect about seal
-  state (this remote clusterless session cannot verify that probe's exact live
-  behavior either way, ADR-0004 — the new rule's value doesn't depend on it: it's a
-  genuinely separate signal, not conditional on the first rule having a gap).
-  Updated `tests/observability-alerting.bats` (new rule-presence assertion; the
-  "five rules" `for`/datasource count assertions bumped to six) and
-  `docs/dependency-tree.md`'s Grafana-alerting row. Updated
-  `docs/dora-audit-readiness.md`'s Q7 answer/gap to describe six rules and cite the
-  new one, narrowing (not fabricating closure of) the section's remaining gaps
-  (escalation stays a non-goal; the CI-health metric still doesn't cover live-cluster
-  incidents). `make ci` must pass. `docs/done/` entry required.
-  (auto/vault-sealed-degraded-alert)
+  (auto/vault-sealed-degraded-alert; PR #1377)
 
 - [x] 🟢 **Close DORA audit Q15's named gap — add `make dependency-maintenance-check`,
   a re-checkable maintenance-health report for every `docs/dependency-register.md`
@@ -2042,43 +1414,10 @@ there is no point where the lab loses a working git source or CI path.
   `docs/dependency-tree.md` with s3manager dashboard note. `docs/done/` entry required.
   (auto/s3manager-dashboard)
 
-- [x] 🟢 **PSA baseline + NetworkPolicy — `lab-demo` namespace** (CHARTER **Objective
-  O2**, due **2026-09-30**; O2 fan-out gap — the `lab-demo` namespace hosts the
-  always-on HotROD demo Application (`gitops/platform/demo.yaml`, `automated:
-  {prune: true, selfHeal: true}`) but has no PSA labels and no default-deny
-  NetworkPolicy floor; it is absent from ADR-0017 §"Per-namespace profile". Three
-  small changes bundled because each is tiny individually:
-  (a) **PSA labels** — add `gitops/apps/demo/namespace.yaml` with all four PSA
-  labels at `baseline` (`enforce: baseline`, `enforce-version: latest`, `warn:
-  baseline`, `audit: baseline`). `restricted` is not yet viable —
-  `jaegertracing/example-hotrod` runs as root (no `USER` instruction in the upstream
-  Dockerfile); `baseline` blocks privileged containers and host-namespace use while
-  permitting the root UID. Document the flip condition to `restricted` in ADR-0017's
-  `lab-demo` row: when the image ships a non-root UID or is superseded by the
-  capstone build.
-  (b) **NetworkPolicy** — add
-  `gitops/apps/demo/networkpolicy/kustomization.yaml` referencing the two shared
-  baseline templates (`../../network/policies/default-deny.yaml`,
-  `../../network/policies/allow-dns-and-apiserver.yaml`) plus one allow file:
-  `allow-demo-egress-tempo.yaml` (egress TCP 4318 to `namespaceSelector:
-  kubernetes.io/metadata.name: observability` — HotROD sends OTLP traces to
-  `tempo.observability.svc.cluster.local:4318` continuously; the observability
-  NetworkPolicy already has the matching ingress allow in
-  `allow-tempo-ingress-otlp.yaml`). No ingress allow needed — `lab-demo` has no
-  HTTPRoute (the HotROD Service is not exposed via Envoy Gateway).
-  (c) **appset entry** — add `lab-demo-networkpolicy` entry to the
-  `networkpolicy-appset.yaml` list generator (`gitPath:
-  gitops/apps/demo/networkpolicy`, `destNamespace: lab-demo`). Sync policy is
-  `automated: {prune: true, selfHeal: true}` via the appset template — same as all
-  other ADR-0016 floor Applications.
-  Add `lab-demo → baseline` row to ADR-0017 §"Per-namespace profile" table, citing
-  the upstream root-UID constraint and the flip condition. New
-  `tests/networkpolicy-lab-demo.bats`: kustomization exists; baseline refs present;
-  `allow-demo-egress-tempo.yaml` exists targeting TCP 4318 to `observability`. New
-  `tests/securitycontext-lab-demo.bats`: `gitops/apps/demo/namespace.yaml` exists;
-  `enforce: baseline` present; `enforce: restricted` absent (safety check). Update
-  `docs/dependency-tree.md` with `lab-demo` PSA + NP note. `docs/done/` entry
-  required. `make ci` must pass. (auto/pss-np-lab-demo)
+- [x] 🟢 **PSA baseline + NetworkPolicy — `lab-demo` namespace** — full
+  verification writeup:
+  [docs/done/2026-06-22-pss-np-lab-demo.md](docs/done/2026-06-22-pss-np-lab-demo.md).
+  (auto/pss-np-lab-demo; PR #256)
 
 - [x] 🟢 **PSA baseline + NetworkPolicy — `inkless` namespace** — full
   verification writeup:
