@@ -102,7 +102,6 @@ setup() {
 @test "Makefile dr-restore target passes all three ADR-0021 namespaces" {
   run grep -A1 '^dr-restore:' "$REPO/Makefile"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"data"* ]]
   [[ "$output" == *"capstone"* ]]
   [[ "$output" == *"vault"* ]]
   [[ "$output" != *"observability"* ]]

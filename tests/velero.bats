@@ -228,16 +228,6 @@ setup() {
   [ ! -f "$REPO/gitops/velero/schedules/observability-daily.yaml" ]
 }
 
-@test "data-daily Schedule exists with cron 0 2, ttl 168h, namespace data" {
-  f="$REPO/gitops/velero/schedules/data-daily.yaml"
-  [ -f "$f" ]
-  grep -q 'kind: Schedule' "$f"
-  grep -q 'schedule: "0 2 \* \* \*"' "$f"
-  grep -q 'ttl: 168h' "$f"
-  grep -qE '^[[:space:]]*- data$' "$f"
-  grep -q 'defaultVolumesToFsBackup: true' "$f"
-}
-
 @test "capstone-daily Schedule exists with cron 0 3, ttl 168h, namespace capstone" {
   f="$REPO/gitops/velero/schedules/capstone-daily.yaml"
   [ -f "$f" ]

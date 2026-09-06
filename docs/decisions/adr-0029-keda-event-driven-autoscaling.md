@@ -1,10 +1,21 @@
 # ADR-0029 — KEDA for event-driven autoscaling
 
-**Status.** Adopted. Architect decision, self-authorizing per
+**Status.** Removed 2026-09-06 (maintainer decision — component dropped from the lab
+entirely, no replacement, alongside its RabbitMQ/ADR-0009 trigger source and
+Valkey/ADR-0018 in the same change). All `gitops/keda/`, `gitops/data/demo/keda-scaling/`,
+`gitops/platform/keda.yaml`, `gitops/platform/keda-extras.yaml`,
+`gitops/platform/keda-networkpolicy.yaml`, `gitops/platform/data-demo-keda-scaling.yaml`
+manifests, the `lab-keda.json` dashboard, the CHARTER "event-driven autoscaling" Goal,
+`keda-up`/`keda-down` Makefile targets, and every KEDA test and cross-reference were
+deleted in the same change. The decision record below is kept for history (why KEDA was
+adopted, what it demonstrated) but no longer describes anything live in the repo — do
+not treat any manifest path or Makefile target named below as still existing.
+
+~~**Status.** Adopted. Architect decision, self-authorizing per
 [WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2 (no binding ADR contradicted — this
 is new ground, not a supersession). On-demand component (converted from always-on
 2026-08-25 — see Re-evaluation log). New CHARTER Goal ("event-driven autoscaling") — no
-existing Objective covers it; ROADMAP items below carry the buildable scope.
+existing Objective covers it; ROADMAP items below carry the buildable scope.~~
 
 ---
 

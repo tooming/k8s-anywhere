@@ -1,10 +1,12 @@
 # velero-schedules — the daily Velero Schedules, one per stateful namespace
 # (ADR-0021 §"Schedule set", RFC #155/#873, CHARTER Objective O3):
-#   observability-daily REMOVED 2026-09-06 (ADR-0041): the observability namespace
-#   no longer exists — the entire observability stack was removed with no replacement.
-#   data-daily      (data)     02:00 UTC  — RabbitMQ + Valkey PVCs
 #   capstone-daily  (capstone) 03:00 UTC  — end-to-end demo app
 #   vault-daily     (vault)    03:30 UTC  — Vault file-backend PVC
+# observability-daily (observability namespace — Loki/Mimir/Tempo PVCs) REMOVED
+# 2026-09-06 (ADR-0041): the observability namespace no longer exists — the entire
+# observability stack was removed with no replacement.
+# data-daily (data namespace — RabbitMQ + Valkey PVCs) removed 2026-09-06 alongside
+# RabbitMQ/ADR-0009 and Valkey/ADR-0018.
 # `storage` (Garage) is deliberately NOT scheduled — see ADR-0021 §Scope &
 # exceptions (Garage is both the workload and the backup target).
 #

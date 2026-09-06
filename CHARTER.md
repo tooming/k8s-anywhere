@@ -98,8 +98,6 @@ restore is exercised, not assumed); **supply-chain security** end-to-end (cosign
 signing in CI, Kyverno verifyImages on admit, continuous Trivy scanning + SBOMs);
 **automated TLS certificate lifecycle** (cert-manager issuing and rotating certs from
 a self-signed root CA at the ingress edge — not a one-off hand-issued Secret);
-**event-driven autoscaling** (KEDA scaling a workload on a real signal — a RabbitMQ
-queue's depth, a Prometheus expression — not a timer or a hand-set replica count);
 **operational-resilience discipline** (DORA's risk-management/incident/testing/
 third-party-risk pillars mapped onto concrete GitOps practice — ADRs, DR drills,
 continuous scanning, dependency pinning — explicitly as an educational lens, never
@@ -226,18 +224,6 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   Gateway's HTTPS listener — a wildcard `*.127.0.0.1.nip.io` Certificate backs it, and
   the DR front door proxies `:8443` through to it — additive alongside the original
   HTTP-only path, never a breaking cutover. (ADR-0028)
-- **Event-driven autoscaling** (built, on-demand as of 2026-08-25): KEDA scales
-  workloads on a real signal — a RabbitMQ queue's depth, a Prometheus expression —
-  augmenting the stock HPA rather than replacing it. `restricted` PSA with zero
-  carve-out (same as cert-manager). Its admission webhook's TLS is wired to
-  cert-manager's `k8s-lab-ca` (a second real consumer beyond the Gateway), and a
-  `ScaledObject` demo (`gitops/data/demo/keda-scaling/`) scales the `rabbitmq-load`
-  Deployment on the `data` namespace's RabbitMQ queue depth. Originally always-on;
-  converted to on-demand (`make keda-up`/`make keda-down`) for cluster-load
-  reduction — reactive/event-driven scaling has no need to run continuously between
-  demos, unlike the RabbitMQ/Valkey signal sources it watches. (ADR-0029's
-  Re-evaluation log)
-
 ## How this drives the ROADMAP
 
 The **executor** routine (several times a day — see `routines/routines.yaml` for the

@@ -33,13 +33,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dependency-register.md includes a Valkey row citing ADR-0018" {
-  run grep -q 'Valkey' "$DOC"
-  [ "$status" -eq 0 ]
-  run grep -q 'adr-0018-valkey-not-redis.md' "$DOC"
-  [ "$status" -eq 0 ]
-}
-
 @test "dependency-register.md explains its relationship to dependency-tree.md and decisions/" {
   run grep -q 'dependency-tree.md' "$DOC"
   [ "$status" -eq 0 ]

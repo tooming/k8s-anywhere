@@ -188,7 +188,7 @@ here is asserted without having been read directly this cycle.)
 |-----|-------------|
 | [ADR-0001](adr-0001-gitops-over-terraform-helm.md) | Engine lands as an ArgoCD `Application`; CRDs installed via the chart. |
 | [ADR-0004](adr-0004-no-fabricated-content.md) | Dashboard sources real `external-secrets` scrape data only; this ADR's own claims were verified directly against live manifests, not assumed. |
-| [ADR-0009](adr-0009-rabbitmq-message-broker.md) / [ADR-0018](adr-0018-valkey-not-redis.md) / others | Every credential those components need flows through this operator's `ExternalSecret`s. |
+| [ADR-0024](adr-0024-harbor-not-artifactory.md) / [ADR-0023](adr-0023-kargo-promotion-pipeline.md) / others | Every credential those components need flows through this operator's `ExternalSecret`s. |
 | [ADR-0016](adr-0016-default-deny-networkpolicy.md) | `external-secrets` namespace carries its own default-deny + explicit-allow overlay. |
 | [ADR-0017](adr-0017-pod-security-standards-restricted.md) | `restricted` PSA, zero carve-out — already recorded there (`external-secrets` row, RFC #229, 2026-06-19); this ADR is the missing companion record for the *component itself*, not the PSA decision. |
 | [ADR-0025](adr-0025-free-oss-tiers-only.md) | Apache 2.0, no paid tier required. |

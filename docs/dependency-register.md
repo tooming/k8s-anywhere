@@ -50,11 +50,12 @@ ADR-0027's decision date and missing ADR-0030's own, much more current,
 Re-evaluation log entirely), and ADR-0041 (the observability-removal decision itself
 — a scope-narrowing choice, not a third-party product of its own).
 
-Of the remaining 26, five name a component that was removed from the lab entirely
+Of the remaining 26, eight name a component that was removed from the lab entirely
 with no replacement, so they contribute no row either: ADR-0012 (Istio ambient +
 Kiali), ADR-0013 (Longhorn), ADR-0015 (Aiven Inkless — a pre-existing gap, never
-had a row of its own), ADR-0031 (TiDB Operator), and ADR-0032 (TiDB) — all removed
-2026-09-06, see each ADR's own Status. The other 21 all have a row below —
+had a row of its own), ADR-0031 (TiDB Operator), ADR-0032 (TiDB), ADR-0009
+(RabbitMQ), ADR-0018 (Valkey), and ADR-0029 (KEDA) — all removed 2026-09-06, see
+each ADR's own Status. The other 18 all have a row below —
 ADR-0035 (Forgejo) gained its own row 2026-08-17 once the live cutover (PR #1205)
 made Forgejo, not GitLab, the actual live component the row should describe (see
 the note above), ADR-0036 (External Secrets Operator) gained its own row
@@ -64,23 +65,11 @@ reason — a mechanism that predated it having any ADR at all, whose version
 history had instead been living as inline `gitops/` YAML comments — ADR-0038
 (moto + ACK S3 + KRO) gained three rows the same day for the identical reason,
 one per tool, and ADR-0039 (s3manager) gained its own row the same day for the
-same reason again — collectively naming the table's 24 distinct third-party-tool
+same reason again — collectively naming the table's 21 distinct third-party-tool
 rows: three ADRs each decide on more than one tool at once (ADR-0001:
 Terraform/Terragrunt + ArgoCD; ADR-0027: Oracle Cloud Infrastructure + k3s;
 ADR-0038: moto + ACK S3 + KRO), and one tool, Garage, is named by two ADRs
 (ADR-0002, ADR-0007) for two different roles and gets one merged row.
-
-Of the remaining 26, one — ADR-0015 (Aiven Inkless, diskless Kafka) — is a
-pre-existing gap: it has never had a row in this register, a separate issue this
-observability-removal edit did not create and does not attempt to close here. The
-other 25 all have a row below: four ADRs each decide on more than one tool at once
-(ADR-0001: Terraform/Terragrunt + ArgoCD; ADR-0012: Istio + Kiali; ADR-0027: Oracle
-Cloud Infrastructure + k3s; ADR-0038: moto + ACK S3 + KRO), one tool (Garage) is
-named by two ADRs (ADR-0002, ADR-0007) for two different roles and gets one merged
-row, and ADR-0031/ADR-0032 each name one — TiDB Operator and TiDB itself are
-distinct products with distinct version lines, so they get separate rows, same
-shape as Istio/Kiali under ADR-0012 — collectively naming the table's 29 distinct
-third-party-tool rows.
 
 **Criticality** reuses CHARTER's own "Target end-state" groupings rather than
 inventing a new scheme: **always-on-core** (part of the always-on base stack),
@@ -101,9 +90,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | ArgoCD | always-on-core | argoproj.github.io, github.com/argoproj/argo-cd | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | 2026-09-03 (full GHSA sweep: all 8 published `argoproj/argo-cd` advisories checked — highest severity Critical (GHSA-3v3m-wc6v-x4x3/CVE-2026-42880, ServerSideDiff secret extraction, fixed `3.2.11`/`3.3.9`) — every affected range tops out at `3.4.2` or lower; current pin's appVersion `v3.5.2` is past every floor. Prior entry: 2026-09-01, chart `10.4.0`→`10.5.0`, appVersion `v3.5.1`→`v3.5.2`, routine currency) |
 | Garage | always-on-core (in-cluster S3, ADR-0002) + bootstrap substrate (off-cluster Terraform-state backend, ADR-0007) | github.com/deuxfleurs-org/garage | [ADR-0002](decisions/adr-0002-garage-not-minio.md), [ADR-0007](decisions/adr-0007-off-cluster-garage-tfstate-backend.md) | 2026-09-04 (currency re-check: `v2.3.0` still the newest tag, zero published security advisories — unchanged. Prior entry: 2026-08-19 org-slug fix) |
 | Traefik (supersedes Envoy Gateway, ADR-0008) | always-on-core (bundled with k3s, no separate chart/version to track — see [ADR-0030](decisions/adr-0030-pin-k3s-version-explicitly.md)) | github.com/traefik/traefik (bundled by github.com/k3s-io/k3s) | [ADR-0040](decisions/adr-0040-traefik-not-envoy-gateway.md) | 2026-09-06 (decision date; not yet live-cluster-verified, see ADR-0040's own "Known risk" section) |
-| RabbitMQ | always-on-core | github.com/rabbitmq/rabbitmq-server | [ADR-0009](decisions/adr-0009-rabbitmq-message-broker.md) | 2026-09-04 (currency re-check: `4.3.5-management` still the newest patch on the `4.3.x` line — unchanged. Prior entry: 2026-08-19 patch bump, fixes 10 GHSAs) |
 | Cilium | always-on-core (CNI — the network data plane itself) | github.com/cilium/cilium | [ADR-0014](decisions/adr-0014-cilium-not-flannel-policy.md) | 2026-09-03 (found a Critical advisory, GHSA-3fcv-jvfp-m4q9/CVE-2026-49445, unaudited in this ADR's log despite predating the 2026-08-19 entry — confirmed pin `1.18.13` is past its fix floor. Prior entry: 2026-08-19, 3 High GHSAs audited, patch bumped `1.18.12`→`1.18.13`) |
-| Valkey (supersedes Redis, ADR-0010) | always-on-core | github.com/valkey-io/valkey | [ADR-0018](decisions/adr-0018-valkey-not-redis.md) | 2026-09-01 (bumped `8.1.9` → `8.1.10`, SECURITY release fixing GHSA-jcj7-v34w-v9vv — a use-after-free in RDMA connection handling — plus AOF/RDB/TLS/cluster-messaging bug fixes) |
 | Kyverno | always-on-next-wave (Objective O1) | github.com/kyverno/kyverno | [ADR-0019](decisions/adr-0019-kyverno-admission-engine.md) | 2026-09-03 (chart bumped `3.8.2` → `3.9.0`, a minor bump taken because real fixes exist only on this line: CVE-2026-32280, CVE-2026-39836, GHSA-79gf-7frw-68m9, GHSA-gcjh-h69q-9w9g. Prior entry: 2026-08-27, `disallow-latest-tag` extended to cover `spec.initContainers`/`spec.ephemeralContainers`) |
 | Argo Rollouts | always-on-next-wave (Objective O1) | github.com/argoproj/argo-rollouts | [ADR-0020](decisions/adr-0020-argo-rollouts-progressive-delivery.md) | 2026-09-01 (bumped chart `2.41.1` → `2.43.0`, appVersion `v1.9.1` → `v1.10.0`; routine currency, no CVE — zero published security advisories exist for this repo at all, unchanged since the 2026-08-19 sweep) |
 | Velero | always-on-next-wave (Objective O1) | github.com/vmware-tanzu/velero | [ADR-0021](decisions/adr-0021-velero-backup-restore.md) | 2026-09-03 (full GHSA sweep: both published advisories checked — the second, GHSA-72xg-3mcq-52v4 Moderate (CVE-2020-3996, PV/PVC binding issue, affects `0.*`/`1.*` before `1.4.3`/`1.5.2`), had not been explicitly checked before — current pin (appVersion `1.18.1`, chart `12.1.0`) is many majors past. Prior entry: 2026-08-19, GHSA-j2g6-362q-6qc6 exactly at the fixed floor, confirmed via `v1.18.1`'s own changelog) |
@@ -113,7 +100,6 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | Oracle Cloud Infrastructure | cloud-backend (opt-in) | cloud.oracle.com | [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md) | not dated in ADR (no Re-evaluation log; decision date 2026-07-13) |
 | k3s | cloud-backend (opt-in) | github.com/k3s-io/k3s | [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md) (backend choice) / [ADR-0030](decisions/adr-0030-pin-k3s-version-explicitly.md) (version pin + re-evaluation) | 2026-09-03 (bumped `v1.36.3+k3s1` → `v1.36.4+k3s1` on both backends, routine currency — a release-list summary claimed a CVE-2025-54410 mitigation but the release's own detailed notes don't confirm it and the CVE describes Docker Engine behavior k3s doesn't run, so treated as unconfirmed rather than asserted; see ADR-0030's own Re-evaluation log, which tracks k3s's real version-currency history across both backends; ADR-0027 itself has no Re-evaluation log, decision date 2026-07-13) |
 | cert-manager | always-on-core | github.com/cert-manager/cert-manager | [ADR-0028](decisions/adr-0028-cert-manager-tls-lifecycle.md) | 2026-09-03 (full GHSA sweep: all 3 published advisories checked — the third, GHSA-r4pg-vg54-wxx4 Low (PEM-parsing DoS, patched `1.16.2`/`1.15.4`/`1.12.14`), had not been explicitly checked before — current pin `1.21.1` past every floor. Prior entry: 2026-08-19, GHSA-8rvj-mm4h-c258/GHSA-gx3x-vq4p-mhhv both past floor, no currency gap) |
-| KEDA | on-demand (`make keda-up`/`keda-down`, converted from always-on-core 2026-08-25, ADR-0029 — lighter-weight than CHARTER's heavy-on-demand tier, not tracked in `ondemand-budget-check.sh`'s budget maps) | github.com/kedacore/keda | [ADR-0029](decisions/adr-0029-keda-event-driven-autoscaling.md) | 2026-09-03 (full GHSA sweep: all 3 published advisories checked — the third, GHSA-w92x-gx4w-j5f2 Low, is a command-injection bug in KEDA's own `pr-e2e.yml` CI workflow, not the deployed operator image; not applicable regardless of version. Prior entries: GHSA-c4p6-qg4m-9jmr High and GHSA-6w3m-4hhp-775q Moderate both past floor at `2.20.2`, no currency gap) |
 | External Secrets Operator | always-on-core | github.com/external-secrets/external-secrets | [ADR-0036](decisions/adr-0036-external-secrets-vault-sync.md) | 2026-09-01 (bumped `2.9.0` → `2.10.0`: purely additive TLS-config schema change, real fixes incl. an AWS credential-log-redaction fix; no CVE. Current pin past every floor from the 2026-08-19 GHSA sweep and is the newest tag) |
 | Forgejo | always-on-core (self-hosted git source + CI runner, host-level Docker Compose, outside the cluster) — **the live, running component as of 2026-08-17** (PR #1205's accelerated cutover); supersedes GitLab, whose `docker-compose.yml`/`infra/modules/gitlab-config` are still in the repo, stopped but kept for rollback until ROADMAP's remaining migration items (script/Makefile rename, full decommission) land | codeberg.org/forgejo/forgejo, code.forgejo.org/forgejo/runner | [ADR-0035](decisions/adr-0035-forgejo-not-gitlab.md) (supersedes [ADR-0033](decisions/adr-0033-gitlab-git-source-and-ci.md)) | 2026-08-17 (live cutover, PR #1205; image pins — `forgejo:16.0.2`, `runner:13.0.0` — independently reconfirmed current the same day, this run's own earlier currency check) |
 | Vault | always-on-core (secrets backend) | helm.releases.hashicorp.com, github.com/hashicorp/vault | [ADR-0037](decisions/adr-0037-vault-secrets-management.md) | 2026-09-03 (ADR-0037 authored as a retroactive governance record — Vault previously had no ADR and its version history lived only as inline `gitops/platform/vault.yaml` comments, now migrated; server image bumped `2.0.4`→`2.1.0` in the same cycle, two real Go-vulnerability-database dependency fixes, no GitHub-native advisories exist for this repo; see ADR-0037's own Re-evaluation log) |

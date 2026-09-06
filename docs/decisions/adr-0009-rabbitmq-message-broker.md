@@ -1,8 +1,17 @@
 # ADR-0009 — RabbitMQ as the lab's message broker (plain manifests, always-on)
 
-**Status.** Adopted. Active in `gitops/platform/rabbitmq.yaml` (ArgoCD Application,
+**Status.** Removed 2026-09-06 (maintainer decision — component dropped from the lab
+entirely, no replacement). All `gitops/data/rabbitmq/`, `gitops/platform/rabbitmq.yaml`
+manifests, the KEDA rabbitmq-load-scaler ScaledObject/TriggerAuthentication that used
+RabbitMQ as its trigger source (see ADR-0029, also removed the same day), the
+`lab-rabbitmq.json` dashboard, and every rabbitmq test and cross-reference were deleted
+in the same change. The decision record below is kept for history (why RabbitMQ was
+adopted, what it demonstrated) but no longer describes anything live in the repo — do
+not treat any manifest path or Makefile target named below as still existing.
+
+~~**Status.** Adopted. Active in `gitops/platform/rabbitmq.yaml` (ArgoCD Application,
 auto-synced) and `gitops/data/rabbitmq/` (StatefulSet + Service + ConfigMap +
-ExternalSecret + HTTPRoute). Demo traffic from `gitops/data/demo/rabbitmq-load.yaml`.
+ExternalSecret + HTTPRoute). Demo traffic from `gitops/data/demo/rabbitmq-load.yaml`.~~
 
 ---
 
@@ -35,11 +44,11 @@ well-known `guest/guest` default.
 
 - The two common charts (Bitnami) have been subject to image-distribution and licensing
   churn that breaks reproducibility — antithetical to the lab's "rebuild with one
-  command" charter bar. A pinned official `rabbitmq:4.3.5-management` image (bumped
+  command" charter bar. The official `rabbitmq:4.3.5-management` image it ran (bumped
   from the original `3.13-management` pin 2026-07-18, patched to `4.3.3` 2026-07-21,
   then `4.3.4` 2026-07-24, then `4.3.5` 2026-08-19 — see [§Re-evaluation
-  log](#re-evaluation-log)) in a plain `StatefulSet` is fully reproducible and
-  transparent (no chart indirection).
+  log](#re-evaluation-log)) in a plain `StatefulSet` was fully reproducible and
+  transparent (no chart indirection) — no longer live, per the Status line above.
 - The **RabbitMQ Cluster Operator** is the production-correct choice for HA, but adds CRDs
   and an operator pod for no teaching gain at single-node lab scale.
 - Plain manifests keep the whole definition reviewable in-repo and validated by

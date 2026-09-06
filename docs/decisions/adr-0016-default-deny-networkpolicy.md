@@ -65,7 +65,7 @@ Each namespace's Kustomize overlay sets `namespace:` in a patch so a single
 
 | Phase | Scope | Rationale |
 |-------|-------|-----------|
-| **Pilot** (this ADR) | `data` namespace | RabbitMQ + Redis are self-contained, the existing "Lab — RabbitMQ" / "Lab — Redis" dashboards and `data-demo` load generator give immediate signal if a policy is wrong. |
+| **Pilot** (this ADR) | `data` namespace | RabbitMQ + Redis are self-contained, the existing "Lab — RabbitMQ" / "Lab — Redis" dashboards and `data-demo` load generator give immediate signal if a policy is wrong. (Historical: the `data` namespace, RabbitMQ, and Valkey — Redis's successor, ADR-0018 — were removed from the lab entirely 2026-09-06; the pilot itself, and the pattern it established, still stands.) |
 | **Fan-out** (planner-groomed items, one namespace per executor run) | Every remaining always-on namespace, delivered two ways: (a) the `networkpolicy` `ApplicationSet` (`gitops/platform/networkpolicy-appset.yaml`, list-generator, wave 3, generated Applications at wave 4) — the majority of namespaces; (b) a handful of standalone `<ns>-networkpolicy` Applications for namespaces whose overlay predates the appset or that carry component-specific wiring (`kyverno`, `trivy-system`, `argo-rollouts`, `velero`, `kargo`, `kargo-project`) | Sequential, one namespace per executor run so failures are isolated; the appset consolidated most of the standalone Applications this pattern originally produced into one list, per RFC #82's spirit without one YAML file per namespace in `gitops/platform/`. |
 | **On-demand namespaces** | `harbor` | **Auto-synced ahead of the on-demand bring-up**, not "with" it as originally planned — the namespace's default-deny floor (via the appset) is in place *before* `make <name>-up` ever admits a pod, so there's no policy race on first bring-up. Same `automated: {prune, selfHeal}` policy as every other appset entry. |
 | **Out of scope** | `kube-system` | Contains kube-dns, metrics-server, and the kubelet's SA issuer; flows are complex and a policy mistake here takes the cluster down. Unchanged since this ADR was adopted. |
@@ -107,10 +107,12 @@ Istio+Kiali, and Longhorn removed from the lab entirely — see each ADR's Statu
 the observability stack — and with it the `observability` and `node-exporter`
 namespaces — removed the same day with no replacement, ADR-0041; Envoy Gateway —
 and with it the `envoy-gateway-system` namespace — removed 2026-09-06 alongside
-the Traefik migration, ADR-0040), 20 namespaces carry the two-policy floor:
+the Traefik migration, ADR-0040; RabbitMQ, Valkey, and KEDA removed the same day too —
+see each ADR's Status; RabbitMQ/Valkey's removal also retired the `data` namespace
+itself, since it held nothing else), 18 namespaces carry the two-policy floor:
 `ack-system`, `argo-rollouts`, `argocd`, `capstone`, `capstone-pipeline`,
-`cert-manager`, `data`, `external-secrets`, `harbor`,
-`kargo`, `keda`, `kro`, `kyverno`, `lab-demo`, `lab-gateway`,
+`cert-manager`, `external-secrets`, `harbor`,
+`kargo`, `kro`, `kyverno`, `lab-demo`, `lab-gateway`,
 `moto`, `storage`,
 `trivy-system`, `vault`, `velero`. This list drifts as new components land — treat
 [docs/dependency-tree.md](../dependency-tree.md) as the live source of truth and this
@@ -135,10 +137,7 @@ ADR as the *pattern*, not the enumeration.
 | `docs/decisions/adr-0016-default-deny-networkpolicy.md` | This ADR |
 | `gitops/network/policies/default-deny.yaml` | Reusable deny-all template |
 | `gitops/network/policies/allow-dns-and-apiserver.yaml` | Reusable DNS+API allow template |
-| `gitops/data/networkpolicy/kustomization.yaml` | Pilot overlay for `data` namespace (the model every later namespace's overlay copies) |
-| `gitops/data/networkpolicy/allow-rabbitmq-ingress.yaml` | Allow ingress to RabbitMQ (5672, 15692) |
-| `gitops/data/networkpolicy/allow-valkey-ingress.yaml` | Allow ingress to Valkey (6379, 9121) |
-| `gitops/data/networkpolicy/allow-data-demo-egress.yaml` | Allow data-demo → RabbitMQ + Redis |
+| `gitops/data/networkpolicy/kustomization.yaml` (removed 2026-09-06 with the `data` namespace) | Pilot overlay for `data` namespace (the model every later namespace's overlay copies) — historical, no longer on disk |
 | `tests/networkpolicy.bats` | Baseline clusterless YAML structural tests (per-namespace overlays get their own `tests/networkpolicy-<ns>.bats`) |
 | `docs/dependency-tree.md` | The continuously-maintained enumeration of every namespace's NetworkPolicy posture — treat as current, this ADR as the pattern |
 
