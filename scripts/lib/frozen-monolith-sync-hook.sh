@@ -1,8 +1,8 @@
 # Shared PostToolUse-hook implementation for the repo's "frozen monolith" test
-# checks (securitycontext, observability, drift-detectors,
-# hook-scripts-coverage) — sourced, not executed. Companion to
-# frozen-monolith-check.sh's CI-side dedup; same rationale (see that file's
-# header). Each thin *-tests-sync-hook.sh wrapper sources this and calls
+# checks (securitycontext, drift-detectors, hook-scripts-coverage) — sourced,
+# not executed. Companion to frozen-monolith-check.sh's CI-side dedup; same
+# rationale (see that file's header, including the observability-tests-check.sh
+# removal note). Each thin *-tests-sync-hook.sh wrapper sources this and calls
 # frozen_monolith_sync_hook with its own file/check-script/label.
 source "$(dirname "${BASH_SOURCE[0]}")/hook-payload.sh"
 

@@ -19,11 +19,11 @@ fi
 # `$drift` itself at the end, this just supplies the two printer functions).
 # Scripts whose bad() has no side effect (they track failure via their own
 # separately-managed `fail` variable instead — argocd-crd-ssa-check.sh,
-# helm-chart-pin-check.sh, lab-health-check.sh, mimir-readonly-root-check.sh,
-# rollouts-plugin-list-check.sh) deliberately keep their own local, no-side-effect
-# copy rather than sourcing this one — forcing them onto a drift-setting bad()
-# would add an incidental unused `drift` variable to their scope, a behavior
-# wrinkle this extraction avoids by design (see scripts/ok-bad-lib-check.sh).
+# helm-chart-pin-check.sh, lab-health-check.sh, rollouts-plugin-list-check.sh)
+# deliberately keep their own local, no-side-effect copy rather than sourcing
+# this one — forcing them onto a drift-setting bad() would add an incidental
+# unused `drift` variable to their scope, a behavior wrinkle this extraction
+# avoids by design (see scripts/ok-bad-lib-check.sh).
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 

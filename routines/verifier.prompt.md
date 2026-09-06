@@ -9,7 +9,7 @@ STEP 2 — Orient. Read CHARTER.md, ROADMAP.md, docs/WAYS-OF-WORKING.md, the ADR
 STEP 3 — Bring up the lab on the PR's branch:
   - `gh pr checkout <num>` (or `git checkout <branch>` for a non-PR branch).
   - `make up` (or whichever bootstrap target the README points to). Wait for ArgoCD to converge — `kubectl -n argocd get applications` should show `Synced/Healthy` for the affected app.
-  - If the PR involves a heavy/on-demand component (TiDB, Artifactory, Istio+Kiali, Longhorn), bring it up with its dedicated `make <name>-up` target — these must NEVER be auto-synced per the 12 GB budget.
+  - If the PR involves a heavy/on-demand component (Harbor, Kargo), bring it up with its dedicated `make <name>-up` target — these must NEVER be auto-synced per the 12 GB budget. (TiDB, Artifactory, Istio+Kiali, and Longhorn no longer exist in this lab — TiDB/Istio+Kiali/Longhorn were removed entirely 2026-09-06 with no replacement, and Artifactory was superseded by Harbor, ADR-0024.)
 
 STEP 4 — Verify the acceptance criteria. For each criterion, run the smallest concrete check that proves it:
   - Routes/Gateways respond → `curl` the URL, expect a 200 and meaningful body.

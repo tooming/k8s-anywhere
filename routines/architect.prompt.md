@@ -7,18 +7,17 @@ Next, directly check upstream for releases in the past 7 days for each ADR'd com
   - ArgoCD: `argoproj/argo-cd`
   - Cilium: `cilium/cilium`
   - Vault: `hashicorp/vault`
-  - Grafana: `grafana/grafana`
-  - Longhorn: `longhorn/longhorn`
   - Valkey: `valkey-io/valkey`
   - RabbitMQ: `rabbitmq/rabbitmq-server`
-  - TiDB: `pingcap/tidb`
-  - Istio: `istio/istio`
   - Garage: `deuxfleurs-org/garage`
   - Harbor: `goharbor/harbor-helm`
   - Kyverno: `kyverno/kyverno`
   - Argo Rollouts: `argoproj/argo-rollouts`
   - Trivy: `aquasecurity/trivy`
   - Velero: `vmware-tanzu/velero`
+  (Grafana, Longhorn, TiDB, and Istio were all removed from the lab entirely
+  2026-09-06 with no replacement — ADR-0041, ADR-0013, ADR-0031/ADR-0032,
+  ADR-0012 — no longer tracked here.)
 
 If network is rate-limited, note it and proceed with training knowledge only — do NOT fabricate release entries (ADR-0004). Record what you found; you will use these findings in STEPs 2, 2b, and 4.
 

@@ -10,7 +10,7 @@ STEP 2 — Take the lab's pulse. Run these in order, capturing output:
   - `kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded` — anything not Running?
   - `kubectl -n argocd get applications -o wide` — every Application `Synced/Healthy`? Note any `OutOfSync`, `Degraded`, `Missing`, `Unknown`.
   - `kubectl get pvc -A` — any `Pending` or `Lost`?
-  - Hit the dashboards: `curl -s -o /dev/null -w "%{http_code}" <gateway-url>/grafana` etc. for each always-on UI in `gitops/network/`. Non-200 = broken route.
+  - Hit the UIs: `curl -s -o /dev/null -w "%{http_code}" <gateway-url>/<host>` for each always-on route in README.md's Endpoints table (ArgoCD, Vault, s3manager, RabbitMQ, moto, …). Non-200 = broken route. (There is no Grafana any more — the observability stack was removed entirely 2026-09-06, ADR-0041, no replacement.)
   - `kubectl top nodes; kubectl top pods -A --sort-by=memory | head -20` — anyone running away with memory? The lab is on a 12 GB VM.
 
 STEP 3 — Classify what you found:

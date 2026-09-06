@@ -23,7 +23,7 @@ STEP 4 — Avoid in-flight + cap WIP. Run `gh pr list --state open --search "hea
 
 STEP 5 — Draft the upgrade. Edit ONLY the file(s) needed to bump the version (typically just one `targetRevision:` line or one `image:` tag). Run `make ci` and confirm it stays green. If `make ci` newly fails (e.g. a manifest schema changed in the new chart version), do NOT paper over it — close out the attempt, open a GitHub issue describing the failure mode (it likely needs the executor to fix the manifest, not just a version bump), and try the next-priority upgrade (still capped at one PR per run).
 
-STEP 6 — Deliver. Branch `upgrade/<component>-<from>-to-<to>` (e.g. `upgrade/grafana-12.4.0-to-12.5.1`). Commit with a message that includes the upstream changelog URL or release notes URL. Open a PR with `gh pr create`. Body MUST include:
+STEP 6 — Deliver. Branch `upgrade/<component>-<from>-to-<to>` (e.g. `upgrade/kyverno-3.8.2-to-3.9.0`). Commit with a message that includes the upstream changelog URL or release notes URL. Open a PR with `gh pr create`. Body MUST include:
   - **What changed:** component, from-version, to-version, source URL.
   - **Why this version:** "highest stable release, no major bump, no pinning ADR".
   - **Upstream notes:** link to the release / changelog.

@@ -1,10 +1,13 @@
 # Shared implementation for the repo's "frozen monolith" bats-test drift
-# checks (securitycontext-tests-check.sh, observability-tests-check.sh,
-# drift-detectors-tests-check.sh, hook-scripts-coverage-tests-check.sh) —
-# sourced, not executed. Each thin wrapper resolves its own *_TESTS_ROOT env
-# var, then calls frozen_monolith_check with its own file/snapshot/label.
+# checks (securitycontext-tests-check.sh, drift-detectors-tests-check.sh,
+# hook-scripts-coverage-tests-check.sh) — sourced, not executed. Each thin
+# wrapper resolves its own *_TESTS_ROOT env var, then calls
+# frozen_monolith_check with its own file/snapshot/label.
+# (observability-tests-check.sh was a fourth consumer, removed 2026-09-06
+# alongside the monolith it guarded, tests/observability.bats — ADR-0041,
+# observability stack removed with no replacement.)
 #
-# Why shared: these four ~40-line scripts were independently copy-pasted from
+# Why shared: these ~40-line scripts were independently copy-pasted from
 # each other every time a new monolith got frozen (CLAUDE.md's
 # bugfix-recurrence rule already demands a mechanical guard per monolith;
 # this closes the matching "duplicated guard implementation" gap, mirroring

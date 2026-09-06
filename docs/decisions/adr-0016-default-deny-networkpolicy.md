@@ -46,9 +46,9 @@ ingress and egress by default.
 
 ### 2. Per-workload explicit-allow policies
 
-Named for the flow they permit (e.g. `allow-grafana-to-mimir`,
-`allow-eso-from-vault`). One YAML file per flow, co-located with the workload
-it serves (e.g. `gitops/observability/networkpolicy/allow-grafana-to-mimir.yaml`).
+Named for the flow they permit (e.g. `allow-vault-from-eso`,
+`allow-argocd-server-from-gateway`). One YAML file per flow, co-located with the
+workload it serves (e.g. `gitops/vault/networkpolicy/allow-vault-from-eso.yaml`).
 No catch-all "allow same namespace" — every edge is explicit.
 
 ### 3. Reusable templates
@@ -66,7 +66,7 @@ Each namespace's Kustomize overlay sets `namespace:` in a patch so a single
 | Phase | Scope | Rationale |
 |-------|-------|-----------|
 | **Pilot** (this ADR) | `data` namespace | RabbitMQ + Redis are self-contained, the existing "Lab — RabbitMQ" / "Lab — Redis" dashboards and `data-demo` load generator give immediate signal if a policy is wrong. |
-| **Fan-out** (planner-groomed items, one namespace per executor run) | Every remaining always-on namespace, delivered two ways: (a) the `networkpolicy` `ApplicationSet` (`gitops/platform/networkpolicy-appset.yaml`, list-generator, wave 3, generated Applications at wave 4) — the majority of namespaces; (b) a handful of standalone `<ns>-networkpolicy` Applications for namespaces whose overlay predates the appset or that carry component-specific wiring (`kyverno`, `trivy-system`, `argo-rollouts`, `envoy-gateway-system`, `velero`, `kargo`, `kargo-project`) | Sequential, one namespace per executor run so failures are isolated; the appset consolidated most of the standalone Applications this pattern originally produced into one list, per RFC #82's spirit without one YAML file per namespace in `gitops/platform/`. |
+| **Fan-out** (planner-groomed items, one namespace per executor run) | Every remaining always-on namespace, delivered two ways: (a) the `networkpolicy` `ApplicationSet` (`gitops/platform/networkpolicy-appset.yaml`, list-generator, wave 3, generated Applications at wave 4) — the majority of namespaces; (b) a handful of standalone `<ns>-networkpolicy` Applications for namespaces whose overlay predates the appset or that carry component-specific wiring (`kyverno`, `trivy-system`, `argo-rollouts`, `velero`, `kargo`, `kargo-project`) | Sequential, one namespace per executor run so failures are isolated; the appset consolidated most of the standalone Applications this pattern originally produced into one list, per RFC #82's spirit without one YAML file per namespace in `gitops/platform/`. |
 | **On-demand namespaces** | `harbor` | **Auto-synced ahead of the on-demand bring-up**, not "with" it as originally planned — the namespace's default-deny floor (via the appset) is in place *before* `make <name>-up` ever admits a pod, so there's no policy race on first bring-up. Same `automated: {prune, selfHeal}` policy as every other appset entry. |
 | **Out of scope** | `kube-system` | Contains kube-dns, metrics-server, and the kubelet's SA issuer; flows are complex and a policy mistake here takes the cluster down. Unchanged since this ADR was adopted. |
 
@@ -103,12 +103,15 @@ The detailed CNI-choice rationale lives in ADR-0014. Summary:
 ## Scope & exceptions
 
 **Namespaces in scope — fan-out complete (2026-07-14).** As of 2026-09-06 (TiDB,
-Istio+Kiali, and Longhorn removed from the lab entirely — see each ADR's Status),
-23 namespaces carry the two-policy floor:
+Istio+Kiali, and Longhorn removed from the lab entirely — see each ADR's Status;
+the observability stack — and with it the `observability` and `node-exporter`
+namespaces — removed the same day with no replacement, ADR-0041; Envoy Gateway —
+and with it the `envoy-gateway-system` namespace — removed 2026-09-06 alongside
+the Traefik migration, ADR-0040), 20 namespaces carry the two-policy floor:
 `ack-system`, `argo-rollouts`, `argocd`, `capstone`, `capstone-pipeline`,
-`cert-manager`, `data`, `envoy-gateway-system`, `external-secrets`, `harbor`,
+`cert-manager`, `data`, `external-secrets`, `harbor`,
 `kargo`, `keda`, `kro`, `kyverno`, `lab-demo`, `lab-gateway`,
-`moto`, `node-exporter`, `observability`, `storage`,
+`moto`, `storage`,
 `trivy-system`, `vault`, `velero`. This list drifts as new components land — treat
 [docs/dependency-tree.md](../dependency-tree.md) as the live source of truth and this
 ADR as the *pattern*, not the enumeration.
@@ -119,8 +122,7 @@ ADR as the *pattern*, not the enumeration.
 |-----------|-----------|--------|
 | `kube-system` | out of scope | DNS, metrics-server, API issuer — a mistake here brings the cluster down. Separate RFC. |
 | `harbor` (on-demand) | policy auto-synced ahead of the component's own on-demand bring-up | The default-deny floor is in place before `make <name>-up` admits any pod — no policy race on first bring-up. Originally planned as "lands with the bring-up PR"; the appset pattern made pre-provisioning both possible and simpler. |
-| `observability` | single broad `podSelector: {}` intra-namespace allow (`gitops/observability/networkpolicy/allow-intra-namespace.yaml`, `NetworkPolicy allow-observability-intra-namespace`) instead of one explicit per-flow policy per edge | Formalized 2026-07-15 (found via ROADMAP rule #9's coverage/hardening sweep — the manifest predates this row and was running as an undocumented deviation from "no catch-all 'allow same namespace'" above). The LGTMP stack has many legitimate, purpose-built intra-namespace flows (Alloy → Mimir/Loki/Pyroscope; Alloy ← KSM/LGTMP self-scrapes; Grafana → Mimir/Loki/Tempo/Pyroscope datasource reads; Pyroscope ↔ co-located pprof scrape targets) — every pod in the namespace is part of the same single-tenant observability pipeline, unlike namespaces mixing independent workloads. The cross-namespace boundary (the actual security perimeter ADR-0016 protects) stays fully explicit via the other per-namespace overlays; this carve-out only widens intra-namespace reachability within one already-cohesive, single-purpose component. **Flip condition:** if a future namespace-scoped threat model requires intra-namespace segmentation (e.g. a compromised low-privilege pod in `observability` should not reach Mimir's write path), replace this with explicit per-flow policies per the ADR's general pattern. |
-| `argocd`, `harbor` | same single broad `podSelector: {}` intra-namespace allow pattern as `observability` above (`allow-{argocd,harbor}-intra-namespace.yaml` respectively) | Formalized 2026-07-15 alongside the `observability` row above — the same coverage sweep that found `observability`'s undocumented deviation found this is actually the **general, already-consistent convention** across every multi-component namespace, not a one-off: each of these namespaces hosts a single purpose-built, tightly-coupled multi-component stack (ArgoCD's controller/server/repo-server/cache; Harbor's core/registry/jobservice/portal/database) with no independent tenants mixed in, and each manifest's own header comment already carried this exact rationale before this row existed. Same flip condition as `observability`: replace with explicit per-flow policies if a future threat model requires intra-namespace segmentation within one of these namespaces. **General principle (to prevent this same gap recurring for a future namespace):** a namespace may use one broad intra-namespace allow instead of per-flow policies when every pod in it is part of the same single-tenant, purpose-built multi-component stack — the cross-namespace boundary is the security perimeter ADR-0016 protects; the intra-namespace convenience allow never widens *that* boundary. (This row also covered `istio-system`, `longhorn-system`, and `tidb` until those components were removed from the lab entirely 2026-09-06.) |
+| `argocd`, `harbor` | single broad `podSelector: {}` intra-namespace allow (`allow-{argocd,harbor}-intra-namespace.yaml`) instead of one explicit per-flow policy per edge | Formalized 2026-07-15 (found via ROADMAP rule #9's coverage/hardening sweep — this is the **general, already-consistent convention** across every multi-component namespace, not a one-off: each of these namespaces hosts a single purpose-built, tightly-coupled multi-component stack (ArgoCD's controller/server/repo-server/cache; Harbor's core/registry/jobservice/portal/database) with no independent tenants mixed in, and each manifest's own header comment already carried this exact rationale before this row existed. **General principle (to prevent this same gap recurring for a future namespace):** a namespace may use one broad intra-namespace allow instead of per-flow policies when every pod in it is part of the same single-tenant, purpose-built multi-component stack — the cross-namespace boundary is the security perimeter ADR-0016 protects; the intra-namespace convenience allow never widens *that* boundary. **Flip condition:** if a future namespace-scoped threat model requires intra-namespace segmentation, replace this with explicit per-flow policies per the ADR's general pattern. (This row also covered `observability`, `istio-system`, `longhorn-system`, and `tidb` until those components were removed from the lab entirely 2026-09-06.) |
 
 ---
 
@@ -145,7 +147,7 @@ ADR as the *pattern*, not the enumeration.
 | Path | Role |
 |------|------|
 | `gitops/platform/networkpolicy-appset.yaml` | `ApplicationSet` (list-generator) that plants the per-namespace overlay Application for most fanned-out namespaces — the primary delivery mechanism today, not a standalone Application per namespace |
-| `gitops/platform/{kyverno,trivy-system,argo-rollouts,envoy-gateway-system,velero,kargo,kargo-project}-networkpolicy.yaml` | Standalone `<ns>-networkpolicy` Applications for namespaces whose overlay predates the appset or carries component-specific wiring |
+| `gitops/platform/{kyverno,trivy-system,argo-rollouts,velero,kargo,kargo-project}-networkpolicy.yaml` | Standalone `<ns>-networkpolicy` Applications for namespaces whose overlay predates the appset or carries component-specific wiring |
 
 ---
 
