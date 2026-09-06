@@ -8,9 +8,9 @@
 # policies (require-pod-security-restricted, add-default-runasnonroot) already
 # have — found via a direct diff of all three Pod-Security-related
 # ClusterPolicies against each other. Those siblings exempt these namespaces
-# because they deliberately run root/privileged workloads (vault, istio-system,
-# tidb, kube-system's own CNI/DNS pods, …) that PSS-restricted was never meant
-# to apply to. Without this exclude, add-default-seccomp would still try to
+# because they deliberately run root/privileged workloads (vault, kube-system's
+# own CNI/DNS pods, …) that PSS-restricted was never meant to apply to. Without
+# this exclude, add-default-seccomp would still try to
 # inject RuntimeDefault into those same exempted namespaces' pods whenever they
 # omit seccompProfile — a real, if usually harmless, inconsistency, since
 # RuntimeDefault can restrict syscalls some privileged workloads (Cilium's own

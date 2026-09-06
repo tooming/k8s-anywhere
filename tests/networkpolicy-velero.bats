@@ -95,11 +95,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-velero-egress-kopia-pv covers the tidb namespace" {
-  run grep -q -- '- tidb' "$VELERO_NP/allow-velero-egress-kopia-pv.yaml"
-  [ "$status" -eq 0 ]
-}
-
 @test "allow-velero-egress-kopia-pv covers the capstone namespace" {
   run grep -q -- '- capstone' "$VELERO_NP/allow-velero-egress-kopia-pv.yaml"
   [ "$status" -eq 0 ]

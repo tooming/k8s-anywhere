@@ -19,8 +19,8 @@ rationale travels with the code.
   - [ADR-0009](adr-0009-rabbitmq-message-broker.md) — RabbitMQ as the lab's message broker (plain manifests, always-on)
   - [ADR-0010](adr-0010-redis-cache.md) — Redis as the lab's cache / key-value store — **Superseded by ADR-0018**
   - [ADR-0011](adr-0011-artifactory-not-nexus.md) — Artifactory as the on-demand artifact registry (not Nexus) — **Superseded by ADR-0024**
-  - [ADR-0012](adr-0012-istio-ambient-not-sidecar.md) — Istio ambient mesh + Kiali on-demand (not sidecar)
-  - [ADR-0013](adr-0013-longhorn-block-storage.md) — Longhorn distributed block storage on-demand
+  - [ADR-0012](adr-0012-istio-ambient-not-sidecar.md) — Istio ambient mesh + Kiali on-demand (not sidecar) — **Removed 2026-09-06, no replacement**
+  - [ADR-0013](adr-0013-longhorn-block-storage.md) — Longhorn distributed block storage on-demand — **Removed 2026-09-06, no replacement**
   - [ADR-0014](adr-0014-cilium-not-flannel-policy.md) — Cilium CNI, not k3s's bundled Flannel + NetworkPolicy controller
   - [ADR-0015](adr-0015-inkless-diskless-kafka.md) — Aiven Inkless (diskless Kafka) on-demand, backed by Garage S3 — **Removed 2026-09-05, no replacement**
   - [ADR-0016](adr-0016-default-deny-networkpolicy.md) — Default-deny NetworkPolicy per namespace (Cilium-enforced)
@@ -38,8 +38,8 @@ rationale travels with the code.
   - [ADR-0028](adr-0028-cert-manager-tls-lifecycle.md) — cert-manager for automated TLS certificate lifecycle (self-signed root CA, not public ACME)
   - [ADR-0029](adr-0029-keda-event-driven-autoscaling.md) — KEDA for event-driven autoscaling (RabbitMQ/Prometheus-triggered scaling, augments the stock HPA)
   - [ADR-0030](adr-0030-pin-k3s-version-explicitly.md) — Pin k3s to an explicit version on every backend
-  - [ADR-0031](adr-0031-tidb-operator-version-policy.md) — TiDB Operator version-pin policy: hold at the 1.6.x line
-  - [ADR-0032](adr-0032-tidb-version-policy.md) — TiDB database version-pin policy: hold at the v8.5.x line
+  - [ADR-0031](adr-0031-tidb-operator-version-policy.md) — TiDB Operator version-pin policy: hold at the 1.6.x line — **Removed 2026-09-06, no replacement**
+  - [ADR-0032](adr-0032-tidb-version-policy.md) — TiDB database version-pin policy: hold at the v8.5.x line — **Removed 2026-09-06, no replacement**
   - [ADR-0033](adr-0033-gitlab-git-source-and-ci.md) — GitLab (self-hosted) as the lab's git source of truth + CI runner — **Superseded by ADR-0035**
   - [ADR-0034](adr-0034-lgtmp-observability-stack.md) — Grafana LGTM(P) stack internals + kube-state-metrics/node-exporter for observability
   - [ADR-0035](adr-0035-forgejo-not-gitlab.md) — Forgejo (self-hosted) as the lab's git source of truth + CI runner (supersedes ADR-0033)

@@ -9,8 +9,8 @@
 # It deliberately ignores two kinds of pod that are SUPPOSED to be transient/absent:
 #   * Job-owned pods (Trivy scans, hook jobs, …) — ephemeral by design; their
 #     Completion is what matters, not steady Readiness.
-#   * On-demand components — the manual `make *-up` targets (TiDB, Harbor, Istio,
-#     Kiali, Longhorn, Kargo) + the capstone demo (needs the on-demand
+#   * On-demand components — the manual `make *-up` targets (Harbor, Kargo)
+#     + the capstone demo (needs the on-demand
 #     Harbor registry). `make up` never starts them, so a missing/unhealthy one isn't a
 #     `make up` failure. Override the set with LAB_ONDEMAND_NS="ns1 ns2 …".
 #

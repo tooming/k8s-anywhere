@@ -498,24 +498,3 @@ setup() {
   run grep -q 'lab-data-demo' "$REPO/docs/dependency-tree.md"
   [ "$status" -eq 0 ]
 }
-
-# --- Lab — TiDB (Distributed Database) scrape + dashboard -------------------
-
-@test "observability-alloy.yaml has tidb scrape block" {
-  run grep -q 'prometheus.scrape "tidb"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-tidb.json dashboard exists" {
-  [ -f "$REPO/grafana/dashboards/lab-tidb.json" ]
-}
-
-@test "lab-tidb.json references tidb namespace in a KSM query" {
-  run grep -q 'namespace=\\"tidb\\"' "$REPO/grafana/dashboards/lab-tidb.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-tidb.json has no fabricated/placeholder data (ADR-0004)" {
-  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-tidb.json"
-  [ "$status" -eq 1 ]
-}

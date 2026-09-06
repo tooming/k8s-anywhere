@@ -378,7 +378,7 @@ setup() {
 # (require-pod-security-restricted, add-default-runasnonroot) already have —
 # without it, this mutate would keep injecting RuntimeDefault into pods in
 # namespaces deliberately exempted from PSS-restricted elsewhere (vault,
-# istio-system, tidb, kube-system's own CNI/DNS pods).
+# kube-system's own CNI/DNS pods).
 @test "add-default-seccomp excludes the same kube-system/baseline/privileged namespaces as its sibling PSS policies" {
   # Same -o=json variant risk as the disallow-latest-tag foreach test above.
   require_mikefarah_yq_or_skip

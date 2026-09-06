@@ -60,17 +60,16 @@ that predated it having any ADR at all, ADR-0037 (Vault) gained its own row
 all, whose version history had instead been living as inline `gitops/` YAML
 comments — ADR-0038 (moto + ACK S3 + KRO) gained three rows the same day for
 the identical reason, one per tool, and ADR-0039 (s3manager) gained its own row
-the same day for the same reason again — collectively naming the table's 37
-distinct third-party-tool rows: four ADRs each
+the same day for the same reason again — collectively naming the table's 32
+distinct third-party-tool rows: three ADRs each
 decide on more than one tool at once (ADR-0001: Terraform/Terragrunt + ArgoCD;
-ADR-0012: Istio + Kiali; ADR-0027: Oracle Cloud Infrastructure + k3s; ADR-0038:
+ADR-0027: Oracle Cloud Infrastructure + k3s; ADR-0038:
 moto + ACK S3 + KRO) and ADR-0034
 alone names seven (the LGTMP observability internals — Mimir, Loki, Tempo, Pyroscope,
 Alloy, kube-state-metrics, node-exporter); one tool, Garage, is named by two ADRs
-(ADR-0002, ADR-0007) for two different roles and gets one merged row; ADR-0031/
-ADR-0032 each name one — TiDB Operator and TiDB itself are distinct products with
-distinct version lines, so they get separate rows, same shape as Istio/Kiali under
-ADR-0012.
+(ADR-0002, ADR-0007) for two different roles and gets one merged row. (ADR-0012's
+Istio+Kiali and ADR-0031/ADR-0032's TiDB Operator/TiDB rows were removed 2026-09-06
+when those components were dropped from the lab entirely — see each ADR's Status.)
 
 **Gap closed 2026-08-07 (was: "Real gap, distinct from the policy-ADR exclusions
 above").** This register's construction rule (every row cites the ADR that decided
@@ -107,12 +106,7 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | Grafana | always-on-core (observability stack) | grafana.com, github.com/grafana/grafana | [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md) | 2026-09-06 (upgrade-drafter fallback: chart bumped `12.10.4`→`12.11.2`, routine packaging currency, no CVE — image pin stays `13.0.8`, unaffected. Prior entry: 2026-09-04, no new finding for Grafana itself, still current at `13.0.8`/chart `12.10.4`) |
 | Traefik (supersedes Envoy Gateway, ADR-0008) | always-on-core (bundled with k3s, no separate chart/version to track — see [ADR-0030](decisions/adr-0030-pin-k3s-version-explicitly.md)) | github.com/traefik/traefik (bundled by github.com/k3s-io/k3s) | [ADR-0040](decisions/adr-0040-traefik-not-envoy-gateway.md) | 2026-09-06 (decision date; not yet live-cluster-verified, see ADR-0040's own "Known risk" section) |
 | RabbitMQ | always-on-core | github.com/rabbitmq/rabbitmq-server | [ADR-0009](decisions/adr-0009-rabbitmq-message-broker.md) | 2026-09-04 (currency re-check: `4.3.5-management` still the newest patch on the `4.3.x` line — unchanged. Prior entry: 2026-08-19 patch bump, fixes 10 GHSAs) |
-| Istio (ambient mode) | heavy-on-demand (`make istio-up`/`istio-down`) | istio.io, github.com/istio/istio | [ADR-0012](decisions/adr-0012-istio-ambient-not-sidecar.md) | 2026-09-01 (bumped all four charts `1.30.3` → `1.30.4`, routine currency, no CVE — includes a real template-quoting hardening fix in istiod's injection templates; GHSA sweep from 2026-08-19 unaffected, `1.30.4` still past every floor) |
-| Kiali | heavy-on-demand (`make kiali-up`/`kiali-down`) | kiali.io, github.com/kiali/kiali | [ADR-0012](decisions/adr-0012-istio-ambient-not-sidecar.md) | 2026-09-01 (bumped `2.30.0` → `2.31.0`: 5 named CVE fixes in `kiali/kiali`'s `git log` — axios/undici/immutable, OpenTelemetry-Go CVE-2026-41178, browserslist CVE-2026-73089/-73088, golang.org/x/text CVE-2026-56852, brace-expansion/ip-address/postcss; chart directory itself byte-for-byte unchanged between the two tags) |
-| Longhorn | heavy-on-demand (`make longhorn-up`/`longhorn-down`) | github.com/longhorn/longhorn | [ADR-0013](decisions/adr-0013-longhorn-block-storage.md) | 2026-09-03 (currency re-check: `v1.12.1` went stable 2026-08-14, confirmed real via two independent sources; ADR's own flip condition still not triggered — `1.11.x` nowhere near its EOL window and no CVE filed against `1.11.3` — so kept at `1.11.3` per the ADR's own binding 2026-07-18 decision to stay one minor line behind `1.12.x`'s bigger behavioral surface. Prior entry: 2026-08-19 GHSA sweep, no new advisory) |
 | Cilium | always-on-core (CNI — the network data plane itself) | github.com/cilium/cilium | [ADR-0014](decisions/adr-0014-cilium-not-flannel-policy.md) | 2026-09-03 (found a Critical advisory, GHSA-3fcv-jvfp-m4q9/CVE-2026-49445, unaudited in this ADR's log despite predating the 2026-08-19 entry — confirmed pin `1.18.13` is past its fix floor. Prior entry: 2026-08-19, 3 High GHSAs audited, patch bumped `1.18.12`→`1.18.13`) |
-| TiDB Operator | heavy-on-demand (`make tidb-up`/`tidb-down`) | github.com/pingcap/tidb-operator | [ADR-0031](decisions/adr-0031-tidb-operator-version-policy.md) | 2026-08-12 (bumped `1.6.5` → `1.6.6`, same `1.6.x` line per ADR-0031's own in-scope patch-bump carve-out; real RBAC least-privilege hardening) |
-| TiDB | heavy-on-demand (`make tidb-up`/`tidb-down`) | github.com/pingcap/tidb | [ADR-0032](decisions/adr-0032-tidb-version-policy.md) | 2026-09-01 (bumped `v8.5.7` → `v8.5.8`, same `v8.5.x` line per ADR-0032's own in-scope patch-bump carve-out; `v26.x` calendar-versioning scheme change still deferred) |
 | Valkey (supersedes Redis, ADR-0010) | always-on-core | github.com/valkey-io/valkey | [ADR-0018](decisions/adr-0018-valkey-not-redis.md) | 2026-09-01 (bumped `8.1.9` → `8.1.10`, SECURITY release fixing GHSA-jcj7-v34w-v9vv — a use-after-free in RDMA connection handling — plus AOF/RDB/TLS/cluster-messaging bug fixes) |
 | Kyverno | always-on-next-wave (Objective O1) | github.com/kyverno/kyverno | [ADR-0019](decisions/adr-0019-kyverno-admission-engine.md) | 2026-09-03 (chart bumped `3.8.2` → `3.9.0`, a minor bump taken because real fixes exist only on this line: CVE-2026-32280, CVE-2026-39836, GHSA-79gf-7frw-68m9, GHSA-gcjh-h69q-9w9g. Prior entry: 2026-08-27, `disallow-latest-tag` extended to cover `spec.initContainers`/`spec.ephemeralContainers`) |
 | Argo Rollouts | always-on-next-wave (Objective O1) | github.com/argoproj/argo-rollouts | [ADR-0020](decisions/adr-0020-argo-rollouts-progressive-delivery.md) | 2026-09-01 (bumped chart `2.41.1` → `2.43.0`, appVersion `v1.9.1` → `v1.10.0`; routine currency, no CVE — zero published security advisories exist for this repo at all, unchanged since the 2026-08-19 sweep) |

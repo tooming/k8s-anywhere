@@ -1,8 +1,19 @@
 # ADR-0031 — TiDB Operator version-pin policy: hold at the 1.6.x line
 
-**Status.** Adopted. Architect decision, self-authorizing per
+**Status.** Removed 2026-09-06 (maintainer decision — TiDB dropped from the lab entirely,
+no replacement). All `gitops/tidb/`, `gitops/tidb-admin/`, `gitops/tidb-demo/`,
+`gitops/platform/tidb-operator.yaml`, `gitops/platform/tidb-cluster.yaml`,
+`gitops/platform/tidb-demo.yaml`, `gitops/platform/tidb-admin-extras.yaml` manifests, the
+`lab-tidb.json`/`tidb-demo.json` dashboards, and every tidb-operator-up/tidb-operator-down/
+tidb-up/tidb-down/tidb-demo-up/tidb-demo-down Makefile target, test, and cross-reference
+were deleted in the same change (see ADR-0032 for the paired database version-pin policy,
+also removed). The decision record below is kept for history but no longer describes
+anything live in the repo — do not treat any manifest path or Makefile target named below
+as still existing.
+
+~~**Status.** Adopted. Architect decision, self-authorizing per
 [WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2 (no binding ADR contradicted — this
-is new ground, not a supersession; no existing ADR governs TiDB Operator's own version).
+is new ground, not a supersession; no existing ADR governs TiDB Operator's own version).~~
 
 ---
 
@@ -32,7 +43,7 @@ are). No v1.6.x end-of-life notice or CVE was found in a targeted grep sweep of 
 
 TiDB itself is a **heavy/on-demand component** (CHARTER "Target end-state"), never
 auto-synced — `gitops/platform/tidb-operator.yaml` has no `automated:` block, brought
-up only via `make tidb-up`. A version-pin decision here carries **zero live-cluster
+up only via make tidb-up. A version-pin decision here carries **zero live-cluster
 blast radius** until the maintainer next runs that target.
 
 ---

@@ -24,11 +24,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dr-restore.sh restores the tidb namespace" {
-  run grep -q 'tidb' "$SCRIPT"
-  [ "$status" -eq 0 ]
-}
-
 @test "dr-restore.sh restores the capstone namespace" {
   run grep -q 'capstone' "$SCRIPT"
   [ "$status" -eq 0 ]
@@ -99,11 +94,10 @@ setup() {
   [[ "$output" == *"dr-restore.sh"* ]]
 }
 
-@test "Makefile dr-restore target passes all five ADR-0021 namespaces" {
+@test "Makefile dr-restore target passes all four ADR-0021 namespaces" {
   run grep -A1 '^dr-restore:' "$REPO/Makefile"
   [ "$status" -eq 0 ]
   [[ "$output" == *"data"* ]]
-  [[ "$output" == *"tidb"* ]]
   [[ "$output" == *"capstone"* ]]
   [[ "$output" == *"vault"* ]]
   [[ "$output" == *"observability"* ]]

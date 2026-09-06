@@ -30,7 +30,7 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
   Terraform/Terragrunt *only* bootstraps. (ADR-0001)
 - **Recreate-from-code.** `make up` rebuilds the whole lab; DR is verified, not assumed
   (`make dr-verify` / `dr-test` / blue-green). (ADR-0005)
-- **Stateful DR is exercised.** Every stateful namespace (`data`, `tidb`, `capstone`,
+- **Stateful DR is exercised.** Every stateful namespace (`data`, `capstone`,
   `vault`, `observability`) has a Velero schedule and a `make dr-restore`
   path that recovers it from the latest backup — not just re-creates the workload
   from manifest.
@@ -70,7 +70,7 @@ states the meta-choices the ADRs encode, so the *why* sits above the *what*.
   ArgoCD `Application`s. No `helm install`, no `kubectl apply` to live state.
   (ADR-0001)
 - **On-demand over always-on for heavy components.** The 12 GB VM holds a ~7 GB
-  always-on core; heavy components (TiDB, Harbor, Istio, Longhorn) come
+  always-on core; heavy components (Harbor, Kargo) come
   up by `make <name>-up`. Never two full stacks at once. (ADR-0003)
 - **Recreate-from-code over pretend-HA.** A single host has SPOFs; we don't pretend
   otherwise. Recovery is via `make up` rebuilds + Velero restores, not multi-replica HA
@@ -124,7 +124,7 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   *Measured by:* `tests/networkpolicy.bats` + `tests/securitycontext.bats` cover every
   namespace in `gitops/`.
 - **O3 — Stateful DR is exercised.** By **2026-12-31**, `make dr-restore` recovers
-  every stateful namespace (`data`, `tidb`, `capstone`, `vault`, `observability`)
+  every stateful namespace (`data`, `capstone`, `vault`, `observability`)
   from its latest Velero backup in under 10 minutes wall-clock on the
   maintainer's hardware. (`observability` added 2026-07-29 — a
   gap audit found it held real PVCs with no Schedule; `storage`/Garage is a
@@ -189,11 +189,13 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   Garage); **Trivy Operator** (continuous vulnerability + SBOM scanning). All four are
   auto-synced ArgoCD `Application`s with their own ADR, real-metric Grafana dashboard,
   and bats coverage (Objective O1, met ahead of its 2026-12-31 date).
-- **Heavy / on-demand** (built, on-demand): a distributed database (TiDB), an artifact
-  registry (Harbor), a service mesh + UI (Istio ambient + Kiali), and distributed
-  storage (Longhorn) — each is a manual-sync ArgoCD `Application` with a `make
-  <name>-up` / `<name>-down` target, brought up *one at a time* within the 12 GB
-  budget. None run always-on; each is code-complete but not continuously deployed.
+- **Heavy / on-demand** (built, on-demand): an artifact registry (Harbor) and a
+  GitOps promotion engine (Kargo) — each is a manual-sync ArgoCD `Application` with
+  a `make <name>-up` / `<name>-down` target, brought up *one at a time* within the
+  12 GB budget. Neither runs always-on. (A distributed database (TiDB), a service
+  mesh + UI (Istio ambient + Kiali), and distributed storage (Longhorn) were also
+  built and demonstrated this pattern, then removed 2026-09-06 — maintainer
+  decision, no replacement — see ADR-0031/ADR-0032, ADR-0012, and ADR-0013.)
 - **Capstone — the full inner loop**: GitLab CI builds *and signs* an image (cosign) →
   Kyverno verifies the signature on admit → ArgoCD deploys it → Argo Rollouts canaries it
   on real Mimir SLOs → Traefik routes it → Grafana shows its metrics & logs → Vault holds

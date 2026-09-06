@@ -41,12 +41,6 @@ spec:
           - appName: storage-networkpolicy
             gitPath: gitops/storage/networkpolicy
             destNamespace: storage
-          - appName: tidb-networkpolicy
-            gitPath: gitops/tidb/networkpolicy
-            destNamespace: tidb
-          - appName: tidb-admin-networkpolicy
-            gitPath: gitops/tidb-admin/networkpolicy
-            destNamespace: tidb-admin
           - appName: kro-networkpolicy
             gitPath: gitops/kro/networkpolicy
             destNamespace: kro
@@ -56,12 +50,6 @@ spec:
           - appName: vault-networkpolicy
             gitPath: gitops/vault/networkpolicy
             destNamespace: vault
-          - appName: istio-system-networkpolicy
-            gitPath: gitops/istio-system/networkpolicy
-            destNamespace: istio-system
-          - appName: longhorn-networkpolicy
-            gitPath: gitops/longhorn/networkpolicy
-            destNamespace: longhorn-system
           - appName: harbor-networkpolicy
             gitPath: gitops/harbor/networkpolicy
             destNamespace: harbor

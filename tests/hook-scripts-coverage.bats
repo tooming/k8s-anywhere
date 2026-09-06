@@ -251,7 +251,7 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
 }
 
 @test "lab-ui-sync-hook: a real HTTPRoute manifest (currently in sync) exits 0" {
-  run bash "$REPO/scripts/lab-ui-sync-hook.sh" <<<"$(mk_payload "$REPO/gitops/tidb-demo/route.yaml")"
+  run bash "$REPO/scripts/lab-ui-sync-hook.sh" <<<"$(mk_payload "$REPO/gitops/kargo/route.yaml")"
   [ "$status" -eq 0 ]
 }
 

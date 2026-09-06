@@ -1,8 +1,16 @@
 # ADR-0013 — Longhorn distributed block storage on-demand
 
-**Status.** Adopted. Decision taken in RFC #60. Manifests live in
+**Status.** Removed 2026-09-06 (maintainer decision — component dropped from the lab
+entirely, no replacement). All `gitops/longhorn/`, `gitops/platform/longhorn.yaml`,
+`gitops/platform/longhorn-extras.yaml` manifests, the `lab-longhorn.json` dashboard, and
+every longhorn-up/longhorn-down Makefile target, test, and cross-reference were deleted
+in the same change. The decision record below is kept for history (why Longhorn was
+adopted, what it demonstrated) but no longer describes anything live in the repo — do
+not treat any manifest path or Makefile target named below as still existing.
+
+~~**Status.** Adopted. Decision taken in RFC #60. Manifests live in
 `gitops/platform/longhorn.yaml` (non-auto-synced ArgoCD `Application`, chart pinned per
-the Re-evaluation log below) and brought up with `make longhorn-up`.
+the Re-evaluation log below) and brought up with make longhorn-up.~~
 
 ---
 
@@ -42,7 +50,7 @@ reached end-of-life — see [§Re-evaluation log](#re-evaluation-log)).
 
 Longhorn is **on-demand, never auto-synced** (see *12 GB budget* below). The ArgoCD
 `Application` lives in `gitops/platform/longhorn.yaml` with no `automated:` block; users
-bring it up with `make longhorn-up` and tear it down with `make longhorn-down`.
+bring it up with make longhorn-up and tear it down with make longhorn-down.
 
 `local-path` remains the provisioner for the always-on stack. Longhorn is an *additional*
 storage class that co-exists with `local-path` — it does not replace it.
@@ -95,12 +103,12 @@ This is modest but non-trivial. Running Longhorn simultaneously with Artifactory
 and Istio (~480 MB) would be tight. Therefore:
 
 - Longhorn is **on-demand** (non-auto-synced), same pattern as TiDB, Artifactory, and Istio.
-- `make longhorn-up` / `make longhorn-down` give the user explicit control.
+- make longhorn-up / make longhorn-down give the user explicit control.
 - A `bats` test asserts that the Longhorn ArgoCD `Application` has no `automated:` block
   (mirrors `tests/platform.bats` for Artifactory and Istio).
 
 This is consistent with **ADR-0001** (workloads via ArgoCD, not `helm install`) and
-**ADR-0005** (recreate-from-code on a single host — if PVCs are lost, `make longhorn-up`
+**ADR-0005** (recreate-from-code on a single host — if PVCs are lost, make longhorn-up
 re-provisions the storage class and the user re-creates volumes as needed).
 
 ---
@@ -185,7 +193,7 @@ CSI driver, manager, or UI actually start cleanly against real (or absent)
 volume data on a live cluster post-bump. **Rollback path:** revert
 `gitops/platform/longhorn.yaml`'s `targetRevision`; since Longhorn is
 on-demand and not auto-synced, this carries zero live-cluster risk unless the
-maintainer already has it running via `make longhorn-up` with real
+maintainer already has it running via make longhorn-up with real
 provisioned volumes, in which case a version-format mismatch on downgrade is
 possible (same class of risk as any stateful storage engine) — verify
 current state before reverting if Longhorn is actually up.

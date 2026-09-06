@@ -139,7 +139,7 @@ setup() {
 # securitycontext-moto-ack-labgateway.bats) that references the namespace name.
 # Namespace names are read from metadata.name in each namespace.yaml so paths like
 # gitops/data/rabbitmq/namespace.yaml → "data" and
-# gitops/longhorn/namespace.yaml → "longhorn-system" resolve correctly.
+# gitops/ack/namespace.yaml → "ack-system" resolve correctly.
 # Closes ROADMAP auto/o2-pss-coverage-loop.
 @test "every PSA-labelled namespace has securitycontext test coverage (O2 recurrence guard)" {
   local fail=0

@@ -39,7 +39,7 @@
 #      Root pods (runAsUser:0 or unset everywhere) never match, so they are
 #      untouched.
 #   2. the exclude block mirrors require-pod-security-restricted: baseline /
-#      privileged carve-out namespaces (vault, istio-system, tidb, …) are skipped,
+#      privileged carve-out namespaces (vault, …) are skipped,
 #      so their deliberately root-running init/JVM containers are never forced
 #      runAsNonRoot. No hard-coded namespace list — driven by the PSA enforce label.
 #   3. the +(runAsNonRoot) conditional anchor patches ONLY when the field is absent,

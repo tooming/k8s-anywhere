@@ -300,16 +300,6 @@ setup() {
   grep -q 'defaultVolumesToFsBackup: true' "$f"
 }
 
-@test "tidb-daily Schedule exists with cron 30 2, ttl 168h, namespace tidb" {
-  f="$REPO/gitops/velero/schedules/tidb-daily.yaml"
-  [ -f "$f" ]
-  grep -q 'kind: Schedule' "$f"
-  grep -q 'schedule: "30 2 \* \* \*"' "$f"
-  grep -q 'ttl: 168h' "$f"
-  grep -qE '^[[:space:]]*- tidb$' "$f"
-  grep -q 'defaultVolumesToFsBackup: true' "$f"
-}
-
 @test "capstone-daily Schedule exists with cron 0 3, ttl 168h, namespace capstone" {
   f="$REPO/gitops/velero/schedules/capstone-daily.yaml"
   [ -f "$f" ]

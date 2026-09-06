@@ -30,13 +30,13 @@ and blocks until Cilium is ready. ArgoCD then adopts the Helm release on first s
 
 ## Velero backup restore (`make dr-restore`)
 
-Restores every stateful namespace (`data`, `tidb`, `capstone`, `vault`,
+Restores every stateful namespace (`data`, `capstone`, `vault`,
 `observability`) from its **latest Velero backup** and verifies
 completion within the CHARTER Objective O3 budget of **< 10 minutes (600 s)**
 total wall-clock.
 
 ```sh
-make dr-restore   # restore all five stateful namespaces from their latest Schedule backup
+make dr-restore   # restore all four stateful namespaces from their latest Schedule backup
 ```
 
 This is distinct from `make dr-test` (which *recreates* the cluster from manifest) —
@@ -45,13 +45,12 @@ are round-tripped back into the live namespace.
 
 ### What it does
 
-`scripts/dr-restore.sh` iterates the five namespaces in order (sequential to avoid
+`scripts/dr-restore.sh` iterates the four namespaces in order (sequential to avoid
 disk I/O contention on the single node):
 
 | Namespace | Schedule | Cron | TTL |
 |-----------|----------|------|-----|
 | `data` | `data-daily` | `0 2 * * *` | 168h |
-| `tidb` | `tidb-daily` | `30 2 * * *` | 168h |
 | `capstone` | `capstone-daily` | `0 3 * * *` | 168h |
 | `vault` | `vault-daily` | `30 3 * * *` | 168h |
 | `observability` | `observability-daily` | `0 1 * * *` | 168h |

@@ -1,10 +1,16 @@
 # ADR-0032 — TiDB database version-pin policy: hold at the `v8.5.x` line
 
-**Status.** Adopted. Architect decision, self-authorizing per
+**Status.** Removed 2026-09-06 (maintainer decision — TiDB dropped from the lab entirely,
+no replacement; see [ADR-0031](adr-0031-tidb-operator-version-policy.md) for the paired
+Operator version-pin policy, also removed, and the full list of deleted paths). The
+decision record below is kept for history but no longer describes anything live in the
+repo.
+
+~~**Status.** Adopted. Architect decision, self-authorizing per
 [WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2 (no binding ADR contradicted — this
 is new ground, not a supersession; no existing ADR governs the TiDB database's own
 version — [ADR-0031](adr-0031-tidb-operator-version-policy.md) governs the *Operator*
-only, a distinct component).
+only, a distinct component).~~
 
 ---
 
@@ -37,7 +43,7 @@ compatible with `tidb-operator` `1.6.x` (held per ADR-0031) is unverified and, p
 ADR's own flip conditions, out of scope until a dedicated migration is actually scoped.
 
 TiDB is a **heavy/on-demand component** (CHARTER "Target end-state"), never
-auto-synced — `gitops/tidb/tidb-cluster.yaml` deploys only via `make tidb-up`. A
+auto-synced — `gitops/tidb/tidb-cluster.yaml` deploys only via make tidb-up. A
 version-pin decision here carries **zero live-cluster blast radius** until the
 maintainer next runs that target.
 

@@ -29,5 +29,3 @@
 @test "external-secrets-extras Application uses ServerSideApply"
 @test "kyverno namespace.yaml has enforce-version: latest"
 @test "storage namespace.yaml enforces PSS baseline"
-@test "tidb namespace.yaml enforces PSS baseline"
-@test "tidb-admin namespace.yaml enforces PSS baseline"
