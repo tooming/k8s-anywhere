@@ -123,4 +123,4 @@ non-duplicate annotations, not leftover bugs — left untouched:
 
 ## PR
 
-(placeholder — backfilled after `create_pull_request` returns)
+https://github.com/tooming/k8s-anywhere/pull/1446
