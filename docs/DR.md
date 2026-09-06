@@ -576,6 +576,34 @@ applied, then move past them):**
 14. Kyverno's admission-controller webhook was crashlooping on a too-tight
     chart-default startup-probe timeout, intermittently blocking ArgoCD from applying
     the fix above (PR #1115, 2026-08-11).
+15. `harbor-jobservice` was missing half of the documented QEMU-emulation-crash
+    mitigation env (`GODEBUG=asyncpreemptoff=1`; only had `GOMAXPROCS=1`) — crashed
+    with `fatal error: sweep increased allocation count` (PR #1434, 2026-09-06).
+16. Forgejo's `HARBOR_USER`/`HARBOR_PASSWORD` CI secrets drifted from Harbor's live
+    admin credential a **second** time (recurrence of the 2026-08-04 finding, item 4
+    above) — this time given a real guard: `make harbor-up` now runs
+    `forgejo-harbor-secret-sync` automatically (PR #1437, 2026-09-06).
+17. Traefik (ADR-0040, supersedes the Envoy Gateway front door items 3/9/12 assumed)
+    was stuck in a liveness-probe restart loop (11 restarts/~75min) on the k3s-bundled
+    chart's stock 2s probe timeout — same class as items 8/14 (PR #1455, 2026-09-06).
+18. Any `IngressRoute` combining the plain-HTTP `web` entryPoint with a `tls: {}`
+    stanza silently fails to match on `web` with no error/access-log trace — broke
+    **every UI's plain-HTTP front door** (`http://<name>.127.0.0.1.nip.io:8000`) since
+    the ADR-0040 Traefik migration, including Harbor's and Kargo's own IngressRoutes.
+    Fixed by splitting all 10 affected IngressRoutes into separate `web`-only/
+    `websecure`-only objects, with a mechanical guard
+    (`scripts/ingressroute-web-tls-check.sh`, in `make ci`) so it can't silently
+    recur (PR #1461, 2026-09-06).
+19. Cilium's kube-proxy-free `KUBERNETES_SERVICE_HOST` drifted again (recurrence of
+    item 1 in the earlier "already fixed" numbering above, now
+    `docs/incident-log.md`'s 2026-09-06 row) after a `colima start` gave the k3d
+    server container a new docker-bridge IP — fixed live via `make cilium-up`, now
+    guarded by `make cilium-drift-check` (wired into `make health`).
+20. A prior session's `make gitlab-up` was never followed by `make gitlab-down` —
+    GitLab CE (decommissioned in favor of Forgejo, ADR-0035) sat running and
+    reclaimed ~3.1 GiB (27% of the 12 GB VM) on every `colima start` since, squarely
+    in the range every #633 host-capacity-ceiling finding has blamed. Fixed live via
+    `make gitlab-down` (docs/incident-log.md, 2026-09-06 row).
 
 **What's genuinely still needed — not a code fix, a live verification window:** every
 fix above is durable and in git. What has never yet happened is one session with
@@ -586,16 +614,27 @@ across every attempt above:
 1. Disk pressure (issue #1034) is already confirmed resolved as of 2026-08-10 — a
    quick `df -h`/`DiskPressure` sanity check is still worth doing given time has
    passed, but this is no longer a standing gate to check first.
-2. Bring up Harbor **alone** — no Kargo, no other on-demand component running
+2. **Before bringing anything up on a freshly-resumed cluster, run `make
+   cilium-drift-check` and `make ondemand-budget-check`/`docker ps`** (items 19/20
+   above) — both silently ate entire sessions' worth of debugging time before being
+   traced to their actual root cause, and both are now a five-second check instead.
+3. Bring up Harbor **alone** — no Kargo, no other on-demand component running
    concurrently — and give it a few minutes to fully stabilize before triggering
    anything. Every prior attempt that hit a host-capacity ceiling did so with Harbor
-   and at least one other heavy on-demand unit running together.
-3. Trigger a pipeline run, confirm `sign-image` completes, and verify a
+   and at least one other heavy on-demand unit running together. Note also
+   (2026-09-06): right after a cluster resume, ArgoCD's own post-outage
+   reconciliation backlog (every Application re-comparing at once) can itself
+   starve `argocd-repo-server` badly enough to `ComparisonError: DeadlineExceeded`
+   Harbor's own sync — this clears on its own once the backlog drains (watch
+   `kubectl -n argocd get application harbor -w`); it is not yet another host-capacity
+   ceiling finding, just normal post-resume churn, and does not need re-diagnosing
+   as one.
+4. Trigger a pipeline run, confirm `sign-image` completes, and verify a
    `<digest>.sig` tag lands in Harbor's `library/hello` repository. Comment the result
    on #631.
-4. Only then bring `kargo` up against the now-signed image and watch for a Warehouse
+5. Only then bring `kargo` up against the now-signed image and watch for a Warehouse
    discovery → Freight → Promotion cycle to complete. Comment the result on #633.
-5. Once both are confirmed, the ROADMAP items gated on these issues
+6. Once both are confirmed, the ROADMAP items gated on these issues
    (`verifyImages` Enforce-flip, the O4 CI rejection-gate job, and capstone
    `Deployment` removal) unblock in the same session or the next executor run.
 

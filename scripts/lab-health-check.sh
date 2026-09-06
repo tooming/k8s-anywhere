@@ -135,6 +135,14 @@ bash "$(dirname "${BASH_SOURCE[0]}")/ondemand-budget-check.sh" 2>/dev/null || tr
 echo
 bash "$(dirname "${BASH_SOURCE[0]}")/k3s-datastore-health-check.sh" 2>/dev/null || true
 
+# Also informational only — same reasoning again: a cilium-agent apiserver-host drift
+# (2026-07-29, recurred 2026-09-06 — issue #633) makes pods stuck in
+# FailedCreatePodSandBox indistinguishable from generic overload in the checks above
+# unless this points at the actual root cause. See
+# scripts/cilium-apiserver-drift-check.sh's header for the story.
+echo
+bash "$(dirname "${BASH_SOURCE[0]}")/cilium-apiserver-drift-check.sh" 2>/dev/null || true
+
 echo
 if [ "$fail" -eq 0 ]; then printf '%s%sLAB HEALTH: PASS%s — the always-on stack is fully up.\n' "$B" "$G" "$Z"
 else printf '%s%sLAB HEALTH: FAIL%s — an always-on workload is down (see ✗).\n' "$B" "$R" "$Z"; fi

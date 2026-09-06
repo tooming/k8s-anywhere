@@ -17,6 +17,7 @@ setup() {
   TFSTATE="$REPO/scripts/tfstate-bootstrap.sh"
   BUDGET="$REPO/scripts/ondemand-budget-check.sh"
   DATASTORE="$REPO/scripts/k3s-datastore-health-check.sh"
+  CILIUMDRIFT="$REPO/scripts/cilium-apiserver-drift-check.sh"
   MAKEFILE="$REPO/Makefile"
 }
 
@@ -402,5 +403,51 @@ setup() {
 
 @test "lab-health-check.sh reports k3s datastore health informationally (never flips PASS/FAIL)" {
   run grep -q "k3s-datastore-health-check.sh" "$HEALTHCHECK"
+  [ "$status" -eq 0 ]
+}
+
+# --- scripts/cilium-apiserver-drift-check.sh ------------------------------------
+# Cilium's kube-proxy-free mode (ADR-0014) bakes the control-plane node's docker-
+# bridge IP into every cilium-agent pod's KUBERNETES_SERVICE_HOST — `make cilium-up`
+# re-derives and re-applies it, but nothing re-runs that automatically when the IP
+# changes (Colima/k3d stop+start, a node container restart). First found 2026-07-29
+# (docs/incident-log.md, noted "re-check if it recurs"); recurred 2026-09-06 mid
+# issue #633 investigation, silently stalling pod-sandbox creation cluster-wide for
+# 10+ minutes before being diagnosed. This script is the mechanical guard.
+@test "cilium-apiserver-drift-check.sh exists" {
+  [ -f "$CILIUMDRIFT" ]
+}
+
+@test "cilium-apiserver-drift-check.sh is executable" {
+  [ -x "$CILIUMDRIFT" ]
+}
+
+@test "cilium-apiserver-drift-check.sh compares KUBERNETES_SERVICE_HOST against the live kubernetes Endpoints" {
+  run grep -q "KUBERNETES_SERVICE_HOST" "$CILIUMDRIFT"
+  [ "$status" -eq 0 ]
+  run grep -q "kubectl get endpoints kubernetes" "$CILIUMDRIFT"
+  [ "$status" -eq 0 ]
+}
+
+@test "cilium-apiserver-drift-check.sh points at 'make cilium-up' as the fix, not a duplicate helm invocation" {
+  run grep -q "make cilium-up" "$CILIUMDRIFT"
+  [ "$status" -eq 0 ]
+  run grep -q "helm upgrade" "$CILIUMDRIFT"
+  [ "$status" -eq 1 ]
+}
+
+@test "cilium-apiserver-drift-check.sh exits non-zero when the cluster is unreachable" {
+  run env KUBECONFIG=/nonexistent-kubeconfig-$$ bash "$CILIUMDRIFT"
+  [ "$status" -ne 0 ]
+}
+
+@test "Makefile cilium-drift-check target invokes cilium-apiserver-drift-check.sh" {
+  run grep -A1 '^cilium-drift-check:' "$MAKEFILE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"cilium-apiserver-drift-check.sh"* ]]
+}
+
+@test "lab-health-check.sh reports cilium apiserver-host drift informationally (never flips PASS/FAIL)" {
+  run grep -q "cilium-apiserver-drift-check.sh" "$HEALTHCHECK"
   [ "$status" -eq 0 ]
 }
