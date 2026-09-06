@@ -766,26 +766,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-23-envoy-gateway-chart-1-8-3.md](docs/done/2026-07-23-envoy-gateway-chart-1-8-3.md).
   (auto/envoy-gateway-chart-1-8-3; PR #674) Closes #671.
 
-- [x] 🟢 **Bump kiali-server chart `1.89.8` → `2.29.0`** (CHARTER **Core Values**
-  §"Everything as code" + §"Docs & dashboards don't drift"; RFC #668 — architect
-  decision 2026-07-23, ADR-0012 audit resolved as **Convert**.) Discovered live:
-  `gitops/platform/kiali.yaml`'s pinned `kiali-server` chart `1.89.8` (the last
-  pre-2.0 release) no longer resolves in the live `kiali.org/helm-charts` index,
-  breaking `make ci`'s `helm-chart-pin-check.sh` drift gate for every PR on
-  `main` regardless of diff — verified not transient (main's own CI passed this
-  exact check 4.5 hours before the break was found). Decision + implementation
-  landed in the same PR (rather than the usual RFC-then-separate-executor-PR
-  split) because the break affects the base branch itself: any subsequent PR's
-  CI would also show this same unrelated failure until the pin is fixed, so
-  waiting for a second PR would mean deliberately merging over a known-red
-  check with no way to get green first. See ADR-0012's Re-evaluation log
-  (2026-07-23 entry) and RFC #668 for the full verification trail (confirmed
-  the Kiali 2.0 breaking changes — Discovery Selectors, `kubernetes_config.
-  cache_*` removal, `istio_namespace` removal — don't touch this lab's
-  `valuesObject` keys). `docs/dependency-tree.md` and `tests/platform.bats`
-  updated. Kiali is on-demand/non-auto-synced (ADR-0012) — zero live-cluster
-  blast radius. `make ci` must pass. `docs/done/` entry required. Closes #668.
-  (arch/adr-0012-kiali-chart-index-audit)
+- [x] 🟢 **Bump kiali-server chart `1.89.8` → `2.29.0`** — full verification
+  writeup:
+  [docs/done/2026-07-23-arch-adr-0012-kiali-chart-index-audit.md](docs/done/2026-07-23-arch-adr-0012-kiali-chart-index-audit.md).
+  (arch/adr-0012-kiali-chart-index-audit; PR #669) Closes #668.
 
 - [x] 🟢 **Bump Valkey image tag `8.0-alpine` → `8.0.10-alpine`** — full
   verification writeup:
@@ -880,67 +864,25 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-17-kyverno-psa-restricted.md](docs/done/2026-07-17-kyverno-psa-restricted.md).
   (auto/kyverno-psa-restricted; PR #486) Closes #483.
 
-- [x] 🟢 **`vault` PSA `baseline` → `restricted` flip** (CHARTER **Objective
-  O2** hardening, RFC #478 — architect decision 2026-07-17, converting audit
-  #477; supersedes the 2026-06-11 audit #157 "keep" — see ADR-0017
-  §"Re-evaluation log" for both entries). The flip condition #157 was waiting
-  on is now met: a real, pinnable `hashicorp/vault-helm` chart release
-  (`v0.34.0`, 2026-07-02) ships a Vault server (`v2.0.3`) that no longer holds
-  `cap_ipc_lock` at build time (verified against `hashicorp/vault` release
-  `v2.0.2`'s changelog, 2026-06-05). Bump `gitops/platform/vault.yaml` chart
-  `0.32.0` → `0.34.0`; add `disable_mlock = true` to the standalone config;
-  flip `gitops/vault/namespace.yaml`'s four PSA labels `baseline` →
-  `restricted`; add the standard ADR-0017 §Layer 1 `securityContext` (verify
-  exact chart value keys against the pinned `0.34.0` `values.yaml` — don't
-  guess, ADR-0004) with an `emptyDir` carve-out for any non-PVC write path;
-  bump `gitops/vault/unsealer.yaml`'s image `hashicorp/vault:1.21.2` →
-  `hashicorp/vault:2.0.3`; update the ADR-0017 `vault` row to `restricted`.
-  Extend `tests/securitycontext.bats` (or a dedicated vault test file) with
-  the four PSA labels + the five Layer-1 securityContext fields. `make ci`
-  must pass — note in the PR body that whether Vault actually starts cleanly
-  under `restricted` + `disable_mlock` is not verifiable in this remote
-  clusterless environment (same caveat every other chart bump here already
-  carries). `docs/done/` entry required. Closes #478.
-  (auto/vault-psa-restricted)
+- [x] 🟢 **`vault` PSA `baseline` → `restricted` flip** — full verification
+  writeup:
+  [docs/done/2026-07-17-vault-psa-restricted.md](docs/done/2026-07-17-vault-psa-restricted.md).
+  (auto/vault-psa-restricted; PR #481) Closes #478.
 
 - [x] 🟢 **Governance LimitRange fan-out — `cert-manager` + `keda`** — full
   verification writeup:
   [docs/done/2026-07-16-governance-cert-manager-keda.md](docs/done/2026-07-16-governance-cert-manager-keda.md).
   (auto/governance-cert-manager-keda; PR #451)
 
-- [x] 🟢 **`observability` readOnlyRootFilesystem tighten — Alloy** (CHARTER
-  **Objective O2** hardening, ADR-0017 §"Per-workload field carve-outs"; split from the
-  combined Alloy/Grafana/Pyroscope item filed 2026-07-14 — see that run's note below
-  for the network-access finding that unblocked this). Verified against the actual
-  `alloy` chart source at the pinned tag (`grafana/alloy` repo, tag `helm-chart/1.8.2`,
-  `operations/helm/charts/alloy/templates/controllers/_pod.yaml` +
-  `templates/containers/_agent.yaml`): contrary to this item's original comment, the
-  chart does **not** create an `emptyDir` for `--storage.path` (default `/tmp/alloy`) —
-  there is no volume or mount matching that path at all, so it was landing on the
-  container's writable root fs. Fixed by adding an explicit `alloy-storage` `emptyDir`
-  via `controller.volumes.extra` + `alloy.mounts.extra` at `/tmp/alloy`, then flipping
-  `readOnlyRootFilesystem: false` → `true`. Extended
-  `tests/securitycontext-observability.bats` with assertions for
-  `readOnlyRootFilesystem: true` and the new mount. `make ci` must pass. `docs/done/`
-  entry required. (auto/observability-readonlyrootfs-alloy)
+- [x] 🟢 **`observability` readOnlyRootFilesystem tighten — Alloy** — full
+  verification writeup:
+  [docs/done/2026-07-15-observability-readonlyrootfs-alloy.md](docs/done/2026-07-15-observability-readonlyrootfs-alloy.md).
+  (auto/observability-readonlyrootfs-alloy; PR #413)
 
-- [x] 🟢 **`observability` readOnlyRootFilesystem tighten — Grafana** (CHARTER
-  **Objective O2** hardening, ADR-0017 §"Per-workload field carve-outs"; split from the
-  combined item filed 2026-07-14). Verified against the pinned chart source
-  (`grafana-community/helm-charts` repo — the chart migrated off `grafana/helm-charts`
-  — tag `grafana-10.5.15`, `charts/grafana/templates/_pod.tpl`) and the
-  `grafana/grafana` image source (tag `v13.0.1`, `pkg/infra/log/log.go` +
-  `packaging/docker/run.sh`): `GF_PATHS_DATA` (`/var/lib/grafana`, including the
-  plugins subdir) is our existing PVC; `/var/lib/grafana-search`
-  (`unified_storage.index_path`) is an unconditional chart-managed `emptyDir`
-  regardless of values; `GF_PATHS_LOGS` (`/var/log/grafana`) is only `MkdirAll`'d by
-  Grafana under `log.mode: file` — our config's `log.mode: console` (the chart
-  default) never reaches that code path, so the directory is never created or
-  written. No new mount was needed — flipped `readOnlyRootFilesystem: false` → `true`
-  directly, replaced the stale "follow-up item" comment with the verified rationale,
-  and extended `tests/securitycontext-observability.bats` with a
-  `readOnlyRootFilesystem: true` assertion. `make ci` passes. `docs/done/` entry
-  required. (auto/observability-readonlyrootfs-grafana)
+- [x] 🟢 **`observability` readOnlyRootFilesystem tighten — Grafana** — full
+  verification writeup:
+  [docs/done/2026-07-15-observability-readonlyrootfs-grafana.md](docs/done/2026-07-15-observability-readonlyrootfs-grafana.md).
+  (auto/observability-readonlyrootfs-grafana; PR #414)
 
 - [x] 🟢 **`observability` readOnlyRootFilesystem tighten — Pyroscope** — full
   verification writeup:
@@ -1030,28 +972,9 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-15-argo-rollouts-dashboard.md](docs/done/2026-06-15-argo-rollouts-dashboard.md).
   (auto/argo-rollouts-dashboard; PR #211)
 
-- [x] 🟢 **Trivy Operator dashboard** (CHARTER **Objective O1** + **O5**; deferred
-  from `auto/trivy-operator` per the 400-line budget rule — see
-  `docs/done/auto-trivy-operator.md` and the `docs/dependency-tree.md` Trivy note:
-  "Dashboard `grafana/dashboards/lab-trivy.json` is the next planner item
-  (ADR-0004 compliance)"). The Alloy scrape job (`prometheus.scrape "trivy_operator"`
-  targeting `trivy-operator.trivy-system.svc.cluster.local:8080`) is already wired in
-  `gitops/platform/observability-alloy.yaml` — no scrape change needed. New
-  `grafana/dashboards/lab-trivy.json` ("Lab — Trivy Operator (Supply Chain)")
-  modelled on `lab-kyverno.json` stat-row: operator running (KSM
-  `kube_deployment_status_replicas_available{namespace="trivy-system"}`); ArgoCD
-  sync state; CVE-by-severity stat panels (Critical / High / Medium / Low) from
-  `trivy_image_vulnerabilities{severity=~"CRITICAL|HIGH|MEDIUM|LOW"}` aggregated
-  across all workloads; top-10 vulnerable-workload bar chart (sum by `resource` label
-  with `topk(10, …)`); configAudit pass/fail pie
-  (`trivy_config_audit_checks_total{severity=…}`); SBOM report count stat panel
-  (`trivy_sbom_reports_total` by namespace — direct CHARTER supply-chain goal).
-  All panels real Mimir data (ADR-0004 — any panel whose metric has not yet emitted
-  a series must show "No data" naturally, not a fabricated fallback). Extend
-  `tests/trivy-operator.bats`: `lab-trivy.json` exists; dashboard references
-  `trivy_image_vulnerabilities`; references `trivy_sbom_reports_total`; no
-  fabricated/placeholder data. Update `docs/dependency-tree.md` Trivy note to
-  confirm dashboard present. (auto/trivy-dashboard)
+- [x] 🟢 **Trivy Operator dashboard** — full verification writeup:
+  [docs/done/2026-06-15-trivy-dashboard.md](docs/done/2026-06-15-trivy-dashboard.md).
+  (auto/trivy-dashboard; PR #212)
 
 - [x] 🟢 **ArgoCD PSS Phase 1 — namespace warn+audit labels** (CHARTER
   **Objective O2**, due **2026-09-30**; RFC #205 — ADR-0017 argocd PSS
