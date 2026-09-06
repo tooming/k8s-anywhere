@@ -1,0 +1,28 @@
+# See gitops/platform/traefik-config.yaml for the full finding this fixes.
+#
+# k3s's helm-controller merges this HelmChartConfig's valuesContent into the
+# auto-managed HelmChart/traefik (kube-system) before every install/upgrade —
+# this repo never touches that HelmChart resource directly. Name + namespace
+# MUST match the HelmChart exactly (helm-controller convention).
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    readinessProbe:
+      timeoutSeconds: 10
+      failureThreshold: 3
+      periodSeconds: 10
+    livenessProbe:
+      timeoutSeconds: 10
+      failureThreshold: 5
+      periodSeconds: 10
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi

@@ -1,0 +1,61 @@
+# Traefik probe/resource tuning — ADR-0040 follow-on, found live 2026-09-06.
+#
+# Traefik ships bundled with k3s (ADR-0040): there is no chart Application for it
+# in this repo to attach a `valuesObject` to. k3s's own helm-controller renders it
+# from an auto-managed `HelmChart` (kube-system/traefik) that this repo must not
+# edit directly (k3s reconciles it back). The supported customization point is a
+# `HelmChartConfig` of the same name/namespace — k3s's helm-controller merges its
+# `valuesContent` into the chart's own values before install/upgrade. This
+# Application just delivers that one manifest via GitOps, same as Cilium
+# (gitops/platform/cilium.yaml) is the other kube-system-targeted plain resource
+# this repo manages.
+#
+# Why: found live while investigating issue #633 on this exact host. Traefik was
+# stuck answering every request — even a Host()-matched, error-free IngressRoute
+# like ArgoCD's — with a bare "404 page not found", reproduced from INSIDE the
+# Traefik pod itself over loopback (ruling out any network/NetworkPolicy/frontdoor
+# involvement). `kubectl get pod ... lastState` showed repeated
+# `terminated: {exitCode: 2, reason: Error}` and the pod's own log showed Traefik's
+# graceful-shutdown message ("I have to go...") — i.e. the kubelet was SIGTERMing
+# it on liveness-probe failure (7 restarts observed in under an hour), and each
+# restart forces the kubernetescrd provider to re-list every IngressRoute from an
+# apiserver that is itself under heavy load, so the router table never finished
+# rebuilding before the next restart hit.
+#
+# Root cause: the chart's own default readinessProbe/livenessProbe
+# (`timeoutSeconds: 2`, readiness `failureThreshold: 1`) assume a lightly-loaded
+# host. This lab's single 8 vCPU/12GB host running its full always-on stack
+# routinely produces >2s probe response latency (same class of finding as the
+# 2026-08-11 systemic probe-timeout audit that fixed Harbor #1040/#1102, ArgoCD
+# repo-server #1103, Kyverno's admission controller #1115, and Cilium's operator
+# leader-election timers above in this same directory — and the same symptom
+# family PR #1063 fixed for the since-removed Envoy Gateway via
+# leaderElection.disable). Traefik is the one always-on component that migration
+# left on the chart's un-widened stock probes. Widen them the same way; also add
+# explicit resource requests (the chart ships none by default) so Traefik gets a
+# guaranteed CPU/memory share under contention instead of competing from zero,
+# mirroring Cilium's sizing in this same file.
+#
+# Rollback: delete this Application (or its HelmChartConfig content) — k3s's
+# helm-controller reconciles straight back to the chart's stock values.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik-config
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ssh://git@host.k3d.internal:2223/lab/k8s-lab.git
+    targetRevision: main
+    path: gitops/traefik-config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=false
