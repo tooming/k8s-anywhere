@@ -7,19 +7,23 @@
 # ExternalSecret sync cluster-wide, not just in this namespace.
 #
 # This is a CiliumNetworkPolicy with `fromEntities: remote-node`, NOT the
-# `ipBlock: 10.43.0.1/32` pattern used by gitops/kyverno, gitops/cert-manager,
-# and gitops/keda's equivalent files. Verified live with `cilium monitor --type
-# drop` on a from-scratch cluster: k3s embeds the apiserver in the server
-# node's own process, so its outbound webhook call arrives with Cilium's
-# `remote-node` identity and the *node's* pod-network IP as source (observed
-# 10.0.0.194, not 10.43.0.1) — the ClusterIP is never the real source address
-# on an outbound connection, so the ipBlock rule silently never matches. Found
-# via "failed calling webhook ... context deadline exceeded" on
-# rabbitmq-creds/valkey-creds/garage-secrets on a from-scratch `make up`.
-# (Doc-precision update: the other three webhook-from-apiserver.yaml files —
-# gitops/kyverno, gitops/cert-manager, gitops/keda — were checked and are
-# already on this same CiliumNetworkPolicy + remote-node shape; no follow-up
-# fix remains outstanding.)
+# `ipBlock: 10.43.0.1/32` pattern used by gitops/kyverno's and
+# gitops/cert-manager's equivalent files (gitops/keda's own copy was removed
+# 2026-08-25 alongside the rest of KEDA going on-demand-only, and KEDA itself
+# was removed entirely 2026-09-06, ADR-0029). Verified live with `cilium
+# monitor --type drop` on a from-scratch cluster: k3s embeds the apiserver in
+# the server node's own process, so its outbound webhook call arrives with
+# Cilium's `remote-node` identity and the *node's* pod-network IP as source
+# (observed 10.0.0.194, not 10.43.0.1) — the ClusterIP is never the real
+# source address on an outbound connection, so the ipBlock rule silently
+# never matches. Found via "failed calling webhook ... context deadline
+# exceeded" on rabbitmq-creds/valkey-creds/garage-secrets on a from-scratch
+# `make up` (RabbitMQ and Valkey were both removed entirely 2026-09-06,
+# ADR-0009/ADR-0018 — this is a historical repro note, not a live consumer
+# list).
+# (Doc-precision update: gitops/kyverno and gitops/cert-manager were checked
+# and are already on this same CiliumNetworkPolicy + remote-node shape; no
+# follow-up fix remains outstanding.)
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

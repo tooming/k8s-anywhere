@@ -2,7 +2,7 @@
 #
 # Why this is needed: with default-deny egress, per-service egress rules
 # select destination *pods* by namespace/label selector. But clients connect
-# to the Kubernetes *Service ClusterIP* (e.g. valkey.data.svc → 10.43.x.x),
+# to the Kubernetes *Service ClusterIP* (e.g. vault.vault.svc → 10.43.x.x),
 # and Cilium's socket-LB may evaluate egress policy against that ClusterIP
 # *before* translating it to the backend pod IP. A pod-selector egress rule
 # never matches a ClusterIP, so the connection is dropped and pods see

@@ -2053,6 +2053,32 @@ there is no point where the lab loses a working git source or CI path.
   `tests/velero.bats` directly). `make ci` must pass. `docs/done/` entry required.
   (auto/velero-networkpolicy-tidb-comment-fix)
 
+- [x] 🟢 **Fix 4 stale RabbitMQ/Valkey/KEDA references in `gitops/` header comments
+  (post-2026-09-06-removal drift)** — full verification writeup:
+  [docs/done/2026-09-06-rabbitmq-valkey-keda-comment-sweep.md](docs/done/2026-09-06-rabbitmq-valkey-keda-comment-sweep.md).
+  (auto/rabbitmq-valkey-keda-comment-sweep)
+  (ADR-0004; JANITOR-fallback coverage sweep 2026-09-06, following up on the same-day
+  RabbitMQ/Valkey/KEDA removal (ADR-0009/ADR-0018/ADR-0029) — same "check every
+  `gitops/` file for lingering references to a just-removed component" pattern that
+  already caught one real stale comment each for the TiDB removal and the
+  observability-stack removal earlier this run.)
+
+  Fixed 4 present-tense comments still describing removed components as live:
+  `gitops/vault/networkpolicy/allow-vault-from-eso.yaml` (ExternalSecret consumer
+  list still named rabbitmq/valkey), `gitops/external-secrets/networkpolicy/
+  allow-eso-webhook-from-apiserver.yaml` (compared its shape to "gitops/keda's
+  equivalent files", a directory that no longer exists), `gitops/platform/
+  harbor.yaml` (implied Valkey was merely "unaffected" by Harbor's redis-photon
+  exception rather than removed entirely), and `gitops/network/policies/
+  zz-dns-clusterip-bridge.yaml` (illustrative ClusterIP example used
+  `valkey.data.svc`, a Service that no longer exists — swapped for
+  `vault.vault.svc`). Left `gitops/kyverno/policies/
+  require-pod-security-restricted.yaml`'s "mimir, loki, tempo, moto, rabbitmq,
+  valkey" list alone — that's a past-tense description of a historical incident
+  (a PSS-rejection replay), not a present-tense claim about current namespace
+  contents, so it's accurate as written. `make ci` must pass. `docs/done/` entry
+  required. (auto/rabbitmq-valkey-keda-comment-sweep)
+
 - ~~🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
   sync strategy**~~ (issue #1335; RFC #1340 — architect decision 2026-08-25:
   build a scheduled, pull-based, fast-forward-only Forgejo Actions sync job
