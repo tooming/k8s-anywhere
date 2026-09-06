@@ -289,6 +289,8 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) cilium-up
 	$(MAKE) coredns-host-alias
 	$(MAKE) argocd
+	$(MAKE) forgejo-up
+	$(MAKE) forgejo-repo-secret
 	$(MAKE) gitlab-up
 	$(MAKE) gitlab-configure
 	$(MAKE) root-app
@@ -402,9 +404,9 @@ gitlab-up: ## Start GitLab omnibus and wait until healthy (first boot ~5 min)
 gitlab-down: ## Stop GitLab omnibus (frees ~3 GB; keeps its volumes)
 	cd gitlab && docker compose stop
 
-# --- Forgejo (ADR-0035, migration stage 1 — additive, NOT yet the live git source) ---
+# --- Forgejo (ADR-0035 — the lab's live git source + CI runner) ---
 .PHONY: forgejo-up
-forgejo-up: ## Start Forgejo + runner and wait until healthy (migration stage 1, ADR-0035)
+forgejo-up: ## Start Forgejo + runner and wait until healthy (ADR-0035)
 	@bash scripts/forgejo-env-ensure.sh
 	cd forgejo && docker compose up -d
 	@echo "waiting for Forgejo to be healthy..."
@@ -420,6 +422,10 @@ forgejo-runner-up: ## Register (if needed) and (re)start the Forgejo Actions run
 .PHONY: forgejo-down
 forgejo-down: ## Stop Forgejo + runner (keeps volumes)
 	cd forgejo && docker compose stop
+
+.PHONY: forgejo-repo-secret
+forgejo-repo-secret: ## Ensure the lab/k8s-lab repo + ArgoCD SSH deploy-key Secret exist on Forgejo (idempotent; closes the fresh-cluster root-app sync gap)
+	@bash scripts/forgejo-repo-secret.sh
 
 .PHONY: gitlab-configure
 gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the repo

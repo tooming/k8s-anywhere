@@ -380,19 +380,28 @@ is reconciled by ArgoCD from GitLab.
 | 4 | Cilium CNI | `cilium-up` | yes (Helm) | the CNI — nodes stay `NotReady` and pods can't schedule until this runs; must precede ArgoCD (ADR-0014) |
 | 5 | CoreDNS host alias | `coredns-host-alias` | yes (`scripts/coredns-host-alias.sh`) | teaches CoreDNS to resolve `host.k3d.internal` (k3d 5.x on Colima omits this); needed before ArgoCD's `repoURL` (which targets `host.k3d.internal`) can resolve |
 | 6 | ArgoCD | `argocd` | yes (Terraform/Helm) | the GitOps engine — must exist before GitOps |
-| 7 | GitLab omnibus | `gitlab-up` | yes (docker) | the git **source** — can't be created by ArgoCD (chicken-and-egg, ADR-0001) |
-| 8 | GitLab project + repo secret + push | `gitlab-configure` | yes (Terraform + git) | mints root token (`scripts/gitlab-pat.sh`), creates the project + ArgoCD repo deploy-token, pushes the repo |
-| 9 | App-of-apps | `root-app` | yes (`kubectl apply`) | the single seed; ArgoCD now syncs **everything else** |
-| 10 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | yes (`scripts/coredns-host-alias.sh nip-io-rewrite`) | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Traefik's in-cluster Service (nip.io's real DNS otherwise resolves it to a pod's own loopback); must run after `root-app` since Traefik (bundled with k3s, ADR-0040) needs a moment to be scheduled on cluster boot — polls up to `COREDNS_NIPIO_WAIT` (default 300s) rather than assuming it exists immediately |
-| 11 | Vault bootstrap | `vault-bootstrap` | yes (`scripts/vault-bootstrap.sh`) | init/unseal, store keys in `vault-keys`, enable KV, **generate+write secrets**, enable k8s auth + `eso` role |
-| 12 | GitLab TLS bootstrap | `gitlab-tls-bootstrap` | yes (`scripts/gitlab-tls-bootstrap.sh`) | mint mkcert cert + start nginx TLS proxy + publish `gitlab-tls-ca` ConfigMap; must run after Vault (the observability namespace is created by ArgoCD by this point) and before Garage, so the CA is in place before Grafana's init container bakes its CA bundle |
-| 13 | Garage bootstrap | `garage-bootstrap` | yes (`scripts/garage-bootstrap.sh`) | assign layout, create S3 key + buckets, push the S3 key to Vault |
-| 14 | Cosign bootstrap | `cosign-bootstrap` | yes (`scripts/cosign-bootstrap.sh`) | generate the cosign keypair + seed the `cosign-public-key` ConfigMap in `kyverno` (idempotent, ADR-0019); needs Garage's S3 key in place first |
-| 15 | Front door | `frontdoor` | yes (`scripts/frontdoor-ensure.sh`) | bring up the stable `:8000` entry point to the active cluster (canonical lab entry) |
-| 16 | Grafana Git Sync bootstrap | `grafana-gitsync-bootstrap` | yes (`scripts/grafana-gitsync-bootstrap.sh`) | create the Pure Git `Repository` in Grafana's unified storage + set the home dashboard; must run once Grafana is healthy (waits up to 5 min) |
+| 7 | Forgejo | `forgejo-up` | yes (docker) | the git **source** every `Application.spec.source.repoURL` actually points at (ADR-0035, since PR #1205) — can't be created by ArgoCD (chicken-and-egg, ADR-0001) |
+| 8 | Forgejo repo + ArgoCD SSH deploy-key secret | `forgejo-repo-secret` | yes (`scripts/forgejo-repo-secret.sh`) | idempotently ensures the `lab/k8s-lab` org+repo exist and the `repo-forgejo-gitops` Secret (SSH deploy key) is loaded into the `argocd` namespace — **must** run before `root-app`, or its very first sync fails outright (`error creating SSH agent: SSH_AUTH_SOCK not-specified`); confirmed live 2026-09-06 |
+| 9 | GitLab omnibus | `gitlab-up` | yes (docker) | legacy — no live `Application` reads from it any more (superseded by row 7/8, ADR-0035); kept running pending the still-open GitLab decommission ROADMAP item, not because anything still depends on it |
+| 10 | GitLab project + repo secret + push | `gitlab-configure` | yes (Terraform + git) | legacy, same caveat as row 9 — mints root token (`scripts/gitlab-pat.sh`), creates the project + ArgoCD repo deploy-token (`repo-gitlab-gitops`, unused by any current `repoURL`), pushes the repo |
+| 11 | App-of-apps | `root-app` | yes (`kubectl apply`) | the single seed; ArgoCD now syncs **everything else** |
+| 12 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | yes (`scripts/coredns-host-alias.sh nip-io-rewrite`) | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Traefik's in-cluster Service (nip.io's real DNS otherwise resolves it to a pod's own loopback); must run after `root-app` since Traefik (bundled with k3s, ADR-0040) needs a moment to be scheduled on cluster boot — polls up to `COREDNS_NIPIO_WAIT` (default 300s) rather than assuming it exists immediately |
+| 13 | Vault bootstrap | `vault-bootstrap` | yes (`scripts/vault-bootstrap.sh`) | init/unseal, store keys in `vault-keys`, enable KV, **generate+write secrets**, enable k8s auth + `eso` role |
+| 14 | GitLab TLS bootstrap | `gitlab-tls-bootstrap` | yes (`scripts/gitlab-tls-bootstrap.sh`) | legacy, same caveat as row 9/10 — Forgejo's git operations go over SSH and need no equivalent TLS layer; mint mkcert cert + start nginx TLS proxy + publish `gitlab-tls-ca` ConfigMap; must run after Vault (the observability namespace is created by ArgoCD by this point) and before Garage, so the CA is in place before Grafana's init container bakes its CA bundle |
+| 15 | Garage bootstrap | `garage-bootstrap` | yes (`scripts/garage-bootstrap.sh`) | assign layout, create S3 key + buckets, push the S3 key to Vault |
+| 16 | Cosign bootstrap | `cosign-bootstrap` | yes (`scripts/cosign-bootstrap.sh`) | generate the cosign keypair + seed the `cosign-public-key` ConfigMap in `kyverno` (idempotent, ADR-0019); needs Garage's S3 key in place first |
+| 17 | Front door | `frontdoor` | yes (`scripts/frontdoor-ensure.sh`) | bring up the stable `:8000` entry point to the active cluster (canonical lab entry) |
+| 18 | Grafana Git Sync bootstrap | `grafana-gitsync-bootstrap` | yes (`scripts/grafana-gitsync-bootstrap.sh`) | create the Pure Git `Repository` in Grafana's unified storage + set the home dashboard; must run once Grafana is healthy (waits up to 5 min) |
 
-Once 9–10 are done, **External Secrets** syncs Vault → k8s Secrets, and the
+Once 11–12 are done, **External Secrets** syncs Vault → k8s Secrets, and the
 workloads (Garage, Mimir, Grafana, Alloy, Traefik, moto, …) come up on their own.
+
+Rows 9, 10, and 14 are GitLab-era steps `make up` still runs for legacy reasons only
+(the GitLab→Forgejo cutover flipped every `repoURL` live, PR #1205, but GitLab's own
+decommission — dropping `gitlab/docker-compose.yml` + `infra/modules/gitlab-config` —
+is a separate, still-open ROADMAP item, deliberately kept a beat longer as a rollback
+path). Don't read this table as GitLab being the git source; it hasn't been since
+2026-08-17.
 
 ### Secret dependency chain (subtle bit)
 - Vault must hold `secret/garage/server` **before** Garage starts (ESO → `garage-secrets` → Garage). `vault-bootstrap` generates it.
