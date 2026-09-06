@@ -1912,6 +1912,40 @@ there is no point where the lab loses a working git source or CI path.
   least one of the five files. `make ci` must pass. `docs/done/` entry required.
   (auto/dora-kyverno-failurepolicy-fix)
 
+- [x] 🟢 **`scripts/ensure-lint-tools-hook.sh` — auto-install `shellcheck`/`yamllint`
+  at session start so `make ci`'s lint gate can't silently self-skip either** —
+  full verification writeup:
+  [docs/done/2026-09-06-ensure-lint-tools-session-start-hook.md](docs/done/2026-09-06-ensure-lint-tools-session-start-hook.md).
+  (auto/ensure-lint-tools-hook)
+  (CLAUDE.md's bugfix-recurrence-prevention rule; JANITOR-fallback cleanup 2026-09-06,
+  a direct follow-up to `auto/ensure-bats-hook` (#1448) earlier this same run — same
+  footgun class, a different pair of tools. Found live checking whether the ArgoCD
+  chart-bump candidate this cycle's `[Action needed]` note (#1450) mentioned could be
+  attempted more safely with `kustomize`/`helm` installed locally: neither was
+  installed either, and neither is `shellcheck`/`yamllint` — `scripts/lint.sh`'s own
+  local/CI skip (`command -v shellcheck`/`yamllint`, soft-skip locally, hard-fail
+  under `CI=true`) meant this session's own `make ci` had been silently skipping the
+  entire `lint` gate the whole run, on every one of this run's prior PRs, exactly the
+  same self-review blind spot the bats fix closed for the `unit` gate.)
+
+  Added `scripts/ensure-lint-tools-hook.sh`, a best-effort `SessionStart` hook
+  (installs `shellcheck`/`yamllint` via `apt-get` if missing, silently no-ops if
+  `apt-get`/network/permission isn't available — never blocks the session) wired
+  into `.claude/settings.json`. Once both are on `PATH`, `scripts/lint.sh`'s own
+  existing local/CI branch naturally takes the "run the real check" path for the
+  rest of the session — no change needed to `lint.sh` itself. Verified live: running
+  `bash scripts/lint.sh` after installing both found zero pre-existing lint findings
+  across the whole repo (the GitHub Actions backstop had genuinely been keeping this
+  clean; installing the tools locally didn't surface a hidden violation this PR would
+  otherwise need to fix). Added `tests/hook-scripts-ensure-lint-tools.bats` (its own
+  file per `tests/hook-scripts-coverage.bats`'s frozen-monolith rule, mirroring
+  `tests/hook-scripts-ensure-bats.bats`'s structure) covering: script
+  exists/executable, exits 0 + reports "already installed" for both tools when
+  present (the actual path this bats run itself exercises), exits 0 even with no
+  `apt-get`/tools on `PATH` (never blocks), and is actually wired into
+  `.claude/settings.json` (valid JSON preserved). `make ci` must pass. `docs/done/`
+  entry required. (auto/ensure-lint-tools-hook)
+
 - ~~🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
   sync strategy**~~ (issue #1335; RFC #1340 — architect decision 2026-08-25:
   build a scheduled, pull-based, fast-forward-only Forgejo Actions sync job
