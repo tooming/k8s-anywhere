@@ -1,8 +1,10 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for Velero (backup/restore controller, ADR-0021,
 # CHARTER O1 + O3). Validates GitOps wiring (Application shape, namespace PSA labels,
-# NetworkPolicy overlay, ExternalSecret), the Garage bootstrap seam, the Alloy metrics
-# scrape job, and the Grafana dashboard — no running cluster required.
+# NetworkPolicy overlay, ExternalSecret) and the Garage bootstrap seam — no running
+# cluster required. The Alloy metrics scrape job and Grafana dashboard this file
+# used to also test were removed 2026-09-06 (ADR-0041, observability stack removed
+# with no replacement).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -147,18 +149,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "velero allow-velero-metrics-from-observability rule exists" {
-  [ -f "$REPO/gitops/velero/networkpolicy/allow-velero-metrics-from-observability.yaml" ]
-}
-
-@test "velero metrics allow rule permits ingress on TCP 8085" {
-  run grep -q 'port: 8085' "$REPO/gitops/velero/networkpolicy/allow-velero-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "velero metrics allow rule selects Alloy pods from observability namespace" {
-  run grep -q 'app.kubernetes.io/name: alloy' "$REPO/gitops/velero/networkpolicy/allow-velero-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+@test "velero allow-velero-metrics-from-observability rule no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/velero/networkpolicy/allow-velero-metrics-from-observability.yaml" ]
 }
 
 @test "velero allow-velero-egress-storage rule exists" {
@@ -184,9 +176,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "velero kopia-pv egress rule allows egress to observability namespace" {
+@test "velero kopia-pv egress rule no longer allows egress to the observability namespace (ADR-0041)" {
   run grep -q -- '- observability' "$REPO/gitops/velero/networkpolicy/allow-velero-egress-kopia-pv.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 # --- velero-networkpolicy Application (wave 4) --------------------------------
@@ -204,58 +196,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Alloy scrape job (ADR-0021 §"Observability") ----------------------------
-@test "observability-alloy has a velero scrape job" {
-  run grep -q 'prometheus.scrape "velero"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "velero scrape targets velero.velero.svc on port 8085" {
-  run grep -q 'velero.velero.svc.cluster.local:8085' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-alloy-egress-external includes egress to velero namespace on port 8085" {
-  run grep -q 'velero' "$REPO/gitops/observability/networkpolicy/allow-alloy-egress-external.yaml"
-  [ "$status" -eq 0 ]
-}
-
-# --- Grafana dashboard (ADR-0004 real metrics) -------------------------------
-@test "Grafana dashboard file lab-velero.json exists" {
-  [ -f "$REPO/grafana/dashboards/lab-velero.json" ]
-}
-
-@test "lab-velero.json is valid JSON" {
-  if ! command -v python3 >/dev/null 2>&1; then skip "python3 not installed"; fi
-  run python3 -c "import json,sys; json.load(open('$REPO/grafana/dashboards/lab-velero.json'))"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-velero.json uid is lab-velero" {
-  run grep -q '"uid": "lab-velero"' "$REPO/grafana/dashboards/lab-velero.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-velero.json charts velero_backup_last_successful_timestamp" {
-  run grep -q 'velero_backup_last_successful_timestamp' "$REPO/grafana/dashboards/lab-velero.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-velero.json charts velero_backup_partial_failure_total" {
-  run grep -q 'velero_backup_partial_failure_total' "$REPO/grafana/dashboards/lab-velero.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-velero.json includes restore success/failure panels" {
-  run grep -q 'velero_restore_success_total' "$REPO/grafana/dashboards/lab-velero.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-velero.json's restore-failed panel references the real velero_restore_failed_total metric, not the nonexistent velero_restore_failure_total (2026-08-12, appVersion v1.18.1)" {
-  run grep -q 'velero_restore_failed_total' "$REPO/grafana/dashboards/lab-velero.json"
-  [ "$status" -eq 0 ]
-  run grep -q 'velero_restore_failure_total' "$REPO/grafana/dashboards/lab-velero.json"
-  [ "$status" -eq 1 ]
+# --- Alloy scrape job (ADR-0021 §"Observability") + Grafana dashboard REMOVED
+# 2026-09-06 (ADR-0041, observability stack removed with no replacement) --------
+@test "grafana/dashboards/lab-velero.json no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/grafana/dashboards/lab-velero.json" ]
 }
 
 # --- Schedules (ADR-0021 §"Schedule set"; one per stateful namespace) ---------
@@ -280,14 +224,8 @@ setup() {
 
 # Each Schedule: exists, is a velero.io/v1 Schedule, has the documented cron + TTL +
 # namespace, and sets defaultVolumesToFsBackup so PVCs are captured via Kopia.
-@test "observability-daily Schedule exists with cron 0 1, ttl 168h, namespace observability" {
-  f="$REPO/gitops/velero/schedules/observability-daily.yaml"
-  [ -f "$f" ]
-  grep -q 'kind: Schedule' "$f"
-  grep -q 'schedule: "0 1 \* \* \*"' "$f"
-  grep -q 'ttl: 168h' "$f"
-  grep -qE '^[[:space:]]*- observability$' "$f"
-  grep -q 'defaultVolumesToFsBackup: true' "$f"
+@test "observability-daily Schedule no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/velero/schedules/observability-daily.yaml" ]
 }
 
 @test "data-daily Schedule exists with cron 0 2, ttl 168h, namespace data" {

@@ -36,12 +36,8 @@ readme-check: ## Check README.md is in sync with the Makefile + tools (drift det
 	@bash scripts/readme-check.sh
 
 .PHONY: lab-ui-check
-lab-ui-check: ## Check the Grafana "Lab UIs" panel matches the HTTPRoutes in gitops
+lab-ui-check: ## Check README.md's Endpoints table matches the IngressRoutes in gitops
 	@bash scripts/lab-ui-check.sh
-
-.PHONY: o5-dashboard-coverage-check
-o5-dashboard-coverage-check: ## Check every auto-synced Application has a matching Grafana dashboard (CHARTER O5)
-	@bash scripts/o5-dashboard-coverage-check.sh
 
 .PHONY: appset-list-coverage-check
 appset-list-coverage-check: ## Check networkpolicy-appset/governance-appset list-generators cover every real leaf dir
@@ -71,10 +67,6 @@ securitycontext-tests-check: ## Check tests/securitycontext.bats stays frozen (n
 networkpolicy-tests-check: ## Check tests/networkpolicy.bats stays baseline-only (per-namespace tests go in networkpolicy-<scope>.bats)
 	@bash scripts/networkpolicy-tests-check.sh
 
-.PHONY: observability-tests-check
-observability-tests-check: ## Check tests/observability.bats stays frozen (new dashboard tests go in observability-<scope>.bats)
-	@bash scripts/observability-tests-check.sh
-
 .PHONY: yq-raw-check
 yq-raw-check: ## Check bats tests read yq scalars via yqs() (no bare yq calls — variant-quoting guard)
 	@bash scripts/yq-raw-check.sh
@@ -91,11 +83,6 @@ git-fixture-isolation-check: ## Check git-fixture bats tests unset GIT_* (so mak
 securitycontext-tests-mark: ## Refresh tests/.securitycontext-titles — run ONLY after an intentional rename/edit of a monolith test
 	@grep -oE '^@test "[^"]*"' tests/securitycontext.bats | sort > tests/.securitycontext-titles
 	@echo "  ok  tests/.securitycontext-titles refreshed ($$(wc -l < tests/.securitycontext-titles | tr -d ' ') titles)"
-
-.PHONY: observability-tests-mark
-observability-tests-mark: ## Refresh tests/.observability-titles — run ONLY after an intentional rename/edit of a monolith test
-	@grep -oE '^@test "[^"]*"' tests/observability.bats | sort > tests/.observability-titles
-	@echo "  ok  tests/.observability-titles refreshed ($$(wc -l < tests/.observability-titles | tr -d ' ') titles)"
 
 .PHONY: drift-detectors-tests-check
 drift-detectors-tests-check: ## Check tests/drift-detectors.bats stays frozen (new drift checks go in drift-<scope>.bats)
@@ -138,14 +125,6 @@ argocd-crd-ssa-check: ## Check Applications whose chart ships an oversized CRD s
 .PHONY: rollouts-plugin-list-check
 rollouts-plugin-list-check: ## Check Argo Rollouts plugin Helm values are YAML lists, not strings (drift detector)
 	@bash scripts/rollouts-plugin-list-check.sh
-
-.PHONY: analysistemplate-step-count-check
-analysistemplate-step-count-check: ## Check step-gating AnalysisTemplates set count (not just interval), else the controller crashloops (drift detector)
-	@bash scripts/analysistemplate-step-count-check.sh
-
-.PHONY: mimir-readonly-root-check
-mimir-readonly-root-check: ## Check every Mimir write path lands on a writable volume, not the read-only root (drift detector)
-	@bash scripts/mimir-readonly-root-check.sh
 
 .PHONY: probe-timeout-check
 probe-timeout-check: ## Check every explicit livenessProbe/readinessProbe/startupProbe has timeoutSeconds >= 5 (drift detector)
@@ -232,14 +211,12 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/test.sh
 	@bash scripts/readme-check.sh
 	@bash scripts/lab-ui-check.sh
-	@bash scripts/o5-dashboard-coverage-check.sh
 	@bash scripts/appset-list-coverage-check.sh
 	@bash scripts/workflow-timeout-check.sh
 	@bash scripts/roadmap-check.sh
 	@bash scripts/markdown-links-check.sh
 	@bash scripts/securitycontext-tests-check.sh
 	@bash scripts/networkpolicy-tests-check.sh
-	@bash scripts/observability-tests-check.sh
 	@bash scripts/yq-raw-check.sh
 	@bash scripts/yq-variant-guard-check.sh
 	@bash scripts/git-fixture-isolation-check.sh
@@ -248,8 +225,6 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/helm-chart-pin-check.sh
 	@bash scripts/argocd-crd-ssa-check.sh
 	@bash scripts/rollouts-plugin-list-check.sh
-	@bash scripts/analysistemplate-step-count-check.sh
-	@bash scripts/mimir-readonly-root-check.sh
 	@bash scripts/probe-timeout-check.sh
 	@bash scripts/adr-followup-check.sh
 	@bash scripts/adr-chart-version-sync-check.sh
@@ -296,14 +271,12 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) root-app
 	$(MAKE) coredns-nip-io-rewrite
 	$(MAKE) vault-bootstrap
-	$(MAKE) gitlab-tls-bootstrap
 	$(MAKE) garage-bootstrap
 	$(MAKE) cosign-bootstrap
 	$(MAKE) frontdoor
-	$(MAKE) grafana-gitsync-bootstrap
 	@echo ""
 	@echo "--- verifying every always-on workload is actually Running+Ready ---"
-	@UI="UIs via the front door on :8000 — Grafana http://localhost:8000 · ArgoCD http://argocd.127.0.0.1.nip.io:8000 · run 'make creds' for logins"; \
+	@UI="UIs via the front door on :8000 — ArgoCD http://argocd.127.0.0.1.nip.io:8000 · run 'make creds' for logins"; \
 		if bash scripts/lab-health-check.sh; then \
 			echo ""; echo "✅ lab up — every always-on workload is healthy. $$UI"; \
 		else \
@@ -510,14 +483,6 @@ garage-bootstrap: ## Assign Garage layout + create key/buckets + push S3 key to 
 cosign-bootstrap: ## Generate cosign keypair + seed cosign-public-key ConfigMap in kyverno namespace (idempotent, ADR-0019)
 	bash scripts/cosign-bootstrap.sh
 
-.PHONY: gitlab-tls-bootstrap
-gitlab-tls-bootstrap: ## Mint mkcert TLS for the GitLab HTTPS proxy + publish CA to cluster + start proxy (idempotent, ADR-0006)
-	bash scripts/gitlab-tls-bootstrap.sh
-
-.PHONY: grafana-gitsync-bootstrap
-grafana-gitsync-bootstrap: ## Create the Grafana Git Sync Repository (Pure Git -> GitLab) so dashboards sync as code (idempotent, ADR-0006)
-	bash scripts/grafana-gitsync-bootstrap.sh
-
 ##@ ArgoCD access
 
 .PHONY: argocd-password
@@ -527,7 +492,6 @@ argocd-password: ## Print the ArgoCD initial admin password
 .PHONY: creds
 creds: ## Print all lab UI logins (reads live secrets; needs the cluster/Forgejo up)
 	@a=$$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "ArgoCD   admin / $${a:-<cluster down>}    http://argocd.127.0.0.1.nip.io:8000"
-	@g=$$(kubectl -n observability get secret grafana-admin -o jsonpath='{.data.admin-password}' 2>/dev/null | base64 -d); echo "Grafana  admin / $${g:-<cluster down>}    http://localhost:8000"
 	@fp=$$(grep -E '^FORGEJO_ADMIN_PASSWORD=' forgejo/.env 2>/dev/null | cut -d= -f2-); echo "Forgejo  lab-admin / $${fp:-<forgejo/.env missing>}    http://localhost:3300 (git source of truth, ADR-0035)"
 	@if docker ps --filter name=^gitlab$$ --format '{{.Names}}' 2>/dev/null | grep -q gitlab; then r=$$(grep -E '^GITLAB_ROOT_PASSWORD=' gitlab/.env 2>/dev/null | cut -d= -f2-); echo "GitLab   root  / $${r:-<gitlab/.env missing>}    http://localhost:8929 (stopped by default since 2026-08-17 — Forgejo is the live source; make gitlab-up to bring back)"; fi
 	@t=$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); echo "Vault    token / $${t:-<cluster down>}    http://vault.127.0.0.1.nip.io:8000"
@@ -572,7 +536,7 @@ dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=c
 
 .PHONY: dr-restore
 dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
-	@./scripts/dr-restore.sh data capstone vault observability
+	@./scripts/dr-restore.sh data capstone vault
 
 .PHONY: dr-chaos
 dr-chaos: ## Chaos drill: kill a random capstone pod, assert self-heal within budget (DORA Pillar 3 TLPT concept)

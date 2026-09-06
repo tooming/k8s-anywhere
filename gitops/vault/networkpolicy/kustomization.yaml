@@ -3,9 +3,9 @@
 # the real ingress flows: ingress from ESO controller (k8s auth + secret reads
 # on TCP 8200), ingress from Traefik's data-plane pods (UI IngressRoute on TCP 8200, ADR-0040),
 # ingress from the same-namespace vault-unsealer pod (TCP 8200 — found missing
-# live 2026-08-06, see allow-vault-from-unsealer.yaml's own header for the story),
-# and ingress from Alloy in observability (TCP 8200 — Vault's own internal
-# telemetry scrape, see allow-vault-metrics-from-observability.yaml).
+# live 2026-08-06, see allow-vault-from-unsealer.yaml's own header for the story).
+# (The Alloy metrics-scrape ingress rule this overlay used to also carry was
+# removed 2026-09-06, ADR-0041, observability stack removed with no replacement.)
 # The allow-dns-and-apiserver baseline already covers Vault's k8s-auth API calls.
 # Wired into gitops/platform/vault-networkpolicy.yaml (auto-synced, wave 4).
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -20,4 +20,3 @@ resources:
   - allow-vault-from-eso.yaml
   - allow-vault-from-gateway.yaml
   - allow-vault-from-unsealer.yaml
-  - allow-vault-metrics-from-observability.yaml

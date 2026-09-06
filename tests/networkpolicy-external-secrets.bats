@@ -29,23 +29,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-eso-metrics-ingress.yaml exists in external-secrets/networkpolicy/" {
-  [ -f "$ESO_NP/allow-eso-metrics-ingress.yaml" ]
-}
-
-@test "allow-eso-metrics-ingress allows port 8080 (ESO controller-runtime metrics)" {
-  run grep -q 'port: 8080' "$ESO_NP/allow-eso-metrics-ingress.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-eso-metrics-ingress allows ingress from observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$ESO_NP/allow-eso-metrics-ingress.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-eso-metrics-ingress targets ESO controller pods by name label" {
-  run grep -q 'app.kubernetes.io/name: external-secrets' "$ESO_NP/allow-eso-metrics-ingress.yaml"
-  [ "$status" -eq 0 ]
+@test "allow-eso-metrics-ingress.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$ESO_NP/allow-eso-metrics-ingress.yaml" ]
 }
 
 @test "allow-eso-vault-egress.yaml exists in external-secrets/networkpolicy/" {
@@ -77,10 +62,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-alloy-egress-external.yaml includes external-secrets egress on port 8080" {
-  run grep -q 'kubernetes.io/metadata.name: external-secrets' "$OBS_NP/allow-alloy-egress-external.yaml"
-  [ "$status" -eq 0 ]
-}
+# The observability namespace's allow-alloy-egress-external.yaml (whose egress
+# rule to external-secrets used to be asserted here) no longer exists (ADR-0041,
+# observability stack removed with no replacement).
 
 # --- allow-eso-webhook-from-apiserver: admission webhook ingress (found via a
 # from-scratch `make up` — every namespace's ExternalSecret/ClusterSecretStore

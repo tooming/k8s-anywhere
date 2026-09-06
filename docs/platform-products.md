@@ -58,7 +58,6 @@ graph TD
   classDef sub fill:#ffe0ef,stroke:#b3598a,color:#000
   classDef prim fill:#fff6cc,stroke:#b39b00,color:#000
   classDef data fill:#dcf5dc,stroke:#3b9b3b,color:#000
-  classDef obs fill:#e6e6ff,stroke:#5b5bc0,color:#000
   classDef ss fill:#e0f7f7,stroke:#3bb3b3,color:#000
   classDef plan fill:#eeeeee,stroke:#999,color:#000
 
@@ -75,9 +74,6 @@ graph TD
   subgraph T2["Tier 2 — Data services"]
     s3["Object storage: Garage S3 (+ s3manager)"]:::data
   end
-  subgraph T3["Tier 3 — Observability (LGTMP)"]
-    obs["Alloy → Mimir/Loki/Tempo/Pyroscope → Grafana"]:::obs
-  end
   subgraph T4["Tier 4 — Self-service control plane"]
     claims["Resource claims: KRO + ACK + moto"]:::ss
   end
@@ -88,19 +84,23 @@ graph TD
   compute --> state --> scm --> cd
   cd --> secrets & ingress
   secrets --> s3
-  s3 --> obs
   secrets --> claims
-  obs -. consumes .-> s3
   ingress --> heavy
   s3 --> heavy
 ```
+
+(Tier 3 — Observability (LGTMP) — was removed from this diagram 2026-09-06 along
+with the stack itself, ADR-0041: no replacement, so no tier sits between Data and
+Self-service any more. Tier numbers 0/1/2/4/5 are kept as-is rather than
+renumbered, matching how this repo never reuses/renumbers a retired ADR or
+CHARTER Objective number either.)
 
 | Tier | What | Build priority | Why this order |
 |------|------|----------------|----------------|
 | **0 Substrate** | Compute (Colima/k3d), TF state (off-cluster Garage), SCM (GitLab), GitOps (ArgoCD) | **P0** | Nothing exists without compute + a state store + a git source + a reconciler. This is the day-0 imperative seam. |
 | **1 Primitives** | Secrets (Vault+ESO), Ingress (Traefik) | **P0** | Every product needs to hold credentials and be reachable. Provisioned first by ArgoCD (sync-waves 0–1). |
-| **2 Data** | Object storage (Garage) | **P1** | Stateful backends for observability and apps. |
-| **3 Observability** | LGTMP + Grafana | **P1** | You can ship without it, but you can't *operate* without it. Depends on object storage. |
+| **2 Data** | Object storage (Garage) | **P1** | Stateful backend for apps (Velero backups, Harbor registry storage). |
+| **3 Observability** | Retired 2026-09-06 (ADR-0041) | — | Was "LGTMP + Grafana" — removed entirely, no replacement. |
 | **4 Self-service** | KRO + ACK + moto claims | **P2** | The "internal API" layer that turns primitives into one-line self-service. |
 | **5 Heavy** | TiDB, Harbor, Istio mesh, Longhorn | **P3** | On-demand, capacity-gated (the 16 GB reality); pulled in per customer need — all four are built (`make <name>-up`), not just planned. |
 
@@ -138,10 +138,12 @@ The paved road for shipping. Substrate that's also offered as a "deploy here" pr
 | **Artifact registry** | push/pull endpoint + repo via `make harbor-up` | Harbor | storage | 🟡 on-demand (heavy) |
 | **Block storage / PVs** | a `longhorn` StorageClass via `make longhorn-up` | Longhorn | compute | 🟡 on-demand (heavy) |
 
-### E. Observability
-| Product | Consumer contract | Backed by | Depends on | Maturity |
-|---------|-------------------|-----------|------------|----------|
-| **Metrics / Logs / Traces / Profiles** | emit to Alloy (auto-collected) or push; query in Grafana; dashboards-as-code | Alloy, Mimir, Loki, Tempo, Pyroscope, Grafana, KSM, node-exporter | Object storage, Secrets | 🟡 mostly automatic; dashboard self-service via git |
+### E. Observability — retired 2026-09-06 (ADR-0041)
+
+This domain used to offer Metrics/Logs/Traces/Profiles (Alloy → Mimir/Loki/Tempo/
+Pyroscope → Grafana, plus kube-state-metrics/node-exporter as scrape targets) as a
+self-service product. The whole stack was removed with no replacement — there is
+no observability product to catalog here any more.
 
 ### F. Developer self-service / abstractions
 The "internal API" layer — the clearest *product* in the lab.
@@ -203,7 +205,8 @@ For each product, push it up this ladder; the rung tells you the next planned in
 
 ## How to organize the team (capability domains → squads)
 
-The six domains in the catalog are the natural workstream/squad boundaries. Even with
+The five live domains in the catalog (Observability retired 2026-09-06, ADR-0041)
+are the natural workstream/squad boundaries. Even with
 one team, treating them as distinct product lines keeps ownership and the roadmap clear:
 
 | Domain | Owns (products) | Substrate it also runs |
@@ -212,8 +215,11 @@ one team, treating them as distinct product lines keeps ownership and the roadma
 | **Security & secrets** | Secrets | Vault, ESO |
 | **Connectivity** | Ingress, (mesh) | Traefik, front door |
 | **Data & storage** | Object storage, (DB/registry/PV) | Garage, (Longhorn/TiDB/Harbor) |
-| **Observability** | Metrics/Logs/Traces/Profiles | LGTMP, Grafana |
 | **Developer self-service** | Cloud Resources Service | KRO, ACK, moto |
+
+(An **Observability** domain — Metrics/Logs/Traces/Profiles, backed by LGTMP +
+Grafana — existed here until 2026-09-06, when the stack was removed with no
+replacement, ADR-0041.)
 
 ### First steps to a self-service offering for the company
 1. **Publish the catalog** (this doc) — name the products and their contracts so teams
@@ -223,7 +229,9 @@ one team, treating them as distinct product lines keeps ownership and the roadma
 3. **Climb the maturity ladder** — convert the remaining "provisioned" products
    (Object storage) to claim-based self-service by extending the KRO RGD pattern.
 4. **Add governance** — quotas, ownership catalog (the `*-catalog` ConfigMap pattern is
-   already there), and cost visibility via the observability stack.
+   already there); cost visibility would previously have come from the observability
+   stack, retired 2026-09-06 (ADR-0041) with no replacement — a future cost-visibility
+   effort would need to pick its own tooling from scratch.
 
 ---
 

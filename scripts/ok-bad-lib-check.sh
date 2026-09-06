@@ -11,7 +11,7 @@
 #
 # Deliberately does NOT flag a `bad()` with no side effect (e.g.
 # argocd-crd-ssa-check.sh, helm-chart-pin-check.sh, lab-health-check.sh,
-# mimir-readonly-root-check.sh, rollouts-plugin-list-check.sh) — those track
+# rollouts-plugin-list-check.sh) — those track
 # failure via their own separately-managed `fail` variable instead, and
 # forcing them onto the shared drift-setting `bad()` would add an incidental
 # unused `drift` variable to their scope. Only a `bad()` matching the exact
@@ -34,7 +34,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 # brace/space style ("bad(){", "bad() {", "bad()  {") — never a no-side-effect
 # bad() (those are intentionally out of scope, see header). ok() is never
 # checked independently: it has no side effect and so can never behaviorally
-# diverge the way a copy-pasted bad() can, and the 5 scripts intentionally
+# diverge the way a copy-pasted bad() can, and the 4 scripts intentionally
 # keeping their own no-side-effect bad() also keep their own paired ok() —
 # flagging ok() alone would wrongly catch those.
 bad_pattern='^bad\(\)[[:space:]]*\{[[:space:]]*printf .* drift=1; ?\}$'

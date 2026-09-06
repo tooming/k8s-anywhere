@@ -83,24 +83,12 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Tempo trace check (Step 4) ----------------------------------------------
+# --- Tempo trace check (Step 4) REMOVED 2026-09-06 (ADR-0041, observability
+# stack removed with no replacement) -------------------------------------------
 
-@test "capstone-demo.sh port-forwards tempo-query-frontend" {
+@test "capstone-demo.sh no longer port-forwards tempo-query-frontend (ADR-0041)" {
   run grep -q 'tempo-query-frontend' "$SCRIPT"
-  [ "$status" -eq 0 ]
-}
-
-@test "capstone-demo.sh queries Tempo for service.name=capstone" {
-  run grep -q 'service.name=capstone' "$SCRIPT"
-  [ "$status" -eq 0 ]
-}
-
-@test "capstone-demo.sh uses OS-portable date arithmetic for 5-minute look-back" {
-  # Both macOS (-v-5M) and Linux (date +%s - 300) paths must be present
-  run grep -q '\-v-5M' "$SCRIPT"
-  [ "$status" -eq 0 ]
-  run grep -q '300' "$SCRIPT"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 # --- Summary table -----------------------------------------------------------

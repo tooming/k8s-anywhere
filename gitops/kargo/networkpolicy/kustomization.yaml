@@ -3,8 +3,10 @@
 # Traefik → kargo-api on TCP 80 (Kargo UI access, ADR-0040);
 # kube-apiserver → webhooks-server on TCP 9443 (Kargo CRD admission webhooks);
 # kargo controller → argocd-server on TCP 80 (argocd-update promotion step);
-# kargo controller → image registry on TCP 443 (image digest discovery for Warehouse);
-# observability (Alloy) → kargo pods on TCP 8080 (Prometheus metrics scrape).
+# kargo controller → image registry on TCP 443 (image digest discovery for Warehouse).
+# (The observability/Alloy metrics-scrape ingress rule this overlay used to also
+# carry was removed 2026-09-06, ADR-0041, observability stack removed with no
+# replacement.)
 # The allow-dns-and-apiserver baseline covers Kargo's k8s API calls (Warehouse/Stage
 # reconciliation, Freight creation, leader election).
 # Wired into gitops/platform/kargo-networkpolicy.yaml (ON-DEMAND, wave 4).
@@ -21,4 +23,3 @@ resources:
   - allow-kargo-webhook-from-apiserver.yaml
   - allow-kargo-egress-argocd.yaml
   - allow-kargo-egress-registry.yaml
-  - allow-kargo-metrics-ingress.yaml

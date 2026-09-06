@@ -30,29 +30,10 @@ setup() {
 }
 
 
-# --- metrics allow (Alloy → Trivy Operator TCP 8080) -----------------------------
-@test "allow-trivy-metrics-from-observability.yaml exists in trivy-system/networkpolicy/" {
-  [ -f "$TRIVY_NP/allow-trivy-metrics-from-observability.yaml" ]
-}
-
-@test "trivy-system kustomization references the metrics allow file" {
-  run grep -q 'allow-trivy-metrics-from-observability.yaml' "$TRIVY_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-trivy-metrics-from-observability allows ingress on port 8080" {
-  run grep -q 'port: 8080' "$TRIVY_NP/allow-trivy-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-trivy-metrics-from-observability restricts source to observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$TRIVY_NP/allow-trivy-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-trivy-metrics-from-observability restricts source to alloy pods" {
-  run grep -q 'app.kubernetes.io/name: alloy' "$TRIVY_NP/allow-trivy-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+# --- metrics allow (Alloy → Trivy Operator TCP 8080) REMOVED 2026-09-06 (ADR-0041,
+# observability stack removed with no replacement) -----------------------------
+@test "allow-trivy-metrics-from-observability.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$TRIVY_NP/allow-trivy-metrics-from-observability.yaml" ]
 }
 
 # --- vuln-DB egress allow (Trivy → ghcr.io TCP 443) ------------------------------

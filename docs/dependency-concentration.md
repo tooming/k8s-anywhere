@@ -11,26 +11,26 @@ file as pure re-indexing, with no new dependency-risk judgment made in producing
 
 ## Method
 
-Group every one of `docs/dependency-register.md`'s 33 tool rows by **upstream GitHub
-org**, reusing the register's own "Upstream source" column verbatim (nothing
-re-derived from memory), and flag any org backing more than one row as a
-concentration point.
+Group every one of `docs/dependency-register.md`'s 26 GitHub-hosted tool rows
+(of 29 total; the other 3 — Terraform/Terragrunt, Oracle Cloud Infrastructure,
+Forgejo — aren't GitHub-hosted, so there's no GitHub org to group them by) by
+**upstream GitHub org**, reusing the register's own "Upstream source" column
+verbatim (nothing re-derived from memory), and flag any org backing more than
+one row as a concentration point.
 
 ## Findings, worst-first
 
-**`github.com/grafana` — 6 tools, the largest single concentration in the table:**
-Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy. All six are `always-on-core` per the
-register's own criticality column — the entire observability pane (dashboards,
-metrics store, log store, trace store, continuous profiling, and the unified
-collector feeding all of them) is maintained by one upstream org. If Grafana Labs
-stopped maintaining this line, or changed its license terms again the way it already
-has once for parts of this product family, every panel this lab's dashboards render
-would be affected at once, not just one isolated component.
+**`github.com/grafana` — removed 2026-09-06 (ADR-0041).** This used to be the
+largest single concentration in the table (6 tools: Grafana, Mimir, Loki, Tempo,
+Pyroscope, Alloy) — the entire observability pane maintained by one upstream org.
+The observability stack was removed entirely with no replacement (ADR-0041,
+supersedes ADR-0006/ADR-0034); none of those six rows exist in the register any
+more, so this is no longer a concentration point to track.
 
 **`github.com/argoproj` — 2 tools:** ArgoCD, Argo Rollouts. `always-on-core` and
-`always-on-next-wave` respectively. Lower blast radius than the Grafana-org cluster
-(2 rows vs. 6), but still couples the GitOps control plane itself to the same
-progressive-delivery layer built on top of it.
+`always-on-next-wave` respectively — now the largest single concentration in the
+table (the `github.com/grafana` cluster that used to be larger no longer exists,
+per the note above).
 
 **Every other row is a distinct org** — Terraform (hashicorp) and Terragrunt
 (gruntwork-io) are two different orgs sharing one register row; Garage (Deuxfleurs);
@@ -53,9 +53,11 @@ chart/image ref, so a disappeared upstream is a fork-the-source-and-repoint oper
 not a rebuild. This isn't theoretical: the ADR-0011→ADR-0024 Artifactory→Harbor
 migration is a real, already-executed exit from one upstream provider to another (the
 same precedent [Q17](dora-audit-readiness.md) already cites for exit strategy). The
-`github.com/grafana` concentration above is real and worth naming, but it isn't a
-structural gap in how this lab is built — it's a fact about which single upstream org
-maintains six of its already-replaceable components.
+`github.com/grafana` concentration this file used to name was resolved the same
+way in the end — not by forking a replacement, but by removing the whole
+observability stack outright with no replacement (ADR-0041) once the maintainer
+narrowed the lab's scope; either path (fork-and-repoint or remove-outright) shows
+this lab isn't structurally locked to any single upstream org.
 
 ## Keeping this in sync
 

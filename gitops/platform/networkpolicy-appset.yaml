@@ -35,9 +35,9 @@ spec:
           - appName: moto-networkpolicy
             gitPath: gitops/moto/networkpolicy
             destNamespace: moto
-          - appName: observability-networkpolicy
-            gitPath: gitops/observability/networkpolicy
-            destNamespace: observability
+          # observability-networkpolicy REMOVED 2026-09-06 (ADR-0041): the
+          # observability namespace no longer exists — Grafana/Mimir/Loki/
+          # Tempo/Pyroscope/Alloy removed entirely, no replacement.
           - appName: storage-networkpolicy
             gitPath: gitops/storage/networkpolicy
             destNamespace: storage
@@ -53,9 +53,10 @@ spec:
           - appName: harbor-networkpolicy
             gitPath: gitops/harbor/networkpolicy
             destNamespace: harbor
-          - appName: node-exporter-networkpolicy
-            gitPath: gitops/node-exporter/networkpolicy
-            destNamespace: node-exporter
+          # node-exporter-networkpolicy REMOVED 2026-09-06 (ADR-0041): the
+          # node-exporter namespace no longer exists — node-exporter existed
+          # only as an Alloy scrape target, removed with the rest of the
+          # observability stack, no replacement.
   template:
     metadata:
       name: "{{appName}}"

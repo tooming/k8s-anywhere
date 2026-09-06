@@ -36,7 +36,9 @@ setup() {
 @test "dependency-concentration-sync-check: passes on the real repo (register in sync with concentration.md)" {
   run bash "$REPO/scripts/dependency-concentration-sync-check.sh"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"github.com/grafana"* ]]
+  # github.com/grafana was removed from the register + concentration.md 2026-09-06
+  # (ADR-0041, observability stack removed with no replacement) — no longer a live
+  # concentration group, so it's no longer expected in this check's output.
   [[ "$output" == *"github.com/argoproj"* ]]
   [[ "$output" == *"stated count"* ]]
 }

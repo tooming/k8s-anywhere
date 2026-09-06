@@ -30,29 +30,10 @@ setup() {
 }
 
 
-# --- metrics allow (Alloy → Velero TCP 8085) --------------------------------------
-@test "allow-velero-metrics-from-observability.yaml exists in velero/networkpolicy/" {
-  [ -f "$VELERO_NP/allow-velero-metrics-from-observability.yaml" ]
-}
-
-@test "velero kustomization references the metrics allow file" {
-  run grep -q 'allow-velero-metrics-from-observability.yaml' "$VELERO_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-velero-metrics-from-observability allows ingress on port 8085" {
-  run grep -q 'port: 8085' "$VELERO_NP/allow-velero-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-velero-metrics-from-observability restricts source to observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$VELERO_NP/allow-velero-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-velero-metrics-from-observability restricts source to alloy pods" {
-  run grep -q 'app.kubernetes.io/name: alloy' "$VELERO_NP/allow-velero-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+# --- metrics allow (Alloy → Velero TCP 8085) REMOVED 2026-09-06 (ADR-0041,
+# observability stack removed with no replacement) --------------------------------
+@test "allow-velero-metrics-from-observability.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$VELERO_NP/allow-velero-metrics-from-observability.yaml" ]
 }
 
 # --- Garage S3 egress allow (Velero → Garage TCP 3900) ---------------------------
@@ -105,9 +86,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-velero-egress-kopia-pv covers the observability namespace" {
+@test "allow-velero-egress-kopia-pv no longer covers the observability namespace (ADR-0041)" {
   run grep -q -- '- observability' "$VELERO_NP/allow-velero-egress-kopia-pv.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 @test "allow-velero-egress-kopia-pv uses Egress policyType" {

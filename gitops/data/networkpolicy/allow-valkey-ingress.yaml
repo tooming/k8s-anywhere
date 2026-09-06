@@ -1,7 +1,8 @@
 # Allow ingress to Valkey pods in the data namespace (ADR-0016).
 # Permits traffic on the Valkey port (6379) from other pods in the data namespace
-# (valkey-load client), plus the redis_exporter metrics port (9121) from Alloy in
-# the observability namespace.
+# (valkey-load client). (The redis_exporter metrics port (9121) ingress-from-
+# observability rule this policy used to also carry was removed 2026-09-06,
+# ADR-0041, observability stack removed with no replacement.)
 #
 # Harbor is NOT a Valkey client (removed 2026-07-21, #632): Harbor's chart
 # renders its external-Redis wiring via Helm `lookup()`, which always returns nil
@@ -25,10 +26,3 @@ spec:
           protocol: TCP
       from:
         - podSelector: {}
-    - ports:
-        - port: 9121
-          protocol: TCP
-      from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: observability

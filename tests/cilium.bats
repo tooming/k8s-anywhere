@@ -101,46 +101,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Observability: scrape config + dashboard (RFC #358, O5) ----------------
+# --- Observability scrape config + dashboard (RFC #358, O5) REMOVED 2026-09-06
+# (ADR-0041, observability stack removed with no replacement) --------------------
 @test "cilium Application enables prometheus metrics (prometheus.enabled: true)" {
   run grep 'enabled: true' "$REPO/gitops/platform/cilium.yaml"
   [ "$status" -eq 0 ]
-}
-
-@test "observability-alloy.yaml has cilium_agent scrape block" {
-  run grep -q 'prometheus.scrape "cilium_agent"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "observability-alloy.yaml cilium_agent relabel filters by kube-system namespace" {
-  run grep -q 'kube-system' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-alloy-egress-external.yaml permits TCP 9962 egress (Cilium metrics port)" {
-  run grep -q '9962' "$REPO/gitops/observability/networkpolicy/allow-alloy-egress-external.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-cilium.json dashboard exists" {
-  [ -f "$REPO/grafana/dashboards/lab-cilium.json" ]
-}
-
-@test "lab-cilium.json references the real cilium_policy metric (not the nonexistent cilium_policy_count)" {
-  run grep -q '"cilium_policy"' "$REPO/grafana/dashboards/lab-cilium.json"
-  [ "$status" -eq 0 ]
-  run grep -q 'cilium_policy_count' "$REPO/grafana/dashboards/lab-cilium.json"
-  [ "$status" -eq 1 ]
-}
-
-@test "lab-cilium.json references cilium_drop_count_total" {
-  run grep -q 'cilium_drop_count_total' "$REPO/grafana/dashboards/lab-cilium.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-cilium.json has no fabricated/placeholder data (ADR-0004)" {
-  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-cilium.json"
-  [ "$status" -eq 1 ]
 }
 
 @test "docs/dependency-tree.md mentions Cilium metrics scrape" {

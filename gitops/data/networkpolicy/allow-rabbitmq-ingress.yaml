@@ -1,8 +1,9 @@
 # Allow ingress to RabbitMQ pods in the data namespace (ADR-0016).
-# Permits traffic on the AMQP port (5672), the management HTTP API (15672),
-# and the Prometheus metrics endpoint (15692) that Alloy scrapes.
-# Source: any pod in the data namespace (data-demo producers/consumers)
-# and any pod in the observability namespace (Alloy scraper).
+# Permits traffic on the AMQP port (5672) and the management HTTP API (15672).
+# Source: any pod in the data namespace (data-demo producers/consumers).
+# (The Prometheus metrics endpoint (15692) ingress-from-observability rule this
+# policy used to also carry was removed 2026-09-06, ADR-0041, observability
+# stack removed with no replacement.)
 # A second, narrower rule permits the KEDA operator (namespace keda) to poll the
 # management API on 15672 only -- the rabbitmq-load-scaler ScaledObject's rabbitmq
 # trigger (ADR-0029 §"Scope & exceptions" ScaledObject-demo follow-up) -- kept as its
@@ -34,13 +35,8 @@ spec:
           protocol: TCP
         - port: 15672
           protocol: TCP
-        - port: 15692
-          protocol: TCP
       from:
         - podSelector: {}
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: observability
     - ports:
         - port: 15672
           protocol: TCP

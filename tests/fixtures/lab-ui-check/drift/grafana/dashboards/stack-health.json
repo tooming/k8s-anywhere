@@ -1,2 +1,0 @@
-# Lab UIs panel fixture (drift): the route fixture declares a demo UI host but the panel
-# advertises no host, so lab-ui-check must report the missing UI.

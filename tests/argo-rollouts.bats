@@ -170,19 +170,16 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "argo-rollouts NetworkPolicy kustomization references the metrics allow file" {
-  run grep -q 'allow-argo-rollouts-metrics-from-observability.yaml' "$REPO/gitops/argo-rollouts/networkpolicy/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
 @test "argo-rollouts NetworkPolicy kustomization references the dashboard gateway allow file" {
   run grep -q 'allow-argo-rollouts-dashboard-from-gateway.yaml' "$REPO/gitops/argo-rollouts/networkpolicy/kustomization.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "argo-rollouts NetworkPolicy kustomization references the Mimir egress allow file" {
+@test "argo-rollouts NetworkPolicy kustomization no longer references the metrics or Mimir egress allow files (ADR-0041)" {
+  run grep -q 'allow-argo-rollouts-metrics-from-observability.yaml' "$REPO/gitops/argo-rollouts/networkpolicy/kustomization.yaml"
+  [ "$status" -ne 0 ]
   run grep -q 'allow-argo-rollouts-egress-mimir.yaml' "$REPO/gitops/argo-rollouts/networkpolicy/kustomization.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 # --- Controller plugin-download egress REMOVED 2026-09-06 (ADR-0040, supersedes
@@ -198,19 +195,9 @@ setup() {
   [ ! -f "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-controller-egress-plugins.yaml" ]
 }
 
-# --- Metrics ingress allow (Alloy → controller :8090) ------------------------
-@test "metrics allow file exists" {
-  [ -f "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-metrics-from-observability.yaml" ]
-}
-
-@test "metrics allow file opens TCP 8090" {
-  run grep -q 'port: 8090' "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "metrics allow file admits pods from the observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+# --- Metrics ingress allow (Alloy → controller :8090), removed 2026-09-06 (ADR-0041) --
+@test "metrics allow file no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-metrics-from-observability.yaml" ]
 }
 
 # --- Dashboard ingress allow (Traefik → dashboard :3100) -----------------
@@ -228,19 +215,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Mimir egress allow (controller → Mimir query frontend :8080) -----------
-@test "Mimir egress allow file exists" {
-  [ -f "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-egress-mimir.yaml" ]
-}
-
-@test "Mimir egress allow file opens TCP 8080 toward observability" {
-  run grep -q 'port: 8080' "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-egress-mimir.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "Mimir egress allow file targets the observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-egress-mimir.yaml"
-  [ "$status" -eq 0 ]
+# --- Mimir egress allow (controller → Mimir query frontend :8080), removed 2026-09-06 (ADR-0041) --
+@test "Mimir egress allow file no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/argo-rollouts/networkpolicy/allow-argo-rollouts-egress-mimir.yaml" ]
 }
 
 # --- NetworkPolicy ArgoCD Application (wave 4) --------------------------------
@@ -263,65 +240,19 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Grafana Lab UIs panel (stack-health.json drift check) --------------------
-@test "stack-health.json Lab UIs panel lists the rollouts dashboard URL" {
-  run grep -q 'rollouts.127.0.0.1.nip.io' "$REPO/grafana/dashboards/stack-health.json"
-  [ "$status" -eq 0 ]
-}
-
 # --- ADR documentation -------------------------------------------------------
 @test "ADR-0020 (Argo Rollouts) document exists" {
   run sh -c "ls $REPO/docs/decisions/adr-0020-*.md"
   [ "$status" -eq 0 ]
 }
 
-# --- Alloy scrape job (metrics -> Mimir, deferred from controller PR) ---------
-@test "observability-alloy.yaml contains argo_rollouts scrape job block" {
-  run grep -q 'prometheus.scrape "argo_rollouts"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
+# --- Alloy scrape job + Grafana dashboard + stack-health.json panel, all removed
+# 2026-09-06 (ADR-0041, observability stack removed with no replacement) --------
+@test "observability-alloy.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/platform/observability-alloy.yaml" ]
 }
 
-@test "argo_rollouts scrape job targets argo-rollouts-metrics service on :8090" {
-  run grep -q 'argo-rollouts-metrics.argo-rollouts.svc.cluster.local:8090' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "argo_rollouts scrape job forwards to mimir remote_write receiver" {
-  run grep -A5 'prometheus.scrape "argo_rollouts"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [[ "$output" == *"prometheus.remote_write.mimir.receiver"* ]]
-}
-
-# --- Grafana dashboard (lab-argo-rollouts.json, deferred from controller PR) --
-@test "lab-argo-rollouts.json dashboard file exists" {
-  [ -f "$REPO/grafana/dashboards/lab-argo-rollouts.json" ]
-}
-
-@test "lab-argo-rollouts.json uid matches file name convention" {
-  run grep -q '"uid": "lab-argo-rollouts"' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-argo-rollouts.json references controller_runtime_reconcile_total (real metric, ADR-0004)" {
-  run grep -q 'controller_runtime_reconcile_total' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-argo-rollouts.json references rollout_phase (real metric, ADR-0004)" {
-  run grep -q 'rollout_phase' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-argo-rollouts.json does not reference the nonexistent rollout_canary_weight metric (2026-08-12: no such metric exists at pinned appVersion v1.9.1; panel removed rather than left permanently broken)" {
-  run grep -q 'rollout_canary_weight' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
-  [ "$status" -eq 1 ]
-}
-
-@test "lab-argo-rollouts.json uses mimir datasource uid (X-Scope-OrgID via datasource config)" {
-  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-argo-rollouts.json contains no placeholder or fabricated data strings (ADR-0004)" {
-  run grep -iE '"(placeholder|fabricated|dummy|fake|example_metric)"' "$REPO/grafana/dashboards/lab-argo-rollouts.json"
-  [ "$status" -ne 0 ]
+@test "grafana/ directory no longer exists, so no lab-argo-rollouts.json dashboard (ADR-0041)" {
+  [ ! -d "$REPO/grafana" ]
+  [ ! -f "$REPO/grafana/dashboards/lab-argo-rollouts.json" ]
 }

@@ -24,7 +24,7 @@ set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 WAIT="${HEALTH_WAIT:-90}"
 IV="${HEALTH_INTERVAL:-10}"
-ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo istio-system kiali longhorn-system kargo ack-system capstone harbor}"
+ONDEMAND_NS="${LAB_ONDEMAND_NS:-kargo ack-system capstone harbor}"
 # Front-door UIs to probe (HTTP, from the host) — readiness of the pods behind Traefik
 # isn't enough: if the Traefik data plane is down, every :8000 UI is unreachable while the
 # pods still look fine. Probes the stable front door (:8000), not a per-cluster Traefik
@@ -32,7 +32,11 @@ ONDEMAND_NS="${LAB_ONDEMAND_NS:-tidb tidb-admin tidb-demo istio-system kiali lon
 # to is torn down after a blue/green cutover (docs/DR.md), so hardcoding one here would
 # make `make health` silently probe the wrong (or a since-removed) backend post-cutover.
 # "url|name", space-separated. Set LAB_UI_PROBES= to skip.
-UI_PROBES="${LAB_UI_PROBES:-http://localhost:8000/api/health|grafana(:8000) http://argocd.127.0.0.1.nip.io:8000/healthz|argocd(:8000)}"
+# (The other default probe here used to hit Grafana's own /api/health — removed
+# 2026-09-06 alongside Grafana, ADR-0041, observability stack removed with no
+# replacement; no other always-on UI has a documented health-style endpoint to
+# safely substitute, so this is single-probe until one does.)
+UI_PROBES="${LAB_UI_PROBES:-http://argocd.127.0.0.1.nip.io:8000/healthz|argocd(:8000)}"
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 ok()   { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }

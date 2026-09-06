@@ -3,11 +3,13 @@
 # now-frozen tests/drift-detectors.bats monolith (see that file's header
 # comment) into their own scope, per the drift-detectors-tests-check
 # convention: new drift-check coverage goes in its own tests/drift-<scope>.bats
-# file. Grouped together here (rather than four separate files) because all
-# four check scripts share one job: verifying a *different* frozen monolith
-# (tests/securitycontext.bats, tests/observability.bats,
-# tests/networkpolicy.bats, tests/hook-scripts-coverage.bats respectively)
-# hasn't grown a new appended @test.
+# file. Grouped together here (rather than separate files) because each check
+# script shares one job: verifying a *different* frozen monolith
+# (tests/securitycontext.bats, tests/networkpolicy.bats,
+# tests/hook-scripts-coverage.bats respectively) hasn't grown a new appended
+# @test. (observability-tests-check, guarding tests/observability.bats, was
+# removed 2026-09-06 along with the monolith itself, ADR-0041 — observability
+# stack removed with no replacement.)
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -31,21 +33,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- observability-tests-check -----------------------------------------------
-@test "observability-tests-check: passes when the monolith matches its snapshot" {
-  run env OBSV_TESTS_ROOT="$FIX/observability-tests-check/in-sync" bash "$REPO/scripts/observability-tests-check.sh"
-  [ "$status" -eq 0 ]
-}
-
-@test "observability-tests-check: fails when a new @test is appended to the frozen monolith" {
-  run env OBSV_TESTS_ROOT="$FIX/observability-tests-check/drift" bash "$REPO/scripts/observability-tests-check.sh"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"FROZEN"* ]]
-}
-
-@test "observability-tests-check: passes on the real repo tests/observability.bats" {
-  run bash "$REPO/scripts/observability-tests-check.sh"
-  [ "$status" -eq 0 ]
+# --- observability-tests-check REMOVED 2026-09-06 (ADR-0041): the script and the
+# monolith it guarded (tests/observability.bats) are both gone — observability
+# stack removed with no replacement.
+@test "observability-tests-check.sh no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/scripts/observability-tests-check.sh" ]
 }
 
 # --- networkpolicy-tests-check -----------------------------------------------

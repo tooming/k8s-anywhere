@@ -18,7 +18,10 @@ setup() {
   [ -x "$SCRIPT" ]
 }
 
-# --- Five namespace restore lines (ADR-0021 §"Scope & exceptions") -----------
+# --- Three namespace restore lines (ADR-0021 §"Scope & exceptions"; tidb's entry
+# was removed 2026-09-06 when TiDB was removed from the lab entirely, and
+# observability's entry was removed the same day, ADR-0041, along with the
+# namespace itself) ------------------------------------------------------------
 @test "dr-restore.sh restores the data namespace" {
   run grep -q 'data' "$SCRIPT"
   [ "$status" -eq 0 ]
@@ -34,9 +37,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dr-restore.sh restores the observability namespace" {
-  run grep -q 'observability' "$SCRIPT"
-  [ "$status" -eq 0 ]
+@test "dr-restore.sh no longer restores the observability namespace (ADR-0041)" {
+  # A header comment may still narrate the namespace's removal history; the
+  # functional default-namespaces line must not name it any more.
+  run grep -q 'NAMESPACES=.*observability' "$SCRIPT"
+  [ "$status" -ne 0 ]
 }
 
 # --- velero restore --from-schedule pattern (ADR-0021 §"Schedule set") -------
@@ -94,13 +99,13 @@ setup() {
   [[ "$output" == *"dr-restore.sh"* ]]
 }
 
-@test "Makefile dr-restore target passes all four ADR-0021 namespaces" {
+@test "Makefile dr-restore target passes all three ADR-0021 namespaces" {
   run grep -A1 '^dr-restore:' "$REPO/Makefile"
   [ "$status" -eq 0 ]
   [[ "$output" == *"data"* ]]
   [[ "$output" == *"capstone"* ]]
   [[ "$output" == *"vault"* ]]
-  [[ "$output" == *"observability"* ]]
+  [[ "$output" != *"observability"* ]]
 }
 
 @test "Makefile dr-restore .PHONY is declared" {

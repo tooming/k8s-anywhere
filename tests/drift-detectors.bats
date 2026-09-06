@@ -39,24 +39,22 @@ setup() {
   [[ "$output" == *"bogus-adr-target"* ]]
 }
 
-# --- lab-ui-check ------------------------------------------------------------
-@test "lab-ui-check: passes when the panel matches the HTTPRoutes" {
+# --- lab-ui-check --------------------------------------------------------------
+# Used to also cross-check a Grafana "Lab UIs" dashboard panel — removed 2026-09-06
+# (ADR-0041, observability stack removed with no replacement) along with grafana/.
+# The README.md Endpoints-table cross-check below is independent of that panel and
+# stays fully functional; these fixtures/tests were updated to match.
+@test "lab-ui-check: passes when README.md's Endpoints table matches the IngressRoutes" {
   run env LABUICHECK_ROOT="$FIX/lab-ui-check/in-sync" bash "$REPO/scripts/lab-ui-check.sh"
   [ "$status" -eq 0 ]
 }
 
-@test "lab-ui-check: fails when a routed UI is missing from the panel" {
-  run env LABUICHECK_ROOT="$FIX/lab-ui-check/drift" bash "$REPO/scripts/lab-ui-check.sh"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"MISSING from the Lab UIs panel"* ]]
-}
-
-@test "lab-ui-check: passes on the real repo's Lab UIs panel + gitops HTTPRoutes" {
+@test "lab-ui-check: passes on the real repo's README.md + gitops IngressRoutes" {
   run bash "$REPO/scripts/lab-ui-check.sh"
   [ "$status" -eq 0 ]
 }
 
-@test "lab-ui-check: fails when a panel URL uses a non-front-door port" {
+@test "lab-ui-check: fails when a README.md Endpoints URL uses a non-front-door port" {
   run env LABUICHECK_ROOT="$FIX/lab-ui-check/port-drift" bash "$REPO/scripts/lab-ui-check.sh"
   [ "$status" -eq 1 ]
   [[ "$output" == *"front-door port :8000"* ]]

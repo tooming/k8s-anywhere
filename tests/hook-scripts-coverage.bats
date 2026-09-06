@@ -2,8 +2,7 @@
 # Structural coverage for the PostToolUse/SessionStart hook scripts that had zero
 # bats coverage: adr-context-hook.sh, adr-chart-version-sync-hook.sh,
 # argocd-crd-ssa-sync-hook.sh, helm-chart-pin-sync-hook.sh, lab-ui-sync-hook.sh,
-# mimir-readonly-root-sync-hook.sh, networkpolicy-tests-sync-hook.sh,
-# observability-tests-sync-hook.sh, readme-sync-hook.sh, roadmap-sync-hook.sh,
+# networkpolicy-tests-sync-hook.sh, readme-sync-hook.sh, roadmap-sync-hook.sh,
 # rollouts-plugin-list-sync-hook.sh, routines-sync-hook.sh,
 # securitycontext-tests-sync-hook.sh, yq-raw-sync-hook.sh,
 # yq-variant-guard-sync-hook.sh, drift-detectors-tests-sync-hook.sh.
@@ -240,40 +239,18 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [ "$status" -eq 0 ]
 }
 
-@test "lab-ui-sync-hook: unrelated gitops yaml with no HTTPRoute exits 0 (filtered out)" {
+@test "lab-ui-sync-hook: unrelated gitops yaml with no IngressRoute exits 0 (filtered out)" {
   run bash "$REPO/scripts/lab-ui-sync-hook.sh" <<<"$(mk_payload "$REPO/gitops/platform/kyverno.yaml")"
   [ "$status" -eq 0 ]
 }
 
-@test "lab-ui-sync-hook: stack-health.json dashboard (currently in sync) exits 0" {
-  run bash "$REPO/scripts/lab-ui-sync-hook.sh" <<<"$(mk_payload "$REPO/grafana/dashboards/stack-health.json")"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-ui-sync-hook: a real HTTPRoute manifest (currently in sync) exits 0" {
-  run bash "$REPO/scripts/lab-ui-sync-hook.sh" <<<"$(mk_payload "$REPO/gitops/kargo/route.yaml")"
+@test "lab-ui-sync-hook: a real IngressRoute manifest (currently in sync) exits 0" {
+  run bash "$REPO/scripts/lab-ui-sync-hook.sh" <<<"$(mk_payload "$REPO/gitops/kargo/ingressroute.yaml")"
   [ "$status" -eq 0 ]
 }
 
 @test "lab-ui-sync-hook: README.md (currently in sync) exits 0" {
   run bash "$REPO/scripts/lab-ui-sync-hook.sh" <<<"$(mk_payload "$REPO/README.md")"
-  [ "$status" -eq 0 ]
-}
-
-# --- mimir-readonly-root-sync-hook.sh ------------------------------------------
-
-@test "mimir-readonly-root-sync-hook: empty payload exits 0" {
-  run bash "$REPO/scripts/mimir-readonly-root-sync-hook.sh" <<<"{}"
-  [ "$status" -eq 0 ]
-}
-
-@test "mimir-readonly-root-sync-hook: a file outside gitops/observability/mimir/ exits 0 (filtered out)" {
-  run bash "$REPO/scripts/mimir-readonly-root-sync-hook.sh" <<<"$(mk_payload "$REPO/gitops/observability/loki/deployment.yaml")"
-  [ "$status" -eq 0 ]
-}
-
-@test "mimir-readonly-root-sync-hook: real mimir manifest (write paths already on a writable mount) exits 0" {
-  run bash "$REPO/scripts/mimir-readonly-root-sync-hook.sh" <<<"$(mk_payload "$REPO/gitops/observability/mimir/configmap.yaml")"
   [ "$status" -eq 0 ]
 }
 
@@ -286,18 +263,6 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
 
 @test "networkpolicy-tests-sync-hook: tests/networkpolicy.bats (currently baseline-only) exits 0" {
   run bash "$REPO/scripts/networkpolicy-tests-sync-hook.sh" <<<"$(mk_payload "$REPO/tests/networkpolicy.bats")"
-  [ "$status" -eq 0 ]
-}
-
-# --- observability-tests-sync-hook.sh ------------------------------------------
-
-@test "observability-tests-sync-hook: unrelated file exits 0 (filtered out)" {
-  run bash "$REPO/scripts/observability-tests-sync-hook.sh" <<<"$(mk_payload "$REPO/tests/networkpolicy.bats")"
-  [ "$status" -eq 0 ]
-}
-
-@test "observability-tests-sync-hook: tests/observability.bats (currently frozen/compliant) exits 0" {
-  run bash "$REPO/scripts/observability-tests-sync-hook.sh" <<<"$(mk_payload "$REPO/tests/observability.bats")"
   [ "$status" -eq 0 ]
 }
 

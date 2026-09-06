@@ -7,8 +7,8 @@
 #   ->  THEN promote green to a FULL stack + verify  (now there's headroom)
 #
 # Serving stays up throughout (a probe proves it). The unavoidable single-host
-# tradeoff: a brief observability/Vault/Garage gap between retiring blue and green
-# finishing its full sync — the *serving* path is continuous. See docs/DR.md, ADR-0005.
+# tradeoff: a brief Vault/Garage gap between retiring blue and green finishing its
+# full sync — the *serving* path is continuous. See docs/DR.md, ADR-0005.
 set -uo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -35,7 +35,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/canary-probe.sh"
 printf '%s== COMPLETE BLUE/GREEN DR (migrate to green, retire blue) ==%s\n' "$B" "$Z"
 printf '  order : serving-green -> cutover -> %sDELETE BLUE%s -> promote green to FULL\n' "$R" "$Z"
 printf '  guard : serving stays up the whole time (probe must show >=%s%% uptime)\n' "$MIN_UPTIME"
-printf '  note  : brief observability gap after blue is gone until green finishes full sync\n'
+printf '  note  : brief Vault/Garage gap after blue is gone until green finishes full sync\n'
 
 confirm_or_abort "$(printf '%sThis DELETES the blue cluster (after a verified cutover).%s ' "$R$B" "$Z")" \
   "promote" "to run"

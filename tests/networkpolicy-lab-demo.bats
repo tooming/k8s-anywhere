@@ -23,23 +23,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-demo-egress-tempo.yaml exists in lab-demo/networkpolicy/" {
-  [ -f "$LAB_DEMO_NP/allow-demo-egress-tempo.yaml" ]
-}
-
-@test "allow-demo-egress-tempo uses Egress policyType" {
-  run grep -q 'Egress' "$LAB_DEMO_NP/allow-demo-egress-tempo.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-demo-egress-tempo targets port 4318 (OTLP HTTP)" {
-  run grep -q 'port: 4318' "$LAB_DEMO_NP/allow-demo-egress-tempo.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-demo-egress-tempo targets observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$LAB_DEMO_NP/allow-demo-egress-tempo.yaml"
-  [ "$status" -eq 0 ]
+@test "allow-demo-egress-tempo.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$LAB_DEMO_NP/allow-demo-egress-tempo.yaml" ]
 }
 
 @test "lab-demo-networkpolicy entry exists in networkpolicy-appset.yaml" {

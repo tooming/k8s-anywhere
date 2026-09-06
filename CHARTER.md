@@ -31,7 +31,7 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
 - **Recreate-from-code.** `make up` rebuilds the whole lab; DR is verified, not assumed
   (`make dr-verify` / `dr-test` / blue-green). (ADR-0005)
 - **Stateful DR is exercised.** Every stateful namespace (`data`, `capstone`,
-  `vault`, `observability`) has a Velero schedule and a `make dr-restore`
+  `vault`) has a Velero schedule and a `make dr-restore`
   path that recovers it from the latest backup — not just re-creates the workload
   from manifest.
 - **Images are signed and verified.** Every image deployed into the cluster is signed
@@ -46,11 +46,11 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
   the 12 GB VM (~7 GB used); heavy components are on-demand, never auto-synced, and
   never two full stacks at once. This is the default, zero-cost path everyone starts
   with; it is not a ceiling on what a cloud backend can run.
-- **Real observability only.** Dashboards and outputs reflect auto-discovered state —
-  never fabricated, placeholder, or mocked data. (ADR-0004)
+- **Real state only.** Outputs reflect auto-discovered state — never fabricated,
+  placeholder, or mocked data. (ADR-0004)
 - **Decoupled / no needless SPOF**, and **Garage (not MinIO)** for S3. (ADR-0002, ADR-0003)
-- **Docs & dashboards don't drift.** README, `docs/dependency-tree.md`, and the Grafana
-  "Lab UIs" panel stay in sync (enforced by drift checks).
+- **Docs don't drift.** README and `docs/dependency-tree.md` stay in sync with the
+  actual repo (enforced by drift checks).
 
 ## Strategy (the bold choices — *how* we deliver the mission)
 
@@ -75,8 +75,8 @@ states the meta-choices the ADRs encode, so the *why* sits above the *what*.
 - **Recreate-from-code over pretend-HA.** A single host has SPOFs; we don't pretend
   otherwise. Recovery is via `make up` rebuilds + Velero restores, not multi-replica HA
   theatre. (ADR-0005)
-- **Real over fabricated.** Dashboards, tests, and outputs reflect auto-discovered
-  state. Stub data, mock metrics, and invented examples are forbidden. (ADR-0004)
+- **Real over fabricated.** Tests and outputs reflect auto-discovered state. Stub
+  data, mock metrics, and invented examples are forbidden. (ADR-0004)
 - **Decisions written down, rejected options off-limits.** Every meaningful technical
   choice lands as an ADR; rejected options (MinIO per ADR-0002, sidecar mesh per
   ADR-0012, Flannel per ADR-0014, Redis per ADR-0018) cannot be reintroduced without a
@@ -87,16 +87,17 @@ states the meta-choices the ADRs encode, so the *why* sits above the *what*.
 The directional outcomes a learner should walk away with — *what* success looks like,
 without committing to *when* or *how much*. The lab should let a learner internalize,
 hands-on: the **GitOps reconcile loop**; **IaC bootstrap vs. in-cluster GitOps**; the
-**secrets flow** (Vault → External Secrets → workload); **north-south ingress** via the
-Gateway API; the **observability pipeline** (metrics, logs, traces, profiles);
-**S3-compatible storage**; **cloud control-plane patterns** (ACK/KRO against a mock);
+**secrets flow** (Vault → External Secrets → workload); **north-south ingress** via
+Traefik's native `IngressRoute` CRDs; **S3-compatible storage**; **cloud
+control-plane patterns** (ACK/KRO against a mock);
 **DR / blue-green** on a single host; **admission-time policy** (Kyverno: validation,
-mutation, image verification); **progressive delivery** (canary releases gated by real
-SLO metrics, not timers); **stateful backup & restore** (Velero against Garage —
+mutation, image verification); **progressive delivery** (staged canary traffic
+shifting via Argo Rollouts + Traefik, pause-gated rather than instant cutover);
+**stateful backup & restore** (Velero against Garage —
 restore is exercised, not assumed); **supply-chain security** end-to-end (cosign
 signing in CI, Kyverno verifyImages on admit, continuous Trivy scanning + SBOMs);
 **automated TLS certificate lifecycle** (cert-manager issuing and rotating certs from
-a self-signed root CA at the Gateway edge — not a one-off hand-issued Secret);
+a self-signed root CA at the ingress edge — not a one-off hand-issued Secret);
 **event-driven autoscaling** (KEDA scaling a workload on a real signal — a RabbitMQ
 queue's depth, a Prometheus expression — not a timer or a hand-set replica count);
 **operational-resilience discipline** (DORA's risk-management/incident/testing/
@@ -115,19 +116,22 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 
 - **O1 — Tier 1 next-wave deployed.** By **2026-12-31**, all four next-wave components
   (Kyverno, Argo Rollouts, Velero, Trivy Operator) are auto-synced ArgoCD
-  `Application`s with their own ADR, real-metric Grafana dashboard, and bats coverage.
-  *Measured by:* presence checks in `make ci` (one Application + one dashboard + one
-  ADR per component).
+  `Application`s with their own ADR and bats coverage. (The "real-metric Grafana
+  dashboard" leg of this bar was dropped 2026-09-06 along with Objective O5 —
+  ADR-0041, observability stack removed with no replacement.)
+  *Measured by:* presence checks in `make ci` (one Application + one ADR per
+  component).
 - **O2 — Default-deny + PSS-restricted everywhere.** By **2026-09-30**, every namespace
   either enforces default-deny NetworkPolicy (ADR-0016) **and** PSS-restricted labels
   (ADR-0017), or has an ADR-cited carve-out in ADR-0017's per-namespace profile table.
   *Measured by:* `tests/networkpolicy.bats` + `tests/securitycontext.bats` cover every
   namespace in `gitops/`.
 - **O3 — Stateful DR is exercised.** By **2026-12-31**, `make dr-restore` recovers
-  every stateful namespace (`data`, `capstone`, `vault`, `observability`)
+  every stateful namespace (`data`, `capstone`, `vault`)
   from its latest Velero backup in under 10 minutes wall-clock on the
-  maintainer's hardware. (`observability` added 2026-07-29 — a
-  gap audit found it held real PVCs with no Schedule; `storage`/Garage is a
+  maintainer's hardware. (`observability` was added 2026-07-29 — a
+  gap audit found it held real PVCs with no Schedule — then dropped again
+  2026-09-06 along with the namespace itself, ADR-0041; `storage`/Garage is a
   deliberate, documented carve-out — see ADR-0021 §Scope & exceptions.) **RPO ≤ 24
   hours** — every stateful namespace's `gitops/velero/schedules/*.yaml` Schedule
   runs once daily (staggered 01:00–04:00) with `ttl: 168h` (7-day retention), so the
@@ -138,14 +142,16 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   `verifyImages` `ClusterPolicy`; an unsigned image push to the capstone Application
   fails admission. *Measured by:* a CI step that pushes an unsigned image and asserts
   Kyverno rejection.
-- **O5 — Every always-on component has a real-metric dashboard.** By **2026-09-30**,
-  every Application in `gitops/bootstrap/root-app.yaml`'s auto-synced set has a
-  matching `grafana/dashboards/lab-<name>.json` with at least one panel backed by a
-  real (auto-discovered) data source — no stub dashboards. *Measured by:* a drift
-  check wired into `make ci`.
+- **O5 — Retired 2026-09-06 (ADR-0041).** Was "every always-on component has a
+  real-metric dashboard" — removed outright, not renumbered, when the observability
+  stack it measured (Grafana + the LGTM(P) backends) was removed with no
+  replacement; there is no dashboard layer left to hold a bar against. The number
+  is retired rather than reused, matching how a superseded ADR keeps its number.
 - **O6 — Capstone end-to-end under 15 min.** By **2026-12-31**, a fresh `make up` to
-  a Tempo-traced capstone request takes under 15 minutes on the maintainer's hardware,
-  measured by a `make capstone-demo` target that wall-clocks the path.
+  a served capstone HTTP request takes under 15 minutes on the maintainer's
+  hardware, measured by a `make capstone-demo` target that wall-clocks the path.
+  (This bar previously required a Tempo trace of the request too; that leg was
+  dropped 2026-09-06 along with Tempo itself — ADR-0041.)
 - **O7 — Deployment pipeline health is measured.** By **2026-10-31**, `make
   dora-metrics` computes and `docs/dora-metrics.md` reports all four DORA (DevOps
   Research and Assessment) metrics — deployment frequency, lead time for changes,
@@ -159,8 +165,10 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 ## Target end-state (initiatives — the platform we're growing toward)
 
 - **Always-on core** (built): k3d + ArgoCD + GitLab + Traefik + Vault + External
-  Secrets + Garage + the full LGTMP observability stack + moto/ACK + a demo app
-  (~32 ArgoCD `Application`s, re-derived 2026-08-25 — KRO's own controller
+  Secrets + Garage + moto/ACK + a demo app (the observability stack this bullet used
+  to name — Grafana + the LGTM(P) backends — was removed 2026-09-06 with no
+  replacement, ADR-0041; the `Application` count below predates that removal and
+  needs re-deriving — re-derived 2026-08-25 — KRO's own controller
   Application was converted to on-demand for cluster-load reduction (ADR-0029's
   Re-evaluation log), one fewer than the prior "~33" [issue #846]; only KRO's
   namespace/RBAC scaffolding (`kro-extras`/`kro-resources`) stays auto-synced,
@@ -187,8 +195,9 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   policy — validation, mutation, image verification); **Argo Rollouts** (SLO-driven
   canary delivery via Traefik traffic-splitting); **Velero** (cluster + PVC backup to
   Garage); **Trivy Operator** (continuous vulnerability + SBOM scanning). All four are
-  auto-synced ArgoCD `Application`s with their own ADR, real-metric Grafana dashboard,
-  and bats coverage (Objective O1, met ahead of its 2026-12-31 date).
+  auto-synced ArgoCD `Application`s with their own ADR and bats coverage (Objective O1,
+  met ahead of its 2026-12-31 date — the "real-metric Grafana dashboard" leg of this
+  bar was dropped 2026-09-06 along with Objective O5, ADR-0041).
 - **Heavy / on-demand** (built, on-demand): an artifact registry (Harbor) and a
   GitOps promotion engine (Kargo) — each is a manual-sync ArgoCD `Application` with
   a `make <name>-up` / `<name>-down` target, brought up *one at a time* within the
@@ -198,7 +207,8 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   decision, no replacement — see ADR-0031/ADR-0032, ADR-0012, and ADR-0013.)
 - **Capstone — the full inner loop**: GitLab CI builds *and signs* an image (cosign) →
   Kyverno verifies the signature on admit → ArgoCD deploys it → Argo Rollouts canaries it
-  on real Mimir SLOs → Traefik routes it → Grafana shows its metrics & logs → Vault holds
+  in staged weight/pause steps via Traefik (the Mimir-SLO auto-gate was removed
+  alongside the rest of the observability stack, ADR-0041) → Vault holds
   its secrets → Velero backs up its state.
 - **Cloud backend** (built, partially verified against a real account): a second
   Terragrunt backend module (`infra/live/oracle/`) targeting Oracle Cloud's Always Free

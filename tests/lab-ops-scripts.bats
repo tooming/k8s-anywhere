@@ -29,10 +29,17 @@ setup() {
   [ -x "$DRVERIFY" ]
 }
 
-@test "dr-verify.sh defines a budget var for every real check (nodes/argo/vault/eso/garage/mimir/grafana)" {
-  for v in T_NODES T_ARGO T_VAULT T_ESO T_GARAGE T_MIMIR T_GRAFANA; do
+@test "dr-verify.sh defines a budget var for every real check (nodes/argo/vault/eso/garage)" {
+  for v in T_NODES T_ARGO T_VAULT T_ESO T_GARAGE; do
     run grep -q "$v=" "$DRVERIFY"
     [ "$status" -eq 0 ]
+  done
+}
+
+@test "dr-verify.sh no longer defines Mimir/Grafana budget vars (ADR-0041)" {
+  for v in T_MIMIR T_GRAFANA; do
+    run grep -q "$v=" "$DRVERIFY"
+    [ "$status" -ne 0 ]
   done
 }
 
@@ -58,14 +65,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dr-verify.sh queries Mimir with the lab tenant header (ADR-0004: real data, no fabrication)" {
+@test "dr-verify.sh no longer queries Mimir or checks Grafana /api/health (ADR-0041)" {
   run grep -q "X-Scope-OrgID: lab" "$DRVERIFY"
-  [ "$status" -eq 0 ]
-}
-
-@test "dr-verify.sh checks Grafana /api/health" {
+  [ "$status" -ne 0 ]
   run grep -q "/api/health" "$DRVERIFY"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 @test "dr-verify.sh exits 0 on pass and 1 on fail" {
@@ -228,14 +232,19 @@ setup() {
 # point (docs/DR.md, scripts/bluegreen-frontdoor.sh); `creds`/`argocd-ui` printing
 # :8080 instead was a real inconsistency a fresh-bootstrap user would hit immediately,
 # and a real breakage post-blue/green-cutover once :8080 stops existing.
-@test "Makefile creds target prints the front door :8000 for ArgoCD/Grafana/Vault/RabbitMQ, not :8080" {
+@test "Makefile creds target prints the front door :8000 for ArgoCD/Vault/RabbitMQ, not :8080" {
   run grep -A6 '^creds:' "$MAKEFILE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"argocd.127.0.0.1.nip.io:8000"* ]]
-  [[ "$output" == *"http://localhost:8000\""* ]]
   [[ "$output" == *"vault.127.0.0.1.nip.io:8000"* ]]
   [[ "$output" == *"rabbitmq.127.0.0.1.nip.io:8000"* ]]
   [[ "$output" != *":8080"* ]]
+}
+
+@test "Makefile creds target no longer prints a Grafana line (ADR-0041)" {
+  run grep -A6 '^creds:' "$MAKEFILE"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"Grafana"* ]]
 }
 
 @test "Makefile argocd-ui target's comment offers the front door :8000, not :8080" {

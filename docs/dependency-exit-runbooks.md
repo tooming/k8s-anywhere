@@ -32,6 +32,11 @@ itself overclaim completeness) even now that coverage is complete — a future n
 in the register (a new ADR naming a new tool) would still need its own runbook added
 here, same as any new concentration group, and per the mechanical-guard gap named in
 "Keeping this in sync" below, nothing currently catches that automatically.
+(`github.com/grafana` and its two exporters were removed 2026-09-06, ADR-0041,
+observability stack removed with no replacement — the same day this sweep ran, one
+of the reasons it ran — and `github.com/pingcap` was removed the same day alongside
+TiDB, ADR-0031/ADR-0032; both are covered by their own "no runbook needed" notes
+below rather than counted among the 13.)
 
 **How to read a runbook below.** Each names: what a real exit changes *mechanically*
 in this repo's `gitops/`; whether a straight fork-and-repoint suffices or a
@@ -43,36 +48,16 @@ Harbor migration originally did.
 
 ---
 
-## `github.com/grafana` — 6 tools (Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy)
+## `github.com/grafana` — removed 2026-09-06 (ADR-0041), no runbook needed
 
-The largest concentration in the register: the entire observability pane (dashboards,
-metrics, logs, traces, continuous profiling, and the unified collector feeding all of
-them) is one upstream org, all `always-on-core`, all governed by
-[ADR-0006](decisions/adr-0006-grafana-native-git-sync.md) (Grafana itself) or
-[ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) (Mimir/Loki/Tempo/
-Pyroscope/Alloy).
-
-**Mechanically:** each is its own ArgoCD `Application` in `gitops/platform/
-observability-*.yaml` (`observability-grafana.yaml`, `-mimir.yaml`, `-loki.yaml`,
-`-tempo.yaml`, `-pyroscope.yaml`, `-alloy.yaml`) — a real exit means picking a
-replacement per role (a dashboard UI, a metrics TSDB, a log store, a trace store, a
-profiler, a collector) and repointing each `Application`'s chart `repoURL`/
-`targetRevision` to the new source, one at a time, not a single-file flip.
-
-**Fork-and-repoint, or a bigger migration?** Depends on the role. Grafana itself
-(the UI) is the most fork-and-repoint-shaped — dashboards are plain JSON, portable
-to most Grafana-compatible viewers. Mimir/Loki/Tempo are each a *storage format and
-query-API* choice, not just a deployment target — replacing any one means a real data
-migration or accepting a cold cutover (lose history), not a same-day repoint.
-Pyroscope and Alloy are the least entangled (a stateless collector and a
-still-developing profiling store, respectively).
-
-**Alternative evaluated?** No — this lab has never run a bake-off against a
-non-Grafana-org observability stack. The first step of any real exit would be the
-same ADR-writing process [ADR-0002](decisions/adr-0002-garage-not-minio.md)/
-[ADR-0018](decisions/adr-0018-valkey-not-redis.md)/
-[ADR-0024](decisions/adr-0024-harbor-not-artifactory.md) already used to pick between
-alternatives before committing — not assumed here as already decided.
+This used to be the largest concentration in the register — the entire
+observability pane (dashboards, metrics, logs, traces, continuous profiling, and
+the unified collector feeding all of them), all one upstream org. There is no exit
+runbook to write for it any more: the whole stack was removed outright with no
+replacement (ADR-0041, supersedes ADR-0006/ADR-0034), so the concentration risk
+this section used to plan an exit for is gone along with the dependency itself —
+the most complete "exit" available. See
+[`docs/dependency-concentration.md`](dependency-concentration.md)'s matching entry.
 
 ## `github.com/argoproj` — 2 tools (ArgoCD, Argo Rollouts)
 
@@ -226,24 +211,10 @@ is a real rewrite, not a value swap (demonstrated by that migration's own real
 findings, e.g. the `GITEA__server__SSH_LISTEN_PORT` bug). No rejected alternative is
 recorded for Forgejo specifically beyond GitLab (ADR-0035's own comparison).
 
-**kube-state-metrics** (Kubernetes object-state exporter —
-[ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md)). `gitops/platform/
-observability-ksm.yaml` is a normal auto-synced `Application` feeding Mimir; several
-Grafana dashboards (`lab-cloud-control-plane.json` among them) read its series
-directly. A real exit means picking a different Kubernetes-object-state exporter and
-re-mapping every PromQL query across those dashboards to its metric names — a metrics
-schema migration, not a same-day repoint, since dashboard queries hardcode
-`kube_state_metrics`'s own metric-naming convention. No rejected alternative is
-recorded — ADR-0034 adopted the de-facto standard exporter with no bake-off.
-
-**node-exporter** (node/host metrics exporter —
-[ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md)). `gitops/platform/
-observability-node-exporter.yaml` is a normal auto-synced `Application`; host-level
-dashboards (CPU, memory, disk, network) depend on its `node_*` metric family. Same
-shape as kube-state-metrics above: the metrics API surface, not the deployment
-mechanism, is what a replacement would need to match — a real exit means re-mapping
-every host-level dashboard panel to the new exporter's own metric names. No rejected
-alternative is recorded — same de-facto-standard adoption as kube-state-metrics.
+(kube-state-metrics and node-exporter, the two remaining ADR-0034 exporters this
+section used to cover individually, were removed 2026-09-06 alongside the rest of
+the observability stack, ADR-0041 — same "no runbook needed, the dependency itself
+is gone" resolution as the `github.com/grafana` group above.)
 
 ---
 
@@ -451,7 +422,7 @@ ESO") even though no comparison has actually been run.
 ## Keeping this in sync
 
 This file is a downstream consumer of two others: [`docs/dependency-
-concentration.md`](dependency-concentration.md)'s three named concentration groups
+concentration.md`](dependency-concentration.md)'s named concentration groups
 (a new group appearing there should get a runbook section here) and
 [`docs/dependency-register.md`](dependency-register.md)'s criticality column (a new
 row there — a new ADR naming a new tool — should get a runbook section here too, same

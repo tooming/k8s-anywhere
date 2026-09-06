@@ -80,11 +80,10 @@ setup() {
   [[ "$output" == *"table row says"* ]]
 }
 
-@test "adr-chart-version-sync-check: passes on the real repo's ADR-0034 table rows (Pyroscope/Alloy/KSM/node-exporter match their live pins)" {
+@test "adr-chart-version-sync-check: passes on the real repo (ADR-0034's table rows no longer exist — removed 2026-09-06, ADR-0041)" {
   run bash "$REPO/scripts/adr-chart-version-sync-check.sh"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"adr-0034"* ]]
-  [[ "$output" == *"table row"* ]]
+  [[ "$output" != *"adr-0034"* ]]
 }
 
 # --- adr-image-pin-sync-check -------------------------------------------------------
@@ -124,11 +123,10 @@ setup() {
   [[ "$output" == *"image-pin table row says"* ]]
 }
 
-@test "adr-image-pin-sync-check: passes on the real repo's ADR-0034 Tempo table row (matches its live image tag)" {
+@test "adr-image-pin-sync-check: passes on the real repo (ADR-0034's Tempo table row no longer exists — removed 2026-09-06, ADR-0041)" {
   run bash "$REPO/scripts/adr-image-pin-sync-check.sh"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"adr-0034"* ]]
-  [[ "$output" == *"table row"* ]]
+  [[ "$output" != *"adr-0034"* ]]
 }
 
 # --- context-doc-version-sync-check -------------------------------------------------
@@ -137,13 +135,13 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "context-doc-version-sync-check: fails when context.md's Grafana citation no longer matches the live image tag" {
+@test "context-doc-version-sync-check: fails when context.md's KRO citation no longer matches the live chart version (Grafana/Pyroscope checks removed 2026-09-06, ADR-0041)" {
   run env CONTEXTDOCCHECK_ROOT="$FIX/context-doc-version-sync/drift" bash "$REPO/scripts/context-doc-version-sync-check.sh"
   [ "$status" -eq 1 ]
   [[ "$output" == *"context.md says"* ]]
 }
 
-@test "context-doc-version-sync-check: passes on the real repo's context.md (Grafana/Pyroscope/KRO/ACK all match their live pins)" {
+@test "context-doc-version-sync-check: passes on the real repo's context.md (KRO/ACK match their live pins)" {
   run bash "$REPO/scripts/context-doc-version-sync-check.sh"
   [ "$status" -eq 0 ]
   [[ "$output" == *"ACK s3-controller"* ]]

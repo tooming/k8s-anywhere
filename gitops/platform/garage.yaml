@@ -1,6 +1,9 @@
-# Garage — S3-compatible object store (the persistent backend for Mimir/Loki,
-# and later Longhorn backups). Replaces the dead MinIO. PVC-backed so data
-# survives pod restarts. Secrets (rpc/admin) are kubectl-created out of git.
+# Garage — S3-compatible object store (the Velero backup target and Terraform-state
+# backend). Replaces the dead MinIO. PVC-backed so data survives pod restarts.
+# Secrets (rpc/admin) are kubectl-created out of git.
+# Note: this used to also be the persistent backend for Mimir/Loki/Tempo/Pyroscope
+# chunk/block storage; that role went away 2026-09-06 when the observability stack
+# was removed with no replacement (ADR-0041).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

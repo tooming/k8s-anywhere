@@ -92,12 +92,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- observability: Alloy must scrape the data layer ------------------------
-@test "Alloy scrapes RabbitMQ (:15692) and Valkey (:9121)" {
-  run grep -q 'rabbitmq.data.svc.cluster.local:15692' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-  run grep -q 'valkey.data.svc.cluster.local:9121' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
+# --- observability: Alloy scrape removed 2026-09-06 (ADR-0041) --------------
+@test "observability-alloy.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/platform/observability-alloy.yaml" ]
 }
 
 # --- security: Valkey must require a password -------------------------------
@@ -112,8 +109,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- dashboards exist (ADR-0004 real metrics) -------------------------------
-@test "Lab — RabbitMQ and Lab — Valkey dashboards exist" {
-  [ -f "$REPO/grafana/dashboards/lab-rabbitmq.json" ]
-  [ -f "$REPO/grafana/dashboards/lab-valkey.json" ]
+# --- dashboards removed 2026-09-06 (ADR-0041) -------------------------------
+@test "grafana/ directory no longer exists, so no Lab — RabbitMQ / Lab — Valkey dashboards (ADR-0041)" {
+  [ ! -d "$REPO/grafana" ]
+  [ ! -f "$REPO/grafana/dashboards/lab-rabbitmq.json" ]
+  [ ! -f "$REPO/grafana/dashboards/lab-valkey.json" ]
 }

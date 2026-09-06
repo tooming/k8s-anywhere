@@ -1,8 +1,9 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for Trivy Operator (supply-chain CVE + SBOM scanner,
 # ADR-0022, CHARTER O1). Validates GitOps wiring (Application shape, namespace PSA
-# labels, NetworkPolicy overlay), the Alloy metrics scrape job, and scanner toggles —
-# no running cluster required.
+# labels, NetworkPolicy overlay) and scanner toggles — no running cluster required.
+# The Alloy metrics scrape job and Grafana dashboard this file used to also test
+# were removed 2026-09-06 (ADR-0041, observability stack removed with no replacement).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -114,18 +115,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "trivy-system allow-trivy-metrics-from-observability rule exists" {
-  [ -f "$REPO/gitops/trivy-system/networkpolicy/allow-trivy-metrics-from-observability.yaml" ]
-}
-
-@test "trivy-metrics allow rule permits ingress on TCP 8080" {
-  run grep -q 'port: 8080' "$REPO/gitops/trivy-system/networkpolicy/allow-trivy-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "trivy-metrics allow rule selects Alloy pods from observability namespace" {
-  run grep -q 'app.kubernetes.io/name: alloy' "$REPO/gitops/trivy-system/networkpolicy/allow-trivy-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+@test "trivy-system allow-trivy-metrics-from-observability rule no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/trivy-system/networkpolicy/allow-trivy-metrics-from-observability.yaml" ]
 }
 
 @test "trivy-system allow-trivy-egress-vdb rule exists" {
@@ -152,64 +143,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Alloy scrape job (ADR-0022 §Observability) --------------------------------
-@test "observability-alloy has a trivy_operator scrape job" {
-  run grep -q 'prometheus.scrape "trivy_operator"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "trivy-operator scrape targets trivy-system.svc on port 8080" {
-  run grep -q 'trivy-operator.trivy-system.svc.cluster.local:8080' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-alloy-egress-external includes egress to trivy-system namespace" {
-  run grep -q 'trivy-system' "$REPO/gitops/observability/networkpolicy/allow-alloy-egress-external.yaml"
-  [ "$status" -eq 0 ]
-}
-
-# --- Grafana dashboard (ADR-0004: real metrics only) --------------------------
-@test "lab-trivy.json dashboard exists in grafana/dashboards/" {
-  [ -f "$REPO/grafana/dashboards/lab-trivy.json" ]
-}
-
-@test "lab-trivy.json references trivy_image_vulnerabilities (CVE-by-severity panels)" {
-  run grep -q 'trivy_image_vulnerabilities' "$REPO/grafana/dashboards/lab-trivy.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-trivy.json does not reference the nonexistent trivy_sbom_reports_total metric (ADR-0022 2026-08-12: no real metric backs an SBOM-count panel; panel removed rather than left permanently broken)" {
-  run grep -q 'trivy_sbom_reports_total' "$REPO/grafana/dashboards/lab-trivy.json"
-  [ "$status" -eq 1 ]
-}
-
-@test "lab-trivy.json references the real trivy_resource_configaudits metric, not the nonexistent trivy_config_audit_checks_total (configAudit panel)" {
-  run grep -q 'trivy_resource_configaudits' "$REPO/grafana/dashboards/lab-trivy.json"
-  [ "$status" -eq 0 ]
-  run grep -q 'trivy_config_audit_checks_total' "$REPO/grafana/dashboards/lab-trivy.json"
-  [ "$status" -eq 1 ]
-}
-
-@test "lab-trivy.json's CVE-by-severity panels use Title-Case severity label values (Critical/High/Medium/Low), matching trivy-operator's real label values, not uppercase" {
-  run grep -q 'severity=\\"Critical\\"' "$REPO/grafana/dashboards/lab-trivy.json"
-  [ "$status" -eq 0 ]
-  run grep -q 'severity=\\"CRITICAL\\"' "$REPO/grafana/dashboards/lab-trivy.json"
-  [ "$status" -eq 1 ]
-}
-
-@test "lab-trivy.json has no fabricated/placeholder data (ADR-0004)" {
-  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-trivy.json"
-  [ "$status" -eq 1 ]
-}
-
-@test "lab-trivy.json uses Mimir datasource uid" {
-  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-trivy.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "docs/dependency-tree.md Trivy note confirms dashboard is present" {
-  run grep -q 'lab-trivy.json' "$REPO/docs/dependency-tree.md"
-  [ "$status" -eq 0 ]
+# --- Alloy scrape job (ADR-0022 §Observability) + Grafana dashboard REMOVED
+# 2026-09-06 (ADR-0041, observability stack removed with no replacement) --------
+@test "grafana/dashboards/lab-trivy.json no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/grafana/dashboards/lab-trivy.json" ]
 }
 
 @test "docs/dependency-tree.md wave-0 row lists trivy-extras" {

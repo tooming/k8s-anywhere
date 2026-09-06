@@ -1,90 +1,24 @@
 #!/usr/bin/env bats
-# Structural tests for the two imperative bootstrap seams wired into `make up`
-# (ADR-0006): gitlab-tls-bootstrap and grafana-gitsync-bootstrap.
-# All checks are clusterless — they assert code structure and Makefile wiring.
+# Structural tests for `make up`'s imperative bootstrap seams. All checks are
+# clusterless — they assert code structure and Makefile wiring.
+#
+# gitlab-tls-bootstrap and grafana-gitsync-bootstrap (ADR-0006) — this file's
+# original subject — were both removed 2026-09-06 (ADR-0041, observability
+# stack removed with no replacement): Grafana's native Git Sync was their only
+# consumer.
 
 setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
 
-# --- scripts present and executable ------------------------------------------
-@test "gitlab-tls-bootstrap.sh exists and is executable" {
-  [ -x "$REPO/scripts/gitlab-tls-bootstrap.sh" ]
+@test "gitlab-tls-bootstrap.sh and grafana-gitsync-bootstrap.sh no longer exist (ADR-0041)" {
+  [ ! -f "$REPO/scripts/gitlab-tls-bootstrap.sh" ]
+  [ ! -f "$REPO/scripts/grafana-gitsync-bootstrap.sh" ]
 }
 
-@test "grafana-gitsync-bootstrap.sh exists and is executable" {
-  [ -x "$REPO/scripts/grafana-gitsync-bootstrap.sh" ]
-}
-
-# --- make up wires both bootstraps -------------------------------------------
-@test "make up calls gitlab-tls-bootstrap" {
-  run grep -n 'gitlab-tls-bootstrap' "$REPO/Makefile"
-  [ "$status" -eq 0 ]
-  # Must appear in the 'up' recipe (not only as a standalone target header)
-  [[ "$output" == *"MAKE) gitlab-tls-bootstrap"* ]]
-}
-
-@test "make up calls grafana-gitsync-bootstrap" {
-  run grep -n 'grafana-gitsync-bootstrap' "$REPO/Makefile"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"MAKE) grafana-gitsync-bootstrap"* ]]
-}
-
-@test "make up calls gitlab-tls-bootstrap before grafana-gitsync-bootstrap" {
-  tls_line=$(grep -n 'MAKE) gitlab-tls-bootstrap' "$REPO/Makefile" | head -1 | cut -d: -f1)
-  gs_line=$(grep -n 'MAKE) grafana-gitsync-bootstrap' "$REPO/Makefile" | head -1 | cut -d: -f1)
-  [ -n "$tls_line" ] && [ -n "$gs_line" ]
-  [ "$tls_line" -lt "$gs_line" ]
-}
-
-@test "make up calls gitlab-tls-bootstrap after vault-bootstrap" {
-  vault_line=$(grep -n 'MAKE) vault-bootstrap' "$REPO/Makefile" | head -1 | cut -d: -f1)
-  tls_line=$(grep -n 'MAKE) gitlab-tls-bootstrap' "$REPO/Makefile" | head -1 | cut -d: -f1)
-  [ -n "$vault_line" ] && [ -n "$tls_line" ]
-  [ "$vault_line" -lt "$tls_line" ]
-}
-
-# --- ADR-0006 prose does not re-drift once both bootstraps are wired ---------
-# ADR-0006 previously claimed "(Follow-up: wire both bootstraps into make up/DR.)"
-# after that follow-up was already done, going stale until caught by a planner
-# gap-analysis run. Both bootstraps are proven wired above (the two "make up
-# calls ..." tests); this asserts the ADR text doesn't claim otherwise again.
-@test "ADR-0006 does not carry a stale 'Follow-up' note about the bootstrap wiring" {
-  run grep -c 'Follow-up: wire both bootstraps into' "$REPO/docs/decisions/adr-0006-grafana-native-git-sync.md"
+@test "make up no longer calls gitlab-tls-bootstrap or grafana-gitsync-bootstrap (ADR-0041)" {
+  run grep -c 'MAKE) gitlab-tls-bootstrap' "$REPO/Makefile"
   [ "$status" -eq 1 ]
-  [ "$output" -eq 0 ]
-}
-
-# --- gitlab-tls-bootstrap has Grafana restart logic --------------------------
-@test "gitlab-tls-bootstrap.sh rolls Grafana deployment when it is already running" {
-  run grep -c 'rollout restart deployment/grafana' "$REPO/scripts/gitlab-tls-bootstrap.sh"
-  [ "$status" -eq 0 ]
-  [ "$output" -ge 1 ]
-}
-
-# --- grafana-gitsync-bootstrap has a health wait loop ------------------------
-@test "grafana-gitsync-bootstrap.sh waits for Grafana /api/health before calling the API" {
-  run grep -c '/api/health' "$REPO/scripts/grafana-gitsync-bootstrap.sh"
-  [ "$status" -eq 0 ]
-  [ "$output" -ge 1 ]
-}
-
-@test "grafana-gitsync-bootstrap.sh defaults GRAFANA_URL to the stable front door :8000, not a per-cluster Traefik port" {
-  run grep -oE 'GRAFANA_URL="\$\{GRAFANA_URL:-[^}]+\}"' "$REPO/scripts/grafana-gitsync-bootstrap.sh"
-  [ "$status" -eq 0 ]
-  [[ "$output" != *":8080"* ]]
-  [[ "$output" == *":8000"* ]]
-}
-
-# --- DR.md documents both new steps ------------------------------------------
-@test "DR.md documents gitlab-tls-bootstrap in the bootstrap order table" {
-  run grep -c 'gitlab-tls-bootstrap' "$REPO/docs/DR.md"
-  [ "$status" -eq 0 ]
-  [ "$output" -ge 1 ]
-}
-
-@test "DR.md documents grafana-gitsync-bootstrap in the bootstrap order table" {
-  run grep -c 'grafana-gitsync-bootstrap' "$REPO/docs/DR.md"
-  [ "$status" -eq 0 ]
-  [ "$output" -ge 1 ]
+  run grep -c 'MAKE) grafana-gitsync-bootstrap' "$REPO/Makefile"
+  [ "$status" -eq 1 ]
 }
 
 # --- every make up sub-target is documented in DR.md's order table -----------
@@ -124,18 +58,6 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   run grep -c 'already has GITLAB_ROOT_PASSWORD' "$REPO/scripts/gitlab-env-ensure.sh"
   [ "$status" -eq 0 ]
   [ "$output" -ge 1 ]
-}
-
-# --- grafana-gitsync wait must clear the cold-start dashboard download --------
-# download-dashboards curls each community gnetId dashboard from grafana.com at up
-# to --max-time 60s. If GRAFANA_WAIT is shorter than that budget, `make up` fails
-# its LAST step on a fresh lab. Keep the wait >= (#gnetId x 60) + startup headroom.
-@test "grafana-gitsync GRAFANA_WAIT covers the community-dashboard download budget" {
-  ndash=$(grep -c 'gnetId:' "$REPO/gitops/platform/observability-grafana.yaml")
-  wait=$(grep -oE 'GRAFANA_WAIT:-[0-9]+' "$REPO/scripts/grafana-gitsync-bootstrap.sh" | grep -oE '[0-9]+' | head -1)
-  [ -n "$wait" ]
-  budget=$(( ndash * 60 + 120 ))
-  [ "$wait" -ge "$budget" ]
 }
 
 # --- gitlab-push must not mirror a stale local main ---------------------------

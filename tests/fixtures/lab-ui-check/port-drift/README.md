@@ -1,0 +1,15 @@
+# fixture
+
+## Endpoints
+
+README.md Endpoints table fixture (port drift): the host matches the routed
+UI, but the URL hardcodes the per-cluster Traefik port :8080 instead of the
+stable front door :8000, so lab-ui-check must flag the wrong port.
+
+| UI | URL |
+|----|-----|
+| Demo | http://demo.127.0.0.1.nip.io:8080 |
+
+## Something else
+
+Not part of the Endpoints section.

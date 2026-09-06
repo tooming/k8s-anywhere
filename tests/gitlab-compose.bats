@@ -6,8 +6,9 @@
 # changelog review, and no rollback record — the exact failure mode ADR-0030 (k3s)
 # already guards against. This file asserts neither service ever regresses back to
 # `:latest`, mirroring tests/argocd-chart-pin.bats's exact-pin assertion pattern.
-# Extended 2026-08-13 to cover the `gitlab-tls` nginx sidecar, which had the same
-# floating-tag gap on its own `1.27-alpine` minor-version pin.
+# The `gitlab-tls` nginx sidecar this file used to also cover (added 2026-08-13
+# for the same floating-tag gap on its own `1.27-alpine` minor-version pin) was
+# removed 2026-09-06 (ADR-0041, observability stack removed with no replacement).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -46,12 +47,7 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-@test "gitlab-tls service is pinned to nginx:1.27.5-alpine" {
-  run grep -F 'image: nginx:1.27.5-alpine' "$COMPOSE"
-  [ "$status" -eq 0 ]
-}
-
-@test "gitlab-tls service is not pinned to the floating nginx:1.27-alpine tag" {
-  run grep -F 'image: nginx:1.27-alpine' "$COMPOSE"
-  [ "$status" -eq 1 ]
+@test "gitlab-tls service no longer exists (ADR-0041)" {
+  run grep -q 'gitlab-tls:' "$COMPOSE"
+  [ "$status" -ne 0 ]
 }

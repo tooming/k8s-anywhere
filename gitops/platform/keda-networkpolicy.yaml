@@ -1,8 +1,9 @@
 # keda-networkpolicy — default-deny + allowlist NetworkPolicies for the keda
 # namespace (ADR-0016 §4 fan-out; event-driven autoscaling controller).
 # Applies the shared baseline templates (default-deny-all, allow-dns-and-apiserver)
-# plus per-workload allow rules: kube-apiserver webhook callback on TCP 9443 and
-# Alloy metrics scrape from observability on TCP 8080.
+# plus a per-workload allow rule: kube-apiserver webhook callback on TCP 9443.
+# (The Alloy metrics-scrape ingress rule this overlay used to also carry was
+# removed 2026-09-06, ADR-0041, observability stack removed with no replacement.)
 # ON-DEMAND (converted 2026-08-25 alongside keda itself — ADR-0029's
 # Re-evaluation log, cluster-load reduction): manual sync only, brought
 # up/down by `make keda-up`/`make keda-down`.

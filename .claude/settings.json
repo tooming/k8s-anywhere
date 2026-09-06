@@ -108,12 +108,6 @@
           },
           {
             "type": "command",
-            "command": "bash scripts/observability-tests-sync-hook.sh",
-            "timeout": 30,
-            "statusMessage": "Checking observability.bats freeze"
-          },
-          {
-            "type": "command",
             "command": "bash scripts/drift-detectors-tests-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking drift-detectors.bats freeze"
@@ -165,18 +159,6 @@
             "command": "bash scripts/rollouts-plugin-list-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking Argo Rollouts plugin values are lists"
-          },
-          {
-            "type": "command",
-            "command": "bash scripts/analysistemplate-step-count-sync-hook.sh",
-            "timeout": 30,
-            "statusMessage": "Checking Argo Rollouts step-gating AnalysisTemplates set count"
-          },
-          {
-            "type": "command",
-            "command": "bash scripts/mimir-readonly-root-sync-hook.sh",
-            "timeout": 30,
-            "statusMessage": "Checking Mimir write paths are writable"
           },
           {
             "type": "command",

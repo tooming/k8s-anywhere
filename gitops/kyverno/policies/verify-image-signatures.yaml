@@ -1,7 +1,7 @@
 # Verifies cosign signatures on images pushed to the in-cluster Harbor
 # registry (ADR-0019, CHARTER Objective O4; scope repointed to Harbor's host
 # per ADR-0024 / auto/harbor-capstone-rewire). Scoped to
-# harbor.127.0.0.1.nip.io/** so upstream chart images (Grafana, Vault, etc.)
+# harbor.127.0.0.1.nip.io/** so upstream chart images (Vault, cert-manager, etc.)
 # that are NOT lab-signed are never rejected. The cosign public key is seeded
 # by scripts/cosign-bootstrap.sh into the Secret cosign-public-key in
 # namespace kyverno.

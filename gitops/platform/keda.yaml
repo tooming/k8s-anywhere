@@ -16,7 +16,9 @@
 # ON-DEMAND (converted 2026-08-25, cluster-load reduction — see ADR-0029's
 # Re-evaluation log): manual sync only, `make keda-up`/`make keda-down`.
 # KEDA is reactive/event-driven by its very nature — nothing in this lab
-# generates the RabbitMQ-queue-depth or Mimir-metric signals it scales on
+# generates the RabbitMQ-queue-depth signal it scales on (the Prometheus/Mimir
+# trigger type this lab could also demonstrate went away with the observability
+# stack's removal, ADR-0041)
 # unless someone is actively demonstrating that pattern, so there is no
 # always-on workload for it to watch between demos. keda-extras (wave 6)
 # pre-creates the namespace with PSA restricted labels before the Helm

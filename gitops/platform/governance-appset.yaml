@@ -72,9 +72,9 @@ spec:
           # Envoy Gateway/ADR-0008): the envoy-gateway-system namespace no longer
           # exists — Traefik replaced it and ships with k3s, no ArgoCD-managed
           # namespace of its own.
-          - appName: node-exporter-governance
-            gitPath: gitops/governance/node-exporter
-            destNamespace: node-exporter
+          # node-exporter-governance REMOVED 2026-09-06 (ADR-0041, observability
+          # stack removed with no replacement): node-exporter existed only as an
+          # Alloy scrape target and had no independent role once Alloy was gone.
           - appName: cert-manager-governance
             gitPath: gitops/governance/cert-manager
             destNamespace: cert-manager
@@ -92,10 +92,9 @@ spec:
           - appName: capstone-pipeline-governance
             gitPath: gitops/governance/capstone-pipeline
             destNamespace: capstone-pipeline
-          # heavy tier (RFC #294 mapping table)
-          - appName: observability-governance
-            gitPath: gitops/governance/observability
-            destNamespace: observability
+          # observability-governance (heavy tier, RFC #294 mapping table) REMOVED
+          # 2026-09-06 (ADR-0041): the observability namespace no longer exists —
+          # the entire observability stack was removed with no replacement.
   template:
     metadata:
       name: "{{appName}}"

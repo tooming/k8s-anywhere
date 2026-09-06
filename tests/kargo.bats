@@ -417,52 +417,14 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-# --- Observability: Alloy scrape + Grafana dashboard (auto/kargo-observability-dashboard) ---
-@test "observability-alloy.yaml has kargo scrape block" {
-  run grep -q 'prometheus.scrape "kargo"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
+# --- Observability: Alloy scrape + NetworkPolicy + Grafana dashboard REMOVED
+# 2026-09-06 (ADR-0041, observability stack removed with no replacement) ------
+@test "allow-kargo-metrics-ingress.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/kargo/networkpolicy/allow-kargo-metrics-ingress.yaml" ]
 }
 
-@test "kargo scrape target points to kargo-api on port 8080" {
-  run grep -q 'kargo-api.kargo.svc.cluster.local:8080' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "kargo NetworkPolicy overlay includes allow-kargo-metrics-ingress.yaml" {
-  run grep -q 'allow-kargo-metrics-ingress.yaml' "$REPO/gitops/kargo/networkpolicy/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-kargo-metrics-ingress.yaml exists" {
-  [ -f "$REPO/gitops/kargo/networkpolicy/allow-kargo-metrics-ingress.yaml" ]
-}
-
-@test "allow-kargo-metrics-ingress.yaml targets TCP 8080 from observability namespace" {
-  run grep -q 'port: 8080' "$REPO/gitops/kargo/networkpolicy/allow-kargo-metrics-ingress.yaml"
-  [ "$status" -eq 0 ]
-  run grep -q 'kubernetes.io/metadata.name: observability' "$REPO/gitops/kargo/networkpolicy/allow-kargo-metrics-ingress.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-kargo.json dashboard exists" {
-  [ -f "$REPO/grafana/dashboards/lab-kargo.json" ]
-}
-
-@test "lab-kargo.json dashboard references controller_runtime_reconcile_total" {
-  run grep -q 'controller_runtime_reconcile_total' "$REPO/grafana/dashboards/lab-kargo.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-kargo.json has no panel targeting a nonexistent freight controller (2026-08-12: Kargo v1.11.1 has no dedicated Freight controller — Freight objects are produced by warehouse; the redundant former 'Freight creation rate' panel was removed, keeping the one real Stage + Warehouse reconcile-rate panel pair)" {
-  run grep -q 'controller=~\\"freight' "$REPO/grafana/dashboards/lab-kargo.json"
-  [ "$status" -eq 1 ]
-  run grep -q 'controller=~\\"warehouse.\*\\"' "$REPO/grafana/dashboards/lab-kargo.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-kargo.json has no fabricated/placeholder data (ADR-0004)" {
-  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-kargo.json"
-  [ "$status" -eq 1 ]
+@test "grafana/dashboards/lab-kargo.json no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/grafana/dashboards/lab-kargo.json" ]
 }
 
 @test "docs/dependency-tree.md documents kargo, kargo-extras, and kargo-project in the apply-order table" {
