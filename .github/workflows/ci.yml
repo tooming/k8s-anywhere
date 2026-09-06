@@ -192,6 +192,7 @@ jobs:
       - run: bash scripts/dependency-exit-runbooks-sync-check.sh
       - run: bash scripts/docs-done-pr-link-check.sh
       - run: bash scripts/kustomize-orphan-check.sh
+      - run: bash scripts/ingressroute-web-tls-check.sh
       - run: bash scripts/yqs-lib-check.sh
       - run: bash scripts/ok-bad-lib-check.sh
       - run: bash scripts/drift-detectors-tests-check.sh

@@ -166,6 +166,10 @@ docs-done-pr-link-check: ## Check every docs/done/*.md file's "## PR" section is
 kustomize-orphan-check: ## Check every file next to a kustomization.yaml is referenced by it (no dead/orphaned manifests, drift detector)
 	@bash scripts/kustomize-orphan-check.sh
 
+.PHONY: ingressroute-web-tls-check
+ingressroute-web-tls-check: ## Check no Traefik IngressRoute combines plain-HTTP `web` with a `tls:` stanza (silently breaks web routing, drift detector)
+	@bash scripts/ingressroute-web-tls-check.sh
+
 .PHONY: yqs-lib-check
 yqs-lib-check: ## Check no scripts/*.sh defines its own local yqs() helper instead of sourcing scripts/lib/yq.sh (drift detector)
 	@bash scripts/yqs-lib-check.sh
@@ -235,6 +239,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/dependency-exit-runbooks-sync-check.sh
 	@bash scripts/docs-done-pr-link-check.sh
 	@bash scripts/kustomize-orphan-check.sh
+	@bash scripts/ingressroute-web-tls-check.sh
 	@bash scripts/yqs-lib-check.sh
 	@bash scripts/ok-bad-lib-check.sh
 	@bash scripts/drift-detectors-tests-check.sh

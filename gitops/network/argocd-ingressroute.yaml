@@ -1,5 +1,19 @@
 # Route the ArgoCD UI through Traefik at http://argocd.127.0.0.1.nip.io:8080
 # (ArgoCD server runs insecure/HTTP, so it sits cleanly behind the gateway).
+#
+# Split into two IngressRoute objects (2026-09-06 fix, found live while chasing
+# #633): a single IngressRoute object carries ONE `tls:` stanza for the whole
+# object, and Traefik's kubernetescrd provider applies it across every listed
+# entryPoint — including plain-HTTP `web`. A `tls: {}` block (even empty) on an
+# object that also lists `web` makes that router silently fail to match ANY
+# plain-HTTP request on `web` (no error logged, no access-log entry — the
+# router just never matches), even though the documented, canonical access
+# path for every UI in this lab is plain HTTP on port 8000/8080, not HTTPS.
+# Confirmed live: a router with `tls: {}` + entryPoints [web, websecure] 404s
+# on `web`; the identical rule with NO `tls:` field on entryPoints [web] alone
+# returns 200. `websecure` continues to work fine either way, so `web` and
+# `websecure` are now two separate objects rather than one that silently
+# breaks `web`.
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -8,6 +22,20 @@ metadata:
 spec:
   entryPoints:
     - web
+  routes:
+    - kind: Rule
+      match: Host(`argocd.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
+        - name: argocd-server
+          port: 80
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: argocd-tls
+  namespace: argocd
+spec:
+  entryPoints:
     - websecure
   routes:
     - kind: Rule

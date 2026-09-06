@@ -6,6 +6,11 @@
 # Routes to the capstone TraefikService (not a plain Service) — the weighted
 # split between capstone-stable/capstone-canary that the Rollout controller
 # rewrites on every canary step (see rollout.yaml's trafficRouting.traefik).
+#
+# Split into two IngressRoute objects (2026-09-06 fix) — see
+# gitops/network/argocd-ingressroute.yaml's header comment for the full finding:
+# a `tls: {}` stanza on an object that also lists `web` silently breaks plain-HTTP
+# matching on `web` entirely.
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -14,6 +19,20 @@ metadata:
 spec:
   entryPoints:
     - web
+  routes:
+    - kind: Rule
+      match: Host(`capstone.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      services:
+        - name: capstone
+          kind: TraefikService
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: capstone-tls
+  namespace: capstone
+spec:
+  entryPoints:
     - websecure
   routes:
     - kind: Rule
