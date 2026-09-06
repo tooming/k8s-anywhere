@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 # Guards docs/00-architecture.md's documented resource ceiling: "A 12 GB Colima VM
-# holds the always-on stack at ~7 GB. Heavy components (TiDB, Harbor, Istio, Longhorn,
-# Kargo) each add 1-4 GB. Running two full stacks at once would exhaust the
-# VM." Nothing enforced that until now (2026-08-05 incident): a chain of live-debugging
-# sessions each ran a `make <name>-up` and never the matching `-down`, so Harbor,
-# Istio, Kiali, Longhorn, Kargo, and TiDB ended up running SIMULTANEOUSLY —
-# plus a fully orphaned `artifactory` namespace with no owning ArgoCD Application at
-# all, left over from before the Harbor migration (ADR-0024) decommissioned it. The
-# Colima VM hit 11Gi/11Gi memory used, load average 30+ on 6 cores, kubelet couldn't
+# holds the always-on stack at ~7 GB. Heavy components (Harbor, Kargo) each add
+# 1-4 GB. Running two full stacks at once would exhaust the VM." Nothing enforced
+# that until now (2026-08-05 incident): a chain of live-debugging sessions each ran
+# a `make <name>-up` and never the matching `-down`, so Harbor, Istio, Kiali,
+# Longhorn, Kargo, and TiDB ended up running SIMULTANEOUSLY — plus a fully orphaned
+# `artifactory` namespace with no owning ArgoCD Application at all, left over from
+# before the Harbor migration (ADR-0024) decommissioned it. The Colima VM hit
+# 11Gi/11Gi memory used, load average 30+ on 6 cores, kubelet couldn't
 # garbage-collect ("Attempted to free 3.3GB, found 0 bytes eligible"), the node flapped
 # NodeNotReady, envoy-gateway lost leader election against a starved apiserver and
-# crashlooped, and every front-door UI in README.md's table 502'd.
+# crashlooped, and every front-door UI in README.md's table 502'd. (TiDB, Istio, and
+# Longhorn were removed from the lab entirely 2026-09-06 — see the incident log —
+# so only Harbor and Kargo remain as heavy on-demand units this guard tracks.)
 #
 # This script is the mechanical guard: it reports which on-demand units are currently
 # live, flags budget overruns (docs' own stated tolerance is ONE heavy unit at a time),
@@ -38,38 +40,28 @@ note() { printf '      %s%s%s\n' "$Y" "$1" "$Z"; }
 # unit -> space-separated ArgoCD Application names that make up that unit
 declare -A UNIT_APPS=(
   [harbor]="harbor harbor-extras"
-  [istio]="istio-base istio-cni istiod ztunnel"
-  [kiali]="kiali kiali-extras"
-  [longhorn]="longhorn longhorn-extras"
   [kargo]="kargo-extras kargo kargo-networkpolicy kargo-project"
-  [tidb]="tidb-operator tidb-cluster tidb-demo"
 )
 # unit -> space-separated namespace(s) actually holding its workload pods. Used as the
 # authoritative "is it really consuming host resources" signal (see unit_is_up()).
 declare -A UNIT_NS=(
   [harbor]="harbor"
-  [istio]="istio-system"
-  [kiali]="kiali"
-  [longhorn]="longhorn-system"
   [kargo]="kargo"
-  [tidb]="tidb tidb-admin"
 )
 # unit -> documented size (Makefile `##` comments / docs/00-architecture.md). Harbor has
 # no committed estimate anywhere in the repo — don't invent one (ADR-0004); flag it as
 # heavy-but-undocumented instead.
 declare -A UNIT_SIZE=(
   [harbor]="undocumented size — treat as heavy (Garage-backed registry + DB + jobservice)"
-  [istio]="~480 MB"
-  [kiali]="~200 MB"
-  [longhorn]="~350-400 MB"
   [kargo]="~250-450 MB"
-  [tidb]="~1.75 GB (operator ~256 MB + cluster ~1.5 GB)"
 )
 # on-demand namespaces, for orphan detection — kept in sync with
 # scripts/lab-health-check.sh's LAB_ONDEMAND_NS default plus the historical
 # artifactory carve-out (decommissioned, ADR-0024, but namespaces aren't
-# self-deleting, so a stray manual `make artifactory-up` can still leave one behind).
-ONDEMAND_NS="tidb tidb-admin istio-system kiali longhorn-system kargo harbor artifactory"
+# self-deleting, so a stray manual `make artifactory-up` can still leave one behind)
+# and the historical tidb/tidb-admin/istio-system/kiali/longhorn-system carve-outs
+# (all three components removed from the lab entirely 2026-09-06, same reasoning).
+ONDEMAND_NS="kargo harbor artifactory tidb tidb-admin istio-system kiali longhorn-system"
 
 command -v kubectl >/dev/null 2>&1 || { echo "kubectl not installed"; exit 2; }
 kubectl get nodes >/dev/null 2>&1 || { bad "cluster unreachable (kubectl get nodes failed)"; exit 2; }
@@ -137,13 +129,12 @@ for ns in $ONDEMAND_NS; do
   # under-flags, since a false "check this" is cheap and a missed orphan burns RAM for days.
   is_owned=1
   case "$ns" in
-    tidb|tidb-admin) unit_is_up tidb || is_owned=0 ;;
-    istio-system) unit_is_up istio || is_owned=0 ;;
-    kiali) unit_is_up kiali || is_owned=0 ;;
-    longhorn-system) unit_is_up longhorn || is_owned=0 ;;
     kargo) unit_is_up kargo || is_owned=0 ;;
     harbor) unit_is_up harbor || is_owned=0 ;;
-    artifactory) is_owned=0 ;; # no unit owns this at all anymore, ADR-0024 — always orphaned if present
+    # No unit owns these anymore — always orphaned if present. artifactory:
+    # decommissioned, ADR-0024. tidb/tidb-admin/istio-system/kiali/longhorn-system:
+    # TiDB, Istio+Kiali, and Longhorn removed from the lab entirely 2026-09-06.
+    artifactory|tidb|tidb-admin|istio-system|kiali|longhorn-system) is_owned=0 ;;
   esac
   [ "$is_owned" -eq 0 ] && ORPHANS+=("$ns ($pods pods)")
 done

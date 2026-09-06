@@ -1,8 +1,7 @@
 # Allow all pods within the harbor namespace to communicate with each other (ADR-0016).
 # This is a documented carve-out from ADR-0016's general "no catch-all 'allow same
 # namespace'" rule — see ADR-0016 §"Scope & exceptions" → Carve-outs table (the
-# argocd/harbor/istio-system/longhorn-system/tidb row) for the binding
-# rationale and flip condition.
+# argocd/harbor row) for the binding rationale and flip condition.
 # Harbor uses a bundled internal PostgreSQL pod (database.type=internal, ADR-0024
 # §"Minimal profile") — core and jobservice connect to it on TCP 5432. Harbor
 # components also communicate with each other over the clusterIP Service endpoints

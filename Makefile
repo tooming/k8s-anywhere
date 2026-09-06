@@ -566,7 +566,7 @@ dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=c
 
 .PHONY: dr-restore
 dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
-	@./scripts/dr-restore.sh data tidb capstone vault observability
+	@./scripts/dr-restore.sh data capstone vault observability
 
 .PHONY: dr-chaos
 dr-chaos: ## Chaos drill: kill a random capstone pod, assert self-heal within budget (DORA Pillar 3 TLPT concept)
@@ -683,31 +683,6 @@ cilium-up: ## Install Cilium CNI via Helm — run BEFORE make argocd on fresh cl
 cilium-down: ## Remove Cilium CNI — WARNING: drops all pod networking; only during cluster teardown
 	helm uninstall cilium --namespace kube-system --ignore-not-found
 
-.PHONY: tidb-operator-up
-tidb-operator-up: ## Deploy TiDB Operator via ArgoCD manual sync (~256 MB; do after make up)
-	$(call argocd-sync,tidb-operator)
-
-.PHONY: tidb-operator-down
-tidb-operator-down: ## Remove TiDB Operator (cascade-deletes resources; keeps namespace + CRDs)
-	$(call argocd-delete,tidb-operator)
-
-.PHONY: tidb-up
-tidb-up: ## Deploy TiDB cluster via ArgoCD manual sync (~1.5 GB; requires tidb-operator-up first)
-	$(call ondemand-guard,tidb)
-	$(call argocd-sync,tidb-cluster)
-
-.PHONY: tidb-down
-tidb-down: ## Remove TiDB cluster (cascade-deletes pods/PVCs; keeps namespace + CRDs)
-	$(call argocd-delete,tidb-cluster)
-
-.PHONY: tidb-demo-up
-tidb-demo-up: ## Deploy TiDB demo app via ArgoCD manual sync (run tidb-up first for a live database)
-	$(call argocd-sync,tidb-demo)
-
-.PHONY: tidb-demo-down
-tidb-demo-down: ## Remove TiDB demo app (cascade-deletes pods/secrets; keeps namespace)
-	$(call argocd-delete,tidb-demo)
-
 .PHONY: harbor-up
 harbor-up: ## Deploy Harbor CNCF OCI registry via ArgoCD manual sync (Garage S3 backend; ADR-0024)
 	$(call ondemand-guard,harbor)
@@ -723,49 +698,6 @@ forgejo-harbor-secret-sync: ## Sync Forgejo's CI HARBOR_USER/HARBOR_PASSWORD sec
 harbor-down: ## Remove Harbor OCI registry and namespace floor (reclaims resources)
 	$(call argocd-delete,harbor-extras)
 	$(call argocd-delete,harbor)
-
-.PHONY: istio-up
-istio-up: ## Deploy Istio ambient mesh via ArgoCD manual sync (~480 MB; do after make up)
-	$(call ondemand-guard,istio)
-	$(call argocd-sync,istio-base)
-	$(call argocd-sync,istio-cni)
-	$(call argocd-sync,istiod)
-	$(call argocd-sync,ztunnel)
-
-.PHONY: istio-down
-istio-down: ## Remove Istio ambient mesh: ztunnel → istiod → cni → base (reclaims ~480 MB)
-	$(call argocd-delete,ztunnel)
-	$(call argocd-delete,istiod)
-	$(call argocd-delete,istio-cni)
-	$(call argocd-delete,istio-base)
-
-.PHONY: kiali-up
-kiali-up: ## Deploy Kiali service mesh UI via ArgoCD manual sync (~200 MB; requires istio-up first)
-	$(call ondemand-guard,kiali)
-	$(call argocd-sync,kiali)
-	$(call argocd-sync,kiali-extras)
-
-.PHONY: kiali-down
-kiali-down: ## Remove Kiali and its Envoy route (reclaims ~200 MB)
-	$(call argocd-delete,kiali-extras)
-	$(call argocd-delete,kiali)
-
-.PHONY: mesh-up
-mesh-up: istio-up kiali-up ## Deploy Istio ambient mesh + Kiali together (istio-up then kiali-up)
-
-.PHONY: mesh-down
-mesh-down: kiali-down istio-down ## Remove Kiali then Istio ambient mesh (kiali-down then istio-down)
-
-.PHONY: longhorn-up
-longhorn-up: ## Deploy Longhorn distributed block storage via ArgoCD manual sync (~350-400 MB; do after make up)
-	$(call ondemand-guard,longhorn)
-	$(call argocd-sync,longhorn)
-	$(call argocd-sync,longhorn-extras)
-
-.PHONY: longhorn-down
-longhorn-down: ## Remove Longhorn and its Envoy route (reclaims ~350-400 MB)
-	$(call argocd-delete,longhorn-extras)
-	$(call argocd-delete,longhorn)
 
 .PHONY: kargo-up
 kargo-up: ## Deploy Kargo promotion-orchestration engine via ArgoCD manual sync (~250-450 MB; do after make up)

@@ -473,37 +473,6 @@ spec:
                 scrape_interval = "30s"
               }
 
-              // ---- Longhorn (on-demand block storage) metrics -> Mimir ----
-              // Longhorn manager exposes Prometheus metrics at :9500/metrics via the
-              // longhorn-manager DaemonSet Service. Feeds the "Lab — Longhorn (Block Storage)"
-              // dashboard with real volume state, robustness, and capacity series (ADR-0013, ADR-0004).
-              // The NetworkPolicy allow (TCP 9500 ingress from observability) is in
-              // gitops/longhorn/networkpolicy/allow-longhorn-metrics-ingress.yaml.
-              // This target is idle unless longhorn is manually synced via make longhorn-up.
-              prometheus.scrape "longhorn" {
-                targets = [
-                  {"__address__" = "longhorn-manager.longhorn-system.svc.cluster.local:9500", "job" = "longhorn"},
-                ]
-                forward_to      = [prometheus.remote_write.mimir.receiver]
-                scrape_interval = "30s"
-              }
-
-              // ---- Istio ambient mesh control plane (on-demand) metrics -> Mimir ----
-              // istiod exposes Prometheus metrics at :15014/metrics via the istiod
-              // Service (the standard Istio monitoring port). Feeds the "Lab — Istio
-              // Ambient Mesh" dashboard with control-plane push/connection series
-              // (ADR-0012, ADR-0004). The NetworkPolicy allow (TCP 15014 ingress from
-              // observability) is in
-              // gitops/istio-system/networkpolicy/allow-istio-metrics-ingress.yaml.
-              // This target is idle unless Istio is manually synced via make istio-up.
-              prometheus.scrape "istiod" {
-                targets = [
-                  {"__address__" = "istiod.istio-system.svc.cluster.local:15014", "job" = "istiod"},
-                ]
-                forward_to      = [prometheus.remote_write.mimir.receiver]
-                scrape_interval = "30s"
-              }
-
               // ---- Cilium agent (CNI, kube-system) metrics -> Mimir ----
               // Cilium DaemonSet uses hostNetwork: true; pod IP equals the node IP.
               // Pod discovery filtered by k8s-app=cilium in kube-system; address
@@ -536,22 +505,6 @@ spec:
               prometheus.scrape "cilium_agent" {
                 targets         = discovery.relabel.cilium_agent.output
                 job_name        = "cilium-agent"
-                forward_to      = [prometheus.remote_write.mimir.receiver]
-                scrape_interval = "30s"
-              }
-
-              // ---- TiDB (distributed SQL database) metrics -> Mimir ----
-              // The TiDB Operator creates a <cluster>-tidb Service in namespace tidb that
-              // exposes the TiDB status/metrics endpoint at :10080/metrics (tidb_executor_*,
-              // tidb_server_connections, etc.). For the lab TidbCluster named "lab", the
-              // Service is lab-tidb.tidb.svc.cluster.local. The NetworkPolicy allow
-              // (TCP 10080 ingress from observability) is pre-wired in
-              // gitops/tidb/networkpolicy/allow-tidb-from-observability.yaml.
-              // This target is idle unless make tidb-up is active (on-demand component).
-              prometheus.scrape "tidb" {
-                targets = [
-                  {"__address__" = "lab-tidb.tidb.svc.cluster.local:10080", "job" = "tidb"},
-                ]
                 forward_to      = [prometheus.remote_write.mimir.receiver]
                 scrape_interval = "30s"
               }

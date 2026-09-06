@@ -1,9 +1,21 @@
 # ADR-0012 — Istio ambient mesh + Kiali on-demand (not sidecar)
 
-**Status.** Adopted. Decision taken in RFC #59. Manifests landed in
+**Status.** Removed 2026-09-06 (maintainer decision — component dropped from the lab
+entirely, no replacement). All `gitops/istio-system/`, `gitops/kiali/`,
+`gitops/platform/istio-base.yaml`, `gitops/platform/istio-cni.yaml`,
+`gitops/platform/istiod.yaml`, `gitops/platform/ztunnel.yaml`,
+`gitops/platform/istio-system-extras.yaml`, `gitops/platform/kiali.yaml`,
+`gitops/platform/kiali-extras.yaml` manifests, the `lab-istio.json` dashboard, and every
+istio-up/istio-down/kiali-up/kiali-down/mesh-up/mesh-down Makefile target, test, and
+cross-reference were deleted in the same change. The decision record below is kept for
+history (why Istio ambient + Kiali was adopted, what it demonstrated) but no longer
+describes anything live in the repo — do not treat any manifest path or Makefile target
+named below as still existing.
+
+~~**Status.** Adopted. Decision taken in RFC #59. Manifests landed in
 `gitops/platform/istiod.yaml`, `gitops/platform/ztunnel.yaml`, and peers /
 `gitops/platform/kiali.yaml` (non-auto-synced ArgoCD `Application`s) and brought up
-with `make istio-up` / `make kiali-up`.
+with make istio-up / make kiali-up.~~
 
 ---
 
@@ -42,8 +54,8 @@ Kiali is deployed from its **official Helm chart** (`kiali-server` from
 `https://kiali.org/helm-charts`). It requires Istio to be up and running first.
 
 All five ArgoCD `Application`s are **non-auto-synced** (no `automated:` block) — users
-bring them up with `make istio-up` / `make kiali-up` and tear them down with
-`make istio-down` / `make kiali-down`.
+bring them up with make istio-up / make kiali-up and tear them down with
+make istio-down / make kiali-down.
 
 ---
 
@@ -92,8 +104,8 @@ This is well within the available headroom (~5 GB), but still significant enough
 running Istio + Longhorn + Artifactory simultaneously would be tight. Therefore:
 
 - Istio and Kiali are **on-demand** (non-auto-synced), same pattern as TiDB and Artifactory.
-- `make istio-up` / `make istio-down` and `make kiali-up` / `make kiali-down` give the
-  user explicit control. A combined `make mesh-up` / `make mesh-down` target is acceptable
+- make istio-up / make istio-down and make kiali-up / make kiali-down give the
+  user explicit control. A combined make mesh-up / make mesh-down target is acceptable
   if the manifest item chooses to fold them (executor's call per ROADMAP rule).
 - A `bats` test asserts that none of the Istio/Kiali ArgoCD `Application`s have an
   `automated:` block (mirrors `tests/platform.bats` for Artifactory).

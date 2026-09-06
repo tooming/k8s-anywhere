@@ -1,6 +1,6 @@
 # Backstop for ADR-0017 (PSS-restricted): reject pods that omit the required
 # security fields at admission time. Skips namespaces with a PSA baseline or
-# privileged label so ADR-0017 carve-out namespaces (vault, storage, tidb, etc.)
+# privileged label so ADR-0017 carve-out namespaces (vault, storage, etc.)
 # are excluded automatically — no hard-coded namespace list to maintain.
 # background: true generates PolicyReports for already-running resources.
 apiVersion: kyverno.io/v1

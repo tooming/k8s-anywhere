@@ -38,7 +38,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Ingress** | Traefik (north-south, bundled with k3s · `IngressRoute`/`TLSStore`/`TraefikService` CRDs; ADR-0040, ADR-0016) |
 | **Secrets** | Vault (KV v2) · External Secrets Operator |
 | **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
-| **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · `velero-schedules` daily Schedules for data / tidb / capstone / vault / observability · `velero-networkpolicy` default-deny overlay; ADR-0021) |
+| **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · `velero-schedules` daily Schedules for data / capstone / vault / observability · `velero-networkpolicy` default-deny overlay; ADR-0021) |
 | **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
 | **Data layer** | RabbitMQ (message broker + management UI) · Valkey (cache / key-value) · redis_exporter · data-demo (traffic generator) |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator — controller suspended 2026-08-25 for cluster-load reduction; its namespace/RBAC scaffolding stays auto-synced, re-enable by restoring `gitops/platform/kro.yaml`'s `automated` sync block) |
@@ -48,7 +48,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller + `capstone-rollout` AnalysisTemplate — Mimir SLO-gated canary steps via Traefik's built-in traffic-split (`TraefikService`) · `argo-rollouts-networkpolicy` default-deny overlay; ADR-0020, ADR-0040) |
 | **Autoscaling** | KEDA (`make keda-up` / `make keda-down` — on-demand as of 2026-08-25, cluster-load reduction; event-driven autoscaling — 60+ built-in scalers including RabbitMQ queue depth and Prometheus expressions, augments the stock HPA · `data-demo-keda-scaling` `ScaledObject` demo scaling `rabbitmq-load` 1→5 replicas on the `demo` queue's real depth via the RabbitMQ management API · `keda-networkpolicy` default-deny overlay; ADR-0029) |
 | **Promotion pipelines** | Kargo (`make kargo-up` / `make kargo-down` — Warehouse detects new image digests → Stage dev auto-promote → Stage prod manual gate · `kargo-project` capstone-pipeline Project · `kargo-networkpolicy` default-deny overlay · `kargo-project-networkpolicy` capstone-pipeline NetworkPolicy overlay; ADR-0023) |
-| **On-demand (heavy)** | TiDB Operator (`make tidb-operator-up` / `make tidb-operator-down`) · TiDB cluster (`make tidb-up` / `make tidb-down`) · TiDB demo app (`make tidb-demo-up` / `make tidb-demo-down`) · Harbor CNCF OCI registry (`make harbor-up` / `make harbor-down` — Garage S3 backend; ADR-0024) · Istio ambient mesh — istio-base · istio-cni · istiod · ztunnel (`make istio-up` / `make istio-down`) · Kiali service mesh UI (`make kiali-up` / `make kiali-down`) · Combined mesh (`make mesh-up` / `make mesh-down`) · Longhorn distributed block storage (`make longhorn-up` / `make longhorn-down`) · Kargo promotion engine (`make kargo-up` / `make kargo-down`) |
+| **On-demand (heavy)** | Harbor CNCF OCI registry (`make harbor-up` / `make harbor-down` — Garage S3 backend; ADR-0024) · Kargo promotion engine (`make kargo-up` / `make kargo-down`) |
 
 > **GitLab vs. Forgejo, as of 2026-08-17.** The table above (and the `make up`
 > bootstrap and the `gitlab-`-prefixed commands below) describe what a fresh
@@ -90,7 +90,7 @@ native Git Sync (Pure Git), not a k8s sidecar. Current dashboards:
 `Lab — Garage S3 (Object Storage)` · `Lab — Git Sync` · `Lab — Grafana` ·
 `Lab — Kyverno (Admission Policy)` · `Lab — Logs` ·
 `Lab — Mimir` · `Lab — Profiles` · `Lab — RabbitMQ` · `Lab — Stack Health` ·
-`Lab — TiDB Demo App` · `Lab — Traces` · `Lab — Trivy Operator (Supply Chain)` ·
+`Lab — Traces` · `Lab — Trivy Operator (Supply Chain)` ·
 `Lab — Valkey` · `Lab — Vault & Secrets` · `Lab — Velero (Backup & Restore)`.
 After editing them, run:
 
@@ -120,11 +120,8 @@ After `make up`, UIs are served via the stable front door on **`:8000`**
 | Argo Rollouts | http://rollouts.127.0.0.1.nip.io:8000 |
 | Capstone *(demo app)* | http://capstone.127.0.0.1.nip.io:8000 |
 | GitLab | http://localhost:8929 |
-| Kiali *(on-demand)* | http://kiali.127.0.0.1.nip.io:8000 |
-| Longhorn *(on-demand)* | http://longhorn.127.0.0.1.nip.io:8000 |
 | Kargo *(on-demand)* | http://kargo.127.0.0.1.nip.io:8000 |
 | Harbor *(on-demand)* | http://harbor.127.0.0.1.nip.io:8000 |
-| TiDB demo *(on-demand)* | http://tidb-demo.127.0.0.1.nip.io:8000 |
 
 `make argocd-password` prints the ArgoCD admin password. `:8080` is a per-cluster
 Traefik LB port used underneath the front door and is not the canonical UI entrypoint.

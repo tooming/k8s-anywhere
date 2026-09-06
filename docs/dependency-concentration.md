@@ -32,14 +32,9 @@ would be affected at once, not just one isolated component.
 (2 rows vs. 6), but still couples the GitOps control plane itself to the same
 progressive-delivery layer built on top of it.
 
-**`github.com/pingcap` — 2 tools:** TiDB Operator, TiDB. Both `heavy-on-demand` only
-(`make tidb-up`/`tidb-down`, never auto-synced) — lower blast radius than either group
-above, since nothing in the always-on baseline depends on this org.
-
 **Every other row is a distinct org** — Terraform (hashicorp) and Terragrunt
 (gruntwork-io) are two different orgs sharing one register row; Garage (Deuxfleurs);
-Traefik (traefik, bundled with k3s — no separate org row of its own to track since ADR-0040); RabbitMQ (rabbitmq); Istio (istio) and Kiali (kiali) are
-two different orgs despite sharing one ADR (ADR-0012); Longhorn (longhorn); Cilium
+Traefik (traefik, bundled with k3s — no separate org row of its own to track since ADR-0040); RabbitMQ (rabbitmq); Cilium
 (cilium); Valkey (valkey-io); Kyverno (kyverno); Velero
 (vmware-tanzu); Trivy Operator (aquasecurity); Kargo (akuity); Harbor (goharbor);
 Oracle Cloud Infrastructure (not GitHub-hosted — cloud.oracle.com); k3s (k3s-io);

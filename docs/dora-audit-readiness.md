@@ -45,8 +45,8 @@ duplicated.
 
 **Q2. Are critical functions/assets identified and mapped to supporting ICT systems?**
 - **Applicable?** Yes.
-- **Answer:** Yes, for the stateful surface. CHARTER Objective O3 names the five
-  stateful namespaces (`data`, `tidb`, `capstone`, `vault`, `observability`) as
+- **Answer:** Yes, for the stateful surface. CHARTER Objective O3 names the four
+  stateful namespaces (`data`, `capstone`, `vault`, `observability`) as
   critical; the always-on
   vs. on-demand split (12GB budget, ADR-0003) documents which ~53 Applications are
   load-bearing (re-derived 2026-08-25 after KEDA + KRO's engine both converted to
@@ -65,7 +65,7 @@ tiered using [docs/incident-log.md](incident-log.md)'s existing P0–P3 severity
 (reused rather than inventing a second taxonomy) — one row per component, with a
 justification grounded in what its *own* outage actually breaks, not a guess. This is
 additive to Q2's existing stateful-surface answer (CHARTER O3); on-demand heavy
-components (Harbor, TiDB, Istio+Kiali, Longhorn, Kargo) are out of scope here — their
+components (Harbor, Kargo) are out of scope here — their
 outage is already covered by the P2 "on-demand/heavy component is broken" row in the
 severity scheme itself, and they carry no always-on blast radius by design.
 
@@ -333,8 +333,7 @@ concentration)?**
   GitHub org. `github.com/grafana` backs six always-on-core rows at once (Grafana,
   Mimir, Loki, Tempo, Pyroscope, Alloy) — the entire observability pane sharing one
   upstream governance/maintenance entity, the largest single concentration in the
-  table. `github.com/argoproj` backs two (ArgoCD, Argo Rollouts); `github.com/pingcap`
-  backs two (TiDB Operator, TiDB, both heavy-on-demand only). Every other row is a
+  table. `github.com/argoproj` backs two (ArgoCD, Argo Rollouts). Every other row is a
   distinct org. The lab's mitigation is structural, not new: every workload is a
   GitOps `Application` pointing at a pinned chart/image ref (ADR-0001), so a
   disappeared upstream is a fork-and-repoint operation, not a rebuild — demonstrated

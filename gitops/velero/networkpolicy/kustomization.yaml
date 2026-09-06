@@ -2,7 +2,7 @@
 # Pulls the two shared baseline templates and adds velero-specific allow rules for:
 # - ingress TCP 8085 from Alloy (observability) for Prometheus metrics scrape
 # - egress TCP 3900 to storage namespace for Garage S3 backup writes/reads
-# - egress (any port) to backed-up namespace pods for Kopia PV reads (data/tidb/capstone/vault)
+# - egress (any port) to backed-up namespace pods for Kopia PV reads (data/capstone/vault)
 # The allow-dns-and-apiserver baseline covers the controller's k8s API calls
 # (workload watch, backup CRD emit, leader election).
 # Wired into gitops/platform/velero-networkpolicy.yaml (auto-synced, wave 4).

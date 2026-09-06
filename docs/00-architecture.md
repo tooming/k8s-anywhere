@@ -49,10 +49,7 @@ grouping appears in the README stack table.
                                    ▼
 ┌────────────────────────────────────────────────────────────────────────────┐
 │  On-demand (manual make <name>-up / <name>-down)                          │
-│  TiDB Operator · TiDB cluster · TiDB demo app                             │
 │  Harbor (OCI artifact + Docker registry; ADR-0024)                        │
-│  Istio ambient mesh (istio-base · istio-cni · istiod · ztunnel) · Kiali  │
-│  Longhorn (distributed block storage)                                      │
 │  Kargo (GitOps promotion pipelines)                                        │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -112,7 +109,7 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **Velero** | Cluster resource + PVC backup/restore to Garage S3. Daily `Schedule` objects back up the `data`, `tidb`, `capstone`, `vault`, and `observability` namespaces with the Kopia uploader. `make dr-restore` drives a verified restore drill. `velero-networkpolicy` default-deny overlay. (ADR-0021) |
+| **Velero** | Cluster resource + PVC backup/restore to Garage S3. Daily `Schedule` objects back up the `data`, `capstone`, `vault`, and `observability` namespaces with the Kopia uploader. `make dr-restore` drives a verified restore drill. `velero-networkpolicy` default-deny overlay. (ADR-0021) |
 
 ### Observability (LGTMP)
 
@@ -123,7 +120,7 @@ Rows are grouped by layer, matching the README stack table.
 | **Loki** | Log aggregation. Alloy ships pod stdout/stderr logs here. |
 | **Tempo** | Distributed tracing. OTLP-compatible ingest. |
 | **Pyroscope** | Continuous profiling. |
-| **Grafana** | Single pane of glass over Mimir, Loki, Tempo, and Pyroscope. Dashboards are managed via native Git Sync (ADR-0006) — no sidecar required. 31 lab dashboards (`grafana/dashboards/*.json`) cover every always-on component and the capstone pipeline — 37 dashboard files total, minus the 6 tied to on-demand/heavy components (Harbor, Istio, Kargo, Longhorn, TiDB ×2). |
+| **Grafana** | Single pane of glass over Mimir, Loki, Tempo, and Pyroscope. Dashboards are managed via native Git Sync (ADR-0006) — no sidecar required. 31 lab dashboards (`grafana/dashboards/*.json`) cover every always-on component and the capstone pipeline — 33 dashboard files total, minus the 2 tied to on-demand/heavy components (Harbor, Kargo). |
 | **kube-state-metrics** | Exports Kubernetes resource state (pod phase, deployment replicas, PVC status, node readiness) as Prometheus metrics. |
 | **node-exporter** | Exports host-level metrics (CPU, memory, disk, network) from the Colima VM. |
 
@@ -172,12 +169,13 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **TiDB Operator / TiDB cluster** | Distributed, MySQL-compatible database (PD + TiKV + TiDB tiers). On-demand because the operator + cluster consume ~3 GB. `make tidb-operator-up` / `make tidb-up`. |
 | **Harbor** | OCI artifact and Docker registry (CNCF graduated; Go runtime, no JVM). Registry storage backed by Garage S3. `make harbor-up` / `make harbor-down`. (ADR-0024; supersedes ADR-0011 — Artifactory OSS fully decommissioned) |
-| **Istio ambient mesh** | Zero-sidecar service mesh (istio-base · istio-cni · istiod · ztunnel). `make istio-up`. (ADR-0012) |
-| **Kiali** | Service-mesh topology and traffic UI. `make kiali-up`. |
-| **Longhorn** | Distributed block storage with UI. `make longhorn-up`. (ADR-0013) |
 | **Kargo** | GitOps promotion pipeline. A `Warehouse` detects new image digests; a `dev` Stage auto-promotes; a `prod` Stage requires a manual gate. `make kargo-up`. (ADR-0023) |
+
+A distributed database (TiDB), a service mesh + UI (Istio ambient mesh + Kiali), and
+distributed block storage (Longhorn) were also built and demonstrated this on-demand
+pattern, then removed entirely 2026-09-06 (maintainer decision, no replacement) — see
+ADR-0031/ADR-0032, ADR-0012, and ADR-0013 for the removal notes.
 
 ## The GitOps flow (worth internalising)
 
@@ -222,7 +220,7 @@ On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`har
 5. **Cloud control-plane patterns** — moto mocks AWS; ACK reconciles `Bucket` CRs against it; KRO composes the CRs into a higher-level claim.
 6. **Supply-chain security** — GitLab CI signs images with cosign; Kyverno's `verifyImages` ClusterPolicy blocks unsigned images at admission; Trivy Operator continuously scans what's running.
 7. **Progressive delivery** — Argo Rollouts replaces the capstone `Deployment` with a canary `Rollout`; Traefik weights traffic; a Mimir AnalysisTemplate gates the canary steps on real SLO data — not timers.
-8. **Stateful backup & restore** — Velero schedules back up `data`, `tidb`, `capstone`, `vault`, and `observability` to Garage S3. `make dr-restore` drives a verified restore drill; `make dr-verify` asserts end-to-end health.
+8. **Stateful backup & restore** — Velero schedules back up `data`, `capstone`, `vault`, and `observability` to Garage S3. `make dr-restore` drives a verified restore drill; `make dr-verify` asserts end-to-end health.
 9. **Continuous scanning** — Trivy Operator produces `VulnerabilityReport` and `SbomReport` CRs for every running image; the Lab — Trivy Operator dashboard surfaces CVE findings and SBOM counts.
 10. **DR / blue-green** — `make dr-bluegreen` stands up a second k3d "green" cluster that sources the *same* `gitops/` repo via `gitops/bluegreen/green-root.yaml`, cuts Traefik traffic over to green, and verifies service continuity before retiring blue with `make dr-bluegreen-promote`; `make dr-bluegreen-down` reclaims green's RAM once the exercise is done (see [docs/DR.md §Zero-downtime blue/green](DR.md) for the full runbook). Steps 8 and 10 test two distinct recovery modes: Velero restores data from backup *on the same cluster*; blue-green rebuilds the whole platform on a *fresh* cluster with live traffic cut over — proving the "recreate-from-code" CHARTER Core Value under real traffic, not just a data restore.
 11. **GitOps promotion pipelines** — Kargo's `Warehouse` CRD watches Harbor for new image digests pushed by GitLab CI; a `dev` `Stage` auto-promotes; a `prod` `Stage` requires a manual gate approval in the Kargo UI (`kargo.127.0.0.1.nip.io`, `make kargo-up` / `make kargo-down` when done). Promotion history is visible in the Lab — Kargo dashboard (`lab-kargo.json`). See [ADR-0023](decisions/adr-0023-kargo-promotion-pipeline.md). This layer adds *multi-stage, Warehouse-gated* promotion on top of the Argo Rollouts canary at step 7 — the two complement each other: Argo Rollouts controls in-cluster traffic shaping during a release; Kargo controls which image digest gets promoted across environment stages in the first place.
@@ -230,7 +228,7 @@ On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`har
 
 ## Why on-demand for heavy components
 
-A 12 GB Colima VM holds the always-on stack at ~7 GB. Heavy components (TiDB, Harbor, Istio, Longhorn, Kargo) each add 1–4 GB. Running two full stacks at once would exhaust the VM. So heavy components are on-demand — `make <name>-up` / `make <name>-down` — and never registered in `gitops/bootstrap/root-app.yaml`'s auto-synced set. (ADR-0003, ADR-0005)
+A 12 GB Colima VM holds the always-on stack at ~7 GB. Heavy components (Harbor, Kargo) each add 1–4 GB. Running two full stacks at once would exhaust the VM. So heavy components are on-demand — `make <name>-up` / `make <name>-down` — and never registered in `gitops/bootstrap/root-app.yaml`'s auto-synced set. (ADR-0003, ADR-0005)
 
 **This budget is mechanically enforced, not just documented** (2026-08-05 incident: several
 unrelated live-debugging sessions each ran a `make <name>-up` and never the matching

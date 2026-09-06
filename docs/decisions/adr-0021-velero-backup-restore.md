@@ -10,7 +10,7 @@ stateful namespace from latest Velero backup in under 10 min).
 ## Context
 
 CHARTER Core Value *Stateful DR is exercised* requires every stateful
-namespace (`data`, `tidb`, `capstone`, `vault`) to have a Velero schedule and
+namespace (`data`, `capstone`, `vault`) to have a Velero schedule and
 a `make dr-restore` path that recovers from the **latest backup**, not just
 re-creates the workload from manifest. Today there is no backup layer at all:
 `make dr-test` rebuilds workloads via `make up` (manifest re-apply), which is
@@ -90,7 +90,6 @@ node isn't snapshotting two namespaces concurrently:
 |----------|-----------|------|-----|----------|
 | `observability-daily` | `observability` | `0 1 * * *` | 168h | All resources + PVCs (Loki + Mimir + Tempo, 5Gi each) |
 | `data-daily` | `data` | `0 2 * * *` | 168h (7d) | All resources + PVCs (RabbitMQ + Valkey) |
-| `tidb-daily` | `tidb` | `30 2 * * *` | 168h | All resources + PVCs (PD/TiKV/TiDB) |
 | `capstone-daily` | `capstone` | `0 3 * * *` | 168h | All resources (no PVCs in pilot) |
 | `vault-daily` | `vault` | `30 3 * * *` | 168h | All resources + Vault PVC (file backend) |
 
@@ -145,9 +144,9 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 - **Garage works as the backend** because Garage is S3-API-compatible
   (ADR-0002) — Velero's `aws` provider with `s3ForcePathStyle=true` is the
   documented Garage configuration.
-- **Kopia FS-snapshot covers `local-path` PVCs** — the lab's default
-  StorageClass today (ADR-0013's Longhorn is on-demand). Most other backup
-  tools require a CSI snapshot driver.
+- **Kopia FS-snapshot covers `local-path` PVCs** — the lab's only
+  StorageClass (Longhorn, an on-demand CSI alternative, was removed 2026-09-06).
+  Most other backup tools require a CSI snapshot driver.
 - **Stash is dead** (upstream archived 2023). **Kasten K10** is commercial.
   No third OSS option is realistic.
 
@@ -156,7 +155,7 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 ## Scope & exceptions
 
 **In scope** — backup of every stateful namespace listed in CHARTER O3
-(`data`, `tidb`, `capstone`, `vault`, `observability`); restore via
+(`data`, `capstone`, `vault`, `observability`); restore via
 `make dr-restore`; real-metric dashboard.
 
 **Out of scope (this RFC):**
@@ -166,7 +165,7 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
   written to — a Garage PVC loss would destroy the live data and every
   stored backup for every other namespace in the same event, which a
   same-target fs-snapshot does not meaningfully protect against (unlike
-  `observability`/`data`/`tidb`/`vault`, which back up to a target
+  `observability`/`data`/`vault`, which back up to a target
   independent of themselves). Deferred rather than silently added, per
   ADR-0004 (adding a Schedule here would assert protection this design does
   not actually provide). **Flip condition:** a backup target independent of
@@ -179,9 +178,6 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
   in place but not a CHARTER objective.
 - Backup encryption-at-rest beyond what Garage provides by default.
 - Velero scheduled-backup retention beyond 7 days (single-host disk pressure).
-- TiDB application-consistent backup via TiDB-Operator's `BackupSchedule` CR
-  (Velero is volume-level; TiDB also has its own logical backup CR — wire that
-  in a follow-up so the lab demonstrates both layers).
 
 ---
 
@@ -214,7 +210,6 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 | [ADR-0004](adr-0004-no-fabricated-content.md) | Dashboard reads real `velero_*` counters; backup ages are live. |
 | [ADR-0005](adr-0005-spof-recreate-over-ha.md) | Backups are how the lab's "recreate over HA" stays honest for *stateful* workloads — the recreate path includes data, not just manifests. |
 | [ADR-0007](adr-0007-off-cluster-garage-tfstate-backend.md) | Different concern (tfstate vs. workload data); the off-host Garage is not the Velero backend. |
-| [ADR-0013](adr-0013-longhorn-block-storage.md) | When Longhorn is up, Velero's `EnableCSI` feature uses Longhorn snapshots; otherwise falls back to Kopia FS-snapshot. |
 | [ADR-0016](adr-0016-default-deny-networkpolicy.md) | `velero` namespace gets default-deny during fan-out. |
 | [ADR-0017](adr-0017-pod-security-standards-restricted.md) | Controller `restricted`; node-agent DaemonSet gets the same per-workload carve-out as node-exporter. |
 

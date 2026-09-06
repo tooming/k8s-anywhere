@@ -13,8 +13,8 @@
 #     subdomains to the literal IP embedded in the name, 127.0.0.1 — which is
 #     a *pod's own loopback* for any in-cluster client, not the ingress
 #     controller. Every IngressRoute hostname in this lab (argocd, capstone,
-#     grafana, harbor, kargo, kiali, longhorn, moto, rabbitmq, rollouts, s3,
-#     tidb-demo, vault) needs this to be reachable from another pod — e.g.
+#     grafana, harbor, kargo, moto, rabbitmq, rollouts, s3, vault) needs this
+#     to be reachable from another pod — e.g.
 #     Kargo's Warehouse polling Harbor for image digests. Found live and first
 #     patched out-of-band (not committed anywhere) in PR #1323 while
 #     investigating issue #633; this brings that fix under GitOps/`make up`

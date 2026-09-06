@@ -29,10 +29,9 @@ setup() {
   [[ "$output" == *"dependency-concentration.md not found"* ]]
 }
 
-@test "dependency-exit-runbooks-sync-check: passes on the real repo (all three concentration groups have runbooks)" {
+@test "dependency-exit-runbooks-sync-check: passes on the real repo (both concentration groups have runbooks)" {
   run bash "$REPO/scripts/dependency-exit-runbooks-sync-check.sh"
   [ "$status" -eq 0 ]
   [[ "$output" == *"github.com/grafana"* ]]
   [[ "$output" == *"github.com/argoproj"* ]]
-  [[ "$output" == *"github.com/pingcap"* ]]
 }

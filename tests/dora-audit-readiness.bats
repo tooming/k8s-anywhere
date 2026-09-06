@@ -62,13 +62,11 @@ setup() {
   [ -f "$REPO/docs/dependency-exit-runbooks.md" ]
 }
 
-@test "dependency-exit-runbooks.md names all three concentration groups" {
+@test "dependency-exit-runbooks.md names both concentration groups" {
   RUNBOOKS="$REPO/docs/dependency-exit-runbooks.md"
   run grep -q 'github.com/grafana' "$RUNBOOKS"
   [ "$status" -eq 0 ]
   run grep -q 'github.com/argoproj' "$RUNBOOKS"
-  [ "$status" -eq 0 ]
-  run grep -q 'github.com/pingcap' "$RUNBOOKS"
   [ "$status" -eq 0 ]
 }
 

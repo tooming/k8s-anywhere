@@ -96,31 +96,10 @@ alternative is on record for ArgoCD specifically. Argo Rollouts likewise has no
 recorded rejected alternative in ADR-0020. Same conclusion as the Grafana group: a
 real exit starts with a new ADR, not an assumed replacement.
 
-## `github.com/pingcap` — 2 tools (TiDB Operator, TiDB)
-
-Both `heavy-on-demand` only (`make tidb-up`/`tidb-down`, never auto-synced,
-[ADR-0031](decisions/adr-0031-tidb-operator-version-policy.md)/
-[ADR-0032](decisions/adr-0032-tidb-version-policy.md)) — the lowest blast radius of
-the three groups, since nothing in the always-on baseline depends on this org; the
-always-on stack keeps running unaffected regardless of TiDB's fate.
-
-**Mechanically:** `gitops/platform/tidb-cluster.yaml` (the Operator) and
-`gitops/platform/tidb-demo.yaml`/`tidb-admin-extras.yaml` (the cluster + admin UI) are
-each their own manual-sync `Application` — a real exit means repointing these to a
-different distributed-SQL operator/database's own chart, plus migrating any real
-data via that database's own dump/restore tooling (TiDB speaks the MySQL wire
-protocol, so a MySQL-compatible target is the most fork-and-repoint-shaped
-replacement; a non-MySQL-compatible target is a real schema/query migration).
-
-**Fork-and-repoint, or a bigger migration?** Since this component is on-demand and
-this lab's only workload against it is a demo, an exit here is closer to
-fork-and-repoint than either group above — no always-on consumer depends on it, and
-the demo data itself is disposable.
-
-**Alternative evaluated?** No — no rejected alternative is recorded in ADR-0031/
-ADR-0032 for the distributed-SQL choice itself (both ADRs are version-pin policies,
-not the original tool selection). Same first step as the other two groups: a new ADR
-before assuming a replacement.
+> `github.com/pingcap` (TiDB Operator, TiDB) previously had a runbook here — removed
+> 2026-09-06 alongside TiDB itself, which was dropped from the lab entirely (no
+> replacement; see [ADR-0031](decisions/adr-0031-tidb-operator-version-policy.md)/
+> [ADR-0032](decisions/adr-0032-tidb-version-policy.md)'s Status).
 
 ---
 

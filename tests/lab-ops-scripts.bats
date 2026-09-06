@@ -258,8 +258,8 @@ setup() {
   [ -x "$BUDGET" ]
 }
 
-@test "ondemand-budget-check.sh tracks all six documented heavy on-demand units" {
-  for unit in harbor istio kiali longhorn kargo tidb; do
+@test "ondemand-budget-check.sh tracks both documented heavy on-demand units" {
+  for unit in harbor kargo; do
     run grep -q "\[$unit\]=" "$BUDGET"
     [ "$status" -eq 0 ]
   done
@@ -294,8 +294,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "ondemand-budget-check.sh maps all six units to a namespace for the Pod check" {
-  for unit in harbor istio kiali longhorn kargo tidb; do
+@test "ondemand-budget-check.sh maps both units to a namespace for the Pod check" {
+  for unit in harbor kargo; do
     run bash -c "grep -A10 'declare -A UNIT_NS=' '$BUDGET' | grep -q '\[$unit\]='"
     [ "$status" -eq 0 ]
   done
@@ -317,7 +317,7 @@ setup() {
 }
 
 @test "Makefile guards every heavy *-up target with ondemand-guard" {
-  for t in harbor-up istio-up kiali-up longhorn-up kargo-up tidb-up; do
+  for t in harbor-up kargo-up; do
     run grep -A2 "^$t:" "$MAKEFILE"
     [ "$status" -eq 0 ]
     [[ "$output" == *"ondemand-guard"* ]]

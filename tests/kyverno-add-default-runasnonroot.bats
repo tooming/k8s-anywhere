@@ -74,8 +74,8 @@ setup() {
 
 @test "add-default-runasnonroot excludes baseline/privileged carve-out namespaces" {
   # Same exclude set as require-pod-security-restricted: deliberately root-running
-  # namespaces (vault, istio-system, tidb, …) must be skipped so their root
-  # init/JVM containers are never forced runAsNonRoot.
+  # namespaces (vault, …) must be skipped so their root init/JVM containers are
+  # never forced runAsNonRoot.
   run grep -q 'pod-security.kubernetes.io/enforce' "$P"
   [ "$status" -eq 0 ]
   run grep -q 'baseline' "$P"
