@@ -176,7 +176,7 @@ dependency-concentration-sync-check: ## Check every dependency-register.md org b
 	@bash scripts/dependency-concentration-sync-check.sh
 
 .PHONY: dependency-exit-runbooks-sync-check
-dependency-exit-runbooks-sync-check: ## Check every dependency-concentration.md group has a matching section in dependency-exit-runbooks.md (drift detector)
+dependency-exit-runbooks-sync-check: ## Check every dependency-concentration.md group and dependency-register.md row has a matching mention in dependency-exit-runbooks.md (drift detector)
 	@bash scripts/dependency-exit-runbooks-sync-check.sh
 
 .PHONY: docs-done-pr-link-check

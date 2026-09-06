@@ -224,7 +224,7 @@
             "type": "command",
             "command": "bash scripts/dependency-exit-runbooks-sync-hook.sh",
             "timeout": 15,
-            "statusMessage": "Checking dependency-exit-runbooks.md group sync"
+            "statusMessage": "Checking dependency-exit-runbooks.md group/row sync"
           },
           {
             "type": "command",
