@@ -116,33 +116,19 @@ cert-manager capstone-pipeline"
   done
 }
 
-@test "observability has the heavy-tier LimitRange profile" {
-  [ -f "$GOV/observability/kustomization.yaml" ]
-  [ -f "$GOV/observability/limitrange.yaml" ]
-  run grep -q 'type: Container' "$GOV/observability/limitrange.yaml"
-  [ "$status" -eq 0 ]
-  run grep -qE 'memory: "?2Gi"?' "$GOV/observability/limitrange.yaml"
-  [ "$status" -eq 0 ]
-  run grep -qE 'cpu: "?2000m"?' "$GOV/observability/limitrange.yaml"
-  [ "$status" -eq 0 ]
-  run grep -qE 'memory: "?8Gi"?' "$GOV/observability/limitrange.yaml"
-  [ "$status" -eq 0 ]
+@test "observability governance leaf dir no longer exists (ADR-0041)" {
+  [ ! -d "$GOV/observability" ]
 }
 
-@test "governance-appset lists every standard namespace plus observability" {
-  for ns in $STANDARD_NS observability; do
+@test "governance-appset lists every standard namespace" {
+  for ns in $STANDARD_NS; do
     run grep -q "destNamespace: $ns$" "$APPSET"
     [ "$status" -eq 0 ] || { echo "appset missing destNamespace: $ns"; return 1; }
   done
 }
 
-@test "node-exporter governance leaf dir has kustomization.yaml" {
-  [ -f "$GOV/node-exporter/kustomization.yaml" ]
-}
-
-@test "node-exporter kustomization references the shared base limitrange" {
-  run grep -q 'base/limitrange-standard.yaml' "$GOV/node-exporter/kustomization.yaml"
-  [ "$status" -eq 0 ]
+@test "node-exporter governance leaf dir no longer exists (ADR-0041)" {
+  [ ! -d "$GOV/node-exporter" ]
 }
 
 @test "governance-appset does NOT bless the ADR-0024-rejected registry namespace" {

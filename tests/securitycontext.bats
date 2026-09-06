@@ -6,7 +6,7 @@
 # FROZEN — do NOT add new @test blocks here. Two parallel PSS fan-out PRs appending a
 # per-namespace block to this file's EOF is what caused the recurring merge conflict
 # (#238 vs #239). New per-namespace / per-scope security-context tests go in their own
-# tests/securitycontext-<scope>.bats file (see -data, -observability, -vault).
+# tests/securitycontext-<scope>.bats file (see -data, -velero, -vault).
 # This freeze is enforced mechanically by scripts/securitycontext-tests-check.sh (make ci);
 # if you intentionally rename/edit an existing test here, run `make securitycontext-tests-mark`.
 

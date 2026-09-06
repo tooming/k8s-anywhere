@@ -62,29 +62,10 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-# --- metrics allow (Alloy -> keda TCP 8080) -----------------------------------
-@test "allow-keda-metrics-from-observability.yaml exists in keda/networkpolicy/" {
-  [ -f "$KEDA_NP/allow-keda-metrics-from-observability.yaml" ]
-}
-
-@test "keda kustomization references the metrics allow file" {
-  run grep -q 'allow-keda-metrics-from-observability.yaml' "$KEDA_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-keda-metrics-from-observability allows ingress on port 8080" {
-  run grep -q 'port: 8080' "$KEDA_NP/allow-keda-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-keda-metrics-from-observability restricts source to observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$KEDA_NP/allow-keda-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-keda-metrics-from-observability restricts source to alloy pods" {
-  run grep -q 'app.kubernetes.io/name: alloy' "$KEDA_NP/allow-keda-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+# --- metrics allow (Alloy -> keda TCP 8080) REMOVED 2026-09-06 (ADR-0041,
+# observability stack removed with no replacement) -----------------------------------
+@test "allow-keda-metrics-from-observability.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$KEDA_NP/allow-keda-metrics-from-observability.yaml" ]
 }
 
 # --- keda-networkpolicy Application (wave 6) ----------------------------------

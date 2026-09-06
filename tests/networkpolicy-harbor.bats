@@ -115,24 +115,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- metrics allow (Alloy → Harbor TCP 9090) --------------------------------------
-@test "allow-harbor-metrics-ingress.yaml exists in harbor/networkpolicy/" {
-  [ -f "$HARBOR_NP/allow-harbor-metrics-ingress.yaml" ]
-}
-
-@test "harbor kustomization references the metrics allow file" {
-  run grep -q 'allow-harbor-metrics-ingress.yaml' "$HARBOR_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-harbor-metrics-ingress allows ingress on port 9090" {
-  run grep -q 'port: 9090' "$HARBOR_NP/allow-harbor-metrics-ingress.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-harbor-metrics-ingress restricts source to observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$HARBOR_NP/allow-harbor-metrics-ingress.yaml"
-  [ "$status" -eq 0 ]
+# --- metrics allow (Alloy → Harbor TCP 9090) REMOVED 2026-09-06 (ADR-0041,
+# observability stack removed with no replacement) --------------------------------
+@test "allow-harbor-metrics-ingress.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$HARBOR_NP/allow-harbor-metrics-ingress.yaml" ]
 }
 
 # --- harbor-networkpolicy appset entry (networkpolicy-appset.yaml wave 4) ----------

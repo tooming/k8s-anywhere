@@ -6,7 +6,10 @@
 #   1  capstone ArgoCD Application is Healthy (argocd app wait, 120 s timeout)
 #   2  capstone ExternalSecret is Ready        (kubectl jsonpath poll, 30 s)
 #   3  capstone HTTP endpoint returns 200      (curl http://capstone.127.0.0.1.nip.io:8000/)
-#   4  Tempo trace for the capstone service    (port-forward + /api/search, 5 min look-back)
+#
+# Step 4 (Tempo trace for the capstone service) was removed 2026-09-06 (ADR-0041,
+# observability stack removed with no replacement) — Tempo no longer exists to
+# query.
 #
 # Exit codes: 0 = all steps passed within budget; 1 = a step failed or timed out.
 #
@@ -107,52 +110,6 @@ if [ "$HTTP_CODE" = "200" ]; then
   step_ok "HTTP $HTTP_CODE from http://capstone.127.0.0.1.nip.io:8000/"
 else
   step_fail "HTTP $HTTP_CODE (expected 200) from http://capstone.127.0.0.1.nip.io:8000/"
-fi
-budget_check
-
-# ------------------------------------------------------------------
-# Step 4: Tempo trace for service.name=capstone
-# ------------------------------------------------------------------
-step_start 4 "Tempo trace for capstone service"
-
-# OS-portable 5-minute look-back (seconds since epoch minus 300).
-# macOS / BSD date uses -v; GNU date (Linux) uses arithmetic on +%s.
-if date -v-5M +%s >/dev/null 2>&1; then
-  START_NS=$(( $(date -v-5M +%s) * 1000000000 ))
-else
-  START_NS=$(( ($(date +%s) - 300) * 1000000000 ))
-fi
-END_NS=$(( $(date +%s) * 1000000000 ))
-
-# Port-forward Tempo query frontend; kill on exit.
-PF_PID=""
-cleanup() {
-  [ -n "$PF_PID" ] && kill "$PF_PID" 2>/dev/null || true
-}
-trap cleanup EXIT INT TERM
-
-kubectl -n observability port-forward svc/tempo-query-frontend 3100:3100 \
-  >/dev/null 2>&1 &
-PF_PID=$!
-sleep 2  # allow port-forward to establish
-
-TRACE_RESULT=$(curl -sf \
-  "http://localhost:3100/api/search?service.name=capstone&start=${START_NS}&end=${END_NS}" \
-  2>/dev/null || echo "")
-
-if echo "$TRACE_RESULT" | grep -q '"traceID"'; then
-  step_ok "Tempo trace found for service.name=capstone"
-elif [ -z "$TRACE_RESULT" ]; then
-  step_fail "Tempo port-forward did not respond — is the cluster reachable?"
-else
-  # Tempo up but no traces yet; this is expected before traffic is sent.
-  # Warn rather than hard-fail: the script exercises the pipeline shape.
-  elapsed=$(( SECONDS - _STEP_START ))
-  printf '  %s⚠%s  Tempo reachable but no trace yet for service.name=capstone\n' "$B" "$Z"
-  printf '        Send traffic first: curl http://capstone.127.0.0.1.nip.io:8000/\n'
-  STEP_NAMES+=("Tempo trace")
-  STEP_ELAPSED+=("$elapsed")
-  STEP_STATUS+=("WARN(no-trace-yet)")
 fi
 budget_check
 

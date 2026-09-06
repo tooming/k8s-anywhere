@@ -45,9 +45,15 @@ setup() {
   [ -f "$REPO/docs/dependency-concentration.md" ]
 }
 
-@test "dependency-concentration.md names github.com/grafana as the largest concentration (6 tools)" {
+@test "dependency-concentration.md records github.com/grafana's removal (ADR-0041), not as a live concentration" {
   CONC="$REPO/docs/dependency-concentration.md"
-  run grep -q 'github.com/grafana` — 6 tools' "$CONC"
+  run grep -q 'github.com/grafana` — removed 2026-09-06 (ADR-0041)' "$CONC"
+  [ "$status" -eq 0 ]
+}
+
+@test "dependency-concentration.md names github.com/argoproj as the largest live concentration (2 tools)" {
+  CONC="$REPO/docs/dependency-concentration.md"
+  run grep -q 'github.com/argoproj` — 2 tools' "$CONC"
   [ "$status" -eq 0 ]
 }
 

@@ -1,7 +1,9 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for Harbor on-demand OCI registry (ADR-0024, RFC #297).
-# Validates GitOps wiring (Application shape, namespace PSA labels, HTTPRoute, ExternalSecret),
-# the Garage bootstrap seam, and the Grafana Lab UIs panel — no running cluster required.
+# Validates GitOps wiring (Application shape, namespace PSA labels, IngressRoute, ExternalSecret)
+# and the Garage bootstrap seam — no running cluster required. The Grafana Lab UIs
+# panel and Alloy scrape/dashboard this file used to also test were removed
+# 2026-09-06 (ADR-0041, observability stack removed with no replacement).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -216,16 +218,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Grafana Lab UIs panel (stack-health.json drift check) --------------------
-@test "harbor.127.0.0.1.nip.io is present in the Grafana Lab UIs panel" {
-  run grep -q 'harbor.127.0.0.1.nip.io' "$REPO/grafana/dashboards/stack-health.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "harbor Lab UIs panel URL uses the :8000 front-door port" {
-  run grep -q 'harbor.127.0.0.1.nip.io:8000' "$REPO/grafana/dashboards/stack-health.json"
-  [ "$status" -eq 0 ]
-}
+# Grafana Lab UIs panel (stack-health.json drift check) REMOVED 2026-09-06
+# (ADR-0041, observability stack removed with no replacement) — README.md's own
+# Endpoints table is the sole UI-discovery source now (make lab-ui-check).
 
 # --- NetworkPolicy overlay (ADR-0016 §4 fan-out) ------------------------------
 @test "harbor networkpolicy kustomization exists" {
@@ -341,51 +336,19 @@ setup() {
   [[ "$output" == *"argocd-delete,harbor)"* ]]
 }
 
-# --- Observability — metrics + scrape + dashboard (auto/harbor-observability-dashboard) ---
-@test "harbor Application has metrics.enabled: true (exposes harbor-metrics Service)" {
+# --- Alloy scrape + NetworkPolicy + Grafana dashboard REMOVED 2026-09-06
+# (ADR-0041, observability stack removed with no replacement) -----------------
+@test "harbor Application still has metrics.enabled: true (chart config, unrelated to Alloy)" {
   run grep -q 'enabled: true' "$REPO/gitops/platform/harbor.yaml"
   [ "$status" -eq 0 ]
 }
 
-@test "harbor networkpolicy kustomization references allow-harbor-metrics-ingress.yaml" {
-  run grep -q 'allow-harbor-metrics-ingress.yaml' "$REPO/gitops/harbor/networkpolicy/kustomization.yaml"
-  [ "$status" -eq 0 ]
+@test "allow-harbor-metrics-ingress.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-metrics-ingress.yaml" ]
 }
 
-@test "allow-harbor-metrics-ingress.yaml exists" {
-  [ -f "$REPO/gitops/harbor/networkpolicy/allow-harbor-metrics-ingress.yaml" ]
-}
-
-@test "allow-harbor-metrics-ingress.yaml targets port 9090 from observability namespace" {
-  F="$REPO/gitops/harbor/networkpolicy/allow-harbor-metrics-ingress.yaml"
-  run grep -q 'port: 9090' "$F"
-  [ "$status" -eq 0 ]
-  run grep -q 'kubernetes.io/metadata.name: observability' "$F"
-  [ "$status" -eq 0 ]
-}
-
-@test "observability-alloy.yaml contains harbor scrape block" {
-  run grep -q 'prometheus.scrape "harbor"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "harbor scrape target uses harbor-metrics.harbor.svc.cluster.local:9090" {
-  run grep -q 'harbor-metrics.harbor.svc.cluster.local:9090' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-harbor.json dashboard exists" {
-  [ -f "$REPO/grafana/dashboards/lab-harbor.json" ]
-}
-
-@test "lab-harbor.json references the real harbor_project_artifact_total metric, not the nonexistent harbor_artifact_total (ADR-0004)" {
-  run grep -q 'harbor_project_artifact_total' "$REPO/grafana/dashboards/lab-harbor.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-harbor.json contains no fabricated or placeholder data (ADR-0004)" {
-  run grep -qi 'placeholder\|TODO\|FIXME\|fake\|dummy\|fabricat' "$REPO/grafana/dashboards/lab-harbor.json"
-  [ "$status" -ne 0 ]
+@test "grafana/dashboards/lab-harbor.json no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/grafana/dashboards/lab-harbor.json" ]
 }
 
 # --- Probe timeouts (found live 2026-08-06) -----------------------------------

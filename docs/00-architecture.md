@@ -40,10 +40,8 @@ grouping appears in the README stack table.
 │  DATA         RabbitMQ  ·  Valkey (cache/KV)  ·  data-demo (generator)   │
 │  AUTOSCALE    KEDA  (scales rabbitmq-load on real RabbitMQ queue depth)  │
 │  CLOUD        moto (AWS mock)  ·  ACK (S3 controller)  ·  KRO             │
-│  OBSERV.      Alloy  ──►  Mimir / Loki / Tempo / Pyroscope  ──►  Grafana  │
-│               kube-state-metrics  ·  node-exporter                        │
 │  SUPPLY CHAIN Trivy Operator  (CVE scanning · SBOM generation)            │
-│  PROG. DELIV. Argo Rollouts  (Mimir-SLO-gated canary steps)               │
+│  PROG. DELIV. Argo Rollouts  (staged weight/pause canary steps)           │
 └────────────────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
@@ -102,27 +100,24 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **Garage** | S3-compatible object store running in-cluster. Buckets: `mimir`, `mimir-ruler`, `loki`, `tempo`, `pyroscope`. Also the Velero backup target and Terraform-state backend. (ADR-0002, ADR-0007) |
+| **Garage** | S3-compatible object store running in-cluster. Buckets: `velero`, `harbor-registry`. Also the Velero backup target and Terraform-state backend. (ADR-0002, ADR-0007) |
 | **s3manager** | Read-only web UI for browsing Garage buckets — visible on the Traefik front door. |
 
 ### Backup & restore
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **Velero** | Cluster resource + PVC backup/restore to Garage S3. Daily `Schedule` objects back up the `data`, `capstone`, `vault`, and `observability` namespaces with the Kopia uploader. `make dr-restore` drives a verified restore drill. `velero-networkpolicy` default-deny overlay. (ADR-0021) |
+| **Velero** | Cluster resource + PVC backup/restore to Garage S3. Daily `Schedule` objects back up the `data`, `capstone`, and `vault` namespaces with the Kopia uploader. `make dr-restore` drives a verified restore drill. `velero-networkpolicy` default-deny overlay. (ADR-0021) |
 
-### Observability (LGTMP)
-
-| Tool | Role in the platform |
-|------|----------------------|
-| **Alloy** | OpenTelemetry-compatible telemetry collector. Scrapes Prometheus metrics from every workload (static targets for Kyverno, ESO, Argo Rollouts, Alloy self-metrics, KSM, node-exporter; dynamic scrape for pods); ships logs via Loki, traces via Tempo, profiles via Pyroscope. |
-| **Mimir** | Long-term, horizontally-scalable metrics storage (Prometheus-compatible). All Grafana dashboards query Mimir with `X-Scope-OrgID: lab`. |
-| **Loki** | Log aggregation. Alloy ships pod stdout/stderr logs here. |
-| **Tempo** | Distributed tracing. OTLP-compatible ingest. |
-| **Pyroscope** | Continuous profiling. |
-| **Grafana** | Single pane of glass over Mimir, Loki, Tempo, and Pyroscope. Dashboards are managed via native Git Sync (ADR-0006) — no sidecar required. 31 lab dashboards (`grafana/dashboards/*.json`) cover every always-on component and the capstone pipeline — 33 dashboard files total, minus the 2 tied to on-demand/heavy components (Harbor, Kargo). |
-| **kube-state-metrics** | Exports Kubernetes resource state (pod phase, deployment replicas, PVC status, node readiness) as Prometheus metrics. |
-| **node-exporter** | Exports host-level metrics (CPU, memory, disk, network) from the Colima VM. |
+> **Observability, removed 2026-09-06.** This lab used to run a full LGTM(P) stack
+> (Grafana, Mimir, Loki, Tempo, Pyroscope) fed by an Alloy collector, plus
+> kube-state-metrics and node-exporter as scrape targets. It was removed entirely
+> with no replacement — [ADR-0041](decisions/adr-0041-remove-observability-stack.md)
+> (supersedes [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md) and
+> [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md)) has the full
+> reasoning. There is no dashboard/metrics/logs/traces layer in this lab any more.
+> (TiDB, Istio ambient mesh + Kiali, and Longhorn were also removed entirely the
+> same day, no replacement — see ADR-0031/ADR-0032, ADR-0012, and ADR-0013.)
 
 ### Data layer
 
@@ -157,13 +152,13 @@ Rows are grouped by layer, matching the README stack table.
 | Tool | Role in the platform |
 |------|----------------------|
 | **Kyverno** | Admission policy engine. Three always-on `ClusterPolicy` objects: (1) validate PSS `restricted` across all namespaces; (2) mutate missing `seccompProfile: RuntimeDefault`; (3) `verifyImages` — blocks admission of any image that isn't cosign-signed (`Enforce` mode since 2026-08-18, CHARTER Objective O4 — see [docs/done/2026-08-18-cosign-enforce-flip.md](done/2026-08-18-cosign-enforce-flip.md)). Kyverno also fans out `NetworkPolicy` default-deny overlays via a `kyverno-policies` Application. (ADR-0019) |
-| **Trivy Operator** | Continuous CVE scanning + SBOM generation. Watches all pods and produces `VulnerabilityReport` / `SbomReport` CRs; a Grafana dashboard surfaces the findings. `trivy-system-networkpolicy` default-deny overlay. (ADR-0022) |
+| **Trivy Operator** | Continuous CVE scanning + SBOM generation. Watches all pods and produces `VulnerabilityReport` / `SbomReport` CRs. `trivy-system-networkpolicy` default-deny overlay. (ADR-0022) |
 
 ### Progressive delivery
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **Argo Rollouts** | Controller that replaces Kubernetes `Deployment` with a `Rollout` for the capstone app. Implements blue/green and Mimir-SLO-gated canary steps via Traefik's built-in traffic-split. `argo-rollouts-networkpolicy` default-deny overlay. (ADR-0020) |
+| **Argo Rollouts** | Controller that replaces Kubernetes `Deployment` with a `Rollout` for the capstone app. Implements blue/green and staged weight/pause canary steps via Traefik's built-in traffic-split (SLO auto-gating was removed alongside Mimir, ADR-0041). `argo-rollouts-networkpolicy` default-deny overlay. (ADR-0020) |
 
 ### On-demand (heavy)
 
@@ -201,27 +196,27 @@ GitLab CI
                                                 │
                                Kyverno verifyImages (admission gate)
                                                 │
-                            Argo Rollouts canary (Mimir-SLO-gated)
-                                                │
-                      Grafana dashboard (metrics · logs · traces)
+                          Argo Rollouts canary (weight/pause steps)
                                                 │
                             Vault ExternalSecret (DB/registry creds)
 ```
 
-On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`harbor.127.0.0.1.nip.io`, `make harbor-up`; per ADR-0024). ArgoCD updates the capstone `Rollout`; Kyverno's `verifyImages` policy blocks admission of any unsigned image (`Enforce` mode since 2026-08-18, CHARTER Objective O4). Once admitted, Argo Rollouts canaries traffic using Traefik's weighted-backend split, gating on a Mimir success-rate AnalysisTemplate. All activity is observable in Grafana.
+On every GitLab CI push a signed `library/hello:SHA` image lands in Harbor (`harbor.127.0.0.1.nip.io`, `make harbor-up`; per ADR-0024). ArgoCD updates the capstone `Rollout`; Kyverno's `verifyImages` policy blocks admission of any unsigned image (`Enforce` mode since 2026-08-18, CHARTER Objective O4). Once admitted, Argo Rollouts canaries traffic using Traefik's weighted-backend split, staged in weight/pause steps (the Mimir success-rate AnalysisTemplate that used to auto-gate each step was removed alongside the rest of the observability stack, ADR-0041).
 
 ## Suggested learning path
 
 0. **Toolchain + Colima** — container runtime VM. Set up first.
 1. **Foundation** — `make up` (k3d + ArgoCD + GitLab wiring — see the "GitOps engine" table above for why this still says GitLab, not Forgejo). The whole lab rebuilds from this one command.
 2. **Core platform** — Traefik routes traffic; cert-manager issues and auto-renews the TLS certs Traefik's TLSStore serves from a self-signed root CA; Vault + External Secrets manage secrets; Garage + s3manager store objects.
-3. **Observability** — Alloy ships telemetry to Mimir (metrics), Loki (logs), Tempo (traces), and Pyroscope (profiles). Grafana displays all four. KSM and node-exporter add cluster and host vitals.
-4. **Data layer** — RabbitMQ messages and Valkey key-value, kept busy by data-demo. Real activity means real dashboard data. KEDA scales the `rabbitmq-load` Deployment on the queue's real depth — event-driven autoscaling, not a timer or a hand-set replica count.
+3. ~~Observability~~ — removed 2026-09-06, no replacement (ADR-0041). This step no
+   longer exists; the learning path below renumbers around the gap rather than
+   reusing the number.
+4. **Data layer** — RabbitMQ messages and Valkey key-value, kept busy by data-demo. KEDA scales the `rabbitmq-load` Deployment on the queue's real depth — event-driven autoscaling, not a timer or a hand-set replica count.
 5. **Cloud control-plane patterns** — moto mocks AWS; ACK reconciles `Bucket` CRs against it; KRO composes the CRs into a higher-level claim.
 6. **Supply-chain security** — GitLab CI signs images with cosign; Kyverno's `verifyImages` ClusterPolicy blocks unsigned images at admission; Trivy Operator continuously scans what's running.
-7. **Progressive delivery** — Argo Rollouts replaces the capstone `Deployment` with a canary `Rollout`; Traefik weights traffic; a Mimir AnalysisTemplate gates the canary steps on real SLO data — not timers.
-8. **Stateful backup & restore** — Velero schedules back up `data`, `capstone`, `vault`, and `observability` to Garage S3. `make dr-restore` drives a verified restore drill; `make dr-verify` asserts end-to-end health.
-9. **Continuous scanning** — Trivy Operator produces `VulnerabilityReport` and `SbomReport` CRs for every running image; the Lab — Trivy Operator dashboard surfaces CVE findings and SBOM counts.
+7. **Progressive delivery** — Argo Rollouts replaces the capstone `Deployment` with a canary `Rollout`; Traefik weights traffic in staged steps (the Mimir AnalysisTemplate that used to auto-gate each step on real SLO data was removed alongside the rest of the observability stack, ADR-0041).
+8. **Stateful backup & restore** — Velero schedules back up `data`, `capstone`, and `vault` to Garage S3. `make dr-restore` drives a verified restore drill; `make dr-verify` asserts end-to-end health.
+9. **Continuous scanning** — Trivy Operator produces `VulnerabilityReport` and `SbomReport` CRs for every running image.
 10. **DR / blue-green** — `make dr-bluegreen` stands up a second k3d "green" cluster that sources the *same* `gitops/` repo via `gitops/bluegreen/green-root.yaml`, cuts Traefik traffic over to green, and verifies service continuity before retiring blue with `make dr-bluegreen-promote`; `make dr-bluegreen-down` reclaims green's RAM once the exercise is done (see [docs/DR.md §Zero-downtime blue/green](DR.md) for the full runbook). Steps 8 and 10 test two distinct recovery modes: Velero restores data from backup *on the same cluster*; blue-green rebuilds the whole platform on a *fresh* cluster with live traffic cut over — proving the "recreate-from-code" CHARTER Core Value under real traffic, not just a data restore.
 11. **GitOps promotion pipelines** — Kargo's `Warehouse` CRD watches Harbor for new image digests pushed by GitLab CI; a `dev` `Stage` auto-promotes; a `prod` `Stage` requires a manual gate approval in the Kargo UI (`kargo.127.0.0.1.nip.io`, `make kargo-up` / `make kargo-down` when done). Promotion history is visible in the Lab — Kargo dashboard (`lab-kargo.json`). See [ADR-0023](decisions/adr-0023-kargo-promotion-pipeline.md). This layer adds *multi-stage, Warehouse-gated* promotion on top of the Argo Rollouts canary at step 7 — the two complement each other: Argo Rollouts controls in-cluster traffic shaping during a release; Kargo controls which image digest gets promoted across environment stages in the first place.
 12. **Cloud-agnostic infrastructure design** — read [`infra/live/README.md`](../infra/live/README.md): the `argocd`/`gitlab` Terragrunt units depend only on the `cluster` unit's `kube_context`/`cluster_name`/`api_endpoint` outputs, never on which backend produced them, which is why steps 1–11 above run identically whether `cluster/` is `local/` (k3d, this lab's default) or `oracle/` (Oracle Cloud Always Free + k3s, see [ADR-0026](decisions/adr-0026-cloud-agnostic-infrastructure.md) and [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md)). The lesson: portability is a property of *where the Terraform bootstrap seam sits*, not something bolted on afterward — GitOps state in `gitops/` never needs to know or care where the cluster runs.

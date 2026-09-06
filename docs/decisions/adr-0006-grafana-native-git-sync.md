@@ -1,5 +1,9 @@
 # ADR-0006 — Dashboards via Grafana native Git Sync (not the sidecar)
 
+**Status.** Superseded by [ADR-0041](adr-0041-remove-observability-stack.md). Grafana is
+removed as a workload entirely, with no replacement — there is no dashboard layer left
+for this ADR's Git Sync mechanism to apply to.
+
 **Decision.** Manage Grafana dashboards with Grafana's **native Git Sync**, replacing
 the k8s-sidecar + labelled-ConfigMap delivery. Git Sync points at the lab's own
 **GitLab** via the OSS **Pure Git** repository type, so dashboards stay versioned in

@@ -38,14 +38,13 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **Ingress** | Traefik (north-south, bundled with k3s · `IngressRoute`/`TLSStore`/`TraefikService` CRDs; ADR-0040, ADR-0016) |
 | **Secrets** | Vault (KV v2) · External Secrets Operator |
 | **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
-| **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · `velero-schedules` daily Schedules for data / capstone / vault / observability · `velero-networkpolicy` default-deny overlay; ADR-0021) |
-| **Observability (LGTMP)** | Alloy · Mimir (metrics) · Loki (logs) · Tempo (traces) · Pyroscope (profiles) · Grafana · kube-state-metrics · node-exporter |
+| **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · `velero-schedules` daily Schedules for data / capstone / vault · `velero-networkpolicy` default-deny overlay; ADR-0021) |
 | **Data layer** | RabbitMQ (message broker + management UI) · Valkey (cache / key-value) · redis_exporter · data-demo (traffic generator) |
 | **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator — controller suspended 2026-08-25 for cluster-load reduction; its namespace/RBAC scaffolding stays auto-synced, re-enable by restoring `gitops/platform/kro.yaml`'s `automated` sync block) |
 | **CNI (bootstrap)** | Cilium (`make cilium-up` — run before `make argocd` on fresh clusters; ADR-0014) |
 | **Policy & supply chain** | Kyverno (NetworkPolicy default-deny fan-out · `kyverno-policies` ClusterPolicies: PSS-restricted validate + seccomp mutate + verifyImages; ADR-0016, ADR-0019) · Trivy Operator (`trivy-system-networkpolicy` default-deny overlay; continuous CVE scanning + SBOM generation; ADR-0022) · `governance` ApplicationSet (per-namespace LimitRange resource defaults fan-out; RFC #293) |
 | **TLS / certificates** | cert-manager (`cert-manager-root-ca` self-signed root CA bootstrap chain — `selfsigned-bootstrap` → root `Certificate` → `k8s-lab-ca` `ClusterIssuer` · `lab-gateway-certificate` wildcard `*.127.0.0.1.nip.io` Certificate terminating the shared Gateway's `https`/443 listener, alongside the original `http`/80 one · DR front door proxies `:8443` through as a TCP passthrough · `cert-manager-networkpolicy` default-deny overlay; ADR-0028) |
-| **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller + `capstone-rollout` AnalysisTemplate — Mimir SLO-gated canary steps via Traefik's built-in traffic-split (`TraefikService`) · `argo-rollouts-networkpolicy` default-deny overlay; ADR-0020, ADR-0040) |
+| **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller — weight/pause canary steps via Traefik's built-in traffic-split (`TraefikService`); no automated SLO gate since the observability stack's removal, ADR-0041 · `argo-rollouts-networkpolicy` default-deny overlay; ADR-0020, ADR-0040) |
 | **Autoscaling** | KEDA (`make keda-up` / `make keda-down` — on-demand as of 2026-08-25, cluster-load reduction; event-driven autoscaling — 60+ built-in scalers including RabbitMQ queue depth and Prometheus expressions, augments the stock HPA · `data-demo-keda-scaling` `ScaledObject` demo scaling `rabbitmq-load` 1→5 replicas on the `demo` queue's real depth via the RabbitMQ management API · `keda-networkpolicy` default-deny overlay; ADR-0029) |
 | **Promotion pipelines** | Kargo (`make kargo-up` / `make kargo-down` — Warehouse detects new image digests → Stage dev auto-promote → Stage prod manual gate · `kargo-project` capstone-pipeline Project · `kargo-networkpolicy` default-deny overlay · `kargo-project-networkpolicy` capstone-pipeline NetworkPolicy overlay; ADR-0023) |
 | **On-demand (heavy)** | Harbor CNCF OCI registry (`make harbor-up` / `make harbor-down` — Garage S3 backend; ADR-0024) · Kargo promotion engine (`make kargo-up` / `make kargo-down`) |
@@ -81,29 +80,6 @@ app-of-apps → Vault/Garage bootstrap — then ArgoCD reconciles everything els
 ordered chain is documented in [docs/DR.md](docs/DR.md). Run `make` with no target
 for the full command list.
 
-### Apply Grafana dashboard changes (localhost lab)
-
-Lab dashboards (`grafana/dashboards/*.json`) are managed by Grafana
-native Git Sync (Pure Git), not a k8s sidecar. Current dashboards:
-`Lab — Argo Rollouts (Progressive Delivery)` · `Lab — ArgoCD (GitOps)` · `Lab — Capstone` ·
-`Lab — Cloud Control Plane (moto / ACK / KRO)` ·
-`Lab — Garage S3 (Object Storage)` · `Lab — Git Sync` · `Lab — Grafana` ·
-`Lab — Kyverno (Admission Policy)` · `Lab — Logs` ·
-`Lab — Mimir` · `Lab — Profiles` · `Lab — RabbitMQ` · `Lab — Stack Health` ·
-`Lab — Traces` · `Lab — Trivy Operator (Supply Chain)` ·
-`Lab — Valkey` · `Lab — Vault & Secrets` · `Lab — Velero (Backup & Restore)`.
-After editing them, run:
-
-```sh
-make gitlab-push                # push dashboard JSON changes to the lab's GitOps source
-make gitlab-tls-bootstrap       # ensure the GitLab HTTPS proxy + CA config are in place
-make grafana-gitsync-bootstrap  # ensure Grafana's "Lab dashboards (GitLab, Pure Git)" repo exists
-```
-
-If the local GitLab `main` branch has diverged and you want to overwrite it, run
-`make gitlab-force-push` instead. Grafana polls the Git Sync repo every 60s and
-applies updates automatically.
-
 ## Endpoints
 
 After `make up`, UIs are served via the stable front door on **`:8000`**
@@ -112,7 +88,6 @@ After `make up`, UIs are served via the stable front door on **`:8000`**
 | UI | URL |
 |----|-----|
 | ArgoCD | http://argocd.127.0.0.1.nip.io:8000 |
-| Grafana | http://localhost:8000 |
 | Vault | http://vault.127.0.0.1.nip.io:8000 |
 | S3 browser | http://s3.127.0.0.1.nip.io:8000 |
 | moto (AWS mock) | http://moto.127.0.0.1.nip.io:8000/moto-api/ |
@@ -132,7 +107,7 @@ The lab is **recreate-from-code**, and recovery is *exercised*, not assumed:
 
 | Command | What it does |
 |---------|--------------|
-| `make dr-verify` | Real end-to-end health check: nodes, every ArgoCD app Synced+Healthy, Vault unsealed, all ExternalSecrets synced, Garage + buckets, a **live Mimir query**, Grafana. Safe anytime. |
+| `make dr-verify` | Real end-to-end health check: nodes, every ArgoCD app Synced+Healthy, Vault unsealed, all ExternalSecrets synced, Garage + buckets. Safe anytime. |
 | `make dr-test` | Full DR drill: **destroy** the lab → `make up` → verify. `SCOPE=cluster\|full\|machine`. |
 | `make dr-bluegreen` | **Zero-downtime** DR: stand up a 2nd (green) cluster, cut over via the front-door proxy, prove ~100% uptime with a continuous probe. |
 | `make dr-bluegreen-promote` | Migrate to green as a full stack and **retire blue** — serving never drops. |
@@ -159,7 +134,8 @@ them and enforces every gate.
 ## The 16 GB reality
 
 The always-on stack above fits the 12 GB Colima VM (~7 GB used). Adding a **heavy**
-profile (TiDB, Harbor, Istio mesh, Longhorn) needs care, and two *full* stacks
+profile (Harbor, Kargo — TiDB, Istio ambient mesh + Kiali, and Longhorn were removed
+entirely 2026-09-06, no replacement) needs care, and two *full* stacks
 don't fit at once — proven by the blue/green drill, which is why its promote retires
 blue *before* growing green. GitLab runs as a standalone container (off the cluster
 budget; `make gitlab-down` frees ~3 GB).
@@ -168,7 +144,7 @@ budget; `make gitlab-down` frees ~3 GB).
 
 - `infra/` — Terraform modules + Terragrunt live config (the day-0 bootstrap)
 - `gitops/` — what ArgoCD syncs: `bootstrap/` (root app-of-apps) → `platform/` (one
-  `Application` per component) → `network/ vault/ secrets/ storage/ observability/
+  `Application` per component) → `network/ vault/ secrets/ storage/
   moto/ ack/ kro/ apps/`; `bluegreen/` (green's serving-tier app-of-apps)
 - `gitlab/` — GitLab omnibus docker-compose · `.gitlab-ci.yml` — capstone build pipeline (builds `gitops/apps/demo/` → pushes to Harbor; see [docs/dependency-tree.md](docs/dependency-tree.md))
 - `scripts/` — bootstrap + DR/blue-green scripts + the quality gates (`lint.sh`, `validate-*.sh`, `test.sh`)

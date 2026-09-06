@@ -1,40 +1,43 @@
 #!/usr/bin/env bats
-# Recurrence guard for docs/00-architecture.md's embedded dashboard-count
-# claim going stale — found live 2026-08-20: the doc claimed "36 dashboard
-# files total... 29 lab dashboards" while grafana/dashboards/*.json actually
-# held 39 files (32 always-on lab dashboards after excluding the 7 tied to
-# on-demand/heavy components), with no mechanical check catching the drift.
-# CLAUDE.md's "every bugfix must prevent recurrence" rule: this asserts the
-# doc's own claimed numbers against the real directory, so the next
-# dashboard added without updating this line fails make ci instead of
-# silently going stale again.
+# Recurrence guard for docs/00-architecture.md's embedded dashboard-count claim.
+# This file used to assert the doc's "N dashboard files total... M lab dashboards"
+# claim against the real grafana/dashboards/ directory (found live 2026-08-20: the
+# doc had gone stale against the real file count, with no mechanical check catching
+# the drift). The observability stack — Grafana included — was removed entirely
+# 2026-09-06 with no replacement (ADR-0041, supersedes ADR-0006/ADR-0034): there is
+# no grafana/ directory and no dashboard-count claim left to keep in sync. This file
+# now guards the opposite regression — that no stale dashboard-count claim or
+# observability-stack reference creeps back into the doc.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   DOC="$REPO/docs/00-architecture.md"
-  DASHBOARD_DIR="$REPO/grafana/dashboards"
 }
 
-@test "docs/00-architecture.md's Grafana row cites the real total dashboard-file count" {
+@test "docs/00-architecture.md exists" {
   [ -f "$DOC" ]
-  real_total="$(find "$DASHBOARD_DIR" -maxdepth 1 -name '*.json' | wc -l | tr -d ' ')"
-  run grep -oE '[0-9]+ dashboard files total' "$DOC"
-  [ "$status" -eq 0 ]
-  claimed_total="$(echo "$output" | grep -oE '^[0-9]+')"
-  [ "$claimed_total" -eq "$real_total" ]
 }
 
-@test "docs/00-architecture.md's Grafana row cites the real always-on lab-dashboard count (total minus the 2 on-demand-tied dashboards)" {
-  [ -f "$DOC" ]
-  real_total="$(find "$DASHBOARD_DIR" -maxdepth 1 -name '*.json' | wc -l | tr -d ' ')"
-  # The 2 on-demand/heavy-tied dashboards the doc's own prose names explicitly
-  # (Harbor, Kargo — was 6 until Istio/Longhorn/TiDB's dashboards were deleted
-  # alongside the rest of those components, 2026-09-06; Inkless's dashboard was
-  # deleted the same day, dropping the count from 7 to 6 first).
-  ondemand_count=2
-  real_always_on=$((real_total - ondemand_count))
-  run grep -oE '[0-9]+ lab dashboards' "$DOC"
+@test "grafana/ directory no longer exists (ADR-0041)" {
+  [ ! -d "$REPO/grafana" ]
+}
+
+@test "docs/00-architecture.md no longer claims a dashboard-file count" {
+  run grep -qE '[0-9]+ dashboard files total' "$DOC"
+  [ "$status" -ne 0 ]
+}
+
+@test "docs/00-architecture.md no longer claims a lab-dashboard count" {
+  run grep -qE '[0-9]+ lab dashboards' "$DOC"
+  [ "$status" -ne 0 ]
+}
+
+@test "docs/00-architecture.md records the observability stack's removal (ADR-0041)" {
+  run grep -q 'ADR-0041' "$DOC"
   [ "$status" -eq 0 ]
-  claimed_always_on="$(echo "$output" | grep -oE '^[0-9]+')"
-  [ "$claimed_always_on" -eq "$real_always_on" ]
+}
+
+@test "docs/00-architecture.md no longer has an Observability (LGTMP) table section" {
+  run grep -q '### Observability (LGTMP)' "$DOC"
+  [ "$status" -ne 0 ]
 }

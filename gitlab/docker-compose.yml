@@ -50,33 +50,9 @@ services:
       - gitlab_logs:/var/log/gitlab
       - gitlab_data:/var/opt/gitlab
 
-  # TLS front door for Grafana's native Git Sync, which only accepts HTTPS git
-  # URLs (ADR-0006). Terminates TLS on :8930 (mkcert cert from gitlab-tls-bootstrap.sh)
-  # and proxies git to GitLab's http :8929. Additive — GitLab/ArgoCD/CLI still use http.
-  gitlab-tls:
-    # Pinned explicit version (not the floating `1.27-alpine` minor tag) — same
-    # rationale as the omnibus service two blocks above: an unpinned tag can
-    # silently jump patches on a routine `docker compose pull`, with no PR, no
-    # changelog review, and no rollback record. `1.27.5-alpine` is what
-    # `1.27-alpine` itself resolves to as of 2026-08-13 (confirmed via the
-    # Docker Hub tags API: the two tags' image digests are byte-identical) —
-    # pinning to it changes nothing about what's actually running, it only
-    # removes the floating-tag footgun. Bump deliberately via a future PR, not
-    # an automatic `docker compose pull`.
-    image: nginx:1.27.5-alpine
-    container_name: gitlab-tls
-    restart: unless-stopped
-    # Opt-in profile: only starts with `docker compose --profile tls up` (which
-    # gitlab-tls-bootstrap.sh runs, after the cert exists), so a plain GitLab
-    # `docker compose up` never crash-loops on a missing cert.
-    profiles: ["tls"]
-    depends_on:
-      - gitlab
-    ports:
-      - "8930:8930"
-    volumes:
-      - ./nginx-tls.conf:/etc/nginx/nginx.conf:ro
-      - ./tls:/etc/nginx/tls:ro
+  # gitlab-tls (TLS front door for Grafana's native Git Sync, ADR-0006) REMOVED
+  # 2026-09-06 (ADR-0041, observability stack removed with no replacement) —
+  # Grafana was its only consumer; GitLab/ArgoCD/CLI always used plain http/ssh.
 
   # CI runner for .gitlab-ci.yml (the capstone build/sign pipeline). Docker executor
   # with privileged mode so job-declared services (docker:29-dind) can run. Registered

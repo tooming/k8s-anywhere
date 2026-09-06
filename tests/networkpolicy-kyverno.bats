@@ -63,29 +63,10 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-# --- metrics allow (Alloy → Kyverno TCP 8000) -------------------------------------
-@test "allow-kyverno-metrics-from-observability.yaml exists in kyverno/networkpolicy/" {
-  [ -f "$KYVERNO_NP/allow-kyverno-metrics-from-observability.yaml" ]
-}
-
-@test "kyverno kustomization references the metrics allow file" {
-  run grep -q 'allow-kyverno-metrics-from-observability.yaml' "$KYVERNO_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-kyverno-metrics-from-observability allows ingress on port 8000" {
-  run grep -q 'port: 8000' "$KYVERNO_NP/allow-kyverno-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-kyverno-metrics-from-observability restricts source to observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$KYVERNO_NP/allow-kyverno-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-kyverno-metrics-from-observability restricts source to alloy pods" {
-  run grep -q 'app.kubernetes.io/name: alloy' "$KYVERNO_NP/allow-kyverno-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+# --- metrics allow (Alloy → Kyverno TCP 8000) REMOVED 2026-09-06 (ADR-0041,
+# observability stack removed with no replacement) -------------------------------------
+@test "allow-kyverno-metrics-from-observability.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$KYVERNO_NP/allow-kyverno-metrics-from-observability.yaml" ]
 }
 
 # --- kyverno-networkpolicy Application (wave 4) -----------------------------------

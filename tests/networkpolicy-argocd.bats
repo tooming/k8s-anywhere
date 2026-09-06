@@ -53,33 +53,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-argocd-from-alloy.yaml exists in argocd/networkpolicy/" {
-  [ -f "$ARGOCD_NP/allow-argocd-from-alloy.yaml" ]
-}
-
-@test "allow-argocd-from-alloy allows metrics port 8082 (application-controller)" {
-  run grep -q 'port: 8082' "$ARGOCD_NP/allow-argocd-from-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argocd-from-alloy allows metrics port 8083 (argocd-server-metrics)" {
-  run grep -q 'port: 8083' "$ARGOCD_NP/allow-argocd-from-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argocd-from-alloy allows metrics port 8084 (repo-server-metrics)" {
-  run grep -q 'port: 8084' "$ARGOCD_NP/allow-argocd-from-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argocd-from-alloy allows ingress from observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$ARGOCD_NP/allow-argocd-from-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argocd-from-alloy allows ingress from Alloy pods" {
-  run grep -q 'app.kubernetes.io/name: alloy' "$ARGOCD_NP/allow-argocd-from-alloy.yaml"
-  [ "$status" -eq 0 ]
+@test "allow-argocd-from-alloy.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$ARGOCD_NP/allow-argocd-from-alloy.yaml" ]
 }
 
 @test "allow-argocd-intra-namespace.yaml exists in argocd/networkpolicy/" {

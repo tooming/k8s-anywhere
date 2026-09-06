@@ -38,9 +38,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-rabbitmq-ingress allows port 15692 (Prometheus metrics)" {
+@test "allow-rabbitmq-ingress no longer allows port 15692 (ADR-0041: Prometheus metrics rule removed)" {
   run grep -q 'port: 15692' "$DATA_NP/allow-rabbitmq-ingress.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 @test "allow-rabbitmq-ingress targets pods with app: rabbitmq" {
@@ -66,9 +66,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-valkey-ingress allows port 9121 (redis_exporter metrics)" {
+@test "allow-valkey-ingress no longer allows port 9121 (ADR-0041: redis_exporter metrics rule removed)" {
   run grep -q 'port: 9121' "$DATA_NP/allow-valkey-ingress.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 @test "allow-valkey-ingress targets pods with app: valkey" {

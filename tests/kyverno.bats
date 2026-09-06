@@ -1,9 +1,11 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for Kyverno (admission policy engine, ADR-0019).
 # Validates GitOps wiring (Application shape, namespace PSA labels, NetworkPolicy
-# overlay), the Alloy metrics scrape job, and the Grafana dashboard — no running
-# cluster required. Companion to tests/networkpolicy.bats (which covers the
-# default-deny fan-out) and the auto/kyverno-engine PR's manifests.
+# overlay) — no running cluster required. Companion to tests/networkpolicy.bats
+# (which covers the default-deny fan-out) and the auto/kyverno-engine PR's
+# manifests. The Alloy metrics scrape job and Grafana dashboard this file used
+# to also test were removed 2026-09-06 (ADR-0041, observability stack removed
+# with no replacement).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -147,9 +149,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "kyverno NetworkPolicy kustomization references the metrics allow file" {
+@test "kyverno NetworkPolicy kustomization no longer references a metrics allow file (ADR-0041)" {
   run grep -q 'allow-kyverno-metrics-from-observability.yaml' "$REPO/gitops/kyverno/networkpolicy/kustomization.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 # --- Webhook allow rule (apiserver -> admission webhook :9443) ----------------
@@ -167,64 +169,15 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Metrics allow rule (observability Alloy -> metrics :8000) ----------------
-@test "metrics allow file opens TCP 8000" {
-  run grep -q 'port: 8000' "$REPO/gitops/kyverno/networkpolicy/allow-kyverno-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+# --- Metrics allow rule (observability Alloy -> metrics :8000) + Alloy scrape
+# job + Grafana dashboard all REMOVED 2026-09-06 (ADR-0041, observability
+# stack removed with no replacement) ------------------------------------------
+@test "allow-kyverno-metrics-from-observability.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/kyverno/networkpolicy/allow-kyverno-metrics-from-observability.yaml" ]
 }
 
-@test "metrics allow file admits the observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$REPO/gitops/kyverno/networkpolicy/allow-kyverno-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-# --- Alloy scrape job --------------------------------------------------------
-@test "Alloy has a kyverno scrape job" {
-  run grep -q 'prometheus.scrape "kyverno"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "Alloy kyverno scrape targets a kyverno metrics Service on :8000" {
-  run grep -qE 'kyverno-.*-controller-metrics\.kyverno\.svc\.cluster\.local:8000' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-# --- Grafana dashboard (ADR-0004 real metrics) -------------------------------
-@test "Grafana dashboard file lab-kyverno.json exists" {
-  [ -f "$REPO/grafana/dashboards/lab-kyverno.json" ]
-}
-
-@test "lab-kyverno.json is valid JSON" {
-  if ! command -v python3 >/dev/null 2>&1; then skip "python3 not installed"; fi
-  run python3 -c "import json,sys; json.load(open('$REPO/grafana/dashboards/lab-kyverno.json'))"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-kyverno.json uid is lab-kyverno" {
-  run grep -q '"uid": "lab-kyverno"' "$REPO/grafana/dashboards/lab-kyverno.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-kyverno.json has a stat-row pod-running panel" {
-  run grep -q 'kube_pod_status_phase{namespace=\\"kyverno\\"' "$REPO/grafana/dashboards/lab-kyverno.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-kyverno.json charts kyverno_policy_results_total by validation/background mode" {
-  run grep -q 'kyverno_policy_results_total' "$REPO/grafana/dashboards/lab-kyverno.json"
-  [ "$status" -eq 0 ]
-  run grep -q 'policy_validation_mode' "$REPO/grafana/dashboards/lab-kyverno.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-kyverno.json charts admission review p95 latency" {
-  run grep -q 'kyverno_admission_review_duration_seconds_bucket' "$REPO/grafana/dashboards/lab-kyverno.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-kyverno.json filters policy execution results to non-pass" {
-  run grep -q 'rule_result!=\\"pass\\"' "$REPO/grafana/dashboards/lab-kyverno.json"
-  [ "$status" -eq 0 ]
+@test "grafana/dashboards/lab-kyverno.json no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/grafana/dashboards/lab-kyverno.json" ]
 }
 
 # --- ADR documentation -------------------------------------------------------

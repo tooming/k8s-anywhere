@@ -63,29 +63,10 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-# --- metrics allow (Alloy → cert-manager TCP 9402) ----------------------------
-@test "allow-cert-manager-metrics-from-observability.yaml exists in cert-manager/networkpolicy/" {
-  [ -f "$CERT_MANAGER_NP/allow-cert-manager-metrics-from-observability.yaml" ]
-}
-
-@test "cert-manager kustomization references the metrics allow file" {
-  run grep -q 'allow-cert-manager-metrics-from-observability.yaml' "$CERT_MANAGER_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-cert-manager-metrics-from-observability allows ingress on port 9402" {
-  run grep -q 'port: 9402' "$CERT_MANAGER_NP/allow-cert-manager-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-cert-manager-metrics-from-observability restricts source to observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$CERT_MANAGER_NP/allow-cert-manager-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-cert-manager-metrics-from-observability restricts source to alloy pods" {
-  run grep -q 'app.kubernetes.io/name: alloy' "$CERT_MANAGER_NP/allow-cert-manager-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+# --- metrics allow (Alloy → cert-manager TCP 9402) REMOVED 2026-09-06 (ADR-0041,
+# observability stack removed with no replacement) ----------------------------
+@test "allow-cert-manager-metrics-from-observability.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$CERT_MANAGER_NP/allow-cert-manager-metrics-from-observability.yaml" ]
 }
 
 # --- cert-manager-networkpolicy Application (wave 4) --------------------------

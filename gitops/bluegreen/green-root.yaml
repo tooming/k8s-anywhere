@@ -6,9 +6,11 @@
 # controller Application is needed any more: Traefik ships with k3s itself, so it's
 # already present on green the moment the cluster boots. The drill's canary is the
 # ArgoCD UI (argocd.127.0.0.1.nip.io), served by both clusters; the point is the
-# zero-downtime cluster CUTOVER, not duplicating the heavy LGTMP tier. Reuses
-# gitops/platform via directory.include (no copies); green's ArgoCD itself is
-# helm-installed by the script.
+# zero-downtime cluster CUTOVER, not standing up every platform Application (the
+# observability stack this comment used to name has since been removed entirely,
+# ADR-0041 — the constraint that motivated a serving-only green predates that and
+# still holds for the rest of the platform tier). Reuses gitops/platform via
+# directory.include (no copies); green's ArgoCD itself is helm-installed by the script.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

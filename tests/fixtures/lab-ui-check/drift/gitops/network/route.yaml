@@ -1,7 +1,0 @@
-apiVersion: gateway.networking.k8s.io/v1
-kind: IngressRoute
-metadata:
-  name: demo
-spec:
-  hostnames:
-    - demo.127.0.0.1.nip.io

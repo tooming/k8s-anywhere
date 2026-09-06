@@ -1,6 +1,10 @@
 # ADR-0034 — Grafana LGTM(P) stack internals + kube-state-metrics/node-exporter for observability
 
-**Status.** Adopted (retroactive). Architect decision, RFC #1073 — ratifies components
+**Status.** Superseded by [ADR-0041](adr-0041-remove-observability-stack.md). Mimir, Loki,
+Tempo, Pyroscope, Alloy, kube-state-metrics, and node-exporter are all removed as
+workloads, with no replacement.
+
+**Status (historical).** Adopted (retroactive). Architect decision, RFC #1073 — ratifies components
 that have been running as this lab's observability pipeline since early bootstrap;
 this ADR gives the internals the dedicated record every other real, always-on
 dependency already has. Not a supersession — no prior ADR named these tools as its
@@ -62,17 +66,22 @@ observability pipeline, all in the `observability` namespace (node-exporter in i
 dedicated `node-exporter` namespace — see below) — as decided when the lab was first
 bootstrapped, formally recorded here for the first time.
 
-### What's actually running (verified directly against `gitops/`)
+### What was running (historical — all REMOVED 2026-09-06, ADR-0041, no replacement)
 
-| Component | Deployment shape | Source | Version pin |
+This table is now a historical record, not a live self-tracking mirror — every
+`gitops/` path and Application it cites below was deleted along with the whole
+stack. Kept verbatim (rather than deleted) so the ADR's own history of what
+each component actually was stays legible.
+
+| Component | Deployment shape | Source (REMOVED) | Version pin at removal |
 |---|---|---|---|
-| **Mimir** | Raw manifests (`gitops/observability/mimir`), single-binary `-target=all`, filesystem storage | ArgoCD `Application` `mimir`, `targetRevision: main` (kustomize path, not a Helm chart — Mimir has no official chart this lab tracks) | `image: grafana/mimir:3.1.5` (tracked in this ADR's own Re-evaluation log, 2026-08-20 CVE bump) |
-| **Loki** | Raw manifests (`gitops/observability/loki`), single-binary, Garage S3-backed | ArgoCD `Application` `loki`, `targetRevision: main` | Image tag tracked via ADR-0006 (currently `3.7.6`) |
-| **Tempo** | Raw manifests (`gitops/observability/tempo`) | `deployment.yaml` pins `image: grafana/tempo:2.10.8` directly | `2.10.8` (tracked in ADR-0006's Re-evaluation log, 2026-08-13 security bump) |
-| **Pyroscope** | Helm chart | `gitops/platform/observability-pyroscope.yaml`, `targetRevision: 2.2.1` | `2.2.1` |
-| **Alloy** | Helm chart | `gitops/platform/observability-alloy.yaml`, `targetRevision: 1.12.1` | `1.12.1` (tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
-| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | `gitops/platform/observability-ksm.yaml`, `targetRevision: 8.4.1` | `8.4.1` (tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
-| **node-exporter** | Helm chart, `prometheus-community/helm-charts` (`prometheus-node-exporter`) | `gitops/platform/observability-node-exporter.yaml`, `targetRevision: 4.56.3`; dedicated `node-exporter` namespace (not `observability`) because it needs `hostPID`/`hostNetwork`/`hostRootFsMount` semantics [ADR-0017](adr-0017-pod-security-standards-restricted.md)'s `restricted` profile forbids | `4.56.3` (tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
+| **Mimir** | Raw manifests (was under the observability namespace's own directory, now deleted), single-binary `-target=all`, filesystem storage | was ArgoCD `Application` `mimir` (kustomize path, not a Helm chart — Mimir has no official chart this lab tracked) | last-known image `grafana/mimir` tag `3.1.5` (last tracked in this ADR's own Re-evaluation log, 2026-08-20 CVE bump) |
+| **Loki** | Raw manifests (was under the observability namespace's own directory, now deleted), single-binary, Garage S3-backed | was ArgoCD `Application` `loki` | Image tag last tracked via ADR-0006 (`3.7.6`) |
+| **Tempo** | Raw manifests (was under the observability namespace's own directory, now deleted) | was a `deployment.yaml` pinning a `grafana/tempo` image tag directly | last-known tag `2.10.8` (last tracked in ADR-0006's Re-evaluation log, 2026-08-13 security bump) |
+| **Pyroscope** | Helm chart | was `gitops/platform/observability-pyroscope.yaml` | `2.2.1` |
+| **Alloy** | Helm chart | was `gitops/platform/observability-alloy.yaml` | `1.12.1` (last tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
+| **kube-state-metrics** | Helm chart, `prometheus-community/helm-charts` | was `gitops/platform/observability-ksm.yaml` | `8.4.1` (last tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
+| **node-exporter** | Helm chart, `prometheus-community/helm-charts` (`prometheus-node-exporter`) | was `gitops/platform/observability-node-exporter.yaml`; dedicated `node-exporter` namespace (not `observability`) because it needed `hostPID`/`hostNetwork`/`hostRootFsMount` semantics [ADR-0017](adr-0017-pod-security-standards-restricted.md)'s `restricted` profile forbids | `4.56.3` (last tracked in this ADR's own Re-evaluation log, 2026-09-01 currency bump) |
 
 Mimir and Loki are deliberately **not** Helm charts (Mimir has no chart this lab
 tracks; both run from hand-maintained raw manifests) — this is an existing, working

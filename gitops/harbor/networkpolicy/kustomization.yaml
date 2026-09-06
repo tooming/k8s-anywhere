@@ -15,4 +15,5 @@ resources:
   - allow-harbor-garage-egress.yaml
   - allow-harbor-intra-namespace.yaml
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
-  - allow-harbor-metrics-ingress.yaml
+  # allow-harbor-metrics-ingress.yaml REMOVED 2026-09-06 (ADR-0041, observability
+  # stack removed with no replacement).

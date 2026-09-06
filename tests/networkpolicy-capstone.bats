@@ -53,28 +53,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-capstone-egress-tempo.yaml exists in capstone/networkpolicy/" {
-  [ -f "$CAPSTONE_NP/allow-capstone-egress-tempo.yaml" ]
-}
-
-@test "allow-capstone-egress-tempo allows port 4318 (OTLP HTTP)" {
-  run grep -q 'port: 4318' "$CAPSTONE_NP/allow-capstone-egress-tempo.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-capstone-egress-tempo targets pods with app: capstone" {
-  run grep -q 'app: capstone' "$CAPSTONE_NP/allow-capstone-egress-tempo.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-capstone-egress-tempo allows egress to observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$CAPSTONE_NP/allow-capstone-egress-tempo.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-capstone-egress-tempo allows egress to pods with app: tempo" {
-  run grep -q 'app: tempo' "$CAPSTONE_NP/allow-capstone-egress-tempo.yaml"
-  [ "$status" -eq 0 ]
+@test "allow-capstone-egress-tempo.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$CAPSTONE_NP/allow-capstone-egress-tempo.yaml" ]
 }
 
 @test "capstone-networkpolicy ArgoCD Application targets the capstone namespace" {

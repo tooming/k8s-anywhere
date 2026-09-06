@@ -1,7 +1,7 @@
 # NetworkPolicy Kustomize overlay for the lab-demo namespace (ADR-0016 §4 fan-out).
-# Pulls the two shared baseline templates (default-deny-all + allow-dns-and-apiserver)
-# and adds a lab-demo-specific egress allow to Tempo for OTLP HTTP traces. The HotROD
-# demo app sends spans to tempo.observability.svc.cluster.local:4318 continuously.
+# Pulls the two shared baseline templates (default-deny-all + allow-dns-and-apiserver).
+# The lab-demo-specific egress-to-Tempo rule this overlay used to also carry was
+# removed 2026-09-06 (ADR-0041, observability stack removed with no replacement).
 # Wired into gitops/platform/networkpolicy-appset.yaml (auto-synced, wave 4).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -12,4 +12,3 @@ resources:
   - ../../../network/policies/default-deny.yaml
   - ../../../network/policies/allow-dns-and-apiserver.yaml
   - ../../../network/policies/zz-dns-clusterip-bridge.yaml
-  - allow-demo-egress-tempo.yaml

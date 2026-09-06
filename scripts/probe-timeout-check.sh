@@ -106,9 +106,10 @@ else
     "gitops/platform/keda.yaml|spec.source.helm.valuesObject.metricsServer.readinessProbe"
     "gitops/platform/keda.yaml|spec.source.helm.valuesObject.webhooks.livenessProbe"
     "gitops/platform/keda.yaml|spec.source.helm.valuesObject.webhooks.readinessProbe"
-    "gitops/platform/observability-alloy.yaml|spec.source.helm.valuesObject.alloy.timeoutSeconds"
-    "gitops/platform/observability-node-exporter.yaml|spec.source.helm.valuesObject.livenessProbe"
-    "gitops/platform/observability-node-exporter.yaml|spec.source.helm.valuesObject.readinessProbe"
+    # Alloy / node-exporter probe-timeout requirements REMOVED 2026-09-06
+    # (ADR-0041): both components (and gitops/platform/observability-alloy.yaml,
+    # gitops/platform/observability-node-exporter.yaml) are gone — the entire
+    # observability stack was removed with no replacement.
     "infra/modules/argocd/values.yaml|server.livenessProbe"
     "infra/modules/argocd/values.yaml|server.readinessProbe"
     "infra/modules/argocd/values.yaml|applicationSet.livenessProbe"

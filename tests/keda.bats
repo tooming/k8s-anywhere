@@ -1,8 +1,10 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for KEDA (event-driven autoscaling, ADR-0029).
 # Validates GitOps wiring (Application shape, namespace PSA labels, NetworkPolicy
-# overlay), the Alloy metrics scrape job, and the Grafana dashboard — no running
-# cluster required. New CHARTER Goal ("event-driven autoscaling") — first item.
+# overlay) — no running cluster required. New CHARTER Goal ("event-driven
+# autoscaling") — first item. The Alloy metrics scrape job and Grafana
+# dashboard this file used to also test were removed 2026-09-06 (ADR-0041,
+# observability stack removed with no replacement).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -124,16 +126,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "keda allow-metrics-from-observability rule permits TCP 8080" {
-  run grep -q 'port: 8080' "$REPO/gitops/keda/networkpolicy/allow-keda-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "keda allow-metrics rule selects Alloy pods from observability namespace" {
-  run grep -q 'name: alloy' "$REPO/gitops/keda/networkpolicy/allow-keda-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-  run grep -q 'observability' "$REPO/gitops/keda/networkpolicy/allow-keda-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+@test "keda allow-metrics-from-observability rule no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/keda/networkpolicy/allow-keda-metrics-from-observability.yaml" ]
 }
 
 @test "keda-networkpolicy Application exists" {
@@ -150,43 +144,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Observability: Alloy scrape + Grafana dashboard --------------------------
-@test "observability-alloy has a keda scrape job" {
-  run grep -q 'prometheus.scrape "keda"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "keda scrape targets the operator Service on port 8080" {
-  run grep -q 'keda-operator.keda.svc.cluster.local:8080' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-keda.json dashboard exists" {
-  [ -f "$REPO/grafana/dashboards/lab-keda.json" ]
-}
-
-@test "lab-keda.json is valid JSON" {
-  run python3 -c "import json; json.load(open('$REPO/grafana/dashboards/lab-keda.json'))"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-keda.json uid is lab-keda" {
-  [ "$(yqs '.uid' "$REPO/grafana/dashboards/lab-keda.json")" = "lab-keda" ]
-}
-
-@test "lab-keda.json uses the Mimir datasource (ADR-0004 — real data only)" {
-  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-keda.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-keda.json charts keda_scaler_active" {
-  run grep -q 'keda_scaler_active' "$REPO/grafana/dashboards/lab-keda.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-keda.json charts keda_scaled_object_paused" {
-  run grep -q 'keda_scaled_object_paused' "$REPO/grafana/dashboards/lab-keda.json"
-  [ "$status" -eq 0 ]
+# --- Observability: Alloy scrape + Grafana dashboard REMOVED 2026-09-06
+# (ADR-0041, observability stack removed with no replacement) --------------------
+@test "grafana/dashboards/lab-keda.json no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/grafana/dashboards/lab-keda.json" ]
 }
 
 @test "docs/dependency-tree.md documents the keda component" {

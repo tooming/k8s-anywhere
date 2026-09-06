@@ -1,7 +1,9 @@
 # NetworkPolicy Kustomize overlay for the argo-rollouts namespace (ADR-0016 §4 fan-out).
-# Pulls the two shared baseline templates and adds argo-rollouts-specific allow rules
-# for: Alloy metrics scrape from observability on TCP 8090; Traefik dashboard
-# access on TCP 3100; egress to Mimir on TCP 8080 for AnalysisTemplate SLO queries.
+# Pulls the two shared baseline templates and adds an argo-rollouts-specific allow
+# rule for Traefik dashboard access on TCP 3100. The Alloy metrics-scrape ingress
+# rule and the Mimir-egress AnalysisTemplate-query rule this overlay used to also
+# carry were removed 2026-09-06 (ADR-0041, observability stack removed with no
+# replacement — Argo Rollouts' canary AnalysisTemplate gate went with it).
 # The allow-dns-and-apiserver baseline covers the controller's k8s API calls (Rollout
 # and AnalysisTemplate reconciliation, leader election, and canary weight patching).
 #
@@ -21,6 +23,4 @@ resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
-  - allow-argo-rollouts-metrics-from-observability.yaml
   - allow-argo-rollouts-dashboard-from-gateway.yaml
-  - allow-argo-rollouts-egress-mimir.yaml

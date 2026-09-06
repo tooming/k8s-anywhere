@@ -3,20 +3,22 @@
 # completion within the CHARTER Objective O3 budget (< 10 min / 600 s).
 #
 # Usage:
-#   ./scripts/dr-restore.sh [data capstone vault observability]
+#   ./scripts/dr-restore.sh [data capstone vault]
 #
-# The namespaces list defaults to the four documented in ADR-0021 §"Scope &
-# exceptions" (observability added 2026-07-29 once its own Schedule landed —
-# see the ADR's Re-evaluation log; tidb removed 2026-09-06 when TiDB was
-# removed from the lab entirely). Each namespace is restored
-# sequentially (Kopia FS-restore is I/O-bound; parallel restores would
-# saturate the single-node disk and likely overshoot the budget).
+# The namespaces list defaults to the three documented in ADR-0021 §"Scope &
+# exceptions" (observability's own Schedule was added 2026-07-29, then removed
+# 2026-09-06 along with the namespace itself — ADR-0041, observability stack
+# removed with no replacement; tidb removed 2026-09-06 when TiDB was removed
+# from the lab entirely, no replacement — see the ADR's Re-evaluation log).
+# Each namespace is restored sequentially (Kopia FS-restore is I/O-bound;
+# parallel restores would saturate the single-node disk and likely overshoot
+# the budget).
 #
 # Exit codes: 0 = all restores completed within budget; 1 = at least one restore
 # failed or incomplete, or total wall-clock exceeded 600 s.
 set -uo pipefail
 
-NAMESPACES=("${@:-data capstone vault observability}")
+NAMESPACES=("${@:-data capstone vault}")
 # Flatten a single-element array that was passed as one space-delimited string
 if [ "${#NAMESPACES[@]}" -eq 1 ]; then
   read -r -a NAMESPACES <<< "${NAMESPACES[0]}"

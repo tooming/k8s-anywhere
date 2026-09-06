@@ -18,27 +18,24 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 40 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0040), three are **Superseded** and fully excluded per the index's own
-convention (only their replacement is listed): ADR-0010 (Redis, superseded by
-ADR-0018/Valkey), ADR-0011 (Artifactory, superseded by ADR-0024/Harbor), and ADR-0008
-(Envoy Gateway, superseded by ADR-0040/Traefik — the workload is removed outright, not
-a staged cutover, so it's excluded the same immediate way as the other two rather than
-the GitLab/Forgejo carve-out below). A fourth, ADR-0033 (GitLab, superseded by
-ADR-0035/Forgejo), was **not** excluded the same way
-for most of its life: unlike the other two's fully-decommissioned predecessors,
-GitLab stayed the live, running component through most of the migration. That
-changed 2026-08-17 — an accelerated, live-cluster cutover (PR #1205) flipped every
-`repoURL` to Forgejo and stopped GitLab (`make gitlab-down`) ahead of the two
-remaining ROADMAP migration steps (script/Makefile rename, full decommission), so
-the table below now rows **Forgejo** (citing ADR-0035) as the live component,
-matching the Redis/Artifactory pattern one step early — GitLab's own row is retired
-even though `gitlab/docker-compose.yml` and `infra/modules/gitlab-config` are still
-in the repo (kept for rollback until the decommission item lands; see ADR-0035's own
-migration-execution list, items 5–6, and ROADMAP.md's Now/next Forgejo-migration
-list for the current status of that follow-up).
+Of the 41 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0041), six are **Superseded** and fully excluded per the index's own
+convention (only a live replacement is listed, when one exists): ADR-0010 (Redis,
+superseded by ADR-0018/Valkey), ADR-0011 (Artifactory, superseded by
+ADR-0024/Harbor), ADR-0008 (Envoy Gateway, superseded by ADR-0040/Traefik), and
+ADR-0033 (GitLab, superseded by ADR-0035/Forgejo — GitLab stayed the live,
+running component through most of its migration, but an accelerated live-cluster
+cutover 2026-08-17, PR #1205, flipped every `repoURL` to Forgejo and stopped GitLab,
+so the table below now rows only **Forgejo**) each have a live replacement counted
+in their place. The remaining two, ADR-0006 (Grafana's native Git Sync) and
+ADR-0034 (the LGTM(P) stack internals — Mimir, Loki, Tempo, Pyroscope, Alloy, plus
+kube-state-metrics/node-exporter), were both superseded 2026-09-06 by
+[ADR-0041](decisions/adr-0041-remove-observability-stack.md), which removes every
+tool either one named **with no replacement at all** — so unlike the other four,
+their eight combined tool-rows (Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy,
+kube-state-metrics, node-exporter) are simply gone, not reassigned.
 
-Of the remaining 37, **eight decide a policy or architectural posture rather than a
+Of the remaining 35, **nine decide a policy or architectural posture rather than a
 single third-party product** — they're excluded from the table below because there's
 no one upstream project to attach a criticality/upstream-source/last-reviewed row to:
 ADR-0003 (decoupled/no-SPOF design principle), ADR-0004 (no-fabricated-content
@@ -46,44 +43,44 @@ policy), ADR-0005 (recreate-over-HA posture), ADR-0016 (default-deny NetworkPoli
 pattern — enforced via Cilium, which *is* in the table), ADR-0017 (Pod Security
 Standards — a built-in Kubernetes admission feature, not a third-party dependency),
 ADR-0025 (free/OSS-tier governance rule), ADR-0026 (cloud-agnostic architecture
-policy), and ADR-0030 (k3s version-pinning governance — no separate row of its own,
+policy), ADR-0030 (k3s version-pinning governance — no separate row of its own,
 but directly cited alongside ADR-0027 in the k3s row's ADR column since 2026-08-24,
 once a gap-analysis pass found the row's "Last reviewed" cell citing only
 ADR-0027's decision date and missing ADR-0030's own, much more current,
-Re-evaluation log entirely). Of the remaining 29, all 29 now
-have a row below — ADR-0035 (Forgejo) gained its own row 2026-08-17 once the live
-cutover (PR #1205) made Forgejo, not GitLab, the actual live component the row
-should describe (see the note above), ADR-0036 (External Secrets Operator)
-gained its own row 2026-08-19 as a retroactive governance record for a mechanism
-that predated it having any ADR at all, ADR-0037 (Vault) gained its own row
-2026-09-03 for the same reason — a mechanism that predated it having any ADR at
-all, whose version history had instead been living as inline `gitops/` YAML
-comments — ADR-0038 (moto + ACK S3 + KRO) gained three rows the same day for
-the identical reason, one per tool, and ADR-0039 (s3manager) gained its own row
-the same day for the same reason again — collectively naming the table's 32
-distinct third-party-tool rows: three ADRs each
-decide on more than one tool at once (ADR-0001: Terraform/Terragrunt + ArgoCD;
-ADR-0027: Oracle Cloud Infrastructure + k3s; ADR-0038:
-moto + ACK S3 + KRO) and ADR-0034
-alone names seven (the LGTMP observability internals — Mimir, Loki, Tempo, Pyroscope,
-Alloy, kube-state-metrics, node-exporter); one tool, Garage, is named by two ADRs
-(ADR-0002, ADR-0007) for two different roles and gets one merged row. (ADR-0012's
-Istio+Kiali and ADR-0031/ADR-0032's TiDB Operator/TiDB rows were removed 2026-09-06
-when those components were dropped from the lab entirely — see each ADR's Status.)
+Re-evaluation log entirely), and ADR-0041 (the observability-removal decision itself
+— a scope-narrowing choice, not a third-party product of its own).
 
-**Gap closed 2026-08-07 (was: "Real gap, distinct from the policy-ADR exclusions
-above").** This register's construction rule (every row cites the ADR that decided
-it) used to leave two real, always-on dependency groups un-rowable: **GitLab** (the
-git source of truth + CI runner, referenced by name across many ADRs but never itself
-the *subject* of one) and the observability pipeline's internals **Mimir, Loki, Tempo,
-Pyroscope, Alloy, kube-state-metrics, and node-exporter** (only Grafana, the
-pane-of-glass on top of all of them, had its own ADR-0006). An architect-fallback
-cycle (RFC #1073) closed the gap by authoring
-[ADR-0033](decisions/adr-0033-gitlab-git-source-and-ci.md) (GitLab, its own ADR — a
-distinct axis from ADR-0001's GitOps-vs-imperative decision) and
-[ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) (one combined ADR for the
-seven observability-internals tools, mirroring ADR-0012's Istio+Kiali
-one-ADR-two-tools precedent). All eight tools now have rows in the table below.
+Of the remaining 26, five name a component that was removed from the lab entirely
+with no replacement, so they contribute no row either: ADR-0012 (Istio ambient +
+Kiali), ADR-0013 (Longhorn), ADR-0015 (Aiven Inkless — a pre-existing gap, never
+had a row of its own), ADR-0031 (TiDB Operator), and ADR-0032 (TiDB) — all removed
+2026-09-06, see each ADR's own Status. The other 21 all have a row below —
+ADR-0035 (Forgejo) gained its own row 2026-08-17 once the live cutover (PR #1205)
+made Forgejo, not GitLab, the actual live component the row should describe (see
+the note above), ADR-0036 (External Secrets Operator) gained its own row
+2026-08-19 as a retroactive governance record for a mechanism that predated it
+having any ADR at all, ADR-0037 (Vault) gained its own row 2026-09-03 for the same
+reason — a mechanism that predated it having any ADR at all, whose version
+history had instead been living as inline `gitops/` YAML comments — ADR-0038
+(moto + ACK S3 + KRO) gained three rows the same day for the identical reason,
+one per tool, and ADR-0039 (s3manager) gained its own row the same day for the
+same reason again — collectively naming the table's 24 distinct third-party-tool
+rows: three ADRs each decide on more than one tool at once (ADR-0001:
+Terraform/Terragrunt + ArgoCD; ADR-0027: Oracle Cloud Infrastructure + k3s;
+ADR-0038: moto + ACK S3 + KRO), and one tool, Garage, is named by two ADRs
+(ADR-0002, ADR-0007) for two different roles and gets one merged row.
+
+Of the remaining 26, one — ADR-0015 (Aiven Inkless, diskless Kafka) — is a
+pre-existing gap: it has never had a row in this register, a separate issue this
+observability-removal edit did not create and does not attempt to close here. The
+other 25 all have a row below: four ADRs each decide on more than one tool at once
+(ADR-0001: Terraform/Terragrunt + ArgoCD; ADR-0012: Istio + Kiali; ADR-0027: Oracle
+Cloud Infrastructure + k3s; ADR-0038: moto + ACK S3 + KRO), one tool (Garage) is
+named by two ADRs (ADR-0002, ADR-0007) for two different roles and gets one merged
+row, and ADR-0031/ADR-0032 each name one — TiDB Operator and TiDB itself are
+distinct products with distinct version lines, so they get separate rows, same
+shape as Istio/Kiali under ADR-0012 — collectively naming the table's 29 distinct
+third-party-tool rows.
 
 **Criticality** reuses CHARTER's own "Target end-state" groupings rather than
 inventing a new scheme: **always-on-core** (part of the always-on base stack),
@@ -103,7 +100,6 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | Terraform / Terragrunt | always-on-core (day-0 bootstrap only, ADR-0001) | terraform.io, terragrunt.gruntwork.io | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | not dated in ADR (no Re-evaluation log) |
 | ArgoCD | always-on-core | argoproj.github.io, github.com/argoproj/argo-cd | [ADR-0001](decisions/adr-0001-gitops-over-terraform-helm.md) | 2026-09-03 (full GHSA sweep: all 8 published `argoproj/argo-cd` advisories checked — highest severity Critical (GHSA-3v3m-wc6v-x4x3/CVE-2026-42880, ServerSideDiff secret extraction, fixed `3.2.11`/`3.3.9`) — every affected range tops out at `3.4.2` or lower; current pin's appVersion `v3.5.2` is past every floor. Prior entry: 2026-09-01, chart `10.4.0`→`10.5.0`, appVersion `v3.5.1`→`v3.5.2`, routine currency) |
 | Garage | always-on-core (in-cluster S3, ADR-0002) + bootstrap substrate (off-cluster Terraform-state backend, ADR-0007) | github.com/deuxfleurs-org/garage | [ADR-0002](decisions/adr-0002-garage-not-minio.md), [ADR-0007](decisions/adr-0007-off-cluster-garage-tfstate-backend.md) | 2026-09-04 (currency re-check: `v2.3.0` still the newest tag, zero published security advisories — unchanged. Prior entry: 2026-08-19 org-slug fix) |
-| Grafana | always-on-core (observability stack) | grafana.com, github.com/grafana/grafana | [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md) | 2026-09-06 (upgrade-drafter fallback: chart bumped `12.10.4`→`12.11.2`, routine packaging currency, no CVE — image pin stays `13.0.8`, unaffected. Prior entry: 2026-09-04, no new finding for Grafana itself, still current at `13.0.8`/chart `12.10.4`) |
 | Traefik (supersedes Envoy Gateway, ADR-0008) | always-on-core (bundled with k3s, no separate chart/version to track — see [ADR-0030](decisions/adr-0030-pin-k3s-version-explicitly.md)) | github.com/traefik/traefik (bundled by github.com/k3s-io/k3s) | [ADR-0040](decisions/adr-0040-traefik-not-envoy-gateway.md) | 2026-09-06 (decision date; not yet live-cluster-verified, see ADR-0040's own "Known risk" section) |
 | RabbitMQ | always-on-core | github.com/rabbitmq/rabbitmq-server | [ADR-0009](decisions/adr-0009-rabbitmq-message-broker.md) | 2026-09-04 (currency re-check: `4.3.5-management` still the newest patch on the `4.3.x` line — unchanged. Prior entry: 2026-08-19 patch bump, fixes 10 GHSAs) |
 | Cilium | always-on-core (CNI — the network data plane itself) | github.com/cilium/cilium | [ADR-0014](decisions/adr-0014-cilium-not-flannel-policy.md) | 2026-09-03 (found a Critical advisory, GHSA-3fcv-jvfp-m4q9/CVE-2026-49445, unaudited in this ADR's log despite predating the 2026-08-19 entry — confirmed pin `1.18.13` is past its fix floor. Prior entry: 2026-08-19, 3 High GHSAs audited, patch bumped `1.18.12`→`1.18.13`) |
@@ -120,13 +116,6 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | KEDA | on-demand (`make keda-up`/`keda-down`, converted from always-on-core 2026-08-25, ADR-0029 — lighter-weight than CHARTER's heavy-on-demand tier, not tracked in `ondemand-budget-check.sh`'s budget maps) | github.com/kedacore/keda | [ADR-0029](decisions/adr-0029-keda-event-driven-autoscaling.md) | 2026-09-03 (full GHSA sweep: all 3 published advisories checked — the third, GHSA-w92x-gx4w-j5f2 Low, is a command-injection bug in KEDA's own `pr-e2e.yml` CI workflow, not the deployed operator image; not applicable regardless of version. Prior entries: GHSA-c4p6-qg4m-9jmr High and GHSA-6w3m-4hhp-775q Moderate both past floor at `2.20.2`, no currency gap) |
 | External Secrets Operator | always-on-core | github.com/external-secrets/external-secrets | [ADR-0036](decisions/adr-0036-external-secrets-vault-sync.md) | 2026-09-01 (bumped `2.9.0` → `2.10.0`: purely additive TLS-config schema change, real fixes incl. an AWS credential-log-redaction fix; no CVE. Current pin past every floor from the 2026-08-19 GHSA sweep and is the newest tag) |
 | Forgejo | always-on-core (self-hosted git source + CI runner, host-level Docker Compose, outside the cluster) — **the live, running component as of 2026-08-17** (PR #1205's accelerated cutover); supersedes GitLab, whose `docker-compose.yml`/`infra/modules/gitlab-config` are still in the repo, stopped but kept for rollback until ROADMAP's remaining migration items (script/Makefile rename, full decommission) land | codeberg.org/forgejo/forgejo, code.forgejo.org/forgejo/runner | [ADR-0035](decisions/adr-0035-forgejo-not-gitlab.md) (supersedes [ADR-0033](decisions/adr-0033-gitlab-git-source-and-ci.md)) | 2026-08-17 (live cutover, PR #1205; image pins — `forgejo:16.0.2`, `runner:13.0.0` — independently reconfirmed current the same day, this run's own earlier currency check) |
-| Mimir | always-on-core (observability — metrics store) | github.com/grafana/mimir | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-08-20 (image tag bumped `3.1.4` → `3.1.5`, Go stdlib CVE bump; `3.2.0` deliberately deferred — needs live-cluster coordinated-upgrade verification) |
-| Loki | always-on-core (observability — log store) | github.com/grafana/loki | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-03 (image tag bumped `3.7.6` → `3.7.7`, security-relevant dependency bumps — see [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md)'s own Re-evaluation log, which tracks Loki's real bump history; `2026-08-07` was only when ADR-0034 itself was authored, not a currency check) |
-| Tempo | always-on-core (observability — trace store) | github.com/grafana/tempo | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-04 (currency re-check: neither `2.10.9` nor `2.11.0` exist — `2.10.8` still the newest tag, unchanged; see [ADR-0006](decisions/adr-0006-grafana-native-git-sync.md)'s own Re-evaluation log, which tracks Tempo's real bump history. Prior entry: 2026-08-13 image tag bump) |
-| Pyroscope | always-on-core (observability — continuous profiling) | github.com/grafana/pyroscope | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-04 (currency re-check: app `v2.3.0` exists (real security content) but has no matching chart release yet — `pyroscope-2.2.1` confirmed still the newest chart tag; current pin already carries `v2.3.0`'s security fixes per that release's own "includes every security fix from 2.2.1" note. Kept, nothing to bump to. Prior entry: 2026-08-10 chart `2.2.0`→`2.2.1`) |
-| Alloy | always-on-core (observability — unified collector) | github.com/grafana/alloy | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-01 (bumped `1.11.1` → `1.12.1`, appVersion `v1.18.1`→`v1.19.2`; chart templates/values.yaml byte-identical, none of v1.19.0's three breaking changes apply to this lab's River config; see ADR-0034's own Re-evaluation log) |
-| kube-state-metrics | always-on-core (observability — Kubernetes object-state exporter) | github.com/kubernetes/kube-state-metrics | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-01 (chart bumped `8.4.0` → `8.4.1`, purely additive opt-in collectors, appVersion unchanged `2.20.0`; see ADR-0034's own Re-evaluation log) |
-| node-exporter | always-on-core (observability — node/host metrics exporter) | github.com/prometheus/node_exporter | [ADR-0034](decisions/adr-0034-lgtmp-observability-stack.md) | 2026-09-01 (chart bumped `4.56.1` → `4.56.3`, real default `extraArgs` change filtering pseudo-filesystems from `node_filesystem_*` metrics, appVersion unchanged `1.12.1`; verified no dashboard panel affected; see ADR-0034's own Re-evaluation log) |
 | Vault | always-on-core (secrets backend) | helm.releases.hashicorp.com, github.com/hashicorp/vault | [ADR-0037](decisions/adr-0037-vault-secrets-management.md) | 2026-09-03 (ADR-0037 authored as a retroactive governance record — Vault previously had no ADR and its version history lived only as inline `gitops/platform/vault.yaml` comments, now migrated; server image bumped `2.0.4`→`2.1.0` in the same cycle, two real Go-vulnerability-database dependency fixes, no GitHub-native advisories exist for this repo; see ADR-0037's own Re-evaluation log) |
 | moto | always-on-core (AWS emulator) | github.com/getmoto/moto | [ADR-0038](decisions/adr-0038-ack-kro-moto-cloud-control-plane.md) | 2026-09-06 (currency re-check alongside the KRO bump below: pin `5.2.3` reconfirmed still current, zero published GHSA advisories — unchanged. Prior entry: 2026-09-03, ADR-0038 authored as a retroactive governance record, image bumped `5.2.2`→`5.2.3`) |
 | ACK S3 controller | always-on-core (cloud-control-plane demo) | public.ecr.aws/aws-controllers-k8s, github.com/aws-controllers-k8s/s3-controller | [ADR-0038](decisions/adr-0038-ack-kro-moto-cloud-control-plane.md) | 2026-09-06 (currency re-check alongside the KRO bump below: pin `1.11.0` reconfirmed still the newest tag, zero published GHSA advisories — unchanged. Prior entry: 2026-09-03, ADR-0038 authored as a retroactive governance record) |

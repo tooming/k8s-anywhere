@@ -27,9 +27,9 @@ spec:
           image: jaegertracing/example-hotrod:2.20.0
           ports:
             - containerPort: 8080
-          env:
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://tempo.observability.svc.cluster.local:4318"
+          # OTEL_EXPORTER_OTLP_ENDPOINT (pointed at Tempo) removed 2026-09-06 (ADR-0041,
+          # observability stack removed with no replacement) — Tempo no longer exists to
+          # receive traces; hotrod runs with its own default (no-op) exporter behavior.
           resources:
             requests:
               cpu: 10m

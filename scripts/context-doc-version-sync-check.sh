@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # docs/decisions/context.md is a hand-maintained "live decisions" summary that cites
-# specific component versions in prose (Grafana's running image tag, Pyroscope's chart
-# version, KRO's chart version, ACK s3-controller's chart version). Unlike the
+# specific component versions in prose (KRO's chart version, ACK s3-controller's chart
+# version — the Grafana/Pyroscope citations this check used to also track were removed
+# 2026-09-06 alongside the components themselves, ADR-0041). Unlike the
 # self-tracking ADR "Chart + version" pattern (adr-chart-version-sync-check.sh),
 # context.md has no structured marker to parse — it went stale for real, twice: a
 # session found "Grafana 13.0.1" and "Pyroscope (chart 2.0.2" and "KRO (0.4.1" all
@@ -65,11 +66,9 @@ check_one() {
   fi
 }
 
-check_one "Grafana image tag" 'Grafana [0-9]+\.[0-9]+\.[0-9]+ on' \
-  "gitops/platform/observability-grafana.yaml" '.spec.source.helm.valuesObject.image.tag'
-
-check_one "Pyroscope chart version" 'Pyroscope\*\* \(chart [0-9]+\.[0-9]+\.[0-9]+' \
-  "gitops/platform/observability-pyroscope.yaml" '.spec.source.targetRevision'
+# Grafana image tag / Pyroscope chart version checks REMOVED 2026-09-06
+# (ADR-0041): both components (and their context.md citations) are gone —
+# the entire observability stack was removed with no replacement.
 
 check_one "KRO chart version" 'KRO\*\* \([0-9]+\.[0-9]+\.[0-9]+' \
   "gitops/platform/kro.yaml" '.spec.source.targetRevision'

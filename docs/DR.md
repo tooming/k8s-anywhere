@@ -30,13 +30,12 @@ and blocks until Cilium is ready. ArgoCD then adopts the Helm release on first s
 
 ## Velero backup restore (`make dr-restore`)
 
-Restores every stateful namespace (`data`, `capstone`, `vault`,
-`observability`) from its **latest Velero backup** and verifies
-completion within the CHARTER Objective O3 budget of **< 10 minutes (600 s)**
-total wall-clock.
+Restores every stateful namespace (`data`, `capstone`, `vault`) from its
+**latest Velero backup** and verifies completion within the CHARTER Objective O3
+budget of **< 10 minutes (600 s)** total wall-clock.
 
 ```sh
-make dr-restore   # restore all four stateful namespaces from their latest Schedule backup
+make dr-restore   # restore all three stateful namespaces from their latest Schedule backup
 ```
 
 This is distinct from `make dr-test` (which *recreates* the cluster from manifest) —
@@ -45,7 +44,7 @@ are round-tripped back into the live namespace.
 
 ### What it does
 
-`scripts/dr-restore.sh` iterates the four namespaces in order (sequential to avoid
+`scripts/dr-restore.sh` iterates the three namespaces in order (sequential to avoid
 disk I/O contention on the single node):
 
 | Namespace | Schedule | Cron | TTL |
@@ -53,7 +52,10 @@ disk I/O contention on the single node):
 | `data` | `data-daily` | `0 2 * * *` | 168h |
 | `capstone` | `capstone-daily` | `0 3 * * *` | 168h |
 | `vault` | `vault-daily` | `30 3 * * *` | 168h |
-| `observability` | `observability-daily` | `0 1 * * *` | 168h |
+
+(`tidb`'s `tidb-daily` Schedule was removed 2026-09-06 when TiDB was removed from
+the lab entirely, no replacement; `observability`'s `observability-daily` Schedule
+was removed the same day, ADR-0041 — neither namespace exists any more.)
 
 For each namespace it runs:
 
@@ -65,7 +67,7 @@ then confirms `status.phase == Completed`. The script prints a timing table and
 fails with exit code 1 if:
 
 - any restore reaches a non-`Completed` phase (`Failed`, `PartiallyFailed`, etc.), or
-- the total wall-clock across all five restores exceeds **600 s**.
+- the total wall-clock across all three restores exceeds **600 s**.
 
 ### Prerequisite
 
@@ -100,18 +102,17 @@ make capstone-demo
 - The capstone Application deployed and the `capstone.127.0.0.1.nip.io` IngressRoute
   reachable through Traefik on port 8000.
 
-### What it checks (four steps)
+### What it checks (three steps)
 
 | # | Check | Tool | Budget |
 |---|-------|------|--------|
 | 1 | capstone ArgoCD Application is `Healthy` | `argocd app wait capstone --health` | 120 s timeout |
 | 2 | capstone `ExternalSecret` status is `Ready` | `kubectl -n capstone get externalsecret` (jsonpath poll) | 30 s |
 | 3 | `http://capstone.127.0.0.1.nip.io:8000/` returns HTTP 200 | `curl` | — |
-| 4 | A Tempo trace exists for `service.name=capstone` (5-min look-back) | `kubectl port-forward` + Tempo `/api/search` | — |
 
-Step 4 warns rather than hard-failing if Tempo is reachable but no trace exists yet
-(traces only appear after at least one HTTP request hits the capstone endpoint). Send
-a `curl http://capstone.127.0.0.1.nip.io:8000/` first if you want a trace immediately.
+A fourth step (a Tempo trace check for `service.name=capstone`) was removed
+2026-09-06 (ADR-0041, observability stack removed with no replacement) — Tempo no
+longer exists to query.
 
 ### Budget enforcement
 
@@ -151,9 +152,7 @@ clean greenfield `make up` (cluster + ArgoCD always; GitLab on full/machine).
 **What `dr-verify` checks (all live, no placeholders — see ADR-0004):**
 nodes `Ready` · every ArgoCD `Application` `Synced`+`Healthy` · Vault initialized &
 unsealed · all `ExternalSecret`s `SecretSynced` · Garage up with its buckets
-(`mimir mimir-ruler loki tempo pyroscope`) · **Mimir actually queryable** (`up`
-returns series for tenant `lab`, proving the Alloy→Mimir→Garage path) · Grafana
-`/api/health` `database=ok`. Each check polls until satisfied or its budget
+(`velero harbor-registry`). Each check polls until satisfied or its budget
 expires; exit 0 only if all pass.
 
 ## Zero-downtime blue/green DR (`make dr-bluegreen`)
@@ -181,9 +180,10 @@ How it works (blue = the running cluster, green = a second one):
    syncs the **serving tier only** (`lab-gateway`, `demo` — no separate ingress-controller
    Application needed, Traefik ships with k3s itself, ADR-0040) from the
    *same* Forgejo repo (ADR-0035) via `gitops/bluegreen/green-root.yaml` (`directory.include`).
-   Two **full** LGTMP stacks don't fit 16 GB, so green recovers the always-available
-   edge; the point of this drill is the **cutover**, not duplicating observability.
-   (Blue+green peaks ~9.4 GB used of the 12 GB VM — fits.)
+   Two **full** platform stacks don't fit 16 GB, so green recovers the always-available
+   edge; the point of this drill is the **cutover**, not standing up every platform
+   Application on both clusters at once. (Blue+green peaks ~9.4 GB used of the 12 GB
+   VM — fits.)
 4. **Probe + cutover** (`scripts/dr-bluegreen.sh`) — start a continuous probe of
    the front door, bring green up, then repoint the front door blue→green. The
    probe records uptime across the whole drill; PASS needs **uptime ≥ 99%** and
@@ -192,14 +192,14 @@ How it works (blue = the running cluster, green = a second one):
    404 through the front door (green doesn't run Vault).
 
 The endpoint of a real blue/green is to **retire blue** — `make dr-bluegreen-promote`
-does that. On 16 GB two *full* stacks can't coexist (proven: the green stack OOMs
-its `alloy`/`repo-server` while blue is also full), so the order is chosen to never
-overlap them: bring up a **serving-tier** green → **cut over** (zero downtime) →
-**delete blue** (frees ~7 GB) → **then promote green to a full, verified stack**.
-Serving never drops (a probe proved 100% — 1135/1135 — across cutover and retire);
-the one unavoidable single-host tradeoff is a brief observability/Vault/Garage gap
-after blue is gone until green finishes its full sync. Afterward green is the sole
-environment (canonical endpoint stays `:8000`; `:8080` is gone with blue).
+does that. On 16 GB two *full* stacks can't coexist while blue is also full, so the
+order is chosen to never overlap them: bring up a **serving-tier** green → **cut
+over** (zero downtime) → **delete blue** (frees ~7 GB) → **then promote green to a
+full, verified stack**. Serving never drops (a probe proved 100% — 1135/1135 —
+across cutover and retire); the one unavoidable single-host tradeoff is a brief
+Vault/Garage gap after blue is gone until green finishes its full sync. Afterward
+green is the sole environment (canonical endpoint stays `:8000`; `:8080` is gone
+with blue).
 (`make dr-bluegreen` alone stops at cutover and keeps blue as a rollback target;
 `make dr-bluegreen-down` reclaims green's RAM.) See ADR-0005.
 
@@ -387,16 +387,18 @@ is reconciled by ArgoCD from GitLab.
 | 11 | App-of-apps | `root-app` | yes (`kubectl apply`) | the single seed; ArgoCD now syncs **everything else** |
 | 12 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | yes (`scripts/coredns-host-alias.sh nip-io-rewrite`) | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Traefik's in-cluster Service (nip.io's real DNS otherwise resolves it to a pod's own loopback); must run after `root-app` since Traefik (bundled with k3s, ADR-0040) needs a moment to be scheduled on cluster boot — polls up to `COREDNS_NIPIO_WAIT` (default 300s) rather than assuming it exists immediately |
 | 13 | Vault bootstrap | `vault-bootstrap` | yes (`scripts/vault-bootstrap.sh`) | init/unseal, store keys in `vault-keys`, enable KV, **generate+write secrets**, enable k8s auth + `eso` role |
-| 14 | GitLab TLS bootstrap | `gitlab-tls-bootstrap` | yes (`scripts/gitlab-tls-bootstrap.sh`) | legacy, same caveat as row 9/10 — Forgejo's git operations go over SSH and need no equivalent TLS layer; mint mkcert cert + start nginx TLS proxy + publish `gitlab-tls-ca` ConfigMap; must run after Vault (the observability namespace is created by ArgoCD by this point) and before Garage, so the CA is in place before Grafana's init container bakes its CA bundle |
-| 15 | Garage bootstrap | `garage-bootstrap` | yes (`scripts/garage-bootstrap.sh`) | assign layout, create S3 key + buckets, push the S3 key to Vault |
-| 16 | Cosign bootstrap | `cosign-bootstrap` | yes (`scripts/cosign-bootstrap.sh`) | generate the cosign keypair + seed the `cosign-public-key` ConfigMap in `kyverno` (idempotent, ADR-0019); needs Garage's S3 key in place first |
-| 17 | Front door | `frontdoor` | yes (`scripts/frontdoor-ensure.sh`) | bring up the stable `:8000` entry point to the active cluster (canonical lab entry) |
-| 18 | Grafana Git Sync bootstrap | `grafana-gitsync-bootstrap` | yes (`scripts/grafana-gitsync-bootstrap.sh`) | create the Pure Git `Repository` in Grafana's unified storage + set the home dashboard; must run once Grafana is healthy (waits up to 5 min) |
+| 14 | Garage bootstrap | `garage-bootstrap` | yes (`scripts/garage-bootstrap.sh`) | assign layout, create S3 key + buckets, push the S3 key to Vault |
+| 15 | Cosign bootstrap | `cosign-bootstrap` | yes (`scripts/cosign-bootstrap.sh`) | generate the cosign keypair + seed the `cosign-public-key` ConfigMap in `kyverno` (idempotent, ADR-0019); needs Garage's S3 key in place first |
+| 16 | Front door | `frontdoor` | yes (`scripts/frontdoor-ensure.sh`) | bring up the stable `:8000` entry point to the active cluster (canonical lab entry) |
+
+(Steps 14 and 18 of a prior version of this table — `gitlab-tls-bootstrap` and
+`grafana-gitsync-bootstrap` — were removed 2026-09-06, ADR-0041: Grafana's native
+Git Sync, their only reason to exist, no longer runs.)
 
 Once 11–12 are done, **External Secrets** syncs Vault → k8s Secrets, and the
-workloads (Garage, Mimir, Grafana, Alloy, Traefik, moto, …) come up on their own.
+workloads (Garage, Traefik, moto, …) come up on their own.
 
-Rows 9, 10, and 14 are GitLab-era steps `make up` still runs for legacy reasons only
+Rows 9 and 10 are GitLab-era steps `make up` still runs for legacy reasons only
 (the GitLab→Forgejo cutover flipped every `repoURL` live, PR #1205, but GitLab's own
 decommission — dropping `gitlab/docker-compose.yml` + `infra/modules/gitlab-config` —
 is a separate, still-open ROADMAP item, deliberately kept a beat longer as a rollback
@@ -405,7 +407,7 @@ path). Don't read this table as GitLab being the git source; it hasn't been sinc
 
 ### Secret dependency chain (subtle bit)
 - Vault must hold `secret/garage/server` **before** Garage starts (ESO → `garage-secrets` → Garage). `vault-bootstrap` generates it.
-- Garage's S3 access key is created **after** Garage is up, then pushed to Vault (`secret/garage/s3`) → ESO → `garage-s3` → Mimir. `garage-bootstrap` does this.
+- Garage's S3 access key is created **after** Garage is up, then pushed to Vault (`secret/garage/s3`) → ESO → `garage-s3`. `garage-bootstrap` does this.
 
 ## Golden rules (keep it acyclic — ADR-0001)
 - **Never** source ArgoCD's git credentials or Vault's unseal key *from Vault*
@@ -426,10 +428,6 @@ backups; not in scope).
 - **GitLab down / freeing RAM:** `make gitlab-down` (keeps volumes), `make gitlab-up` to bring back.
 - **ArgoCD out of sync after a git push:** `kubectl -n argocd annotate applications.argoproj.io/root argocd.argoproj.io/refresh=hard --overwrite`.
 - **Re-run a bootstrap safely:** `vault-bootstrap` and `garage-bootstrap` are idempotent.
-- **Grafana Git Sync dashboards missing after a cluster rebuild or Grafana pod restart:**
-  run `make gitlab-tls-bootstrap` (re-publishes the mkcert CA ConfigMap and restarts
-  Grafana if needed), then `make grafana-gitsync-bootstrap` (re-creates the Repository in
-  unified storage). Both are idempotent. After `make up` these steps are automatic.
 - **GitHub→Forgejo sync job (`.forgejo/workflows/sync-from-github.yml`, RFC #1340)
   failing:** this scheduled job fast-forward-merges GitHub's `main` into Forgejo's —
   the mechanism that keeps ArgoCD's actual tracked remote (ADR-0035) current with

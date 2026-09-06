@@ -1,7 +1,6 @@
 # NetworkPolicy Kustomize overlay for the storage namespace (ADR-0016 §4 fan-out).
 # Pulls the two shared baseline templates and adds per-workload allow rules for
-# Garage's real ingress flows: from the LGTMP stack in observability (S3 writes
-# on TCP 3900 + Alloy metrics scrape on TCP 3903), and from Harbor's registry in
+# Garage's real ingress flows: from Harbor's registry in
 # the harbor namespace (blob storage S3 writes on TCP 3900 — found live
 # 2026-08-18, see allow-garage-s3-from-harbor.yaml's own comment: this
 # ingress-side rule was missing even though harbor's egress-side rule existed,
@@ -19,6 +18,5 @@ resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
-  - allow-garage-s3-from-observability.yaml
   - allow-garage-s3-from-harbor.yaml
   - allow-s3manager-ingress.yaml

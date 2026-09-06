@@ -1,8 +1,9 @@
 # cert-manager-networkpolicy — default-deny + allowlist NetworkPolicies for the
 # cert-manager namespace (ADR-0016 §4 fan-out; TLS certificate lifecycle manager).
 # Applies the shared baseline templates (default-deny-all, allow-dns-and-apiserver)
-# plus per-workload allow rules: kube-apiserver webhook callback on TCP 10250 and
-# Alloy metrics scrape from observability on TCP 9402.
+# plus a per-workload allow rule: kube-apiserver webhook callback on TCP 10250.
+# (The Alloy metrics-scrape ingress rule this overlay used to also carry was
+# removed 2026-09-06, ADR-0041, observability stack removed with no replacement.)
 # ALWAYS-ON: automated sync alongside the cert-manager Application (same namespace).
 # The kustomization references templates from ../../network/policies/ — the
 # kustomize.buildOptions flag lifts the out-of-tree load restriction for this overlay.

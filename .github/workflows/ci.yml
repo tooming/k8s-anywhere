@@ -168,14 +168,12 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       - run: bash scripts/readme-check.sh
       - run: bash scripts/lab-ui-check.sh
-      - run: bash scripts/o5-dashboard-coverage-check.sh
       - run: bash scripts/appset-list-coverage-check.sh
       - run: bash scripts/workflow-timeout-check.sh
       - run: bash scripts/roadmap-check.sh
       - run: bash scripts/markdown-links-check.sh
       - run: bash scripts/securitycontext-tests-check.sh
       - run: bash scripts/networkpolicy-tests-check.sh
-      - run: bash scripts/observability-tests-check.sh
       - run: bash scripts/yq-raw-check.sh
       - run: bash scripts/yq-variant-guard-check.sh
       - run: bash scripts/git-fixture-isolation-check.sh
@@ -184,8 +182,6 @@ jobs:
       - run: bash scripts/helm-chart-pin-check.sh
       - run: bash scripts/argocd-crd-ssa-check.sh
       - run: bash scripts/rollouts-plugin-list-check.sh
-      - run: bash scripts/analysistemplate-step-count-check.sh
-      - run: bash scripts/mimir-readonly-root-check.sh
       - run: bash scripts/probe-timeout-check.sh
       - run: bash scripts/adr-followup-check.sh
       - run: bash scripts/adr-chart-version-sync-check.sh

@@ -1,8 +1,9 @@
 # NetworkPolicy Kustomize overlay for the cert-manager namespace (ADR-0016 §4
-# fan-out). Pulls the shared baseline templates and adds cert-manager-specific
-# allow rules for the admission webhook callback from the kube-apiserver
-# (TCP 10250) and the Alloy metrics scrape from the observability namespace
-# (TCP 9402).
+# fan-out). Pulls the shared baseline templates and adds a cert-manager-specific
+# allow rule for the admission webhook callback from the kube-apiserver
+# (TCP 10250). The Alloy metrics-scrape ingress rule this overlay used to also
+# carry was removed 2026-09-06 (ADR-0041, observability stack removed with no
+# replacement).
 # The allow-dns-and-apiserver baseline covers cert-manager's k8s API calls
 # (Certificate/Issuer reconcile, leader election, admission review fan-out).
 # Wired into gitops/platform/cert-manager-networkpolicy.yaml (auto-synced, wave 4).
@@ -16,4 +17,3 @@ resources:
   - ../../network/policies/allow-dns-and-apiserver.yaml
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-cert-manager-webhook-from-apiserver.yaml
-  - allow-cert-manager-metrics-from-observability.yaml

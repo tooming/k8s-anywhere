@@ -141,29 +141,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- metrics allow (Alloy → kargo pods TCP 8080) ----------------------------------
-@test "allow-kargo-metrics-ingress.yaml exists in kargo/networkpolicy/" {
-  [ -f "$KARGO_NP/allow-kargo-metrics-ingress.yaml" ]
-}
-
-@test "kargo kustomization references the metrics allow file" {
-  run grep -q 'allow-kargo-metrics-ingress.yaml' "$KARGO_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-kargo-metrics-ingress allows ingress on port 8080" {
-  run grep -q 'port: 8080' "$KARGO_NP/allow-kargo-metrics-ingress.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-kargo-metrics-ingress restricts source to observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$KARGO_NP/allow-kargo-metrics-ingress.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-kargo-metrics-ingress uses Ingress policyType" {
-  run grep -q 'Ingress' "$KARGO_NP/allow-kargo-metrics-ingress.yaml"
-  [ "$status" -eq 0 ]
+# --- metrics allow (Alloy → kargo pods TCP 8080) REMOVED 2026-09-06 (ADR-0041,
+# observability stack removed with no replacement) ----------------------------------
+@test "allow-kargo-metrics-ingress.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$KARGO_NP/allow-kargo-metrics-ingress.yaml" ]
 }
 
 # --- kargo-networkpolicy Application (wave 4, on-demand — no automated: block) ---

@@ -103,16 +103,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "cert-manager allow-metrics-from-observability rule permits TCP 9402" {
-  run grep -q 'port: 9402' "$REPO/gitops/cert-manager/networkpolicy/allow-cert-manager-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "cert-manager allow-metrics rule selects Alloy pods from observability namespace" {
-  run grep -q 'name: alloy' "$REPO/gitops/cert-manager/networkpolicy/allow-cert-manager-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-  run grep -q 'observability' "$REPO/gitops/cert-manager/networkpolicy/allow-cert-manager-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+@test "allow-cert-manager-metrics-from-observability.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/cert-manager/networkpolicy/allow-cert-manager-metrics-from-observability.yaml" ]
 }
 
 @test "cert-manager-networkpolicy Application exists" {
@@ -170,43 +162,14 @@ setup() {
   done <<< "$output"
 }
 
-# --- Observability: Alloy scrape + Grafana dashboard --------------------------
-@test "observability-alloy has a cert_manager scrape job" {
-  run grep -q 'prometheus.scrape "cert_manager"' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
+# --- Observability: Alloy scrape + Grafana dashboard, removed 2026-09-06 (ADR-0041) --
+@test "observability-alloy.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/gitops/platform/observability-alloy.yaml" ]
 }
 
-@test "cert_manager scrape targets the controller Service on port 9402" {
-  run grep -q 'cert-manager.cert-manager.svc.cluster.local:9402' "$REPO/gitops/platform/observability-alloy.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-cert-manager.json dashboard exists" {
-  [ -f "$REPO/grafana/dashboards/lab-cert-manager.json" ]
-}
-
-@test "lab-cert-manager.json is valid JSON" {
-  run python3 -c "import json; json.load(open('$REPO/grafana/dashboards/lab-cert-manager.json'))"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-cert-manager.json uid is lab-cert-manager" {
-  [ "$(yqs '.uid' "$REPO/grafana/dashboards/lab-cert-manager.json")" = "lab-cert-manager" ]
-}
-
-@test "lab-cert-manager.json uses the Mimir datasource (ADR-0004 — real data only)" {
-  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-cert-manager.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-cert-manager.json charts certmanager_certificate_ready_status" {
-  run grep -q 'certmanager_certificate_ready_status' "$REPO/grafana/dashboards/lab-cert-manager.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-cert-manager.json charts certificate expiry (certmanager_certificate_expiration_timestamp_seconds)" {
-  run grep -q 'certmanager_certificate_expiration_timestamp_seconds' "$REPO/grafana/dashboards/lab-cert-manager.json"
-  [ "$status" -eq 0 ]
+@test "grafana/ directory no longer exists, so no lab-cert-manager.json dashboard (ADR-0041)" {
+  [ ! -d "$REPO/grafana" ]
+  [ ! -f "$REPO/grafana/dashboards/lab-cert-manager.json" ]
 }
 
 @test "docs/dependency-tree.md documents the cert-manager component" {

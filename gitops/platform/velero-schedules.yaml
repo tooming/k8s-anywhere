@@ -1,6 +1,7 @@
-# velero-schedules — the six daily Velero Schedules, one per stateful namespace
+# velero-schedules — the daily Velero Schedules, one per stateful namespace
 # (ADR-0021 §"Schedule set", RFC #155/#873, CHARTER Objective O3):
-#   observability-daily (observability) 01:00 UTC — Loki/Mimir/Tempo PVCs (added 2026-07-29)
+#   observability-daily REMOVED 2026-09-06 (ADR-0041): the observability namespace
+#   no longer exists — the entire observability stack was removed with no replacement.
 #   data-daily      (data)     02:00 UTC  — RabbitMQ + Valkey PVCs
 #   capstone-daily  (capstone) 03:00 UTC  — end-to-end demo app
 #   vault-daily     (vault)    03:30 UTC  — Vault file-backend PVC

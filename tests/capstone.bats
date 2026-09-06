@@ -168,42 +168,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "capstone.127.0.0.1.nip.io appears in the Grafana Lab UIs panel" {
-  run grep -q 'capstone\.127\.0\.0\.1\.nip\.io' "$REPO/grafana/dashboards/stack-health.json"
-  [ "$status" -eq 0 ]
-}
+# --- Step 4 (Grafana dashboard for the capstone app) REMOVED 2026-09-06
+# (ADR-0041, observability stack removed with no replacement) -----------------
 
-# --- Step 4: Grafana dashboard for the capstone app ---------------------------
-
-@test "lab-capstone.json dashboard exists in grafana/dashboards/" {
-  [ -f "$REPO/grafana/dashboards/lab-capstone.json" ]
-}
-
-@test "lab-capstone.json has uid lab-capstone" {
-  run grep -q '"uid": "lab-capstone"' "$REPO/grafana/dashboards/lab-capstone.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-capstone.json uses Mimir datasource for pod/container metrics" {
-  run grep -q '"uid": "mimir"' "$REPO/grafana/dashboards/lab-capstone.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-capstone.json includes a Loki logs panel for namespace=capstone" {
-  run grep -q '"uid": "loki"' "$REPO/grafana/dashboards/lab-capstone.json"
-  [ "$status" -eq 0 ]
-  run grep -q 'namespace.*capstone' "$REPO/grafana/dashboards/lab-capstone.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-capstone.json includes a Tempo traces panel" {
-  run grep -q '"uid": "tempo"' "$REPO/grafana/dashboards/lab-capstone.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "lab-capstone.json has no fabricated/placeholder data (ADR-0004)" {
-  run grep -iE '"(fake|mock|placeholder|dummy|todo|fixme)"' "$REPO/grafana/dashboards/lab-capstone.json"
-  [ "$status" -eq 1 ]
+@test "lab-capstone.json dashboard no longer exists (ADR-0041)" {
+  [ ! -f "$REPO/grafana/dashboards/lab-capstone.json" ]
 }
 
 # --- Step 5: Vault secret + ExternalSecret for the capstone app ---------------

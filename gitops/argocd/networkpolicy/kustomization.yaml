@@ -2,8 +2,9 @@
 # ArgoCD is the entire GitOps reconcile plane — the highest blast-radius non-secrets
 # namespace. Pulls the two shared baseline templates and adds argocd-specific allow rules:
 # ingress from Traefik's data-plane pods (argocd.127.0.0.1.nip.io IngressRoute on TCP 8080, ADR-0040);
-# ingress from Alloy (metrics scrape on ports 8080/8082/8083/8084);
 # intra-namespace allow-all (controller ↔ repo-server ↔ argocd-cache ↔ server ↔ appset);
+# (the Alloy metrics-scrape ingress rule this overlay used to also carry was
+# removed 2026-09-06, ADR-0041, observability stack removed with no replacement)
 # egress to ArgoCD ClusterIP service frontends (TCP 6379/7000/8080/8081);
 # egress from argocd-repo-server to GitLab on the host (TCP 8929, git clone/fetch);
 # egress from argocd-repo-server to public Helm chart registries (TCP 443).
@@ -19,7 +20,6 @@ resources:
   - ../../network/policies/allow-dns-and-apiserver.yaml
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-argocd-server-from-gateway.yaml
-  - allow-argocd-from-alloy.yaml
   - allow-argocd-intra-namespace.yaml
   - allow-argocd-service-frontends.yaml
   - allow-argocd-repo-server-egress-forgejo.yaml

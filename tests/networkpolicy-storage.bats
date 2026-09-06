@@ -29,28 +29,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "allow-garage-s3-from-observability.yaml exists in storage/networkpolicy/" {
-  [ -f "$STORAGE_NP/allow-garage-s3-from-observability.yaml" ]
-}
-
-@test "allow-garage-s3-from-observability allows port 3900 (Garage S3 API)" {
-  run grep -q 'port: 3900' "$STORAGE_NP/allow-garage-s3-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-garage-s3-from-observability allows port 3903 (Garage admin metrics)" {
-  run grep -q 'port: 3903' "$STORAGE_NP/allow-garage-s3-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-garage-s3-from-observability targets Garage pods (app: garage)" {
-  run grep -q 'app: garage' "$STORAGE_NP/allow-garage-s3-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-garage-s3-from-observability allows ingress from observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$STORAGE_NP/allow-garage-s3-from-observability.yaml"
-  [ "$status" -eq 0 ]
+@test "allow-garage-s3-from-observability.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$STORAGE_NP/allow-garage-s3-from-observability.yaml" ]
 }
 
 

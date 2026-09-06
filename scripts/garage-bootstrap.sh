@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Idempotent Garage bootstrap: assign layout -> create key + buckets -> store the
-# S3 access key in Vault (ESO then syncs it to the garage-s3 Secret for Mimir).
+# Idempotent Garage bootstrap: assign layout -> create the velero-key access key +
+# bucket -> store its S3 credentials in Vault (ESO then syncs them to the
+# cloud-credentials Secret Velero consumes).
 # Safe to re-run. Used by `make garage-bootstrap` and the DR flow (docs/DR.md).
 set -euo pipefail
 
@@ -34,48 +35,10 @@ if g status 2>/dev/null | grep -q 'NO ROLE ASSIGNED'; then
   g layout apply --version 1
 fi
 
-# access key: ensure it exists, then ALWAYS ensure its creds are in Vault. (A
-# mid-run failure can leave the key created but not yet pushed; `key info
-# --show-secret` lets us recover it idempotently.) Garage v2.3 redacts the
-# secret from `key create`, so always re-read it via `key info --show-secret`.
-# ESO syncs secret/garage/s3 -> the garage-s3 Secret that Mimir/Loki/Tempo use.
-if ! g key info mimir-key >/dev/null 2>&1; then
-  echo "[garage] creating access key mimir-key"
-  g key create mimir-key >/dev/null 2>&1
-fi
-KEYOUT=$(g key info --show-secret mimir-key 2>/dev/null || true)
-# Garage output has varied across versions; prefer labelled fields first, then
-# fall back to legacy Garage-formatted key patterns.
-KID=$(printf '%s\n' "$KEYOUT" | awk -F': *' '
-  BEGIN { IGNORECASE = 1 }
-  $1 ~ /^(access[ _-]?key([ _-]?id)?|key[ _-]?id)$/ {
-    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
-    print $2
-    exit
-  }' | tr -d '"' || true)
-KSEC=$(printf '%s\n' "$KEYOUT" | awk -F': *' '
-  BEGIN { IGNORECASE = 1 }
-  $1 ~ /^(secret[ _-]?access[ _-]?key|secret[ _-]?key)$/ {
-    gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
-    print $2
-    exit
-  }' | tr -d '"' || true)
-[ -n "$KID" ] || KID=$(printf '%s' "$KEYOUT" | grep -oiE 'GK[0-9a-f]{20,}' | head -1 || true)
-[ -n "$KSEC" ] || KSEC=$(printf '%s' "$KEYOUT" | grep -oiE '[0-9a-f]{64}' | head -1 || true)
-[[ "$(echo "$KSEC" | tr '[:upper:]' '[:lower:]')" == redacted* || "$KSEC" == "*" ]] && KSEC=""
-if [ -n "$KID" ] && [ -n "$KSEC" ]; then
-  TOKEN=$(kubectl -n "$VNS" get secret vault-keys -o jsonpath='{.data.root-token}' | base64 -d)
-  kubectl -n "$VNS" exec vault-0 -- env VAULT_TOKEN="$TOKEN" vault kv put secret/garage/s3 access-key-id="$KID" secret-access-key="$KSEC" >/dev/null
-  echo "[garage] ensured secret/garage/s3 in Vault (key $KID)"
-else
-  echo "[garage] ERROR: could not resolve mimir-key id/secret"; exit 1
-fi
-
-# buckets + permissions
-for b in mimir mimir-ruler loki tempo pyroscope; do
-  g bucket create "$b" >/dev/null 2>&1 || true
-  g bucket allow --read --write "$b" --key mimir-key >/dev/null 2>&1 || true
-done
+# The mimir-key access key + secret/garage/s3 Vault write + mimir/mimir-ruler/
+# loki/tempo/pyroscope bucket creation this script used to also do here were
+# removed 2026-09-06 (ADR-0041, observability stack removed with no
+# replacement) — Mimir/Loki/Tempo/Pyroscope and their Garage buckets are gone.
 
 # velero key + bucket (always-on; created at bootstrap so the velero Application works
 # immediately once the cloud-credentials Secret is rendered by ESO). Stores creds at
@@ -148,9 +111,4 @@ fi
 g bucket create harbor-registry >/dev/null 2>&1 || true
 g bucket allow --read --write harbor-registry --key harbor-key >/dev/null 2>&1 || true
 
-# secret/garage/s3 was just (re)written above; nudge ESO so the garage-s3
-# ExternalSecrets (Mimir/Loki/Tempo + storage) pick it up now instead of waiting
-# for their refreshInterval. Best-effort.
-kubectl annotate externalsecret -A --all force-sync="$(date +%s)" --overwrite >/dev/null 2>&1 || true
-
-echo "[garage] bootstrap complete (buckets: mimir, mimir-ruler, loki, tempo, pyroscope, velero, harbor-registry)"
+echo "[garage] bootstrap complete (buckets: velero, harbor-registry)"

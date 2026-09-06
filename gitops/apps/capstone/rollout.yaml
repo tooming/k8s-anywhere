@@ -4,9 +4,11 @@
 # to avoid both managing the same pod label selector (a follow-up planner item will delete
 # the Deployment once the Rollout proves out in a live demo).
 #
-# Canary strategy: two weight gates (10% → 50% → 100%), each preceded by a 60s pause and
-# followed by a Mimir-backed success-rate analysis (≥ 95% http_requests_total 2xx ratio,
-# ADR-0020 §"AnalysisTemplate"). Argo Rollouts' built-in Traefik integration rewrites
+# Canary strategy: two weight gates (10% → 50% → 100%), each preceded by a 60s pause.
+# The Mimir-backed success-rate AnalysisTemplate gate this used to also run after each
+# pause was removed 2026-09-06 (ADR-0041, observability stack removed with no
+# replacement) — canary progression is now weight/pause-only, with no automated
+# SLO-regression halt. Argo Rollouts' built-in Traefik integration rewrites
 # the capstone TraefikService's weighted.services[].weight field on each step
 # (ingressroute.yaml; Traefik / ADR-0040, supersedes the Envoy Gateway gatewayAPI
 # plugin this used before). The capstone-stable and capstone-canary Services below
@@ -53,8 +55,9 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://tempo.observability.svc.cluster.local:4318"
+            # OTEL_EXPORTER_OTLP_ENDPOINT (pointed at Tempo) REMOVED 2026-09-06
+            # (ADR-0041, observability stack removed with no replacement) — no
+            # trace backend exists to export to any more.
             - name: APP_KEY
               valueFrom:
                 secretKeyRef:
@@ -85,25 +88,14 @@ spec:
       - setWeight: 10
       - pause:
           duration: 60s
-      - analysis:
-          templates:
-          - templateName: success-rate
-          args:
-          - name: namespace
-            value: capstone
       - setWeight: 50
       - pause:
           duration: 60s
-      - analysis:
-          templates:
-          - templateName: success-rate
-          args:
-          - name: namespace
-            value: capstone
 ---
 # capstone-stable Service: stable-side traffic target. The Rollout controller updates
-# this service's selector to point at the stable ReplicaSet; the HTTPRoute backendRef
-# weight for stable traffic is rewritten per step by the gatewayAPI plugin.
+# this service's selector to point at the stable ReplicaSet; the capstone
+# TraefikService's weighted.services[] weight for stable traffic is rewritten per
+# step by Argo Rollouts' built-in Traefik integration (ADR-0040).
 apiVersion: v1
 kind: Service
 metadata:

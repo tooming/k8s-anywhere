@@ -45,9 +45,12 @@ duplicated.
 
 **Q2. Are critical functions/assets identified and mapped to supporting ICT systems?**
 - **Applicable?** Yes.
-- **Answer:** Yes, for the stateful surface. CHARTER Objective O3 names the four
-  stateful namespaces (`data`, `capstone`, `vault`, `observability`) as
-  critical; the always-on
+- **Answer:** Yes, for the stateful surface. CHARTER Objective O3 names the three
+  stateful namespaces (`data`, `capstone`, `vault`) as critical (`tidb` was
+  dropped 2026-09-06 when TiDB was removed from the lab entirely, no
+  replacement; `observability` was named here 2026-07-29 through 2026-09-06,
+  then dropped along with the namespace itself — ADR-0041, observability stack
+  removed with no replacement); the always-on
   vs. on-demand split (12GB budget, ADR-0003) documents which ~53 Applications are
   load-bearing (re-derived 2026-08-25 after KEDA + KRO's engine both converted to
   on-demand for cluster-load reduction, ADR-0029's Re-evaluation log — down from
@@ -77,11 +80,8 @@ severity scheme itself, and they carry no always-on blast radius by design.
 | Vault | **P1** | Secrets backend. Documented real incident (`gitops/vault/unsealer.yaml`'s header comment): sealed for 4+ days, silently breaking every ExternalSecrets refresh cluster-wide. Already-synced K8s `Secret` objects are untouched — new/rotated secrets stop flowing. Matches P1's "security-relevant gap" language directly. |
 | External Secrets Operator | **P1** | Shares Vault's exact blast radius — the two fail together functionally (ESO is the sync mechanism, Vault is the source). |
 | Kyverno | **P1** | Admission policy engine. Re-checked directly 2026-09-06 (ADR-0004: the prior version of this row was stale) — `verify-image-signatures.yaml` explicitly sets `failurePolicy: Fail` (flipped from `Ignore` 2026-08-18, per that file's own header comment and ADR-0019's Re-evaluation log), not `Ignore` as this row previously claimed. The other 4 `ClusterPolicy` files (`add-default-runasnonroot`, `add-default-seccomp`, `disallow-latest-tag`, `require-pod-security-restricted`) don't set `failurePolicy` explicitly at all, so their actual webhook behavior on a Kyverno outage depends on Kyverno's own admission-controller default — not independently verified live from this clusterless session, so not asserted either way. Still tiered P1 regardless: an outage during that undetermined-failurePolicy window is, at minimum, a security-relevant gap for those 4 policies (fail-open would silently disable enforcement) even with `verify-image-signatures` itself now fail-closed. |
-| Garage | **P1** | S3-compatible object store — backs the entire LGTMP stack's chunk/block storage (Loki/Tempo/Mimir/Pyroscope) *and* Velero's backup target. An outage stops new metrics/logs/traces ingestion and all backups at once — a real, compounding gap even though nothing already-running crashes. |
-| Alloy | **P1** | The single collector feeding every Mimir/Loki/Tempo/Pyroscope series in the lab (`prometheus.scrape`/`loki.write`/`otelcol` pipelines all route through it). An outage blinds the *entire* observability stack simultaneously, not just one dashboard — the same "nothing surfaced anywhere visible" failure mode the 2026-08-11 P0 k3s-datastore incident and the Vault-sealed incident both independently illustrate the cost of. |
+| Garage | **P1** | S3-compatible object store — backs Velero's backup target and Harbor's registry storage. An outage stops all backups landing — a real, compounding gap even though nothing already-running crashes. |
 | GitLab | **P2** | Git source + CI runner (host-level Docker Compose, outside the cluster per ADR-0033/ADR-0035). Matches the real 2026-08-04 incident-log entry for "no GitLab Runner ever registered," logged P2 there — no deploys/CI, but the already-running cluster is unaffected. |
-| Grafana | **P2** | Observability UI only — the underlying Mimir/Loki/Tempo/Pyroscope data keeps being written by Alloy even if Grafana itself is down; only the human-facing view is lost. |
-| Mimir / Loki / Tempo / Pyroscope / kube-state-metrics / node-exporter | **P2** each | Individual observability stores/exporters — losing any one is a partial, single-signal blind spot (metrics, or logs, or traces, or profiles), not the total blackout Alloy's own outage would cause. Matches P2's "non-blocking functional defect in an always-on component." |
 | cert-manager | **P2** | TLS lifecycle. Existing certs keep working until their own expiry; only renewal stops — a slow-burn gap, not an immediate one. |
 | KEDA | **P2** | Event-driven autoscaling. Workloads simply stop receiving new scale events and stay at their current replica count — no crash, no traffic loss. |
 | RabbitMQ / Valkey | **P2** each | Data layer backing the always-on demo app and the KEDA scaling demo only — no core-lab component depends on either. |
@@ -89,6 +89,11 @@ severity scheme itself, and they carry no always-on blast radius by design.
 | Argo Rollouts | **P2** | Progressive-delivery controller for the capstone canary. Outage freezes new canary rollouts; the currently-active capstone `Rollout` pods keep serving traffic unaffected. |
 | Velero | **P2** | Backup engine. Outage means no *new* backups land (a growing RPO risk, not an immediate one) — restoring from the last-known-good backup is still possible until the gap grows past O3's 24h RPO bar. |
 | Trivy Operator | **P2** | Continuous vulnerability/SBOM scanner. Outage stops new scan reports; it's a detection-visibility gap, not an active exploit path — no already-running workload is affected. |
+
+(The observability stack's own rows here — Alloy at P1, Grafana/Mimir/Loki/Tempo/
+Pyroscope/kube-state-metrics/node-exporter at P2 — were removed 2026-09-06 along
+with the components themselves, ADR-0041: there's no outage to tier for a
+component that no longer exists.)
 
 **Recurrence guard:** `tests/dora-audit-readiness.bats` asserts this table exists and
 names Cilium and Traefik specifically — the two components tiered P0 here,
@@ -132,52 +137,34 @@ so a future edit can't silently drop the highest-severity rows without failing
   automated paging/escalation — that residual gap is unchanged, see Q7.
 
 **Q7. Is there a defined detection → escalation → resolution path?**
-- **Answer:** Detection is now partly automated: Grafana Unified Alerting (RFC #1084,
-  `gitops/platform/observability-grafana.yaml` `valuesObject.alerting`) evaluates six
-  rules against Mimir every minute — an ArgoCD Application unhealthy for 10m+, an
-  ArgoCD Application OutOfSync for 30m+, a Deployment running below its desired
-  replica count for 10m+, a PVC stuck `Pending`/`Lost` for 10m+, (ROADMAP
-  `auto/vault-pod-readiness-alert`) the Vault server pod not Ready for 10m+, and
-  (2026-09-02, `auto/vault-sealed-degraded-alert`) Vault sealed for 10m+ even while
-  its pod stays Ready — surfaced visually in Grafana's own Alerting UI. The first
-  Vault rule closes this section's own previously-named gap (a real 2026-07-29
-  incident, documented in `gitops/vault/unsealer.yaml`'s header comment, where
-  Vault stayed sealed for 4+ days with nothing surfacing anywhere visible) using
-  `kube_pod_status_ready` from the already-scraped `ksm` job, not a new
-  Vault-specific scrape target — pod-readiness was the first signal closed. The
-  second Vault rule (`VaultSealedDegraded`) is a direct, independent signal on
-  top of it: rather than inferring seal state from the pod's readiness probe
-  (whose exact behavior on a sealed-but-running Vault this remote clusterless
-  session can't verify live either way, ADR-0004), it reads `vault_core_unsealed`
-  straight from Vault's own telemetry — so seal state is caught whether or not
-  the readiness probe happens to reflect it. Vault's own internal metrics are
-  now scraped too
-  (ROADMAP `auto/vault-telemetry-scrape`): a `telemetry` stanza +
-  `unauthenticated_metrics_access = true` in `vault.yaml` exposes real
-  `vault_core_unsealed`/`vault_core_active`/`vault_core_in_flight_requests`/
-  `vault_expire_num_leases` series at `GET /v1/sys/metrics`, scraped by a new Alloy
-  job and surfaced in `lab-vault.json`'s panel row (verified against Vault's own
-  source, not docs prose, ADR-0004) — visual-only, same as the alerting rules below,
-  not a new alert condition. There is still no escalation concept (no external
-  notification receiver is configured — an **explicit non-goal**, not a silent
-  absence: this is a solo-operator lab with no pager/Slack/email channel to wire one
-  to, per the RFC's own reasoning). Resolution paths exist per-symptom (the cookbook).
-  One real, automated signal also exists at the CI layer: `make dora-metrics`'s "time
-  to restore service" row measures the wall-clock gap between a CI run going red and
-  the next going green, from the real GitHub Actions API — a genuine MTTR-shaped
-  metric, just scoped to CI health, not live-cluster incidents.
+- **Answer:** Detection's automated half is gone again. From RFC #1084 (2026-09-02)
+  through 2026-09-06, Grafana Unified Alerting evaluated six real rules against
+  Mimir every minute (ArgoCD Application unhealthy/OutOfSync, a Deployment under
+  replica count, a stuck PVC, Vault pod not-Ready, Vault sealed-but-Ready) and
+  surfaced them in Grafana's own Alerting UI — see this section's own prior
+  revision for the full mechanism. The observability stack that alerting ran on
+  (Grafana, Mimir, and the Alloy scrape feeding both) was removed entirely with no
+  replacement 2026-09-06 (ADR-0041), and no replacement alerting mechanism was
+  stood up in its place — the "no alerting" gap this section had closed is open
+  again, not narrower. There is still no escalation concept either (no external
+  notification receiver — an **explicit non-goal** for this solo-operator lab, per
+  the RFC's own reasoning, independent of the alerting-mechanism question).
+  Resolution paths still exist per-symptom (the cookbook), unaffected by the
+  alerting removal. One real, automated signal still exists at the CI layer:
+  `make dora-metrics`'s "time to restore service" row measures the wall-clock gap
+  between a CI run going red and the next going green, from the real GitHub
+  Actions API — a genuine MTTR-shaped metric, just scoped to CI health, not
+  live-cluster incidents.
 - **Evidence:** [docs/DR.md](DR.md#recovery-cookbook-single-component); `make status`
   target; [docs/dora-metrics.md](dora-metrics.md) "Time to restore service" row;
-  `gitops/platform/observability-grafana.yaml` `valuesObject.alerting`; RFC #1084.
-- **Gap:** narrower now — the "no alerting" half of this gap is closed for the six
-  conditions above (as of 2026-09-02, `VaultSealedDegraded` closed the future
-  candidate this section previously named: a direct, independent seal-state
-  signal alongside pod-readiness, reading the already-scraped
-  `vault_core_unsealed` rather than only inferring seal state from
-  `kube_pod_status_ready`), and Vault's own internal telemetry is now scraped
-  and dashboarded (not just pod-readiness). Remaining gaps: escalation stays a
-  permanent non-goal for this solo-operator lab; the CI-health metric still
-  doesn't cover a live-cluster incident.
+  [ADR-0041](decisions/adr-0041-remove-observability-stack.md) (the removal that
+  reopened this gap).
+- **Gap:** real again, and unquantified this time — no rule-evaluation mechanism
+  exists at all (not "no receiver wired to an existing evaluator," the prior
+  gap's shape). A future session picking observability back up, or standing up a
+  lighter-weight alternative, would need to re-close this from scratch. Escalation
+  stays a permanent non-goal for this solo-operator lab regardless; the CI-health
+  metric still doesn't cover a live-cluster incident.
 
 **Q8. Are incidents logged with root cause and a corrective action, after the fact?**
 - **Answer:** Yes, as of [`docs/incident-log.md`](incident-log.md)'s "Real incident
@@ -282,9 +269,10 @@ so a future edit can't silently drop the highest-severity rows without failing
 
 **Q14. Is there a register of ICT third-party dependencies?**
 - **Answer:** Yes. [`docs/dependency-register.md`](dependency-register.md) tabulates
-  every third-party tool named in a binding ADR — 33 tools across 27 ADRs — by
-  criticality, upstream source, deciding ADR, and last-reviewed date, re-indexed
-  purely from existing ADR content.
+  every third-party tool named in a binding ADR — 29 tools across 25 ADRs (down
+  from 33/27 after the observability stack's 8-tool, 2-ADR removal, ADR-0041,
+  2026-09-06) — by criticality, upstream source, deciding ADR, and last-reviewed
+  date, re-indexed purely from existing ADR content.
 - **Evidence:** [docs/dependency-register.md](dependency-register.md).
 - **Gap:** narrower now — `make ci` gained a mechanical drift guard
   (`scripts/dependency-register-check.sh`, 2026-08-24, PR #1297, extended the same
@@ -293,15 +281,11 @@ so a future edit can't silently drop the highest-severity rows without failing
   edit time (`scripts/dependency-register-sync-hook.sh`, PR #1301). It fails the
   build if any register row's "Last reviewed" date is older than the newest
   Re-evaluation-log entry of the ADR(s) cited in that row's ADR column, recognizing
-  two log conventions: the `### YYYY-MM-DD` dated-heading shape most ADRs use, and
-  one narrow, component-scoped slice of ADR-0034's `**YYYY-MM-DD** — <Component>
-  (chart|image tag) bumped` bold-entry shape. Two honest limits remain, stated in
-  the script's own header comment rather than overclaimed: (1) only 3 of the 7 rows
-  citing ADR-0034 alone (kube-state-metrics, Mimir, Pyroscope) have a matching
-  bold-entry pattern to check against — Alloy/node-exporter currently have no
-  logged ADR-0034 entry at all, and Loki/Tempo's real currency history lives in
-  ADR-0006, not ADR-0034 (cited only in the register's own prose, per the
-  ADR-column-only scoping note above), so those four stay unchecked; (2) it can't
+  the `### YYYY-MM-DD` dated-heading shape most ADRs use (the narrower,
+  component-scoped `**YYYY-MM-DD** — <Component> (chart|image tag) bumped`
+  bold-entry variant this check also recognized was ADR-0034's own shape, moot
+  now that ADR-0034 and its rows are gone, ADR-0041). One honest limit remains,
+  stated in the script's own header comment rather than overclaimed: it can't
   invent a review date for an ADR that never recorded one — a few rows are still
   honestly marked "not dated in ADR" where the underlying ADR itself has no
   Re-evaluation log, which is a gap in the ADR, not something this register or its
@@ -329,45 +313,57 @@ concentration)?**
 
 **Q16. Is concentration risk assessed (reliance on a single upstream provider)?**
 - **Answer:** Yes, as of [`docs/dependency-concentration.md`](dependency-concentration.md)
-  — a cross-cutting rollup of `docs/dependency-register.md`'s 33 tools by upstream
-  GitHub org. `github.com/grafana` backs six always-on-core rows at once (Grafana,
-  Mimir, Loki, Tempo, Pyroscope, Alloy) — the entire observability pane sharing one
-  upstream governance/maintenance entity, the largest single concentration in the
-  table. `github.com/argoproj` backs two (ArgoCD, Argo Rollouts). Every other row is a
-  distinct org. The lab's mitigation is structural, not new: every workload is a
-  GitOps `Application` pointing at a pinned chart/image ref (ADR-0001), so a
-  disappeared upstream is a fork-and-repoint operation, not a rebuild — demonstrated
-  for real by the ADR-0011→ADR-0024 Artifactory→Harbor migration.
+  — a cross-cutting rollup of `docs/dependency-register.md`'s tools by upstream
+  GitHub org. `github.com/grafana` used to back six always-on-core rows at once
+  (Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy) — the entire observability pane
+  sharing one upstream governance/maintenance entity, the largest single
+  concentration in the table — until the whole stack was removed with no
+  replacement 2026-09-06 (ADR-0041); that concentration point is gone along with
+  the dependency itself, the most complete resolution available.
+  `github.com/pingcap` (TiDB Operator, TiDB) is gone the same way — TiDB was
+  removed from the lab entirely the same day, no replacement. `github.com/argoproj`
+  is now the sole live concentration, backing two rows (ArgoCD, Argo Rollouts).
+  Every other row is a distinct org. The lab's mitigation is structural, not
+  new: every workload is a GitOps `Application` pointing at a pinned chart/image ref
+  (ADR-0001), so a disappeared upstream is a fork-and-repoint operation, not a
+  rebuild — demonstrated for real by the ADR-0011→ADR-0024 Artifactory→Harbor
+  migration.
 - **Evidence:** [docs/dependency-concentration.md](dependency-concentration.md);
   [docs/dependency-register.md](dependency-register.md); ADR-0001.
 - **Gap:** none in rollup *existence* — the cross-cutting view this question asked for
-  now exists. The `github.com/grafana` concentration itself is not closed (it's a real
-  fact about upstream maintainership, not a bug this lab's code can fix); it's simply
-  now visible instead of implicit.
+  now exists. The `github.com/grafana` and `github.com/pingcap` concentrations are
+  both resolved (removed, not mitigated); the one remaining live concentration
+  (`github.com/argoproj`) is a real fact about upstream maintainership, not a bug
+  this lab's code can fix — it's simply visible instead of implicit.
 
 **Q17. Is there an exit strategy per critical third-party dependency?**
-- **Answer:** Yes, now pre-planned (not just implicit) for the lab's top three
-  concentration risks: [`docs/dependency-exit-runbooks.md`](dependency-exit-runbooks.md)
-  writes down, per group, what a real exit changes mechanically in `gitops/`, whether
+- **Answer:** Yes, pre-planned (not just implicit) for the lab's live concentration
+  risks: [`docs/dependency-exit-runbooks.md`](dependency-exit-runbooks.md) writes
+  down, per group, what a real exit changes mechanically in `gitops/`, whether
   it's a fork-and-repoint or a real schema/data migration, and whether any
-  alternative has actually been evaluated (honestly: no, for all three today — the
-  first step of any real exit is the same ADR-writing process this lab already uses
-  to pick a tool). Still grounded in ADR-0001 (GitOps + Terraform-only-bootstraps
-  means every workload is redeployable by changing one `Application` source) and
-  demonstrated once by the real, executed ADR-0011→ADR-0024 Artifactory→Harbor
-  migration — the runbooks make the *first-response steps* explicit in advance,
-  they don't replace that structural exit-ability or invent a smaller true cost.
+  alternative has actually been evaluated (honestly: no, for either live group
+  today — the first step of any real exit is the same ADR-writing process this
+  lab already uses to pick a tool). The `github.com/grafana` group's own runbook
+  is now moot — that dependency was removed entirely 2026-09-06 with no
+  replacement (ADR-0041), the most complete "exit" available, so there's nothing
+  left to plan an exit for. Still grounded in ADR-0001 (GitOps +
+  Terraform-only-bootstraps means every workload is redeployable by changing one
+  `Application` source) and demonstrated once by the real, executed
+  ADR-0011→ADR-0024 Artifactory→Harbor migration — the runbooks make the
+  *first-response steps* explicit in advance, they don't replace that structural
+  exit-ability or invent a smaller true cost.
 - **Evidence:** [docs/dependency-exit-runbooks.md](dependency-exit-runbooks.md);
   ADR-0024 (executed migration); ADR-0001 (structural exit-ability).
-- **Gap:** narrower still (as of 2026-09-02) — the lab's three named concentration
-  groups (Q16) each have a written runbook, and so now do the four
-  highest-blast-radius remaining `always-on-core` single-tool rows (Cilium, Garage,
-  Traefik, cert-manager). Seven lower-blast-radius single-tool rows still
-  don't (Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo,
-  kube-state-metrics, node-exporter) — a real, separately-scoped future item if
-  wanted. A written runbook existing in advance also doesn't mean the effort of an
-  actual exit is smaller, only that the first-response steps are already
-  identified — exits still happen reactively via a new ADR when actually
+- **Gap:** the two live concentration groups (Q16) each have a written runbook, and
+  so do nine `always-on-core` single-tool rows (Cilium, Garage, Traefik,
+  cert-manager, Terraform/Terragrunt, RabbitMQ, Valkey, KEDA, Forgejo). Fifteen
+  newer register rows (Istio, Kiali, Longhorn, Velero, Trivy Operator, Kargo,
+  Harbor, Oracle Cloud Infrastructure, k3s, moto, ACK S3 controller, KRO,
+  s3manager, Vault, External Secrets Operator) don't yet have one — a real,
+  separately-scoped gap, flagged as its own follow-up rather than silently
+  claimed complete. A written runbook existing in advance also doesn't mean the
+  effort of an actual exit is smaller, only that the first-response steps are
+  already identified — exits still happen reactively via a new ADR when actually
   triggered.
 
 ---

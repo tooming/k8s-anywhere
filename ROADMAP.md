@@ -10,9 +10,11 @@ whenever its own lane runs dry, which can happen more than once in a single run.
 = the goals; this file = the next steps.
 
 The always-on stack is already built (Traefik, Vault, External Secrets, Garage,
-the full LGTMP observability stack, moto/ACK/KRO, the RabbitMQ + Valkey data layer,
-the demo app — ~33 ArgoCD apps). What's left is the heavy *on-demand* components,
-the end-to-end capstone, and cross-cutting hardening.
+moto/ACK/KRO, the RabbitMQ + Valkey data layer, the demo app — the observability
+stack this bullet used to also name was removed entirely 2026-09-06 with no
+replacement, ADR-0041; the ArgoCD-app count above predates that removal and needs
+re-deriving). What's left is the heavy *on-demand* components, the end-to-end
+capstone, and cross-cutting hardening.
 
 ---
 
@@ -58,10 +60,12 @@ rules below are binding.
    - a `make <name>-up` / `make <name>-down` target;
    - docs + `bats` tests + README/dashboard wiring as applicable.
    Never add a heavy component to the always-on auto-synced set.
-5. **Keep docs and dashboards in sync.** If you add a user-facing UI, wire it into
-   the Grafana "Lab UIs" panel (there's a drift check) and update the README /
+5. **Keep docs in sync.** If you add a user-facing UI, update the README /
    `docs/dependency-tree.md` so `make readme-check` and `make lab-ui-check` stay
-   green.
+   green. (The Grafana "Lab UIs" panel this step used to also mention was removed
+   2026-09-06 alongside the rest of the observability stack, ADR-0041 — README's
+   own Endpoints table is now the sole UI-discovery source, independent of
+   Grafana.)
 6. **Every item lands as a PR, self-reviewed and self-merged by the same run** (per
    WAYS-OF-WORKING.md §0.1/§3/§4 — this superseded the old human-merge model on
    2026-07-14; this rule was stale until 2026-07-16 and still said otherwise). One

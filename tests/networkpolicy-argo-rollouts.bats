@@ -30,24 +30,14 @@ setup() {
 }
 
 
-# --- metrics allow (Alloy → Argo Rollouts TCP 8090) -------------------------------
-@test "allow-argo-rollouts-metrics-from-observability.yaml exists in argo-rollouts/networkpolicy/" {
-  [ -f "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-metrics-from-observability.yaml" ]
+# --- metrics allow (Alloy → Argo Rollouts TCP 8090), removed 2026-09-06 (ADR-0041) --
+@test "allow-argo-rollouts-metrics-from-observability.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-metrics-from-observability.yaml" ]
 }
 
-@test "argo-rollouts kustomization references the metrics allow file" {
+@test "argo-rollouts kustomization no longer references the metrics allow file (ADR-0041)" {
   run grep -q 'allow-argo-rollouts-metrics-from-observability.yaml' "$ARGO_ROLLOUTS_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argo-rollouts-metrics-from-observability allows ingress on port 8090" {
-  run grep -q 'port: 8090' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argo-rollouts-metrics-from-observability restricts source to observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-metrics-from-observability.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 # --- dashboard allow (Traefik → rollouts-dashboard TCP 3100) ------------------
@@ -75,29 +65,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Mimir egress allow (Argo Rollouts → Mimir TCP 8080) --------------------------
-@test "allow-argo-rollouts-egress-mimir.yaml exists in argo-rollouts/networkpolicy/" {
-  [ -f "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-egress-mimir.yaml" ]
+# --- Mimir egress allow (Argo Rollouts → Mimir TCP 8080), removed 2026-09-06 (ADR-0041) --
+@test "allow-argo-rollouts-egress-mimir.yaml no longer exists (ADR-0041)" {
+  [ ! -f "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-egress-mimir.yaml" ]
 }
 
-@test "argo-rollouts kustomization references the Mimir egress allow file" {
+@test "argo-rollouts kustomization no longer references the Mimir egress allow file (ADR-0041)" {
   run grep -q 'allow-argo-rollouts-egress-mimir.yaml' "$ARGO_ROLLOUTS_NP/kustomization.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argo-rollouts-egress-mimir allows egress on port 8080" {
-  run grep -q 'port: 8080' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-egress-mimir.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argo-rollouts-egress-mimir uses Egress policyType" {
-  run grep -q 'Egress' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-egress-mimir.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "allow-argo-rollouts-egress-mimir targets the observability namespace" {
-  run grep -q 'kubernetes.io/metadata.name: observability' "$ARGO_ROLLOUTS_NP/allow-argo-rollouts-egress-mimir.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 # --- plugin egress allow REMOVED 2026-09-06 (ADR-0040, supersedes Envoy Gateway/

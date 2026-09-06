@@ -1,10 +1,11 @@
 # velero-networkpolicy — default-deny + allowlist NetworkPolicies for the velero
 # namespace (ADR-0016 §4 fan-out; backup/restore controller + node-agent). Applies
 # the shared baseline templates (default-deny-all, allow-dns-and-apiserver) plus
-# per-workload allow rules: Alloy metrics scrape on TCP 8085, Garage S3 egress on
-# TCP 3900, and Kopia PV-read egress to backed-up namespaces (data/capstone/vault/
-# observability — tidb removed 2026-09-06, PR #1452: TiDB was removed from the lab
-# entirely, no replacement).
+# per-workload allow rules: Garage S3 egress on TCP 3900, and Kopia PV-read egress
+# to backed-up namespaces (data/capstone/vault — tidb removed 2026-09-06, PR #1452:
+# TiDB was removed from the lab entirely, no replacement). (The Alloy metrics-scrape
+# ingress rule this overlay used to also carry was removed the same day, ADR-0041,
+# observability stack removed with no replacement.)
 # The allow-dns-and-apiserver baseline covers the controller's k8s API calls
 # (backup/restore CRD watch, leader election, node-agent DaemonSet coordination).
 # ALWAYS-ON: automated sync alongside the velero Application (same namespace).

@@ -1,7 +1,8 @@
 # NetworkPolicy Kustomize overlay for the external-secrets namespace (ADR-0016 §4 fan-out).
 # Pulls the two shared baseline templates and adds ESO-specific allow rules for:
-# - ingress TCP 8080 from Alloy (observability) for Prometheus metrics scrape
 # - egress TCP 8200 to vault namespace for ClusterSecretStore token review calls
+#   (the Alloy metrics-scrape ingress rule this overlay used to also carry was
+#   removed 2026-09-06, ADR-0041, observability stack removed with no replacement)
 # - ingress TCP 10250 from the apiserver to the admission webhook (every namespace's
 #   ExternalSecret/ClusterSecretStore create/update is validated through it — without
 #   this rule the webhook call times out cluster-wide the moment default-deny lands)
@@ -18,6 +19,5 @@ resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
   - ../../network/policies/zz-dns-clusterip-bridge.yaml
-  - allow-eso-metrics-ingress.yaml
   - allow-eso-vault-egress.yaml
   - allow-eso-webhook-from-apiserver.yaml
