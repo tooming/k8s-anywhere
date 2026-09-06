@@ -390,6 +390,34 @@ You review and merge plan PRs, same as implementation PRs.
   [docs/done/2026-09-03-vault-adr-0037-retroactive-record.md](docs/done/2026-09-03-vault-adr-0037-retroactive-record.md).
   (auto/vault-adr-0037-retroactive-record; PR #1394)
 
+- [x] 🟢 **Traefik full GHSA sweep — bundled `v3.7.8` audited, 9 advisories checked,
+  none exploitable in this lab's config** — full verification writeup:
+  [docs/done/2026-09-06-traefik-full-ghsa-sweep.md](docs/done/2026-09-06-traefik-full-ghsa-sweep.md).
+  (auto/traefik-full-ghsa-sweep)
+  (ADR-0004; extending this run's "full advisory listing, not just currency" GHSA-sweep
+  technique — already applied to Envoy Gateway, Cilium, ArgoCD, KEDA+Velero, and
+  cert-manager — to Traefik, the one remaining always-on ingress component with no
+  dedicated security audit on record since ADR-0040 replaced Envoy Gateway after that
+  component's own sweep had already happened.)
+
+  Traefik ships bundled with k3s (no independent chart `Application`/`targetRevision`
+  of its own — `gitops/platform/traefik-config.yaml` only delivers a `HelmChartConfig`
+  for probe/resource tuning). Confirmed the actual bundled version directly via k3s's
+  `v1.36.4+k3s1` release notes' "Embedded Component Versions" table: Traefik `v3.7.8`.
+  Checked all 9 published `traefik/traefik` GitHub security advisories in range,
+  including one Critical (`digestAuth` complete auth bypass, GHSA-5w68-77r2-r64c) —
+  every one's affected range includes `v3.7.8`, but every one requires a feature this
+  lab's `gitops/` doesn't use (digestAuth/basicAuth middlewares, Gateway API objects,
+  `TLSOption`/mTLS, HTTP/3, the `kubernetesIngressNGINX` compat provider, or a
+  multi-tenant `crossProviderNamespaces` setup) — confirmed via direct `grep` against
+  every real manifest, not assumed. No newer k3s release yet bundles a fixed Traefik
+  (`v3.7.11`/`v3.7.12`); flip condition recorded: re-check when the k3s pin
+  (ADR-0030) next bumps, since that silently carries a new bundled Traefik version
+  along with it. `docs/dependency-register.md`'s Traefik row updated with the result
+  (ADR-0040 has no dedicated Re-evaluation log of its own, same shape as this run's
+  ArgoCD sweep). No code/config change. `make ci` must pass. `docs/done/` entry
+  required. (auto/traefik-full-ghsa-sweep)
+
 - [x] 🟢 **ArgoCD full GHSA sweep — confirm `v3.5.2` pin security-clean** — full
   verification writeup:
   [docs/done/2026-09-03-argocd-full-ghsa-sweep-clean.md](docs/done/2026-09-03-argocd-full-ghsa-sweep-clean.md).
