@@ -950,35 +950,7 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-concentration.md`, and `docs/dependency-exit-runbooks.md`** — full
   verification writeup:
   [docs/done/2026-09-03-dependency-docs-sync-check-drift-fix.md](docs/done/2026-09-03-dependency-docs-sync-check-drift-fix.md).
-  (auto/dependency-docs-sync-check-drift-fix)
-  (CHARTER **Core Values** §"Real observability only" / §"Docs & dashboards don't
-  drift" (ADR-0004); planner-fallback gap analysis 2026-09-03, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated this cycle (both standing GitLab→Forgejo migration items and the
-  capstone-Deployment-removal item, still blocked on unconfirmed issues #633/#1229 —
-  re-checked, no new comments since 2026-08-25) and no ungroomed intake/`rfc` issue
-  existed to groom (only the three standing `[Action required]` issues, none new
-  work). Fresh angle: the prior day's two cycles (2026-09-02) landed
-  `dependency-concentration-sync-check.sh` and `dependency-exit-runbooks-sync-check.sh`
-  but never circled back to update the very "Keeping this in sync" prose in
-  `docs/dependency-register.md`/`docs/dependency-concentration.md`/
-  `docs/dependency-exit-runbooks.md` that those scripts closed the gap named in —
-  leaving three docs asserting "no mechanical drift guard yet" right next to the
-  guard that had just landed, an ADR-0004 self-consistency bug this cycle closed
-  instead of mining `docs/dora-audit-readiness.md` for a fourth consecutive gap.
-  **No prerequisites — executor may pick up immediately.**)
-  Verified directly (not assumed, ADR-0004): confirmed all three scripts
-  (`scripts/dependency-register-check.sh`, `scripts/dependency-concentration-sync-check.sh`,
-  `scripts/dependency-exit-runbooks-sync-check.sh`) exist, each has a `.PHONY`
-  Makefile target, and all three are invoked from the `drift` job `make ci` runs
-  (`Makefile` lines 263-265) — directly contradicting each file's own stale
-  "no mechanical drift guard yet" / "no mechanical guard, keep by hand" prose.
-  Rewrote each file's "Keeping this in sync" section to state precisely what's now
-  guarded (register "Last reviewed" staleness; register→concentration.md org-count
-  sync; concentration→exit-runbooks.md group-coverage sync) and what honestly still
-  isn't (the reverse direction on each sync check; exit-runbooks.md's remaining
-  seven uncovered single-tool rows — unchanged, deliberate scope, not drift).
-  `make ci` must pass. `docs/done/` entry required.
+  (auto/dependency-docs-sync-check-drift-fix; PR #1381)
 
 - [x] 🟢 **GitOps-track the `harbor.127.0.0.1.nip.io`-class in-cluster DNS rewrite
   found live in PR #1323 — extend `scripts/coredns-host-alias.sh`** — full
@@ -1819,29 +1791,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-02-gitops-clusterip-bridge.md](docs/done/2026-07-02-gitops-clusterip-bridge.md).
   (auto/gitops-clusterip-bridge; PR #324) Closes #315.
 
-- [x] 🟢 **`tests/dr-bluegreen.bats` — structural test gate for zero-downtime blue/green DR
-  scripts** (CHARTER Goal "DR / blue-green on a single host"; `make ci` coverage gap —
-  `docs/00-architecture.md` step 10 and `docs/DR.md §Zero-downtime blue/green` document
-  the drill, and Makefile targets `dr-bluegreen`/`dr-bluegreen-down`/`dr-bluegreen-promote`
-  exist, but no bats gate validates the underlying scripts' structural integrity or prevents
-  the zero-downtime thresholds from being silently changed; the existing `bluegreen-probe.bats`
-  only unit-tests the probe math — it doesn't assert the scripts exist, are executable, or
-  reference the right GitOps resource. **No prerequisites — executor may pick up
-  immediately.**) New `tests/dr-bluegreen.bats` with clusterless structural assertions
-  (mirrors the `dr-restore.bats` pattern — no k3d, no kubectl, pure grep/bash):
-  `gitops/bluegreen/green-root.yaml` exists (the serving-tier ArgoCD root planted on green);
-  all six bluegreen scripts exist and are executable: `scripts/dr-bluegreen.sh`,
-  `scripts/bluegreen-up.sh`, `scripts/bluegreen-frontdoor.sh`, `scripts/bluegreen-down.sh`,
-  `scripts/bluegreen-probe.sh`, `scripts/dr-bluegreen-promote.sh`;
-  `scripts/dr-bluegreen.sh` defines `MIN_UPTIME=99.0` (the uptime PASS threshold — the
-  zero-downtime claim; changing this would silently weaken the drill verdict);
-  `scripts/dr-bluegreen.sh` defines `MAX_OUTAGE=2.0` (the maximum outage seconds PASS
-  threshold); `scripts/bluegreen-up.sh` references `gitops/bluegreen/green-root.yaml`
-  (ensures the green cluster sources the right serving-tier root app);
-  Makefile `dr-bluegreen` is `.PHONY` and calls `bash scripts/dr-bluegreen.sh`;
-  Makefile `dr-bluegreen-down` is `.PHONY`; Makefile `dr-bluegreen-promote` is `.PHONY`.
-  No Makefile changes, no script changes — tests only. `make ci` must pass. `docs/done/`
-  entry required. (auto/dr-bluegreen-bats)
+- [x] 🟢 **`tests/dr-bluegreen.bats` — structural test gate for zero-downtime
+  blue/green DR scripts** — full verification writeup:
+  [docs/done/2026-07-14-dr-bluegreen-bats-bookkeeping.md](docs/done/2026-07-14-dr-bluegreen-bats-bookkeeping.md).
+  (chore/dr-bluegreen-bats; PR #393)
 
 - [x] 🟢 **ADR-0019 amendment — add `add-default-runasnonroot` to the Initial ClusterPolicy
   set table** (CHARTER Core Values §"Decisions written down, rejected options off-limits";
@@ -2540,14 +2493,15 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-12-auto-cilium-agent-metrics.md](docs/done/2026-07-12-auto-cilium-agent-metrics.md).
   (auto/cilium-agent-metrics; PR #367)
 
-- [x] 🟢 **`docs/00-architecture.md` — add learning-path steps for DR/blue-green and GitOps promotion (Kargo)** (CHARTER **Goals** gap — "DR / blue-green on a single host" is an explicit Goal that does not appear in the current learning-path steps 0–9; Kargo promotion pipelines are deployed and documented in the Who-does-what table but are absent from the learning-path narrative; **no prerequisites — executor may pick up immediately**; docs-only). Two small additions to the `## Suggested learning path` section in `docs/00-architecture.md`:
-  (a) **Step 10 — DR / blue-green**: after step 8 (Velero backup & restore), add a step explaining `make dr-bluegreen` — it stands up a second k3d 'green' cluster that sources the *same* `gitops/` repo via `gitops/bluegreen/green-root.yaml`, cuts Envoy Gateway traffic over to green, and verifies service continuity before retiring blue with `make dr-bluegreen-promote`. `make dr-bluegreen-down` reclaims the green cluster's RAM when the exercise is done. Cross-reference `docs/DR.md §Zero-downtime blue/green` for the full runbook. Explain that steps 8 and 10 test *two distinct recovery modes*: Velero restores data from backup on the same cluster; blue-green rebuilds the platform on a fresh cluster with live traffic cut over, proving the "recreate-from-code" CHARTER Core Value under real traffic.
-  (b) **Step 11 — GitOps promotion pipelines**: describe Kargo's role — a `Warehouse` CRD watches Harbor for new image digests pushed by GitLab CI; a `dev` `Stage` auto-promotes; a `prod` `Stage` requires a manual gate approval in the Kargo UI (`kargo.127.0.0.1.nip.io`, `make kargo-up`). The promotion history is visible in the Grafana Kargo dashboard (`lab-kargo.json`). Cite ADR-0023. Note `make kargo-down` when done. Explain how this layer adds *multi-stage, Warehouse-gated* promotion on top of the Argo Rollouts canary at step 7 — the two complement each other: Argo Rollouts controls in-cluster traffic shaping; Kargo controls which image digest is promoted across environment stages.
-  No code changes. `make ci` must pass (readme-check and lab-ui-check unaffected — no new HTTPRoute row, no new Application). `docs/done/` entry required.
-  (auto/architecture-doc-learning-path-update)
+- [x] 🟢 **`docs/00-architecture.md` — add learning-path steps for DR/blue-green
+  and GitOps promotion (Kargo)** — full verification writeup:
+  [docs/done/2026-07-13-architecture-doc-learning-path-update.md](docs/done/2026-07-13-architecture-doc-learning-path-update.md).
+  (auto/architecture-doc-learning-path-update; PR #385)
 
-- [x] 🟢 **`docs/00-architecture.md` — add learning-path step 12 for cloud-agnostic infrastructure design** (CHARTER **Goals** gap, self-caught: the "cloud-agnostic infrastructure design" learning outcome added to CHARTER.md's Goals alongside ADR-0026 was never reflected in the learning-path narrative, including in the very PR that added steps 10–11 above — docs-only). Adds step 12 explaining that `argocd`/`gitlab` Terragrunt units depend only on `cluster`'s `kube_context`/`cluster_name`/`api_endpoint` outputs, which is why steps 1–11 run identically on `local/` (k3d) or `oracle/` (Oracle Cloud Always Free + k3s), citing `infra/live/README.md`, ADR-0026, and ADR-0027. No code changes. `docs/done/` entry required.
-  (auto/architecture-doc-cloud-agnostic-step)
+- [x] 🟢 **`docs/00-architecture.md` — add learning-path step 12 for
+  cloud-agnostic infrastructure design** — full verification writeup:
+  [docs/done/2026-07-13-architecture-doc-cloud-agnostic-step.md](docs/done/2026-07-13-architecture-doc-cloud-agnostic-step.md).
+  (auto/architecture-doc-cloud-agnostic-step; PR #387)
 
 - [x] 🟢 **Hook-scripts negative-path coverage — `argocd-crd-ssa-sync-hook.sh` +
   `helm-chart-pin-sync-hook.sh`** — full verification writeup:
