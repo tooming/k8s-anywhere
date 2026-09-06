@@ -220,23 +220,27 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- Gateway HTTPS listener + wildcard Certificate (ADR-0028 follow-up) -------
-@test "shared Gateway keeps the original http listener on port 80" {
-  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "http") | .port' "$REPO/gitops/network/gateway.yaml")" = "80" ]
+# --- Traefik TLSStore + wildcard Certificate (ADR-0028 follow-up, ADR-0040 —
+# supersedes the shared Gateway's http/https listeners under Envoy Gateway) ---
+@test "shared TLSStore is a traefik.io/v1alpha1 object named default" {
+  [ "$(yqs '.apiVersion' "$REPO/gitops/network/traefik-tls-store.yaml")" = "traefik.io/v1alpha1" ]
+  [ "$(yqs '.kind' "$REPO/gitops/network/traefik-tls-store.yaml")" = "TLSStore" ]
+  [ "$(yqs '.metadata.name' "$REPO/gitops/network/traefik-tls-store.yaml")" = "default" ]
 }
 
-@test "shared Gateway has an additive https listener on port 443" {
-  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "https") | .port' "$REPO/gitops/network/gateway.yaml")" = "443" ]
-  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "https") | .protocol' "$REPO/gitops/network/gateway.yaml")" = "HTTPS" ]
+@test "shared TLSStore terminates TLS using the wildcard Certificate's Secret" {
+  [ "$(yqs '.spec.defaultCertificate.secretName' "$REPO/gitops/network/traefik-tls-store.yaml")" = "wildcard-127-0-0-1-nip-io-tls" ]
 }
 
-@test "https listener terminates TLS using the wildcard Certificate's Secret" {
-  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "https") | .tls.mode' "$REPO/gitops/network/gateway.yaml")" = "Terminate" ]
-  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "https") | .tls.certificateRefs[0].name' "$REPO/gitops/network/gateway.yaml")" = "wildcard-127-0-0-1-nip-io-tls" ]
+@test "shared TLSStore lives in the lab-gateway namespace" {
+  [ "$(yqs '.metadata.namespace' "$REPO/gitops/network/traefik-tls-store.yaml")" = "lab-gateway" ]
 }
 
-@test "https listener allows routes from all namespaces, same as http" {
-  [ "$(yqs 'select(.kind == "Gateway") | .spec.listeners[] | select(.name == "https") | .allowedRoutes.namespaces.from' "$REPO/gitops/network/gateway.yaml")" = "All" ]
+@test "every IngressRoute opts into the shared TLSStore with an empty tls stanza" {
+  while IFS= read -r f; do
+    run grep -q '^  tls: {}$' "$f"
+    [ "$status" -eq 0 ] || { echo "missing tls: {} in $f"; return 1; }
+  done < <(find "$REPO/gitops" -name 'ingressroute.yaml')
 }
 
 @test "wildcard Certificate manifest exists in lab-gateway namespace" {
