@@ -1946,30 +1946,9 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-18-capstone-latest-tag-exclude.md](docs/done/2026-07-18-capstone-latest-tag-exclude.md).
   (auto/capstone-latest-tag-exclude; PR #500) Closes #498.
 
-- [x] 🟢 **Bump RabbitMQ `3.13` → `4.3.x`** (CHARTER **Core Values** §"Everything as
-  code" + general hardening; RFC #522 — architect decision 2026-07-18. **No
-  prerequisites — executor may pick up immediately.**) RabbitMQ's community-support
-  policy now covers only the current + previous minor series (`4.3.x` / `4.2.x`);
-  this lab's pinned `rabbitmq:3.13-management` (four minor series back) no longer
-  receives free security patches — a version-currency gap, not a single named CVE.
-  Per RFC #522's acceptance criteria the executor MUST independently re-verify the
-  direct 3.13 → 4.3 upgrade path (Mnesia → Khepri automatic migration) against
-  RabbitMQ's own current upgrade docs at pickup time before landing — do not assume
-  the RFC's summary is still accurate. Bump
-  `gitops/data/rabbitmq/statefulset.yaml`'s image tag to `rabbitmq:4.3.2-management`
-  (or the latest `4.3.x` patch at pickup time). Update
-  `docs/decisions/adr-0009-rabbitmq-message-broker.md` with the new pin + a
-  `## Re-evaluation log` entry (trigger: support-window lapse, not a CVE — mirror
-  the ADR-0017/ADR-0020 log pattern). Add new bats coverage pinning the RabbitMQ
-  image tag (none exists today — checked `tests/data-layer.bats`). `make ci` must
-  pass. PR body must document the executor's own upgrade-path re-verification and
-  the ADR-0004 caveat that this remote clusterless session cannot confirm the
-  Mnesia→Khepri migration completes cleanly against this lab's live persisted
-  queue data on a real cluster — call out the rollback path prominently (revert
-  the image tag; note a stateful-format downgrade may not be clean, so recovery
-  may require `make dr-restore`/reseed rather than a clean revert, per ADR-0005's
-  already-accepted single-node recreate-over-HA risk posture). `docs/done/` entry
-  required. Closes #522. (auto/rabbitmq-bump-4x)
+- [x] 🟢 **Bump RabbitMQ `3.13` → `4.3.x`** — full verification writeup:
+  [docs/done/2026-07-18-rabbitmq-bump-4x.md](docs/done/2026-07-18-rabbitmq-bump-4x.md).
+  (auto/rabbitmq-bump-4x; PR #525) Closes #522.
 
 - [x] 🟢 **Bump Longhorn `1.7.3` → `1.11.x`** — full verification writeup:
   [docs/done/2026-07-18-longhorn-bump-1-11.md](docs/done/2026-07-18-longhorn-bump-1-11.md).
@@ -2236,30 +2215,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-24-demo-data-demo-dashboards.md](docs/done/2026-06-24-demo-data-demo-dashboards.md).
   (auto/demo-data-demo-dashboards; PR #264)
 
-- [x] 🟢 **`docs/00-architecture.md` — current-state rewrite** (CHARTER **Core Values**
-  §"Docs & dashboards don't drift"; docs-only). The file is 70 lines and was written when
-  the platform had ~8 components; it now runs ~28 ArgoCD Applications across four
-  categories (always-on core, LGTMP observability, Tier 1 next-wave, on-demand heavy)
-  and the doc mentions none of the new components. Rewrite `docs/00-architecture.md` to
-  reflect the current platform state:
-  (a) **Updated tool table** — expand the "Who does what" table to cover the full
-  always-on stack: Cilium (CNI), External Secrets Operator, Garage (S3), s3manager,
-  RabbitMQ, Valkey, Alloy, Mimir, Loki, Tempo, Pyroscope, Grafana, kube-state-metrics,
-  node-exporter, moto, ACK S3, KRO, Kyverno, Argo Rollouts, Velero, Trivy Operator, and
-  the capstone pipeline (cosign → verifyImages → progressive canary). Describe each
-  tool's role in one line. Group rows by layer (matching the README table structure so
-  they stay in sync).
-  (b) **Updated learning path** — the current five-step path ends with "Tie it together"
-  via GitLab CI; expand to cover the full CHARTER Goals: supply-chain security
-  (cosign → Kyverno verifyImages), progressive delivery (Argo Rollouts canary on Mimir
-  SLOs), stateful backup/restore (Velero → `make dr-restore`), and continuous scanning
-  (Trivy Operator). The existing steps 0–5 can stay; add steps 6–9 or rewrite them.
-  (c) **Updated diagram** — either expand the ASCII diagram or replace it with a prose
-  description of the platform's current data-flow layers: bootstrap → GitOps → ingress
-  → workloads → secrets → observability → security (admission + supply-chain) → backup.
-  No new CI gates; no new code. All assertions about what's deployed must reflect what's
-  actually in `gitops/` (ADR-0004 — no fabricated state). `make ci` must pass.
-  `docs/done/` entry required. (auto/architecture-doc-rewrite)
+- [x] 🟢 **`docs/00-architecture.md` — current-state rewrite** — full
+  verification writeup:
+  [docs/done/2026-06-25-auto-architecture-doc-rewrite.md](docs/done/2026-06-25-auto-architecture-doc-rewrite.md).
+  (auto/architecture-doc-rewrite; PR #273)
 
 - [x] 🟢 **ADR-0017 `velero` PSA row correction + `docs/dependency-tree.md` stale
   notes** (CHARTER **Core Values** §"Docs & dashboards don't drift"; docs-only, two
@@ -2523,116 +2482,20 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-03-auto-harbor-governance-limitrange.md](docs/done/2026-07-03-auto-harbor-governance-limitrange.md).
   (auto/harbor-governance-limitrange; PR #327)
 
-- [x] 🟢 **O5 dashboard-coverage bats — always-on service apps** (CHARTER
-  **Objective O5**, due **2026-09-30**; O5 says "measured by a drift
-  check wired into make ci" but the current CI only checks HTTPRoute ↔
-  panel sync via `lab-ui-check.sh` — it does NOT verify that each
-  always-on service app has a `lab-<name>.json` file. This item adds
-  the O5 measurement mechanism as bats assertions; no Makefile change
-  needed — bats already runs in `scripts/test.sh` which is in
-  `make ci`). Add to `tests/observability.bats` (or a new
-  `tests/dashboard-coverage.bats`) one `@test` block per always-on
-  service application verifying its `grafana/dashboards/lab-<name>.json`
-  exists and contains at least one reference to `"uid": "mimir"` (a
-  real Mimir datasource panel, not a stub — ADR-0004). Cover these
-  apps (18 total): `argo-rollouts` → `lab-argo-rollouts.json`;
-  `capstone` → `lab-capstone.json`; `data-demo` → `lab-data-demo.json`;
-  `demo` → `lab-demo.json`; `envoy-gateway` → `lab-envoy.json`;
-  `external-secrets` → `lab-external-secrets.json`; `garage` →
-  `lab-garage.json`; `kro` + `moto` + `ack-s3` → `lab-cloud-control-plane.json`;
-  `kyverno` → `lab-kyverno.json`; `observability-alloy` → `lab-alloy.json`;
-  `observability-grafana` → `lab-grafana.json`; `observability-ksm` →
-  `lab-ksm.json`; `observability-loki` → `lab-logs.json`;
-  `observability-mimir` → `lab-mimir.json`;
-  `observability-node-exporter` → `lab-node-exporter.json`;
-  `observability-pyroscope` → `lab-profiles.json`;
-  `observability-tempo` → `lab-traces.json`; `rabbitmq` →
-  `lab-rabbitmq.json`; `s3manager` → `lab-s3manager.json`;
-  `trivy-operator` → `lab-trivy.json`; `valkey` → `lab-valkey.json`;
-  `vault` → `lab-vault.json`; `velero` → `lab-velero.json`. Each test
-  only checks file existence + mimir uid presence — no panel-count
-  assertions (those are in the per-dashboard tests already). Note: the
-  multi-app shared dashboard (`lab-cloud-control-plane.json`) is tested
-  once, citing all three apps it covers. **Executor note:** if this
-  pushes `tests/observability.bats` past reasonable size, split into a
-  new `tests/dashboard-coverage.bats`; the existing per-dashboard bats
-  tests stay where they are. `make ci` must pass. `docs/done/` entry
-  required. (auto/o5-dashboard-coverage-bats)
+- [x] 🟢 **O5 dashboard-coverage bats — always-on service apps** — full
+  verification writeup:
+  [docs/done/2026-07-04-auto-o5-dashboard-coverage-bats.md](docs/done/2026-07-04-auto-o5-dashboard-coverage-bats.md).
+  (auto/o5-dashboard-coverage-bats; PR #328)
 
-- [x] 🟢 **NetworkPolicy bats fan-out — Tier-1 wave overlays** (CHARTER
-  **Objective O2**, due **2026-09-30**; O2 gap — four Tier-1 next-wave
-  namespaces have NetworkPolicy overlays but lack dedicated
-  `tests/networkpolicy-<ns>.bats` files; their NP assertions are
-  currently embedded in the component bats files
-  (`tests/kyverno.bats`, `tests/argo-rollouts.bats`,
-  `tests/velero.bats`, `tests/trivy-operator.bats`); O2's
-  measurement criterion says "tests/networkpolicy.bats +
-  per-scope files cover every namespace in gitops/" — the
-  per-scope files should exist for every namespace with an overlay,
-  mirroring the established pattern from all other namespace bats.
-  Wait for PR #324 (`auto/gitops-clusterip-bridge`) to merge first —
-  it adds the path variables `KYVERNO_NP`, `ARGO_ROLLOUTS_NP`,
-  `VELERO_NP`, `TRIVY_NP` to `tests/lib/networkpolicy-paths.bash`
-  that these new bats files will `load lib/networkpolicy-paths` to
-  use). Create four new files: `tests/networkpolicy-kyverno.bats`,
-  `tests/networkpolicy-argo-rollouts.bats`,
-  `tests/networkpolicy-velero.bats`,
-  `tests/networkpolicy-trivy-system.bats` — each structured as a
-  per-scope bats file (mirrors `tests/networkpolicy-kro.bats` as the
-  template; `load lib/networkpolicy-paths`; section header; assertions
-  for: overlay `kustomization.yaml` exists; references
-  `default-deny.yaml`; references `allow-dns-and-apiserver.yaml`;
-  references the `zz-dns-clusterip-bridge` template (post-PR-#324 the
-  shared template is the baseline); references each namespace's
-  specific allow files by name). For each file's specific allow
-  assertions, use the actual files present in the overlay at executor
-  pickup (e.g. for kyverno: `allow-kyverno-webhook-from-apiserver.yaml`
-  TCP 9443 from apiserver ipBlock, `allow-kyverno-metrics-from-observability.yaml`
-  TCP 8000; for argo-rollouts: the dashboard-from-gateway, metrics,
-  mimir-egress, plugin-egress allows; for velero: garage-egress,
-  metrics-ingress, kopia-egress allows; for trivy-system:
-  ghcr-egress, metrics-ingress allows). These tests are additive
-  — they do NOT remove the existing NP checks from the component
-  bats files; they exist for O2 measurement completeness.
-  `make ci` must pass. `docs/done/` entry required.
-  (auto/networkpolicy-tier1-bats)
+- [x] 🟢 **NetworkPolicy bats fan-out — Tier-1 wave overlays** — full
+  verification writeup:
+  [docs/done/2026-07-04-networkpolicy-tier1-bats.md](docs/done/2026-07-04-networkpolicy-tier1-bats.md).
+  (auto/networkpolicy-tier1-bats; PR #329)
 
-- [x] 🟢 **Lab — TiDB on-demand Alloy scrape + dashboard** (CHARTER **Core
-  Values** §"Real observability only"; O5 gap-fill for on-demand components —
-  follows the `lab-kargo.json` / `lab-inkless.json` precedent; **no
-  prerequisites — executor may pick up immediately**). The TiDB namespace
-  NetworkPolicy already permits ingress TCP 10080 from `observability`
-  (`gitops/tidb/networkpolicy/allow-tidb-from-observability.yaml`) but the
-  corresponding Alloy scrape job and dashboard were never added; the NP comment
-  references a scrape job that does not yet exist. Add
-  `prometheus.scrape "tidb"` block to
-  `gitops/platform/observability-alloy.yaml` (static target
-  `tidb.tidb.svc.cluster.local:10080`; `scrape_interval = "30s"`; add an
-  inline comment explaining this target is idle unless `make tidb-up` is active
-  — mirror the `kargo` scrape block comment). New
-  `grafana/dashboards/lab-tidb.json` ("Lab — TiDB (Distributed Database)")
-  modelled on `lab-kargo.json` stat-row: TiDB server pod running (KSM
-  `kube_deployment_status_replicas_available{namespace="tidb"}`); TiDB operator
-  pod running (`kube_deployment_status_replicas_available{namespace="tidb-admin"}`);
-  ArgoCD sync state (`argocd_app_info{name="tidb-cluster"}`); TiDB query
-  execution rate timeseries (`rate(tidb_executor_statement_total[5m])` by
-  `type`); TiDB connection count (`tidb_server_connections`); TiDB server memory
-  (cAdvisor `container_memory_working_set_bytes{namespace="tidb",container=~"tidb.*"}`).
-  **Executor note:** the exact deployment name and TiDB metric names depend on
-  the chart version pinned in `gitops/platform/tidb-cluster.yaml` — verify with
-  `grep -r "tidb_executor\|tidb_server_connections" gitops/` or the TiDB docs
-  before writing the dashboard; if a metric is not available, substitute the
-  nearest equivalent (keep ADR-0004: no fabricated fallbacks). All panels real
-  Mimir data with `X-Scope-OrgID: lab` (panels show "No data" naturally when
-  TiDB is not running — it is on-demand). No new NP changes needed (TCP 10080
-  allow is pre-wired). No new HTTPRoute row needed (`tidb-demo` row already in
-  Lab UIs panel). Extend `tests/observability.bats` with four assertions:
-  scrape block `"tidb"` present in `observability-alloy.yaml`; `lab-tidb.json`
-  exists; dashboard references `tidb` namespace in at least one KSM query; no
-  fabricated/placeholder data. Update `docs/dependency-tree.md` with TiDB
-  observability note (parallel to the Kargo observability note added in
-  `auto/kargo-observability-dashboard`). `docs/done/` entry required. `make ci`
-  must pass. (auto/tidb-dashboard)
+- [x] 🟢 **Lab — TiDB on-demand Alloy scrape + dashboard** — full verification
+  writeup:
+  [docs/done/2026-07-05-auto-tidb-dashboard.md](docs/done/2026-07-05-auto-tidb-dashboard.md).
+  (auto/tidb-dashboard; PR #332)
 
 - [x] 🟢 **Lab — Longhorn on-demand Alloy scrape + dashboard** — full
   verification writeup:
@@ -2644,37 +2507,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-06-auto-securitycontext-tier1-bats.md](docs/done/2026-07-06-auto-securitycontext-tier1-bats.md).
   (auto/securitycontext-tier1-bats; PR #335)
 
-- [x] 🟢 **O2 measurement — per-scope NP bats for 3 late-addition namespaces**
-  (CHARTER **Objective O2**, due **2026-09-30**; O2 NP coverage gap — three
-  namespaces (`harbor`, `kargo`, `node-exporter`) have NetworkPolicy overlays
-  in `gitops/*/networkpolicy/` and are wired into the appset or a dedicated NP
-  Application, but lack dedicated `tests/networkpolicy-<ns>.bats` files; the NP
-  drift guard only blocks per-namespace tests creeping back into the shared
-  baseline monolith — it does not require every overlay to have a per-scope
-  file. O2 says "per-scope files cover every namespace in gitops/". **No
-  prerequisites — executor may pick up immediately; pick up after
-  `auto/securitycontext-tier1-bats` if both are available.** Create three new
-  files following `tests/networkpolicy-kro.bats` as the template (`load
-  lib/networkpolicy-paths`; section header; assertions for: overlay
-  `kustomization.yaml` exists; references `default-deny.yaml`; references
-  `allow-dns-and-apiserver.yaml`; references `zz-dns-clusterip-bridge`; each
-  namespace's specific allow files by name). Also add three path vars to
-  `tests/lib/networkpolicy-paths.bash`:
-  `HARBOR_NP="$REPO/gitops/harbor/networkpolicy"`,
-  `KARGO_NP="$REPO/gitops/kargo/networkpolicy"`,
-  `NODE_EXPORTER_NP="$REPO/gitops/node-exporter/networkpolicy"`.
-  Per-namespace specific allows to assert (verify exact files at executor
-  pickup):
-  `harbor` — `allow-harbor-ingress.yaml`, `allow-harbor-garage-egress.yaml`,
-  `allow-harbor-valkey-egress.yaml`, `allow-harbor-intra-namespace.yaml`,
-  `allow-harbor-metrics-ingress.yaml` (all 5 files in overlay);
-  `kargo` — `allow-kargo-api-from-gateway.yaml`,
-  `allow-kargo-webhook-from-apiserver.yaml`, `allow-kargo-egress-argocd.yaml`,
-  `allow-kargo-egress-registry.yaml`, `allow-kargo-metrics-ingress.yaml`;
-  `node-exporter` — `allow-node-exporter-metrics-ingress.yaml`.
-  These tests are additive — they do NOT remove the existing NP checks from the
-  component bats files. `make ci` must pass. `docs/done/` entry required.
-  (auto/networkpolicy-tier1-bats-wave2)
+- [x] 🟢 **O2 measurement — per-scope NP bats for 3 late-addition
+  namespaces** — full verification writeup:
+  [docs/done/2026-07-06-auto-networkpolicy-tier1-bats-wave2.md](docs/done/2026-07-06-auto-networkpolicy-tier1-bats-wave2.md).
+  (auto/networkpolicy-tier1-bats-wave2; PR #336)
 
 - [x] 🟢 **`docs/00-architecture.md` — Harbor registry update** (CHARTER
   **Core Values** §"Docs & dashboards don't drift"; docs-only; **no
