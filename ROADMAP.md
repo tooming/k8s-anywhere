@@ -1987,15 +1987,21 @@ there is no point where the lab loses a working git source or CI path.
 > 🟢 cloud-control-plane dashboard item that previously lived here has been promoted
 > to *Now / next* above (CHARTER **O5** carrier).
 >
-> **O4 gap (surfaced 2026-06-25):** CHARTER O4 is measured by "a CI step that
-> pushes an unsigned image and asserts Kyverno rejection." This step does not exist
-> yet. It depends on the verifyImages flip to Enforce (the unchecked item above) AND
-> needs an architect RFC to define the exact GitLab CI job shape, unsigned-image
-> source, and rejection assertion method before the executor can build it.
+> **O4 gap (surfaced 2026-06-25) — resolved 2026-08-18, note left stale until now
+> (chore/roadmap-cross-cutting-stale-notes-cleanup).** This note used to say the
+> unsigned-image-rejection CI step "does not exist yet" — it does now: both the
+> `verifyImages` Enforce flip and the `verify-image-rejection` CI job merged
+> 2026-08-18 (`auto/cosign-enforce-flip` PR #1223, `auto/o4-ci-rejection-gate`
+> PR #1224 — see the *Now / next* top note's O4 status and the `[x]` items at
+> lines ~1553 and ~2278/2295 below for the full trail). No CHARTER-O4-buildable
+> gap remains here.
 >
-> **Two upgrade-drafter major-bump findings parked 2026-07-24** (issues #704, #705)
-> — both need an architect go/no-go call, not a mechanical bump, per
-> `routines/upgrade-drafter.prompt.md`'s "skip major bumps, open an issue" rule.
+> **Two upgrade-drafter major-bump findings parked 2026-07-24 (issues #704, #705)
+> — resolved the same day, note left stale until now.** Both issues were closed
+> 2026-07-24 once groomed: #704 (kube-state-metrics `7.8.1`→`8.0.0`) shipped via
+> RFC #707/PR #710 (see the `[x]` item at line ~2222 below); #705 (`apache/kafka`
+> `3.9.2`→`4.3.1`) was decided **Hold** via RFC #708 (see the `~~🟡~~` item at
+> line ~2227 below). Nothing here is still awaiting an architect call.
 
 - [x] 🟢 **`scripts/ensure-bats-hook.sh` — auto-install `bats` at session start so
   `make ci`'s unit-test gate can't silently self-skip in an autonomous session** —
