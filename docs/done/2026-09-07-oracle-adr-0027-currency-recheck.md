@@ -49,4 +49,4 @@ row, the same lens that found the Terraform/Terragrunt gap on 2026-09-06.
 
 ## PR
 
-(filled in once the PR is opened)
+https://github.com/tooming/k8s-anywhere/pull/1474 (auto/oracle-adr-0027-currency-check)
