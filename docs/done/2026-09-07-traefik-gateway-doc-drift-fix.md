@@ -45,4 +45,4 @@ assumed.
 
 ## PR
 
-auto/traefik-gateway-doc-drift-fix
+https://github.com/tooming/k8s-anywhere/pull/1473 (auto/traefik-gateway-doc-drift-fix)
