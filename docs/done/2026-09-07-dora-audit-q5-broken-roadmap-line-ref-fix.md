@@ -36,4 +36,4 @@ authorship time" claim were both verified directly (`wc -l ROADMAP.md`;
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1492 (chore/dora-audit-q5-broken-roadmap-line-ref-fix)
