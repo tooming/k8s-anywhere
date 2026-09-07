@@ -24,9 +24,10 @@ spec:
           # Kyverno.
           # data-networkpolicy REMOVED 2026-09-06 (RabbitMQ/ADR-0009, Valkey/
           # ADR-0018): the data namespace no longer exists — it held nothing else.
-          - appName: external-secrets-networkpolicy
-            gitPath: gitops/external-secrets/networkpolicy
-            destNamespace: external-secrets
+          # external-secrets-networkpolicy REMOVED 2026-09-07 (ADR-0042,
+          # supersedes ADR-0036): the external-secrets namespace no longer
+          # exists — External Secrets Operator was dropped entirely, no
+          # replacement, alongside Vault.
           - appName: lab-gateway-networkpolicy
             gitPath: gitops/network/networkpolicy
             destNamespace: lab-gateway
@@ -46,9 +47,9 @@ spec:
           - appName: lab-demo-networkpolicy
             gitPath: gitops/apps/demo/networkpolicy
             destNamespace: lab-demo
-          - appName: vault-networkpolicy
-            gitPath: gitops/vault/networkpolicy
-            destNamespace: vault
+          # vault-networkpolicy REMOVED 2026-09-07 (ADR-0042, supersedes
+          # ADR-0037): the vault namespace no longer exists — Vault was dropped
+          # from the lab entirely, no replacement.
           # harbor-networkpolicy REMOVED 2026-09-07 (ADR-0024): Harbor was dropped
           # from the lab entirely, no replacement — the harbor namespace no longer
           # exists, same dead-config shape the data-networkpolicy removal above

@@ -6,13 +6,12 @@
 # FROZEN — do NOT add new @test blocks here. Two parallel PSS fan-out PRs appending a
 # per-namespace block to this file's EOF is what caused the recurring merge conflict
 # (#238 vs #239). New per-namespace / per-scope security-context tests go in their own
-# tests/securitycontext-<scope>.bats file (see -data, -velero, -vault).
+# tests/securitycontext-<scope>.bats file (see -argocd, -lab-gateway).
 # This freeze is enforced mechanically by scripts/securitycontext-tests-check.sh (make ci);
 # if you intentionally rename/edit an existing test here, run `make securitycontext-tests-mark`.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
-  ESO="$REPO/gitops/platform/external-secrets.yaml"
   load lib/yq
 }
 
@@ -55,65 +54,6 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- external-secrets namespace PSA restricted labels (RFC #229, ADR-0017) ----
-
-@test "external-secrets namespace.yaml exists" {
-  [ -f "$REPO/gitops/external-secrets/namespace.yaml" ]
-}
-
-@test "external-secrets namespace.yaml enforces PSS restricted" {
-  run grep -q 'pod-security.kubernetes.io/enforce: restricted' "$REPO/gitops/external-secrets/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "external-secrets namespace.yaml has enforce-version: latest" {
-  run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$REPO/gitops/external-secrets/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "external-secrets namespace.yaml has warn: restricted" {
-  run grep -q 'pod-security.kubernetes.io/warn: restricted' "$REPO/gitops/external-secrets/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "external-secrets namespace.yaml has audit: restricted" {
-  run grep -q 'pod-security.kubernetes.io/audit: restricted' "$REPO/gitops/external-secrets/namespace.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "external-secrets-extras Application exists" {
-  [ -f "$REPO/gitops/platform/external-secrets-extras.yaml" ]
-}
-
-@test "external-secrets-extras Application targets gitops/external-secrets" {
-  run grep -q 'path: gitops/external-secrets' "$REPO/gitops/platform/external-secrets-extras.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "external-secrets-extras Application uses ServerSideApply" {
-  run grep -q 'ServerSideApply=true' "$REPO/gitops/platform/external-secrets-extras.yaml"
-  [ "$status" -eq 0 ]
-}
-
-@test "external-secrets chart valuesObject sets runAsNonRoot: true" {
-  # The chart has no global.podSecurityContext key — main/webhook/certController
-  # each need their OWN pod-level podSecurityContext.runAsNonRoot, or
-  # require-pod-security-restricted (ADR-0017) rejects the pod at admission
-  # (regression: #340, a rollout restart during vault-bootstrap got blocked
-  # because the values were nested under the wrong, silently-ignored key).
-  for path in '.podSecurityContext.runAsNonRoot' '.webhook.podSecurityContext.runAsNonRoot' '.certController.podSecurityContext.runAsNonRoot'; do
-    [ "$(yqs ".spec.source.helm.valuesObject${path}" "$ESO")" = "true" ]
-  done
-}
-
-@test "external-secrets chart valuesObject sets readOnlyRootFilesystem: true" {
-  for path in '.securityContext.readOnlyRootFilesystem' '.webhook.securityContext.readOnlyRootFilesystem' '.certController.securityContext.readOnlyRootFilesystem'; do
-    [ "$(yqs ".spec.source.helm.valuesObject${path}" "$ESO")" = "true" ]
-  done
-}
-
-@test "external-secrets chart valuesObject drops ALL capabilities" {
-  for path in '.securityContext.capabilities.drop[0]' '.webhook.securityContext.capabilities.drop[0]' '.certController.securityContext.capabilities.drop[0]'; do
-    [ "$(yqs ".spec.source.helm.valuesObject${path}" "$ESO")" = "ALL" ]
-  done
-}
+# external-secrets namespace PSA restricted labels (RFC #229, ADR-0017) REMOVED
+# 2026-09-07 (ADR-0042, supersedes ADR-0036): External Secrets Operator was
+# dropped from the lab entirely, no replacement.

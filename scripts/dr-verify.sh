@@ -9,8 +9,6 @@ set -uo pipefail
 # Per-check budgets (seconds). Slow ones cover post-rebuild convergence.
 T_NODES="${DR_T_NODES:-120}"
 T_ARGO="${DR_T_ARGO:-600}"
-T_VAULT="${DR_T_VAULT:-180}"
-T_ESO="${DR_T_ESO:-300}"
 
 # Optionally verify a specific cluster (KCTX=k3d-k8s-lab-green). Unset = current context.
 source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
@@ -52,44 +50,22 @@ argo_offenders() {
              | "\(.metadata.name): sync=\(.status.sync.status) health=\(.status.health.status)"'
 }
 
-p_vault() {
-  local s
-  s=$(kubectl -n vault exec vault-0 -- vault status -format=json 2>/dev/null) || true
-  [ -n "$s" ] \
-    && [ "$(jq -r '.initialized' <<<"$s" 2>/dev/null)" = "true" ] \
-    && [ "$(jq -r '.sealed' <<<"$s" 2>/dev/null)" = "false" ]
-}
-
-p_eso() {
-  kubectl get clustersecretstore vault \
-    -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null | grep -q True || return 1
-  local json total ready
-  json=$(kubectl get externalsecrets.external-secrets.io -A -o json 2>/dev/null) || return 1
-  total=$(jq '.items|length' <<<"$json" 2>/dev/null) || return 1
-  [ "${total:-0}" -ge 1 ] || return 1
-  ready=$(jq '[.items[]|select(any(.status.conditions[]?; .type=="Ready" and .status=="True"))]|length' <<<"$json")
-  [ "$total" = "$ready" ]
-}
-eso_offenders() {
-  kubectl get externalsecrets.external-secrets.io -A -o json 2>/dev/null \
-    | jq -r '.items[]|select((any(.status.conditions[]?; .type=="Ready" and .status=="True"))|not)
-             | "\(.metadata.namespace)/\(.metadata.name): not Ready"'
-}
-
 # p_garage (storage namespace, velero/harbor-registry buckets) REMOVED 2026-09-07
 # (ADR-0002/ADR-0021/ADR-0024) — Garage, Velero, and Harbor were all removed
 # entirely, no replacement; the storage namespace no longer exists to query.
 # p_mimir / p_grafana (and the curlsh in-cluster-probe helper they used) REMOVED
 # 2026-09-06 (ADR-0041, observability stack removed with no replacement) —
 # Mimir and Grafana no longer exist to query.
+# p_vault / p_eso / eso_offenders REMOVED 2026-09-07 (ADR-0042, supersedes
+# ADR-0036/ADR-0037) — Vault and External Secrets Operator were both removed
+# entirely, no replacement; the vault and external-secrets namespaces no
+# longer exist to query.
 
 # ---- run --------------------------------------------------------------------
 printf '%s== DR verify ==%s  (real end-to-end health checks)\n' "$B" "$Z"
 
 retry "$T_NODES"   10 p_nodes   && ok "Kubernetes nodes Ready"                  || bad "Kubernetes nodes Ready"
 retry "$T_ARGO"    10 p_argo    && ok "ArgoCD: all Applications Synced+Healthy" || { bad "ArgoCD: all Applications Synced+Healthy"; argo_offenders | while read -r l; do note "$l"; done; }
-retry "$T_VAULT"   5  p_vault   && ok "Vault initialized + unsealed"            || bad "Vault initialized + unsealed"
-retry "$T_ESO"     10 p_eso     && ok "External Secrets: all SecretSynced"      || { bad "External Secrets: all SecretSynced"; eso_offenders | while read -r l; do note "$l"; done; }
 
 echo
 if [ "$drift" -eq 0 ]; then

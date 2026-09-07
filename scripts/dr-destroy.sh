@@ -3,9 +3,8 @@
 # `make up` has to rebuild it entirely from code. See docs/DR.md.
 #
 # Scopes (how much to wipe — bigger = more faithful, slower to rebuild):
-#   cluster  (default) destroy the k3d cluster only (ArgoCD, Vault, all workloads,
+#   cluster  (default) destroy the k3d cluster only (ArgoCD, all workloads,
 #            the in-cluster repo secret). Colima survives. Fast (~3-5 min rebuild).
-#            Exercises full secret regeneration (new Vault keys).
 #   machine  cluster + delete the Colima VM (clean-machine simulation; re-pulls
 #            all images). Slowest.
 #
@@ -44,7 +43,7 @@ clear_state(){ # force greenfield for a unit whose real resources are now gone
 }
 
 # --- 1. Cluster (and everything running in it) -------------------------------
-step "destroying k3d cluster '$CLUSTER_NAME' (ArgoCD, Vault, all workloads)"
+step "destroying k3d cluster '$CLUSTER_NAME' (ArgoCD, all workloads)"
 tg_destroy cluster
 k3d cluster delete "$CLUSTER_NAME" >/dev/null 2>&1 || true
 clear_state cluster

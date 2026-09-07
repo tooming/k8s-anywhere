@@ -43,9 +43,10 @@ rationale travels with the code.
   - [ADR-0033](adr-0033-gitlab-git-source-and-ci.md) — GitLab (self-hosted) as the lab's git source of truth + CI runner — **Superseded by ADR-0035**
   - [ADR-0034](adr-0034-lgtmp-observability-stack.md) — Grafana LGTM(P) stack internals + kube-state-metrics/node-exporter for observability — **Superseded by ADR-0041**
   - [ADR-0035](adr-0035-forgejo-not-gitlab.md) — Forgejo (self-hosted) as the lab's git source of truth + CI runner (supersedes ADR-0033) — **Removed 2026-09-07, no replacement**
-  - [ADR-0036](adr-0036-external-secrets-vault-sync.md) — External Secrets Operator for Vault-backed secret sync (retroactive governance record)
-  - [ADR-0037](adr-0037-vault-secrets-management.md) — HashiCorp Vault for secrets management (retroactive governance record)
+  - [ADR-0036](adr-0036-external-secrets-vault-sync.md) — External Secrets Operator for Vault-backed secret sync (retroactive governance record) — **Superseded by ADR-0042**
+  - [ADR-0037](adr-0037-vault-secrets-management.md) — HashiCorp Vault for secrets management (retroactive governance record) — **Superseded by ADR-0042**
   - [ADR-0038](adr-0038-ack-kro-moto-cloud-control-plane.md) — moto + ACK (S3) + KRO for the cloud-control-plane demo pattern (retroactive governance record) — **Removed 2026-09-07, no replacement**
   - [ADR-0039](adr-0039-s3manager-garage-browser-ui.md) — s3manager as the lab's Garage (S3) browser UI (retroactive governance record)
   - [ADR-0040](adr-0040-traefik-not-envoy-gateway.md) — Traefik for north-south ingress (supersedes ADR-0008)
   - [ADR-0041](adr-0041-remove-observability-stack.md) — Remove the observability stack entirely (supersedes ADR-0006, ADR-0034)
+  - [ADR-0042](adr-0042-remove-vault-and-external-secrets.md) — Remove Vault + External Secrets Operator entirely (supersedes ADR-0036, ADR-0037)

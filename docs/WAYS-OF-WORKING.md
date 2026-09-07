@@ -299,7 +299,6 @@ Each domain has an owning person/team, encoded in [`.github/CODEOWNERS`](../.git
 |---|---|---|
 | Bootstrap / IaC | `infra/`, `gitops/bootstrap/`, `gitops/platform/` | @tbd |
 | Network / ingress | `gitops/network/` | @tbd |
-| Secrets | `gitops/vault/`, `gitops/secrets/` | @tbd |
 | Storage / data | `gitops/storage/`, `gitops/data/` | @tbd |
 | Apps / demo | `gitops/apps/` | @tbd |
 

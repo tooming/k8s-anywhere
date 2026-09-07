@@ -47,15 +47,16 @@ duplicated.
 - **Applicable?** Yes.
 - **Answer:** Narrower, but simpler, than before. Every namespace this lab's
   earlier CHARTER Objective O3 named as stateful and critical — `data`, `capstone`,
-  `vault`'s own Velero backup target, `tidb` — is gone: `data`/`capstone` were
+  Vault's own Velero backup target, `tidb` — is gone: `data`/`capstone` were
   removed entirely 2026-09-07 alongside Velero/Garage (their backup mechanism),
-  `tidb` was removed 2026-09-06, and `observability` the same day (ADR-0041). As
-  of 2026-09-07 there is no stateful data left in this lab worth naming critical
-  in the DORA sense — Vault itself holds secrets, not application state, and is
-  fully re-derivable from `vault-bootstrap.sh` against a fresh cluster. The
-  always-on stack is now exactly 6 namespaces (`argocd`, `cert-manager`,
-  `external-secrets`, `lab-demo`, `lab-gateway`, `vault`), all load-bearing, none
-  on-demand.
+  `tidb` was removed 2026-09-06, `observability` the same day (ADR-0041), and
+  Vault itself (which held secrets, not application state) followed 2026-09-07
+  (ADR-0042, alongside External Secrets Operator, its only client). As of
+  2026-09-07 there is no stateful data left in this lab worth naming critical in
+  the DORA sense — nothing left even holds secrets externally; every credential
+  the always-on stack needs is now natively generated in-cluster. The always-on
+  stack is now exactly 4 namespaces (`argocd`, `cert-manager`, `lab-demo`,
+  `lab-gateway`), all load-bearing, none on-demand.
 - **Evidence:** [CHARTER.md](../CHARTER.md) O3; [docs/dependency-tree.md](dependency-tree.md).
 - **Gap:** closed below — see "Stateless component criticality tiers".
 
@@ -75,15 +76,16 @@ component is always-on, so there's no separate "on-demand" carve-out any more.
 | Traefik | **P0** | Sole north-south ingress (ADR-0040, supersedes ADR-0008) — bundled with k3s, and (since the DR front door was removed entirely 2026-09-07, no replacement) the *only* entry point into the lab, via k3d's own load balancer on `:8080`. An outage of the gateway itself means total external unreachability — whole-lab-down by the scheme's own P0 definition. |
 | k3s's bundled Flannel + kube-router | **P0** | CNI/network dataplane and NetworkPolicy enforcement — replaces Cilium (removed entirely 2026-09-07, no replacement, ADR-0014; Cilium itself was the *only* documented P0 in `docs/incident-log.md` before removal, 2026-07-29: apiserver connectivity loss, cluster-wide, caused by a stale `cilium-agent` config after every `colima start`). Without a functioning CNI no pod can reach the apiserver or any other pod. Not yet independently incident-tested since the switch (ADR-0004 caveat). |
 | ArgoCD | **P1** | GitOps control plane. Already-running pods keep serving on outage — this is not immediate lab-down — but no new deploys land and drift stops self-healing, matching the P1 definition ("a single always-on component is down or degraded"). |
-| Vault | **P1** | Secrets backend. Documented real incident (`gitops/vault/unsealer.yaml`'s header comment): sealed for 4+ days, silently breaking every ExternalSecrets refresh cluster-wide. Already-synced K8s `Secret` objects are untouched — new/rotated secrets stop flowing. Matches P1's "security-relevant gap" language directly. |
-| External Secrets Operator | **P1** | Shares Vault's exact blast radius — the two fail together functionally (ESO is the sync mechanism, Vault is the source). |
 | cert-manager | **P2** | TLS lifecycle. Existing certs keep working until their own expiry; only renewal stops — a slow-burn gap, not an immediate one. |
 
-(Kyverno, Garage, GitLab/Forgejo, moto/ACK/KRO, Argo Rollouts, and Velero all had
-rows here until they were removed entirely, no replacement, across the
-2026-09-06/2026-09-07 removals — there's no outage to tier for a component that no
-longer exists, same reasoning already applied to the observability stack's own
-removed rows below.)
+(Kyverno, Garage, GitLab/Forgejo, moto/ACK/KRO, Argo Rollouts, Velero, Vault, and
+External Secrets Operator all had rows here until they were removed entirely, no
+replacement, across the 2026-09-06/2026-09-07 removals — Vault's own real
+documented incident (sealed for 4+ days, silently breaking every ExternalSecrets
+refresh cluster-wide) is preserved in [docs/incident-log.md](incident-log.md) as
+history even though the component itself is gone (ADR-0042) — there's no outage
+to tier for a component that no longer exists, same reasoning already applied to
+the observability stack's own removed rows below.)
 
 (The observability stack's own rows here — Alloy at P1, Grafana/Mimir/Loki/Tempo/
 Pyroscope/kube-state-metrics/node-exporter at P2 — were removed 2026-09-06 along
@@ -109,9 +111,9 @@ test change was needed when Cilium's row changed, only this prose description.)
 - **Evidence:** CHARTER.md's current Objective set; [docs/DR.md](DR.md);
   [ADR-0021](decisions/adr-0021-velero-backup-restore.md)'s Status.
 - **Gap:** real. This lab has no data to lose (every stateful component was removed
-  along with Velero/Garage — the remaining always-on stack, Vault included, is
-  fully re-derivable from git + `vault-bootstrap.sh`), so the practical risk is low,
-  but there is honestly no RTO/RPO commitment left to point to.
+  along with Velero/Garage — the remaining always-on stack is fully re-derivable
+  from git alone, no secrets-bootstrap step left to run), so the practical risk is
+  low, but there is honestly no RTO/RPO commitment left to point to.
 
 **Q4. Is there a backup policy (scope, frequency, retention, and is restoration tested)?**
 - **Answer:** No. Velero — this lab's only backup/restore mechanism — was removed
@@ -246,8 +248,8 @@ test change was needed when Cilium's row changed, only this prose description.)
   [ADR-0024](decisions/adr-0024-harbor-not-artifactory.md) Status sections (component
   removals that took the drills with them).
 - **Gap:** real. A future session could write a new fault-injection drill against one
-  of the six remaining always-on components (e.g. kill the single-replica ArgoCD or
-  Vault pod and assert Kubernetes' own self-heal) — nothing like that exists today.
+  of the four remaining always-on components (e.g. kill the single-replica ArgoCD
+  pod and assert Kubernetes' own self-heal) — nothing like that exists today.
 
 **Q13. Are test results tracked with remediation deadlines?**
 - **Answer:** No mechanism exists any more. `docs/dr-results-log.md` and

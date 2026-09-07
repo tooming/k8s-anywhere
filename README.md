@@ -35,14 +35,13 @@ lab's current, deliberately small shape, not a temporary gap to "finish" later.
 ## The stack
 
 Everything except Terraform/Terragrunt runs **in** the cluster, deployed by ArgoCD
-(one `Application` per component) — 6 always-on namespaces, nothing on-demand.
+(one `Application` per component) — 4 always-on namespaces, nothing on-demand.
 
 | Layer | Tools |
 |-------|-------|
 | **Bootstrap (IaC)** | Terraform · Terragrunt · k3d (k3s-in-Docker, bundled Flannel CNI + kube-router NetworkPolicy) |
 | **GitOps** | GitHub (this repo's own public remote, git source) · ArgoCD (engine, app-of-apps) |
 | **Ingress** | Traefik (north-south, bundled with k3s · `IngressRoute`/`TLSStore` CRDs; ADR-0040, ADR-0016) — k3d's own load balancer publishes it directly on host `:8080`, no separate front door |
-| **Secrets** | Vault (KV v2) · External Secrets Operator |
 | **TLS / certificates** | cert-manager (`cert-manager-root-ca` self-signed root CA bootstrap chain — `selfsigned-bootstrap` → root `Certificate` → `k8s-lab-ca` `ClusterIssuer` · `lab-gateway-certificate` wildcard `*.127.0.0.1.nip.io` Certificate · `cert-manager-networkpolicy` default-deny overlay; ADR-0028) |
 | **Demo app** | lab-demo (single static hello-world Deployment, `gitops/apps/demo/`, Docker Hub image) |
 
@@ -51,7 +50,7 @@ Everything except Terraform/Terragrunt runs **in** the cluster, deployed by Argo
 macOS with **Colima** (not Docker Desktop). Install the toolchain, then verify:
 
 ```sh
-brew install colima docker k3d kubectl helm terraform terragrunt kustomize argocd vault yq jq mkcert
+brew install colima docker k3d kubectl helm terraform terragrunt kustomize argocd yq jq mkcert
 make preflight      # checks all of the above are on PATH
 ```
 
@@ -64,9 +63,9 @@ make dr-verify      # assert the whole lab is healthy end-to-end (real checks)
 ```
 
 `make up` runs the only imperative (day-0) steps — Colima → k3d → ArgoCD → app-of-apps
-→ Vault bootstrap — then ArgoCD reconciles everything else directly from this repo's
-GitHub remote. The ordered chain is documented in [docs/DR.md](docs/DR.md). Run `make`
-with no target for the full command list.
+— then ArgoCD reconciles everything else directly from this repo's GitHub remote. The
+ordered chain is documented in [docs/DR.md](docs/DR.md). Run `make` with no target for
+the full command list.
 
 ## Endpoints
 
@@ -77,7 +76,6 @@ more (hostnames resolve to 127.0.0.1 via `nip.io` — no `/etc/hosts` edits):
 | UI | URL |
 |----|-----|
 | ArgoCD | http://argocd.127.0.0.1.nip.io:8080 |
-| Vault | http://vault.127.0.0.1.nip.io:8080 |
 
 `make argocd-password` prints the ArgoCD admin password.
 
@@ -89,7 +87,7 @@ the components they exercised) — the only recovery mechanism is a full rebuild
 
 | Command | What it does |
 |---------|--------------|
-| `make dr-verify` | Real end-to-end health check: nodes, every ArgoCD app Synced+Healthy, Vault unsealed, all ExternalSecrets synced. Safe anytime. |
+| `make dr-verify` | Real end-to-end health check: nodes, every ArgoCD app Synced+Healthy. Safe anytime. |
 | `make dr-test` | Full DR drill: **destroy** the lab → `make up` → verify. `SCOPE=cluster\|machine`. |
 
 See [docs/DR.md](docs/DR.md) and [ADR-0005](docs/decisions/adr-0005-spof-recreate-over-ha.md)
@@ -115,7 +113,7 @@ them and enforces every gate.
 
 - `infra/` — Terraform modules + Terragrunt live config (the day-0 bootstrap)
 - `gitops/` — what ArgoCD syncs: `bootstrap/` (root app-of-apps) → `platform/` (one
-  `Application` per component) → `network/ vault/ secrets/ apps/`
+  `Application` per component) → `network/ apps/`
 - `scripts/` — bootstrap + quality-gate scripts (`lint.sh`, `validate-*.sh`, `test.sh`)
 - `tests/` — `bats` unit tests + fixtures · `.github/workflows/ci.yml` — the clusterless CI gates · `docs/` — architecture, DR, decisions, dependency tree
 

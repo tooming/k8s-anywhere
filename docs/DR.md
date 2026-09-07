@@ -5,7 +5,7 @@ repo (manifests, Terraform, scripts); secrets are *generated* during bootstrap.
 To rebuild the whole thing on a clean machine: `make up`.
 
 ```sh
-make preflight   # check tools (brew install: colima k3d helm terragrunt kustomize argocd vault yq jq mkcert)
+make preflight   # check tools (brew install: colima k3d helm terragrunt kustomize argocd yq jq mkcert)
 make up          # bootstrap everything, in order
 make status      # VM RAM + per-namespace usage + unhealthy pods
 ```
@@ -36,22 +36,20 @@ ArgoCD from GitHub.
 | 4 | ArgoCD | `argocd` | the GitOps engine — must exist before GitOps |
 | 5 | App-of-apps | `root-app` | the single seed; ArgoCD now syncs everything else, directly from this repo's public GitHub remote |
 | 6 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Traefik's in-cluster Service |
-| 7 | Vault bootstrap | `vault-bootstrap` | init/unseal, store keys in `vault-keys`, enable KV, enable k8s auth + `eso` role |
 
-Once step 5 is done, **External Secrets** syncs Vault → k8s Secrets, and the
-remaining workloads (Traefik, cert-manager, lab-demo) come up on their own.
+Once step 5 is done, the remaining workloads (Traefik, cert-manager, lab-demo)
+come up on their own — no secrets-bootstrap step left to run (Vault and External
+Secrets Operator were removed entirely 2026-09-07, ADR-0042, no replacement; no
+credential currently flowing through the lab needs an external secrets store).
 
 ### Golden rules (keep it acyclic — ADR-0001)
-- **Never** source ArgoCD's git credentials or Vault's unseal key *from Vault*
-  (that creates an ArgoCD↔Vault cycle). The unseal key lives in the `vault-keys`
-  k8s Secret.
-- ESO/Vault being down does **not** kill running workloads — their k8s Secrets
-  persist; only refresh/new-secret creation pauses.
+- **Never** source ArgoCD's git credentials from anywhere but Terraform's own
+  bootstrap — no in-cluster component should hold the keys to its own reconciler.
 
 ### What is NOT preserved on a rebuild
-Recreate model → fresh everything: new Vault root/unseal keys. That's expected for
-a throwaway lab — there is no stateful application data left in this lab to lose
-(see the honest-scope note above).
+Recreate model → fresh everything. That's expected for a throwaway lab — there is
+no stateful application data left in this lab to lose (see the honest-scope note
+above).
 
 ## `make dr-test`, `make dr-verify`, `make dr-destroy`
 
@@ -71,9 +69,8 @@ now lives only on its public GitHub remote, which a local DR drill neither destr
 nor rebuilds), so it collapsed into `cluster` and was dropped.
 
 `dr-verify` checks (all live, no placeholders — see ADR-0004): nodes `Ready`,
-every ArgoCD `Application` `Synced`+`Healthy`, Vault initialized & unsealed, all
-`ExternalSecret`s `SecretSynced`. Each check polls until satisfied or its budget
-expires; exit 0 only if all pass.
+every ArgoCD `Application` `Synced`+`Healthy`. Each check polls until satisfied or
+its budget expires; exit 0 only if all pass.
 
 ## Single points of failure (and why true HA isn't possible here)
 
@@ -90,10 +87,7 @@ restart) and **recoverability** (recreate-from-code), not true HA — see
 [ADR-0005](decisions/adr-0005-spof-recreate-over-ha.md).
 
 ## Recovery cookbook (single-component)
-- **Vault sealed** (after a pod restart): the in-cluster `vault-unsealer` re-unseals
-  automatically within ~10s. Manual: `make vault-unseal`.
 - **ArgoCD out of sync after a git push:** `kubectl -n argocd annotate applications.argoproj.io/root argocd.argoproj.io/refresh=hard --overwrite`.
-- **Re-run a bootstrap safely:** `vault-bootstrap` is idempotent.
 
 ### k3s embedded datastore (SQLite/kine) health
 

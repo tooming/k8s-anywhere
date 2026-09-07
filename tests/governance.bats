@@ -103,8 +103,13 @@ setup() {
 # Garage and s3manager, both dropped from the lab entirely, no replacement
 # (ADR-0002/ADR-0007/ADR-0039) — same dead-config shape the removals above
 # already established.
-STANDARD_NS="argocd external-secrets \
-lab-demo vault lab-gateway \
+# `external-secrets` and `vault` are likewise now absent (REMOVED 2026-09-07,
+# ADR-0042, supersedes ADR-0036/ADR-0037): both were dropped from the lab
+# entirely, no replacement — explicit maintainer direction; External Secrets
+# Operator had no ExternalSecret consumer left after the removals above, and
+# Vault was ESO's only backend.
+STANDARD_NS="argocd \
+lab-demo lab-gateway \
 cert-manager"
 
 @test "every standard-tier namespace has a governance leaf overlay" {

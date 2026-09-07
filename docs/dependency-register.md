@@ -18,8 +18,8 @@ questions, not duplicates of each other):
 
 ## Scope note
 
-Of the 41 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
-(ADR-0001–ADR-0041), two are **Superseded** and fully excluded per the index's own
+Of the 42 ADRs indexed in [`docs/decisions/README.md`](decisions/README.md)
+(ADR-0001–ADR-0042), two are **Superseded** and fully excluded per the index's own
 convention (only a live replacement is listed, when one exists): ADR-0010 (Redis,
 superseded by ADR-0018/Valkey — Valkey itself was later removed entirely, see
 below) and ADR-0008 (Envoy Gateway, superseded by ADR-0040/Traefik) each have (or
@@ -27,16 +27,23 @@ had) a live replacement counted in their place. ADR-0011 (Artifactory, supersede
 by ADR-0024/Harbor) and ADR-0033 (GitLab, superseded by ADR-0035/Forgejo) once
 followed the same pattern, but both eventual replacements — Harbor and Forgejo —
 were themselves removed entirely with no replacement 2026-09-07 (see below), so
-neither the original nor the superseding ADR contributes a row any more. The
-remaining two, ADR-0006 (Grafana's native Git Sync) and ADR-0034 (the LGTM(P)
-stack internals — Mimir, Loki, Tempo, Pyroscope, Alloy, plus kube-state-metrics/
-node-exporter), were both superseded 2026-09-06 by
+neither the original nor the superseding ADR contributes a row any more. ADR-0006
+(Grafana's native Git Sync) and ADR-0034 (the LGTM(P) stack internals — Mimir,
+Loki, Tempo, Pyroscope, Alloy, plus kube-state-metrics/node-exporter) were both
+superseded 2026-09-06 by
 [ADR-0041](decisions/adr-0041-remove-observability-stack.md), which removes every
-tool either one named **with no replacement at all** — so unlike the other two,
+tool either one named **with no replacement at all** — so unlike ADR-0010/ADR-0008,
 their eight combined tool-rows (Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy,
-kube-state-metrics, node-exporter) are simply gone, not reassigned.
+kube-state-metrics, node-exporter) are simply gone, not reassigned. The remaining
+two, ADR-0036 (External Secrets Operator) and ADR-0037 (Vault), were both
+superseded 2026-09-07 by
+[ADR-0042](decisions/adr-0042-remove-vault-and-external-secrets.md) the same
+way — explicit maintainer direction, no replacement — so their two combined
+tool-rows (External Secrets Operator, Vault) are simply gone too; ESO had zero
+live `ExternalSecret` consumers left in the repo by the time it was cut (every
+component that had ever needed a Vault-held credential was already gone).
 
-Of the remaining 35, **nine decide a policy or architectural posture rather than a
+Of the remaining 34, **ten decide a policy or architectural posture rather than a
 single third-party product** — they're excluded from the table below because there's
 no one upstream project to attach a criticality/upstream-source/last-reviewed row to:
 ADR-0003 (decoupled/no-SPOF design principle), ADR-0004 (no-fabricated-content
@@ -49,10 +56,11 @@ version-pinning governance — no separate row of its own, but directly cited
 alongside ADR-0027 in the k3s row's ADR column since 2026-08-24, once a
 gap-analysis pass found the row's "Last reviewed" cell citing only ADR-0027's
 decision date and missing ADR-0030's own, much more current, Re-evaluation log
-entirely), and ADR-0041 (the observability-removal decision itself — a
-scope-narrowing choice, not a third-party product of its own).
+entirely), ADR-0041 (the observability-removal decision itself — a
+scope-narrowing choice, not a third-party product of its own), and ADR-0042 (the
+Vault/External Secrets Operator removal decision itself — same shape as ADR-0041).
 
-Of the remaining 26, twenty-one name a component that was removed from the lab
+Of the remaining 24, twenty-one name a component that was removed from the lab
 entirely with no replacement, so they contribute no row either: ADR-0012 (Istio
 ambient + Kiali), ADR-0013 (Longhorn), ADR-0015 (Aiven Inkless — a pre-existing
 gap, never had a row of its own), ADR-0031 (TiDB Operator), ADR-0032 (TiDB),
@@ -67,15 +75,10 @@ went) — all removed 2026-09-07 — see each ADR's own Status. (Cilium's own ro
 the one exception to "removed = no row": its Re-evaluation log is recent and
 informative enough — the live host-capacity evidence that drove the removal — to
 be worth keeping as a dated historical entry rather than deleting outright; it's
-the only "removed" row still in the table.) The other 5 all have a row below —
-ADR-0036 (External Secrets Operator) gained its own row 2026-08-19 as a
-retroactive governance record for a mechanism that predated it having any ADR at
-all, ADR-0037 (Vault) gained its own row 2026-09-03 for the same reason — a
-mechanism that predated it having any ADR at all, whose version history had
-instead been living as inline `gitops/` YAML comments — collectively naming the
-table's 9 distinct third-party-tool rows: two ADRs each decide on more than one
-tool at once (ADR-0001: Terraform/Terragrunt + ArgoCD; ADR-0027: Oracle Cloud
-Infrastructure + k3s).
+the only "removed" row still in the table.) The other 3 all have a row below —
+collectively naming the table's 7 distinct third-party-tool rows: two ADRs each
+decide on more than one tool at once (ADR-0001: Terraform/Terragrunt + ArgoCD;
+ADR-0027: Oracle Cloud Infrastructure + k3s).
 
 **Criticality** reuses CHARTER's own "Target end-state" groupings rather than
 inventing a new scheme: **always-on-core** (part of the always-on base stack),
@@ -99,8 +102,6 @@ rather than guessed (ADR-0004 — never fabricate a date not actually in the sou
 | Oracle Cloud Infrastructure | cloud-backend (opt-in) | cloud.oracle.com | [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md) | 2026-09-07 (currency re-check — first review this row had ever recorded; ADR-0027 has no dedicated Re-evaluation log of its own, same shape as the Terraform/ArgoCD/ADR-0001 rows above, so the result is recorded here directly. Re-confirmed the Always Free Ampere A1 cut this ADR already documents — 4 OCPU/24 GB → **2 OCPU/12 GB**, effective 2026-06-15 — is still accurate and unchanged; no further reduction has landed since. New fact found, not yet in the ADR: Oracle has since emailed Always Free users that any Ampere A1 instance still exceeding the new 2 OCPU/12 GB limit on or after **2026-08-18** gets terminated — a real deadline, but moot for this repo today since no live Oracle k3s instance has ever actually launched yet (blocked on the `500 Out of host capacity` transient constraint CHARTER.md's "Cloud backend" bullet already records) — nothing here to be terminated. The ADR's core "free forever, no trial/credit mechanism" comparison against AKS/GKE Autopilot still holds; no competing free-tier option has changed status. No code/config change; no currency gap requiring action.) |
 | k3s | cloud-backend (opt-in) | github.com/k3s-io/k3s | [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md) (backend choice) / [ADR-0030](decisions/adr-0030-pin-k3s-version-explicitly.md) (version pin + re-evaluation) | 2026-09-03 (bumped `v1.36.3+k3s1` → `v1.36.4+k3s1` on both backends, routine currency — a release-list summary claimed a CVE-2025-54410 mitigation but the release's own detailed notes don't confirm it and the CVE describes Docker Engine behavior k3s doesn't run, so treated as unconfirmed rather than asserted; see ADR-0030's own Re-evaluation log, which tracks k3s's real version-currency history across both backends; ADR-0027 itself has no Re-evaluation log, decision date 2026-07-13) |
 | cert-manager | always-on-core | github.com/cert-manager/cert-manager | [ADR-0028](decisions/adr-0028-cert-manager-tls-lifecycle.md) | 2026-09-03 (full GHSA sweep: all 3 published advisories checked — the third, GHSA-r4pg-vg54-wxx4 Low (PEM-parsing DoS, patched `1.16.2`/`1.15.4`/`1.12.14`), had not been explicitly checked before — current pin `1.21.1` past every floor. Prior entry: 2026-08-19, GHSA-8rvj-mm4h-c258/GHSA-gx3x-vq4p-mhhv both past floor, no currency gap) |
-| External Secrets Operator | always-on-core | github.com/external-secrets/external-secrets | [ADR-0036](decisions/adr-0036-external-secrets-vault-sync.md) | 2026-09-01 (bumped `2.9.0` → `2.10.0`: purely additive TLS-config schema change, real fixes incl. an AWS credential-log-redaction fix; no CVE. Current pin past every floor from the 2026-08-19 GHSA sweep and is the newest tag) |
-| Vault | always-on-core (secrets backend) | helm.releases.hashicorp.com, github.com/hashicorp/vault | [ADR-0037](decisions/adr-0037-vault-secrets-management.md) | 2026-09-03 (ADR-0037 authored as a retroactive governance record — Vault previously had no ADR and its version history lived only as inline `gitops/platform/vault.yaml` comments, now migrated; server image bumped `2.0.4`→`2.1.0` in the same cycle, two real Go-vulnerability-database dependency fixes, no GitHub-native advisories exist for this repo; see ADR-0037's own Re-evaluation log) |
 
 ## Keeping this in sync
 
