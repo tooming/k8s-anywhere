@@ -37,14 +37,14 @@ setup() {
   run bash "$REPO/scripts/dependency-concentration-sync-check.sh"
   [ "$status" -eq 0 ]
   # github.com/grafana was removed from the register + concentration.md 2026-09-06
-  # (ADR-0041, observability stack removed with no replacement), and
-  # github.com/argoproj dropped below the 2-row threshold 2026-09-07 (Argo
-  # Rollouts removed, ADR-0020, no replacement). github.com/hashicorp (Terraform +
-  # Vault) became the register's only remaining 2-row concentration the same day,
-  # once Garage/Harbor/Forgejo/s3manager's removal shrank the register enough for
-  # the pairing to surface (it existed all along — Vault and Terraform were always
-  # both hashicorp — just diluted among more rows before).
-  [[ "$output" == *"github.com/hashicorp (2 rows) is named"* ]]
+  # (ADR-0041, observability stack removed with no replacement); github.com/argoproj
+  # dropped below the 2-row threshold 2026-09-07 (Argo Rollouts removed, ADR-0020,
+  # no replacement); github.com/hashicorp (Terraform + Vault) briefly became the
+  # register's only remaining 2-row concentration the same day, then also dropped
+  # below the threshold 2026-09-07 when Vault (and External Secrets Operator, its
+  # only client) was removed entirely, no replacement (ADR-0042) — no org backs 2+
+  # rows in the register any more.
+  [[ "$output" == *"no org backs 2+ rows in dependency-register.md right now"* ]]
 }
 
 # Reverse-direction check (2026-09-03, JANITOR-fallback): a concentration.md group

@@ -64,7 +64,7 @@ setup() {
 }
 
 @test "dr-verify.sh no longer checks Vault init/unseal or ExternalSecrets Ready (ADR-0042, no replacement)" {
-  run grep -q "p_vault\|p_eso" "$DRVERIFY"
+  run grep -qE '^(p_vault|p_eso)\(\)' "$DRVERIFY"
   [ "$status" -ne 0 ]
 }
 

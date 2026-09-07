@@ -53,8 +53,10 @@ setup() {
   [[ "$output" == *"github.com/grafana"* ]]
   [[ "$output" == *"github.com/argoproj"* ]]
   [[ "$output" == *"github.com/hashicorp"* ]]
-  [[ "$output" == *"Vault is mentioned"* ]]
+  [[ "$output" == *"cert-manager is mentioned"* ]]
   # s3manager was removed from the register entirely 2026-09-07 (Garage's browser
   # UI, orphaned the same day Garage itself went, ADR-0039) — it's no longer a
   # register row at all, so it no longer needs (or gets) a "mentioned" line here.
+  # Vault and External Secrets Operator were removed the same way 2026-09-07
+  # (ADR-0042, no replacement) — neither is a register row any more either.
 }
