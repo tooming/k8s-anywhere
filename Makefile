@@ -147,7 +147,7 @@ adr-image-pin-sync-check: ## Check every ADR that self-declares a "pinned offici
 	@bash scripts/adr-image-pin-sync-check.sh
 
 .PHONY: context-doc-version-sync-check
-context-doc-version-sync-check: ## Check docs/decisions/context.md's tracked version citations (Grafana, Pyroscope, KRO) match their live gitops pins (drift detector)
+context-doc-version-sync-check: ## Check docs/decisions/context.md's tracked version citations (KRO, ACK s3-controller) match their live gitops pins (drift detector)
 	@bash scripts/context-doc-version-sync-check.sh
 
 .PHONY: dependency-register-check
@@ -369,7 +369,7 @@ coredns-host-alias: ## Teach CoreDNS to resolve host.k3d.internal -> docker gate
 	@bash scripts/coredns-host-alias.sh host-alias
 
 .PHONY: coredns-nip-io-rewrite
-coredns-nip-io-rewrite: ## Teach CoreDNS to resolve *.127.0.0.1.nip.io -> Envoy Gateway's proxy Service (needed for in-cluster clients, e.g. Kargo image discovery; issue #633/PR #1323)
+coredns-nip-io-rewrite: ## Teach CoreDNS to resolve *.127.0.0.1.nip.io -> Traefik's in-cluster Service (needed for in-cluster clients, e.g. Kargo image discovery; issue #633/PR #1323)
 	@bash scripts/coredns-host-alias.sh nip-io-rewrite
 
 ##@ Bootstrap (day-0, imperative seam)
@@ -595,7 +595,7 @@ dependency-maintenance-check: ## Report how long since each dependency-register.
 ##@ Capstone (demo + learning path)
 
 .PHONY: capstone-demo
-capstone-demo: ## Run the end-to-end capstone demo: ArgoCD health → ExternalSecret → HTTP 200 → Tempo trace (O6, 900 s budget)
+capstone-demo: ## Run the end-to-end capstone demo: ArgoCD health → ExternalSecret → HTTP 200 (O6, 900 s budget)
 	bash scripts/capstone-demo.sh
 
 ##@ On-demand components (heavy; not auto-synced — bring up manually)
@@ -629,7 +629,7 @@ define ondemand-guard
 endef
 
 .PHONY: ondemand-budget-check
-ondemand-budget-check: ## Report which on-demand units (Harbor/Istio/Kiali/Longhorn/Kargo/TiDB) are live + flag orphaned namespaces
+ondemand-budget-check: ## Report which on-demand units (Harbor/Kargo) are live + flag orphaned namespaces (incl. historical TiDB/Istio/Kiali/Longhorn carve-outs)
 	@bash scripts/ondemand-budget-check.sh
 
 .PHONY: k3s-datastore-health-check
@@ -704,16 +704,3 @@ kargo-down: ## Remove Kargo and its Envoy route (reclaims ~250-450 MB)
 	$(call argocd-delete,kargo-extras)
 	$(call argocd-delete,kargo)
 
-.PHONY: keda-up
-keda-up: ## Deploy KEDA event-driven autoscaling via ArgoCD manual sync (~320 MB; do after make up)
-	$(call argocd-sync,keda-extras)
-	$(call argocd-sync,keda)
-	$(call argocd-sync,keda-networkpolicy)
-	$(call argocd-sync,data-demo-keda-scaling)
-
-.PHONY: keda-down
-keda-down: ## Remove KEDA (reclaims ~320 MB; converted to on-demand 2026-08-25, ADR-0029)
-	$(call argocd-delete,data-demo-keda-scaling)
-	$(call argocd-delete,keda-networkpolicy)
-	$(call argocd-delete,keda)
-	$(call argocd-delete,keda-extras)
