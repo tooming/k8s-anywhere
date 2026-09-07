@@ -292,6 +292,11 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [x] 🟢 **Oracle Cloud Infrastructure (ADR-0027) currency re-check — first review
+  this dependency-register.md row had ever recorded** — full verification writeup:
+  [docs/done/2026-09-07-oracle-adr-0027-currency-recheck.md](docs/done/2026-09-07-oracle-adr-0027-currency-recheck.md).
+  (auto/oracle-adr-0027-currency-check)
+
 - [x] 🟢 **Fix stale "shared Gateway HTTPS listener" terminology in CHARTER.md,
   README.md, docs/00-architecture.md, and docs/dependency-tree.md** — full
   verification writeup:
