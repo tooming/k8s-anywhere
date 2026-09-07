@@ -1,9 +1,20 @@
 # ADR-0022 — Trivy Operator for continuous vulnerability + SBOM scanning
 
-**Status.** Adopted. Decision taken by the architect routine in this RFC. Always-on
+**Status.** Removed 2026-09-07 (maintainer decision — component dropped from the lab
+entirely, no replacement). `gitops/trivy-system/` (whole directory),
+`gitops/governance/trivy-system/`, `gitops/platform/{trivy-operator,trivy-extras,
+trivy-system-networkpolicy}.yaml`, and `tests/{trivy-operator,networkpolicy-trivy-
+system,securitycontext-trivy-system}.bats` were deleted in the same change.
+`grafana/dashboards/lab-trivy.json` no longer existed — it was already removed with
+the rest of the observability stack (ADR-0041, 2026-09-06). The decision record
+below is kept for history (why Trivy Operator was adopted, what it demonstrated)
+but no longer describes anything live in the repo — do not treat any manifest path
+or Makefile target named below as still existing.
+
+~~**Status.** Adopted. Decision taken by the architect routine in this RFC. Always-on
 component. CHARTER **Objective O1** (one of four Tier 1 next-wave components,
 due 2026-12-31) and covers CHARTER goal *supply-chain security end-to-end
-(Trivy continuous scanning + SBOMs)*.
+(Trivy continuous scanning + SBOMs)*.~~
 
 ---
 
@@ -357,3 +368,24 @@ it by many releases) — noted here only because the pin that entry's own
 citation references moved again. **Flip condition (unchanged):** re-evaluate
 on the next Trivy supply-chain advisory, or when a future chart bump changes a
 `valuesObject` key shape.
+
+### 2026-09-07 — Removed entirely, no replacement
+
+**Trigger.** Explicit user/maintainer request to remove Trivy Operator from the
+lab, with no replacement (alongside an unrelated same-session removal of ACK/
+moto/KRO, see ADR-0038).
+
+**Decision: delete the component and every cross-reference.** Removed:
+`gitops/trivy-system/` (whole directory: namespace + default-deny NetworkPolicy
+overlay); `gitops/governance/trivy-system/`; `gitops/platform/{trivy-operator,
+trivy-extras,trivy-system-networkpolicy}.yaml`; `tests/trivy-operator.bats`,
+`tests/networkpolicy-trivy-system.bats`, `tests/securitycontext-trivy-system.bats`.
+`grafana/dashboards/lab-trivy.json` and the `observability` Alloy scrape job
+referenced in §Observability above no longer existed — both were already removed
+with the rest of the observability stack (ADR-0041, 2026-09-06). This closes the
+CHARTER Objective O1 line item this ADR covered (supply-chain continuous
+scanning + SBOMs) with no replacement, rather than leaving it permanently gated.
+
+**Flip condition.** None — no replacement is planned. Re-adopting continuous
+in-cluster vulnerability/SBOM scanning would need a new ADR, not a revival of
+this one.

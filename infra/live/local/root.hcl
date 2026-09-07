@@ -1,47 +1,40 @@
 # Root Terragrunt config for the local lab environment.
-# Child units (cluster/, argocd/, gitlab/) include this for shared state + inputs.
+# Child units (cluster/, argocd/) include this for shared state + inputs. A
+# gitlab/ unit (ADR-0033) and later a forgejo/ unit (ADR-0035) existed here in
+# the past — both self-hosted git options were removed entirely 2026-09-07, no
+# replacement (the repo now lives only on its public GitHub remote).
 
 locals {
   cluster_name = "k8s-lab"
 }
 
-# State lives in the off-cluster Garage (infra/tfstate), one key per unit. That Garage
-# is brought up + bootstrapped by `make tfstate-up` BEFORE any apply, so the state
-# backend never depends on the cluster this Terraform builds (no bootstrap loop). Creds
-# come from the AWS_* env vars the Makefile exports; endpoint overridable via
-# TFSTATE_ENDPOINT. `region` must match the Garage s3_region (infra/tfstate/garage.toml).
-# We write backend.tf directly (generate, not remote_state) so Terragrunt does not
-# try to manage the bucket via the real AWS APIs against Garage.
-# No state locking (no use_lockfile / DynamoDB): Garage doesn't support S3-native
-# locking — Terraform 404s releasing the .tflock — and this single-operator lab applies
-# sequentially, so a lock isn't needed. Do NOT re-add use_lockfile.
+# State backend: local file, one per Terragrunt unit (ADR-0007, superseded 2026-09-07).
+# The off-cluster Garage this used to point to (infra/tfstate/) was removed entirely
+# that same day, no replacement — this lab is now single-host and single-operator with
+# no S3-compatible store left anywhere, in-cluster or out, so a local backend is the
+# honest simplification rather than standing up new bootstrap substrate to replace it.
+# `path` uses get_terragrunt_dir() (the directory containing each unit's own
+# terragrunt.hcl, e.g. infra/live/local/cluster/) rather than Terraform's own default
+# (relative to its Terragrunt-managed working dir, inside the ephemeral
+# .terragrunt-cache/ tree) — that default would silently lose state on every
+# `.terragrunt-cache` wipe. *.tfstate is gitignored; per ADR-0005 ("recoverability over
+# impossible HA"), if the file is ever lost the correct response on this disposable lab
+# is recreate-from-code (`make down && make up`), not state recovery.
 generate "backend" {
   path      = "backend.tf"
   if_exists = "overwrite"
   contents  = <<-EOF
     terraform {
-      backend "s3" {
-        bucket                      = "tfstate"
-        key                         = "${path_relative_to_include()}/terraform.tfstate"
-        region                      = "garage"
-        use_path_style              = true
-        skip_credentials_validation = true
-        skip_region_validation      = true
-        skip_metadata_api_check     = true
-        skip_requesting_account_id  = true
-        endpoints = {
-          s3 = "${get_env("TFSTATE_ENDPOINT", "http://localhost:3900")}"
-        }
+      backend "local" {
+        path = "${get_terragrunt_dir()}/terraform.tfstate"
       }
     }
   EOF
 }
 
 # Terragrunt auto-runs `terraform init` before every plan/apply. Pass -reconfigure so a
-# backend change or a stale local-backend cache (e.g. left over from before this S3
-# backend existed) re-binds to the generated s3 backend instead of failing with
-# "Backend type changed from local to s3". Garage holds the authoritative state, so we
-# adopt the current backend rather than migrating the old one.
+# backend change (e.g. this file's own migration from the removed S3/Garage backend to
+# local) re-binds cleanly instead of failing with "Backend type changed from s3 to local".
 terraform {
   extra_arguments "reconfigure" {
     commands  = ["init"]

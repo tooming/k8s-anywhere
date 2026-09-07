@@ -1,12 +1,13 @@
 #!/usr/bin/env bats
 # Clusterless structural + functional tests for scripts/lib/kctx.sh — the
 # shared KCTX-aware kubectl wrapper extracted from byte-identical inline
-# copies in scripts/cosign-bootstrap.sh, scripts/dr-verify.sh,
-# scripts/garage-bootstrap.sh, scripts/lab-health-check.sh, and
+# copies in scripts/dr-verify.sh, scripts/lab-health-check.sh, and
 # scripts/vault-bootstrap.sh (scripts/grafana-gitsync-bootstrap.sh, a sixth
-# caller, was removed 2026-09-06 alongside Grafana itself, ADR-0041 —
-# janitor cleanup, mirrors the earlier scripts/lib/colors.sh / scripts/lib/
-# budget-check.sh / scripts/lib/confirm.sh / scripts/lib/canary-probe.sh
+# caller, was removed 2026-09-06 alongside Grafana itself, ADR-0041;
+# scripts/garage-bootstrap.sh and scripts/cosign-bootstrap.sh, two more
+# callers, were removed 2026-09-07 alongside Garage and Kyverno respectively,
+# both no replacement — janitor cleanup, mirrors the earlier scripts/lib/
+# colors.sh / scripts/lib/confirm.sh / scripts/lib/canary-probe.sh
 # extractions). Guards against the duplicate pattern creeping back in as
 # new bootstrap/check scripts get added.
 
@@ -73,9 +74,8 @@ FAKE
   [ "$status" -ne 0 ]
 }
 
-@test "all five known callers source lib/kctx.sh" {
-  for f in cosign-bootstrap.sh dr-verify.sh garage-bootstrap.sh \
-    lab-health-check.sh vault-bootstrap.sh; do
+@test "all three known callers source lib/kctx.sh" {
+  for f in dr-verify.sh lab-health-check.sh vault-bootstrap.sh; do
     run grep -q 'lib/kctx.sh' "$REPO/scripts/$f"
     [ "$status" -eq 0 ]
   done

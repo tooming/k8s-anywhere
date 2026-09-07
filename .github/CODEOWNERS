@@ -24,7 +24,4 @@
 # /gitops/secrets/         @secrets-owners
 # /gitops/storage/         @storage-owners
 # /gitops/data/            @storage-owners
-# /gitops/ack/             @cloud-owners
-# /gitops/kro/             @cloud-owners
-# /gitops/moto/            @cloud-owners
 # /gitops/apps/            @app-owners

@@ -32,7 +32,7 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
 
 @test "kustomize-orphan-sync-hook: a real, currently-clean kustomization directory exits 0" {
   run bash "$REPO/scripts/kustomize-orphan-sync-hook.sh" \
-    <<<"$(mk_payload "$REPO/gitops/harbor/networkpolicy/allow-harbor-ingress.yaml")"
+    <<<"$(mk_payload "$REPO/gitops/argocd/networkpolicy/allow-argocd-intra-namespace.yaml")"
   [ "$status" -eq 0 ]
 }
 

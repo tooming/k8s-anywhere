@@ -3,8 +3,10 @@
 **Decision.** The first cloud backend implementing the [ADR-0026](adr-0026-cloud-agnostic-infrastructure.md)
 contract is **Oracle Cloud Infrastructure's Always Free tier** (Ampere A1 ARM compute),
 running **k3s** installed directly on the VM (no managed control-plane service). New
-Terragrunt unit set: `infra/live/oracle/{cluster,argocd,gitlab}/`, backed by a new
-`infra/modules/oracle-k3s-cluster` module.
+Terragrunt unit set: `infra/live/oracle/{cluster,argocd}/`, backed by a new
+`infra/modules/oracle-k3s-cluster` module. (A `gitlab/` unit was part of the original
+set; that self-hosted git option — and its later `forgejo/` successor, ADR-0035 — were
+both removed from the project entirely 2026-09-07, no replacement.)
 
 **Why this backend, not a managed Kubernetes service.** [ADR-0025](adr-0025-free-oss-tiers-only.md)
 requires that the lab run "entirely on a free/open-source tier... with zero spend." I

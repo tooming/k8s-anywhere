@@ -139,7 +139,7 @@ log entry's "kept" status.
 ### 2026-07-21 — Harbor's own cache scoped exception: bundled redis-photon, not Valkey (#632)
 
 **Trigger.** Confirming ADR-0024's "12 GB gate" measurement (issue #632) required
-actually running `make harbor-up` for the first time. The `harbor` namespace had
+actually running make harbor-up for the first time. The `harbor` namespace had
 sat empty since the Harbor migration landed — not crashlooping, just never
 synced. Root cause: `gitops/platform/harbor.yaml` pointed Harbor's cache
 dependency at this ADR's platform Valkey via `redis.external.existingSecret`,

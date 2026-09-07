@@ -1,7 +1,19 @@
 # ADR-0007 — Off-cluster Garage as the Terraform-state backend
 
-**Status.** Adopted. Shipped in commit `a07a1d2`; active in `infra/live/local/root.hcl`,
-`infra/tfstate/`, `scripts/tfstate-bootstrap.sh`, `make tfstate-up`.
+**Status.** Removed 2026-09-07 (maintainer decision — component dropped from the lab
+entirely, no replacement). The off-cluster tfstate Garage was removed alongside Garage
+itself (ADR-0002) and s3manager (ADR-0039) in the same change: `infra/tfstate/` (the
+whole directory — `docker-compose.yml`, `garage.toml`) and `scripts/tfstate-bootstrap.sh`
+were deleted. `infra/live/local/root.hcl` still generates an `s3` backend pointed at this
+now-deleted Garage and needs migrating to a local backend (or another replacement) as a
+separate, coordinated follow-up — not done as part of this removal, since it touches
+every Terragrunt unit at once. The decision record below is kept for history (why an
+off-cluster Garage was chosen over in-cluster Garage or a hosted S3 bucket) but no
+longer describes anything live in the repo — do not treat any manifest path or Makefile
+target named below as still existing.
+
+~~**Status.** Adopted. Shipped in commit `a07a1d2`; active in `infra/live/local/root.hcl`,
+`infra/tfstate/`, `scripts/tfstate-bootstrap.sh`, make tfstate-up.~~
 
 ---
 
@@ -93,7 +105,7 @@ backend that supports locking (AWS S3 + DynamoDB).
 |---|---|
 | [ADR-0001](adr-0001-gitops-over-terraform-helm.md) | The off-cluster Garage is **bootstrap substrate** (day-0 seam), not a workload — consistent with ADR-0001's rule that Terraform only bootstraps. It is never registered as an ArgoCD Application. |
 | [ADR-0002](adr-0002-garage-not-minio.md) | Same engine (Garage) for the same reason (lightweight, actively maintained, MinIO is out). Two instances, two purposes: this ADR covers the state backend; ADR-0002 covers the in-cluster object store. |
-| [ADR-0003](adr-0003-decoupled-no-spof.md) | The off-cluster state Garage is a SPOF by position in the bootstrap chain (you can't apply without it), but the appropriate mitigation is recreate-from-code (ADR-0005): if the Docker volume is lost, `make tfstate-up && make tfstate-bootstrap` rebuilds an empty store; the next `terragrunt apply` repopulates it from live infrastructure. |
+| [ADR-0003](adr-0003-decoupled-no-spof.md) | The off-cluster state Garage is a SPOF by position in the bootstrap chain (you can't apply without it), but the appropriate mitigation is recreate-from-code (ADR-0005): if the Docker volume is lost, running tfstate-up then tfstate-bootstrap (targets since removed, see Status above) rebuilds an empty store; the next `terragrunt apply` repopulates it from live infrastructure. |
 | [ADR-0005](adr-0005-spof-recreate-over-ha.md) | On a single host, adding a second state Garage replica provides no protection against the host failure; recreate-from-code is the correct response. |
 
 ---
@@ -107,5 +119,7 @@ backend that supports locking (AWS S3 + DynamoDB).
 | `scripts/tfstate-bootstrap.sh` | Idempotent layout → key import → bucket create + grant |
 | `infra/live/local/root.hcl` | `generate "backend"` + `-reconfigure` shared across all Terragrunt units |
 
-Brought up via `make tfstate-up`; torn down via `make tfstate-down` (stops the
-container; the Docker volume `tfstate_data` persists until `make tfstate-clean`).
+Was brought up via tfstate-up; torn down via tfstate-down (stopped the
+container; the Docker volume `tfstate_data` persisted until tfstate-clean) —
+all three Makefile targets were removed along with the rest of this backend
+(see Status above).

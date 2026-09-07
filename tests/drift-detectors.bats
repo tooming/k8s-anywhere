@@ -54,10 +54,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "lab-ui-check: fails when a README.md Endpoints URL uses a non-front-door port" {
+@test "lab-ui-check: fails when a README.md Endpoints URL uses a non-standard port" {
   run env LABUICHECK_ROOT="$FIX/lab-ui-check/port-drift" bash "$REPO/scripts/lab-ui-check.sh"
   [ "$status" -eq 1 ]
-  [[ "$output" == *"front-door port :8000"* ]]
+  [[ "$output" == *"load-balancer port :8080"* ]]
 }
 
 @test "lab-ui-check: fails when a routed UI is missing from README.md's Endpoints table" {

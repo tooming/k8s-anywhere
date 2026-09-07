@@ -45,19 +45,17 @@ duplicated.
 
 **Q2. Are critical functions/assets identified and mapped to supporting ICT systems?**
 - **Applicable?** Yes.
-- **Answer:** Yes, for the stateful surface. CHARTER Objective O3 names the three
-  stateful namespaces (`data`, `capstone`, `vault`) as critical (`tidb` was
-  dropped 2026-09-06 when TiDB was removed from the lab entirely, no
-  replacement; `observability` was named here 2026-07-29 through 2026-09-06,
-  then dropped along with the namespace itself — ADR-0041, observability stack
-  removed with no replacement); the always-on
-  vs. on-demand split (12GB budget, ADR-0003) documents which ~53 Applications are
-  load-bearing (re-derived 2026-08-25 after KEDA + KRO's engine both converted to
-  on-demand for cluster-load reduction, ADR-0029's Re-evaluation log — down from
-  "~58" as of the 2026-07-29/issue #846 count; CHARTER's own "Always-on core"
-  bullet count is ~32 of those 53; the rest are the always-on next-wave/
-  cert-manager/capstone Applications, distinct from the ~5 namespace-only
-  PSA-floor shells that merely pre-stage an otherwise on-demand component).
+- **Answer:** Narrower, but simpler, than before. Every namespace this lab's
+  earlier CHARTER Objective O3 named as stateful and critical — `data`, `capstone`,
+  `vault`'s own Velero backup target, `tidb` — is gone: `data`/`capstone` were
+  removed entirely 2026-09-07 alongside Velero/Garage (their backup mechanism),
+  `tidb` was removed 2026-09-06, and `observability` the same day (ADR-0041). As
+  of 2026-09-07 there is no stateful data left in this lab worth naming critical
+  in the DORA sense — Vault itself holds secrets, not application state, and is
+  fully re-derivable from `vault-bootstrap.sh` against a fresh cluster. The
+  always-on stack is now exactly 6 namespaces (`argocd`, `cert-manager`,
+  `external-secrets`, `lab-demo`, `lab-gateway`, `vault`), all load-bearing, none
+  on-demand.
 - **Evidence:** [CHARTER.md](../CHARTER.md) O3; [docs/dependency-tree.md](dependency-tree.md).
 - **Gap:** closed below — see "Stateless component criticality tiers".
 
@@ -67,26 +65,25 @@ Every always-on **stateless** component from CHARTER's "Target end-state" sectio
 tiered using [docs/incident-log.md](incident-log.md)'s existing P0–P3 severity scheme
 (reused rather than inventing a second taxonomy) — one row per component, with a
 justification grounded in what its *own* outage actually breaks, not a guess. This is
-additive to Q2's existing stateful-surface answer (CHARTER O3); on-demand heavy
-components (Harbor, Kargo) are out of scope here — their
-outage is already covered by the P2 "on-demand/heavy component is broken" row in the
-severity scheme itself, and they carry no always-on blast radius by design.
+additive to Q2's existing stateful-surface answer (CHARTER O3). As of 2026-09-07
+there are no on-demand heavy components left at all (Harbor and Kargo, the only two
+this lab ever ran, were both removed entirely, no replacement) — every remaining
+component is always-on, so there's no separate "on-demand" carve-out any more.
 
 | Component | Tier | Why |
 |---|---|---|
-| Cilium | **P0** | CNI/network dataplane — the *only* documented P0 in `docs/incident-log.md` to date (2026-07-29: apiserver connectivity loss, cluster-wide). Without it, no pod can reach the apiserver or any other pod. |
-| Traefik | **P0** | Sole north-south ingress front door (ADR-0040, supersedes ADR-0008) — every lab UI, the capstone endpoint, and the DR front door all route through it. An outage of the gateway itself (not a NetworkPolicy gap, which is what the two logged 2026-08-04/08-07 incidents actually were, both P1, against the prior Envoy Gateway) means total external unreachability — whole-lab-down by the scheme's own P0 definition, even though no incident has hit this specific failure mode yet. |
+| Traefik | **P0** | Sole north-south ingress (ADR-0040, supersedes ADR-0008) — bundled with k3s, and (since the DR front door was removed entirely 2026-09-07, no replacement) the *only* entry point into the lab, via k3d's own load balancer on `:8080`. An outage of the gateway itself means total external unreachability — whole-lab-down by the scheme's own P0 definition. |
+| k3s's bundled Flannel + kube-router | **P0** | CNI/network dataplane and NetworkPolicy enforcement — replaces Cilium (removed entirely 2026-09-07, no replacement, ADR-0014; Cilium itself was the *only* documented P0 in `docs/incident-log.md` before removal, 2026-07-29: apiserver connectivity loss, cluster-wide, caused by a stale `cilium-agent` config after every `colima start`). Without a functioning CNI no pod can reach the apiserver or any other pod. Not yet independently incident-tested since the switch (ADR-0004 caveat). |
 | ArgoCD | **P1** | GitOps control plane. Already-running pods keep serving on outage — this is not immediate lab-down — but no new deploys land and drift stops self-healing, matching the P1 definition ("a single always-on component is down or degraded"). |
 | Vault | **P1** | Secrets backend. Documented real incident (`gitops/vault/unsealer.yaml`'s header comment): sealed for 4+ days, silently breaking every ExternalSecrets refresh cluster-wide. Already-synced K8s `Secret` objects are untouched — new/rotated secrets stop flowing. Matches P1's "security-relevant gap" language directly. |
 | External Secrets Operator | **P1** | Shares Vault's exact blast radius — the two fail together functionally (ESO is the sync mechanism, Vault is the source). |
-| Kyverno | **P1** | Admission policy engine. Re-checked directly 2026-09-06 (ADR-0004: the prior version of this row was stale) — `verify-image-signatures.yaml` explicitly sets `failurePolicy: Fail` (flipped from `Ignore` 2026-08-18, per that file's own header comment and ADR-0019's Re-evaluation log), not `Ignore` as this row previously claimed. The other 4 `ClusterPolicy` files (`add-default-runasnonroot`, `add-default-seccomp`, `disallow-latest-tag`, `require-pod-security-restricted`) don't set `failurePolicy` explicitly at all — **resolved 2026-09-07**: Kyverno's own controller source confirms this defaults to `Fail`, not `Ignore` (`api/kyverno/v1/spec_types.go`'s `GetFailurePolicy()` method returns `Fail` when the field is `nil`, checked directly against the raw source on GitHub — the field itself is deprecated in favor of `spec.webhookConfiguration.failurePolicy`, but neither this Application's `gitops/platform/kyverno.yaml` valuesObject nor any of these 4 policies sets that either, so the same Go-level default applies). Not independently confirmed against this exact chart's *live-rendered* `ValidatingWebhookConfiguration` object (that would need a live cluster), but the controller logic that computes it is unambiguous. So all 5 `ClusterPolicy` files are fail-closed by default, not just `verify-image-signatures` — a stronger security posture than previously documented, though still P1: any Kyverno outage still blocks legitimate admission of new/updated resources cluster-wide (the flip side of fail-closed), matching P1's "single always-on component down or degraded" language on its own. |
-| Garage | **P1** | S3-compatible object store — backs Velero's backup target and Harbor's registry storage. An outage stops all backups landing — a real, compounding gap even though nothing already-running crashes. |
-| GitLab | **P2** | Git source + CI runner (host-level Docker Compose, outside the cluster per ADR-0033/ADR-0035). Matches the real 2026-08-04 incident-log entry for "no GitLab Runner ever registered," logged P2 there — no deploys/CI, but the already-running cluster is unaffected. |
 | cert-manager | **P2** | TLS lifecycle. Existing certs keep working until their own expiry; only renewal stops — a slow-burn gap, not an immediate one. |
-| moto / ACK / KRO | **P2** each | Cloud-control-plane emulation for AWS-resource demos — outage breaks the cloud-demo path only, no core-lab impact. |
-| Argo Rollouts | **P2** | Progressive-delivery controller for the capstone canary. Outage freezes new canary rollouts; the currently-active capstone `Rollout` pods keep serving traffic unaffected. |
-| Velero | **P2** | Backup engine. Outage means no *new* backups land (a growing RPO risk, not an immediate one) — restoring from the last-known-good backup is still possible until the gap grows past O3's 24h RPO bar. |
-| Trivy Operator | **P2** | Continuous vulnerability/SBOM scanner. Outage stops new scan reports; it's a detection-visibility gap, not an active exploit path — no already-running workload is affected. |
+
+(Kyverno, Garage, GitLab/Forgejo, moto/ACK/KRO, Argo Rollouts, and Velero all had
+rows here until they were removed entirely, no replacement, across the
+2026-09-06/2026-09-07 removals — there's no outage to tier for a component that no
+longer exists, same reasoning already applied to the observability stack's own
+removed rows below.)
 
 (The observability stack's own rows here — Alloy at P1, Grafana/Mimir/Loki/Tempo/
 Pyroscope/kube-state-metrics/node-exporter at P2 — were removed 2026-09-06 along
@@ -99,19 +96,29 @@ so a future edit can't silently drop the highest-severity rows without failing
 `make ci`.
 
 **Q3. What are the recovery targets (RTO/RPO) for critical functions?**
-- **Applicable?** Yes.
-- **Answer:** RTO = **< 10 minutes** (O3, enforced by `make dr-restore`'s 600s budget).
-  RPO = **≤ 24 hours** (Velero daily schedules, 168h retention).
-- **Evidence:** [CHARTER.md](../CHARTER.md) Objective O3; [docs/DR.md](DR.md#velero-backup-restore-make-dr-restore); `gitops/velero/schedules/*.yaml`.
-- **Gap:** none — CHARTER's O3 bullet now states the RPO explicitly (closed
-  2026-08-07), alongside the pre-existing RTO.
+- **Applicable?** Yes, but narrower than before. Velero (this lab's only backup/restore
+  mechanism) was removed entirely 2026-09-07, no replacement, alongside its S3 backend
+  Garage — CHARTER Objective O3, which named this exact RTO/RPO bar, was re-scoped in
+  the same change (see CHARTER.md's own note on the removal).
+- **Answer:** There is no backup/restore mechanism left, so there is no RPO to state —
+  a real gap, not a cadence one. The only recovery path left is a full cluster
+  recreate from git (`make down && make up`); its RTO has not been independently
+  timed since the 2026-09-07 simplification.
+- **Evidence:** CHARTER.md's current Objective set; [docs/DR.md](DR.md);
+  [ADR-0021](decisions/adr-0021-velero-backup-restore.md)'s Status.
+- **Gap:** real. This lab has no data to lose (every stateful component was removed
+  along with Velero/Garage — the remaining always-on stack, Vault included, is
+  fully re-derivable from git + `vault-bootstrap.sh`), so the practical risk is low,
+  but there is honestly no RTO/RPO commitment left to point to.
 
 **Q4. Is there a backup policy (scope, frequency, retention, and is restoration tested)?**
-- **Answer:** Yes, and restoration is tested — not just assumed. `make dr-restore`
-  actually restores from the latest real backup and asserts completion + timing, which
-  is stronger than most personal setups (which back up but never test the restore path).
-- **Evidence:** [ADR-0021](decisions/adr-0021-velero-backup-restore.md); `scripts/dr-restore.sh`.
-- **Gap:** none in mechanism. Cadence gap: the test is on-demand, not scheduled (see Q9).
+- **Answer:** No. Velero — this lab's only backup/restore mechanism — was removed
+  entirely 2026-09-07, no replacement, alongside its S3 backend (Garage). There is no
+  backup policy and nothing to restore-test.
+- **Evidence:** [ADR-0021](decisions/adr-0021-velero-backup-restore.md)'s Status.
+- **Gap:** real, not just a cadence gap. Mitigated by there being no stateful data
+  left in this lab worth backing up (see Q3) — everything remaining is re-derivable
+  from git — but that's a property of the current small shape, not a control.
 
 **Q5. Is the risk framework reviewed on a defined cadence?**
 - **Answer:** Partially. ADRs get a re-evaluation log when triggered by an external
@@ -197,20 +204,26 @@ so a future edit can't silently drop the highest-severity rows without failing
 ## Pillar 3 — Digital operational resilience testing (Ch IV)
 
 **Q10. What test types are performed, and against what?**
-- **Answer:** Four distinct, real (non-fabricated) tests exist:
+- **Answer:** Narrower than before, honestly. The chaos/fault-injection drills
+  (`dr-chaos`, a pod-kill against capstone), the network-partition drill
+  (`dr-network-partition`), the storage-failure drill (`dr-garage-failure`),
+  the Velero-restore drill (`dr-restore`), the end-to-end capstone functional
+  check (`capstone-demo`), and the blue-green zero-downtime cutover drill
+  (`dr-bluegreen`) all depended on components removed entirely 2026-09-07
+  (capstone, Velero, Garage, the DR front door) and were deleted in the same
+  change — there is no replacement for any of them. Two real tests remain:
   1. `make dr-test` — full destroy + rebuild from code, asserts health.
-  2. `make dr-restore` — restore all 4 stateful namespaces from the latest real Velero
-     backup, budget-enforced.
-  3. `make dr-bluegreen` — live cutover to a second cluster with a continuous uptime
-     probe (proven **1135/1135**, ≥99% uptime in the last recorded run).
-  4. `make capstone-demo` — end-to-end functional + tracing check, budget-enforced.
-  Plus continuous vulnerability scanning (Trivy Operator) running independent of any
-  `make` invocation.
-- **Evidence:** [docs/DR.md](DR.md); [ADR-0022](decisions/adr-0022-trivy-operator-supply-chain.md).
-- **Gap:** none in test *existence* or *honesty* of results.
+  2. `make dr-verify` — asserts the live lab is healthy end-to-end (no rebuild).
+  No continuous vulnerability scanning exists either — Trivy Operator was
+  removed entirely 2026-09-07, no replacement.
+- **Evidence:** [docs/DR.md](DR.md); `scripts/dr-test.sh`; `scripts/dr-verify.sh`.
+- **Gap:** real. This lab's DR testing surface shrank along with everything it used
+  to exercise (backup/restore, chaos injection, blue-green cutover, continuous
+  scanning) — what's left is "recreate from code, then verify," which is real and
+  honest but narrower than DORA's TLPT concept asks for (see Q12).
 
 **Q11. What is the testing cadence?**
-- **Answer:** On-demand only, except Trivy's continuous scanning. No test above runs on
+- **Answer:** On-demand only. Neither remaining test (`dr-test`, `dr-verify`) runs on
   a schedule or in CI against the live cluster (CI is clusterless by design — see
   ROADMAP rule #2 — so scheduling these against a real cluster would need a
   laptop-resident cron, which doesn't exist today).
@@ -219,53 +232,32 @@ so a future edit can't silently drop the highest-severity rows without failing
   run; they're just not on a calendar.
 
 **Q12. Is there an adversarial/penetration-style test (DORA's TLPT concept)?**
-- **Answer:** Yes, in three scoped forms testing three different recovery
-  paths/failure domains. `make dr-chaos` (`scripts/dr-chaos.sh`) kills a
-  random capstone pod and asserts a replacement reaches Running within a
-  120s budget, exercising Kubernetes' own ReplicaSet/Rollout self-heal.
-  `make dr-network-partition` (`scripts/dr-network-partition.sh`, added
-  2026-08-18) deletes capstone's ingress `NetworkPolicy` and asserts
-  ArgoCD's `selfHeal` reconciliation restores it within a 300s budget,
-  exercising a distinct recovery path — GitOps drift-correction rather than
-  the Kubernetes controller layer. `make dr-garage-failure`
-  (`scripts/dr-garage-failure.sh`, added 2026-08-18) kills the single-replica
-  Garage pod (the lab's S3-compatible storage backend, ADR-0002) and asserts
-  a replacement reaches Ready within a 120s budget — the same Kubernetes
-  self-heal mechanism `dr-chaos` exercises, applied to the storage-layer
-  failure domain this question's original framing named as still open. All
-  three are *injected* failures, distinct from blue/green's *planned*
-  cutover.
-- **Evidence:** [docs/DR.md](DR.md#chaos--fault-injection-drill-make-dr-chaos);
-  [docs/DR.md](DR.md#network-partition-drill-make-dr-network-partition);
-  [docs/DR.md](DR.md#garage-failure-drill-make-dr-garage-failure);
-  `scripts/dr-chaos.sh`; `scripts/dr-network-partition.sh`;
-  `scripts/dr-garage-failure.sh`.
-- **Gap:** narrower now — three fault types covered (a pod kill against
-  capstone, a NetworkPolicy deletion against capstone, and a pod kill
-  against Garage) exercising two of the lab's distinct self-heal mechanisms
-  (Kubernetes controllers, ArgoCD reconciliation) across two components
-  (capstone, Garage). What's still not covered: a multi-pod/quorum-loss
-  scenario (not applicable today — every stateful component in this lab
-  runs single-replica, per ADR-0005) and a full node-loss scenario (a
-  different, larger-blast-radius failure class none of the three drills
-  here attempt). This remote clusterless session authored and structurally
-  verified all three scripts but has not executed any against a real
-  cluster (ADR-0004 caveat, same as every other DR-script addition here).
+- **Answer:** No, not any more. The three scoped fault-injection drills this lab used
+  to run (`dr-chaos` — pod kill against capstone; `dr-network-partition` — NetworkPolicy
+  deletion against capstone; `dr-garage-failure` — pod kill against Garage) each
+  targeted a component removed entirely 2026-09-07 (capstone, Garage) and were
+  deleted in the same change, with no replacement drill written against any
+  currently-live component. This is an honest regression from a prior, narrower
+  version of this answer, not a silent gap — said plainly per ADR-0004 rather than
+  restating the removed drills as if they still existed.
+- **Evidence:** [ADR-0021](decisions/adr-0021-velero-backup-restore.md),
+  [ADR-0024](decisions/adr-0024-harbor-not-artifactory.md) Status sections (component
+  removals that took the drills with them).
+- **Gap:** real. A future session could write a new fault-injection drill against one
+  of the six remaining always-on components (e.g. kill the single-replica ArgoCD or
+  Vault pod and assert Kubernetes' own self-heal) — nothing like that exists today.
 
 **Q13. Are test results tracked with remediation deadlines?**
-- **Answer:** Pass/fail is enforced by exit codes (CI-style), and every DR/capstone-demo
-  script now also appends a row (date, status, elapsed, budget, objective) to
-  [`docs/dr-results-log.md`](dr-results-log.md) on each real run, pass or fail
-  (`scripts/lib/dr-results-log.sh`), so a history of *past* run results over time now
-  exists, not just today's pass/fail.
-- **Evidence:** `scripts/dr-restore.sh`, `scripts/dr-bluegreen.sh`, `scripts/dr-chaos.sh`,
-  `scripts/capstone-demo.sh` each source `scripts/lib/dr-results-log.sh` and call
-  `dr_log_result` on both their pass and fail exit paths; `docs/dr-results-log.md`.
-- **Gap:** narrower now — the mechanism exists, but this remote clusterless session
-  cannot generate a real logged run (ADR-0004), so the log ships with just its header;
-  rows only accumulate once a maintainer or a live-cluster session actually runs one of
-  the four scripts. No remediation-deadline tracking yet (out of scope here) — only a
-  pass/fail/elapsed trend.
+- **Answer:** No mechanism exists any more. `docs/dr-results-log.md` and
+  `scripts/lib/dr-results-log.sh` — the shared library every DR/capstone-demo script
+  used to log a pass/fail row to — were removed 2026-09-07 alongside their last
+  remaining callers (`dr-restore.sh`, `dr-chaos.sh`, `dr-network-partition.sh`,
+  `capstone-demo.sh`; `scripts/lib/budget-check.sh`, the matching wall-clock-budget
+  helper, went the same way). `dr-test`/`dr-verify` still enforce pass/fail via exit
+  codes (CI-style), but nothing appends a historical row any more.
+- **Evidence:** `scripts/dr-test.sh`, `scripts/dr-verify.sh` (exit-code enforcement).
+- **Gap:** real. No remediation-deadline tracking, and no historical run log either —
+  a plainer answer than the mechanism this section used to describe.
 
 ---
 
@@ -273,15 +265,15 @@ so a future edit can't silently drop the highest-severity rows without failing
 
 **Q14. Is there a register of ICT third-party dependencies?**
 - **Answer:** Yes. [`docs/dependency-register.md`](dependency-register.md) tabulates
-  every third-party tool named in a binding ADR — **21 tools across 20 ADRs**,
-  counted directly from the register's real rows and ADR-column values as of
-  2026-09-07 (down from the 29/25 this line previously stated after the
-  observability stack's 8-tool, 2-ADR removal, ADR-0041, 2026-09-06 — a further
-  removal wave the same day and 2026-08-25, RabbitMQ/Valkey/KEDA plus TiDB/Istio
-  ambient mesh + Kiali/Longhorn, ADR-0009/ADR-0018/ADR-0029/ADR-0031/ADR-0032/
-  ADR-0012/ADR-0013, shrank it further without this line ever being updated) — by
-  criticality, upstream source, deciding ADR, and last-reviewed
-  date, re-indexed purely from existing ADR content.
+  every third-party tool named in a binding ADR — **9 tools**, counted directly
+  from the register's real rows as of 2026-09-07 (down from 13 after Cilium,
+  Garage, Forgejo, Harbor, and s3manager were also removed entirely, no
+  replacement, the same day and the day after Kyverno/Argo Rollouts/Velero/Trivy
+  Operator/Kargo/moto/ACK/KRO went — ADR-0014, ADR-0002/ADR-0007, ADR-0035/
+  ADR-0033, ADR-0024, ADR-0039 — on top of the observability stack's earlier
+  8-tool removal, ADR-0041, 2026-09-06) — by criticality, upstream source,
+  deciding ADR, and last-reviewed date, re-indexed purely from existing ADR
+  content.
 - **Evidence:** [docs/dependency-register.md](dependency-register.md).
 - **Gap:** narrower now — `make ci` gained a mechanical drift guard
   (`scripts/dependency-register-check.sh`, 2026-08-24, PR #1297, extended the same
@@ -331,8 +323,11 @@ concentration)?**
   the dependency itself, the most complete resolution available.
   `github.com/pingcap` (TiDB Operator, TiDB) is gone the same way — TiDB was
   removed from the lab entirely the same day, no replacement. `github.com/argoproj`
-  is now the sole live concentration, backing two rows (ArgoCD, Argo Rollouts).
-  Every other row is a distinct org. The lab's mitigation is structural, not
+  was the next-largest concentration (ArgoCD, Argo Rollouts) until Argo Rollouts was
+  also removed entirely 2026-09-07, no replacement — argoproj now backs just ArgoCD,
+  below the 2-row concentration threshold. As of 2026-09-07, no org backs 2+ rows in
+  the register — there is currently no live concentration risk to name.
+  Every row is a distinct org. The lab's mitigation is structural, not
   new: every workload is a GitOps `Application` pointing at a pinned chart/image ref
   (ADR-0001), so a disappeared upstream is a fork-and-repoint operation, not a
   rebuild — demonstrated for real by the ADR-0011→ADR-0024 Artifactory→Harbor
@@ -340,45 +335,37 @@ concentration)?**
 - **Evidence:** [docs/dependency-concentration.md](dependency-concentration.md);
   [docs/dependency-register.md](dependency-register.md); ADR-0001.
 - **Gap:** none in rollup *existence* — the cross-cutting view this question asked for
-  now exists. The `github.com/grafana` and `github.com/pingcap` concentrations are
-  both resolved (removed, not mitigated); the one remaining live concentration
-  (`github.com/argoproj`) is a real fact about upstream maintainership, not a bug
-  this lab's code can fix — it's simply visible instead of implicit.
+  now exists. The `github.com/grafana`, `github.com/pingcap`, and `github.com/argoproj`
+  concentrations are all resolved (removed or dropped below threshold, not
+  mitigated) — the rollup would flag a new concentration the moment one forms
+  again (`make dependency-concentration-sync-check`, wired into `make ci`).
 
 **Q17. Is there an exit strategy per critical third-party dependency?**
-- **Answer:** Yes, pre-planned (not just implicit) for the lab's live concentration
-  risks: [`docs/dependency-exit-runbooks.md`](dependency-exit-runbooks.md) writes
-  down, per group, what a real exit changes mechanically in `gitops/`, whether
-  it's a fork-and-repoint or a real schema/data migration, and whether any
-  alternative has actually been evaluated (honestly: no, for either live group
-  today — the first step of any real exit is the same ADR-writing process this
-  lab already uses to pick a tool). The `github.com/grafana` group's own runbook
-  is now moot — that dependency was removed entirely 2026-09-06 with no
-  replacement (ADR-0041), the most complete "exit" available, so there's nothing
-  left to plan an exit for. Still grounded in ADR-0001 (GitOps +
-  Terraform-only-bootstraps means every workload is redeployable by changing one
-  `Application` source) and demonstrated once by the real, executed
-  ADR-0011→ADR-0024 Artifactory→Harbor migration — the runbooks make the
-  *first-response steps* explicit in advance, they don't replace that structural
-  exit-ability or invent a smaller true cost.
+- **Answer:** Yes, pre-planned (not just implicit) for every dependency this lab
+  actually still runs: [`docs/dependency-exit-runbooks.md`](dependency-exit-runbooks.md)
+  writes down, per component, what a real exit changes mechanically in `gitops/`,
+  whether it's a fork-and-repoint or a real schema/data migration, and whether any
+  alternative has actually been evaluated. The `github.com/grafana` group's own
+  runbook is moot (removed 2026-09-06, ADR-0041) and so are eleven more —
+  Kyverno, Velero, Trivy Operator, Kargo, Harbor, moto, ACK S3 controller, KRO,
+  Cilium, Garage, and Forgejo — all removed entirely 2026-09-07, no replacement,
+  alongside Argo Rollouts (`github.com/argoproj`'s other former member). There's
+  nothing left to plan an exit for any of those. Still grounded in ADR-0001
+  (GitOps + Terraform-only-bootstraps means every workload is redeployable by
+  changing one `Application` source) and demonstrated once by the real, executed
+  ADR-0011→ADR-0024 Artifactory→Harbor migration (itself now also moot, Harbor
+  having since been removed too) — the runbooks make the *first-response steps*
+  explicit in advance, they don't replace that structural exit-ability.
 - **Evidence:** [docs/dependency-exit-runbooks.md](dependency-exit-runbooks.md);
-  ADR-0024 (executed migration); ADR-0001 (structural exit-ability).
-- **Gap:** none in coverage *existence* — every one of `docs/dependency-register.md`'s
-  21 current rows has a written runbook entry in
-  [`docs/dependency-exit-runbooks.md`](dependency-exit-runbooks.md), mechanically
-  enforced by `make dependency-exit-runbooks-sync-check` (wired into `make ci`'s
-  `drift` job, so a new register row without a matching runbook mention fails the
-  build). This closed in three sweeps (2026-09-02, then a 2026-09-06 pass covering
-  the final thirteen rows: Kyverno, Velero, Trivy Operator, Kargo, Harbor, Oracle
-  Cloud Infrastructure, k3s, moto, ACK S3 controller, KRO, s3manager, Vault, and
-  External Secrets Operator) — this entry previously (as of 2026-09-06) still
-  described those thirteen as "a real, separately-scoped gap," which was true when
-  written but stale by the time this correction landed. RabbitMQ, Valkey, and KEDA
-  had runbooks too until all three were removed from the lab entirely 2026-09-06,
-  with no replacement — a removed dependency needs no exit runbook. A written
-  runbook existing in advance also doesn't mean the effort of an actual exit is
-  smaller, only that the first-response steps are already identified — exits still
-  happen reactively via a new ADR when actually triggered.
+  ADR-0024 (executed migration, itself now also moot); ADR-0001 (structural
+  exit-ability).
+- **Gap:** none in coverage — every one of the register's 9 current rows (Q14) has
+  either a written runbook or a "moot, removed" note, and
+  `scripts/dependency-exit-runbooks-sync-check.sh` (wired into `make ci`) mechanically
+  fails the build if a future register row lacks one. A written runbook existing in
+  advance doesn't mean the effort of an actual exit is smaller, only that the
+  first-response steps are already identified — exits still happen reactively via a
+  new ADR when actually triggered.
 
 ---
 
@@ -413,15 +400,22 @@ the stack in use?**
 
 ## Reading this document
 
-Sixteen of eighteen questions above have honest, evidence-backed answers grounded in
-real repo state. The recurring gap pattern is **cadence, not design**: risk review,
-resilience testing, dependency re-checks, and threat-intel digesting are all designed
-correctly (the mechanism exists and works when invoked) but none run on a schedule —
-everything is on-demand, which matches this lab being clusterless-by-default and
-maintainer-triggered rather than continuously operated. **Pillar 2 (incident
-classification & logging)** was the one *structural* gap, not just a cadence one —
-`docs/incident-log.md` now closes the classification (Q6) and root-cause-logging (Q8)
-halves of it with a real severity scheme and a backfilled incident history; the
-narrower residual gap is automated detection/alerting/escalation (Q7), which remains
-unchanged and is named there as an intentional non-goal for a solo-operator lab rather
-than a silent absence.
+This document was substantially rewritten 2026-09-07 after this lab's aggressive
+simplification (observability, Cilium, Garage, Forgejo, GitLab, Harbor, the DR front
+door, capstone, Kyverno, Argo Rollouts, Velero, Trivy Operator, Kargo, ACK, and
+moto/KRO all removed, no replacement). Several answers that used to be design-complete
+(Pillar 3's DR/resilience testing, Pillar 1's Q3/Q4 backup RTO/RPO) are now **real,
+structural gaps, not just cadence ones** — the mechanisms that used to close them
+(Velero, the chaos/network-partition/storage-failure drills, blue-green cutover, the
+DR results log) were deleted along with the components they depended on, and nothing
+replaces them. This is the honest current state (ADR-0004), not a temporary
+regression to "fix" back to the prior answers — the maintainer's explicit direction
+this session was aggressive simplification, and a smaller lab with fewer real backup
+targets is a legitimate trade-off, not an oversight. What's still solid: Pillar 1's
+risk-framework/criticality-tiering structure (Q1-Q2), Pillar 2's incident
+classification and logging (Q6, Q8), and Pillar 4's dependency register/concentration/
+exit-runbook trio (Q14, Q16, Q17), all of which stayed mechanically enforced and
+accurate through the simplification. The recurring gap pattern for what remains solid
+is still **cadence, not design** — reviews are event-triggered, not periodic, which
+matches this lab being clusterless-by-default and maintainer-triggered rather than
+continuously operated.

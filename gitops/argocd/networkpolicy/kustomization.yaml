@@ -2,13 +2,24 @@
 # ArgoCD is the entire GitOps reconcile plane — the highest blast-radius non-secrets
 # namespace. Pulls the two shared baseline templates and adds argocd-specific allow rules:
 # ingress from Traefik's data-plane pods (argocd.127.0.0.1.nip.io IngressRoute on TCP 8080, ADR-0040);
-# intra-namespace allow-all (controller ↔ repo-server ↔ argocd-cache ↔ server ↔ appset);
+# intra-namespace allow-all (controller ↔ repo-server ↔ argocd-cache ↔ server ↔ appset —
+# this alone now also covers what allow-argocd-service-frontends.yaml used to carry
+# separately, see below);
 # (the Alloy metrics-scrape ingress rule this overlay used to also carry was
 # removed 2026-09-06, ADR-0041, observability stack removed with no replacement)
-# egress to ArgoCD ClusterIP service frontends (TCP 6379/7000/8080/8081);
-# egress from argocd-repo-server to GitLab on the host (TCP 8929, git clone/fetch);
-# egress from argocd-repo-server to public Helm chart registries (TCP 443).
+# egress from argocd-repo-server to public Helm chart registries and this repo's own
+# git remote (TCP 443 — self-hosted git source-of-truth options were removed
+# 2026-09-06/07, no replacement; the repo now lives only on the public git host).
 # The allow-dns-and-apiserver baseline covers all pods' k8s API calls.
+# zz-dns-clusterip-bridge.yaml (Cilium socket-LB workaround) and
+# allow-argocd-service-frontends.yaml (its namespace-scoped counterpart, covering
+# ArgoCD's own cache/repo-server/webhook Service frontends on TCP 6379/7000/8080/8081)
+# were both dropped 2026-09-07 alongside Cilium itself, no replacement — kube-router
+# enforces NetworkPolicy post-DNAT, so Service-ClusterIP traffic already resolves to
+# the real backend pod IP by the time policy is evaluated, and
+# allow-argocd-intra-namespace.yaml's existing podSelector:{} egress rule already
+# matches those same backend pods (see allow-dns-and-apiserver.yaml's header for the
+# full reasoning).
 # Wired into gitops/platform/argocd-networkpolicy.yaml (auto-synced, wave 4).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -18,9 +29,6 @@ namespace: argocd
 resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
-  - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-argocd-server-from-gateway.yaml
   - allow-argocd-intra-namespace.yaml
-  - allow-argocd-service-frontends.yaml
-  - allow-argocd-repo-server-egress-forgejo.yaml
   - allow-argocd-repo-server-egress-charts.yaml

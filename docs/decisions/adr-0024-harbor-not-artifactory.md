@@ -1,6 +1,22 @@
 # ADR-0024 — Harbor as the on-demand artifact registry (supersedes ADR-0011)
 
-**Status.** Adopted (architect decision, RFC #297) and **live**. **Supersedes
+**Status.** Removed 2026-09-07 (maintainer decision — component dropped from the lab
+entirely, no replacement). `gitops/platform/harbor.yaml`, `gitops/platform/
+harbor-extras.yaml`, all of `gitops/harbor/` and `gitops/governance/harbor/`, the
+three `gitops/secrets/harbor-*-externalsecret.yaml` ExternalSecrets, the
+`verify-image-signatures` Kyverno ClusterPolicy (scoped exclusively to Harbor
+images), the `harbor-governance`/`harbor-networkpolicy` ApplicationSet entries, and
+every harbor test and cross-reference named below were deleted in the same change.
+Capstone's Rollout/Deployment still reference `harbor.127.0.0.1.nip.io` as their
+image source and Kargo's Warehouse (`gitops/kargo-project/project.yaml`) still
+subscribes to it for digest discovery — both are accepted, documented casualties
+(ImagePullBackOff / no Freight discovery) of removing the only registry in the lab,
+not something this change fixes. The decision record below is kept for history (why
+Harbor was adopted, what it demonstrated) but no longer describes anything live in
+the repo — do not treat any manifest path or Makefile target named below as still
+existing.
+
+~~**Status.** Adopted (architect decision, RFC #297) and **live**. **Supersedes
 [ADR-0011](adr-0011-artifactory-not-nexus.md).** Harbor's manifests landed
 (`docs/done/2026-06-30-harbor-application.md`), the trimmed minimal-profile footprint
 was measured on-demand at ~6.6 GB/12 GB (~55%), comfortably meeting the 12 GB gate
@@ -11,7 +27,7 @@ fully decommissioned (`docs/done/2026-07-29-harbor-artifactory-decommission.md`,
 `tests/no-artifactory.bats`). Harbor is on-demand (manual-sync, ADR-0003) — it is
 not auto-synced, so "live" here means code-complete and footprint-verified, not
 continuously running; per ADR-0004 this status reflects real, verified state, not
-an aspiration.
+an aspiration.~~
 
 ---
 
@@ -60,7 +76,7 @@ weight, the OSS feature walls, and the single-vendor governance risk.
 
 Harbor stays **on-demand by default** (mirrors ADR-0011's 12 GB budget reasoning): a
 `gitops/platform/harbor.yaml` `Application` with **no `automated:` block**, brought up with
-`make harbor-up` and town down with `make harbor-down`. It is promoted to always-on **only
+make harbor-up and town down with make harbor-down. It is promoted to always-on **only
 if** the minimal profile measures light enough to stay resident — a decision deferred until
 after measurement, never assumed.
 
@@ -134,7 +150,7 @@ no plaintext creds in CI. Out of scope for the first cut: any non-registry Harbo
 |-----|-------------|
 | [ADR-0001](adr-0001-gitops-over-terraform-helm.md) | Harbor is an ArgoCD `Application` from the `goharbor/harbor` chart; no imperative `helm install`. |
 | [ADR-0002](adr-0002-garage-not-minio.md) | Harbor registry storage targets Garage S3; egress stays TCP 3900 to `storage`. |
-| [ADR-0005](adr-0005-spof-recreate-over-ha.md) | Single on-demand Harbor; recover-from-code via `make harbor-up`, like every other on-demand component. |
+| [ADR-0005](adr-0005-spof-recreate-over-ha.md) | Single on-demand Harbor; recover-from-code via make harbor-up, like every other on-demand component. |
 | [ADR-0008](adr-0008-envoy-gateway-not-traefik.md) | Harbor UI + registry endpoint exposed via an Envoy `HTTPRoute` (`harbor.127.0.0.1.nip.io`). |
 | [ADR-0011](adr-0011-artifactory-not-nexus.md) | **Superseded.** ADR-0011 chose Artifactory OSS; this ADR records the explicit switch to Harbor and the reasoning. |
 | [ADR-0017](adr-0017-pod-security-standards-restricted.md) | Target `restricted` for the `harbor` namespace if the chart renders non-root; the old `artifactory → baseline` row is removed. |

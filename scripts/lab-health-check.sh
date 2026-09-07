@@ -6,13 +6,17 @@
 # "Healthy" = every pod is Running with all containers Ready (or a Job/Completed pod),
 # AND every Deployment/StatefulSet/DaemonSet has all desired replicas Ready.
 #
-# It deliberately ignores two kinds of pod that are SUPPOSED to be transient/absent:
-#   * Job-owned pods (Trivy scans, hook jobs, …) — ephemeral by design; their
+# It deliberately ignores one kind of pod that's SUPPOSED to be transient/absent:
+#   * Job-owned pods (hook jobs, …) — ephemeral by design; their
 #     Completion is what matters, not steady Readiness.
-#   * On-demand components — the manual `make *-up` targets (Harbor, Kargo)
-#     + the capstone demo (needs the on-demand
-#     Harbor registry). `make up` never starts them, so a missing/unhealthy one isn't a
-#     `make up` failure. Override the set with LAB_ONDEMAND_NS="ns1 ns2 …".
+#
+# On-demand components (the manual `make *-up` targets, e.g. Harbor/Kargo) used to be
+# a second such exclusion — LAB_ONDEMAND_NS defaulted to "kargo capstone harbor". All
+# three were removed from the project entirely 2026-09-07, no replacement, and no
+# other component ever adopted the on-demand pattern before then (see
+# scripts/ondemand-budget-check.sh's own now-empty UNIT_NS/UNIT_SIZE), so the default
+# is empty — every namespace this script sees today really is always-on. Override
+# with LAB_ONDEMAND_NS="ns1 ns2 …" if a future component reintroduces the pattern.
 #
 # Polls up to HEALTH_WAIT seconds (default 90; 0 = single snapshot) so a workload that's
 # still converging — pulling an image, downloading a plugin/DB, rolling — isn't reported
@@ -24,19 +28,21 @@ set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 WAIT="${HEALTH_WAIT:-90}"
 IV="${HEALTH_INTERVAL:-10}"
-ONDEMAND_NS="${LAB_ONDEMAND_NS:-kargo ack-system capstone harbor}"
-# Front-door UIs to probe (HTTP, from the host) — readiness of the pods behind Traefik
-# isn't enough: if the Traefik data plane is down, every :8000 UI is unreachable while the
-# pods still look fine. Probes the stable front door (:8000), not a per-cluster Traefik
-# port (:8080 blue / :8082 green) — those go away entirely once the cluster they belong
-# to is torn down after a blue/green cutover (docs/DR.md), so hardcoding one here would
-# make `make health` silently probe the wrong (or a since-removed) backend post-cutover.
+ONDEMAND_NS="${LAB_ONDEMAND_NS:-}"
+# UIs to probe (HTTP, from the host) — readiness of the pods behind Traefik isn't
+# enough: if the Traefik data plane is down, every UI is unreachable while the pods
+# still look fine. Probes k3d's own load balancer port :8080 directly — the custom
+# front door (:8000) that used to sit in front of a blue/green cluster pair was
+# removed entirely 2026-09-07, no replacement (there is only one cluster/mode left,
+# see docs/decisions/adr-0005-spof-recreate-over-ha.md's Re-evaluation log), so :8080
+# is now the sole, permanent entry point, not one of two per-cluster ports that could
+# disappear on a cutover.
 # "url|name", space-separated. Set LAB_UI_PROBES= to skip.
 # (The other default probe here used to hit Grafana's own /api/health — removed
 # 2026-09-06 alongside Grafana, ADR-0041, observability stack removed with no
 # replacement; no other always-on UI has a documented health-style endpoint to
 # safely substitute, so this is single-probe until one does.)
-UI_PROBES="${LAB_UI_PROBES:-http://argocd.127.0.0.1.nip.io:8000/healthz|argocd(:8000)}"
+UI_PROBES="${LAB_UI_PROBES:-http://argocd.127.0.0.1.nip.io:8080/healthz|argocd(:8080)}"
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 ok()   { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
@@ -86,7 +92,7 @@ scan() {
     A_WL+="$kind $ns/$name  ready=$r"$'\n'
   done <<<"$wl"
 
-  # --- front door: the :8000 UIs must actually answer over HTTP -----------------
+  # --- UI probes: the :8080 UIs must actually answer over HTTP -------------------
   F=""
   local p url name code
   for p in $UI_PROBES; do
@@ -135,13 +141,11 @@ bash "$(dirname "${BASH_SOURCE[0]}")/ondemand-budget-check.sh" 2>/dev/null || tr
 echo
 bash "$(dirname "${BASH_SOURCE[0]}")/k3s-datastore-health-check.sh" 2>/dev/null || true
 
-# Also informational only — same reasoning again: a cilium-agent apiserver-host drift
-# (2026-07-29, recurred 2026-09-06 — issue #633) makes pods stuck in
-# FailedCreatePodSandBox indistinguishable from generic overload in the checks above
-# unless this points at the actual root cause. See
-# scripts/cilium-apiserver-drift-check.sh's header for the story.
-echo
-bash "$(dirname "${BASH_SOURCE[0]}")/cilium-apiserver-drift-check.sh" 2>/dev/null || true
+# scripts/cilium-apiserver-drift-check.sh (a third informational check here, for a
+# cilium-agent apiserver-host drift that made pods stuck in FailedCreatePodSandBox
+# indistinguishable from generic overload — 2026-07-29, recurred 2026-09-06, issue
+# #633) was removed 2026-09-07 alongside Cilium itself (ADR-0014), no replacement —
+# k3s's bundled Flannel + kube-router doesn't share that failure mode.
 
 echo
 if [ "$fail" -eq 0 ]; then printf '%s%sLAB HEALTH: PASS%s — the always-on stack is fully up.\n' "$B" "$G" "$Z"

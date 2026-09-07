@@ -4,31 +4,19 @@
 # baseline) and every per-scope tests/networkpolicy-<scope>.bats. Centralising the
 # paths here means a per-scope file never re-declares the shared set, and there is no
 # shared monolith for parallel fan-out PRs to collide on.
+#
+# Only vars for the project's current 6 always-on namespaces remain. Many more used to
+# be declared here (data, capstone, observability, storage, tidb/tidb-admin,
+# istio-system, longhorn, artifactory, kyverno, velero, argo-rollouts, harbor, kargo/
+# kargo-project, keda) — every one of those namespaces was removed entirely across
+# several sessions (most on 2026-09-06/07, no replacement), and none of the vars had
+# any remaining reference once its own networkpolicy-<scope>.bats file was deleted
+# alongside it, so they were dropped here too rather than kept as dead declarations.
 REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
 POLICIES="$REPO/gitops/network/policies"
-DATA_NP="$REPO/gitops/data/networkpolicy"
-CAPSTONE_NP="$REPO/gitops/apps/capstone/networkpolicy"
-OBS_NP="$REPO/gitops/observability/networkpolicy"
 VAULT_NP="$REPO/gitops/vault/networkpolicy"
-STORAGE_NP="$REPO/gitops/storage/networkpolicy"
 ARGOCD_NP="$REPO/gitops/argocd/networkpolicy"
-MOTO_NP="$REPO/gitops/moto/networkpolicy"
-ACK_NP="$REPO/gitops/ack/networkpolicy"
 GATEWAY_NP="$REPO/gitops/network/networkpolicy"
-TIDB_NP="$REPO/gitops/tidb/networkpolicy"
-TIDB_ADMIN_NP="$REPO/gitops/tidb-admin/networkpolicy"
 ESO_NP="$REPO/gitops/external-secrets/networkpolicy"
-KRO_NP="$REPO/gitops/kro/networkpolicy"
 LAB_DEMO_NP="$REPO/gitops/apps/demo/networkpolicy"
-ISTIO_SYSTEM_NP="$REPO/gitops/istio-system/networkpolicy"
-LONGHORN_NP="$REPO/gitops/longhorn/networkpolicy"
-ARTIFACTORY_NP="$REPO/gitops/artifactory/networkpolicy"
-KYVERNO_NP="$REPO/gitops/kyverno/networkpolicy"
-VELERO_NP="$REPO/gitops/velero/networkpolicy"
-TRIVY_NP="$REPO/gitops/trivy-system/networkpolicy"
-ARGO_ROLLOUTS_NP="$REPO/gitops/argo-rollouts/networkpolicy"
-HARBOR_NP="$REPO/gitops/harbor/networkpolicy"
-KARGO_NP="$REPO/gitops/kargo/networkpolicy"
-KARGO_PROJECT_NP="$REPO/gitops/kargo-project/networkpolicy"
 CERT_MANAGER_NP="$REPO/gitops/cert-manager/networkpolicy"
-KEDA_NP="$REPO/gitops/keda/networkpolicy"

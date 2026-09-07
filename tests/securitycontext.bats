@@ -12,87 +12,13 @@
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
-  DEPLOY="$REPO/gitops/apps/capstone/deployment.yaml"
-  NS="$REPO/gitops/apps/capstone/namespace.yaml"
   ESO="$REPO/gitops/platform/external-secrets.yaml"
   load lib/yq
 }
 
-# --- namespace PSA labels ----------------------------------------------------
-
-@test "capstone namespace.yaml exists" {
-  [ -f "$NS" ]
-}
-
-@test "capstone namespace enforces PSS restricted" {
-  run grep -q 'pod-security.kubernetes.io/enforce: restricted' "$NS"
-  [ "$status" -eq 0 ]
-}
-
-@test "capstone namespace has enforce-version: latest" {
-  run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$NS"
-  [ "$status" -eq 0 ]
-}
-
-@test "capstone namespace has warn: restricted" {
-  run grep -q 'pod-security.kubernetes.io/warn: restricted' "$NS"
-  [ "$status" -eq 0 ]
-}
-
-@test "capstone namespace has audit: restricted" {
-  run grep -q 'pod-security.kubernetes.io/audit: restricted' "$NS"
-  [ "$status" -eq 0 ]
-}
-
-# --- Deployment pod-level securityContext ------------------------------------
-# Path-aware via yqs() (not bare grep -q): $DEPLOY is a multi-doc file
-# (Deployment + Service), and a bare grep can't tell a value correctly nested
-# under the Deployment's pod/container securityContext from the same string
-# sitting anywhere else — the same key-mismatch gap class fixed for KSM/
-# node-exporter/Pyroscope/Grafana/KRO/moto/ack-s3/vault (see docs/done/
-# 2026-07-18-securitycontext-key-guard-hardening.md and its follow-ups).
-# select(.kind == "Deployment") scopes the query to the first document.
-
-@test "capstone Deployment sets runAsNonRoot: true" {
-  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.securityContext.runAsNonRoot' "$DEPLOY")" = "true" ]
-}
-
-@test "capstone Deployment sets seccompProfile.type: RuntimeDefault" {
-  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.securityContext.seccompProfile.type' "$DEPLOY")" = "RuntimeDefault" ]
-}
-
-# --- container-level securityContext -----------------------------------------
-
-@test "capstone Deployment sets allowPrivilegeEscalation: false" {
-  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation' "$DEPLOY")" = "false" ]
-}
-
-@test "capstone Deployment sets readOnlyRootFilesystem: true" {
-  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem' "$DEPLOY")" = "true" ]
-}
-
-@test "capstone Deployment drops ALL capabilities" {
-  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.containers[0].securityContext.capabilities.drop[0]' "$DEPLOY")" = "ALL" ]
-}
-
-@test "capstone Deployment does not run as privileged" {
-  [ "$(yqs 'select(.kind == "Deployment") | .spec.template.spec.containers[0].securityContext.privileged' "$DEPLOY")" = "false" ]
-}
-
 # --- baseline carve-out namespaces (ADR-0017 §Per-namespace profile) ----------
-
-@test "storage namespace.yaml enforces PSS baseline" {
-  NS="$REPO/gitops/storage/garage/namespace.yaml"
-  [ -f "$NS" ]
-  run grep -q 'pod-security.kubernetes.io/enforce: baseline' "$NS"
-  [ "$status" -eq 0 ]
-}
-
-@test "kyverno namespace.yaml has enforce-version: latest" {
-  NS="$REPO/gitops/kyverno/namespace.yaml"
-  run grep -q 'pod-security.kubernetes.io/enforce-version: latest' "$NS"
-  [ "$status" -eq 0 ]
-}
+# (storage/Garage's PSS-baseline row was removed 2026-09-07 alongside Garage
+# itself, no replacement — ADR-0002/ADR-0007/ADR-0039.)
 
 # --- argocd namespace Phase 1 PSA labels (RFC #205, ADR-0017) -----------------
 

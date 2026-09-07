@@ -29,10 +29,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "lab-gateway kustomization has only three resources (baseline templates + ClusterIP bridge, no extra rules)" {
+@test "lab-gateway kustomization has only two resources (baseline templates, no extra rules)" {
+  # zz-dns-clusterip-bridge.yaml (the third resource this test used to require)
+  # was dropped 2026-09-07 alongside Cilium itself, no replacement — kube-router
+  # enforces NetworkPolicy post-DNAT so the ClusterIP-CIDR bridge workaround it
+  # provided is no longer needed (see allow-dns-and-apiserver.yaml's header).
   run grep -c '^\s*-' "$GATEWAY_NP/kustomization.yaml"
   [ "$status" -eq 0 ]
-  [ "$output" -eq 3 ]
+  [ "$output" -eq 2 ]
 }
 
 @test "lab-gateway-networkpolicy ArgoCD Application file exists" {

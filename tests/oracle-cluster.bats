@@ -114,14 +114,14 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-# --- infra/live/oracle/ contract: argocd + gitlab units are byte-identical to local/'s ---
+# --- infra/live/oracle/ contract: argocd unit is byte-identical to local/'s ---
+# A gitlab/ unit (ADR-0033), and later a forgejo/ unit (ADR-0035), existed in both
+# infra/live/local/ and infra/live/oracle/ with an equivalent byte-identical-to-local
+# contract test here — both self-hosted git options were removed entirely 2026-09-07,
+# no replacement, so both units (and this test) were dropped from every backend.
 
 @test "infra/live/oracle/argocd/terragrunt.hcl is byte-identical to local/'s" {
   diff -q "$REPO/infra/live/local/argocd/terragrunt.hcl" "$LIVE/argocd/terragrunt.hcl"
-}
-
-@test "infra/live/oracle/gitlab/terragrunt.hcl is byte-identical to local/'s" {
-  diff -q "$REPO/infra/live/local/gitlab/terragrunt.hcl" "$LIVE/gitlab/terragrunt.hcl"
 }
 
 @test "infra/live/oracle/cluster/terragrunt.hcl points source at oracle-k3s-cluster" {

@@ -8,7 +8,7 @@
 # object that also lists `web` makes that router silently fail to match ANY
 # plain-HTTP request on `web` (no error logged, no access-log entry — the
 # router just never matches), even though the documented, canonical access
-# path for every UI in this lab is plain HTTP on port 8000/8080, not HTTPS.
+# path for every UI in this lab is plain HTTP on port 8080, not HTTPS.
 # Confirmed live: a router with `tls: {}` + entryPoints [web, websecure] 404s
 # on `web`; the identical rule with NO `tls:` field on entryPoints [web] alone
 # returns 200. `websecure` continues to work fine either way, so `web` and

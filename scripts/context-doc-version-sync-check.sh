@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# docs/decisions/context.md is a hand-maintained "live decisions" summary that cites
-# specific component versions in prose (KRO's chart version, ACK s3-controller's chart
-# version — the Grafana/Pyroscope citations this check used to also track were removed
-# 2026-09-06 alongside the components themselves, ADR-0041). Unlike the
-# self-tracking ADR "Chart + version" pattern (adr-chart-version-sync-check.sh),
+# docs/decisions/context.md is a hand-maintained "live decisions" summary that, when it
+# tracks a component's version in prose, needs that citation kept in sync by hand. Unlike
+# the self-tracking ADR "Chart + version" pattern (adr-chart-version-sync-check.sh),
 # context.md has no structured marker to parse — it went stale for real, twice: a
 # session found "Grafana 13.0.1" and "Pyroscope (chart 2.0.2" and "KRO (0.4.1" all
 # quietly out of date after later bumps (to 13.0.3, 2.2.0, 0.9.2 respectively)
@@ -15,6 +13,13 @@
 # version citation equals the real live gitops pin. NOTE: unlike the ADR guards,
 # this list is NOT self-maintaining — a new context.md version citation needs its
 # own `check_one` call added here manually.
+#
+# The Grafana/Pyroscope check_one calls were REMOVED 2026-09-06 (ADR-0041, both
+# components dropped with no replacement); the KRO and ACK s3-controller check_one
+# calls that were this file's only remaining tracked citations were REMOVED 2026-09-07
+# (ADR-0038, ACK/moto/KRO all dropped with no replacement) — see below. This checker
+# currently tracks zero citations; it stays wired into `make ci` for whenever
+# context.md next grows a new self-tracking version citation worth guarding.
 #
 # Run by `make context-doc-version-sync-check`, the CI 'drift' gate, and the
 # context-doc-version-sync-hook.sh PostToolUse hook. Exit 0 = every tracked
@@ -70,11 +75,11 @@ check_one() {
 # (ADR-0041): both components (and their context.md citations) are gone —
 # the entire observability stack was removed with no replacement.
 
-check_one "KRO chart version" 'KRO\*\* \([0-9]+\.[0-9]+\.[0-9]+' \
-  "gitops/platform/kro.yaml" '.spec.source.targetRevision'
-
-check_one "ACK s3-controller chart version" 'ACK\*\* s3-controller \(chart [0-9]+\.[0-9]+\.[0-9]+' \
-  "gitops/platform/ack-s3.yaml" '.spec.source.targetRevision'
+# KRO chart version / ACK s3-controller chart version checks REMOVED 2026-09-07
+# (ADR-0038): moto, ACK, and KRO were all dropped from the lab with no replacement
+# (ACK/moto: maintainer decision; KRO: orphaned dependent of ACK) — their
+# context.md citations are gone too. No check_one call remains below; this
+# checker is currently a no-op until a new self-tracking citation is added.
 
 echo
 [ "$drift" -eq 0 ] && printf '  %s✓%s every tracked context.md version citation matches its live gitops pin\n' "$G" "$Z"

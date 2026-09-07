@@ -1,8 +1,20 @@
 # ADR-0020 — Argo Rollouts for progressive delivery (SLO-gated canaries via Envoy Gateway API)
 
-**Status.** Adopted. Decision taken by the architect routine in this RFC. Always-on
+**Status.** Removed 2026-09-07 (maintainer decision — component dropped from the lab
+entirely, no replacement). capstone was Argo Rollouts' only consumer in the whole
+repo — its `gitops/apps/capstone/rollout.yaml` was the sole `Rollout` resource ever
+defined — and capstone is also gone. All `gitops/argo-rollouts/`,
+`gitops/governance/argo-rollouts/`, `gitops/platform/argo-rollouts.yaml`,
+`gitops/platform/argo-rollouts-extras.yaml`, `gitops/platform/argo-rollouts-networkpolicy.yaml`
+manifests, the `lab-argo-rollouts.json` dashboard, and every argo-rollouts test and
+cross-reference were deleted in the same change. The decision record below is kept for
+history (why Argo Rollouts was adopted, what it demonstrated) but no longer describes
+anything live in the repo — do not treat any manifest path or Makefile target named
+below as still existing.
+
+~~**Status.** Adopted. Decision taken by the architect routine in this RFC. Always-on
 component. CHARTER **Objective O1** (one of four Tier 1 next-wave components,
-due 2026-12-31).
+due 2026-12-31).~~
 
 ---
 
@@ -31,13 +43,13 @@ by Alloy).
 
 ### Chart + version
 
-- **Chart:** `argo/argo-rollouts` `2.43.0` (`appVersion: 1.10.0`; pin lives in
-  `gitops/platform/argo-rollouts.yaml`'s `targetRevision` — this note read
-  "v2.40.x" until the 2026-07-18 audit corrected it to the actual pin,
-  "2.41.0 (appVersion: 1.9.0)" until the 2026-07-20 upgrade-drafter bump, and
-  "2.41.1 (appVersion: 1.9.1)" until the 2026-09-01 upgrade-drafter currency
-  bump; see [§Re-evaluation log](#re-evaluation-log) for the current status
-  of this pin).
+- **Chart:** `argo/argo-rollouts` `2.43.0` (`appVersion: 1.10.0`; pin **lived** in
+  `gitops/platform/argo-rollouts.yaml`'s `targetRevision` until the component was
+  removed 2026-09-07 — that file no longer exists. This note read "v2.40.x" until
+  the 2026-07-18 audit corrected it to the actual pin, "2.41.0 (appVersion: 1.9.0)"
+  until the 2026-07-20 upgrade-drafter bump, and "2.41.1 (appVersion: 1.9.1)" until
+  the 2026-09-01 upgrade-drafter currency bump; see [§Re-evaluation
+  log](#re-evaluation-log) for the full pin history up to removal).
 - **Source:** `https://argoproj.github.io/argo-helm`
 - **Namespace:** `argo-rollouts` (new namespace; PSA label `restricted` —
   controller is non-root-capable per upstream Helm chart).
@@ -395,3 +407,28 @@ the actual gap is unauthenticated *mutation*, not exposure of a read-only view.
 GHSA-366v-5xmx-36vh — at that point RFC #1479's compensating control may be kept
 as defense-in-depth or reconsidered, but is not itself a reason to drop once
 built. Audit closed: `gh issue close #1478`, actioned as RFC #1479.
+
+### 2026-09-07 — Removed, no replacement (maintainer decision, supersedes the RFC #1479 audit above)
+
+**Trigger.** Maintainer decision to drop Argo Rollouts from the lab entirely, alongside
+capstone (its only consumer) and Velero/Kargo/Kyverno in the same sweep — landed the
+same day as, and after, the dashboard-CVE audit immediately above. This removal makes
+that audit's RFC #1479 (a Traefik `basicAuth` Middleware in front of the dashboard)
+moot: there is no longer a dashboard, or any Argo Rollouts component, to compensate
+for. RFC #1479 should be closed as moot rather than implemented.
+
+**Decision: remove, no replacement.** `gitops/argo-rollouts/`,
+`gitops/governance/argo-rollouts/`, `gitops/platform/argo-rollouts.yaml`,
+`gitops/platform/argo-rollouts-extras.yaml`,
+`gitops/platform/argo-rollouts-networkpolicy.yaml`, the `lab-argo-rollouts.json`
+dashboard, `tests/argo-rollouts.bats`, `tests/networkpolicy-argo-rollouts.bats`,
+`tests/securitycontext-argo-rollouts.bats`, and every other argo-rollouts
+cross-reference (governance leaf, ApplicationSet entry, dependency-register row) were
+deleted in the same change. `scripts/rollouts-plugin-list-check.sh`'s drift guard is
+now a permanent no-op (it scans for a `controller.trafficRouterPlugins`/
+`metricProviderPlugins` shape that can no longer occur) rather than removed outright,
+since its Makefile wiring is out of this change's scope.
+
+**Flip condition (next re-evaluation).** None — this is a terminal removal, not a
+version pin. Re-adopting progressive delivery would need a fresh RFC, not a revisit of
+this entry.

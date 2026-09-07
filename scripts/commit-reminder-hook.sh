@@ -53,7 +53,7 @@ if [ -n "$dirty" ] || [ "${ahead:-0}" -gt 0 ] || [ "$no_pr" -eq 1 ]; then
     [ "${ahead:-0}" -gt 0 ]   && echo "  - ${ahead} local commit(s) not on any github branch"
     [ "$no_pr" -eq 1 ]        && echo "  - branch is pushed but has no open PR — run: gh pr create"
     echo "Commit with a real message, then push the branch: git push github HEAD."
-    echo "(main reaches github via reviewed PR — don't push to main directly; sync gitlab main when the lab is up.)"
+    echo "(main reaches github via reviewed PR — don't push to main directly.)"
   } >&2
   exit 2
 fi

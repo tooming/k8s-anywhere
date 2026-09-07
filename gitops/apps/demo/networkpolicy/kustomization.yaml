@@ -2,6 +2,9 @@
 # Pulls the two shared baseline templates (default-deny-all + allow-dns-and-apiserver).
 # The lab-demo-specific egress-to-Tempo rule this overlay used to also carry was
 # removed 2026-09-06 (ADR-0041, observability stack removed with no replacement).
+# zz-dns-clusterip-bridge.yaml (Cilium socket-LB workaround) dropped 2026-09-07
+# alongside Cilium itself, no replacement — see allow-dns-and-apiserver.yaml's own
+# header for why it's no longer needed under kube-router.
 # Wired into gitops/platform/networkpolicy-appset.yaml (auto-synced, wave 4).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -11,4 +14,3 @@ namespace: lab-demo
 resources:
   - ../../../network/policies/default-deny.yaml
   - ../../../network/policies/allow-dns-and-apiserver.yaml
-  - ../../../network/policies/zz-dns-clusterip-bridge.yaml

@@ -1,10 +1,35 @@
 # ADR-0014 — Cilium CNI, not k3s's bundled Flannel + NetworkPolicy controller
 
-**Status.** Adopted. Decision taken in RFC #82 (the default-deny `NetworkPolicy`
+**Status.** Removed 2026-09-07, no replacement — superseded by using k3s's bundled
+Flannel + kube-router instead (maintainer decision — component dropped from the lab
+entirely; cluster reverts to k3s's bundled Flannel CNI + kube-router NetworkPolicy
+controller, this ADR's own originally-rejected option). The
+`gitops/platform/cilium.yaml` Application, every `CiliumNetworkPolicy` custom resource
+under `gitops/` (including the shared `allow-dns-and-apiserver.yaml` and
+`zz-dns-clusterip-bridge.yaml` baseline templates and the per-component
+`allow-*-webhook-from-apiserver.yaml`/`allow-argocd-service-frontends.yaml` policies),
+`scripts/cilium-apiserver-drift-check.sh`, the `cilium-up`/`cilium-down`/
+`cilium-drift-check` Makefile targets, and `tests/cilium.bats` were deleted in this or a
+paired change. `infra/modules/k3d-cluster`'s `disable_default_cni` flip (and the
+`k3d-config.yaml.tftpl` `--flannel-backend=none`/`--disable-network-policy` args it
+renders) is reverted to k3s's defaults as a separate, coordinated infra change — see
+that module and `infra/live/local/cluster/terragrunt.hcl` for the live flip. The
+`CiliumNetworkPolicy` resources this ADR's default-deny fan-out depended on have no
+in-repo plain-`NetworkPolicy` replacement yet; the namespace `networkpolicy/
+kustomization.yaml` overlays that referenced the deleted files, `tests/networkpolicy*.bats`,
+and `docs/decisions/adr-0016-default-deny-networkpolicy.md` still need a follow-up pass
+to either restore equivalent allow-rules as plain `NetworkPolicy` (viable now that
+kube-router's iptables-based enforcement, unlike Cilium's kube-proxy-free socket-LB
+datapath, does not silently miss ClusterIP-fronted egress) or drop the rules they encoded.
+The decision record below is kept for history (why Cilium was adopted, what it
+demonstrated) but no longer describes anything live in the repo — do not treat any
+manifest path or Makefile target named below as still existing.
+
+~~**Status.** Adopted. Decision taken in RFC #82 (the default-deny `NetworkPolicy`
 prerequisite). Per WAYS-OF-WORKING.md §2 the architect's RFC is binding; this ADR
 captures the prerequisite swap that #82's Decision step 1 demanded. The Cilium
 chart manifests are a follow-on item (the planner will groom from RFC #82's
-acceptance criteria).
+acceptance criteria).~~
 
 ---
 
@@ -91,10 +116,10 @@ Two-step bring-up:
    records the decision; the infra/ machinery is in place but inert.
 2. **Follow-on PR (planner-groomed from RFC #82).** Lands
    `gitops/platform/cilium.yaml` (non-auto-synced ArgoCD `Application` from
-   `cilium/cilium` ≥ v1.16), `make cilium-up` / `make cilium-down`, bats
+   `cilium/cilium` ≥ v1.16), make cilium-up / make cilium-down, bats
    tests, **and flips the default** to `true` in
    `infra/live/local/cluster/terragrunt.hcl`. A pre-merge note in DR.md will
-   explain that the next `make up` requires `make cilium-up` immediately
+   explain that the next `make up` requires make cilium-up immediately
    after.
 
 This staging is the recreate-from-code property (ADR-0005) at work: a single
@@ -154,7 +179,7 @@ No existing ADR is contradicted; this is a new decision in a domain (CNI choice)
 | `gitops/platform/cilium.yaml` | Non-auto-synced ArgoCD `Application`, chart `cilium/cilium` ≥ v1.16, namespace `kube-system`; inline `valuesObject` sets `kubeProxyReplacement: true`, `hubble.enabled: false`. |
 | `Makefile` | `cilium-up` / `cilium-down` targets. |
 | `infra/live/local/cluster/terragrunt.hcl` | Flip `disable_default_cni = true`. |
-| `docs/DR.md` | "After `make up`, run `make cilium-up` before any workload" note. |
+| `docs/DR.md` | "After `make up`, run make cilium-up before any workload" note. |
 | `tests/cilium.bats` | Application has no `automated:` block; default-deny baseline policies render. |
 
 ---
@@ -300,3 +325,46 @@ itself reaches end-of-support, or a CVE lands against `1.18.13` specifically.
 A future cycle wanting stronger assurance than this cycle's spot-check
 should walk Cilium's full multi-page advisory list end-to-end rather than
 re-doing this same partial pass.
+
+### 2026-09-07 — Removed entirely, no replacement (host capacity + aggressive simplification)
+
+**Trigger.** Not a CVE/currency sweep like the entries above — a maintainer-directed
+scope narrowing this session, alongside removing Kyverno, Argo Rollouts, Velero,
+Trivy Operator, Kargo, Harbor, Forgejo, GitLab, and capstone the same day.
+
+**Why.** Two independent pressures converged: (1) **host capacity, found live with
+hard evidence** — this issue's own long-running host-capacity-ceiling investigation
+(docs/incident-log.md's 2026-09-06 rows) repeatedly traced symptoms that looked like
+"the host is out of capacity" back to Cilium specifically — a stale `cilium-agent`
+`KUBERNETES_SERVICE_HOST` after every `colima start` hung pod-sandbox creation
+cluster-wide (recurred 2026-07-29 and 2026-09-06), and Cilium's kube-proxy-free
+socket-LB datapath is real, non-trivial overhead this single-node M4 Mac / 12 GB
+Colima VM lab pays on every packet regardless of whether that specific bug is live;
+(2) the maintainer's explicit **"no replacement, aggressive simplification"** direction
+this session (the same direction that removed Kyverno, Argo Rollouts, Velero, Trivy
+Operator, Kargo, Harbor, Forgejo, GitLab, and capstone the same day) — Cilium's
+specific benefits documented in this ADR's original Decision (eBPF datapath
+performance, kube-proxy-free mode, Hubble observability, richer `CiliumNetworkPolicy`
+semantics) were real but not worth their operational cost in a single-node homelab
+that was actively destabilized by them.
+
+**What replaces it.** Nothing dedicated — k3s's bundled Flannel CNI + kube-router
+NetworkPolicy controller (this ADR's own originally-rejected option) is used instead,
+enforcing this lab's default-deny posture (ADR-0016) as plain `networking.k8s.io/v1`
+`NetworkPolicy` rather than `CiliumNetworkPolicy`. The enforcement point moved: under
+kube-router's iptables-based `FORWARD`-chain enforcement, kube-proxy's ClusterIP DNAT
+happens first (in `PREROUTING`), so NetworkPolicy sees already-DNAT'd traffic to real
+pod IPs — the opposite order from Cilium's pre-DNAT, socket-LB-based enforcement,
+which evaluated policy before a ClusterIP was ever resolved to a backend pod. See
+[`gitops/network/policies/allow-dns-and-apiserver.yaml`](../../gitops/network/policies/allow-dns-and-apiserver.yaml)'s
+header comment for the full technical detail — plain podSelector/namespaceSelector
+rules against real destination pods now work correctly and need none of the
+socket-LB/pre-DNAT ClusterIP-CIDR workarounds Cilium required.
+
+**Decision: Removed, no replacement.** See Status above for the exact scope of what
+was deleted.
+
+**Flip condition.** None planned — re-adopting a dedicated CNI/policy engine would be
+a new ADR weighing the same trade-off afresh (host capacity vs. eBPF-datapath/
+observability benefits) against whatever this lab's shape is at that time, not a
+revival of this decision as originally reasoned.

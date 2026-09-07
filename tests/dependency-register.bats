@@ -19,18 +19,24 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dependency-register.md has at least 20 data rows" {
+@test "dependency-register.md has at least 10 data rows" {
   # Count markdown table rows starting with '| [' or '| ' that are real data
-  # rows (exclude the header and the '|---|---|...' separator).
+  # rows (exclude the header and the '|---|---|...' separator). Lowered from 20
+  # to 10 2026-09-07: Kyverno/Argo Rollouts/Velero/Trivy Operator/Kargo/moto/
+  # ACK/KRO were all removed entirely, no replacement, dropping the real row
+  # count from 21 to 13 (docs/dependency-register.md's own Scope note) — a
+  # smaller register is the correct, honest reflection of a smaller lab, not
+  # a regression to guard against.
   count=$(grep -cE '^\| [A-Za-z0-9]' "$DOC")
-  [ "$count" -ge 20 ]
+  [ "$count" -ge 10 ]
 }
 
-@test "dependency-register.md includes a Garage row citing ADR-0002" {
-  run grep -q 'Garage' "$DOC"
-  [ "$status" -eq 0 ]
-  run grep -q 'adr-0002-garage-not-minio.md' "$DOC"
-  [ "$status" -eq 0 ]
+@test "dependency-register.md no longer has a Garage row (removed 2026-09-07, no replacement)" {
+  # Garage (in-cluster S3, ADR-0002, and the off-cluster Terraform-state backend,
+  # ADR-0007) was removed entirely 2026-09-07 alongside s3manager (its browser UI,
+  # ADR-0039, orphaned the same day) — no live component left to cite a row for.
+  run grep -q '^| Garage ' "$DOC"
+  [ "$status" -ne 0 ]
 }
 
 @test "dependency-register.md explains its relationship to dependency-tree.md and decisions/" {
@@ -52,20 +58,23 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-@test "Garage's upstream org slug is deuxfleurs-org, not the dead Deuxfleurs/deuxfleurs (ADR-0002 2026-08-19)" {
-  # github.com/Deuxfleurs/garage (and github.com/deuxfleurs/garage, missing the
-  # -org suffix) both 404 — the real org is deuxfleurs-org. This bug was
-  # invisible to markdown-links-check (bare external URLs, not [text](path)
-  # links) and silently broke the architect routine's own weekly upstream
-  # release check for Garage. Pin the correct slug in both files that name it.
-  run grep -qF 'github.com/deuxfleurs-org/garage' "$DOC"
-  [ "$status" -eq 0 ]
+@test "Garage's dead org slug never resurfaces, and the architect routine no longer tracks it as a release-check target (removed 2026-09-07, no replacement)" {
+  # This test used to guard the correct deuxfleurs-org (not the dead Deuxfleurs/
+  # deuxfleurs) org slug wherever Garage was named, after that exact typo once
+  # silently broke the architect routine's own weekly upstream release check
+  # (ADR-0002, found 2026-08-19). Garage itself was removed entirely 2026-09-07,
+  # no replacement — the register's Scope note still names it in passing (why
+  # ADR-0002/ADR-0007 contribute no row, same as every other removed component),
+  # but there's no live component left to track a release-check slug for, so the
+  # architect routine's per-release-check list should no longer name it at all,
+  # and the dead slug (with or without -org) must never come back anywhere.
   run grep -qiE 'github\.com/deuxfleurs/garage|github\.com/Deuxfleurs/garage' "$DOC"
   [ "$status" -ne 0 ]
-
-  run grep -qF 'deuxfleurs-org/garage' "$ARCHITECT_PROMPT"
-  [ "$status" -eq 0 ]
-  run grep -qiE '\bdeuxfleurs/garage\b' "$ARCHITECT_PROMPT"
+  # The architect prompt's removed-components list legitimately still names
+  # Garage by name (why it's no longer tracked) — check it's not listed as an
+  # active per-release-check target (that shape, "Garage: `slug`", not a bare
+  # mention) instead of checking the word is absent entirely.
+  run grep -qE '^\s*-\s*Garage:' "$ARCHITECT_PROMPT"
   [ "$status" -ne 0 ]
 }
 

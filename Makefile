@@ -11,17 +11,9 @@ COLIMA_DISK ?= 60
 
 LIVE     := infra/live/local
 REPO_DIR := $(shell pwd)
-GITLAB_REMOTE_URL := http://root@localhost:8929/lab/k8s-lab.git
-GITLAB_PUSH_FLAGS ?=
 
-# Terraform state lives in the off-cluster Garage (infra/tfstate). These fixed
-# lab-local creds are imported into that Garage by tfstate-bootstrap.sh; the S3
-# backend reads them from the env. Garage-format key (GK + 24 hex / 64-hex secret).
-export AWS_ACCESS_KEY_ID     ?= GK31c2d4e5f60718293a4b5c6d
-export AWS_SECRET_ACCESS_KEY ?= a1b2c3d4e5f60718293a4b5c6d7e8f90112233445566778899aabbccddeeff00
-
-# DR drill blast radius: cluster | full | machine (see docs/DR.md)
-SCOPE ?= full
+# DR drill blast radius: cluster | machine (see docs/DR.md)
+SCOPE ?= cluster
 
 REQUIRED_TOOLS := colima docker k3d kubectl helm terraform terragrunt kustomize argocd vault yq jq mkcert
 
@@ -126,10 +118,6 @@ helm-chart-pin-check: ## Check every Helm-chart Application pins a targetRevisio
 argocd-crd-ssa-check: ## Check Applications whose chart ships an oversized CRD sync with ServerSideApply=true (network-tolerant drift detector)
 	@bash scripts/argocd-crd-ssa-check.sh
 
-.PHONY: rollouts-plugin-list-check
-rollouts-plugin-list-check: ## Check Argo Rollouts plugin Helm values are YAML lists, not strings (drift detector)
-	@bash scripts/rollouts-plugin-list-check.sh
-
 .PHONY: probe-timeout-check
 probe-timeout-check: ## Check every explicit livenessProbe/readinessProbe/startupProbe has timeoutSeconds >= 5 (drift detector)
 	@bash scripts/probe-timeout-check.sh
@@ -147,7 +135,7 @@ adr-image-pin-sync-check: ## Check every ADR that self-declares a "pinned offici
 	@bash scripts/adr-image-pin-sync-check.sh
 
 .PHONY: context-doc-version-sync-check
-context-doc-version-sync-check: ## Check docs/decisions/context.md's tracked version citations (KRO, ACK s3-controller) match their live gitops pins (drift detector)
+context-doc-version-sync-check: ## Check docs/decisions/context.md's tracked version citations match their live gitops pins (drift detector; currently tracks zero citations — Grafana, Pyroscope, KRO, and ACK were all removed, candidate for retirement)
 	@bash scripts/context-doc-version-sync-check.sh
 
 .PHONY: dependency-register-check
@@ -232,7 +220,6 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/routines-author-check.sh
 	@bash scripts/helm-chart-pin-check.sh
 	@bash scripts/argocd-crd-ssa-check.sh
-	@bash scripts/rollouts-plugin-list-check.sh
 	@bash scripts/probe-timeout-check.sh
 	@bash scripts/adr-followup-check.sh
 	@bash scripts/adr-chart-version-sync-check.sh
@@ -269,25 +256,15 @@ preflight: ## Check required CLI tools are installed
 .PHONY: up
 up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) colima-up
-	$(MAKE) tfstate-up
 	$(MAKE) cluster-up
-	$(MAKE) cilium-up
 	$(MAKE) coredns-host-alias
 	$(MAKE) argocd
-	$(MAKE) forgejo-up
-	$(MAKE) forgejo-repo-secret
-	$(MAKE) gitlab-up
-	$(MAKE) gitlab-configure
-	$(MAKE) gitlab-down
 	$(MAKE) root-app
 	$(MAKE) coredns-nip-io-rewrite
 	$(MAKE) vault-bootstrap
-	$(MAKE) garage-bootstrap
-	$(MAKE) cosign-bootstrap
-	$(MAKE) frontdoor
 	@echo ""
 	@echo "--- verifying every always-on workload is actually Running+Ready ---"
-	@UI="UIs via the front door on :8000 — ArgoCD http://argocd.127.0.0.1.nip.io:8000 · run 'make creds' for logins"; \
+	@UI="UIs on :8080 — ArgoCD http://argocd.127.0.0.1.nip.io:8080 · run 'make creds' for logins"; \
 		if bash scripts/lab-health-check.sh; then \
 			echo ""; echo "✅ lab up — every always-on workload is healthy. $$UI"; \
 		else \
@@ -295,10 +272,8 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 		fi
 
 .PHONY: down
-down: ## Stop everything (cluster + GitLab + Colima). Data on PVCs/volumes is kept.
-	-cd gitlab && docker compose stop
+down: ## Stop everything (cluster + Colima). Data on PVCs/volumes is kept.
 	-cd $(LIVE)/cluster && terragrunt destroy -auto-approve
-	-cd infra/tfstate && docker compose stop
 	-colima stop
 
 ##@ Runtime (Colima)
@@ -324,22 +299,6 @@ colima-status: ## Show Colima VM status
 	colima status
 
 ##@ Terraform state (off-cluster S3)
-
-.PHONY: tfstate-up
-tfstate-up: ## Start + bootstrap the off-cluster Garage holding Terraform state (must precede any apply)
-	cd infra/tfstate && docker compose up -d
-	@echo "waiting for tfstate Garage to be healthy..."
-	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' tfstate-garage 2>/dev/null)" = "healthy" ]; do sleep 2; done
-	bash scripts/tfstate-bootstrap.sh
-	@echo "tfstate Garage ready (S3 http://localhost:3900, bucket tfstate)."
-
-.PHONY: tfstate-down
-tfstate-down: ## Stop the off-cluster Terraform-state Garage (keeps its volume/state)
-	cd infra/tfstate && docker compose stop
-
-.PHONY: tfstate-clean
-tfstate-clean: ## Remove the off-cluster tfstate Garage container + its volume (irreversible; re-run tfstate-up to recreate)
-	cd infra/tfstate && docker compose down -v
 
 .PHONY: tfstate-oracle-up
 tfstate-oracle-up: ## Bootstrap the oracle backend's off-cluster Garage on a separate Always Free AMD Micro instance (ADR-0027; must precede any terragrunt apply under infra/live/oracle/)
@@ -369,7 +328,7 @@ coredns-host-alias: ## Teach CoreDNS to resolve host.k3d.internal -> docker gate
 	@bash scripts/coredns-host-alias.sh host-alias
 
 .PHONY: coredns-nip-io-rewrite
-coredns-nip-io-rewrite: ## Teach CoreDNS to resolve *.127.0.0.1.nip.io -> Traefik's in-cluster Service (needed for in-cluster clients, e.g. Kargo image discovery; issue #633/PR #1323)
+coredns-nip-io-rewrite: ## Teach CoreDNS to resolve *.127.0.0.1.nip.io -> Traefik's in-cluster Service (needed for in-cluster clients; issue #633/PR #1323)
 	@bash scripts/coredns-host-alias.sh nip-io-rewrite
 
 ##@ Bootstrap (day-0, imperative seam)
@@ -383,104 +342,6 @@ argocd: ## Install ArgoCD (Helm via Terraform)
 		terragrunt apply -auto-approve \
 	)
 
-.PHONY: gitlab-up
-gitlab-up: ## Start GitLab omnibus and wait until healthy (first boot ~5 min)
-	@bash scripts/gitlab-env-ensure.sh
-	cd gitlab && docker compose up -d
-	@echo "waiting for GitLab to be healthy..."
-	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' gitlab 2>/dev/null)" = "healthy" ]; do sleep 10; done
-	@echo "GitLab healthy."
-
-.PHONY: gitlab-down
-gitlab-down: ## Stop GitLab omnibus (frees ~3 GB; keeps its volumes)
-	cd gitlab && docker compose stop
-
-# --- Forgejo (ADR-0035 — the lab's live git source + CI runner) ---
-.PHONY: forgejo-up
-forgejo-up: ## Start Forgejo + runner and wait until healthy (ADR-0035)
-	@bash scripts/forgejo-env-ensure.sh
-	cd forgejo && docker compose up -d
-	@echo "waiting for Forgejo to be healthy..."
-	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' forgejo 2>/dev/null)" = "healthy" ]; do sleep 5; done
-	@echo "Forgejo healthy."
-	@bash scripts/forgejo-admin-ensure.sh
-	@$(MAKE) forgejo-runner-up
-
-.PHONY: forgejo-runner-up
-forgejo-runner-up: ## Register (if needed) and (re)start the Forgejo Actions runner
-	@bash scripts/forgejo-runner-ensure.sh
-
-.PHONY: forgejo-down
-forgejo-down: ## Stop Forgejo + runner (keeps volumes)
-	cd forgejo && docker compose stop
-
-.PHONY: forgejo-repo-secret
-forgejo-repo-secret: ## Ensure the lab/k8s-lab repo + ArgoCD SSH deploy-key Secret exist on Forgejo (idempotent; closes the fresh-cluster root-app sync gap)
-	@bash scripts/forgejo-repo-secret.sh
-
-.PHONY: gitlab-configure
-gitlab-configure: ## Create the gitops project + ArgoCD repo secret, push the repo
-	bash scripts/gitlab-pat.sh >/dev/null
-	@PAT="$$(cat $(REPO_DIR)/gitlab/.gitlab-token)"; \
-		cd $(LIVE)/gitlab && export GITLAB_TOKEN="$$PAT"; ( \
-			terragrunt state list 2>/dev/null | grep -qx 'gitlab_group.lab' || { \
-				gid="$$(curl -fsS --header "PRIVATE-TOKEN: $$PAT" "http://localhost:8929/api/v4/groups/lab" 2>/dev/null | jq -r '.id // empty')"; \
-				[ -n "$$gid" ] && terragrunt import gitlab_group.lab "$$gid" >/dev/null || true; \
-			}; \
-			terragrunt state list 2>/dev/null | grep -qx 'gitlab_project.gitops' || { \
-				pid="$$(curl -fsS --header "PRIVATE-TOKEN: $$PAT" "http://localhost:8929/api/v4/projects/lab%2Fk8s-lab" 2>/dev/null | jq -r '.id // empty')"; \
-				[ -n "$$pid" ] && terragrunt import gitlab_project.gitops "$$pid" >/dev/null || true; \
-			}; \
-			terragrunt state list 2>/dev/null | grep -qx 'gitlab_branch_protection.main' || { \
-				pid="$$(curl -fsS --header "PRIVATE-TOKEN: $$PAT" "http://localhost:8929/api/v4/projects/lab%2Fk8s-lab" 2>/dev/null | jq -r '.id // empty')"; \
-				[ -n "$$pid" ] && terragrunt import gitlab_branch_protection.main "$${pid}:main" >/dev/null || true; \
-			}; \
-			terragrunt apply -auto-approve \
-		)
-	@$(MAKE) gitlab-push
-
-# A from-scratch `make up` hits two GitLab-auth footguns at this step, both fatal
-# with the same "HTTP Basic: Access denied" 401:
-#   1. Activation race — on a freshly-booted GitLab the git-over-HTTP path
-#      (workhorse/gitlab-shell) lags the Rails API in recognizing a brand-new PAT.
-#      terragrunt already used the token, but `git push` moments later still 401s.
-#      Gate the push on a git-receive-pack probe (curl, bypasses any credential
-#      store) until GitLab accepts the token for git.
-#   2. Stale cached credential — the host's credential helper (e.g. osxkeychain)
-#      persists across GitLab rebuilds and serves a dead token from a previous
-#      instance ahead of our helper. Push with an isolated helper list (reset, then
-#      only the repo helper that reads gitlab/.gitlab-token) so nothing stale wins.
-.PHONY: gitlab-push
-gitlab-push: ## Push main to the local GitLab repo
-	@git remote remove gitlab 2>/dev/null || true; \
-		git remote add gitlab "$(GITLAB_REMOTE_URL)"; \
-		if [ "$$(git rev-parse --abbrev-ref HEAD)" != "main" ]; then \
-			git fetch github main -q 2>/dev/null \
-				&& git merge-base --is-ancestor main github/main 2>/dev/null \
-				&& git fetch github main:main -q 2>/dev/null \
-				&& echo "gitlab-push: fast-forwarded stale local main to github/main" \
-				|| true; \
-		fi; \
-		pat="$$(cat $(REPO_DIR)/gitlab/.gitlab-token 2>/dev/null)"; \
-		printf 'waiting for GitLab to accept the PAT for git push'; \
-		for i in $$(seq 1 30); do \
-			code="$$(curl -s -o /dev/null -w '%{http_code}' --user "root:$$pat" "http://localhost:8929/lab/k8s-lab.git/info/refs?service=git-receive-pack" 2>/dev/null)"; \
-			[ "$$code" = "200" ] && { printf ' ready\n'; break; }; \
-			printf '.'; sleep 2; \
-		done; \
-		git -c credential.helper= -c credential.helper="$(REPO_DIR)/scripts/gitlab-credential-helper.sh" \
-			push $(GITLAB_PUSH_FLAGS) -u gitlab main || { \
-			rc="$$?"; \
-			if [ -z "$(GITLAB_PUSH_FLAGS)" ]; then \
-				echo "gitlab push failed. If the local GitLab branch should be overwritten, rerun 'make gitlab-force-push'." >&2; \
-			fi; \
-			exit "$$rc"; \
-		}
-
-.PHONY: gitlab-force-push
-gitlab-force-push: ## Force-push main to the local GitLab repo (--force)
-	@$(MAKE) gitlab-push GITLAB_PUSH_FLAGS=--force
-
 .PHONY: root-app
 root-app: ## Plant the ArgoCD app-of-apps (everything else syncs from here)
 	kubectl apply -f gitops/bootstrap/root-app.yaml
@@ -493,14 +354,6 @@ vault-bootstrap: ## Init/unseal Vault + load secrets + k8s auth (idempotent)
 vault-unseal: ## Manually unseal Vault from the vault-keys Secret
 	kubectl -n vault exec vault-0 -- vault operator unseal "$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.unseal-key}' | base64 -d)"
 
-.PHONY: garage-bootstrap
-garage-bootstrap: ## Assign Garage layout + create key/buckets + push S3 key to Vault (idempotent)
-	bash scripts/garage-bootstrap.sh
-
-.PHONY: cosign-bootstrap
-cosign-bootstrap: ## Generate cosign keypair + seed cosign-public-key ConfigMap in kyverno namespace (idempotent, ADR-0019)
-	bash scripts/cosign-bootstrap.sh
-
 ##@ ArgoCD access
 
 .PHONY: argocd-password
@@ -508,15 +361,12 @@ argocd-password: ## Print the ArgoCD initial admin password
 	@kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
 
 .PHONY: creds
-creds: ## Print all lab UI logins (reads live secrets; needs the cluster/Forgejo up)
-	@a=$$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "ArgoCD   admin / $${a:-<cluster down>}    http://argocd.127.0.0.1.nip.io:8000"
-	@fp=$$(grep -E '^FORGEJO_ADMIN_PASSWORD=' forgejo/.env 2>/dev/null | cut -d= -f2-); echo "Forgejo  lab-admin / $${fp:-<forgejo/.env missing>}    http://localhost:3300 (git source of truth, ADR-0035)"
-	@if docker ps --filter name=^gitlab$$ --format '{{.Names}}' 2>/dev/null | grep -q gitlab; then r=$$(grep -E '^GITLAB_ROOT_PASSWORD=' gitlab/.env 2>/dev/null | cut -d= -f2-); echo "GitLab   root  / $${r:-<gitlab/.env missing>}    http://localhost:8929 (stopped by default since 2026-08-17 — Forgejo is the live source; make gitlab-up to bring back)"; fi
-	@t=$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); echo "Vault    token / $${t:-<cluster down>}    http://vault.127.0.0.1.nip.io:8000"
-	@hu=$$(kubectl -n harbor get secret harbor-admin-creds -o jsonpath='{.data.HARBOR_ADMIN_USER}' 2>/dev/null | base64 -d); hp=$$(kubectl -n harbor get secret harbor-admin-creds -o jsonpath='{.data.HARBOR_ADMIN_PASSWORD}' 2>/dev/null | base64 -d); if [ -n "$$hu" ]; then echo "Harbor   $$hu / $$hp    http://harbor.127.0.0.1.nip.io:8080 (on-demand; make harbor-up)"; fi
+creds: ## Print all lab UI logins (reads live secrets; needs the cluster up)
+	@a=$$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "ArgoCD   admin / $${a:-<cluster down>}    http://argocd.127.0.0.1.nip.io:8080"
+	@t=$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); echo "Vault    token / $${t:-<cluster down>}    http://vault.127.0.0.1.nip.io:8080"
 
 .PHONY: argocd-ui
-argocd-ui: ## Port-forward ArgoCD UI -> http://localhost:8081 (or use http://argocd.127.0.0.1.nip.io:8000)
+argocd-ui: ## Port-forward ArgoCD UI -> http://localhost:8081 (or use http://argocd.127.0.0.1.nip.io:8080)
 	kubectl -n argocd port-forward svc/argocd-server 8081:80
 
 ##@ Status / RAM guard
@@ -529,8 +379,6 @@ status: ## Show VM resources + per-namespace memory + any non-running pods
 		kubectl top pods -A --no-headers 2>/dev/null | awk '{gsub(/Mi/,"",$$4); ns[$$1]+=$$4} END {for (n in ns) printf "  %-24s %5d Mi\n", n, ns[n]}' | sort -k2 -rn
 	@echo "--- pods not Running/Completed ---"; \
 		kubectl get pods -A --no-headers 2>/dev/null | awk '$$4!="Running" && $$4!="Completed" {print "  "$$1"/"$$2"  "$$4}' || true
-	@echo "--- GitLab container ---"; docker ps --filter name=gitlab --format '  {{.Names}}  {{.Status}}' 2>/dev/null || true
-	@echo "--- Forgejo container (migration stage 1, ADR-0035) ---"; docker ps --filter name=forgejo --format '  {{.Names}}  {{.Status}}' 2>/dev/null || true
 
 .PHONY: health
 health: ## Assert every always-on pod + workload is actually Running+Ready (exit 1 if not)
@@ -539,7 +387,7 @@ health: ## Assert every always-on pod + workload is actually Running+Ready (exit
 ##@ Disaster recovery (see docs/DR.md)
 
 .PHONY: dr-test
-dr-test: ## DR drill: destroy + rebuild from scratch + verify. SCOPE=cluster|full|machine (default full)
+dr-test: ## DR drill: destroy + rebuild from scratch + verify. SCOPE=cluster|machine (default cluster)
 	bash scripts/dr-test.sh $(SCOPE)
 
 .PHONY: dr-verify
@@ -547,40 +395,8 @@ dr-verify: ## Assert the lab is healthy end-to-end (real checks, no rebuild)
 	bash scripts/dr-verify.sh
 
 .PHONY: dr-destroy
-dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=cluster|full|machine
+dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=cluster|machine
 	bash scripts/dr-destroy.sh $(SCOPE)
-
-.PHONY: dr-restore
-dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
-	@./scripts/dr-restore.sh capstone vault
-
-.PHONY: dr-chaos
-dr-chaos: ## Chaos drill: kill a random capstone pod, assert self-heal within budget (DORA Pillar 3 TLPT concept)
-	bash scripts/dr-chaos.sh
-
-.PHONY: dr-network-partition
-dr-network-partition: ## Network-partition drill: delete capstone's ingress NetworkPolicy, assert ArgoCD self-heal within budget (DORA Pillar 3 TLPT concept)
-	bash scripts/dr-network-partition.sh
-
-.PHONY: dr-garage-failure
-dr-garage-failure: ## Chaos drill: kill the single-replica Garage pod, assert self-heal within budget (DORA Pillar 3 TLPT concept)
-	bash scripts/dr-garage-failure.sh
-
-.PHONY: dr-bluegreen
-dr-bluegreen: ## Zero-downtime blue/green DR: stand up a green cluster + cut over, prove no outage
-	bash scripts/dr-bluegreen.sh
-
-.PHONY: dr-bluegreen-down
-dr-bluegreen-down: ## Remove the blue/green apparatus (green cluster + front door); blue is untouched
-	bash scripts/bluegreen-down.sh
-
-.PHONY: dr-bluegreen-promote
-dr-bluegreen-promote: ## Complete blue/green: green->FULL + verify + cutover + RETIRE blue (destructive, zero-downtime)
-	bash scripts/dr-bluegreen-promote.sh
-
-.PHONY: frontdoor
-frontdoor: ## Ensure the stable front door is up on :8000 -> active cluster (canonical lab entry; UIs use :8000)
-	bash scripts/frontdoor-ensure.sh
 
 ##@ Metrics (on-demand, clusterless)
 
@@ -592,115 +408,21 @@ dora-metrics: ## Compute DORA metrics from git/CI history -> docs/dora-metrics.m
 dependency-maintenance-check: ## Report how long since each dependency-register.md repo last committed (DORA Q15, on-demand only)
 	bash scripts/dependency-maintenance-check.sh
 
-##@ Capstone (demo + learning path)
-
-.PHONY: capstone-demo
-capstone-demo: ## Run the end-to-end capstone demo: ArgoCD health → ExternalSecret → HTTP 200 (O6, 900 s budget)
-	bash scripts/capstone-demo.sh
-
 ##@ On-demand components (heavy; not auto-synced — bring up manually)
 
-# Drive ArgoCD via kubectl, not the argocd CLI: the CLI needs a logged-in
-# server/token (and --core depends on the repo-server pod), neither of which a
-# fresh shell has. Patching the Application's `operation` field hands the work to
-# the in-cluster controller — the same engine that syncs every auto-synced app.
-# $(1) = Application name in the argocd namespace.
-define argocd-sync
-	kubectl -n argocd patch application $(1) --type merge -p '{"operation":{"initiatedBy":{"username":"make"},"sync":{}}}'
-	@echo "$(1): sync triggered (runs async in-cluster) — watch: kubectl -n argocd get app $(1) -w"
-endef
-
-# --cascade=background equivalent: add the resources finalizer, then delete the CR.
-define argocd-delete
-	-kubectl -n argocd patch application $(1) --type merge -p '{"metadata":{"finalizers":["resources-finalizer.argocd.argoproj.io"]}}'
-	kubectl -n argocd delete application $(1) --ignore-not-found
-endef
-
-# Blocking pre-flight for on-demand `-up` targets (2026-08-05 incident: Harbor, Istio,
-# Kiali, Longhorn, Kargo, and TiDB all ended up running simultaneously across
-# several unrelated debugging sessions that each brought one up and never back down,
-# exhausting the 12 GB VM and taking down every front-door UI). Docs/00-architecture.md's
-# own stated tolerance is ONE heavy unit at a time. Override: ONDEMAND_BUDGET_FORCE=1.
-# $(1) = unit name (a key in scripts/ondemand-budget-check.sh's UNIT_APPS)
-define ondemand-guard
-	@bash scripts/ondemand-budget-check.sh --pre $(1) || { \
-	  echo ""; echo "Refusing to bring up '$(1)' over budget. See report above."; exit 1; \
-	}
-endef
+# No heavy on-demand components remain (Harbor, Kargo, and KEDA — the last three —
+# were all removed/converted-away by 2026-09-07; Istio, Longhorn, TiDB, and Trivy
+# Operator went earlier). The argocd-sync/argocd-delete/ondemand-guard macros this
+# section used to define (for the *-up/*-down targets that called them) were dropped
+# alongside the last component that used them — nothing left to call them. If a
+# future component adopts the on-demand pattern again, resurrect them from git
+# history rather than reinventing the shape.
 
 .PHONY: ondemand-budget-check
-ondemand-budget-check: ## Report which on-demand units (Harbor/Kargo) are live + flag orphaned namespaces (incl. historical TiDB/Istio/Kiali/Longhorn carve-outs)
+ondemand-budget-check: ## Report which on-demand units are live + flag orphaned namespaces (no heavy units currently tracked; see scripts/ondemand-budget-check.sh)
 	@bash scripts/ondemand-budget-check.sh
 
 .PHONY: k3s-datastore-health-check
 k3s-datastore-health-check: ## Report k3s embedded datastore (SQLite/kine) health: size, compaction gap, Slow SQL volume (2026-08-11 incident, docs/incident-log.md)
 	@bash scripts/k3s-datastore-health-check.sh
-
-.PHONY: cilium-drift-check
-cilium-drift-check: ## Report whether cilium-agent's baked-in apiserver host:port has drifted from the live endpoint (fix: make cilium-up) — 2026-07-29/2026-09-06 recurrence, issue #633
-	@bash scripts/cilium-apiserver-drift-check.sh
-
-# --- Cilium CNI (always-on once enabled; run before ArgoCD on fresh clusters) ----
-# Cilium replaces k3s-bundled Flannel (disable_default_cni=true — ADR-0014).
-# Bootstrap order: make cluster-up → make cilium-up → make argocd → rest of make up.
-# After the initial install, ArgoCD adopts the Helm release and manages it.
-#
-# kube-proxy-free (kubeProxyReplacement=true) requires the real kube-apiserver
-# host:port: with no kube-proxy, a pod that is NOT co-located with the apiserver
-# cannot reach the kubernetes ClusterIP (10.43.0.1) until Cilium itself programs
-# it — a chicken-and-egg that leaves the apiserver unreachable. We read the
-# endpoint k3d assigned (deterministic only per-run, so derive it, don't hardcode).
-.PHONY: cilium-up
-cilium-up: ## Install Cilium CNI via Helm — run BEFORE make argocd on fresh clusters (ADR-0014)
-	@api_host="$$(kubectl get endpoints kubernetes -o jsonpath='{.subsets[0].addresses[0].ip}')"; \
-	api_port="$$(kubectl get endpoints kubernetes -o jsonpath='{.subsets[0].ports[0].port}')"; \
-	[ -n "$$api_host" ] && [ -n "$$api_port" ] || { echo "cilium-up: could not resolve kube-apiserver endpoint — is the cluster up?" >&2; exit 1; }; \
-	echo "[cilium] kube-proxy-free apiserver endpoint: k8sServiceHost=$$api_host k8sServicePort=$$api_port"; \
-	helm upgrade --install cilium cilium \
-		--repo https://helm.cilium.io \
-		--version 1.16.6 \
-		--namespace kube-system \
-		--create-namespace \
-		--set kubeProxyReplacement=true \
-		--set k8sServiceHost=$$api_host \
-		--set k8sServicePort=$$api_port \
-		--set hubble.enabled=false \
-		--set operator.replicas=1 \
-		--wait --timeout 5m
-	@echo "Cilium CNI installed — pod networking active. Continue with: make argocd"
-
-.PHONY: cilium-down
-cilium-down: ## Remove Cilium CNI — WARNING: drops all pod networking; only during cluster teardown
-	helm uninstall cilium --namespace kube-system --ignore-not-found
-
-.PHONY: harbor-up
-harbor-up: ## Deploy Harbor CNCF OCI registry via ArgoCD manual sync (Garage S3 backend; ADR-0024)
-	$(call ondemand-guard,harbor)
-	$(call argocd-sync,harbor)
-	$(call argocd-sync,harbor-extras)
-	@$(MAKE) forgejo-harbor-secret-sync
-
-.PHONY: forgejo-harbor-secret-sync
-forgejo-harbor-secret-sync: ## Sync Forgejo's CI HARBOR_USER/HARBOR_PASSWORD secrets from Harbor's live admin credential (recurrence guard for #631/#633's credential-drift bug)
-	@./scripts/forgejo-harbor-secret-sync.sh
-
-.PHONY: harbor-down
-harbor-down: ## Remove Harbor OCI registry and namespace floor (reclaims resources)
-	$(call argocd-delete,harbor-extras)
-	$(call argocd-delete,harbor)
-
-.PHONY: kargo-up
-kargo-up: ## Deploy Kargo promotion-orchestration engine via ArgoCD manual sync (~250-450 MB; do after make up)
-	$(call ondemand-guard,kargo)
-	$(call argocd-sync,kargo-extras)
-	$(call argocd-sync,kargo)
-	$(call argocd-sync,kargo-networkpolicy)
-	$(call argocd-sync,kargo-project)
-
-.PHONY: kargo-down
-kargo-down: ## Remove Kargo and its Envoy route (reclaims ~250-450 MB)
-	$(call argocd-delete,kargo-project)
-	$(call argocd-delete,kargo-networkpolicy)
-	$(call argocd-delete,kargo-extras)
-	$(call argocd-delete,kargo)
 

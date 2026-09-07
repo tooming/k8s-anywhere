@@ -1,6 +1,15 @@
 # ADR-0039 — s3manager as the lab's Garage (S3) browser UI
 
-**Status.** Adopted (retroactive record). Already live in `gitops/storage/s3manager/`
+**Status.** Removed 2026-09-07 (maintainer decision — component dropped from the lab
+entirely, no replacement). s3manager had nothing left to browse once Garage itself
+(ADR-0002) was removed in the same change, so it was deleted alongside it:
+`gitops/storage/s3manager/`, `gitops/platform/s3manager.yaml`, and every
+s3manager-specific test were deleted. The decision record below is kept for history
+(why s3manager was adopted as Garage's browser UI) but no longer describes anything
+live in the repo — do not treat any manifest path or Makefile target named below as
+still existing.
+
+~~**Status.** Adopted (retroactive record). Already live in `gitops/storage/s3manager/`
 — this ADR closes a documentation gap, not a new technical choice. No binding ADR
 is contradicted or superseded; self-authorizing per
 [WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2, same precedent as
@@ -8,7 +17,7 @@ is contradicted or superseded; self-authorizing per
 [ADR-0037](adr-0037-vault-secrets-management.md), and
 [ADR-0038](adr-0038-ack-kro-moto-cloud-control-plane.md): a real,
 already-implemented, already-live mechanism that predated having any ADR of its
-own. Always-on component.
+own. Always-on component.~~
 
 ---
 

@@ -18,7 +18,7 @@ component (`gitops/platform/external-secrets.yaml`, sync-wave 1) with a Vault-ba
 `ClusterSecretStore` (`gitops/secrets/clustersecretstore.yaml`, Kubernetes-auth to
 `http://vault.vault.svc.cluster.local:8200`) — every credential the lab's other
 components need (Garage RPC/S3 keys, Harbor admin/registry/S3 creds, Grafana admin,
-Kargo admin, Velero S3, ACK AWS creds, the capstone app key) flows through an
+Kargo admin, Velero S3, the capstone app key) flows through an
 `ExternalSecret` resolved against that store.
 
 **Why this ADR is only being written now.** ESO was never compared against an

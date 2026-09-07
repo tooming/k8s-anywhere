@@ -142,9 +142,7 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-@test "dr-bluegreen.sh, dr-bluegreen-promote.sh, and dr-test.sh all source lib/colors.sh (for phase())" {
-  for f in dr-bluegreen.sh dr-bluegreen-promote.sh dr-test.sh; do
-    run grep -q 'lib/colors.sh' "$REPO/scripts/$f"
-    [ "$status" -eq 0 ]
-  done
+@test "dr-test.sh sources lib/colors.sh (for phase())" {
+  run grep -q 'lib/colors.sh' "$REPO/scripts/dr-test.sh"
+  [ "$status" -eq 0 ]
 }

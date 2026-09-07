@@ -20,53 +20,51 @@ spec:
           - appName: argocd-governance
             gitPath: gitops/governance/argocd
             destNamespace: argocd
-          - appName: capstone-governance
-            gitPath: gitops/governance/capstone
-            destNamespace: capstone
-          - appName: kyverno-governance
-            gitPath: gitops/governance/kyverno
-            destNamespace: kyverno
+          # capstone-governance REMOVED 2026-09-07 (capstone dropped from the lab
+          # entirely, no replacement, alongside Harbor/Kargo/Argo Rollouts/Kyverno).
+          # kyverno-governance REMOVED 2026-09-07 (ADR-0019): Kyverno was dropped
+          # from the lab entirely, no replacement.
           - appName: external-secrets-governance
             gitPath: gitops/governance/external-secrets
             destNamespace: external-secrets
-          - appName: velero-governance
-            gitPath: gitops/governance/velero
-            destNamespace: velero
-          - appName: argo-rollouts-governance
-            gitPath: gitops/governance/argo-rollouts
-            destNamespace: argo-rollouts
-          - appName: trivy-system-governance
-            gitPath: gitops/governance/trivy-system
-            destNamespace: trivy-system
-          - appName: moto-governance
-            gitPath: gitops/governance/moto
-            destNamespace: moto
-          - appName: ack-system-governance
-            gitPath: gitops/governance/ack-system
-            destNamespace: ack-system
-          - appName: kro-governance
-            gitPath: gitops/governance/kro
-            destNamespace: kro
-          - appName: kargo-governance
-            gitPath: gitops/governance/kargo
-            destNamespace: kargo
+          # velero-governance REMOVED 2026-09-07 (ADR-0021): Velero was dropped
+          # from the lab entirely, no replacement (its S3 backend, Garage, was
+          # already removed the same day).
+          # argo-rollouts-governance REMOVED 2026-09-07 (ADR-0020): Argo Rollouts
+          # was dropped from the lab entirely, no replacement — capstone was its
+          # only consumer and is also gone.
+          # trivy-system-governance REMOVED 2026-09-07 (ADR-0022): Trivy Operator
+          # was dropped from the lab entirely, no replacement.
+          # moto-governance REMOVED 2026-09-07 (ADR-0038): moto was dropped from
+          # the lab entirely, no replacement — ACK-S3 (its only client) and KRO
+          # (which orchestrated ACK on top of it) are also gone.
+          # ack-system-governance REMOVED 2026-09-07 (ADR-0038): ACK (S3) was
+          # dropped from the lab entirely, no replacement.
+          # kro-governance REMOVED 2026-09-07 (ADR-0038): KRO was dropped from the
+          # lab entirely — its only ResourceGraphDefinition claimed an ACK Bucket,
+          # so it became dead weight the moment ACK/moto were removed, no
+          # replacement.
+          # kargo-governance REMOVED 2026-09-07 (ADR-0023): Kargo was dropped from
+          # the lab entirely, no replacement — capstone (its only pipeline target)
+          # and Harbor (its only image source) are also gone.
           - appName: lab-demo-governance
             gitPath: gitops/governance/lab-demo
             destNamespace: lab-demo
           # data-governance REMOVED 2026-09-06 (RabbitMQ/ADR-0009, Valkey/ADR-0018):
           # the data namespace no longer exists — it held nothing else.
-          - appName: storage-governance
-            gitPath: gitops/governance/storage
-            destNamespace: storage
+          # storage-governance REMOVED 2026-09-07 (ADR-0002/ADR-0007/ADR-0039): the
+          # storage namespace held only Garage and s3manager, both removed the
+          # same day with no replacement — this was the last leaf keeping the
+          # now-empty namespace's governance leaf alive.
           - appName: vault-governance
             gitPath: gitops/governance/vault
             destNamespace: vault
           - appName: lab-gateway-governance
             gitPath: gitops/governance/lab-gateway
             destNamespace: lab-gateway
-          - appName: harbor-governance
-            gitPath: gitops/governance/harbor
-            destNamespace: harbor
+          # harbor-governance REMOVED 2026-09-07 (ADR-0024): Harbor was dropped from
+          # the lab entirely, no replacement — same dead-config shape the
+          # data-governance removal above already established.
           # envoy-gateway-system-governance REMOVED 2026-09-06 (ADR-0040, supersedes
           # Envoy Gateway/ADR-0008): the envoy-gateway-system namespace no longer
           # exists — Traefik replaced it and ships with k3s, no ArgoCD-managed
@@ -88,9 +86,8 @@ spec:
           # (istio-system excluded as an on-demand-heavy namespace too variable
           # for static defaults) — re-add only if keda's namespace becomes
           # always-on again.
-          - appName: capstone-pipeline-governance
-            gitPath: gitops/governance/capstone-pipeline
-            destNamespace: capstone-pipeline
+          # capstone-pipeline-governance REMOVED 2026-09-07: capstone (and its
+          # Kargo pipeline) were dropped from the lab entirely, no replacement.
           # observability-governance (heavy tier, RFC #294 mapping table) REMOVED
           # 2026-09-06 (ADR-0041): the observability namespace no longer exists —
           # the entire observability stack was removed with no replacement.
@@ -103,7 +100,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: ssh://git@host.k3d.internal:2223/lab/k8s-lab.git
+        repoURL: https://github.com/tooming/k8s-anywhere.git
         targetRevision: main
         path: "{{gitPath}}"
         kustomize:

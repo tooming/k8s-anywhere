@@ -9,6 +9,9 @@
 # The allow-dns-and-apiserver baseline covers the *controller's* own k8s API calls
 # (SecretStore watch, ExternalSecret reconcile, leader election) — it does NOT cover
 # the apiserver calling back into the webhook, which is the opposite direction.
+# zz-dns-clusterip-bridge.yaml (Cilium socket-LB workaround) dropped 2026-09-07
+# alongside Cilium itself, no replacement — see allow-dns-and-apiserver.yaml's own
+# header for why it's no longer needed under kube-router.
 # Wired into gitops/platform/networkpolicy-appset.yaml (auto-synced, wave 4 via appset).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -18,6 +21,5 @@ namespace: external-secrets
 resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
-  - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-eso-vault-egress.yaml
   - allow-eso-webhook-from-apiserver.yaml

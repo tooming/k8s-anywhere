@@ -8,8 +8,8 @@ must report the stale row.
 
 | UI | URL |
 |----|-----|
-| Demo | http://demo.127.0.0.1.nip.io:8000 |
-| Retired | http://retired.127.0.0.1.nip.io:8000 |
+| Demo | http://demo.127.0.0.1.nip.io:8080 |
+| Retired | http://retired.127.0.0.1.nip.io:8080 |
 
 ## Something else
 

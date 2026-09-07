@@ -40,7 +40,7 @@ fi
 
 if [ "$drift" -ne 0 ]; then
   printf '      %s\n' "→ One scope = one file = no shared EOF for parallel fan-out PRs to collide on."
-  printf '      %s\n' "→ Copy an existing tests/networkpolicy-<scope>.bats (e.g. networkpolicy-kro.bats) as the template."
+  printf '      %s\n' "→ Copy an existing tests/networkpolicy-<scope>.bats (e.g. networkpolicy-vault.bats) as the template."
 fi
 
 [ "$drift" -eq 0 ] && printf '  %s✓%s tests/networkpolicy.bats is baseline-only (per-namespace tests live in networkpolicy-<scope>.bats)\n' "$G" "$Z"

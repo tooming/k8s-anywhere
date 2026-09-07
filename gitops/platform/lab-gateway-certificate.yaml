@@ -16,7 +16,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: ssh://git@host.k3d.internal:2223/lab/k8s-lab.git
+    repoURL: https://github.com/tooming/k8s-anywhere.git
     targetRevision: main
     path: gitops/network/certificates
   destination:

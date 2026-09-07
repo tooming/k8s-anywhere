@@ -268,7 +268,7 @@ affected.
 | `gitops/cert-manager/root-ca/` | `selfSigned` + `ca` `ClusterIssuer`s, root `Certificate` |
 | `gitops/network/gateway.yaml` | HTTPS :443 listener (shipped; see `tests/cert-manager.bats`) |
 | `gitops/network/certificates/wildcard-certificate.yaml` | `*.127.0.0.1.nip.io` `Certificate` (shipped; see `tests/cert-manager.bats`) |
-| `scripts/bluegreen-frontdoor.sh` / `frontdoor-ensure.sh` | `:8443 → :443` port mapping (shipped; see `tests/frontdoor-https.bats`) |
+| ~~`scripts/bluegreen-frontdoor.sh` / `frontdoor-ensure.sh`~~ | ~~`:8443 → :443` port mapping~~ — the DR front door these scripts fronted was removed entirely 2026-09-07, no replacement; both scripts and `tests/frontdoor-https.bats` are gone |
 | `gitops/platform/observability-alloy.yaml` | New `cert_manager` scrape job |
 | `grafana/dashboards/lab-cert-manager.json` | Real-metric dashboard (Objective O5 pattern) |
 | `tests/cert-manager.bats` | Clusterless tests: Application shape, chart pin, PSA labels, ClusterIssuer chain, scrape job, dashboard |

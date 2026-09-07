@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Guards docs/00-architecture.md's documented resource ceiling: "A 12 GB Colima VM
-# holds the always-on stack at ~7 GB. Heavy components (Harbor, Kargo) each add
-# 1-4 GB. Running two full stacks at once would exhaust the VM." Nothing enforced
-# that until now (2026-08-05 incident): a chain of live-debugging sessions each ran
+# holds the always-on stack at ~7 GB." Nothing enforced that until this script was
+# added (2026-08-05 incident): a chain of live-debugging sessions each ran
 # a `make <name>-up` and never the matching `-down`, so Harbor, Istio, Kiali,
 # Longhorn, Kargo, and TiDB ended up running SIMULTANEOUSLY — plus a fully orphaned
 # `artifactory` namespace with no owning ArgoCD Application at all, left over from
@@ -11,8 +10,12 @@
 # garbage-collect ("Attempted to free 3.3GB, found 0 bytes eligible"), the node flapped
 # NodeNotReady, envoy-gateway lost leader election against a starved apiserver and
 # crashlooped, and every front-door UI in README.md's table 502'd. (TiDB, Istio, and
-# Longhorn were removed from the lab entirely 2026-09-06 — see the incident log —
-# so only Harbor and Kargo remain as heavy on-demand units this guard tracks.)
+# Longhorn were removed from the lab entirely 2026-09-06; Harbor and Kargo — the last
+# two heavy on-demand units this guard tracked — were both removed entirely 2026-09-07,
+# no replacement. UNIT_APPS/UNIT_NS/UNIT_SIZE below are therefore empty: no heavy
+# on-demand unit currently exists in this lab. The mechanism (and the orphan-namespace
+# detection below, which still matters) is kept ready for the next heavy on-demand
+# component rather than deleted — don't remove it just because it's momentarily unused.)
 #
 # This script is the mechanical guard: it reports which on-demand units are currently
 # live, flags budget overruns (docs' own stated tolerance is ONE heavy unit at a time),
@@ -37,30 +40,24 @@ ok()   { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
 bad()  { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; }
 note() { printf '      %s%s%s\n' "$Y" "$1" "$Z"; }
 
-# unit -> space-separated ArgoCD Application names that make up that unit
+# unit -> space-separated ArgoCD Application names that make up that unit.
+# Empty: Harbor and Kargo (the last two heavy on-demand units) were both removed
+# entirely 2026-09-07, no replacement. Add the next heavy on-demand component here.
 declare -A UNIT_APPS=(
-  [harbor]="harbor harbor-extras"
-  [kargo]="kargo-extras kargo kargo-networkpolicy kargo-project"
 )
 # unit -> space-separated namespace(s) actually holding its workload pods. Used as the
 # authoritative "is it really consuming host resources" signal (see unit_is_up()).
 declare -A UNIT_NS=(
-  [harbor]="harbor"
-  [kargo]="kargo"
 )
-# unit -> documented size (Makefile `##` comments / docs/00-architecture.md). Harbor has
-# no committed estimate anywhere in the repo — don't invent one (ADR-0004); flag it as
-# heavy-but-undocumented instead.
+# unit -> documented size (Makefile `##` comments / docs/00-architecture.md).
 declare -A UNIT_SIZE=(
-  [harbor]="undocumented size — treat as heavy (Garage-backed registry + DB + jobservice)"
-  [kargo]="~250-450 MB"
 )
 # on-demand namespaces, for orphan detection — kept in sync with
-# scripts/lab-health-check.sh's LAB_ONDEMAND_NS default plus the historical
-# artifactory carve-out (decommissioned, ADR-0024, but namespaces aren't
-# self-deleting, so a stray manual `make artifactory-up` can still leave one behind)
-# and the historical tidb/tidb-admin/istio-system/kiali/longhorn-system carve-outs
-# (all three components removed from the lab entirely 2026-09-06, same reasoning).
+# scripts/lab-health-check.sh's LAB_ONDEMAND_NS default. All of these are now
+# permanently-orphaned-if-present: kargo/harbor (removed 2026-09-07), artifactory
+# (decommissioned, ADR-0024), and tidb/tidb-admin/istio-system/kiali/longhorn-system
+# (removed 2026-09-06) — namespaces aren't self-deleting, so a stray manual
+# `make <x>-up` from before removal can still leave one behind.
 ONDEMAND_NS="kargo harbor artifactory tidb tidb-admin istio-system kiali longhorn-system"
 
 command -v kubectl >/dev/null 2>&1 || { echo "kubectl not installed"; exit 2; }

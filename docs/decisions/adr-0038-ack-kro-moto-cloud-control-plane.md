@@ -1,6 +1,21 @@
 # ADR-0038 — moto + ACK (S3) + KRO for the cloud-control-plane demo pattern
 
-**Status.** Adopted (retroactive record). All three components are already live in
+**Status.** Removed 2026-09-07, no replacement. ACK and moto were dropped by explicit
+maintainer request; KRO went with them as an orphaned dependent — its only
+`ResourceGraphDefinition` (`gitops/kro/rgd-s3bucketclaim.yaml`) claimed an ACK `Bucket`,
+so once ACK/moto were gone it was pure dead weight, the same reasoning already applied
+to Kargo/Argo Rollouts when Harbor/capstone were removed earlier this run. All
+`gitops/ack/`, `gitops/moto/`, `gitops/kro/`, `gitops/governance/{ack-system,moto,kro}/`,
+`gitops/platform/{ack-resources,ack-s3,moto,kro,kro-extras,kro-resources}.yaml`, and
+`gitops/secrets/ack-creds.yaml` manifests, plus every ack/moto/kro test and
+cross-reference, were deleted in the same change (`grafana/dashboards/
+lab-cloud-control-plane.json` was already gone with the rest of the observability
+stack, ADR-0041). See [§Re-evaluation log](#re-evaluation-log) for the full removal
+entry. The decision record below is kept for history (why moto/ACK/KRO were adopted,
+what they demonstrated) but no longer describes anything live in the repo — do not
+treat any manifest path or Makefile target named below as still existing.
+
+~~**Status.** Adopted (retroactive record). All three components are already live in
 `gitops/` — this ADR closes a documentation gap, not a new technical choice. No
 binding ADR is contradicted or superseded; self-authorizing per
 [WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2, same precedent as
@@ -8,7 +23,7 @@ binding ADR is contradicted or superseded; self-authorizing per
 [ADR-0037](adr-0037-vault-secrets-management.md) (Vault): a real, already-implemented,
 already-live mechanism that predated having any ADR of its own. KRO is currently
 **suspended** in the live cluster (manual sync only, replicas scaled to 0 — see
-§Suspension below); moto and ACK-S3 are always-on.
+§Suspension below); moto and ACK-S3 are always-on.~~
 
 ---
 
@@ -277,3 +292,34 @@ whenever it's re-enabled; it does not itself resync anything live.
 re-check moto/ACK-S3/KRO currency and GHSA status on the next full-sweep
 pass; re-check whether KRO's suspension can lift once a live-cluster session
 confirms the apiserver/datastore write pressure has real headroom again.
+
+### 2026-09-07 — Removed entirely, no replacement
+
+**Trigger.** Explicit user/maintainer request to remove ACK (S3), moto, and KRO
+from the lab, with no replacement. KRO was in scope even though only ACK/moto
+were named directly: its sole `ResourceGraphDefinition`
+(`gitops/kro/rgd-s3bucketclaim.yaml`) composes an ACK `Bucket`, so with ACK gone
+KRO had nothing left to orchestrate — the same "orphaned dependent" reasoning
+already applied to Kargo/Argo Rollouts once Harbor/capstone were removed earlier
+this run.
+
+**Decision: delete all three, plus every governance/networkpolicy/test/dashboard
+cross-reference.** Removed: `gitops/ack/`, `gitops/moto/`, `gitops/kro/` (whole
+directories); `gitops/governance/{ack-system,moto,kro}/`;
+`gitops/platform/{ack-resources,ack-s3,moto,kro,kro-extras,kro-resources}.yaml`;
+`gitops/secrets/ack-creds.yaml`; `tests/ack-s3.bats`,
+`tests/networkpolicy-{ack-system,kro,moto}.bats`, `tests/securitycontext-kro.bats`,
+`tests/securitycontext-moto-ack-labgateway.bats`. `grafana/dashboards/
+lab-cloud-control-plane.json` no longer existed — it was already removed with the
+rest of the observability stack (ADR-0041, 2026-09-06). `docs/decisions/context.md`'s
+component-table rows and "Live decisions" bullets for moto/ACK/KRO were removed, and
+`scripts/context-doc-version-sync-check.sh`'s `check_one` calls for the KRO and ACK
+S3-controller chart-version citations (the only two remaining after ADR-0041 already
+dropped the Grafana/Pyroscope ones) were dropped with them — that checker now tracks
+zero citations until a new self-tracking one is added to context.md.
+
+KRO's suspension (§Suspension above, 2026-08-24) is moot — a suspended-then-deleted
+component never needed re-enabling.
+
+**Flip condition.** None — no replacement is planned. Re-adopting any of the three
+would need a new ADR, not a revival of this one.

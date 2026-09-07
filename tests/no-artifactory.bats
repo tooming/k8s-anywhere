@@ -44,17 +44,20 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
-@test "the architect routine's weekly upstream-release check tracks Harbor, not the decommissioned Artifactory (ADR-0024, 2026-08-19)" {
+@test "the architect routine's weekly upstream-release check tracks neither Artifactory nor Harbor (both decommissioned; ADR-0024 2026-08-19, then ADR-0024 itself removed 2026-09-07)" {
   # routines/architect.prompt.md STEP 1 hardcodes a fixed list of repos to
   # check for new releases each week. It still named jfrog/charts
   # (Artifactory) months after ADR-0024 fully decommissioned it in favor of
   # Harbor — the architect routine was checking a technology this lab no
-  # longer runs at all, instead of the one it does. Unlike gitops/ + Makefile
-  # above, this file is live operating instruction (not historical decision
-  # record), so it's held to the same "no legacy-registry reference" bar.
+  # longer ran at all. Harbor itself was then removed entirely 2026-09-07, no
+  # replacement (ADR-0024) — so now neither belongs on the active
+  # per-release-check list. Unlike gitops/ + Makefile above, this file is live
+  # operating instruction (not historical decision record), so it's held to
+  # the same "no dead-component release-check target" bar as Garage's
+  # equivalent guard in tests/dependency-register.bats.
   prompt="$REPO/routines/architect.prompt.md"
   run grep -qi 'jfrog\|artifactory' "$prompt"
   [ "$status" -ne 0 ]
-  run grep -qF 'goharbor/harbor-helm' "$prompt"
-  [ "$status" -eq 0 ]
+  run grep -qE '^\s*-\s*Harbor:' "$prompt"
+  [ "$status" -ne 0 ]
 }

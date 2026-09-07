@@ -17,8 +17,8 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "criticality tiering names Cilium at P0 (recurrence guard: highest-severity row can't silently drop)" {
-  run grep -q '| Cilium | \*\*P0\*\*' "$DOC"
+@test "criticality tiering names the CNI/NetworkPolicy layer at P0 (recurrence guard: highest-severity row can't silently drop)" {
+  run grep -q 'kube-router | \*\*P0\*\*' "$DOC"
   [ "$status" -eq 0 ]
 }
 
@@ -51,9 +51,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dependency-concentration.md names github.com/argoproj as the largest live concentration (2 tools)" {
+@test "dependency-concentration.md records github.com/argoproj dropping below the concentration threshold (Argo Rollouts removed)" {
   CONC="$REPO/docs/dependency-concentration.md"
-  run grep -q 'github.com/argoproj` — 2 tools' "$CONC"
+  run grep -q 'github.com/argoproj` — no longer a concentration' "$CONC"
   [ "$status" -eq 0 ]
 }
 
@@ -76,11 +76,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dependency-exit-runbooks.md covers the four highest-blast-radius single-tool rows (2026-09-02 slice)" {
+@test "dependency-exit-runbooks.md covers the highest-blast-radius single-tool rows still live (Traefik, cert-manager) and marks Cilium/Garage moot" {
   RUNBOOKS="$REPO/docs/dependency-exit-runbooks.md"
-  run grep -q '^\*\*Cilium\*\*' "$RUNBOOKS"
-  [ "$status" -eq 0 ]
-  run grep -q '^\*\*Garage\*\*' "$RUNBOOKS"
+  run grep -q '^\*\*Cilium\*\* and \*\*Garage\*\*' "$RUNBOOKS"
   [ "$status" -eq 0 ]
   run grep -q '^\*\*Traefik\*\*' "$RUNBOOKS"
   [ "$status" -eq 0 ]

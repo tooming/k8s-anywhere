@@ -3,73 +3,68 @@
 # reach the Kubernetes API server. The consuming namespace's Kustomize overlay
 # sets the namespace. Without this a deny-all namespace cannot start workloads.
 #
-# This is a CiliumNetworkPolicy, NOT a plain NetworkPolicy, on purpose (ADR-0014):
-# under Cilium's kube-proxy-free datapath the API server is given Cilium's reserved
-# `kube-apiserver` identity, and the ClusterIP (10.43.0.1) is socket-LB-translated to
-# the real endpoint BEFORE egress policy is evaluated. A plain NetworkPolicy `ipBlock`
-# rule (whether 10.43.0.1/32 or the node IP) therefore never matches API-server
-# traffic, and every deny-all namespace is silently cut off from the apiserver.
-# `toEntities: kube-apiserver` is the only rule Cilium matches for that traffic.
+# Plain networking.k8s.io/v1 NetworkPolicy — Cilium (ADR-0014) was removed
+# entirely 2026-09-07, no replacement; k3s's bundled Flannel + kube-router is
+# the CNI now. Under kube-router's iptables enforcement, kube-proxy's ClusterIP
+# DNAT happens in the nat table's PREROUTING chain, strictly before the FORWARD
+# chain kube-router uses to enforce NetworkPolicy — so by the time a policy is
+# evaluated, a pod's request to a Service ClusterIP has ALREADY been rewritten
+# to the real backend pod's IP. A plain podSelector/namespaceSelector rule
+# targeting the real destination pods (CoreDNS) therefore works correctly and
+# needs none of the socket-LB, pre-DNAT ClusterIP-CIDR workarounds this file
+# and zz-dns-clusterip-bridge.yaml (dropped entirely, no replacement) used to
+# carry under Cilium's kube-proxy-free datapath.
 #
-# DNS is the inverse footgun in this lab: pods send DNS to the kube-dns Service
-# frontend (10.43.0.10), and Cilium may evaluate that service IP before matching
-# the CoreDNS pod identity. Keep the pod-identity rule, but also allow only
-# TCP/UDP 53 to the service CIDR so DNS works on fresh `make up` rebuilds without
-# a live-only bridge policy. The Kubernetes API has the same service-frontend
-# shape for in-cluster clients (10.43.0.1:443), so that exact ClusterIP is allowed
-# alongside Cilium's reserved kube-apiserver identity.
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
+# The kube-apiserver is the one exception: k3s embeds the apiserver in the
+# server node's own process rather than running it as a selectable pod, so no
+# pod/namespace selector can ever match it — post-DNAT the real destination is
+# the node's own IP on TCP 6443, which isn't practically pinnable from a
+# Kustomize template (it varies per k3d/Colima environment and across
+# rebuilds; this repo confirmed live, while removing the equivalent Cilium
+# rule for webhook callbacks, that the observed node IP is neither the
+# ClusterIP nor a fixed value — see allow-eso-webhook-from-apiserver.yaml).
+# Following this repo's own established pattern for not-practically-pinnable
+# targets (allow-argocd-repo-server-egress-charts.yaml), this uses an ipBlock
+# 0.0.0.0/0 egress scoped strictly to the apiserver's own ports — not a security regression versus the Cilium `toEntities:
+# kube-apiserver` rule it replaces (that matched traffic to ANY node too; the
+# real access boundary for the apiserver is its own TLS/RBAC layer, not
+# NetworkPolicy). NEEDS LIVE VERIFICATION on the next cluster rebuild (ADR-0004)
+# — flagged explicitly here rather than asserted as confirmed-working.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: allow-dns-and-apiserver
   annotations:
-    # Must land strictly before default-deny.yaml (wave 0) in every namespace that
-    # includes both: neither ArgoCD's own sync-wave-4 NetworkPolicy Applications nor
-    # kubectl apply order guarantee CiliumNetworkPolicy (this) lands before/with a
-    # plain NetworkPolicy (default-deny-all) in the same sync — observed applying
-    # default-deny-all first cuts the namespace's own pods off from the apiserver
-    # and DNS before this policy exists, and if that namespace is argocd itself the
-    # controller can never finish the sync that would have added this rule (found on
-    # a from-scratch `make up`: argocd-networkpolicy landed default-deny-all only,
-    # then argocd-application-controller lost apiserver access mid-sync — #440-follow-up).
+    # Must land strictly before default-deny.yaml (wave 0) in every namespace
+    # that includes both — kubectl/ArgoCD apply order doesn't guarantee this
+    # policy lands before the deny-all floor in the same sync, and if it lands
+    # after, the namespace's own pods lose DNS/apiserver access in the gap
+    # (self-fatal if the namespace is argocd itself — #440-follow-up).
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  endpointSelector: {}
+  podSelector: {}
+  policyTypes:
+    - Egress
   egress:
     # DNS: every pod must resolve names via CoreDNS (kube-dns) in kube-system.
-    - toEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-system
-            k8s-app: kube-dns
-      toPorts:
-        - ports:
-            - port: "53"
-              protocol: UDP
-            - port: "53"
-              protocol: TCP
-    # DNS service frontend: kube-proxy-free Cilium can evaluate the ClusterIP
-    # before pod identity, so permit DNS ports to Service CIDRs only.
-    - toCIDR:
-        - 10.43.0.0/16
-      toPorts:
-        - ports:
-            - port: "53"
-              protocol: UDP
-            - port: "53"
-              protocol: TCP
-    # Kubernetes API service frontend used by in-cluster clients.
-    - toCIDR:
-        - 10.43.0.1/32
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP
-    # Kubernetes API server: reserved identity, survives kube-proxy-free translation.
-    - toEntities:
-        - kube-apiserver
-      toPorts:
-        - ports:
-            - port: "443"
-              protocol: TCP
-            - port: "6443"
-              protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Kubernetes API server: node IP isn't pinnable here (see header comment).
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP

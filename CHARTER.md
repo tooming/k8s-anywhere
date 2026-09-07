@@ -8,6 +8,12 @@ The durable statement of **what k8s-lab is becoming**. Slow-changing. The backlo
 Layered top-down in the classical V/M/CV → Strategy → Goals → Objectives → Initiatives
 order, most-stable at the top.
 
+**A large, deliberate simplification landed 2026-09-06/2026-09-07** (see "The
+2026-09-07 simplification" near the bottom of this file for the full pivot and why).
+This charter has been rewritten to describe the lab's actual current, intentionally
+small shape — not a temporary gap to rebuild back up to the platform's prior, much
+larger scope.
+
 ## Vision
 
 The most complete production-shaped cloud-native platform a learner can run
@@ -16,10 +22,10 @@ backend — **the lab that is the syllabus, not tied to one vendor**.
 
 ## Mission
 
-A **cloud-agnostic GitOps platform** that wires the full cloud-native stack together
-as portable infrastructure-as-code: the identical `gitops/` state deploys to a free
-localhost cluster (the default, zero-external-dependency path — one 16 GB Mac) or to
-any CNCF-conformant Kubernetes cloud backend, so the pieces are learned as one
+A **cloud-agnostic GitOps platform** that wires a small, coherent cloud-native stack
+together as portable infrastructure-as-code: the identical `gitops/` state deploys to
+a free localhost cluster (the default, zero-external-dependency path — one 16 GB Mac)
+or to any CNCF-conformant Kubernetes cloud backend, so the pieces are learned as one
 coherent system that isn't tied to one host or one vendor — built as code end to end,
 rebuildable with one command, with recovery that is *exercised*, not assumed.
 (ADR-0026)
@@ -28,27 +34,23 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
 
 - **Everything as code; GitOps deploys it.** Workloads are ArgoCD `Application`s;
   Terraform/Terragrunt *only* bootstraps. (ADR-0001)
-- **Recreate-from-code.** `make up` rebuilds the whole lab; DR is verified, not assumed
-  (`make dr-verify` / `dr-test` / blue-green). (ADR-0005)
-- **Stateful DR is exercised.** Every stateful namespace (`data`, `capstone`,
-  `vault`) has a Velero schedule and a `make dr-restore`
-  path that recovers it from the latest backup — not just re-creates the workload
-  from manifest.
-- **Images are signed and verified.** Every image deployed into the cluster is signed
-  by the lab's cosign key in CI and admitted by a Kyverno `verifyImages` policy; an
-  unsigned image is rejected at admission.
+- **Recreate-from-code.** `make up` rebuilds the whole lab; DR is verified, not
+  assumed (`make dr-verify` / `dr-test`). There is no stateful backup/restore
+  mechanism in this lab any more (Velero was removed entirely 2026-09-07, no
+  replacement) — full-cluster-recreate-from-git is the only recovery path, and an
+  honest one for a lab with no stateful application data left to protect. (ADR-0005)
 - **Clusterless gates stay green.** `make ci` (lint + validate + test + drift checks) is
   the floor and runs on every push.
 - **Cloud-agnostic by construction.** No component above the Terraform bootstrap seam
   encodes a backend-specific assumption; the same `gitops/` Applications deploy
   unchanged to localhost or to a cloud backend. (ADR-0026)
-- **Fits the 16 GB reality — on the localhost backend.** The always-on stack lives in
-  the 12 GB VM (~7 GB used); heavy components are on-demand, never auto-synced, and
-  never two full stacks at once. This is the default, zero-cost path everyone starts
-  with; it is not a ceiling on what a cloud backend can run.
+- **Fits the 12 GB reality — on the localhost backend.** The always-on stack (6
+  namespaces) uses a small fraction of the 12 GB Colima VM. There are no on-demand
+  heavy components any more (Harbor and Kargo, the only two this lab ever ran, were
+  both removed entirely, no replacement) — everything that exists is always-on.
 - **Real state only.** Outputs reflect auto-discovered state — never fabricated,
   placeholder, or mocked data. (ADR-0004)
-- **Decoupled / no needless SPOF**, and **Garage (not MinIO)** for S3. (ADR-0002, ADR-0003)
+- **Decoupled / no needless SPOF.** (ADR-0003)
 - **Docs don't drift.** README and `docs/dependency-tree.md` stay in sync with the
   actual repo (enforced by drift checks).
 
@@ -69,18 +71,18 @@ states the meta-choices the ADRs encode, so the *why* sits above the *what*.
 - **GitOps over imperative.** Terraform/Terragrunt bootstraps only; workloads land as
   ArgoCD `Application`s. No `helm install`, no `kubectl apply` to live state.
   (ADR-0001)
-- **On-demand over always-on for heavy components.** The 12 GB VM holds a ~7 GB
-  always-on core; heavy components (Harbor, Kargo) come
-  up by `make <name>-up`. Never two full stacks at once. (ADR-0003)
+- **Aggressive simplification over breadth-for-its-own-sake.** As of 2026-09-07, the
+  lab favors a small, well-understood always-on core over demonstrating every
+  cloud-native pattern at once — see "The 2026-09-07 simplification" below.
 - **Recreate-from-code over pretend-HA.** A single host has SPOFs; we don't pretend
-  otherwise. Recovery is via `make up` rebuilds + Velero restores, not multi-replica HA
-  theatre. (ADR-0005)
+  otherwise. Recovery is via `make up` rebuilds, not multi-replica HA theatre or a
+  backup mechanism this lab no longer runs. (ADR-0005)
 - **Real over fabricated.** Tests and outputs reflect auto-discovered state. Stub
   data, mock metrics, and invented examples are forbidden. (ADR-0004)
 - **Decisions written down, rejected options off-limits.** Every meaningful technical
   choice lands as an ADR; rejected options (MinIO per ADR-0002, sidecar mesh per
-  ADR-0012, Flannel per ADR-0014, Redis per ADR-0018) cannot be reintroduced without a
-  new ADR.
+  ADR-0012, Flannel + kube-router per ADR-0014's original decision — since revisited,
+  see the ADR's own Status) cannot be reintroduced without a new ADR.
 
 ## Goals (qualitative — what a learner internalizes)
 
@@ -88,23 +90,22 @@ The directional outcomes a learner should walk away with — *what* success look
 without committing to *when* or *how much*. The lab should let a learner internalize,
 hands-on: the **GitOps reconcile loop**; **IaC bootstrap vs. in-cluster GitOps**; the
 **secrets flow** (Vault → External Secrets → workload); **north-south ingress** via
-Traefik's native `IngressRoute` CRDs; **S3-compatible storage**; **cloud
-control-plane patterns** (ACK/KRO against a mock);
-**DR / blue-green** on a single host; **admission-time policy** (Kyverno: validation,
-mutation, image verification); **progressive delivery** (staged canary traffic
-shifting via Argo Rollouts + Traefik, pause-gated rather than instant cutover);
-**stateful backup & restore** (Velero against Garage —
-restore is exercised, not assumed); **supply-chain security** end-to-end (cosign
-signing in CI, Kyverno verifyImages on admit, continuous Trivy scanning + SBOMs);
-**automated TLS certificate lifecycle** (cert-manager issuing and rotating certs from
-a self-signed root CA at the ingress edge — not a one-off hand-issued Secret);
-**operational-resilience discipline** (DORA's risk-management/incident/testing/
-third-party-risk pillars mapped onto concrete GitOps practice — ADRs, DR drills,
-continuous scanning, dependency pinning — explicitly as an educational lens, never
-a regulatory compliance claim this lab cannot honestly make); and
-**cloud-agnostic infrastructure design** — why the GitOps layer never encodes a
-backend, so the same platform runs free on a laptop or on a cloud Kubernetes service
-without a fork. The sequenced path lives in [docs/00-architecture.md](docs/00-architecture.md).
+Traefik's native `IngressRoute` CRDs; **automated TLS certificate lifecycle**
+(cert-manager issuing and rotating certs from a self-signed root CA at the ingress
+edge — not a one-off hand-issued Secret); **operational-resilience discipline**
+(DORA's risk-management/incident/testing/third-party-risk pillars mapped onto
+concrete GitOps practice — ADRs, dependency pinning, an honest accounting of what DR
+capability actually remains — explicitly as an educational lens, never a regulatory
+compliance claim this lab cannot honestly make); and **cloud-agnostic infrastructure
+design** — why the GitOps layer never encodes a backend, so the same platform runs
+free on a laptop or on a cloud Kubernetes service without a fork. The sequenced path
+lives in [docs/00-architecture.md](docs/00-architecture.md).
+
+Cloud control-plane patterns (ACK/KRO against a mock), admission-time policy engines,
+progressive delivery, stateful backup & restore, and continuous vulnerability
+scanning were all goals this lab used to teach — see "The 2026-09-07 simplification"
+below for why that scope was cut, and each removed component's own ADR Status for
+what it demonstrated while it was live.
 
 ## Objectives (measurable, time-bound)
 
@@ -112,44 +113,41 @@ The bars that turn goals into proof. Each is specific, measurable, and has a dat
 the planner can flag "missed objective" as a gap, not just absence-of-feature. Dates
 are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 
-- **O1 — Tier 1 next-wave deployed.** By **2026-12-31**, all four next-wave components
-  (Kyverno, Argo Rollouts, Velero, Trivy Operator) are auto-synced ArgoCD
-  `Application`s with their own ADR and bats coverage. (The "real-metric Grafana
-  dashboard" leg of this bar was dropped 2026-09-06 along with Objective O5 —
-  ADR-0041, observability stack removed with no replacement.)
-  *Measured by:* presence checks in `make ci` (one Application + one ADR per
-  component).
+- **O1 — Retired 2026-09-07.** Was "Tier 1 next-wave deployed" — all four
+  components it measured (Kyverno, Argo Rollouts, Velero, Trivy Operator) were
+  removed from the lab entirely, no replacement, the same day (alongside Harbor,
+  Kargo, ACK, moto, KRO, Cilium, Garage, Forgejo, GitLab, the DR front door, and
+  capstone). There is no next-wave tier left to hold a bar against. The number is
+  retired rather than reused, matching how O5 was retired 2026-09-06 (same pattern).
 - **O2 — Default-deny + PSS-restricted everywhere.** By **2026-09-30**, every namespace
   either enforces default-deny NetworkPolicy (ADR-0016) **and** PSS-restricted labels
   (ADR-0017), or has an ADR-cited carve-out in ADR-0017's per-namespace profile table.
+  Enforcement moved from Cilium to k3s's bundled Flannel + kube-router 2026-09-07
+  (ADR-0014's Status) — the bar itself (every namespace covered) is unchanged.
   *Measured by:* `tests/networkpolicy.bats` + `tests/securitycontext.bats` cover every
   namespace in `gitops/`.
-- **O3 — Stateful DR is exercised.** By **2026-12-31**, `make dr-restore` recovers
-  every stateful namespace (`data`, `capstone`, `vault`)
-  from its latest Velero backup in under 10 minutes wall-clock on the
-  maintainer's hardware. (`observability` was added 2026-07-29 — a
-  gap audit found it held real PVCs with no Schedule — then dropped again
-  2026-09-06 along with the namespace itself, ADR-0041; `storage`/Garage is a
-  deliberate, documented carve-out — see ADR-0021 §Scope & exceptions.) **RPO ≤ 24
-  hours** — every stateful namespace's `gitops/velero/schedules/*.yaml` Schedule
-  runs once daily (staggered 01:00–04:00) with `ttl: 168h` (7-day retention), so the
-  worst-case gap between a change and its next backup is one day.
-  *Measured by:* a bats target that times the restore and fails over budget.
-- **O4 — Every image is signed and verified.** By **2026-12-31**, 100% of images
-  deployed into the cluster are cosign-signed in CI and admitted by a Kyverno
-  `verifyImages` `ClusterPolicy`; an unsigned image push to the capstone Application
-  fails admission. *Measured by:* a CI step that pushes an unsigned image and asserts
-  Kyverno rejection.
+- **O3 — Retired 2026-09-07.** Was "Stateful DR is exercised" — Velero, the
+  mechanism this objective measured, was removed entirely, no replacement, the
+  same day as its S3 backend (Garage). This lab has no stateful application data
+  left to hold an RTO/RPO bar against (see [docs/DR.md](docs/DR.md) and
+  [ADR-0021](docs/decisions/adr-0021-velero-backup-restore.md)'s Status for the
+  honest current DR picture: full-cluster-recreate-from-git only). Retired rather
+  than reused, same pattern as O1/O5.
+- **O4 — Retired 2026-09-07.** Was "Every image is signed and verified" — Kyverno
+  (the admission engine that enforced `verifyImages`) was removed entirely, no
+  replacement, the same day. There is no admission-time policy engine left to hold
+  this bar against. Retired rather than reused, same pattern as O1/O3/O5.
 - **O5 — Retired 2026-09-06 (ADR-0041).** Was "every always-on component has a
   real-metric dashboard" — removed outright, not renumbered, when the observability
   stack it measured (Grafana + the LGTM(P) backends) was removed with no
   replacement; there is no dashboard layer left to hold a bar against. The number
   is retired rather than reused, matching how a superseded ADR keeps its number.
-- **O6 — Capstone end-to-end under 15 min.** By **2026-12-31**, a fresh `make up` to
-  a served capstone HTTP request takes under 15 minutes on the maintainer's
-  hardware, measured by a `make capstone-demo` target that wall-clocks the path.
-  (This bar previously required a Tempo trace of the request too; that leg was
-  dropped 2026-09-06 along with Tempo itself — ADR-0041.)
+- **O6 — Retired 2026-09-07.** Was "Capstone end-to-end under 15 min" — capstone
+  itself (the demo app this objective timed), along with Argo Rollouts and Kargo
+  which fed its pipeline, was removed entirely, no replacement, the same day. The
+  lab's remaining demo workload (`lab-demo`, a single static hello-world
+  Deployment) has no equivalent multi-step pipeline to time. Retired rather than
+  reused, same pattern as O1/O3/O4/O5.
 - **O7 — Deployment pipeline health is measured.** By **2026-10-31**, `make
   dora-metrics` computes and `docs/dora-metrics.md` reports all four DORA (DevOps
   Research and Assessment) metrics — deployment frequency, lead time for changes,
@@ -162,52 +160,12 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 
 ## Target end-state (initiatives — the platform we're growing toward)
 
-- **Always-on core** (built): k3d + ArgoCD + GitLab + Traefik + Vault + External
-  Secrets + Garage + moto/ACK + a demo app (the observability stack this bullet used
-  to name — Grafana + the LGTM(P) backends — was removed 2026-09-06 with no
-  replacement, ADR-0041; the `Application` count below predates that removal and
-  needs re-deriving — re-derived 2026-08-25 — KRO's own controller
-  Application was converted to on-demand for cluster-load reduction (ADR-0029's
-  Re-evaluation log), one fewer than the prior "~33" [issue #846]; only KRO's
-  namespace/RBAC scaffolding (`kro-extras`/`kro-resources`) stays auto-synced,
-  matching the harbor-extras-style "PSA floor for an on-demand component"
-  pattern — see [docs/dependency-tree.md](docs/dependency-tree.md)'s ArgoCD
-  apply-order table. Cilium is the one component conceptually part of this core
-  that lacks ArgoCD's `automated:` sync flag — it bootstraps manually before
-  ArgoCD itself can run, then is adopted by ArgoCD afterward, per its own
-  manifest comment).
-
-  > **GitLab vs. Forgejo, as of 2026-08-17.** This bullet (and the Capstone bullet
-  > below) describe what a fresh `make up` bootstrap still literally does — GitLab
-  > is provisioned as the git source (ADR-0035's migration items 3/4 not yet picked
-  > up; see ROADMAP.md's Now/next Forgejo-migration items). The already-running lab
-  > was separately re-pointed at Forgejo directly on the live cluster (PR #1205), so
-  > today's steady-state git source + CI runner is Forgejo, not GitLab. See
-  > [docs/dependency-tree.md](docs/dependency-tree.md)'s "Day-0 bootstrap chain"
-  > section for the full explanation of this gap, and README.md /
-  > [docs/00-architecture.md](docs/00-architecture.md) / [docs/DR.md](docs/DR.md) /
-  > [docs/dependency-concentration.md](docs/dependency-concentration.md) /
-  > [docs/platform-products.md](docs/platform-products.md) for the same caveat
-  > applied to this repo's other architecture-description docs.
-- **Always-on next wave** (built, ~500 MB total within budget): **Kyverno** (admission
-  policy — validation, mutation, image verification); **Argo Rollouts** (SLO-driven
-  canary delivery via Traefik traffic-splitting); **Velero** (cluster + PVC backup to
-  Garage); **Trivy Operator** (continuous vulnerability + SBOM scanning). All four are
-  auto-synced ArgoCD `Application`s with their own ADR and bats coverage (Objective O1,
-  met ahead of its 2026-12-31 date — the "real-metric Grafana dashboard" leg of this
-  bar was dropped 2026-09-06 along with Objective O5, ADR-0041).
-- **Heavy / on-demand** (built, on-demand): an artifact registry (Harbor) and a
-  GitOps promotion engine (Kargo) — each is a manual-sync ArgoCD `Application` with
-  a `make <name>-up` / `<name>-down` target, brought up *one at a time* within the
-  12 GB budget. Neither runs always-on. (A distributed database (TiDB), a service
-  mesh + UI (Istio ambient + Kiali), and distributed storage (Longhorn) were also
-  built and demonstrated this pattern, then removed 2026-09-06 — maintainer
-  decision, no replacement — see ADR-0031/ADR-0032, ADR-0012, and ADR-0013.)
-- **Capstone — the full inner loop**: GitLab CI builds *and signs* an image (cosign) →
-  Kyverno verifies the signature on admit → ArgoCD deploys it → Argo Rollouts canaries it
-  in staged weight/pause steps via Traefik (the Mimir-SLO auto-gate was removed
-  alongside the rest of the observability stack, ADR-0041) → Vault holds
-  its secrets → Velero backs up its state.
+- **Always-on core** (built, 6 namespaces, all always-on — nothing on-demand): k3d
+  (bundled Flannel CNI + kube-router NetworkPolicy) + ArgoCD (syncing directly from
+  this repo's public GitHub remote) + Traefik + cert-manager + Vault + External
+  Secrets + a demo app (`lab-demo`). This is the entire lab as of 2026-09-07 — see
+  "The 2026-09-07 simplification" below for what used to sit alongside it and why
+  it's gone.
 - **Cloud backend** (built, partially verified against a real account): a second
   Terragrunt backend module (`infra/live/oracle/`) targeting Oracle Cloud's Always Free
   tier running self-managed k3s — `gitops/` requires no fork to run there. Localhost
@@ -217,14 +175,42 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   itself is still blocked by a transient Oracle Always Free capacity constraint
   (`500 Out of host capacity` across all ADs), not a bug in this repo — see
   [`infra/live/README.md`](infra/live/README.md)'s Status table for what's confirmed
-  end-to-end versus still pending. (ADR-0026, ADR-0027)
+  end-to-end versus still pending. (ADR-0026, ADR-0027) Note: this module's own
+  tfstate backend design predates the 2026-09-07 simplification and may itself need
+  re-examining as a follow-up, since the localhost backend's equivalent (the
+  off-cluster Garage tfstate store) was removed with its migration to a replacement
+  backend left as an open item (ADR-0007's Status).
 - **TLS certificate lifecycle**: cert-manager issues and auto-renews certs from a
   self-signed root CA (works identically on localhost and the Oracle backend, unlike
   public ACME). Every north-south route is reachable over both HTTP and Traefik's
-  `websecure` entrypoint, TLS terminated via the shared `TLSStore` (ADR-0040) — a
-  wildcard `*.127.0.0.1.nip.io` Certificate backs it, and the DR front door proxies
-  `:8443` through to it — additive alongside the original HTTP-only path, never a
-  breaking cutover. (ADR-0028)
+  HTTPS listener — a wildcard `*.127.0.0.1.nip.io` Certificate backs it, additive
+  alongside the original HTTP-only path, never a breaking cutover. (ADR-0028)
+
+### The 2026-09-07 simplification — what changed, and why
+
+This lab used to run a much larger stack: an admission-policy engine (Kyverno), a
+progressive-delivery controller (Argo Rollouts), a backup/restore system (Velero), a
+continuous vulnerability scanner (Trivy Operator), a GitOps promotion pipeline
+(Kargo), an OCI artifact registry (Harbor), a cloud-control-plane demo pattern
+(moto/ACK/KRO), a dedicated eBPF CNI (Cilium), an in-cluster S3 store (Garage), a
+self-hosted git source (first GitLab, then Forgejo), a DR front door with a
+zero-downtime blue/green drill, and an end-to-end demo pipeline (capstone) tying
+several of the above together. By explicit maintainer decision, **all of it was
+removed entirely, no replacement**, across a short, deliberate series of changes
+2026-09-06/2026-09-07 — see each component's own ADR Status for the specific
+reasoning (several cite this single-host lab's real, live-observed capacity
+constraints — see `docs/incident-log.md`'s 2026-09-06 entries — as a contributing
+factor, alongside the maintainer's explicit preference for a smaller, more legible
+lab over demonstrating every pattern at once).
+
+What's left is a small, coherent core that still teaches the fundamentals this
+project cares most about — the GitOps reconcile loop, IaC-bootstraps-then-GitOps-runs,
+the secrets flow, ingress, and TLS lifecycle — without the operational weight of
+the larger stack. This is not a temporary regression to rebuild back up from; it is
+the maintainer's deliberate current shape for this project. A future CHARTER edit
+may reintroduce scope deliberately, the same way any other goal change happens here
+— but nothing in this file should be read as an implicit promise to do so.
+
 ## How this drives the ROADMAP
 
 The **executor** routine (several times a day — see `routines/routines.yaml` for the
