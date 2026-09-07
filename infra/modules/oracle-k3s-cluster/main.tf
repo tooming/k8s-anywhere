@@ -27,8 +27,8 @@ terraform {
 }
 
 # The oci provider itself is configured by the Terragrunt live unit (generate
-# "provider" block, matching how infra/live/local/{argocd,gitlab} inject their
-# providers) — this module only declares the required_providers entry.
+# "provider" block, matching how infra/live/local/argocd injects its
+# provider) — this module only declares the required_providers entry.
 
 data "oci_identity_availability_domain" "ad" {
   compartment_id = var.tenancy_ocid
