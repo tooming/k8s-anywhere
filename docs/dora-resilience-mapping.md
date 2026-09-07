@@ -28,7 +28,10 @@ concrete instance of *treating risk as something to structurally close off*,
 not merely document. Evidence:
 
 - [ADR-0016](decisions/adr-0016-default-deny-networkpolicy.md) — default-deny
-  NetworkPolicy per namespace, Cilium-enforced.
+  NetworkPolicy per namespace. Enforcement moved from Cilium to k3s's bundled
+  Flannel + kube-router 2026-09-07 (Cilium removed entirely, no replacement,
+  ADR-0014) — the pattern itself is unchanged, see ADR-0016's own "Cilium's
+  removal" section for the mechanics.
 - [ADR-0017](decisions/adr-0017-pod-security-standards-restricted.md) — Pod
   Security Standards `restricted` profile across namespaces.
 - [ADR-0022](decisions/adr-0022-trivy-operator-supply-chain.md) — continuous
