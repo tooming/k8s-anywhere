@@ -48,3 +48,41 @@ materially different, live-verification-dependent design decision, not a
 find-and-replace. Left unchecked and un-picked-up this cycle rather than shipping
 a same-shaped-but-wrong rename (ADR-0004 — don't assert a working replacement
 this session can't verify).
+
+## Update 2026-09-06 (live-cluster session) — the credential-wiring half of
+finding 3 above is now closed
+
+Independently of this item: a fresh `make up` was reproduced live failing
+`root-app`'s very first sync (missing `repo-forgejo-gitops` Secret — the exact
+gap this investigation flagged). Fixed with `scripts/forgejo-repo-secret.sh` +
+`make forgejo-repo-secret`, wired into `up` right after `forgejo-up` and before
+`gitlab-up`/`root-app` — full writeup:
+[docs/done/2026-09-06-forgejo-repo-secret-bootstrap-gap.md](../../done/2026-09-06-forgejo-repo-secret-bootstrap-gap.md).
+
+This item stays open: the SSH-based `forgejo-push`/`forgejo-force-push`
+replacement, the TLS-layer question, and the actual `gitlab-*.sh` →
+`forgejo-*.sh` rename are still undone — GitLab's targets still run in `up`,
+and no automated push exists yet for a genuinely empty Forgejo repo.
+
+## Update 2026-09-06 (live-cluster session, issue #633) — "legacy, harmless"
+was wrong about the resource cost, even though the correctness call was right
+
+`docker stats` showed the `gitlab` container alone holding ~3.1 GiB (27% of
+the 12 GB VM) for the entire rest of a session after a `make up`, because
+nothing in the `up` sequence ever brought it back down — `gitlab-configure`
+only needs GitLab reachable for its own one-shot Terraform-state import +
+initial push, and nothing later in `up` (`root-app` now tracks Forgejo, per
+the repoURL flip already mentioned above) depends on it staying up. Added
+`$(MAKE) gitlab-down` right after `gitlab-configure` in the `up` target —
+GitLab still gets configured every fresh bootstrap, it just doesn't sit there
+afterward burning a quarter of the VM. This is a narrow, safe addition, not
+the full decommission this item is still tracking.
+
+**Status as of 2026-09-06: still blocked, same reason as the original
+finding.** The three live-verification-dependent design decisions in the
+Recommendation above (SSH push replacement, TLS-layer question, `make up`
+bootstrap-sequence rewrite) remain undone. Both 2026-09-06 updates above
+closed adjacent gaps this investigation surfaced (the missing-Secret bug, the
+GitLab-left-running resource cost) without touching the rename/decommission
+itself — genuine progress, not a resolution of this investigation's own
+question.
