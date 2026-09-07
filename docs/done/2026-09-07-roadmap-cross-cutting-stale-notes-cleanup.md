@@ -58,4 +58,4 @@ date, close-comment grooming trail).
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1486 (chore/roadmap-cross-cutting-stale-notes-cleanup)
