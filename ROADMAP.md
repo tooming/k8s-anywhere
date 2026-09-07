@@ -1094,26 +1094,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-15-trivy-dashboard.md](docs/done/2026-06-15-trivy-dashboard.md).
   (auto/trivy-dashboard; PR #212)
 
-- [x] 🟢 **ArgoCD PSS Phase 1 — namespace warn+audit labels** (CHARTER
-  **Objective O2**, due **2026-09-30**; RFC #205 — ADR-0017 argocd PSS
-  two-phase rollout, Phase 1 🟢 immediately). Create
-  `gitops/argocd/namespace.yaml` with PSA labels `warn: restricted`,
-  `audit: restricted`, `warn-version: latest`, `audit-version: latest`
-  only — `enforce` label is absent (that is Phase 2). ArgoCD
-  Server-Side-Applies this onto the existing Terraform-created
-  namespace; no `infra/` touch needed (SSA merges labels safely). Deliver
-  via a new auto-synced ArgoCD `Application`
-  `gitops/platform/argocd-extras.yaml` (sync-wave 0,
-  `LoadRestrictionsNone`, `CreateNamespace=false` — namespace is
-  pre-created by Terraform; this Application only manages the PSA
-  labels). Follow the existing `kyverno-extras` / `trivy-extras` naming
-  convention — RFC #205 refers to it as `argocd-namespace.yaml` but the
-  repo uses the `-extras` suffix for this class of Application. Extend
-  `tests/securitycontext.bats` asserting: `gitops/argocd/namespace.yaml`
-  exists; the four warn/audit labels are present; `enforce` label is
-  absent. Update `docs/dependency-tree.md` with an argocd PSS Phase 1
-  note. `docs/done/2026-06-15-argocd-pss-warn-audit.md` required.
-  (auto/argocd-pss-warn-audit)
+- [x] 🟢 **ArgoCD PSS Phase 1 — namespace warn+audit labels** — full
+  verification writeup:
+  [docs/done/2026-06-16-argocd-pss-warn-audit.md](docs/done/2026-06-16-argocd-pss-warn-audit.md).
+  (auto/argocd-pss-warn-audit; PR #217)
 
 - [x] 🟢 **External Secrets dashboard + Alloy scrape** — full verification
   writeup:
@@ -1121,26 +1105,9 @@ there is no point where the lab loses a working git source or CI path.
   (auto/external-secrets-dashboard; PR #234)
 
 - [x] 🟢 **ArgoCD PSS Phase 2 — securityContext hardening + enforce
-  flip** (CHARTER **Objective O2**, RFC #205 — Phase 2; buildable after
-  Phase 1 is **verified green in cluster** by maintainer). Update
-  `infra/modules/argocd/values.yaml` adding the exact
-  `global.podSecurityContext` + `global.containerSecurityContext` block
-  from RFC #205 §Decision (`runAsNonRoot: true`, `runAsUser/Group: 1000`,
-  `seccompProfile.type: RuntimeDefault`; `allowPrivilegeEscalation:
-  false`, `readOnlyRootFilesystem: true`, `capabilities.drop: [ALL]`);
-  add `emptyDir` at `/tmp` for `repoServer` (git clone scratch) and
-  `server` (session token files) via `volumes` + `volumeMounts`. Update
-  `gitops/argocd/namespace.yaml` to add `enforce: restricted` +
-  `enforce-version: latest`. Verify the bundled `argocd-redis`
-  sub-chart's own securityContext is not adversely overridden by the
-  global block — add per-component override if needed. Extend
-  `tests/securitycontext.bats` asserting `enforce: restricted` label is
-  present in `gitops/argocd/namespace.yaml`. `docs/done/` entry required.
-  **Executor note:** the `infra/` touch is 🟡 by default, but RFC #205
-  (the architect's binding decision per WAYS-OF-WORKING.md §2) explicitly
-  names this `infra/` change as part of the implementation spec — the
-  RFC IS the approval; no additional human sign-off needed before
-  building. (auto/argocd-pss-enforce)
+  flip** — full verification writeup:
+  [docs/done/2026-06-24-argocd-pss-enforce.md](docs/done/2026-06-24-argocd-pss-enforce.md).
+  (auto/argocd-pss-enforce; PR #268)
 
 - [x] 🟢 **NetworkPolicy fan-out — `envoy-gateway-system` namespace** — full
   verification writeup:
@@ -1162,26 +1129,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-18-capstone-demo-target.md](docs/done/2026-06-18-capstone-demo-target.md)
   (PR #225). (auto/capstone-demo-target)
 
-- [x] 🟢 **PSS-restricted hardening — `external-secrets` namespace** (CHARTER **Objective O2**,
-  due **2026-09-30**; RFC #229 — architect decision 2026-06-19). Add
-  `gitops/external-secrets/namespace.yaml` with all four PSA labels at `restricted`
-  (`enforce: restricted`, `enforce-version: latest`, `warn: restricted`,
-  `audit: restricted`). Add new auto-synced `Application`
-  `gitops/platform/external-secrets-extras.yaml` (sync-wave 0, `ServerSideApply=true`,
-  `CreateNamespace=false` — namespace pre-created by the existing `external-secrets`
-  Application; follows the `argocd-extras` / `kyverno-extras` naming convention). Patch
-  `gitops/platform/external-secrets.yaml` `valuesObject` with `global.podSecurityContext`
-  (`runAsNonRoot: true`, `runAsUser: 65534`, `runAsGroup: 65534`, `seccompProfile.type:
-  RuntimeDefault`) + `global.containerSecurityContext` (`allowPrivilegeEscalation: false`,
-  `readOnlyRootFilesystem: true`, `capabilities.drop: ["ALL"]`) per RFC #229 §Decision. If
-  `readOnlyRootFilesystem: true` causes a startup failure, add an `emptyDir` at `/tmp` via
-  `extraVolumes`/`extraVolumeMounts` in `valuesObject`; do NOT relax `readOnlyRootFilesystem`
-  without a follow-up issue. Add `external-secrets → restricted` row to ADR-0017
-  §"Per-namespace profile" table citing RFC #229. Extend `tests/securitycontext.bats`:
-  namespace PSA-label assertions + `runAsNonRoot: true` in the chart `valuesObject`. `make
-  ci` must pass. `docs/done/` entry required. **Executor note:** the `valuesObject` patch
-  is security-adjacent (🟡 by default) but RFC #229 is the binding architect decision
-  (WAYS-OF-WORKING.md §2) — the RFC IS the approval. (auto/pss-external-secrets)
+- [x] 🟢 **PSS-restricted hardening — `external-secrets` namespace** — full
+  verification writeup:
+  [docs/done/2026-06-20-pss-external-secrets.md](docs/done/2026-06-20-pss-external-secrets.md).
+  (auto/pss-external-secrets; PR #238)
 
 - [x] 🟢 **PSS-baseline hardening — `envoy-gateway-system` namespace** (CHARTER **Objective O2**,
   due **2026-09-30**; RFC #230 — architect decision 2026-06-19). Add
