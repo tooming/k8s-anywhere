@@ -61,4 +61,4 @@ still exist.
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1498 (chore/adr-0007-status-stale-migration-claim-fix)
