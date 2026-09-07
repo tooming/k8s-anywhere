@@ -51,3 +51,40 @@ YAML
   [ "$status" -eq 2 ]
   [[ "$output" == *"isn't referenced by kustomization.yaml"* ]]
 }
+
+@test "kustomize-orphan-sync-hook: a file in an unreferenced kustomization-less directory exits 2" {
+  # Reproduces the gitops/argo-rollouts/ class: no kustomization.yaml in the
+  # directory, and nothing elsewhere in the fixture's gitops/ tree or Makefile
+  # points at it. KUSTOMIZE_ORPHAN_SYNC_HOOK_CHECK_ROOT scopes pass 2's search
+  # to this isolated fixture instead of the real repo tree.
+  mkdir -p "$BATS_TEST_TMPDIR/fixture/gitops/argo-rollouts"
+  echo "kind: ConfigMap" > "$BATS_TEST_TMPDIR/fixture/gitops/argo-rollouts/dead.yaml"
+  run env KUSTOMIZE_ORPHAN_SYNC_HOOK_CHECK_ROOT="$BATS_TEST_TMPDIR/fixture" \
+    bash "$REPO/scripts/kustomize-orphan-sync-hook.sh" \
+    <<<"$(mk_payload "$BATS_TEST_TMPDIR/fixture/gitops/argo-rollouts/dead.yaml")"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"nothing in the repo's live wiring"* ]]
+  [[ "$output" == *"gitops/argo-rollouts/ has no kustomization.yaml"* ]]
+}
+
+@test "kustomize-orphan-sync-hook: a file in a directory still named by an Application path: exits 0" {
+  mkdir -p "$BATS_TEST_TMPDIR/fixture/gitops/foo" "$BATS_TEST_TMPDIR/fixture/gitops/root"
+  echo "kind: ConfigMap" > "$BATS_TEST_TMPDIR/fixture/gitops/foo/live.yaml"
+  cat > "$BATS_TEST_TMPDIR/fixture/gitops/root/kustomization.yaml" <<'YAML'
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - app.yaml
+YAML
+  cat > "$BATS_TEST_TMPDIR/fixture/gitops/root/app.yaml" <<'YAML'
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+spec:
+  source:
+    path: gitops/foo
+YAML
+  run env KUSTOMIZE_ORPHAN_SYNC_HOOK_CHECK_ROOT="$BATS_TEST_TMPDIR/fixture" \
+    bash "$REPO/scripts/kustomize-orphan-sync-hook.sh" \
+    <<<"$(mk_payload "$BATS_TEST_TMPDIR/fixture/gitops/foo/live.yaml")"
+  [ "$status" -eq 0 ]
+}
