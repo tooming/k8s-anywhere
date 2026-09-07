@@ -54,4 +54,4 @@ on the file returned `0`), so nothing was duplicated.
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1487 (chore/gitlab-rename-investigation-note-trim)
