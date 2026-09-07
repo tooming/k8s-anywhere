@@ -292,6 +292,12 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [x] 🟢 **Re-verify every GHSA ID cited in `docs/dependency-register.md`
+  (confirms the Harbor fabrication was isolated, not a pattern)** — full
+  verification writeup:
+  [docs/done/2026-09-07-dependency-register-ghsa-audit-clean.md](docs/done/2026-09-07-dependency-register-ghsa-audit-clean.md).
+  (auto/dependency-register-ghsa-audit-clean)
+
 - [x] 🟢 **Correct a fabricated GHSA ID in `docs/dependency-register.md`'s Harbor
   row (CVE-2026-4404 mischaracterized as Low/disputed; real advisory is
   Critical, already correctly audited in ADR-0024, lab unaffected)** — full
