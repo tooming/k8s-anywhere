@@ -220,10 +220,11 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   end-to-end versus still pending. (ADR-0026, ADR-0027)
 - **TLS certificate lifecycle**: cert-manager issues and auto-renews certs from a
   self-signed root CA (works identically on localhost and the Oracle backend, unlike
-  public ACME). Every north-south route is reachable over both HTTP and the shared
-  Gateway's HTTPS listener — a wildcard `*.127.0.0.1.nip.io` Certificate backs it, and
-  the DR front door proxies `:8443` through to it — additive alongside the original
-  HTTP-only path, never a breaking cutover. (ADR-0028)
+  public ACME). Every north-south route is reachable over both HTTP and Traefik's
+  `websecure` entrypoint, TLS terminated via the shared `TLSStore` (ADR-0040) — a
+  wildcard `*.127.0.0.1.nip.io` Certificate backs it, and the DR front door proxies
+  `:8443` through to it — additive alongside the original HTTP-only path, never a
+  breaking cutover. (ADR-0028)
 ## How this drives the ROADMAP
 
 The **executor** routine (several times a day — see `routines/routines.yaml` for the
