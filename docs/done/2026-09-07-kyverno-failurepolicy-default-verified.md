@@ -53,4 +53,4 @@ this run).
 
 ## PR
 
-(filled in once the PR is opened)
+https://github.com/tooming/k8s-anywhere/pull/1477 (auto/kyverno-failurepolicy-default-verified)
