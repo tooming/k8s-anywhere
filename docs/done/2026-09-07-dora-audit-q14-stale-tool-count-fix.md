@@ -45,4 +45,4 @@ forward from the stale text being corrected.
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1491 (chore/dora-audit-q14-stale-tool-count-fix)
