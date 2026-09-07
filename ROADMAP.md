@@ -292,6 +292,12 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [x] 🟢 **Close docs/dora-audit-readiness.md's open Kyverno `failurePolicy`
+  question — confirmed `Fail` by default via Kyverno's own controller
+  source** — full verification writeup:
+  [docs/done/2026-09-07-kyverno-failurepolicy-default-verified.md](docs/done/2026-09-07-kyverno-failurepolicy-default-verified.md).
+  (auto/kyverno-failurepolicy-default-verified)
+
 - [x] 🟢 **JANITOR-fallback: post-2026-09-06-removal-wave Makefile help-text
   drift + dead `keda-up`/`keda-down` targets cleaned up; readme-check's ADR
   exemption gap closed** — full verification writeup:
