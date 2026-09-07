@@ -91,9 +91,11 @@ with the components themselves, ADR-0041: there's no outage to tier for a
 component that no longer exists.)
 
 **Recurrence guard:** `tests/dora-audit-readiness.bats` asserts this table exists and
-names Cilium and Traefik specifically — the two components tiered P0 here,
-so a future edit can't silently drop the highest-severity rows without failing
-`make ci`.
+names Traefik specifically at P0, so a future edit can't silently drop the
+highest-severity row without failing `make ci`. (This guard previously also named
+Cilium — removed 2026-09-07, ADR-0014, replaced in this table by "k3s's bundled
+Flannel + kube-router"; the test itself only ever asserted Traefik's row, so no
+test change was needed when Cilium's row changed, only this prose description.)
 
 **Q3. What are the recovery targets (RTO/RPO) for critical functions?**
 - **Applicable?** Yes, but narrower than before. Velero (this lab's only backup/restore
