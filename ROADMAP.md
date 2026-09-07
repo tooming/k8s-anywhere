@@ -292,6 +292,38 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [ ] 🟢 **Fix stale "shared Gateway HTTPS listener" terminology in CHARTER.md,
+  README.md, docs/00-architecture.md, and docs/dependency-tree.md — post-ADR-0040
+  Traefik migration doc drift (Core Value: "Docs don't drift").** ADR-0040
+  replaced Envoy Gateway with Traefik for north-south ingress, and
+  `gitops/platform/lab-gateway.yaml`'s own header comment already documents
+  the current shape correctly ("the shared lab TLS termination (Traefik TLSStore,
+  ADR-0040 — supersedes the GatewayClass/Gateway this used to hold under Envoy
+  Gateway/ADR-0008)"). `docs/dependency-tree.md` itself is inconsistent: its
+  front-door row (the `:8443` table entry) and its ArgoCD-apply-order wave-0 note
+  both already correctly describe Traefik's `websecure` entrypoint terminated via
+  the shared `TLSStore`, but four other prose spots still describe the current
+  state using pre-ADR-0040 Gateway-API language as if a literal `Gateway`
+  resource with an `https`/443 listener still exists:
+  - `CHARTER.md`'s "TLS certificate lifecycle" bullet (Target end-state section)
+    — "the shared Gateway's HTTPS listener".
+  - `README.md`'s "TLS / certificates" row in the dependency/endpoints table —
+    "the shared Gateway's `https`/443 listener".
+  - `docs/00-architecture.md`'s `cert-manager` row — "at the Gateway edge" /
+    "the shared Gateway's HTTPS listener (:8443)".
+  - `docs/dependency-tree.md`'s ArgoCD apply-order table, wave 1 ("shared Gateway
+    (after Gateway API CRDs)") and wave 6 ("the shared Gateway's HTTPS listener").
+  Fix: reword each spot to accurately describe the current mechanism — Traefik's
+  `websecure` entrypoint, TLS terminated via the shared `TLSStore`
+  (`gitops/network/traefik-tls-store.yaml`), backed by the wildcard
+  `*.127.0.0.1.nip.io` Certificate — matching the phrasing `docs/dependency-tree.md`
+  itself already uses correctly elsewhere. Do **not** rename the `lab-gateway`
+  ArgoCD Application/namespace — that's a retained resource name, not a literal
+  Gateway API object (see `gitops/platform/lab-gateway.yaml`'s own comment), and is
+  out of scope here. No manifest/code changes — pure doc correction. `make ci`
+  (readme-check) must stay green. `docs/done/` entry required.
+  (auto/traefik-gateway-doc-drift-fix)
+
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 6** — full verification
   writeup:
   [docs/done/2026-09-04-roadmap-legacy-item-trim-batch6.md](docs/done/2026-09-04-roadmap-legacy-item-trim-batch6.md).
