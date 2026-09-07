@@ -25,10 +25,10 @@ qualify here, needs four things:
 
 | Property | Meaning | Example in this lab |
 |----------|---------|---------------------|
-| **A consumer-facing contract** | a stable API/CRD or documented interface the customer uses, *not* the implementation | `kind: Application`, `kind: ExternalSecret`, `kind: IngressRoute` |
+| **A consumer-facing contract** | a stable API/CRD or documented interface the customer uses, *not* the implementation | `kind: Application`, `kind: Certificate`, `kind: IngressRoute` |
 | **Self-service** | the customer gets it via git/API, no human in the loop | open a PR adding the resource → ArgoCD reconciles it |
 | **An owner** | a team accountable for its SLO and its runbook | platform domain squads (below) |
-| **A hidden implementation** | the customer doesn't need to know what's behind the contract | "route" hides Traefik; "secret" hides Vault |
+| **A hidden implementation** | the customer doesn't need to know what's behind the contract | "route" hides Traefik; "certificate" hides cert-manager's root CA chain |
 
 The distinction that matters: **substrate is built and run by the platform but is not
 itself a product** (app teams never touch k3d or Terraform), whereas **a product is
@@ -58,18 +58,17 @@ graph TD
     cd["GitOps engine: ArgoCD (app-of-apps)"]:::sub
   end
   subgraph T1["Tier 1 — Platform primitives (every product needs these)"]
-    secrets["Secrets: Vault + ESO"]:::prim
     ingress["Ingress: Traefik"]:::prim
   end
 
   compute --> scm --> cd
-  cd --> secrets & ingress
+  cd --> ingress
 ```
 
 | Tier | What | Build priority | Why this order |
 |------|------|----------------|----------------|
 | **0 Substrate** | Compute (Colima/k3d), SCM (GitHub), GitOps (ArgoCD) | **P0** | Nothing exists without compute + a git source + a reconciler. This is the day-0 imperative seam — no separate Terraform state backend any more (ADR-0007 superseded, plain local file). |
-| **1 Primitives** | Secrets (Vault+ESO), Ingress (Traefik) | **P0** | Every product needs to hold credentials and be reachable. Provisioned first by ArgoCD (sync-waves 0–1). |
+| **1 Primitives** | Ingress (Traefik) | **P0** | Every product needs to be reachable. Provisioned first by ArgoCD (sync-wave 1). Secrets (Vault+ESO) retired 2026-09-07 (ADR-0042) — no replacement; no credential currently flowing through the lab needs an external secrets store any more. |
 | **2 Data** | Retired 2026-09-07 (ADR-0002/ADR-0007/ADR-0039) | — | Was "Object storage (Garage)" — removed entirely, no replacement. |
 | **3 Observability** | Retired 2026-09-06 (ADR-0041) | — | Was "LGTMP + Grafana" — removed entirely, no replacement. |
 | **4 Self-service** | Retired 2026-09-07 (ADR-0038) | — | Was "KRO + ACK + moto claims" — removed entirely, no replacement. |
@@ -91,10 +90,16 @@ The paved road for shipping. Substrate that's also offered as a "deploy here" pr
 | **Continuous Delivery** | add an ArgoCD `Application` / app-of-apps entry via git PR | ArgoCD | GitHub, cluster | ✅ self-service (PR → sync) |
 | **Cluster / environment** | (platform-provisioned) | k3d + Terraform/Terragrunt | Colima | 🛠 platform-only (no tenant API yet) |
 
-### B. Security & secrets
-| Product | Consumer contract | Backed by | Depends on | Maturity |
-|---------|-------------------|-----------|------------|----------|
-| **Secrets** | `kind: ExternalSecret` referencing a Vault path → a k8s `Secret` appears | Vault (KV v2) + External Secrets Operator | ArgoCD | ✅ self-service (team adds ExternalSecret; platform owns Vault paths/policy) |
+### B. Security & secrets — retired 2026-09-07 (ADR-0042)
+
+This domain used to offer **Secrets** (`kind: ExternalSecret` referencing a Vault
+path → a k8s `Secret` appears, backed by Vault KV v2 + External Secrets Operator,
+self-service — team adds an `ExternalSecret`, platform owns Vault paths/policy).
+Both components were removed entirely with no replacement, per explicit
+maintainer direction — by the time they were cut, zero `ExternalSecret`
+resources remained anywhere in the repo. There is no secrets product to catalog
+here any more; every credential the remaining always-on stack needs (ArgoCD's
+admin password, every TLS certificate) is natively generated in-cluster.
 
 ### C. Connectivity / ingress
 | Product | Consumer contract | Backed by | Depends on | Maturity |
@@ -154,7 +159,7 @@ budgeted** so it doesn't silently consume the team.
   zero-downtime cutover drill was removed entirely 2026-09-07, no replacement — the
   only DR mechanism left is recreate-from-code, ADR-0005).
 - Secret rotation, cert renewal, token expiry.
-- ArgoCD drift / failed syncs, ESO sync failures.
+- ArgoCD drift / failed syncs.
 - Request-queue items that aren't yet self-service (every one is a roadmap signal:
   *if you're handling it manually, it's a missing product feature*).
 
@@ -172,9 +177,9 @@ For each product, push it up this ladder; the rung tells you the next planned in
 
 ```
 1. Manual        platform does it by hand on request   (pure toil)
-2. Scripted      a runbook/script does it              (vault-bootstrap.sh)
+2. Scripted      a runbook/script does it              (coredns-host-alias.sh)
 3. Provisioned   platform applies it via GitOps        (ArgoCD Applications today)
-4. Self-service  customer claims it via a contract     (Application, ExternalSecret, IngressRoute)
+4. Self-service  customer claims it via a contract     (Application, Certificate, IngressRoute)
 5. Governed      self-service + quotas/policy/cost      (target state)
 ```
 
@@ -189,15 +194,15 @@ above for the ADR):
 | Domain | Owns (products) | Substrate it also runs |
 |--------|-----------------|------------------------|
 | **Platform core / paved road** | Continuous Delivery, Cluster/env | k3d, Terraform/Terragrunt, GitHub, ArgoCD |
-| **Security & secrets** | Secrets | Vault, ESO |
 | **Connectivity** | Ingress | Traefik |
 
-(**Data & storage** — Object storage/registry, backed by Garage/Harbor — existed here
-until 2026-09-07, ADR-0002/ADR-0007/ADR-0039/ADR-0024. **Observability** — Metrics/
-Logs/Traces/Profiles, backed by LGTMP + Grafana — existed here until 2026-09-06,
-ADR-0041. **Developer self-service** — Cloud Resources Service, backed by KRO/ACK/
-moto — existed here until 2026-09-07, ADR-0038. All three domains removed with no
-replacement.)
+(**Security & secrets** — Secrets, backed by Vault + ESO — existed here until
+2026-09-07, ADR-0042. **Data & storage** — Object storage/registry, backed by
+Garage/Harbor — existed here until 2026-09-07, ADR-0002/ADR-0007/ADR-0039/
+ADR-0024. **Observability** — Metrics/Logs/Traces/Profiles, backed by LGTMP +
+Grafana — existed here until 2026-09-06, ADR-0041. **Developer self-service** —
+Cloud Resources Service, backed by KRO/ACK/moto — existed here until 2026-09-07,
+ADR-0038. All four domains removed with no replacement.)
 
 ### First steps to a self-service offering for the company
 1. **Publish the catalog** (this doc) — name the products and their contracts so teams

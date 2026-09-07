@@ -24,9 +24,11 @@ spec:
           # entirely, no replacement, alongside Harbor/Kargo/Argo Rollouts/Kyverno).
           # kyverno-governance REMOVED 2026-09-07 (ADR-0019): Kyverno was dropped
           # from the lab entirely, no replacement.
-          - appName: external-secrets-governance
-            gitPath: gitops/governance/external-secrets
-            destNamespace: external-secrets
+          # external-secrets-governance REMOVED 2026-09-07 (ADR-0042, supersedes
+          # ADR-0036): External Secrets Operator was dropped from the lab
+          # entirely, no replacement — Vault (its only ClusterSecretStore
+          # backend) is also gone, and no ExternalSecret resource had any other
+          # consumer left after the earlier same-day removal round.
           # velero-governance REMOVED 2026-09-07 (ADR-0021): Velero was dropped
           # from the lab entirely, no replacement (its S3 backend, Garage, was
           # already removed the same day).
@@ -56,9 +58,10 @@ spec:
           # storage namespace held only Garage and s3manager, both removed the
           # same day with no replacement — this was the last leaf keeping the
           # now-empty namespace's governance leaf alive.
-          - appName: vault-governance
-            gitPath: gitops/governance/vault
-            destNamespace: vault
+          # vault-governance REMOVED 2026-09-07 (ADR-0042, supersedes ADR-0037):
+          # Vault was dropped from the lab entirely, no replacement — explicit
+          # maintainer direction; External Secrets Operator (its only client)
+          # is removed alongside it in the same ADR.
           - appName: lab-gateway-governance
             gitPath: gitops/governance/lab-gateway
             destNamespace: lab-gateway

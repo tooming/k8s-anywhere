@@ -28,14 +28,13 @@ itself.
 │  GitHub (public repo, git source of truth) ◄──── ArgoCD (app-of-apps)     │
 │  ArgoCD watches gitops/ and converges the cluster to every commit          │
 └──────────────────────────────────┬─────────────────────────────────────────┘
-                                   │ sync-waves 0 → 2
+                                   │ sync-waves 0 → 1
                                    ▼
 ┌────────────────────────────────────────────────────────────────────────────┐
-│  Always-on in-cluster workloads (6 namespaces, nothing on-demand)          │
+│  Always-on in-cluster workloads (4 namespaces, nothing on-demand)          │
 │                                                                            │
 │  INGRESS      Traefik        (bundled with k3s; north-south traffic)       │
 │  TLS          cert-manager  (auto-renewed certs from a self-signed CA)    │
-│  SECRETS      Vault  ──►  External Secrets Operator  ──►  k8s Secrets     │
 │  POLICY       kube-router  (bundled NetworkPolicy enforcement, default-   │
 │               deny per namespace — no separate policy engine)             │
 │  DEMO         lab-demo  (single static hello-world Deployment)             │
@@ -72,10 +71,12 @@ itself.
 
 ### Secrets
 
-| Tool | Role in the platform |
-|------|----------------------|
-| **Vault** | Secrets management (KV v2). |
-| **External Secrets Operator** | Bridges Vault to Kubernetes. A `ClusterSecretStore` points to Vault; `ExternalSecret` objects pull values into native k8s `Secret`s without embedding secrets in git. |
+Removed entirely 2026-09-07 ([ADR-0042](decisions/adr-0042-remove-vault-and-external-secrets.md),
+supersedes ADR-0036/ADR-0037), no replacement — Vault (KV v2 secrets backend) and
+External Secrets Operator (its Kubernetes-sync bridge) both had zero live
+consumers left by the time they were cut; every credential the remaining
+always-on stack needs (ArgoCD's admin password, every TLS certificate) is
+natively generated in-cluster.
 
 ### Networking / policy
 
@@ -110,7 +111,7 @@ Terraform/Terragrunt is the exception: it builds the *foundation* that GitOps th
 
 0. **Toolchain + Colima** — container runtime VM. Set up first.
 1. **Foundation** — `make up` (k3d + ArgoCD + GitHub wiring). The whole lab rebuilds from this one command.
-2. **Core platform** — Traefik routes traffic; cert-manager issues and auto-renews the TLS certs Traefik's TLSStore serves from a self-signed root CA; Vault + External Secrets manage secrets.
+2. **Core platform** — Traefik routes traffic; cert-manager issues and auto-renews the TLS certs Traefik's TLSStore serves from a self-signed root CA.
 3. **Cloud-agnostic infrastructure design** — read [`infra/live/README.md`](../infra/live/README.md): the `argocd` Terragrunt unit depends only on the `cluster` unit's `kube_context`/`cluster_name`/`api_endpoint` outputs, never on which backend produced them, which is why step 1 above runs identically whether `cluster/` is `local/` (k3d, this lab's default) or `oracle/` (Oracle Cloud Always Free + k3s, see [ADR-0026](decisions/adr-0026-cloud-agnostic-infrastructure.md) and [ADR-0027](decisions/adr-0027-first-cloud-backend-oracle-always-free-k3s.md)). The lesson: portability is a property of *where the Terraform bootstrap seam sits*, not something bolted on afterward — GitOps state in `gitops/` never needs to know or care where the cluster runs.
 
 Every step this lab's learning path used to cover past step 3 — observability,

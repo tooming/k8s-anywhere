@@ -11,22 +11,20 @@ file as pure re-indexing, with no new dependency-risk judgment made in producing
 
 ## Method
 
-Group every one of `docs/dependency-register.md`'s 8 GitHub-hosted tool rows
-(of 9 total; the other one — Oracle Cloud Infrastructure — isn't GitHub-hosted,
+Group every one of `docs/dependency-register.md`'s 6 GitHub-hosted tool rows
+(of 7 total; the other one — Oracle Cloud Infrastructure — isn't GitHub-hosted,
 so there's no GitHub org to group it by) by **upstream GitHub org**, reusing the
 register's own "Upstream source" column verbatim (nothing re-derived from
 memory), and flag any org backing more than one row as a concentration point.
 
 ## Findings, worst-first
 
-**`github.com/hashicorp` — 2 tools: Terraform (+ Terragrunt, gruntwork-io) and
-Vault.** The only org still backing more than one register row. Both are
-day-0/always-on-core dependencies with no in-lab overlap in what they do
-(bootstrap tooling vs. secrets backend), so a single upstream org going dark
-would require two independent fork-and-repoint efforts, not one shared blast
-radius — but it's still one org this lab depends on twice. No mitigation beyond
-"pin exact versions, same as everything else" (ADR-0001's design, see below) is
-currently in place specifically for this.
+**`github.com/hashicorp` — no longer a concentration.** Used to back 2 rows
+(Terraform + Terragrunt, gruntwork-io, and Vault); Vault (and External Secrets
+Operator, its only client) was removed entirely 2026-09-07 (ADR-0042, supersedes
+ADR-0036/ADR-0037, no replacement — explicit maintainer direction), so hashicorp
+now backs just Terraform (Terragrunt is gruntwork-io, a separate org), below the
+2-row threshold.
 
 **`github.com/grafana` — removed 2026-09-06 (ADR-0041).** This used to be the
 largest single concentration in the table (6 tools: Grafana, Mimir, Loki, Tempo,
@@ -44,12 +42,14 @@ just ArgoCD, below the 2-row threshold.
 gone):** Deuxfleurs/Garage, cilium (Cilium's register row is kept, dated, for
 its removal history — see the register's own Scope note — but contributes no
 concentration grouping since nothing else shares that org), goharbor/Harbor,
-codeberg.org+code.forgejo.org/Forgejo (not GitHub-hosted), cloudlena/s3manager.
+codeberg.org+code.forgejo.org/Forgejo (not GitHub-hosted), cloudlena/s3manager,
+external-secrets/External Secrets Operator (its own single-row org, no group of
+its own even before removal).
 
 **Every other row is a distinct, single-row org** — traefik (traefik, bundled
 with k3s — no separate org row of its own to track since ADR-0040); Oracle Cloud
 Infrastructure (not GitHub-hosted — cloud.oracle.com); k3s (k3s-io);
-cert-manager (cert-manager); External Secrets Operator (external-secrets).
+cert-manager (cert-manager).
 No further grouping applies — padding this section with one-line "groups" of a
 single tool each would not add information the register table doesn't already give
 directly.

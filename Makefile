@@ -15,7 +15,7 @@ REPO_DIR := $(shell pwd)
 # DR drill blast radius: cluster | machine (see docs/DR.md)
 SCOPE ?= cluster
 
-REQUIRED_TOOLS := colima docker k3d kubectl helm terraform terragrunt kustomize argocd vault yq jq mkcert
+REQUIRED_TOOLS := colima docker k3d kubectl helm terraform terragrunt kustomize argocd yq jq mkcert
 
 ##@ General
 
@@ -249,7 +249,7 @@ preflight: ## Check required CLI tools are installed
 	@missing=0; for t in $(REQUIRED_TOOLS); do \
 		if command -v $$t >/dev/null 2>&1; then printf "  ok    %s\n" "$$t"; \
 		else printf "  MISS  %s\n" "$$t"; missing=1; fi; done; \
-	if [ $$missing -eq 1 ]; then echo "Some tools missing (vault is optional)."; fi
+	if [ $$missing -eq 1 ]; then echo "Some tools missing."; fi
 
 ##@ Full lifecycle
 
@@ -261,7 +261,6 @@ up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) argocd
 	$(MAKE) root-app
 	$(MAKE) coredns-nip-io-rewrite
-	$(MAKE) vault-bootstrap
 	@echo ""
 	@echo "--- verifying every always-on workload is actually Running+Ready ---"
 	@UI="UIs on :8080 — ArgoCD http://argocd.127.0.0.1.nip.io:8080 · run 'make creds' for logins"; \
@@ -346,14 +345,6 @@ argocd: ## Install ArgoCD (Helm via Terraform)
 root-app: ## Plant the ArgoCD app-of-apps (everything else syncs from here)
 	kubectl apply -f gitops/bootstrap/root-app.yaml
 
-.PHONY: vault-bootstrap
-vault-bootstrap: ## Init/unseal Vault + load secrets + k8s auth (idempotent)
-	bash scripts/vault-bootstrap.sh
-
-.PHONY: vault-unseal
-vault-unseal: ## Manually unseal Vault from the vault-keys Secret
-	kubectl -n vault exec vault-0 -- vault operator unseal "$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.unseal-key}' | base64 -d)"
-
 ##@ ArgoCD access
 
 .PHONY: argocd-password
@@ -363,7 +354,6 @@ argocd-password: ## Print the ArgoCD initial admin password
 .PHONY: creds
 creds: ## Print all lab UI logins (reads live secrets; needs the cluster up)
 	@a=$$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' 2>/dev/null | base64 -d); echo "ArgoCD   admin / $${a:-<cluster down>}    http://argocd.127.0.0.1.nip.io:8080"
-	@t=$$(kubectl -n vault get secret vault-keys -o jsonpath='{.data.root-token}' 2>/dev/null | base64 -d); echo "Vault    token / $${t:-<cluster down>}    http://vault.127.0.0.1.nip.io:8080"
 
 .PHONY: argocd-ui
 argocd-ui: ## Port-forward ArgoCD UI -> http://localhost:8081 (or use http://argocd.127.0.0.1.nip.io:8080)

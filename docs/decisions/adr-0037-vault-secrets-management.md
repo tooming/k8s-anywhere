@@ -1,9 +1,14 @@
 # ADR-0037 — HashiCorp Vault for secrets management
 
-**Status.** Adopted (retroactive record). Architect decision, self-authorizing per
-[WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2 (no binding ADR contradicted — this
-closes a documentation gap on an already-implemented, already-live component, not a new
-technical choice). Always-on-core component.
+**Status.** Superseded by [ADR-0042](adr-0042-remove-vault-and-external-secrets.md).
+Vault is removed as a workload entirely, with no replacement — explicit maintainer
+direction; External Secrets Operator (its only client) is removed alongside it in
+the same ADR.
+
+**Status (historical).** Adopted (retroactive record). Architect decision,
+self-authorizing per [WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2 (no binding
+ADR contradicted — this closes a documentation gap on an already-implemented,
+already-live component, not a new technical choice). Always-on-core component.
 
 ---
 

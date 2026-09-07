@@ -44,7 +44,7 @@ rebuildable with one command, with recovery that is *exercised*, not assumed.
 - **Cloud-agnostic by construction.** No component above the Terraform bootstrap seam
   encodes a backend-specific assumption; the same `gitops/` Applications deploy
   unchanged to localhost or to a cloud backend. (ADR-0026)
-- **Fits the 12 GB reality — on the localhost backend.** The always-on stack (6
+- **Fits the 12 GB reality — on the localhost backend.** The always-on stack (4
   namespaces) uses a small fraction of the 12 GB Colima VM. There are no on-demand
   heavy components any more (Harbor and Kargo, the only two this lab ever ran, were
   both removed entirely, no replacement) — everything that exists is always-on.
@@ -88,9 +88,9 @@ states the meta-choices the ADRs encode, so the *why* sits above the *what*.
 
 The directional outcomes a learner should walk away with — *what* success looks like,
 without committing to *when* or *how much*. The lab should let a learner internalize,
-hands-on: the **GitOps reconcile loop**; **IaC bootstrap vs. in-cluster GitOps**; the
-**secrets flow** (Vault → External Secrets → workload); **north-south ingress** via
-Traefik's native `IngressRoute` CRDs; **automated TLS certificate lifecycle**
+hands-on: the **GitOps reconcile loop**; **IaC bootstrap vs. in-cluster GitOps**;
+**north-south ingress** via Traefik's native `IngressRoute` CRDs; **automated TLS
+certificate lifecycle**
 (cert-manager issuing and rotating certs from a self-signed root CA at the ingress
 edge — not a one-off hand-issued Secret); **operational-resilience discipline**
 (DORA's risk-management/incident/testing/third-party-risk pillars mapped onto
@@ -102,10 +102,11 @@ free on a laptop or on a cloud Kubernetes service without a fork. The sequenced 
 lives in [docs/00-architecture.md](docs/00-architecture.md).
 
 Cloud control-plane patterns (ACK/KRO against a mock), admission-time policy engines,
-progressive delivery, stateful backup & restore, and continuous vulnerability
-scanning were all goals this lab used to teach — see "The 2026-09-07 simplification"
-below for why that scope was cut, and each removed component's own ADR Status for
-what it demonstrated while it was live.
+progressive delivery, stateful backup & restore, continuous vulnerability scanning,
+and a real secrets-management backend + sync flow (Vault → External Secrets Operator
+→ workload) were all goals this lab used to teach — see "The 2026-09-07
+simplification" below for why that scope was cut, and each removed component's own
+ADR Status for what it demonstrated while it was live.
 
 ## Objectives (measurable, time-bound)
 
@@ -160,12 +161,11 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
 
 ## Target end-state (initiatives — the platform we're growing toward)
 
-- **Always-on core** (built, 6 namespaces, all always-on — nothing on-demand): k3d
+- **Always-on core** (built, 4 namespaces, all always-on — nothing on-demand): k3d
   (bundled Flannel CNI + kube-router NetworkPolicy) + ArgoCD (syncing directly from
-  this repo's public GitHub remote) + Traefik + cert-manager + Vault + External
-  Secrets + a demo app (`lab-demo`). This is the entire lab as of 2026-09-07 — see
-  "The 2026-09-07 simplification" below for what used to sit alongside it and why
-  it's gone.
+  this repo's public GitHub remote) + Traefik + cert-manager + a demo app
+  (`lab-demo`). This is the entire lab as of 2026-09-07 — see "The 2026-09-07
+  simplification" below for what used to sit alongside it and why it's gone.
 - **Cloud backend** (built, partially verified against a real account): a second
   Terragrunt backend module (`infra/live/oracle/`) targeting Oracle Cloud's Always Free
   tier running self-managed k3s — `gitops/` requires no fork to run there. Localhost
@@ -198,22 +198,28 @@ continuous vulnerability scanner (Trivy Operator), a GitOps promotion pipeline
 (Kargo), an OCI artifact registry (Harbor), a cloud-control-plane demo pattern
 (moto/ACK/KRO), a dedicated eBPF CNI (Cilium), an in-cluster S3 store (Garage), a
 self-hosted git source (first GitLab, then Forgejo), a DR front door with a
-zero-downtime blue/green drill, and an end-to-end demo pipeline (capstone) tying
-several of the above together. By explicit maintainer decision, **all of it was
-removed entirely, no replacement**, across a short, deliberate series of changes
+zero-downtime blue/green drill, a real secrets backend + sync operator (Vault +
+External Secrets Operator), and an end-to-end demo pipeline (capstone) tying several
+of the above together. By explicit maintainer decision, **all of it was removed
+entirely, no replacement**, across a short, deliberate series of changes
 2026-09-06/2026-09-07 — see each component's own ADR Status for the specific
 reasoning (several cite this single-host lab's real, live-observed capacity
 constraints — see `docs/incident-log.md`'s 2026-09-06 entries — as a contributing
 factor, alongside the maintainer's explicit preference for a smaller, more legible
-lab over demonstrating every pattern at once).
+lab over demonstrating every pattern at once). Vault and External Secrets Operator
+were the last of this round: by the time they were cut, ESO had zero live
+`ExternalSecret` consumers left in the repo — every component that had ever needed a
+Vault-held credential (Garage, Harbor, Kargo, Velero, ACK, capstone) was already gone
+— so the secrets-sync path they still ran was proving nothing with a real consumer
+behind it (ADR-0042, supersedes ADR-0036/ADR-0037).
 
 What's left is a small, coherent core that still teaches the fundamentals this
 project cares most about — the GitOps reconcile loop, IaC-bootstraps-then-GitOps-runs,
-the secrets flow, ingress, and TLS lifecycle — without the operational weight of
-the larger stack. This is not a temporary regression to rebuild back up from; it is
-the maintainer's deliberate current shape for this project. A future CHARTER edit
-may reintroduce scope deliberately, the same way any other goal change happens here
-— but nothing in this file should be read as an implicit promise to do so.
+ingress, and TLS lifecycle — without the operational weight of the larger stack. This
+is not a temporary regression to rebuild back up from; it is the maintainer's
+deliberate current shape for this project. A future CHARTER edit may reintroduce
+scope deliberately, the same way any other goal change happens here — but nothing in
+this file should be read as an implicit promise to do so.
 
 ## How this drives the ROADMAP
 

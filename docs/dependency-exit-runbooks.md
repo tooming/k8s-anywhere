@@ -12,12 +12,11 @@ Harbor precedent; this only writes the steps down before an exit is forced.
 **Scope of this file.** [`docs/dependency-concentration.md`](dependency-concentration.md)
 (Q16) named concentration groups, worst-first — this file covers those plus every
 single-tool row in [`docs/dependency-register.md`](dependency-register.md). As of
-2026-09-07, seven single-tool rows have a real, live runbook below: Traefik,
-cert-manager, Terraform/Terragrunt (also part of the `github.com/hashicorp`
-concentration group with Vault), Oracle Cloud Infrastructure, k3s, Vault, and
-External Secrets Operator. Kyverno, Velero, Trivy Operator, Kargo, Harbor, moto,
-ACK S3 controller, KRO, Cilium, Garage, Forgejo, and s3manager each had a real
-runbook here once but are now moot — all twelve components were removed entirely
+2026-09-07, five single-tool rows have a real, live runbook below: Traefik,
+cert-manager, Terraform/Terragrunt, Oracle Cloud Infrastructure, and k3s. Kyverno,
+Velero, Trivy Operator, Kargo, Harbor, moto, ACK S3 controller, KRO, Cilium,
+Garage, Forgejo, s3manager, Vault, and External Secrets Operator each had a real
+runbook here once but are now moot — all fourteen components were removed entirely
 2026-09-07, no replacement (alongside Argo Rollouts, `github.com/argoproj`'s other
 former member — see that section above) — no exit runbook is needed for a
 component that no longer exists, so each keeps a short "moot, removed" note below
@@ -83,20 +82,16 @@ real exit starts with a new ADR, not an assumed replacement.
 > replacement; see [ADR-0031](decisions/adr-0031-tidb-operator-version-policy.md)/
 > [ADR-0032](decisions/adr-0032-tidb-version-policy.md)'s Status).
 
-## `github.com/hashicorp` — 2 rows (Terraform + Vault); the register's only current concentration group
+## `github.com/hashicorp` — 1 tool (Terraform); no longer a concentration group
 
-The one org still backing more than one register row, found when Garage, Harbor,
-Forgejo, and s3manager's removal (2026-09-07) shrank the register from 13 rows to
-9 and left this pairing newly visible
-([docs/dependency-concentration.md](dependency-concentration.md)'s matching
-entry). Terraform (day-0 bootstrap seam) and Vault (steady-state secrets backend)
-share zero runtime overlap — one runs once at cluster creation and never again,
-the other is a live `Application` every `ExternalSecret` in the cluster depends
-on — so an org-level HashiCorp outage or license change would force two
-independent exits, not one shared migration, but it is still one upstream org
-this lab depends on twice. See the Terraform/Terragrunt and Vault entries below
-for each one's own mechanical exit detail; no combined mitigation beyond "pin
-exact versions, evaluate independently" is in place specifically for the pairing.
+Used to back 2 rows (Terraform + Terragrunt, gruntwork-io — a separate org —
+and Vault); Vault (and External Secrets Operator, its only client) was removed
+entirely 2026-09-07 (ADR-0042, supersedes ADR-0036/ADR-0037, no replacement —
+explicit maintainer direction), so hashicorp now backs just Terraform, below
+the 2-row concentration threshold
+([docs/dependency-concentration.md](dependency-concentration.md)). Terraform's
+own runbook stays below, same as ArgoCD's after the argoproj group thinned out
+above.
 
 ---
 
@@ -244,39 +239,16 @@ with no purpose independent of Garage, which was removed the same day (no
 replacement); s3manager was orphaned by that removal and dropped alongside it.
 No exit runbook is needed for a component that no longer exists.
 
-**Vault** (secrets backend —
-[ADR-0037](decisions/adr-0037-vault-secrets-management.md); part of the
-`github.com/hashicorp` concentration group with Terraform, see above). `gitops/
-platform/vault.yaml` is a normal auto-synced `Application`; every credential
-ESO delivers to every other component (down to just cert-manager's and ESO's
-own bootstrap secrets now, after 2026-09-07's simplification — Garage, Harbor,
-Kargo, Velero, ACK, and the capstone app were all real consumers here in the
-past, each removed with no replacement) is actually held here, in Vault's KV v2
-engine on a 1Gi file-storage PVC — the lab's one real secrets-of-record store. A
-real exit is a genuine data migration (every KV secret, re-created or
-exported/imported) plus repointing ESO's `ClusterSecretStore` provider config
-at the replacement backend — not a repoint, since Vault's KV v2 API shape is
-Vault-specific. ADR-0037 doesn't record a rejected alternative (Vault was
-this lab's first and only secrets-backend choice, adopted as infrastructure
-glue before it had its own ADR) — no exit-direction alternative has ever been
-evaluated, the same "starts with a new ADR" conclusion as most rows above.
-
-**External Secrets Operator** (Vault-backed secret sync —
-[ADR-0036](decisions/adr-0036-external-secrets-vault-sync.md)). `gitops/
-platform/external-secrets.yaml` (engine) plus `gitops/secrets/*.yaml` (the
-`ClusterSecretStore` and every component's `ExternalSecret`) are normal
-auto-synced `Application`s — every native `Secret` object in the cluster
-that isn't hand-created flows through this mechanism. A real exit means
-picking a different secret-sync operator (or reverting to the **Vault Agent
-Injector** / **Vault CSI provider**, both explicitly named as
-never-evaluated alternatives in ADR-0036's own Scope & exceptions) and
-rewriting every `ExternalSecret` resource into the new tool's own CRD shape
-across every namespace that has one — broad blast radius (touches every
-component with a credential) but mechanically uniform, one CRD shape
-migrated repeatedly, closer to fork-and-repoint than a Cilium-style CNI exit.
-Uniquely among rows in this file, ADR-0036 already names the *not-yet-
-evaluated* alternatives explicitly ("no case has been made to reconsider
-ESO") even though no comparison has actually been run.
+**Vault and External Secrets Operator** (secrets backend + sync operator —
+[ADR-0037](decisions/adr-0037-vault-secrets-management.md)/
+[ADR-0036](decisions/adr-0036-external-secrets-vault-sync.md); formerly the
+`github.com/hashicorp` concentration group's other member, with Terraform, see
+above) — moot, both removed 2026-09-07 (ADR-0042, supersedes ADR-0036/
+ADR-0037, no replacement — explicit maintainer direction). ESO had zero live
+`ExternalSecret` consumers left in the repo by the time it was cut — every
+component that had ever needed a Vault-held credential (Garage, Harbor, Kargo,
+Velero, ACK, capstone) was already gone. No exit runbook is needed for a
+component that no longer exists.
 
 ---
 

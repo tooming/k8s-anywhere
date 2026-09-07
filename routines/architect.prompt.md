@@ -5,20 +5,18 @@ STEP 1 — Orient + gather news. Run `git fetch origin && git checkout main && g
 Next, directly check upstream for releases in the past 7 days for each ADR'd component. Use `gh release list --repo <owner>/<repo> --limit 5` for each:
   - k3s: `k3s-io/k3s`
   - ArgoCD: `argoproj/argo-cd`
-  - Vault: `hashicorp/vault`
   - Traefik: `traefik/traefik` (bundled with k3s, ADR-0040 — track upstream Traefik
     releases directly since there's no separate chart/`targetRevision` of its own)
   - cert-manager: `cert-manager/cert-manager`
-  - External Secrets Operator: `external-secrets/external-secrets`
   (Grafana, Longhorn, TiDB, and Istio were all removed from the lab entirely
   2026-09-06 with no replacement — ADR-0041, ADR-0013, ADR-0031/ADR-0032,
   ADR-0012. RabbitMQ, Valkey, and KEDA were removed the same day, no
   replacement — ADR-0009, ADR-0018, ADR-0029. Cilium, Garage, Forgejo/GitLab,
   Harbor, the DR front door, capstone, Kyverno, Kargo, Argo Rollouts, Velero,
-  Trivy Operator, and ACK/moto/KRO were all removed 2026-09-07, no replacement
-  — ADR-0014, ADR-0002/ADR-0007/ADR-0039, ADR-0035/ADR-0033, ADR-0024,
-  ADR-0019, ADR-0023, ADR-0020, ADR-0021, ADR-0022, ADR-0038. None of the above
-  are tracked here any more.)
+  Trivy Operator, ACK/moto/KRO, Vault, and External Secrets Operator were all
+  removed 2026-09-07, no replacement — ADR-0014, ADR-0002/ADR-0007/ADR-0039,
+  ADR-0035/ADR-0033, ADR-0024, ADR-0019, ADR-0023, ADR-0020, ADR-0021,
+  ADR-0022, ADR-0038, ADR-0042. None of the above are tracked here any more.)
 
 If network is rate-limited, note it and proceed with training knowledge only — do NOT fabricate release entries (ADR-0004). Record what you found; you will use these findings in STEPs 2, 2b, and 4.
 

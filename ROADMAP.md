@@ -9,12 +9,12 @@ has no cron of its own anymore — the executor invokes it as a fallback role (S
 whenever its own lane runs dry, which can happen more than once in a single run. CHARTER
 = the goals; this file = the next steps.
 
-The always-on stack, as of 2026-09-07, is exactly 6 namespaces: ArgoCD, cert-manager,
-External Secrets, Vault, lab-gateway (Traefik, bundled with k3s), and lab-demo (a
-single static hello-world Deployment). A large, deliberate simplification landed
-2026-09-06/2026-09-07: the observability stack, moto/ACK/KRO, the RabbitMQ + Valkey
-data layer, Cilium, Garage, Forgejo, GitLab, Harbor, the DR front door + blue/green
-drill, capstone, Kyverno, Argo Rollouts, Velero, Trivy Operator, and Kargo were all
+The always-on stack, as of 2026-09-07, is exactly 4 namespaces: ArgoCD, cert-manager,
+lab-gateway (Traefik, bundled with k3s), and lab-demo (a single static hello-world
+Deployment). A large, deliberate simplification landed 2026-09-06/2026-09-07: the
+observability stack, moto/ACK/KRO, the RabbitMQ + Valkey data layer, Cilium, Garage,
+Forgejo, GitLab, Harbor, the DR front door + blue/green drill, capstone, Kyverno, Argo
+Rollouts, Velero, Trivy Operator, Kargo, External Secrets Operator, and Vault were all
 removed entirely, no replacement — see each component's own ADR Status. This is the
 lab's current, deliberately small shape, not a temporary gap to rebuild back up.
 
@@ -39,7 +39,7 @@ rules below are binding.
    of resources.
 2. **You are remote and clusterless.** There is **no** Kubernetes cluster, no
    Colima, no live GitLab reachable from where you run. Never run `make up`,
-   `make dr-*`, `kubectl`, `argocd`, `vault`, or anything needing a cluster.
+   `make dr-*`, `kubectl`, `argocd`, or anything needing a cluster.
    **Your definition of done is `make ci` passing** — lint + validate + test +
    readme-check + lab-ui-check. Never weaken, skip, or stub a gate to go green.
 3. **The ADRs in `docs/decisions/` are binding:**

@@ -19,16 +19,17 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dependency-register.md has at least 10 data rows" {
+@test "dependency-register.md has at least 5 data rows" {
   # Count markdown table rows starting with '| [' or '| ' that are real data
   # rows (exclude the header and the '|---|---|...' separator). Lowered from 20
-  # to 10 2026-09-07: Kyverno/Argo Rollouts/Velero/Trivy Operator/Kargo/moto/
-  # ACK/KRO were all removed entirely, no replacement, dropping the real row
-  # count from 21 to 13 (docs/dependency-register.md's own Scope note) — a
-  # smaller register is the correct, honest reflection of a smaller lab, not
-  # a regression to guard against.
+  # to 10 2026-09-07 (Kyverno/Argo Rollouts/Velero/Trivy Operator/Kargo/moto/
+  # ACK/KRO removed, 21->13 rows), then from 10 to 5 the same day when Vault
+  # and External Secrets Operator were also removed entirely, no replacement
+  # (ADR-0042), dropping the real row count to 7 (docs/dependency-register.md's
+  # own Scope note) — a smaller register is the correct, honest reflection of a
+  # smaller lab, not a regression to guard against.
   count=$(grep -cE '^\| [A-Za-z0-9]' "$DOC")
-  [ "$count" -ge 10 ]
+  [ "$count" -ge 5 ]
 }
 
 @test "dependency-register.md no longer has a Garage row (removed 2026-09-07, no replacement)" {

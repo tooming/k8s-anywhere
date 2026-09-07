@@ -32,10 +32,17 @@ setup() {
   [ -x "$DRVERIFY" ]
 }
 
-@test "dr-verify.sh defines a budget var for every real check (nodes/argo/vault/eso)" {
-  for v in T_NODES T_ARGO T_VAULT T_ESO; do
+@test "dr-verify.sh defines a budget var for every real check (nodes/argo)" {
+  for v in T_NODES T_ARGO; do
     run grep -q "$v=" "$DRVERIFY"
     [ "$status" -eq 0 ]
+  done
+}
+
+@test "dr-verify.sh no longer defines Vault/ESO budget vars (ADR-0042, no replacement)" {
+  for v in T_VAULT T_ESO; do
+    run grep -q "$v=" "$DRVERIFY"
+    [ "$status" -ne 0 ]
   done
 }
 
@@ -56,16 +63,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dr-verify.sh checks Vault is initialized and unsealed" {
-  run grep -q "initialized" "$DRVERIFY"
-  [ "$status" -eq 0 ]
-  run grep -q "sealed" "$DRVERIFY"
-  [ "$status" -eq 0 ]
-}
-
-@test "dr-verify.sh checks ExternalSecrets report Ready" {
-  run grep -q "externalsecrets.external-secrets.io" "$DRVERIFY"
-  [ "$status" -eq 0 ]
+@test "dr-verify.sh no longer checks Vault init/unseal or ExternalSecrets Ready (ADR-0042, no replacement)" {
+  run grep -qE '^(p_vault|p_eso)\(\)' "$DRVERIFY"
+  [ "$status" -ne 0 ]
 }
 
 @test "dr-verify.sh no longer checks Garage buckets (ADR-0002/ADR-0021/ADR-0024, no replacement)" {
@@ -165,12 +165,17 @@ setup() {
 # pair was removed entirely 2026-09-07, no replacement — `make up`'s own
 # completion banner, `creds`, and `argocd-ui` all now consistently advertise
 # k3d's own :8080 load-balancer port, the sole entry point left.
-@test "Makefile creds target prints k3d's load-balancer :8080 for ArgoCD/Vault, not the removed front door's :8000" {
+@test "Makefile creds target prints k3d's load-balancer :8080 for ArgoCD, not the removed front door's :8000" {
   run grep -A6 '^creds:' "$MAKEFILE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"argocd.127.0.0.1.nip.io:8080"* ]]
-  [[ "$output" == *"vault.127.0.0.1.nip.io:8080"* ]]
   [[ "$output" != *":8000"* ]]
+}
+
+@test "Makefile creds target no longer prints a Vault line (ADR-0042, no replacement)" {
+  run grep -A6 '^creds:' "$MAKEFILE"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"Vault"* ]]
 }
 
 @test "Makefile creds target no longer prints a Grafana line (ADR-0041)" {

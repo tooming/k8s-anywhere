@@ -12,10 +12,8 @@
 #     Envoy Gateway/ADR-0008). nip.io's real wildcard DNS resolves any of its
 #     subdomains to the literal IP embedded in the name, 127.0.0.1 — which is
 #     a *pod's own loopback* for any in-cluster client, not the ingress
-#     controller. Every IngressRoute hostname in this lab (argocd, capstone,
-#     harbor, kargo, rollouts, s3, vault) needs this
-#     to be reachable from another pod — e.g.
-#     Kargo's Warehouse polling Harbor for image digests. Found live and first
+#     controller. Every IngressRoute hostname in this lab needs this
+#     to be reachable from another pod. Found live and first
 #     patched out-of-band (not committed anywhere) in PR #1323 while
 #     investigating issue #633; this brings that fix under GitOps/`make up`
 #     management instead of living only as a manual live kubectl patch.

@@ -1,9 +1,14 @@
 # ADR-0036 — External Secrets Operator for Vault-backed secret sync
 
-**Status.** Adopted (retroactive record). Architect decision, self-authorizing per
-[WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2 (no binding ADR contradicted — this
-closes a documentation gap on an already-implemented, already-live component, not a new
-technical choice). Always-on-core component.
+**Status.** Superseded by [ADR-0042](adr-0042-remove-vault-and-external-secrets.md).
+External Secrets Operator is removed as a workload entirely, with no replacement —
+by the time it was cut, zero `ExternalSecret` resources remained in the repo; every
+component that had ever needed a Vault-held credential was already gone.
+
+**Status (historical).** Adopted (retroactive record). Architect decision,
+self-authorizing per [WAYS-OF-WORKING.md](../WAYS-OF-WORKING.md) §0.1/§2 (no binding
+ADR contradicted — this closes a documentation gap on an already-implemented,
+already-live component, not a new technical choice). Always-on-core component.
 
 ---
 
