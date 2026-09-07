@@ -65,4 +65,4 @@ sandbox can exercise end-to-end.
 
 ## PR
 
-(filled in once the PR is opened)
+https://github.com/tooming/k8s-anywhere/pull/1482 (auto/argo-rollouts-dashboard-basicauth)
