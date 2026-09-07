@@ -11,11 +11,9 @@ inputs = {
   agents               = 1
   api_port             = 6445
   http_port            = 8080
-  # NOT 8443: the DR frontdoor's HTTPS TCP passthrough (scripts/bluegreen-frontdoor.sh)
-  # is the stable, blue/green-independent entry point and owns host :8443 (mirrors how
-  # :8000 there is distinct from this cluster's own :8080 http_port above). Binding this
-  # cluster's own direct k3d loadbalancer port to the same :8443 makes `docker run` for
-  # the frontdoor container fail ("port is already allocated") on every fresh `make up`.
+  # https_port kept at 8446 (not the default 8443) — no functional reason left
+  # to avoid 8443 (the DR frontdoor that reserved it was removed 2026-09-07, no
+  # replacement), but changing a working port assignment isn't worth the churn.
   https_port           = 8446
   # disable_traefik left at the module's default (false, ADR-0040 supersedes ADR-0008):
   # Traefik is now the lab's sole north-south ingress controller, so it must NOT be
@@ -24,8 +22,10 @@ inputs = {
   # found live 2026-09-06 attempting a fresh `make up`: `coredns-nip-io-rewrite` timed
   # out because no `traefik` Service ever appeared in `kube-system` on a freshly
   # created cluster, since this override was still disabling it at k3d creation time.
-  # ADR-0014: Flannel + bundled NetworkPolicy controller disabled; Cilium is the CNI.
-  # Run `make cilium-up` immediately after `make cluster-up` — before `make argocd`
-  # or any workload — to install Cilium and enable pod networking.
-  disable_default_cni  = true
+  # Cilium (ADR-0014) was removed entirely 2026-09-07, no replacement — k3s's
+  # bundled Flannel CNI + kube-router NetworkPolicy controller is the CNI now.
+  # `disable_default_cni` MUST stay `false` (the k3d default) or the cluster comes
+  # up with no CNI at all and every pod sits in ContainerCreating forever — see
+  # the variable's own warning in infra/modules/k3d-cluster/variables.tf.
+  disable_default_cni  = false
 }

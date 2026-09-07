@@ -2,21 +2,25 @@
 # One-command disaster-recovery drill: destroy the lab, rebuild it entirely from
 # code with `make up`, then assert it came back healthy end-to-end. See docs/DR.md.
 #
-#   ./scripts/dr-test.sh [cluster|full|machine]   (default: full)
+#   ./scripts/dr-test.sh [cluster|machine]   (default: cluster)
+#
+# A third scope, "full" (also wiping the self-hosted Forgejo git remote),
+# existed until 2026-09-07 — Forgejo was removed entirely that day, no
+# replacement, so it collapsed into "cluster" and was dropped (see
+# scripts/dr-destroy.sh's header for the full reasoning).
 #
 # This is the real thing — it tears the running lab down. Exit 0 only if the
 # rebuilt lab passes every check in scripts/dr-verify.sh.
 set -uo pipefail
 
-SCOPE="${1:-${DR_SCOPE:-full}}"
+SCOPE="${1:-${DR_SCOPE:-cluster}}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_DIR" || exit 1
 
 case "$SCOPE" in
-  cluster) EST="~3-6 min";   WIPE="k3d cluster (GitLab + Colima survive)";;
-  full)    EST="~8-15 min";  WIPE="k3d cluster + GitLab container & volumes (Colima survives)";;
-  machine) EST="~15-30 min"; WIPE="cluster + GitLab + Colima VM (re-pulls all images)";;
-  *) echo "unknown SCOPE '$SCOPE' (cluster|full|machine)" >&2; exit 2;;
+  cluster) EST="~3-6 min";   WIPE="k3d cluster (Colima survives)";;
+  machine) EST="~15-30 min"; WIPE="cluster + Colima VM (re-pulls all images)";;
+  *) echo "unknown SCOPE '$SCOPE' (cluster|machine)" >&2; exit 2;;
 esac
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"

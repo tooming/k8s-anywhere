@@ -14,8 +14,14 @@
 # grafana/. The README.md cross-check below is independent of that panel and
 # stays fully functional.
 #
-# Compares only host-based (`*.127.0.0.1.nip.io`) UIs — GitLab (off-cluster
-# :8929) is a stable special case the skill handles by hand.
+# Compares only host-based (`*.127.0.0.1.nip.io`) UIs.
+#
+# Port :8080 (updated 2026-09-07): the DR front door + blue/green drill that used
+# to make :8000 the only stable, cutover-independent entry point were removed
+# entirely, no replacement. With only one cluster/mode left, k3d's own load
+# balancer port (`http_port` in infra/modules/k3d-cluster/variables.tf, currently
+# 8080) is simply THE port — there is no longer a blue/green ambiguity to hide
+# behind a stable proxy port.
 set -uo pipefail
 # ROOT defaults to the repo; tests point LABUICHECK_ROOT at a fixture tree.
 ROOT="${LABUICHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -43,14 +49,13 @@ if [ -f "$README" ]; then
     grep -qx "$h" <<<"$route_hosts" || bad "README.md's Endpoints table lists '$h' but no IngressRoute declares it (stale row?)"
   done
 
-  # Port check: host-based UIs must use the stable front-door port :8000. The front
-  # door routes to whichever cluster is active across a blue/green cutover; the
-  # per-cluster Traefik ports (:8080 blue, :8082 green) are NOT stable and must
-  # never be hardcoded in the table. (See ADR-0005.)
-  for u in $(grep -oE 'http://[a-z0-9-]+\.127\.0\.0\.1\.nip\.io(:[0-9]+)?' <<<"$endpoints_section" 2>/dev/null | grep -vE ':8000$' | sort -u || true); do
-    bad "README.md's Endpoints table URL '$u' is not on the stable front-door port :8000 (never hardcode per-cluster ports like :8080/:8082)"
+  # Port check: host-based UIs must use k3d's own load-balancer port :8080 — the
+  # only entry point left now that the DR front door + blue/green drill are gone
+  # (2026-09-07, no replacement). See the header comment above.
+  for u in $(grep -oE 'http://[a-z0-9-]+\.127\.0\.0\.1\.nip\.io(:[0-9]+)?' <<<"$endpoints_section" 2>/dev/null | grep -vE ':8080$' | sort -u || true); do
+    bad "README.md's Endpoints table URL '$u' is not on k3d's load-balancer port :8080 (never hardcode a different port)"
   done
 fi
 
-[ "$drift" -eq 0 ] && printf '  %s✓%s README.md'"'"'s Endpoints table matches the host-based IngressRoutes in gitops (and uses the :8000 front door)\n' "$G" "$Z"
+[ "$drift" -eq 0 ] && printf '  %s✓%s README.md'"'"'s Endpoints table matches the host-based IngressRoutes in gitops (and uses the :8080 k3d load-balancer port)\n' "$G" "$Z"
 exit "$drift"

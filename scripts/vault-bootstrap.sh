@@ -5,7 +5,6 @@
 set -euo pipefail
 
 NS=vault
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Optionally target a specific cluster (e.g. KCTX=k3d-k8s-lab-green to bootstrap
 # the green cluster). Unset = current context, so blue's `make up` path is unchanged.
@@ -52,27 +51,15 @@ fi
 # KV v2
 v secrets list 2>/dev/null | grep -q '^secret/' || { echo "[vault] enabling kv-v2"; v secrets enable -path=secret kv-v2; }
 
-# secrets (generate if absent). These must exist for ESO to render the k8s
-# Secrets the workloads need — every remoteRef in gitops/secrets/ must be seeded
-# here or by garage-bootstrap, or a from-scratch rebuild stalls.
-#   secret/garage/server -> garage-secrets (Garage server)         [here]
-#   secret/aws/moto       -> ack-aws-creds (ACK->moto, dummy creds) [here]
-#   secret/garage/s3      -> garage-s3 (s3manager)                  [garage-bootstrap]
-#   secret/velero/s3      -> cloud-credentials (Velero S3 key)      [garage-bootstrap]
-#   secret/capstone/app   -> capstone-app-creds (capstone app credential) [here]
-#   secret/harbor/admin   -> harbor-admin-creds (Harbor admin user + password)        [here]
-#   secret/harbor/registry -> CI registry creds for harbor (username + password)       [here]
-#   secret/kargo/admin    -> kargo-admin-credentials (Kargo admin password hash + JWT signing key) [here]
-#   secret/argo-rollouts/dashboard -> argo-rollouts-dashboard-auth (Traefik basicAuth htpasswd, RFC #1479) [here]
-v kv get secret/garage/server >/dev/null 2>&1 || { echo "[vault] writing secret/garage/server"; v kv put secret/garage/server rpc-secret="$(openssl rand -hex 32)" admin-token="$(openssl rand -hex 16)" >/dev/null; }
-v kv get secret/aws/moto >/dev/null 2>&1 || { echo "[vault] writing secret/aws/moto (dummy creds; moto ignores them)"; v kv put secret/aws/moto access-key-id=test secret-access-key=test >/dev/null; }
-v kv get secret/capstone/app >/dev/null 2>&1 || { echo "[vault] writing secret/capstone/app"; v kv put secret/capstone/app app-key="$(openssl rand -hex 32)" >/dev/null; }
-v kv get secret/harbor/admin >/dev/null 2>&1 || { echo "[vault] writing secret/harbor/admin"; v kv put secret/harbor/admin admin-user=admin admin-password="$(openssl rand -hex 16)" >/dev/null; }
-v kv get secret/harbor/registry >/dev/null 2>&1 || { echo "[vault] writing secret/harbor/registry"; v kv put secret/harbor/registry username=admin password="$(openssl rand -hex 16)" >/dev/null; }
-v kv get secret/kargo/admin >/dev/null 2>&1 || { echo "[vault] writing secret/kargo/admin"; v kv put secret/kargo/admin password-hash="$(htpasswd -bnBC 14 "" "$(openssl rand -hex 16)" | tr -d ':\n')" token-signing-key="$(openssl rand -base64 29 | tr -d '=+/' | cut -c1-32)" >/dev/null; }
-v kv get secret/argo-rollouts/dashboard >/dev/null 2>&1 || { echo "[vault] writing secret/argo-rollouts/dashboard"; ARP="$(openssl rand -hex 16)"; v kv put secret/argo-rollouts/dashboard username=admin password-hash="$(htpasswd -nbBC 14 admin "$ARP" | cut -d: -f2)" plaintext-password-for-first-login="$ARP" >/dev/null; }
-if [ -s "$ROOT_DIR/gitlab/.gitlab-token" ]; then v kv put secret/gitlab/bootstrap token="$(cat "$ROOT_DIR/gitlab/.gitlab-token")" >/dev/null; fi
-
+# No KV secrets to seed here any more. This block used to write secret/garage/server,
+# secret/capstone/app, secret/harbor/admin, secret/harbor/registry, secret/kargo/admin,
+# secret/argo-rollouts/dashboard, and secret/gitlab/bootstrap — every one of those
+# consumers (Garage, capstone, Harbor, Kargo, Argo Rollouts, GitLab/Forgejo) was
+# removed entirely 2026-09-06/2026-09-07, no replacement. gitops/secrets/ now holds
+# only clustersecretstore.yaml (the Vault connection config itself, no KV path to
+# seed) — no live ExternalSecret in the repo references a secret/* path any more.
+# The `kv-v2` engine stays enabled (below) so it's ready the moment a future
+# component needs it.
 # Kubernetes auth + read policy + ESO role
 if ! v auth list 2>/dev/null | grep -q '^kubernetes/'; then
   echo "[vault] enabling kubernetes auth + eso role"
@@ -87,8 +74,9 @@ fi
 
 # Vault is now usable by ESO. On a cold bootstrap the ESO controller cached a
 # failing Vault client (Vault was sealed when it started) and would otherwise wait
-# out its ~5min store requeue — stalling garage-secrets/ack-aws-creds and thus
-# Garage/ACK. Restart the controller so the ClusterSecretStore re-validates, then
+# out its ~5min store requeue — stalling any ExternalSecret that needs it (a real
+# incident when this restart step didn't exist, back when Garage was the affected
+# consumer). Restart the controller so the ClusterSecretStore re-validates, then
 # force every ExternalSecret to re-sync now. Best-effort; never fail bootstrap.
 if kubectl -n external-secrets get deploy external-secrets >/dev/null 2>&1; then
   echo "[vault] kicking External Secrets to re-validate against the ready Vault"

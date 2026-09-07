@@ -5,7 +5,7 @@
 #  1. host.k3d.internal -> the docker host gateway. k3d 5.x does NOT inject
 #     this into the node container's /etc/hosts when running under Colima/
 #     Docker on macOS, so without it every ArgoCD Application (whose repoURL
-#     points at the local GitLab via http://host.k3d.internal:8929/...)
+#     points at the local Forgejo via http://host.k3d.internal:2223/...)
 #     silently fails to fetch on refresh and drifts away from desired state.
 #
 #  2. *.127.0.0.1.nip.io -> Traefik's in-cluster Service (ADR-0040, supersedes
@@ -13,7 +13,7 @@
 #     subdomains to the literal IP embedded in the name, 127.0.0.1 — which is
 #     a *pod's own loopback* for any in-cluster client, not the ingress
 #     controller. Every IngressRoute hostname in this lab (argocd, capstone,
-#     harbor, kargo, moto, rabbitmq, rollouts, s3, vault) needs this
+#     harbor, kargo, rollouts, s3, vault) needs this
 #     to be reachable from another pod — e.g.
 #     Kargo's Warehouse polling Harbor for image digests. Found live and first
 #     patched out-of-band (not committed anywhere) in PR #1323 while

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Schema-validate every Kubernetes/ArgoCD manifest in gitops/ with kubeconform.
 # Catches a typo'd field or wrong apiVersion in seconds, before ArgoCD ever tries
-# to sync it on a live cluster. CRDs (HTTPRoute, ExternalSecret, ArgoCD Application,
-# the ACK/KRO kinds) have no public schema here, so they're skipped, not failed
+# to sync it on a live cluster. CRDs (HTTPRoute, ExternalSecret, ArgoCD Application)
+# have no public schema here, so they're skipped, not failed
 # (-ignore-missing-schemas) — we still validate the core kinds and that every file
 # is well-formed, multi-doc YAML.
 #

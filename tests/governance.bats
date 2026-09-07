@@ -2,7 +2,8 @@
 # Clusterless structural tests for the Platform Governance appset (RFC #293).
 # The governance ApplicationSet fans out per-namespace governance objects
 # (LimitRange defaults today) from gitops/governance/<namespace>/ leaf overlays,
-# mirroring the networkpolicy-appset pattern. Seed namespaces: argocd + capstone.
+# mirroring the networkpolicy-appset pattern. Seed namespace: argocd (the
+# original second seed, capstone, was removed 2026-09-07 — see below).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -48,14 +49,8 @@ setup() {
   [ -f "$GOV/argocd/kustomization.yaml" ]
 }
 
-@test "capstone governance leaf dir has kustomization.yaml" {
-  [ -f "$GOV/capstone/kustomization.yaml" ]
-}
-
 @test "each seed kustomization references the shared base limitrange" {
   run grep -q 'base/limitrange-standard.yaml' "$GOV/argocd/kustomization.yaml"
-  [ "$status" -eq 0 ]
-  run grep -q 'base/limitrange-standard.yaml' "$GOV/capstone/kustomization.yaml"
   [ "$status" -eq 0 ]
 }
 
@@ -73,9 +68,7 @@ setup() {
 }
 
 # --- RFC #294 LimitRange fan-out (all always-on namespaces) -------------------
-# The full standard-tier list from the RFC #294 mapping table. `harbor` is
-# included (RFC #297 / ADR-0024): its namespace landed in auto/harbor-application
-# and the governance overlay was added in auto/harbor-governance-limitrange.
+# The full standard-tier list from the RFC #294 mapping table.
 # `cert-manager` (ADR-0028) and `keda` (ADR-0029) were added in
 # auto/governance-cert-manager-keda — both landed after RFC #294's original
 # fan-out and were missing a governance leaf until this item.
@@ -91,9 +84,28 @@ setup() {
 # `data` is likewise now absent (REMOVED 2026-09-06): RabbitMQ/ADR-0009 and
 # Valkey/ADR-0018 were dropped from the lab entirely, no replacement — the
 # `data` namespace held nothing else, so it went with them.
-STANDARD_NS="argocd capstone kyverno external-secrets velero argo-rollouts \
-trivy-system moto ack-system kro kargo lab-demo storage vault lab-gateway harbor \
-cert-manager capstone-pipeline"
+# `harbor` is likewise now absent (REMOVED 2026-09-07): Harbor/ADR-0024 was
+# dropped from the lab entirely, no replacement — same dead-config shape the
+# data/keda removals above already established.
+# `capstone`, `kyverno`, `velero`, `argo-rollouts`, `kargo`, and `capstone-pipeline`
+# (Kargo's promotion-target namespace) are likewise now absent (REMOVED
+# 2026-09-07): Kyverno/ADR-0019, Argo Rollouts/ADR-0020, Velero/ADR-0021, and
+# Kargo/ADR-0023 were dropped from the lab entirely, no replacement, alongside
+# capstone itself (their only consumer/target) — same dead-config shape the
+# harbor removal above already established.
+# `trivy-system`, `moto`, `ack-system`, and `kro` are likewise now absent (REMOVED
+# 2026-09-07): Trivy Operator/ADR-0022 was dropped from the lab entirely, no
+# replacement (user request); ACK/moto/ADR-0038 were dropped the same way (user
+# request), and KRO/ADR-0038 went with them as an orphaned dependent (its only
+# ResourceGraphDefinition claimed an ACK Bucket) — same dead-config shape the
+# capstone/kargo removal above already established.
+# `storage` is likewise now absent (REMOVED 2026-09-07): the namespace held only
+# Garage and s3manager, both dropped from the lab entirely, no replacement
+# (ADR-0002/ADR-0007/ADR-0039) — same dead-config shape the removals above
+# already established.
+STANDARD_NS="argocd external-secrets \
+lab-demo vault lab-gateway \
+cert-manager"
 
 @test "every standard-tier namespace has a governance leaf overlay" {
   for ns in $STANDARD_NS; do
@@ -139,21 +151,56 @@ cert-manager capstone-pipeline"
   [ ! -d "$GOV/artifactory" ]
 }
 
-# --- Harbor governance (RFC #297 / ADR-0024) ----------------------------------
-@test "harbor governance kustomization.yaml exists" {
-  [ -f "$GOV/harbor/kustomization.yaml" ]
+# --- Harbor governance REMOVED 2026-09-07 (ADR-0024): Harbor was dropped from
+# the lab entirely, no replacement — same dead-config shape the
+# observability/node-exporter removals above already established. -------------
+@test "harbor governance leaf dir no longer exists (ADR-0024)" {
+  [ ! -d "$GOV/harbor" ]
 }
 
-@test "harbor governance kustomization references the shared base limitrange" {
-  run grep -q 'base/limitrange-standard.yaml' "$GOV/harbor/kustomization.yaml"
-  [ "$status" -eq 0 ]
+@test "governance-appset does NOT bless the removed harbor namespace (ADR-0024)" {
+  run grep -qw 'destNamespace: harbor' "$APPSET"
+  [ "$status" -ne 0 ]
+  run grep -qw 'appName: harbor-governance' "$APPSET"
+  [ "$status" -ne 0 ]
 }
 
-@test "governance-appset has harbor-governance entry" {
-  run grep -q 'destNamespace: harbor' "$APPSET"
-  [ "$status" -eq 0 ]
-  run grep -q 'appName: harbor-governance' "$APPSET"
-  [ "$status" -eq 0 ]
+# --- capstone/kyverno/velero/argo-rollouts/kargo governance REMOVED 2026-09-07:
+# capstone, Kyverno (ADR-0019), Argo Rollouts (ADR-0020), Velero (ADR-0021), and
+# Kargo (ADR-0023, plus its capstone-pipeline promotion-target namespace) were
+# all dropped from the lab entirely, no replacement — same dead-config shape the
+# harbor removal above already established. -----------------------------------
+@test "capstone governance leaf dir no longer exists" {
+  [ ! -d "$GOV/capstone" ]
+}
+
+@test "kyverno governance leaf dir no longer exists (ADR-0019)" {
+  [ ! -d "$GOV/kyverno" ]
+}
+
+@test "velero governance leaf dir no longer exists (ADR-0021)" {
+  [ ! -d "$GOV/velero" ]
+}
+
+@test "argo-rollouts governance leaf dir no longer exists (ADR-0020)" {
+  [ ! -d "$GOV/argo-rollouts" ]
+}
+
+@test "kargo governance leaf dir no longer exists (ADR-0023)" {
+  [ ! -d "$GOV/kargo" ]
+}
+
+@test "capstone-pipeline governance leaf dir no longer exists (ADR-0023)" {
+  [ ! -d "$GOV/capstone-pipeline" ]
+}
+
+@test "governance-appset does NOT bless any of the removed capstone/kyverno/velero/argo-rollouts/kargo namespaces" {
+  for ns in capstone kyverno velero argo-rollouts kargo capstone-pipeline; do
+    run grep -qw "destNamespace: $ns" "$APPSET"
+    [ "$status" -ne 0 ] || { echo "appset still blesses destNamespace: $ns"; return 1; }
+    run grep -qw "appName: $ns-governance" "$APPSET"
+    [ "$status" -ne 0 ] || { echo "appset still has appName: $ns-governance"; return 1; }
+  done
 }
 
 # --- cert-manager governance (ADR-0028 / RFC #294 follow-up) ------------------

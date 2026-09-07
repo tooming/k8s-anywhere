@@ -3,24 +3,28 @@
 # `make up` has to rebuild it entirely from code. See docs/DR.md.
 #
 # Scopes (how much to wipe — bigger = more faithful, slower to rebuild):
-#   cluster  destroy the k3d cluster only (ArgoCD, Vault, Garage, all workloads,
-#            the in-cluster repo secret). GitLab + Colima survive. Fast (~3-5 min
-#            rebuild). Exercises full secret regeneration (new Vault + Garage keys).
-#   full     (default) cluster + GitLab container & volumes. The git source itself
-#            is rebuilt and the repo re-pushed. Colima survives (image cache kept).
-#   machine  full + delete the Colima VM (clean-machine simulation; re-pulls all
-#            images). Slowest.
+#   cluster  (default) destroy the k3d cluster only (ArgoCD, Vault, all workloads,
+#            the in-cluster repo secret). Colima survives. Fast (~3-5 min rebuild).
+#            Exercises full secret regeneration (new Vault keys).
+#   machine  cluster + delete the Colima VM (clean-machine simulation; re-pulls
+#            all images). Slowest.
+#
+# A third scope, "full" (cluster + wiping the self-hosted Forgejo git remote),
+# existed until 2026-09-07 — Forgejo was removed entirely that day, no
+# replacement (the repo now lives only on its public GitHub remote, which isn't
+# something a local DR drill destroys or rebuilds), so that scope collapsed
+# into "cluster" and was dropped rather than kept as a no-op alias.
 #
 # State is local + throwaway (infra/live/local/root.hcl), so once a layer's real
 # resources are gone we clear its tfstate to force a clean greenfield `make up`.
 set -uo pipefail
 
-SCOPE="${1:-${DR_SCOPE:-full}}"
+SCOPE="${1:-${DR_SCOPE:-cluster}}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LIVE="$REPO_DIR/infra/live/local"
 CLUSTER_NAME="k8s-lab"
 
-case "$SCOPE" in cluster|full|machine) ;; *) echo "unknown SCOPE '$SCOPE' (cluster|full|machine)" >&2; exit 2;; esac
+case "$SCOPE" in cluster|machine) ;; *) echo "unknown SCOPE '$SCOPE' (cluster|machine)" >&2; exit 2;; esac
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
@@ -40,23 +44,13 @@ clear_state(){ # force greenfield for a unit whose real resources are now gone
 }
 
 # --- 1. Cluster (and everything running in it) -------------------------------
-step "destroying k3d cluster '$CLUSTER_NAME' (ArgoCD, Vault, Garage, all workloads)"
+step "destroying k3d cluster '$CLUSTER_NAME' (ArgoCD, Vault, all workloads)"
 tg_destroy cluster
 k3d cluster delete "$CLUSTER_NAME" >/dev/null 2>&1 || true
 clear_state cluster
 clear_state argocd   # ArgoCD lived in the cluster -> gone -> greenfield its state
 
-# --- 2. GitLab (full + machine) ---------------------------------------------
-if [ "$SCOPE" = "full" ] || [ "$SCOPE" = "machine" ]; then
-  step "wiping GitLab container + volumes (the git source is rebuilt from scratch)"
-  ( cd "$REPO_DIR/gitlab" && docker compose down -v ) >/dev/null 2>&1 || true
-  rm -f "$REPO_DIR/gitlab/.gitlab-token"
-  clear_state gitlab   # GitLab project/token + repo secret gone -> greenfield
-else
-  step "keeping GitLab (scope=cluster); its repo secret is recreated by 'make up'"
-fi
-
-# --- 3. Colima VM (machine only) --------------------------------------------
+# --- 2. Colima VM (machine only) ---------------------------------------------
 if [ "$SCOPE" = "machine" ]; then
   step "deleting Colima VM (clean-machine simulation; images will be re-pulled)"
   colima delete --force >/dev/null 2>&1 || true

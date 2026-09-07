@@ -7,8 +7,13 @@ work once they exist.
 
 This is the org/product companion to [dependency-tree.md](dependency-tree.md) (the
 runtime + bootstrap graph) and [00-architecture.md](00-architecture.md) (roles).
-Everything below maps to components that exist in this repo today, including the
-heavy add-ons named in the README — all now built and on-demand, not planned.
+
+**A large simplification landed 2026-09-06/2026-09-07** (see README.md's own note and
+each removed component's ADR Status). This lab is now down to 6 always-on namespaces
+and nothing on-demand — most of the products, tiers, and domains this doc used to
+catalog no longer exist, no replacement. This rewrite describes only what's actually
+live today; it does not restate the removal history component-by-component the way
+earlier revisions of this file did — see `docs/decisions/` for that.
 
 ---
 
@@ -20,21 +25,14 @@ qualify here, needs four things:
 
 | Property | Meaning | Example in this lab |
 |----------|---------|---------------------|
-| **A consumer-facing contract** | a stable API/CRD or documented interface the customer uses, *not* the implementation | `kind: S3BucketClaim`, `kind: HTTPRoute`, `kind: ExternalSecret` |
+| **A consumer-facing contract** | a stable API/CRD or documented interface the customer uses, *not* the implementation | `kind: Application`, `kind: ExternalSecret`, `kind: IngressRoute` |
 | **Self-service** | the customer gets it via git/API, no human in the loop | open a PR adding the resource → ArgoCD reconciles it |
 | **An owner** | a team accountable for its SLO and its runbook | platform domain squads (below) |
-| **A hidden implementation** | the customer doesn't need to know what's behind the contract | "S3 bucket" hides ACK→moto (or Garage); "secret" hides Vault |
+| **A hidden implementation** | the customer doesn't need to know what's behind the contract | "route" hides Traefik; "secret" hides Vault |
 
 The distinction that matters: **substrate is built and run by the platform but is not
-itself a product** (app teams never touch k3d or the Terraform state backend), whereas
-**a product is the thing you put a self-service contract in front of**.
-
-The off-cluster Garage we just added is a perfect illustration: it backs Terraform
-state, it's pure **substrate / build-time plumbing**, and even though it's the *same
-engine* as the in-cluster Garage **object-storage product**, it's a deliberately
-*separate instance* with a different purpose — never offered to teams. Keeping the two
-apart is both a loop-breaker (see dependency-tree.md) and a clean product boundary:
-"same tech, different role" is exactly the build-vs-product distinction.
+itself a product** (app teams never touch k3d or Terraform), whereas **a product is
+the thing you put a self-service contract in front of**.
 
 ---
 
@@ -42,87 +40,56 @@ apart is both a loop-breaker (see dependency-tree.md) and a clean product bounda
 
 You build (and recover) bottom-up; nothing in a higher tier works until its tier is up.
 This is the priority order: **Tier 0 is most critical** — without it there is no
-platform at all — and criticality decreases as you go up.
-
-> **GitLab vs. Forgejo, as of 2026-08-17.** Tier 0's "SCM: GitLab" node below (and the
-> table row after it) describe `make up`'s literal, current bootstrap — a fresh
-> bootstrap still provisions GitLab as the git source of truth (ADR-0033/ADR-0035). The
-> currently-running lab's ArgoCD, however, was separately re-pointed at Forgejo
-> directly on the live cluster (PR #1205), so today's steady-state SCM is Forgejo, not
-> GitLab. See [docs/dependency-tree.md](dependency-tree.md)'s own "Known gap, not yet
-> reconciled" note for the same caveat in the bootstrap-order diagram this file is the
-> product-view companion to.
+platform at all — and criticality decreases as you go up. There are only two tiers
+left; every tier that used to sit above Tier 1 (Data, Observability, Self-service,
+Heavy add-ons) was removed entirely 2026-09-06/2026-09-07, no replacement — see
+`docs/decisions/` for each component's own removal record. Tier numbers are not
+renumbered after a removal, matching how this repo never reuses/renumbers a retired
+ADR or CHARTER Objective number either.
 
 ```mermaid
 graph TD
   classDef sub fill:#ffe0ef,stroke:#b3598a,color:#000
   classDef prim fill:#fff6cc,stroke:#b39b00,color:#000
-  classDef data fill:#dcf5dc,stroke:#3b9b3b,color:#000
-  classDef ss fill:#e0f7f7,stroke:#3bb3b3,color:#000
-  classDef plan fill:#eeeeee,stroke:#999,color:#000
 
   subgraph T0["Tier 0 — Substrate (build it / run it; not a product)"]
     compute["Compute: Colima + k3d cluster"]:::sub
-    state["TF state backend: off-cluster Garage (separate instance)"]:::sub
-    scm["Source of truth: GitLab"]:::sub
+    scm["Source of truth: GitHub (public remote)"]:::sub
     cd["GitOps engine: ArgoCD (app-of-apps)"]:::sub
   end
   subgraph T1["Tier 1 — Platform primitives (every product needs these)"]
     secrets["Secrets: Vault + ESO"]:::prim
     ingress["Ingress: Traefik"]:::prim
   end
-  subgraph T2["Tier 2 — Data services"]
-    s3["Object storage: Garage S3 (+ s3manager)"]:::data
-  end
-  subgraph T4["Tier 4 — Self-service control plane"]
-    claims["Resource claims: KRO + ACK + moto"]:::ss
-  end
-  subgraph T5["Tier 5 — Heavy add-ons (on-demand, built)"]
-    heavy["Harbor · Kargo"]:::plan
-  end
 
-  compute --> state --> scm --> cd
+  compute --> scm --> cd
   cd --> secrets & ingress
-  secrets --> s3
-  secrets --> claims
-  ingress --> heavy
-  s3 --> heavy
 ```
-
-(Tier 3 — Observability (LGTMP) — was removed from this diagram 2026-09-06 along
-with the stack itself, ADR-0041: no replacement, so no tier sits between Data and
-Self-service any more. Tier numbers 0/1/2/4/5 are kept as-is rather than
-renumbered, matching how this repo never reuses/renumbers a retired ADR or
-CHARTER Objective number either. Tier 5's own heavy-add-on set shrank the same
-day: TiDB, Istio ambient mesh + Kiali, and Longhorn were also built and
-demonstrated this on-demand pattern, then removed entirely 2026-09-06
-(maintainer decision, no replacement) — see ADR-0031/ADR-0032, ADR-0012, and
-ADR-0013 for the removal notes, matching how `00-architecture.md` and
-CHARTER.md already record it.)
 
 | Tier | What | Build priority | Why this order |
 |------|------|----------------|----------------|
-| **0 Substrate** | Compute (Colima/k3d), TF state (off-cluster Garage), SCM (GitLab), GitOps (ArgoCD) | **P0** | Nothing exists without compute + a state store + a git source + a reconciler. This is the day-0 imperative seam. |
+| **0 Substrate** | Compute (Colima/k3d), SCM (GitHub), GitOps (ArgoCD) | **P0** | Nothing exists without compute + a git source + a reconciler. This is the day-0 imperative seam — no separate Terraform state backend any more (ADR-0007 superseded, plain local file). |
 | **1 Primitives** | Secrets (Vault+ESO), Ingress (Traefik) | **P0** | Every product needs to hold credentials and be reachable. Provisioned first by ArgoCD (sync-waves 0–1). |
-| **2 Data** | Object storage (Garage) | **P1** | Stateful backend for apps (Velero backups, Harbor registry storage). |
+| **2 Data** | Retired 2026-09-07 (ADR-0002/ADR-0007/ADR-0039) | — | Was "Object storage (Garage)" — removed entirely, no replacement. |
 | **3 Observability** | Retired 2026-09-06 (ADR-0041) | — | Was "LGTMP + Grafana" — removed entirely, no replacement. |
-| **4 Self-service** | KRO + ACK + moto claims | **P2** | The "internal API" layer that turns primitives into one-line self-service. |
-| **5 Heavy** | Harbor, Kargo | **P3** | On-demand, capacity-gated (the 12 GB reality); pulled in per customer need — both are built (`make <name>-up`), not just planned. TiDB, Istio mesh, and Longhorn also built this pattern, then removed 2026-09-06 (no replacement). |
+| **4 Self-service** | Retired 2026-09-07 (ADR-0038) | — | Was "KRO + ACK + moto claims" — removed entirely, no replacement. |
+| **5 Heavy** | Retired 2026-09-07 (ADR-0024/ADR-0023) | — | Was "Harbor, Kargo" (and TiDB/Istio mesh/Longhorn before them, ADR-0031/ADR-0032/ADR-0012/ADR-0013, 2026-09-06) — removed entirely, no replacement. No heavy on-demand tier exists any more. |
 
 ---
 
 ## Product catalog
 
 Grouped by **capability domain** — the natural unit for assigning an owning squad.
-"Maturity" reflects how self-service it is *today* in this repo.
+"Maturity" reflects how self-service it is *today* in this repo. Only two domains
+still have a live product to catalog.
 
 ### A. Delivery & control plane
 The paved road for shipping. Substrate that's also offered as a "deploy here" product.
 
 | Product | Consumer contract (self-service) | Backed by | Depends on | Maturity |
 |---------|----------------------------------|-----------|------------|----------|
-| **Continuous Delivery** | add an ArgoCD `Application` / app-of-apps entry via git PR | ArgoCD | GitLab, cluster | ✅ self-service (PR → sync) |
-| **Cluster / environment** | (platform-provisioned) | k3d + Terraform/Terragrunt | off-cluster Garage (state), Colima | 🛠 platform-only (no tenant API yet) |
+| **Continuous Delivery** | add an ArgoCD `Application` / app-of-apps entry via git PR | ArgoCD | GitHub, cluster | ✅ self-service (PR → sync) |
+| **Cluster / environment** | (platform-provisioned) | k3d + Terraform/Terragrunt | Colima | 🛠 platform-only (no tenant API yet) |
 
 ### B. Security & secrets
 | Product | Consumer contract | Backed by | Depends on | Maturity |
@@ -132,24 +99,21 @@ The paved road for shipping. Substrate that's also offered as a "deploy here" pr
 ### C. Connectivity / ingress
 | Product | Consumer contract | Backed by | Depends on | Maturity |
 |---------|-------------------|-----------|------------|----------|
-| **Ingress / north-south routing** | `kind: IngressRoute` (Traefik CRD) on the shared TLSStore | Traefik, bundled with k3s (+ off-cluster front door) | k3s | ✅ self-service |
+| **Ingress / north-south routing** | `kind: IngressRoute` (Traefik CRD) on the shared TLSStore | Traefik, bundled with k3s — the sole entry point (the off-cluster DR front door that used to sit in front of it, and the blue/green cluster pair it fronted, were removed entirely 2026-09-07, no replacement) | k3s | ✅ self-service |
 
-(**Service mesh (east-west)** — sidecarless `PeerAuthentication`/traffic policy +
-Kiali topology via Istio ambient mesh + Kiali — was built and demonstrated as an
-on-demand product here, then removed entirely 2026-09-06, maintainer decision, no
-replacement. See ADR-0012.)
+(**Service mesh (east-west)** — sidecarless `PeerAuthentication`/traffic policy + Kiali
+topology via Istio ambient mesh + Kiali — was built and demonstrated as an on-demand
+product here, then removed entirely 2026-09-06, maintainer decision, no replacement.
+See ADR-0012.)
 
-### D. Data & storage
-| Product | Consumer contract | Backed by | Depends on | Maturity |
-|---------|-------------------|-----------|------------|----------|
-| **Object storage (S3)** | a bucket + credentials (today provisioned by `garage-bootstrap`; browse via s3manager) | Garage S3 | Secrets | 🟡 platform-provisioned (self-service path = Cloud Resources below) |
-| **Artifact registry** | push/pull endpoint + repo via `make harbor-up` | Harbor | storage | 🟡 on-demand (heavy) |
+### D. Data & storage — retired 2026-09-07 (ADR-0002/ADR-0007/ADR-0039)
 
-(**Relational database** — a TiDB cluster via `make tidb-up` — and **Block storage /
-PVs** — a `longhorn` StorageClass via `make longhorn-up` — were both built and
-demonstrated as on-demand products here, then removed entirely 2026-09-06,
-maintainer decision, no replacement. See ADR-0031/ADR-0032 and ADR-0013
-respectively.)
+This domain used to offer **Object storage (S3)** (a Garage bucket + credentials,
+browsable via s3manager) and **Artifact registry** (Harbor, on-demand). Both, and the
+storage engine behind them, were removed entirely with no replacement. (**Relational
+database** — TiDB — and **Block storage / PVs** — Longhorn — were removed the same way
+2026-09-06, ADR-0031/ADR-0032 and ADR-0013.) There is no data/storage product to
+catalog here any more.
 
 ### E. Observability — retired 2026-09-06 (ADR-0041)
 
@@ -158,17 +122,15 @@ Pyroscope → Grafana, plus kube-state-metrics/node-exporter as scrape targets) 
 self-service product. The whole stack was removed with no replacement — there is
 no observability product to catalog here any more.
 
-### F. Developer self-service / abstractions
-The "internal API" layer — the clearest *product* in the lab.
+### F. Developer self-service / abstractions — retired 2026-09-07 (ADR-0038)
 
-| Product | Consumer contract | Backed by | Depends on | Maturity |
-|---------|-------------------|-----------|------------|----------|
-| **Cloud Resources Service** | `kind: S3BucketClaim` (one object → a bucket + an ownership catalog entry) | KRO `ResourceGraphDefinition` → ACK `Bucket` → moto | Secrets, ArgoCD | ✅ self-service (the model abstraction; extend the RGD for more resource types) |
-
-> The `S3BucketClaim` (`gitops/kro/rgd-s3bucketclaim.yaml`) is the template for *every*
-> future self-service product: define a high-level CRD, compose the real resources
-> behind it, surface status, and record ownership. This is how you scale from
-> "platform provisions it" → "teams claim it."
+This domain used to offer a **Cloud Resources Service** (`kind: S3BucketClaim` — one
+object → a bucket + an ownership catalog entry, backed by KRO's
+`ResourceGraphDefinition` composing an ACK `Bucket` against the moto AWS mock) as the
+clearest self-service *product* in the lab — the model abstraction every future
+claim-based product would extend. All three components (moto, ACK, KRO) were removed
+entirely with no replacement (ACK/moto: maintainer decision; KRO: orphaned dependent
+once ACK was gone) — there is no self-service claims product to catalog here any more.
 
 ---
 
@@ -179,18 +141,20 @@ around keeping them separate so roadmap doesn't get eaten by firefighting.
 
 ### Build (planned / roadmap)
 Discrete, schedulable, value-adding. Tracked as epics per product.
-- New products & new self-service contracts (e.g. extend KRO RGDs to DB/cache claims).
-- New product versions / upgrades (ArgoCD chart bumps, k8s version, Garage v2→vN).
-- Capacity & cost work (the "12 GB reality" — what heavy profiles fit).
+- New products & new self-service contracts (the KRO-RGD-based claims layer this
+  bullet used to name was removed 2026-09-07 with no replacement, ADR-0038 — a
+  future self-service claims layer would need to pick its own tooling from scratch).
+- New product versions / upgrades (ArgoCD chart bumps, k3s version).
 - Paved-road improvements (templates, golden paths, docs).
 
 ### Run (operational / unplanned)
 Reactive, interrupt-driven, keeps-the-lights-on (KTLO / toil). Should be **measured and
 budgeted** so it doesn't silently consume the team.
-- Incidents & on-call; **DR drills** (`make dr-verify`, `make dr-test`, blue/green).
+- Incidents & on-call; **DR drills** (`make dr-verify`, `make dr-test`; the blue/green
+  zero-downtime cutover drill was removed entirely 2026-09-07, no replacement — the
+  only DR mechanism left is recreate-from-code, ADR-0005).
 - Secret rotation, cert renewal, token expiry.
 - ArgoCD drift / failed syncs, ESO sync failures.
-- Capacity firefighting, noisy-neighbor evictions.
 - Request-queue items that aren't yet self-service (every one is a roadmap signal:
   *if you're handling it manually, it's a missing product feature*).
 
@@ -208,9 +172,9 @@ For each product, push it up this ladder; the rung tells you the next planned in
 
 ```
 1. Manual        platform does it by hand on request   (pure toil)
-2. Scripted      a runbook/script does it              (garage-bootstrap.sh)
-3. Provisioned   platform applies it via GitOps        (Garage buckets today)
-4. Self-service  customer claims it via a contract     (S3BucketClaim, HTTPRoute, ExternalSecret)
+2. Scripted      a runbook/script does it              (vault-bootstrap.sh)
+3. Provisioned   platform applies it via GitOps        (ArgoCD Applications today)
+4. Self-service  customer claims it via a contract     (Application, ExternalSecret, IngressRoute)
 5. Governed      self-service + quotas/policy/cost      (target state)
 ```
 
@@ -218,49 +182,33 @@ For each product, push it up this ladder; the rung tells you the next planned in
 
 ## How to organize the team (capability domains → squads)
 
-The five live domains in the catalog (Observability retired 2026-09-06, ADR-0041)
-are the natural workstream/squad boundaries. Even with
-one team, treating them as distinct product lines keeps ownership and the roadmap clear:
+Only two domains still have a live product to own — the others existed here until
+their components were removed entirely, no replacement (see each domain's own section
+above for the ADR):
 
 | Domain | Owns (products) | Substrate it also runs |
 |--------|-----------------|------------------------|
-| **Platform core / paved road** | Continuous Delivery, Cluster/env | k3d, Terraform/Terragrunt, **off-cluster Garage (state)**, GitLab, ArgoCD |
+| **Platform core / paved road** | Continuous Delivery, Cluster/env | k3d, Terraform/Terragrunt, GitHub, ArgoCD |
 | **Security & secrets** | Secrets | Vault, ESO |
-| **Connectivity** | Ingress | Traefik, front door |
-| **Data & storage** | Object storage, (registry) | Garage, (Harbor) |
-| **Developer self-service** | Cloud Resources Service | KRO, ACK, moto |
+| **Connectivity** | Ingress | Traefik |
 
-(An **Observability** domain — Metrics/Logs/Traces/Profiles, backed by LGTMP +
-Grafana — existed here until 2026-09-06, when the stack was removed with no
-replacement, ADR-0041.)
+(**Data & storage** — Object storage/registry, backed by Garage/Harbor — existed here
+until 2026-09-07, ADR-0002/ADR-0007/ADR-0039/ADR-0024. **Observability** — Metrics/
+Logs/Traces/Profiles, backed by LGTMP + Grafana — existed here until 2026-09-06,
+ADR-0041. **Developer self-service** — Cloud Resources Service, backed by KRO/ACK/
+moto — existed here until 2026-09-07, ADR-0038. All three domains removed with no
+replacement.)
 
 ### First steps to a self-service offering for the company
 1. **Publish the catalog** (this doc) — name the products and their contracts so teams
    know what they can self-serve.
 2. **Standardize the contract surface** — every product is a k8s CRD/resource consumed
-   via git PR (already true for CD, Secrets, Ingress, Cloud Resources).
-3. **Climb the maturity ladder** — convert the remaining "provisioned" products
-   (Object storage) to claim-based self-service by extending the KRO RGD pattern.
-4. **Add governance** — quotas, ownership catalog (the `*-catalog` ConfigMap pattern is
-   already there); cost visibility would previously have come from the observability
-   stack, retired 2026-09-06 (ADR-0041) with no replacement — a future cost-visibility
-   effort would need to pick its own tooling from scratch.
-
----
-
-## Operational note on the change that prompted this doc
-
-Adding the off-cluster state Garage shifts a few flows:
-- `make tfstate-up` now precedes `cluster-up` in `make up` (it starts the container,
-  waits for health, then runs `scripts/tfstate-bootstrap.sh` to assign layout, import
-  the fixed key, and create the `tfstate` bucket); `make down` stops it *after* the
-  cluster destroy (the destroy reads state from it).
-- Any flow that runs `terragrunt` (the **DR scripts** — `dr-destroy`, `dr-test`,
-  `dr-bluegreen`) now requires this Garage to be up and the `AWS_*` env vars exported.
-  The Makefile exports the lab-default creds; verify the DR scripts bring `tfstate-up`
-  along before wider rollout (a likely small follow-up).
-- Engine choice follows [ADR-0002](decisions/adr-0002-garage-not-minio.md) — Garage,
-  not MinIO (MinIO's OSS offering is considered dead). The state store reuses the same
-  blessed engine as the object-storage product, just a separate off-cluster instance.
-- It's substrate, single-host, throwaway-lab grade: no HA — consistent with
-  [ADR-0005](decisions/adr-0005-spof-recreate-over-ha.md).
+   via git PR (already true for CD, Secrets, Ingress).
+3. **Climb the maturity ladder** — the KRO-RGD claim-based pattern this step used to
+   point toward next was removed 2026-09-07 with no replacement (ADR-0038) — a future
+   claims-based effort would need to pick its own tooling from scratch, same as the
+   observability-metrics gap below.
+4. **Add governance** — quotas, ownership catalog, cost visibility would previously
+   have come from the observability stack, retired 2026-09-06 (ADR-0041) with no
+   replacement — a future cost-visibility effort would need to pick its own tooling
+   from scratch.

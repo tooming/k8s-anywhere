@@ -5,453 +5,95 @@ repo (manifests, Terraform, scripts); secrets are *generated* during bootstrap.
 To rebuild the whole thing on a clean machine: `make up`.
 
 ```sh
-make preflight   # check tools (brew install: colima k3d helm terragrunt kustomize argocd yq mkcert)
+make preflight   # check tools (brew install: colima k3d helm terragrunt kustomize argocd vault yq jq mkcert)
 make up          # bootstrap everything, in order
 make status      # VM RAM + per-namespace usage + unhealthy pods
 ```
 
-### Cilium bootstrap order (ADR-0014)
-
-The cluster is created with `--flannel-backend=none --disable-network-policy`
-(see `infra/live/local/cluster/terragrunt.hcl`). Flannel is disabled; **Cilium
-is the CNI.** Pods cannot start until Cilium is installed. On every fresh
-`make cluster-up`, install Cilium **before** `make argocd`:
-
-```sh
-make cluster-up   # k3d cluster — no CNI yet; pods stay ContainerCreating
-make cilium-up    # ← install Cilium first; pod networking now works
-make argocd       # ArgoCD pods start; then continue with `make up` from here
-# or simply re-run the full make up (it is idempotent):
-make up
-```
-
-`make cilium-up` uses `helm upgrade --install` directly (day-0 seam, per ADR-0001)
-and blocks until Cilium is ready. ArgoCD then adopts the Helm release on first sync.
-
-## Velero backup restore (`make dr-restore`)
-
-Restores every stateful namespace (`data`, `capstone`, `vault`) from its
-**latest Velero backup** and verifies completion within the CHARTER Objective O3
-budget of **< 10 minutes (600 s)** total wall-clock.
-
-```sh
-make dr-restore   # restore all three stateful namespaces from their latest Schedule backup
-```
-
-This is distinct from `make dr-test` (which *recreates* the cluster from manifest) —
-`dr-restore` proves that **data** survives: PVC contents captured by Velero/Kopia
-are round-tripped back into the live namespace.
-
-### What it does
-
-`scripts/dr-restore.sh` iterates the three namespaces in order (sequential to avoid
-disk I/O contention on the single node):
-
-| Namespace | Schedule | Cron | TTL |
-|-----------|----------|------|-----|
-| `data` | `data-daily` | `0 2 * * *` | 168h |
-| `capstone` | `capstone-daily` | `0 3 * * *` | 168h |
-| `vault` | `vault-daily` | `30 3 * * *` | 168h |
-
-(`tidb`'s `tidb-daily` Schedule was removed 2026-09-06 when TiDB was removed from
-the lab entirely, no replacement; `observability`'s `observability-daily` Schedule
-was removed the same day, ADR-0041 — neither namespace exists any more.)
-
-For each namespace it runs:
-
-```sh
-velero restore create dr-restore-<ns>-<ts> --from-schedule <ns>-daily --wait
-```
-
-then confirms `status.phase == Completed`. The script prints a timing table and
-fails with exit code 1 if:
-
-- any restore reaches a non-`Completed` phase (`Failed`, `PartiallyFailed`, etc.), or
-- the total wall-clock across all three restores exceeds **600 s**.
-
-### Prerequisite
-
-Velero must be running and at least one successful backup must exist for each
-Schedule. Schedules run nightly (see table above); on a fresh cluster run
-`velero backup create --from-schedule <ns>-daily` to seed the first backup
-manually before running `make dr-restore`.
-
-See [ADR-0021](decisions/adr-0021-velero-backup-restore.md) for the Velero
-architecture, Garage S3 backend wiring, and Objective O3 rationale.
-
----
-
-## Capstone demo (`make capstone-demo`)
-
-Runs the end-to-end capstone learning-path demo and verifies the full pipeline is
-healthy within the **CHARTER Objective O6 budget of 900 s (15 min)** wall-clock.
-
-```sh
-make capstone-demo
-```
-
-### Pre-requisites
-
-- A healthy, running lab cluster (`make up` complete, all apps Synced + Healthy).
-- `argocd` CLI installed and logged in:
-  ```sh
-  make argocd-password    # print the admin password
-  argocd login localhost:8080 --username admin --password <password> --insecure
-  ```
-- `kubectl` configured to the active cluster context.
-- The capstone Application deployed and the `capstone.127.0.0.1.nip.io` IngressRoute
-  reachable through Traefik on port 8000.
-
-### What it checks (three steps)
-
-| # | Check | Tool | Budget |
-|---|-------|------|--------|
-| 1 | capstone ArgoCD Application is `Healthy` | `argocd app wait capstone --health` | 120 s timeout |
-| 2 | capstone `ExternalSecret` status is `Ready` | `kubectl -n capstone get externalsecret` (jsonpath poll) | 30 s |
-| 3 | `http://capstone.127.0.0.1.nip.io:8000/` returns HTTP 200 | `curl` | — |
-
-A fourth step (a Tempo trace check for `service.name=capstone`) was removed
-2026-09-06 (ADR-0041, observability stack removed with no replacement) — Tempo no
-longer exists to query.
-
-### Budget enforcement
-
-`scripts/capstone-demo.sh` checks the running total after each step and prints a
-summary table (elapsed per step + total) at the end. Exit code 1 if any step fails
-or the total exceeds 900 s (Objective O6 requirement).
-
-See [ADR-0020](decisions/adr-0020-argo-rollouts-progressive-delivery.md) for the
-progressive-delivery context and [RFC #215](https://github.com/tooming/k8s-lab/issues/215)
-for the original acceptance criteria.
-
----
-
-## One-command DR test (`make dr-test`)
-
-Proves the recreate-from-code claim end to end: it **destroys the lab, rebuilds it
-with `make up`, then asserts it came back healthy** — and fails loudly if not.
-
-```sh
-make dr-test                 # default scope=full: cluster + GitLab wiped, rebuilt
-make dr-test SCOPE=cluster   # faster: only the k3d cluster (GitLab + Colima survive)
-make dr-test SCOPE=machine   # also delete the Colima VM (re-pulls all images)
-make dr-verify               # just the health assertions (no rebuild) — safe anytime
-make dr-destroy SCOPE=full   # just the teardown
-```
-
-| SCOPE | Wipes | Survives | Rebuild |
-|-------|-------|----------|---------|
-| `cluster` | k3d cluster (ArgoCD, Vault, Garage, all workloads, in-cluster repo secret) | GitLab + Colima | ~3-6 min. Exercises full **secret regeneration** (new Vault unseal/root keys, new Garage S3 key). The GitLab repo secret is recreated by `gitlab-configure`. |
-| `full` (default) | cluster **+ GitLab container & volumes** | Colima (image cache) | ~8-15 min. The git **source** itself is rebuilt and the repo re-pushed; new GitLab token minted. |
-| `machine` | full **+ the Colima VM** | nothing | ~15-30 min. Closest to a clean laptop; re-pulls every image. |
-
-State is local + throwaway (`infra/live/local/root.hcl`), so once a layer's real
-resources are gone the drill clears that layer's `terraform.tfstate` to force a
-clean greenfield `make up` (cluster + ArgoCD always; GitLab on full/machine).
-
-**What `dr-verify` checks (all live, no placeholders — see ADR-0004):**
-nodes `Ready` · every ArgoCD `Application` `Synced`+`Healthy` · Vault initialized &
-unsealed · all `ExternalSecret`s `SecretSynced` · Garage up with its buckets
-(`velero harbor-registry`). Each check polls until satisfied or its budget
-expires; exit 0 only if all pass.
-
-## Zero-downtime blue/green DR (`make dr-bluegreen`)
-
-`make dr-test` recovers the lab but has an **outage** while it rebuilds. The
-blue/green drill instead recovers onto a **fresh cluster with zero downtime** —
-the system keeps serving the whole time — and proves it with a live probe.
-
-```sh
-make dr-bluegreen        # stand up green alongside blue, cut over, prove ~100% uptime
-make dr-bluegreen-down   # remove the green cluster + front door (blue is untouched)
-```
-
-How it works (blue = the running cluster, green = a second one):
-
-1. **Front door** — a small nginx proxy on host **:8000** forwards to whichever
-   cluster's Traefik load balancer is *active* (`scripts/bluegreen-frontdoor.sh`). It
-   runs on its own port, so blue's `:8080` is **never touched**. Cutover = rewrite
-   the upstream + `nginx -s reload`, which is graceful (keeps the listening socket,
-   drains old workers) → **no dropped connections**.
-2. **Canary** — the probe targets the **ArgoCD UI** (`argocd.127.0.0.1.nip.io`),
-   which both clusters serve, so "is it up?" is a real end-to-end signal.
-3. **Green** (`scripts/bluegreen-up.sh`) — a second k3d cluster `k8s-lab-green` on
-   its own ports (8082/8444/6446) and docker network, with its own ArgoCD that
-   syncs the **serving tier only** (`lab-gateway`, `demo` — no separate ingress-controller
-   Application needed, Traefik ships with k3s itself, ADR-0040) from the
-   *same* Forgejo repo (ADR-0035) via `gitops/bluegreen/green-root.yaml` (`directory.include`).
-   Two **full** platform stacks don't fit 16 GB, so green recovers the always-available
-   edge; the point of this drill is the **cutover**, not standing up every platform
-   Application on both clusters at once. (Blue+green peaks ~9.4 GB used of the 12 GB
-   VM — fits.)
-4. **Probe + cutover** (`scripts/dr-bluegreen.sh`) — start a continuous probe of
-   the front door, bring green up, then repoint the front door blue→green. The
-   probe records uptime across the whole drill; PASS needs **uptime ≥ 99%** and
-   longest outage ≤ 2 s. Cutover is proven real two ways: the front-door config now
-   targets green's load balancer, and a blue-only route (`vault.*`) starts returning
-   404 through the front door (green doesn't run Vault).
-
-The endpoint of a real blue/green is to **retire blue** — `make dr-bluegreen-promote`
-does that. On 16 GB two *full* stacks can't coexist while blue is also full, so the
-order is chosen to never overlap them: bring up a **serving-tier** green → **cut
-over** (zero downtime) → **delete blue** (frees ~7 GB) → **then promote green to a
-full, verified stack**. Serving never drops (a probe proved 100% — 1135/1135 —
-across cutover and retire); the one unavoidable single-host tradeoff is a brief
-Vault/Garage gap after blue is gone until green finishes its full sync. Afterward
-green is the sole environment (canonical endpoint stays `:8000`; `:8080` is gone
-with blue).
-(`make dr-bluegreen` alone stops at cutover and keeps blue as a rollback target;
-`make dr-bluegreen-down` reclaims green's RAM.) See ADR-0005.
-
-## Chaos / fault-injection drill (`make dr-chaos`)
-
-The drills above all test *planned* failover — you decide when the disaster
-happens. This one tests an **injected** failure instead (DORA's Pillar 3 "digital
-operational resilience testing" — the TLPT, threat-led penetration testing,
-concept): it kills a running capstone pod at a moment you don't control the
-timing of, then asserts the cluster self-heals within budget.
-
-```sh
-make dr-chaos   # kill a random capstone pod, assert a replacement reaches Running within 120s
-```
-
-What it does: pick one running capstone pod at random (`scripts/dr-chaos.sh`,
-bash `$RANDOM`, no external random-picker dependency), delete it, then poll until
-a genuinely new, Ready replacement pod count is back to its pre-injection value
-or the budget is exceeded — the poll explicitly excludes the deleted pod's own
-name and checks actual container readiness, not just pod phase (fixed 2026-08-13:
-a pod stays `phase=Running` throughout its termination grace period, so an
-earlier version of this check could count the pod being deleted as still
-"healthy" and report a false-positive instant pass). The
-capstone Rollout runs a **single replica** (no HA — ADR-0005), so this is an
-honest test of *recreate*, not of masking an outage behind a spare replica: there
-*is* a brief gap while Kubernetes reschedules. The 120 s budget is 4x the ~30 s a
-healthy node normally takes to reschedule + restart a pod whose image is already
-cached (the pod we killed was already running it, so no cold image pull is
-needed) — generous enough to absorb a slow node without masking a real
-regression.
-
-This introduces no new failure mode: pod-delete-then-recreate is a guarantee
-Kubernetes' ReplicaSet controller (which the Rollout manages) already provides.
-The drill only *observes and times* that existing guarantee — its only
-real-world side effect is one capstone pod restarting, the same event a node
-drain or an OOM-kill would already cause routinely.
-
-## Network-partition drill (`make dr-network-partition`)
-
-A second, distinct injected-failure scenario (same DORA Pillar 3 / TLPT concept
-as `dr-chaos` above) — `docs/dora-audit-readiness.md` Q12 named this as a real,
-separately-scoped follow-up once the pod-kill drill existed: "cutting a
-NetworkPolicy... still real, separately-scoped future drills if wanted." Where
-`dr-chaos` tests Kubernetes' own ReplicaSet/Rollout self-heal, this one tests
-**ArgoCD's** self-heal — a different recovery mechanism, a different failure
-domain.
-
-```sh
-make dr-network-partition   # delete capstone's ingress NetworkPolicy, assert ArgoCD restores it within 300s
-```
-
-What it does: deletes the `allow-capstone-ingress-from-gateway` NetworkPolicy
-live in the `capstone` namespace (`scripts/dr-network-partition.sh`) — since
-capstone's default-deny floor (ADR-0016) then has no matching allow left,
-every Traefik-routed request to the app is dropped for the duration of
-the drill — then polls until the object reappears (ArgoCD's `selfHeal: true`
-on `gitops/platform/networkpolicy-appset.yaml`'s `syncPolicy.automated`
-reconciling the live drift back to git's declared state) or the 300 s budget
-is exceeded.
-
-This introduces no new failure mode: ArgoCD re-applying a manifest that
-drifted from git is the same guarantee `selfHeal: true` already provides for
-*any* live edit or deletion under its management, accidental or otherwise.
-The drill only *observes and times* that existing guarantee — its only
-real-world side effect is capstone's ingress route being briefly unreachable,
-the same outcome a maintainer's own `kubectl delete` typo would already cause.
-
-## Garage-failure drill (`make dr-garage-failure`)
-
-A third, distinct injected-failure scenario (same DORA Pillar 3 / TLPT concept
-as the two drills above) — `docs/dora-audit-readiness.md` Q12 named this as
-the last of its own follow-ups once the pod-kill and NetworkPolicy-delete
-drills existed: "Simulating Garage unavailability... a different failure
-domain (storage-layer availability)." Where `dr-chaos` and
-`dr-network-partition` both exercise capstone's recovery paths, this one
-targets Garage (`gitops/storage/garage/statefulset.yaml`, the lab's
-S3-compatible storage backend, ADR-0002) — the same Kubernetes
-ReplicaSet/StatefulSet self-heal mechanism `dr-chaos` proves out, just for a
-previously-uncovered component.
-
-```sh
-make dr-garage-failure   # kill the single-replica Garage pod, assert Kubernetes restores it within 120s
-```
-
-What it does: deletes the single running Garage pod live in the `storage`
-namespace (`scripts/dr-garage-failure.sh`) — Garage runs as a single-replica
-`StatefulSet` (no HA, per ADR-0005 — recreate over pretend-HA on one host),
-so this briefly interrupts S3 API availability for any in-flight request —
-then polls until a replacement pod's container reports ready (excluding the
-deleted pod's own name, the same self-heal-detection fix `dr-chaos.sh`'s own
-self-review found and fixed, reused here rather than reintroduced) or the
-120 s budget is exceeded.
-
-This introduces no new failure mode: pod-delete-then-recreate is a guarantee
-Kubernetes already provides for any StatefulSet-managed pod. The drill only
-*observes and times* that existing guarantee. Not covered by this drill: a
-multi-pod/quorum-loss scenario (not applicable — Garage runs single-replica
-in this lab) or a full node-loss scenario, both real, separately-scoped
-future gaps if ever worth closing.
-
-## Results history log ([`docs/dr-results-log.md`](dr-results-log.md))
-
-Each of the six drills above (`dr-restore`, `dr-bluegreen`, `dr-chaos`,
-`dr-network-partition`, `dr-garage-failure`, `capstone-demo`) appends one row — date, status (`PASS`/`FAIL`), elapsed
-seconds, budget seconds, objective tag — to
-[`docs/dr-results-log.md`](dr-results-log.md) on **every** run, pass or fail
-(`scripts/lib/dr-results-log.sh`'s `dr_log_result`, called from each script's
-exit path). This closes the gap `docs/dora-audit-readiness.md` Q13 named:
-pass/fail was already enforced by exit codes, but there was no historical
-trend — no way to see if, say, the restore is creeping toward its 600 s
-budget as the lab grows, only whether today's run passed. The log is
-append-only and never hand-edited or backfilled (ADR-0004) — it ships with
-just the header until a real run happens.
-
-## Single points of failure (and why true HA isn't possible here)
-
-Once you cut over to green and retire blue, two SPOFs remain — in **different paths**:
-
-| SPOF | Path | If it fails | Blast radius |
-|------|------|-------------|--------------|
-| **Front load balancer** (nginx `:8000`) | **Serving** | the stable endpoint is down until it restarts | the whole site, briefly |
-| **GitLab** (omnibus container) | **Control / recovery** | running workloads keep serving (ArgoCD holds last-synced state); but you can't sync changes or **recover** | no serving impact; recovery is blocked |
-
-**The hard truth: you cannot make this HA on a single machine.** HA needs ≥2
-independent failure domains; here the Colima VM (and the laptop) is itself the
-ultimate SPOF. Running two nginx front doors or two GitLabs on the same host removes
-nothing — they share the one thing that actually fails. So the honest lab goals are
-**resilience** (self-heal, fast restart) and **recoverability** (recreate-from-code),
-not true HA. What that looks like, and how you'd really do it in production:
-
-### Front load balancer
-- **Lab today:** the front door runs with `--restart unless-stopped`, so Docker
-  restarts it within ~1 s of a crash. That's *resilience*, not HA — a crash is still
-  a sub-second blip, and a host failure takes it down with everything else.
-- **Production HA:** the front LB is never a single box. Either a managed cloud LB
-  (multi-AZ, the cloud owns its redundancy), or a self-managed pair (HAProxy/nginx ×2)
-  sharing a **virtual IP via keepalived/VRRP**, fronted by **DNS** with health checks.
-  The VIP fails over between LBs in ~seconds; DNS spreads across regions. The point:
-  N≥2 LBs across N≥2 hosts/AZs, with an automatic failover mechanism.
-
-### GitLab (the DR irony)
-
-> **GitLab vs. Forgejo, as of 2026-08-17.** This section (and the "make up" order
-> table above) describes what a fresh `make up` bootstrap still literally does —
-> GitLab is the git source that gets stood up and configured, unchanged. The
-> currently-running lab's ArgoCD, however, was separately re-pointed at Forgejo
-> directly on the live cluster (PR #1205), so today's steady-state recovery-path
-> SPOF is Forgejo, not GitLab — the DR reasoning below (single git source = single
-> point of failure in the recovery path) applies identically either way, just to
-> whichever one is actually live. See
-> [docs/dependency-tree.md](dependency-tree.md)'s own "Known gap, not yet
-> reconciled" note for the same caveat in the bootstrap-order diagram.
-
-GitLab is the source of truth for a system whose *recovery* is GitOps — so a single
-GitLab means a single point of failure **in the recovery path itself**. Note it does
-*not* take serving down: if GitLab dies, every running workload keeps running on
-ArgoCD's last-synced state; only new syncs/recovery pause.
-- **Lab today:** GitLab is **recreate-from-code** — its data lives in the local clone
-  and both clusters' ArgoCD repo caches, and `make dr-test SCOPE=full` proves it
-  rebuilds and re-pushes from the local clone in ~5 min (RTO, not HA).
-- **Production HA:** GitLab Geo / a multi-replica HA topology (Postgres + Gitaly
-  Cluster + object storage), which is far too heavy for 16 GB. The lighter, lab-shaped
-  step toward removing the *recovery* SPOF is a **git mirror**: push-mirror the repo to
-  a second remote and let ArgoCD **fail over** its `repoURL` when GitLab is unreachable.
-  (Designed, not built — see the SPOF decision in `docs/decisions/`.)
-
-## The order (what `make up` does, and why)
+**Honest scope, as of 2026-09-07.** This lab went through a large, deliberate
+simplification the same day: Velero (backup/restore), Garage (its S3 target), the
+DR front door, capstone, and the chaos/network-partition/storage-failure/blue-green
+drills that all depended on them were removed entirely, no replacement. There is
+**no automated backup/restore, no fault-injection drill, and no zero-downtime
+cutover drill left in this lab** — full-cluster-recreate-from-git (`make down &&
+make up`) is the only recovery mechanism that remains. This is a plain statement of
+current fact (ADR-0004), not a gap to silently paper over: the maintainer's
+explicit direction this session was aggressive simplification, and a lab this small
+has no stateful data left worth a dedicated backup mechanism (see each removed
+component's own ADR Status for the reasoning).
+
+## What `make up` does, and why
 
 The only **imperative** steps are the day-0 seam (you can't GitOps the GitOps
-engine or its git source into existence). Everything after the root app-of-apps
-is reconciled by ArgoCD from GitLab.
+engine into existence). Everything after the root app-of-apps is reconciled by
+ArgoCD from GitHub.
 
-| # | Step | `make` target | Imperative? | Why this order |
-|---|------|---------------|-------------|----------------|
-| 1 | Colima VM | `colima-up` | yes | container runtime |
-| 2 | Terraform-state Garage | `tfstate-up` | yes (docker compose + `scripts/tfstate-bootstrap.sh`) | off-cluster S3 backend for Terraform state (ADR-0007); must precede any `terragrunt apply`, so before the cluster itself |
-| 3 | k3d cluster | `cluster-up` | yes (Terraform) | the substrate — created with **no CNI** (`--flannel-backend=none`, ADR-0014) |
-| 4 | Cilium CNI | `cilium-up` | yes (Helm) | the CNI — nodes stay `NotReady` and pods can't schedule until this runs; must precede ArgoCD (ADR-0014) |
-| 5 | CoreDNS host alias | `coredns-host-alias` | yes (`scripts/coredns-host-alias.sh`) | teaches CoreDNS to resolve `host.k3d.internal` (k3d 5.x on Colima omits this); needed before ArgoCD's `repoURL` (which targets `host.k3d.internal`) can resolve |
-| 6 | ArgoCD | `argocd` | yes (Terraform/Helm) | the GitOps engine — must exist before GitOps |
-| 7 | Forgejo | `forgejo-up` | yes (docker) | the git **source** every `Application.spec.source.repoURL` actually points at (ADR-0035, since PR #1205) — can't be created by ArgoCD (chicken-and-egg, ADR-0001) |
-| 8 | Forgejo repo + ArgoCD SSH deploy-key secret | `forgejo-repo-secret` | yes (`scripts/forgejo-repo-secret.sh`) | idempotently ensures the `lab/k8s-lab` org+repo exist and the `repo-forgejo-gitops` Secret (SSH deploy key) is loaded into the `argocd` namespace — **must** run before `root-app`, or its very first sync fails outright (`error creating SSH agent: SSH_AUTH_SOCK not-specified`); confirmed live 2026-09-06 |
-| 9 | GitLab omnibus | `gitlab-up` | yes (docker) | legacy — no live `Application` reads from it any more (superseded by row 7/8, ADR-0035); kept running pending the still-open GitLab decommission ROADMAP item, not because anything still depends on it |
-| 10 | GitLab project + repo secret + push | `gitlab-configure` | yes (Terraform + git) | legacy, same caveat as row 9 — mints root token (`scripts/gitlab-pat.sh`), creates the project + ArgoCD repo deploy-token (`repo-gitlab-gitops`, unused by any current `repoURL`), pushes the repo |
-| 11 | GitLab back down | `gitlab-down` | yes (docker compose) | found live 2026-09-06 (issue #633): rows 9/10 only need GitLab reachable for their own one-shot import+push, and nothing after this point depends on it staying up (row 8's Forgejo is the real `repoURL` target) — leaving it running cost ~3.1 GiB (27% of the 12 GB VM) for the rest of every session until this row was added |
-| 12 | App-of-apps | `root-app` | yes (`kubectl apply`) | the single seed; ArgoCD now syncs **everything else** |
-| 13 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | yes (`scripts/coredns-host-alias.sh nip-io-rewrite`) | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Traefik's in-cluster Service (nip.io's real DNS otherwise resolves it to a pod's own loopback); must run after `root-app` since Traefik (bundled with k3s, ADR-0040) needs a moment to be scheduled on cluster boot — polls up to `COREDNS_NIPIO_WAIT` (default 300s) rather than assuming it exists immediately |
-| 14 | Vault bootstrap | `vault-bootstrap` | yes (`scripts/vault-bootstrap.sh`) | init/unseal, store keys in `vault-keys`, enable KV, **generate+write secrets**, enable k8s auth + `eso` role |
-| 15 | Garage bootstrap | `garage-bootstrap` | yes (`scripts/garage-bootstrap.sh`) | assign layout, create S3 key + buckets, push the S3 key to Vault |
-| 16 | Cosign bootstrap | `cosign-bootstrap` | yes (`scripts/cosign-bootstrap.sh`) | generate the cosign keypair + seed the `cosign-public-key` ConfigMap in `kyverno` (idempotent, ADR-0019); needs Garage's S3 key in place first |
-| 17 | Front door | `frontdoor` | yes (`scripts/frontdoor-ensure.sh`) | bring up the stable `:8000` entry point to the active cluster (canonical lab entry) |
+| # | Step | `make` target | Why this order |
+|---|------|---------------|-----------------|
+| 1 | Colima VM | `colima-up` | container runtime |
+| 2 | k3d cluster | `cluster-up` | the substrate — ships with Flannel (CNI) + kube-router (NetworkPolicy) bundled and enabled, no separate CNI install step |
+| 3 | CoreDNS host alias | `coredns-host-alias` | teaches CoreDNS to resolve `host.k3d.internal` (k3d 5.x on Colima omits this) |
+| 4 | ArgoCD | `argocd` | the GitOps engine — must exist before GitOps |
+| 5 | App-of-apps | `root-app` | the single seed; ArgoCD now syncs everything else, directly from this repo's public GitHub remote |
+| 6 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Traefik's in-cluster Service |
+| 7 | Vault bootstrap | `vault-bootstrap` | init/unseal, store keys in `vault-keys`, enable KV, enable k8s auth + `eso` role |
 
-(Steps 14 and 18 of a prior version of this table — `gitlab-tls-bootstrap` and
-`grafana-gitsync-bootstrap` — were removed 2026-09-06, ADR-0041: Grafana's native
-Git Sync, their only reason to exist, no longer runs.)
+Once step 5 is done, **External Secrets** syncs Vault → k8s Secrets, and the
+remaining workloads (Traefik, cert-manager, lab-demo) come up on their own.
 
-Once 11–12 are done, **External Secrets** syncs Vault → k8s Secrets, and the
-workloads (Garage, Traefik, moto, …) come up on their own.
-
-Rows 9 and 10 are GitLab-era steps `make up` still runs for legacy reasons only
-(the GitLab→Forgejo cutover flipped every `repoURL` live, PR #1205, but GitLab's own
-decommission — dropping `gitlab/docker-compose.yml` + `infra/modules/gitlab-config` —
-is a separate, still-open ROADMAP item, deliberately kept a beat longer as a rollback
-path). Don't read this table as GitLab being the git source; it hasn't been since
-2026-08-17.
-
-### Secret dependency chain (subtle bit)
-- Vault must hold `secret/garage/server` **before** Garage starts (ESO → `garage-secrets` → Garage). `vault-bootstrap` generates it.
-- Garage's S3 access key is created **after** Garage is up, then pushed to Vault (`secret/garage/s3`) → ESO → `garage-s3`. `garage-bootstrap` does this.
-
-## Golden rules (keep it acyclic — ADR-0001)
+### Golden rules (keep it acyclic — ADR-0001)
 - **Never** source ArgoCD's git credentials or Vault's unseal key *from Vault*
-  (that creates an ArgoCD↔Vault cycle). The repo secret is Terraform-made; the
-  unseal key lives in the `vault-keys` k8s Secret.
+  (that creates an ArgoCD↔Vault cycle). The unseal key lives in the `vault-keys`
+  k8s Secret.
 - ESO/Vault being down does **not** kill running workloads — their k8s Secrets
   persist; only refresh/new-secret creation pauses.
 
-## What is NOT preserved on a rebuild
-Recreate model → fresh everything: new Vault root/unseal keys, new Garage S3 key,
-empty metrics history. That's expected for a throwaway lab. If you ever want true
-data survival across a *cluster* rebuild, that's a separate exercise (external
-backups; not in scope).
+### What is NOT preserved on a rebuild
+Recreate model → fresh everything: new Vault root/unseal keys. That's expected for
+a throwaway lab — there is no stateful application data left in this lab to lose
+(see the honest-scope note above).
+
+## `make dr-test`, `make dr-verify`, `make dr-destroy`
+
+The only DR mechanism this lab still has: prove the recreate-from-code claim end
+to end.
+
+```sh
+make dr-test                 # default scope=cluster: destroy + rebuild with `make up`, then verify
+make dr-test SCOPE=machine   # also delete the Colima VM (re-pulls all images)
+make dr-verify               # just the health assertions (no rebuild) — safe anytime
+make dr-destroy SCOPE=cluster # just the teardown
+```
+
+A third scope, `full` (also wiping the self-hosted Forgejo git remote), existed
+until 2026-09-07 — Forgejo was removed entirely that day, no replacement (the repo
+now lives only on its public GitHub remote, which a local DR drill neither destroys
+nor rebuilds), so it collapsed into `cluster` and was dropped.
+
+`dr-verify` checks (all live, no placeholders — see ADR-0004): nodes `Ready`,
+every ArgoCD `Application` `Synced`+`Healthy`, Vault initialized & unsealed, all
+`ExternalSecret`s `SecretSynced`. Each check polls until satisfied or its budget
+expires; exit 0 only if all pass.
+
+## Single points of failure (and why true HA isn't possible here)
+
+| SPOF | Path | If it fails | Blast radius |
+|------|------|-------------|--------------|
+| **Traefik / k3d load balancer** (`:8080`) | Serving | the only entry point is down until it restarts | the whole site, briefly |
+| **GitHub** (this repo's own remote) | Control / recovery | running workloads keep serving (ArgoCD holds last-synced state); but you can't sync changes or recover | no serving impact; recovery is blocked |
+| **Colima VM / the laptop itself** | Everything | total outage | the whole lab |
+
+**The hard truth: you cannot make this HA on a single machine.** HA needs ≥2
+independent failure domains; here the Colima VM (and the laptop) is itself the
+ultimate SPOF. So the honest lab goals are **resilience** (self-heal, fast
+restart) and **recoverability** (recreate-from-code), not true HA — see
+[ADR-0005](decisions/adr-0005-spof-recreate-over-ha.md).
 
 ## Recovery cookbook (single-component)
 - **Vault sealed** (after a pod restart): the in-cluster `vault-unsealer` re-unseals
   automatically within ~10s. Manual: `make vault-unseal`.
-- **GitLab down / freeing RAM:** `make gitlab-down` (keeps volumes), `make gitlab-up` to bring back.
 - **ArgoCD out of sync after a git push:** `kubectl -n argocd annotate applications.argoproj.io/root argocd.argoproj.io/refresh=hard --overwrite`.
-- **Re-run a bootstrap safely:** `vault-bootstrap` and `garage-bootstrap` are idempotent.
-- **GitHub→Forgejo sync job (`.forgejo/workflows/sync-from-github.yml`, RFC #1340)
-  failing:** this scheduled job fast-forward-merges GitHub's `main` into Forgejo's —
-  the mechanism that keeps ArgoCD's actual tracked remote (ADR-0035) current with
-  merged GitHub PRs. It's designed to fail loudly (not silently no-op) on two
-  distinct conditions, each needing a different fix:
-  - **Real divergence** (`git merge --ff-only` rejects): Forgejo's `main` has a
-    commit GitHub doesn't — almost certainly a live-cluster fix committed directly
-    against Forgejo without a matching GitHub PR (the exact gap issue #1335 found,
-    and the working-agreement rule this repo's `CLAUDE.md` now states to prevent
-    it going forward). Fix: a live-cluster session reconciles the two histories
-    (see standing issue #1345 for the one-time backlog this job's own future runs
-    don't cover) and opens the missing GitHub PR(s) for any Forgejo-only commit.
-  - **Network/reachability failure** (the `git fetch`/`git push` step itself fails
-    after exhausting `retry_cmd`'s budget): most likely the documented Colima-VM
-    egress-flakiness class (see `build-sign-push.yml`'s own header comment) —
-    usually transient, the job's next scheduled run typically recovers on its own.
-    If it recurs persistently, `github.com` may be durably unreachable from job
-    containers (not just flaky) — see `sync-from-github.yml`'s own header comment
-    for the specific prior finding this would confirm, and treat it as needing a
-    live-cluster re-diagnosis, not a bigger retry budget.
-  No `make` target exists for this — it's a Forgejo Actions schedule, not part of
-  `make up`'s bootstrap sequence; check its run history directly in the Forgejo
-  Actions UI.
+- **Re-run a bootstrap safely:** `vault-bootstrap` is idempotent.
 
 ### k3s embedded datastore (SQLite/kine) health
 
@@ -472,10 +114,7 @@ transaction has already been committed or rolled back"` errors on 2026-07-25.
 `state.db` had grown to 505MB with an 82MB uncheckpointed WAL. Notably, an earlier k3s
 server restart that same day had only bought ~6 hours of healthy compaction before the
 compactor silently died again — **a restart is not a durable fix by itself**, only a
-way to buy time until the same failure mode recurs. Sustained resource-reconciliation
-churn (Kyverno's own multi-day restart-loop history, dozens of continuously-reconciling
-ArgoCD Applications) is the plausible write-pressure driver, but the proximate cause is
-the compactor thread dying and never restarting itself, not datastore size in isolation.
+way to buy time until the same failure mode recurs.
 
 **Detect it:** `make k3s-datastore-health-check` (also runs as an informational,
 non-blocking section of `make health`) — checks `state.db`/WAL size, the gap since the
@@ -496,14 +135,12 @@ still work when the apiserver itself is the thing timing out).
    ADR-0004.
 3. **Last resort — recreate the cluster:** `make down && make up` gives a fresh
    `state.db` outright. This is the lab's standing recreate-from-code answer (ADR-0005)
-   and is always safe to reach for, but it's whole-cluster, not targeted, and workload
-   state not covered by Velero (`make dr-restore`) is lost — prefer options 1-2 first.
+   and is always safe to reach for, since there is no workload state left to lose.
 
 No k3s flag exists to *tune* the sqlite/kine compaction interval or force a manual
 compaction (unlike embedded etcd, which exposes `--etcd-arg`); the interval is
 internal to kine and not currently k3s-CLI-configurable. The mechanical guard here is
-therefore detection (the health check above), not prevention — there is no dial to turn
-that would structurally rule this class of failure out.
+therefore detection (the health check above), not prevention.
 
 **A restart's symptom relief is not proof the compactor thread itself resumed.**
 Confirmed 2026-08-17 (second real occurrence of this incident, `docs/incident-log.md`):
@@ -513,131 +150,6 @@ line appeared in the 20 minutes that followed — the restart clears the immedia
 symptom (flushes the WAL, restores query latency) without necessarily restarting the
 compactor goroutine itself. Re-run `make k3s-datastore-health-check` a while after any
 restart, not just immediately after, before trusting the incident is actually closed.
-
-### Harbor signed-image-pipeline verification (issues #631 / #633)
-
-**Why this exists:** since 2026-07-20, standing issues
-[#631](https://github.com/tooming/k8s-anywhere/issues/631) (confirm a CI run pushes a
-cosign-signed image to Harbor) and
-[#633](https://github.com/tooming/k8s-anywhere/issues/633) (confirm a Kargo canary
-promotion completes end-to-end) have had roughly a dozen live-cluster session
-attempts. Every attempt found and durably fixed a real, distinct bug — but none has
-yet completed one full pipeline run start to finish, because the *next* live session
-kept re-discovering the prior fixes from scratch by re-reading issue-comment history.
-This entry exists so that stops here: read this once, don't re-derive it.
-
-**Already fixed and durably in git (do NOT re-diagnose these — verify they're still
-applied, then move past them):**
-1. Cilium apiserver-connectivity drift after a k3d node IP reshuffle — fixed live via
-   `make cilium-up` (2026-07-29, non-persistent; re-check if it recurs).
-2. `artifactory` namespace's default-deny NetworkPolicy had no intra-namespace allow
-   (PR #884, 2026-07-29) — superseded by the Harbor cutover, kept for history.
-3. `envoy-gateway-system`'s egress NetworkPolicy never allowlisted the `harbor`
-   namespace (PR #968, 2026-08-04) — every Envoy→Harbor request timed out until this
-   merged.
-4. Stale Harbor admin credentials in Vault (`secret/harbor/registry`) and the GitLab
-   `HARBOR_USER`/`HARBOR_PASSWORD` CI variables — fixed live 2026-08-04 (not
-   GitOps-managed, no PR; re-verify these are still correct if `docker login` fails
-   again).
-5. No GitLab Runner was ever registered against this lab's GitLab instance, so no
-   pipeline had ever executed at all (PR #1026, 2026-08-04/05).
-6. `k3d-k8s-lab-server-0` node disk pressure caused Harbor pods to crashloop — found
-   2026-08-05 (root cause: a stopped-but-not-deleted DR green cluster,
-   `k8s-lab-green`, holding ~10GB of container volumes), fixed live 2026-08-06
-   (`k3d cluster delete k8s-lab-green`), and **confirmed resolved 2026-08-10**
-   (`DiskPressure: False`, 74% usage, issue
-   [#1034](https://github.com/tooming/k8s-anywhere/issues/1034) closed). Worth a
-   quick `df -h`/`kubectl describe node` sanity check given time has passed since,
-   but this is not a standing blocker.
-7. Vault sealed for 9+ hours, silently breaking ExternalSecrets cluster-wide,
-   including Harbor's (PR #1038, 2026-08-06).
-8. Harbor chart's default 1-second probe timeouts self-inflicted crashloops under
-   real host load — bumped to 5s (PR #1040, 2026-08-06).
-9. `allow-harbor-ingress.yaml`'s NetworkPolicy listed the Harbor **Service** port
-   (`80`) instead of the destination **pod's** real `containerPort` (`8080`) —
-   NetworkPolicy `ports:` always match the pod's port, never the Service's; this
-   silently blocked every cross-namespace request to Harbor for as long as the policy
-   existed (PR #1054, 2026-08-07).
-10. The `capstone-pipeline` namespace was stuck `Terminating` for 20 days — a
-    chicken-and-egg deadlock where Kargo's own controller (needed to clear the
-    finalizer) wasn't running because the `kargo` on-demand unit was down — fixed
-    live by bringing `kargo`'s controller stack up (2026-08-07, structural, no PR).
-11. Kargo 1.11.0's admission webhook rejects a `Warehouse` with
-    `imageSelectionStrategy: Digest` and no `constraint` field — added
-    `constraint: latest` (PR #1055, 2026-08-07).
-12. In-cluster pulls of `harbor.127.0.0.1.nip.io` resolved to the pulling pod's own
-    loopback, not Harbor's real Service (`nip.io` is host-only DNS) — fixed with a k3d
-    containerd registry mirror (`docs/done/2026-08-07-k3d-registry-mirror-harbor.md`,
-    ROADMAP item already checked off).
-13. `gitops/platform/harbor.yaml` used `registry.registry.extraEnvVarsSecret`, a field
-    that doesn't exist in the `goharbor/harbor` chart — Harbor's registry component
-    never actually received its S3 credentials, so every push failed with
-    `s3aws: NoCredentialProviders` (PR #1114, 2026-08-11). Switched to the chart's real
-    `extraEnvVars`/`valueFrom.secretKeyRef` mechanism.
-14. Kyverno's admission-controller webhook was crashlooping on a too-tight
-    chart-default startup-probe timeout, intermittently blocking ArgoCD from applying
-    the fix above (PR #1115, 2026-08-11).
-15. `harbor-jobservice` was missing half of the documented QEMU-emulation-crash
-    mitigation env (`GODEBUG=asyncpreemptoff=1`; only had `GOMAXPROCS=1`) — crashed
-    with `fatal error: sweep increased allocation count` (PR #1434, 2026-09-06).
-16. Forgejo's `HARBOR_USER`/`HARBOR_PASSWORD` CI secrets drifted from Harbor's live
-    admin credential a **second** time (recurrence of the 2026-08-04 finding, item 4
-    above) — this time given a real guard: `make harbor-up` now runs
-    `forgejo-harbor-secret-sync` automatically (PR #1437, 2026-09-06).
-17. Traefik (ADR-0040, supersedes the Envoy Gateway front door items 3/9/12 assumed)
-    was stuck in a liveness-probe restart loop (11 restarts/~75min) on the k3s-bundled
-    chart's stock 2s probe timeout — same class as items 8/14 (PR #1455, 2026-09-06).
-18. Any `IngressRoute` combining the plain-HTTP `web` entryPoint with a `tls: {}`
-    stanza silently fails to match on `web` with no error/access-log trace — broke
-    **every UI's plain-HTTP front door** (`http://<name>.127.0.0.1.nip.io:8000`) since
-    the ADR-0040 Traefik migration, including Harbor's and Kargo's own IngressRoutes.
-    Fixed by splitting all 10 affected IngressRoutes into separate `web`-only/
-    `websecure`-only objects, with a mechanical guard
-    (`scripts/ingressroute-web-tls-check.sh`, in `make ci`) so it can't silently
-    recur (PR #1461, 2026-09-06).
-19. Cilium's kube-proxy-free `KUBERNETES_SERVICE_HOST` drifted again (recurrence of
-    item 1 in the earlier "already fixed" numbering above, now
-    `docs/incident-log.md`'s 2026-09-06 row) after a `colima start` gave the k3d
-    server container a new docker-bridge IP — fixed live via `make cilium-up`, now
-    guarded by `make cilium-drift-check` (wired into `make health`).
-20. A prior session's `make gitlab-up` was never followed by `make gitlab-down` —
-    GitLab CE (decommissioned in favor of Forgejo, ADR-0035) sat running and
-    reclaimed ~3.1 GiB (27% of the 12 GB VM) on every `colima start` since, squarely
-    in the range every #633 host-capacity-ceiling finding has blamed. Fixed live via
-    `make gitlab-down` (docs/incident-log.md, 2026-09-06 row).
-
-**What's genuinely still needed — not a code fix, a live verification window:** every
-fix above is durable and in git. What has never yet happened is one session with
-*sustained* host headroom to keep Harbor's full stack (7 components + Postgres)
-stable through a complete `docker login && push && cosign sign` cycle without the
-host's load average climbing past 100 mid-attempt. Per the accumulated findings
-across every attempt above:
-1. Disk pressure (issue #1034) is already confirmed resolved as of 2026-08-10 — a
-   quick `df -h`/`DiskPressure` sanity check is still worth doing given time has
-   passed, but this is no longer a standing gate to check first.
-2. **Before bringing anything up on a freshly-resumed cluster, run `make
-   cilium-drift-check` and `make ondemand-budget-check`/`docker ps`** (items 19/20
-   above) — both silently ate entire sessions' worth of debugging time before being
-   traced to their actual root cause, and both are now a five-second check instead.
-3. Bring up Harbor **alone** — no Kargo, no other on-demand component running
-   concurrently — and give it a few minutes to fully stabilize before triggering
-   anything. Every prior attempt that hit a host-capacity ceiling did so with Harbor
-   and at least one other heavy on-demand unit running together. Note also
-   (2026-09-06): right after a cluster resume, ArgoCD's own post-outage
-   reconciliation backlog (every Application re-comparing at once) can itself
-   starve `argocd-repo-server` badly enough to `ComparisonError: DeadlineExceeded`
-   Harbor's own sync — this clears on its own once the backlog drains (watch
-   `kubectl -n argocd get application harbor -w`); it is not yet another host-capacity
-   ceiling finding, just normal post-resume churn, and does not need re-diagnosing
-   as one.
-4. Trigger a pipeline run, confirm `sign-image` completes, and verify a
-   `<digest>.sig` tag lands in Harbor's `library/hello` repository. Comment the result
-   on #631.
-5. Only then bring `kargo` up against the now-signed image and watch for a Warehouse
-   discovery → Freight → Promotion cycle to complete. Comment the result on #633.
-6. Once both are confirmed, the ROADMAP items gated on these issues
-   (`verifyImages` Enforce-flip, the O4 CI rejection-gate job, and capstone
-   `Deployment` removal) unblock in the same session or the next executor run.
 
 For severity triage when something breaks, see [`docs/incident-log.md`](incident-log.md)'s
 severity scheme (P0–P3) and its log of real incidents this lab has actually hit.

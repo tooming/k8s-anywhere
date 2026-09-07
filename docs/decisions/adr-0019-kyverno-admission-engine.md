@@ -1,8 +1,22 @@
 # ADR-0019 — Kyverno as the lab's admission policy engine (not OPA Gatekeeper)
 
-**Status.** Adopted. Decision taken by the architect routine in this RFC. Always-on
+**Status.** Removed 2026-09-07 (maintainer decision — component dropped from the lab
+entirely, no replacement, alongside capstone and Harbor/ADR-0024). All `gitops/kyverno/`,
+`gitops/governance/kyverno/`, `gitops/platform/kyverno.yaml`,
+`gitops/platform/kyverno-extras.yaml`, `gitops/platform/kyverno-policies.yaml`,
+`gitops/platform/kyverno-networkpolicy.yaml` manifests, the `lab-kyverno.json` dashboard,
+`scripts/cosign-bootstrap.sh`'s ConfigMap seed step, and every kyverno test and
+cross-reference were deleted in the same change. Its `verify-image-signatures`
+ClusterPolicy had already been deleted earlier the same day, when Harbor (ADR-0024, the
+policy's only image source) was itself dropped with no replacement — this ADR's removal
+closes out the admission-policy engine that policy used to run under. The decision record below is
+kept for history (why Kyverno was adopted, what it demonstrated) but no longer describes
+anything live in the repo — do not treat any manifest path or Makefile target named
+below as still existing.
+
+~~**Status.** Adopted. Decision taken by the architect routine in this RFC. Always-on
 component. CHARTER **Objective O1** (one of four Tier 1 next-wave components,
-due 2026-12-31) and **Objective O4** (every image cosign-signed and admission-verified).
+due 2026-12-31) and **Objective O4** (every image cosign-signed and admission-verified).~~
 
 ---
 
@@ -456,6 +470,26 @@ line. Rollback is a one-line `targetRevision` revert; ArgoCD's own
 ships on the `3.9.x` (or later) line with a security fix, or when this lab
 adopts one of the new policy CRD types (at which point the deprecation
 warning on the legacy types becomes directly relevant, not just noted).
+
+### 2026-09-07 — Removed, no replacement (maintainer decision)
+
+**Trigger.** Maintainer decision to drop Kyverno from the lab entirely, alongside
+capstone and Harbor/ADR-0024 (removed earlier the same day) in the same sweep.
+
+**Decision: remove, no replacement.** `gitops/kyverno/`, `gitops/governance/kyverno/`,
+`gitops/platform/kyverno.yaml`, `gitops/platform/kyverno-extras.yaml`,
+`gitops/platform/kyverno-policies.yaml`, `gitops/platform/kyverno-networkpolicy.yaml`,
+the `lab-kyverno.json` dashboard, `tests/kyverno.bats`,
+`tests/kyverno-add-default-runasnonroot.bats`, `tests/networkpolicy-kyverno.bats`, and
+every other kyverno cross-reference (governance leaf, ApplicationSet entry,
+`scripts/cosign-bootstrap.sh`'s ConfigMap seed step, dependency-register row) were
+deleted in the same change. Its `verify-image-signatures` ClusterPolicy — the
+in-cluster half of Objective O4 — had already been deleted earlier the same day
+alongside Harbor, its only image source.
+
+**Flip condition (next re-evaluation).** None — this is a terminal removal, not a
+version pin. Re-adopting an admission policy engine would need a fresh RFC, not a
+revisit of this entry.
 
 ---
 

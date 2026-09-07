@@ -6,27 +6,38 @@
 # Without this allow, the default-deny-all floor blocks webhook callbacks and
 # every Certificate/Issuer/ClusterIssuer create/update fails.
 #
-# This is a CiliumNetworkPolicy with `fromEntities: remote-node`, NOT a plain
-# NetworkPolicy `ipBlock: 10.43.0.1/32` (the shape this file used before).
-# Verified live with `cilium monitor --type drop` on a from-scratch cluster: k3s
-# embeds the apiserver in the server node's own process, so its outbound
-# webhook call arrives with Cilium's `remote-node` identity and the *node's*
-# pod-network IP as source — the apiserver Service ClusterIP (10.43.0.1) is
-# never the real source address on an outbound connection, so the old ipBlock
-# rule silently never matched (found while fixing the identical bug for
-# external-secrets' webhook — gitops/external-secrets/networkpolicy/
-# allow-eso-webhook-from-apiserver.yaml — on a from-scratch `make up`).
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
+# Plain networking.k8s.io/v1 NetworkPolicy — Cilium (ADR-0014) was removed
+# entirely 2026-09-07, no replacement. The prior CiliumNetworkPolicy used
+# `fromEntities: remote-node` because k3s embeds the apiserver in the server
+# node's own process: its outbound webhook call arrives with the *node's* real
+# pod-network IP as source, never the apiserver Service ClusterIP
+# (10.43.0.1) — confirmed live with `cilium monitor --type drop` on a
+# from-scratch cluster (see allow-eso-webhook-from-apiserver.yaml's header for
+# the full repro, observed source 10.0.0.194). Plain NetworkPolicy has no
+# "remote-node" equivalent — only podSelector/namespaceSelector/ipBlock — and
+# the node's real IP isn't practically pinnable from a Kustomize template (it
+# varies per k3d/Colima environment and across rebuilds). This uses an
+# ipBlock 0.0.0.0/0 ingress scoped strictly to TCP 10250, the same
+# not-practically-pinnable-target pattern this repo already uses elsewhere
+# (allow-argocd-repo-server-egress-charts.yaml).
+# Not a security regression versus the Cilium rule it replaces (that matched
+# ANY node too) — the real access boundary for admission webhooks is mTLS via
+# the CA cert-manager itself issues, not NetworkPolicy. NEEDS LIVE
+# VERIFICATION on the next cluster rebuild (ADR-0004) — flagged explicitly
+# rather than asserted as confirmed-working.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: allow-cert-manager-webhook-from-apiserver
   namespace: cert-manager
 spec:
-  endpointSelector: {}
+  podSelector: {}
+  policyTypes:
+    - Ingress
   ingress:
-    - fromEntities:
-        - remote-node
-      toPorts:
-        - ports:
-            - port: "10250"
-              protocol: TCP
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 10250
+          protocol: TCP

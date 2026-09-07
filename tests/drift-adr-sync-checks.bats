@@ -60,12 +60,10 @@ setup() {
   [[ "$output" == *"no ADR uses the self-tracking"* ]]
 }
 
-@test "adr-chart-version-sync-check: passes on the real repo's ADRs (ADR-0020/0021/0023 match their live pins)" {
+@test "adr-chart-version-sync-check: passes on the real repo's ADRs (no self-tracking chart-pin ADR left, since Argo Rollouts/ADR-0020, Velero/ADR-0021, and Kargo/ADR-0023 were all removed 2026-09-07)" {
   run bash "$REPO/scripts/adr-chart-version-sync-check.sh"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"adr-0020"* ]]
-  [[ "$output" == *"adr-0021"* ]]
-  [[ "$output" == *"adr-0023"* ]]
+  [[ "$output" == *"no ADR uses the self-tracking"* ]]
 }
 
 @test "adr-chart-version-sync-check: passes when a self-tracking table-row ADR matches its live gitops pin" {
@@ -129,21 +127,30 @@ setup() {
 }
 
 # --- context-doc-version-sync-check -------------------------------------------------
-@test "context-doc-version-sync-check: passes when context.md's citations match the live gitops pins" {
+# The script's only two check_one calls (KRO, ACK s3-controller — the Grafana/Pyroscope
+# ones were already removed 2026-09-06, ADR-0041) were themselves removed 2026-09-07
+# (ADR-0038: ACK/moto/KRO all dropped from the lab, no replacement). The checker now
+# tracks zero prose version citations, so it exits 0 unconditionally regardless of
+# fixture content — the tests/fixtures/context-doc-version-sync/{in-sync,drift}/
+# fixtures (built around a synthetic KRO/ACK citation) can no longer exercise real
+# drift detection. Left in place, still exercised below, so a regression that makes
+# the checker error out on these paths would still be caught; a real "detects drift"
+# test needs a new self-tracking citation with its own check_one call first.
+@test "context-doc-version-sync-check: passes on the in-sync fixture (checker currently tracks zero citations)" {
   run env CONTEXTDOCCHECK_ROOT="$FIX/context-doc-version-sync/in-sync" bash "$REPO/scripts/context-doc-version-sync-check.sh"
   [ "$status" -eq 0 ]
 }
 
-@test "context-doc-version-sync-check: fails when context.md's KRO citation no longer matches the live chart version (Grafana/Pyroscope checks removed 2026-09-06, ADR-0041)" {
+@test "context-doc-version-sync-check: also passes on the drift fixture (its KRO citation is no longer parsed by anything)" {
   run env CONTEXTDOCCHECK_ROOT="$FIX/context-doc-version-sync/drift" bash "$REPO/scripts/context-doc-version-sync-check.sh"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"context.md says"* ]]
+  [ "$status" -eq 0 ]
 }
 
-@test "context-doc-version-sync-check: passes on the real repo's context.md (KRO/ACK match their live pins)" {
+@test "context-doc-version-sync-check: passes on the real repo (no self-tracking citation left, since ACK/moto/KRO were removed 2026-09-07, ADR-0038)" {
   run bash "$REPO/scripts/context-doc-version-sync-check.sh"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"ACK s3-controller"* ]]
+  [[ "$output" != *"ACK s3-controller"* ]]
+  [[ "$output" != *"KRO chart version"* ]]
 }
 
 # --- dependency-register-check -------------------------------------------------------

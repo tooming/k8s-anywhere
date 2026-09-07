@@ -1,11 +1,12 @@
 #!/usr/bin/env bats
 # Clusterless structural + functional tests for scripts/lib/confirm.sh — the
 # shared "type-to-confirm" destructive-action gate extracted from
-# near-identical inline copies in scripts/dr-chaos.sh, scripts/dr-destroy.sh,
-# scripts/dr-test.sh, and scripts/dr-bluegreen-promote.sh (janitor cleanup,
-# mirrors the earlier scripts/lib/colors.sh / scripts/lib/budget-check.sh
-# extractions). Guards against the duplicate pattern creeping back in as new
-# destructive DR scripts get added.
+# near-identical inline copies in scripts/dr-destroy.sh and scripts/dr-test.sh
+# (janitor cleanup, mirrors the earlier scripts/lib/colors.sh /
+# scripts/lib/budget-check.sh extractions; a third original copy in
+# scripts/dr-chaos.sh was removed along with that script 2026-09-07, capstone
+# gone with no replacement). Guards against the duplicate pattern creeping
+# back in as new destructive DR scripts get added.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
@@ -62,8 +63,8 @@ setup() {
   [ -z "$hits" ]
 }
 
-@test "dr-chaos.sh, dr-destroy.sh, dr-test.sh, and dr-bluegreen-promote.sh all source lib/confirm.sh" {
-  for f in dr-chaos.sh dr-destroy.sh dr-test.sh dr-bluegreen-promote.sh; do
+@test "dr-destroy.sh and dr-test.sh both source lib/confirm.sh" {
+  for f in dr-destroy.sh dr-test.sh; do
     run grep -q 'lib/confirm.sh' "$REPO/scripts/$f"
     [ "$status" -eq 0 ]
   done

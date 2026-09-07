@@ -2,25 +2,31 @@
 
 *(renamed from `k8s-lab` 2026-07-13 to match the cloud-agnostic goal below)*
 
-A **cloud-agnostic GitOps platform** that wires a full cloud-native stack together as
+A **cloud-agnostic GitOps platform** that wires a small cloud-native stack together as
 portable infrastructure-as-code — so you can see how the pieces actually fit, not learn
 them in isolation. The identical `gitops/` state deploys to a free **localhost** cluster
 (the default: one 16 GB Mac, zero external dependencies) or to any CNCF-conformant
 **cloud** Kubernetes backend, chosen by swapping the Terraform/Terragrunt bootstrap
 module — never by forking the GitOps layer. See
-[ADR-0026](docs/decisions/adr-0026-cloud-agnostic-infrastructure.md). GitLab holds the
-manifests, and **ArgoCD continuously syncs everything else in**, identically regardless
-of where the cluster runs.
+[ADR-0026](docs/decisions/adr-0026-cloud-agnostic-infrastructure.md). This repo's own
+public GitHub remote holds the manifests, and **ArgoCD continuously syncs everything
+else in**, identically regardless of where the cluster runs.
 
-The sections below (Quick start, Endpoints, DR) describe the **localhost backend**,
-which is built today and remains the default. A second backend module targeting
-Oracle Cloud's Always Free tier is also built and partially verified against a real
-account — see [`infra/live/README.md`](infra/live/README.md) → Status for exactly
-what has and hasn't run end-to-end yet.
+The sections below (Quick start, Endpoints) describe the **localhost backend**, which
+is built today and remains the default. A second backend module targeting Oracle
+Cloud's Always Free tier is also built and partially verified against a real account —
+see [`infra/live/README.md`](infra/live/README.md) → Status for exactly what has and
+hasn't run end-to-end yet.
 
 Built as code end to end: **one command (`make up`) rebuilds the whole lab from
-scratch**, with self-verifying **disaster-recovery** and **zero-downtime blue/green**
-drills to prove recovery actually works.
+scratch**.
+
+**A large simplification landed 2026-09-06/2026-09-07.** This lab used to run a much
+larger stack (observability, Cilium, Garage, Forgejo, GitLab, Harbor, a DR front door +
+blue/green drill, capstone, Kyverno, Argo Rollouts, Velero, Trivy Operator, Kargo, ACK,
+and moto/KRO). All of it was removed entirely, no replacement, by explicit maintainer
+decision — see each component's own ADR Status for why. What's documented below is the
+lab's current, deliberately small shape, not a temporary gap to "finish" later.
 
 - 📊 **[docs/dependency-tree.md](docs/dependency-tree.md)** — full dependency & integration graph (who deploys / depends on / talks to whom)
 - 🛟 **[docs/DR.md](docs/DR.md)** — recovery model + the day-0 bootstrap chain
@@ -28,33 +34,17 @@ drills to prove recovery actually works.
 
 ## The stack
 
-Everything except Terraform/Terragrunt, GitLab, and the front door runs **in** the
-cluster, deployed by ArgoCD (one `Application` per component).
+Everything except Terraform/Terragrunt runs **in** the cluster, deployed by ArgoCD
+(one `Application` per component) — 6 always-on namespaces, nothing on-demand.
 
 | Layer | Tools |
 |-------|-------|
-| **Bootstrap (IaC)** | Terraform · Terragrunt · k3d (k3s-in-Docker) |
-| **GitOps** | GitLab (git source, omnibus container) · ArgoCD (engine, app-of-apps) |
-| **Ingress** | Traefik (north-south, bundled with k3s · `IngressRoute`/`TLSStore`/`TraefikService` CRDs; ADR-0040, ADR-0016) |
+| **Bootstrap (IaC)** | Terraform · Terragrunt · k3d (k3s-in-Docker, bundled Flannel CNI + kube-router NetworkPolicy) |
+| **GitOps** | GitHub (this repo's own public remote, git source) · ArgoCD (engine, app-of-apps) |
+| **Ingress** | Traefik (north-south, bundled with k3s · `IngressRoute`/`TLSStore` CRDs; ADR-0040, ADR-0016) — k3d's own load balancer publishes it directly on host `:8080`, no separate front door |
 | **Secrets** | Vault (KV v2) · External Secrets Operator |
-| **Storage** | Garage (S3-compatible) · s3manager (bucket browser) |
-| **Backup & restore** | Velero (cluster + PVC backups to Garage S3 · Kopia uploader · `velero-schedules` daily Schedules for data / capstone / vault · `velero-networkpolicy` default-deny overlay; ADR-0021) |
-| **Cloud / platform-eng** | moto (AWS mock) · ACK (AWS Controllers for K8s → moto) · KRO (Kube Resource Orchestrator — controller suspended 2026-08-25 for cluster-load reduction; its namespace/RBAC scaffolding stays auto-synced, re-enable by restoring `gitops/platform/kro.yaml`'s `automated` sync block) |
-| **CNI (bootstrap)** | Cilium (`make cilium-up` — run before `make argocd` on fresh clusters; ADR-0014) |
-| **Policy & supply chain** | Kyverno (NetworkPolicy default-deny fan-out · `kyverno-policies` ClusterPolicies: PSS-restricted validate + seccomp mutate + verifyImages; ADR-0016, ADR-0019) · Trivy Operator (`trivy-system-networkpolicy` default-deny overlay; continuous CVE scanning + SBOM generation; ADR-0022) · `governance` ApplicationSet (per-namespace LimitRange resource defaults fan-out; RFC #293) |
-| **TLS / certificates** | cert-manager (`cert-manager-root-ca` self-signed root CA bootstrap chain — `selfsigned-bootstrap` → root `Certificate` → `k8s-lab-ca` `ClusterIssuer` · `lab-gateway-certificate` wildcard `*.127.0.0.1.nip.io` Certificate terminating Traefik's `websecure` entrypoint via the shared `TLSStore` (ADR-0040), alongside the original `web`/`http` one · DR front door proxies `:8443` through as a TCP passthrough · `cert-manager-networkpolicy` default-deny overlay; ADR-0028) |
-| **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller — weight/pause canary steps via Traefik's built-in traffic-split (`TraefikService`); no automated SLO gate since the observability stack's removal, ADR-0041 · dashboard behind a Traefik `basicAuth` Middleware, RFC #1479 (GHSA-366v-5xmx-36vh) · `argo-rollouts-networkpolicy` default-deny overlay; ADR-0020, ADR-0040) |
-| **Promotion pipelines** | Kargo (`make kargo-up` / `make kargo-down` — Warehouse detects new image digests → Stage dev auto-promote → Stage prod manual gate · `kargo-project` capstone-pipeline Project · `kargo-networkpolicy` default-deny overlay · `kargo-project-networkpolicy` capstone-pipeline NetworkPolicy overlay; ADR-0023) |
-| **On-demand (heavy)** | Harbor CNCF OCI registry (`make harbor-up` / `make harbor-down` — Garage S3 backend; ADR-0024) · Kargo promotion engine (`make kargo-up` / `make kargo-down`) |
-
-> **GitLab vs. Forgejo, as of 2026-08-17.** The table above (and the `make up`
-> bootstrap and the `gitlab-`-prefixed commands below) describe what a fresh
-> bootstrap still literally does — GitLab is provisioned as the git source
-> (ADR-0035's migration items 3/4 not yet picked up). The already-running lab
-> was separately re-pointed at Forgejo directly on the live cluster (PR #1205),
-> so today's steady-state git source is Forgejo, not GitLab. See
-> [docs/dependency-tree.md](docs/dependency-tree.md)'s "Day-0 bootstrap chain"
-> section for the full explanation.
+| **TLS / certificates** | cert-manager (`cert-manager-root-ca` self-signed root CA bootstrap chain — `selfsigned-bootstrap` → root `Certificate` → `k8s-lab-ca` `ClusterIssuer` · `lab-gateway-certificate` wildcard `*.127.0.0.1.nip.io` Certificate · `cert-manager-networkpolicy` default-deny overlay; ADR-0028) |
+| **Demo app** | lab-demo (single static hello-world Deployment, `gitops/apps/demo/`, Docker Hub image) |
 
 ## Prerequisites
 
@@ -68,53 +58,46 @@ make preflight      # checks all of the above are on PATH
 ## Quick start — one command
 
 ```sh
-make up             # bootstrap the ENTIRE lab from scratch, in order (~10 min; GitLab's first boot dominates)
+make up             # bootstrap the ENTIRE lab from scratch, in order
 make status         # VM RAM + per-namespace usage + any unhealthy pods
 make dr-verify      # assert the whole lab is healthy end-to-end (real checks)
 ```
 
-`make up` runs the only imperative (day-0) steps — Colima → k3d → ArgoCD → GitLab →
-app-of-apps → Vault/Garage bootstrap — then ArgoCD reconciles everything else. The
-ordered chain is documented in [docs/DR.md](docs/DR.md). Run `make` with no target
-for the full command list.
+`make up` runs the only imperative (day-0) steps — Colima → k3d → ArgoCD → app-of-apps
+→ Vault bootstrap — then ArgoCD reconciles everything else directly from this repo's
+GitHub remote. The ordered chain is documented in [docs/DR.md](docs/DR.md). Run `make`
+with no target for the full command list.
 
 ## Endpoints
 
-After `make up`, UIs are served via the stable front door on **`:8000`**
-(hostnames resolve to 127.0.0.1 via `nip.io` — no `/etc/hosts` edits):
+After `make up`, UIs are served directly through Traefik on **`:8080`** — k3d's own
+load balancer publishes it on the host, there is no separate front-door process any
+more (hostnames resolve to 127.0.0.1 via `nip.io` — no `/etc/hosts` edits):
 
 | UI | URL |
 |----|-----|
-| ArgoCD | http://argocd.127.0.0.1.nip.io:8000 |
-| Vault | http://vault.127.0.0.1.nip.io:8000 |
-| S3 browser | http://s3.127.0.0.1.nip.io:8000 |
-| moto (AWS mock) | http://moto.127.0.0.1.nip.io:8000/moto-api/ |
-| Argo Rollouts *(HTTP Basic Auth — `vault kv get secret/argo-rollouts/dashboard`, RFC #1479)* | http://rollouts.127.0.0.1.nip.io:8000 |
-| Capstone *(demo app)* | http://capstone.127.0.0.1.nip.io:8000 |
-| GitLab | http://localhost:8929 |
-| Kargo *(on-demand)* | http://kargo.127.0.0.1.nip.io:8000 |
-| Harbor *(on-demand)* | http://harbor.127.0.0.1.nip.io:8000 |
+| ArgoCD | http://argocd.127.0.0.1.nip.io:8080 |
+| Vault | http://vault.127.0.0.1.nip.io:8080 |
 
-`make argocd-password` prints the ArgoCD admin password. `:8080` is a per-cluster
-Traefik LB port used underneath the front door and is not the canonical UI entrypoint.
+`make argocd-password` prints the ArgoCD admin password.
 
-## Disaster recovery & blue/green
+## Disaster recovery
 
-The lab is **recreate-from-code**, and recovery is *exercised*, not assumed:
+The lab is **recreate-from-code**. There is no automated backup/restore, fault-injection,
+or blue/green drill left (all removed entirely 2026-09-07, no replacement, along with
+the components they exercised) — the only recovery mechanism is a full rebuild from git:
 
 | Command | What it does |
 |---------|--------------|
-| `make dr-verify` | Real end-to-end health check: nodes, every ArgoCD app Synced+Healthy, Vault unsealed, all ExternalSecrets synced, Garage + buckets. Safe anytime. |
-| `make dr-test` | Full DR drill: **destroy** the lab → `make up` → verify. `SCOPE=cluster\|full\|machine`. |
-| `make dr-bluegreen` | **Zero-downtime** DR: stand up a 2nd (green) cluster, cut over via the front-door proxy, prove ~100% uptime with a continuous probe. |
-| `make dr-bluegreen-promote` | Migrate to green as a full stack and **retire blue** — serving never drops. |
+| `make dr-verify` | Real end-to-end health check: nodes, every ArgoCD app Synced+Healthy, Vault unsealed, all ExternalSecrets synced. Safe anytime. |
+| `make dr-test` | Full DR drill: **destroy** the lab → `make up` → verify. `SCOPE=cluster\|machine`. |
 
 See [docs/DR.md](docs/DR.md) and [ADR-0005](docs/decisions/adr-0005-spof-recreate-over-ha.md)
 (why true HA isn't possible on a single host, and what the lab does instead).
 
 ## Quality gates
 
-`dr-verify`/`dr-test` are the *top* of the pyramid — they need a live 16 GB lab. The
+`dr-verify`/`dr-test` are the *top* of the pyramid — they need a live cluster. The
 *bottom* is fast, clusterless, and runs on every push via GitHub Actions (and locally):
 
 | Command | What it checks |
@@ -128,28 +111,17 @@ See [docs/DR.md](docs/DR.md) and [ADR-0005](docs/decisions/adr-0005-spof-recreat
 Tools are optional locally (skipped with a note, like `make preflight`); CI installs
 them and enforces every gate.
 
-## The 16 GB reality
-
-The always-on stack above fits the 12 GB Colima VM (~7 GB used). Adding a **heavy**
-profile (Harbor, Kargo — TiDB, Istio ambient mesh + Kiali, and Longhorn were removed
-entirely 2026-09-06, no replacement) needs care, and two *full* stacks
-don't fit at once — proven by the blue/green drill, which is why its promote retires
-blue *before* growing green. GitLab runs as a standalone container (off the cluster
-budget; `make gitlab-down` frees ~3 GB).
-
 ## Layout
 
 - `infra/` — Terraform modules + Terragrunt live config (the day-0 bootstrap)
 - `gitops/` — what ArgoCD syncs: `bootstrap/` (root app-of-apps) → `platform/` (one
-  `Application` per component) → `network/ vault/ secrets/ storage/
-  moto/ ack/ kro/ apps/`; `bluegreen/` (green's serving-tier app-of-apps)
-- `gitlab/` — GitLab omnibus docker-compose · `.gitlab-ci.yml` — capstone build pipeline (builds `gitops/apps/demo/` → pushes to Harbor; see [docs/dependency-tree.md](docs/dependency-tree.md))
-- `scripts/` — bootstrap + DR/blue-green scripts + the quality gates (`lint.sh`, `validate-*.sh`, `test.sh`)
+  `Application` per component) → `network/ vault/ secrets/ apps/`
+- `scripts/` — bootstrap + quality-gate scripts (`lint.sh`, `validate-*.sh`, `test.sh`)
 - `tests/` — `bats` unit tests + fixtures · `.github/workflows/ci.yml` — the clusterless CI gates · `docs/` — architecture, DR, decisions, dependency tree
 
 ## Repo
 
-`main` lives in the local **GitLab** (the GitOps source ArgoCD reads from) and is
-mirrored to **GitHub**
-([github.com/tooming/k8s-anywhere](https://github.com/tooming/k8s-anywhere)).
-Push to GitLab for the running lab to pick up changes; GitHub is the public copy.
+`main` lives on **GitHub**
+([github.com/tooming/k8s-anywhere](https://github.com/tooming/k8s-anywhere)) — this
+repo's only git remote. There is no self-hosted git source any more (Forgejo and
+GitLab were both removed entirely, no replacement); ArgoCD clones directly from GitHub.

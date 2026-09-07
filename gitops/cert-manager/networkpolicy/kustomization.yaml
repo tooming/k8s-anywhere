@@ -6,6 +6,10 @@
 # replacement).
 # The allow-dns-and-apiserver baseline covers cert-manager's k8s API calls
 # (Certificate/Issuer reconcile, leader election, admission review fan-out).
+# zz-dns-clusterip-bridge.yaml (Cilium socket-LB workaround) dropped 2026-09-07
+# alongside Cilium itself, no replacement — kube-router enforces NetworkPolicy
+# post-DNAT, so it never needed the bridge (see allow-dns-and-apiserver.yaml's
+# own header for the full reasoning).
 # Wired into gitops/platform/cert-manager-networkpolicy.yaml (auto-synced, wave 4).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -15,5 +19,4 @@ namespace: cert-manager
 resources:
   - ../../network/policies/default-deny.yaml
   - ../../network/policies/allow-dns-and-apiserver.yaml
-  - ../../network/policies/zz-dns-clusterip-bridge.yaml
   - allow-cert-manager-webhook-from-apiserver.yaml

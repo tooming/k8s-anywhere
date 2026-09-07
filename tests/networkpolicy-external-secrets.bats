@@ -79,30 +79,33 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# fromEntities remote-node, not ipBlock 10.43.0.1/32: k3s embeds the apiserver in
-# the server node's own process, so its outbound webhook call carries Cilium's
-# remote-node identity + the node's real pod-network IP as source — the apiserver
-# Service ClusterIP is never the actual source address on an outbound connection,
-# so an ipBlock rule against it silently never matches. Verified live with
-# `cilium monitor --type drop` on a from-scratch cluster (the plain-NetworkPolicy
-# ipBlock version tried first here reproduced the exact same timeout). The same
-# fix was then applied to kyverno/cert-manager/keda/kargo's equivalent files,
-# which shared the identical (previously untested) bug.
-@test "allow-eso-webhook-from-apiserver is a CiliumNetworkPolicy using fromEntities remote-node" {
+# Plain networking.k8s.io/v1 NetworkPolicy, ipBlock 0.0.0.0/0 scoped to TCP 10250 —
+# Cilium (ADR-0014, `fromEntities: remote-node`) was removed entirely 2026-09-07,
+# no replacement. k3s embeds the apiserver in the server node's own process, so its
+# outbound webhook call carries the node's real pod-network IP as source, not the
+# apiserver Service ClusterIP — an ipBlock rule scoped to that ClusterIP (the
+# pre-Cilium pattern this file used before, and the actual live bug it fixed)
+# silently never matches. Plain NetworkPolicy has no "remote-node" equivalent, and
+# the node's real IP isn't practically pinnable from a Kustomize template, hence
+# the broad-but-port-scoped 0.0.0.0/0 ipBlock (see the file's own header).
+@test "allow-eso-webhook-from-apiserver is a plain NetworkPolicy (Cilium removed 2026-09-07)" {
+  run grep -q 'kind: NetworkPolicy' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
+  [ "$status" -eq 0 ]
   run grep -q 'kind: CiliumNetworkPolicy' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
-  [ "$status" -eq 0 ]
-  run grep -q 'remote-node' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
 }
 
-@test "allow-eso-webhook-from-apiserver does not regress to the broken ipBlock 10.43.0.1 pattern" {
-  run grep -q -- '- ipBlock:' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
+@test "allow-eso-webhook-from-apiserver does not regress to the broken ipBlock 10.43.0.1 ClusterIP pattern" {
+  # Excludes comment lines: the header legitimately explains *why* the old
+  # ipBlock:10.43.0.1 pattern was broken (history), which itself mentions the
+  # string — only an actual ipBlock: cidr field matters here.
+  run bash -c "grep -vE '^\s*#' '$ESO_NP/allow-eso-webhook-from-apiserver.yaml' | grep -q '10.43.0.1'"
   [ "$status" -ne 0 ]
 }
 
 @test "allow-eso-webhook-from-apiserver targets the webhook pod on port 10250" {
   run grep -q 'app.kubernetes.io/name: external-secrets-webhook' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
   [ "$status" -eq 0 ]
-  run grep -q 'port: "10250"' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
+  run grep -q 'port: 10250' "$ESO_NP/allow-eso-webhook-from-apiserver.yaml"
   [ "$status" -eq 0 ]
 }

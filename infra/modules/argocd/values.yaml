@@ -99,7 +99,7 @@ configs:
     # cert-manager-networkpolicy.yaml, kargo-networkpolicy.yaml,
     # kargo-project-networkpolicy.yaml, keda-networkpolicy.yaml,
     # kyverno-networkpolicy.yaml, velero-networkpolicy.yaml,
-    # trivy-system-networkpolicy.yaml, governance-appset.yaml,
+    # governance-appset.yaml,
     # networkpolicy-appset.yaml) has that field silently ignored by kubectl's
     # strict-decode/ArgoCD's own schema — it only "works" for those because
     # THIS global setting already covers the same LoadRestrictionsNone need.

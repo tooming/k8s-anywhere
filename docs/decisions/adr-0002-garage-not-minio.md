@@ -13,7 +13,22 @@ Longhorn is ever added. Distinct from moto's S3 (moto = AWS-API/IaC learning;
 Garage = real workload storage). Bootstrap (layout/key/buckets) is imperative via
 the `garage` CLI — see `scripts/garage-bootstrap.sh`.
 
-**Status.** Adopted. Deployed in `storage` ns; S3 verified.
+**Status.** Removed 2026-09-07 (maintainer decision — component dropped from the lab
+entirely, no replacement). Garage itself, s3manager (its browser UI, ADR-0039 — nothing
+left to browse once Garage is gone), and the off-cluster tfstate Garage backend
+(ADR-0007) were all removed in the same change: `gitops/storage/` (garage/, s3manager/,
+networkpolicy/), `gitops/platform/garage.yaml`, `gitops/platform/s3manager.yaml`,
+`gitops/secrets/garage-externalsecrets.yaml`, `gitops/secrets/garage-s3-storage-
+externalsecret.yaml`, `scripts/garage-bootstrap.sh`, `scripts/dr-garage-failure.sh`,
+`infra/tfstate/`, `scripts/tfstate-bootstrap.sh`, and every garage/s3manager-only test
+were deleted. The decision record below is kept for history (why Garage was adopted,
+what it replaced) but no longer describes anything live in the repo — do not treat any
+manifest path or Makefile target named below as still existing. Velero (ADR-0021) and
+Harbor (ADR-0024) both used Garage as their S3 backend and are left needing either a
+replacement backend or loss of that capability — not resolved by this removal, tracked
+as a cascading follow-up.
+
+~~**Status.** Adopted. Deployed in `storage` ns; S3 verified.~~
 
 ---
 

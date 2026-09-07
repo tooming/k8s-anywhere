@@ -32,7 +32,8 @@ not merely document. Evidence:
 - [ADR-0017](decisions/adr-0017-pod-security-standards-restricted.md) — Pod
   Security Standards `restricted` profile across namespaces.
 - [ADR-0022](decisions/adr-0022-trivy-operator-supply-chain.md) — continuous
-  vulnerability + SBOM scanning.
+  vulnerability + SBOM scanning. **Removed 2026-09-07, no replacement** — this
+  control no longer exists; see the ADR's Status for the removal note.
 
 ## Pillar 2 — ICT-related incident management, classification, reporting
 
@@ -52,12 +53,17 @@ against the issue/PR where it was found and fixed.
 
 ## Pillar 3 — Digital operational resilience testing
 
-DORA Articles 24–27 require regular resilience testing. This is the strongest,
-most literal mapping of the five: `make dr-verify`, `make dr-test`, and
-`make dr-bluegreen` are real, runnable recovery drills, not aspirational
+DORA Articles 24–27 require regular resilience testing. `make dr-verify` and
+`make dr-test` are real, runnable recovery drills, not aspirational
 descriptions — `make dr-test` destroys and rebuilds the lab from scratch and
-verifies it; `make dr-bluegreen` stands up a second cluster and cuts over with
-zero downtime. See [docs/DR.md](DR.md) for the full drill catalogue.
+verifies it; `make dr-verify` asserts the live lab is healthy end-to-end
+without a rebuild. The zero-downtime cutover drill that used to sit alongside
+them, `make dr-bluegreen` (blue/green pair behind a stable DR front door), was
+**removed entirely 2026-09-07, no replacement** — it depended on the DR front
+door and the second cluster it fronted, both gone the same day. This is a real
+narrowing of Pillar 3's mapping, not just a rename: the lab no longer
+demonstrates a zero-downtime cutover at all. See [docs/DR.md](DR.md) for the
+current drill catalogue and honest gap accounting.
 
 ## Pillar 4 — ICT third-party risk management
 
@@ -67,6 +73,8 @@ lab's closest analogs are supply-chain controls over the third-party software
 
 - [ADR-0022](decisions/adr-0022-trivy-operator-supply-chain.md) — Trivy
   Operator's continuous vulnerability + SBOM scanning of every deployed image.
+  **Removed 2026-09-07, no replacement** — this control no longer exists; see
+  the ADR's Status for the removal note.
 - `scripts/helm-chart-pin-check.sh` — a drift detector asserting every
   Helm-chart `Application` pins a `targetRevision` that actually exists in its
   chart repo (no unpinned, no silently-moving version).

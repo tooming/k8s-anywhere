@@ -9,12 +9,14 @@ has no cron of its own anymore — the executor invokes it as a fallback role (S
 whenever its own lane runs dry, which can happen more than once in a single run. CHARTER
 = the goals; this file = the next steps.
 
-The always-on stack is already built (Traefik, Vault, External Secrets, Garage,
-moto/ACK/KRO, the RabbitMQ + Valkey data layer, the demo app — the observability
-stack this bullet used to also name was removed entirely 2026-09-06 with no
-replacement, ADR-0041; the ArgoCD-app count above predates that removal and needs
-re-deriving). What's left is the heavy *on-demand* components, the end-to-end
-capstone, and cross-cutting hardening.
+The always-on stack, as of 2026-09-07, is exactly 6 namespaces: ArgoCD, cert-manager,
+External Secrets, Vault, lab-gateway (Traefik, bundled with k3s), and lab-demo (a
+single static hello-world Deployment). A large, deliberate simplification landed
+2026-09-06/2026-09-07: the observability stack, moto/ACK/KRO, the RabbitMQ + Valkey
+data layer, Cilium, Garage, Forgejo, GitLab, Harbor, the DR front door + blue/green
+drill, capstone, Kyverno, Argo Rollouts, Velero, Trivy Operator, and Kargo were all
+removed entirely, no replacement — see each component's own ADR Status. This is the
+lab's current, deliberately small shape, not a temporary gap to rebuild back up.
 
 ---
 
@@ -226,36 +228,20 @@ You review and merge plan PRs, same as implementation PRs.
 > Pick the topmost unchecked item. If it can't be done cleanly this run, fall
 > through to the next.
 >
-> **Status (updated 2026-08-18): O1, O2, and now O4 are all substantially done.**
-> All four Tier 1 next-wave components (Kyverno, Argo Rollouts, Velero, Trivy
-> Operator) are long since auto-synced with their own ADR, dashboard, and bats
-> coverage — CHARTER.md records O1 as met ahead of its 2026-12-31 date. The O2
-> tail this section used to track (PSS-restricted for `moto`/`ack-system`/
-> `lab-gateway`, NP for `tidb`/`tidb-admin`, both coverage-loop recurrence
-> guards) is fully checked off below; O2's own `argocd` PSS and
-> `envoy-gateway-system` NP gaps closed earlier still. The cloud-control-plane
-> dashboard (O5) shipped too (`lab-cloud-control-plane.json`, covering
-> kro+moto+ack-s3). **Objective O4** (due 2026-12-31, "every image is signed
-> and verified") landed both of its measurement criteria 2026-08-18: the
-> `verifyImages` ClusterPolicy flipped Audit → Enforce (`auto/cosign-enforce-flip`,
-> PR #1223, gated on issue #631's maintainer confirmation — a real signed image
-> observed landing in Harbor) and the CI step that proves an *unsigned* image
-> gets rejected (`auto/o4-ci-rejection-gate`, PR #1224) both merged. Both still
-> carry an ADR-0004 caveat this remote clusterless session cannot resolve: a
-> live Forgejo Actions run has not yet executed either job end-to-end (the
-> rejection-gate job also needs a `KUBECONFIG` secret the maintainer hasn't set
-> up yet, tracked as a standing `[Action required]` issue, #1229) — a
-> live-cluster/interactive session verifying that closes the loop, but no
-> further executor-buildable work remains for O4 itself.
->
-> The remaining unchecked items in this section are now the two sequentially-
-> blocked GitLab→Forgejo migration items (script/Makefile rename, full
-> decommission — both deliberately deferred pending live verification per their
-> own investigation notes) and the legacy capstone `Deployment` removal, gated
-> on issue #633 (still unconfirmed as of this update). When every item here is
-> gated, use rule #9's split-the-gate judgment before falling back to
-> coverage/hardening filler — don't assume there's nothing left just because
-> the checkboxes are gated.
+> **Status (updated 2026-09-07): the objectives this section used to track no
+> longer describe a live target.** Kyverno, Argo Rollouts, Velero, and Trivy
+> Operator — the "four Tier 1 next-wave components" O1 used to measure — were
+> all removed from the project entirely, no replacement, 2026-09-07, alongside
+> Harbor, Kargo, ACK, moto, KRO, Cilium, Garage, Forgejo, GitLab, the DR front
+> door, and capstone in the same maintainer-directed simplification. Every item
+> that used to be gated on issue #633 (the legacy capstone `Deployment` removal,
+> the GitLab→Forgejo migration items) is being **closed as moot in this same
+> change**, not left "still unconfirmed" — Harbor, Kargo, and Argo Rollouts no
+> longer exist in the project for #633's own maintainer-confirmation question to
+> apply to. See CHARTER.md's current Objective set for what this lab's goals
+> actually are now; this ROADMAP file's own historical `[x]` entries above
+> record what those four components demonstrated while they were live and are
+> left as accurate history, not rewritten.
 >
 > **WIP / size discipline reminder.** Per WAYS-OF-WORKING.md §3, target ≤ 400
 > changed lines per PR. Items below that risk crossing the cap carry a
@@ -679,8 +665,13 @@ there is no point where the lab loses a working git source or CI path.
   DORA audit Q17's named gap** →
   [docs/done/2026-08-18-dependency-exit-runbooks.md](docs/done/2026-08-18-dependency-exit-runbooks.md)
   (PR #1242)
-- [ ] 🟢 **Rename `scripts/gitlab-*.sh` → `scripts/forgejo-*.sh` + matching `Makefile`
-  targets** (bootstrap, TLS bootstrap, push, force-push, `rebase-prs`' GitLab leg);
+- [x] 🟢 **Rename `scripts/gitlab-*.sh` → `scripts/forgejo-*.sh` + matching `Makefile`
+  targets** — closed as moot 2026-09-07: GitLab was fully decommissioned (the
+  item right below), then Forgejo itself was also removed entirely, no
+  replacement, the same day (ADR-0035's Status) — the repo now lives only on its
+  public GitHub remote, so neither a `gitlab-*.sh`→`forgejo-*.sh` rename nor a
+  `forgejo-*.sh` script of any kind has anything left to apply to.
+  (bootstrap, TLS bootstrap, push, force-push, `rebase-prs`' GitLab leg);
   `tests/gitlab-compose.bats`/`tests/gitlab-push.bats` → `forgejo-*` bats files with
   equivalent coverage (mechanical-guard parity, not a regression). Prerequisite item
   (repoURL flip) is now done and GitLab itself is stopped (2026-08-17, `make
@@ -698,15 +689,40 @@ there is no point where the lab loses a working git source or CI path.
   update history:
   [docs/roadmap/investigations/2026-08-17-gitlab-forgejo-rename.md](docs/roadmap/investigations/2026-08-17-gitlab-forgejo-rename.md).
   Left unchecked rather than shipping a same-shaped-but-wrong rename (ADR-0004).
-- [ ] 🟢 **Decommission `gitlab/docker-compose.yml` + `infra/modules/gitlab-config`** —
-  GitLab is **stopped** as of 2026-08-17 (`make gitlab-down`, volumes kept for
-  rollback) but not yet removed from the repo — deliberately kept a beat longer than
-  the accelerated cutover above so there's a fast rollback path if Forgejo proves
-  unstable over a real work cycle, matching how Artifactory's decommission followed
-  (not preceded) Harbor's proven-live cutover
-  (`docs/done/2026-07-29-harbor-artifactory-decommission.md`). Update
-  `docs/dependency-register.md`'s GitLab row (currently flagged "still the live,
-  running component") to a Forgejo row once this lands.
+
+  **Update 2026-09-06 (live-cluster session) — the credential-wiring half of "`make
+  up`'s bootstrap sequence still calls the GitLab targets outright" is now closed**,
+  independently of this item: a fresh `make up` was reproduced live failing
+  `root-app`'s very first sync (missing `repo-forgejo-gitops` Secret — the exact gap
+  this investigation flagged). Fixed with `scripts/forgejo-repo-secret.sh` +
+  `make forgejo-repo-secret`, wired into `up` right after `forgejo-up` and before
+  `gitlab-up`/`root-app` — full writeup:
+  [docs/done/2026-09-06-forgejo-repo-secret-bootstrap-gap.md](docs/done/2026-09-06-forgejo-repo-secret-bootstrap-gap.md).
+  This item stays open: the SSH-based `forgejo-push`/`forgejo-force-push` replacement,
+  the TLS-layer question, and the actual `gitlab-*.sh` → `forgejo-*.sh` rename are
+  still undone — GitLab's targets still run in `up`, and no automated push exists yet
+  for a genuinely empty Forgejo repo.
+
+  **Update 2026-09-06 (live-cluster session, issue #633) — "legacy, harmless" was
+  wrong about the resource cost, even though the correctness call was right.**
+  `docker stats` showed the `gitlab` container alone holding ~3.1 GiB (27% of the
+  12 GB VM) for the entire rest of a session after a `make up`, because nothing in
+  the `up` sequence ever brought it back down — `gitlab-configure` only needs GitLab
+  reachable for its own one-shot Terraform-state import + initial push, and nothing
+  later in `up` (`root-app` now tracks Forgejo, per the repoURL flip already
+  mentioned above) depends on it staying up. Added `$(MAKE) gitlab-down` right after
+  `gitlab-configure` in the `up` target — GitLab still gets configured every fresh
+  bootstrap, it just doesn't sit there afterward burning a quarter of the VM. This is
+  a narrow, safe addition, not the full decommission this item is still tracking.
+- [x] 🟢 **Decommission `gitlab/docker-compose.yml` + `infra/modules/gitlab-config`** —
+  GitLab was stopped 2026-08-17; fully removed from the repo 2026-09-06 (`gitlab/`,
+  `infra/live/local/gitlab/`, `infra/modules/gitlab-config/`, `scripts/gitlab-*.sh`,
+  every Makefile target, `docs/dependency-register.md`'s row) as part of a broader
+  simplification pass (maintainer decision, issue #633 session) to reduce the always-
+  on host footprint. Forgejo (ADR-0035) was its immediate successor as the live git
+  source, but was itself removed entirely the very next day (2026-09-07, no
+  replacement, same simplification effort) — the repo now lives only on its public
+  GitHub remote.
 
 - [x] 🟢 **Add `make dependency-concentration-sync-check` — a mechanical `make ci`
   guard closing the "no mechanical drift guard yet" gap `docs/dependency-register.md`,
@@ -1688,29 +1704,12 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-09-auto-capstone-pipeline-psa.md](docs/done/2026-07-09-auto-capstone-pipeline-psa.md).
   (auto/capstone-pipeline-psa; PR #354)
 
-- [ ] 🟢 **Remove legacy capstone `Deployment` — Rollout is now the sole workload
-  owner** (CHARTER **Core Values** §"Production-shaped designs"; promised follow-up
-  from `auto/capstone-rollout` (2026-06-13) per `docs/done/2026-06-13-capstone-rollout.md`:
-  "A follow-up planner item will delete the Deployment once the Rollout is verified
-  end-to-end"; **maintainer-confirmation prerequisite: pick up ONLY after the
-  maintainer confirms the Argo Rollouts canary pipeline has been exercised end-to-end
-  on the live cluster — at least one successful Kargo promotion seen — the done-promise
-  gate, tracked as a standing `[Action required]` issue (#633, stays open until
-  confirmed); check it for a confirmation comment before treating this as satisfied;
-  skip to the next item if not verifiable this run**). Three deliverables:
-  (1) delete `gitops/apps/capstone/deployment.yaml` and remove `deployment.yaml`
-  from the `resources:` list in `gitops/apps/capstone/kustomization.yaml` (the
-  Rollout in `rollout.yaml` is the sole workload owner after this change; image-ref
-  and imagePullSecret are already on `rollout.yaml`); (2) update
-  `tests/capstone.bats` — replace the `"capstone Deployment exists"` assertion
-  with a `"capstone Deployment yaml is absent"` assertion (asserting
-  `gitops/apps/capstone/deployment.yaml` does NOT exist) and add a
-  `"capstone kustomization does not reference deployment.yaml"` assertion checking
-  `kustomization.yaml` does not list `deployment.yaml` — both act as
-  recurrence guards per CLAUDE.md's bug-fix-prevents-recurrence rule; (3) update
-  `docs/dependency-tree.md` capstone sub-graph to remove the Deployment node and
-  note the Rollout is the sole workload. `make ci` must pass. `docs/done/` entry
-  required. (auto/capstone-deployment-removal)
+- [x] 🟢 **Remove legacy capstone `Deployment` — Rollout is now the sole workload
+  owner** — closed as moot 2026-09-07: this item's own maintainer-confirmation
+  gate (issue #633) is being closed as moot in the same change, since capstone,
+  Argo Rollouts, Kargo, and Harbor were all removed from the project entirely, no
+  replacement, the same day — there is no `gitops/apps/capstone/` left at all
+  (Deployment, Rollout, or otherwise) for this item to act on.
 
 - [x] 🟢 **Chaos / fault-injection drill — `make dr-chaos`** — full verification
   writeup:

@@ -1,6 +1,8 @@
 # NetworkPolicy Kustomize overlay for the lab-gateway namespace (ADR-0016 §4 fan-out).
-# Pulls only the three shared baseline templates — default-deny-all floor,
-# allow-dns-and-apiserver, and the zz-dns-clusterip-bridge ClusterIP egress bridge.
+# Pulls only the two shared baseline templates — default-deny-all floor and
+# allow-dns-and-apiserver (the zz-dns-clusterip-bridge ClusterIP egress bridge was
+# dropped 2026-09-07 alongside Cilium itself, no replacement — see
+# allow-dns-and-apiserver.yaml's own header for why it's no longer needed).
 # No per-workload allow rules are needed: the lab-gateway namespace today holds only
 # the TLSStore CR (no pods run here; Traefik itself runs in kube-system, bundled
 # with k3s — ADR-0040, supersedes Envoy Gateway/ADR-0008).
@@ -15,4 +17,3 @@ namespace: lab-gateway
 resources:
   - ../policies/default-deny.yaml
   - ../policies/allow-dns-and-apiserver.yaml
-  - ../policies/zz-dns-clusterip-bridge.yaml

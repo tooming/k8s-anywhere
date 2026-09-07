@@ -1,9 +1,24 @@
 # ADR-0021 — Velero for cluster + PVC backup/restore to Garage S3
 
-**Status.** Adopted. Decision taken by the architect routine in this RFC. Always-on
+**Status.** Removed 2026-09-07 (maintainer decision — component dropped from the lab
+entirely, no replacement; its S3 backend, Garage, was already removed the same day).
+All `gitops/velero/`, `gitops/governance/velero/`, `gitops/platform/velero.yaml`,
+`gitops/platform/velero-extras.yaml`, `gitops/platform/velero-schedules.yaml`,
+`gitops/platform/velero-networkpolicy.yaml`, `gitops/secrets/velero-s3-externalsecret.yaml`
+manifests, the `lab-velero.json` dashboard, and every velero test and cross-reference
+were deleted in the same change. `scripts/dr-restore.sh`'s `velero restore
+create --from-schedule` path, the make dr-restore Makefile target that invokes it,
+and its own `tests/dr-restore.bats` coverage are now dead code targeting a controller
+that no longer exists — left in place pending a dedicated follow-up rather than
+rewritten in this change (see `docs/decisions/adr-0021-velero-backup-restore.md`'s own
+Re-evaluation log entry below). The decision record below is kept for history (why
+Velero was adopted, what it demonstrated) but no longer describes anything live in the
+repo — do not treat any manifest path or Makefile target named below as still existing.
+
+~~**Status.** Adopted. Decision taken by the architect routine in this RFC. Always-on
 component. CHARTER **Objective O1** (one of four Tier 1 next-wave components,
-due 2026-12-31) and **gates Objective O3** (`make dr-restore` recovers every
-stateful namespace from latest Velero backup in under 10 min).
+due 2026-12-31) and **gates Objective O3** (make dr-restore recovers every
+stateful namespace from latest Velero backup in under 10 min).~~
 
 ---
 
@@ -11,7 +26,7 @@ stateful namespace from latest Velero backup in under 10 min).
 
 CHARTER Core Value *Stateful DR is exercised* requires every stateful
 namespace (`data`, `capstone`, `vault`) to have a Velero schedule and
-a `make dr-restore` path that recovers from the **latest backup**, not just
+a make dr-restore path that recovers from the **latest backup**, not just
 re-creates the workload from manifest. Today there is no backup layer at all:
 `make dr-test` rebuilds workloads via `make up` (manifest re-apply), which is
 correct for stateless workloads but silently loses every PVC's contents and
@@ -32,10 +47,11 @@ filesystem-snapshot uploader (the in-tree default since Velero 1.11).
 
 ### Chart + version
 
-- **Chart:** `vmware-tanzu/velero` `12.1.0` (`appVersion: 1.18.1`; pin lives in
-  `gitops/platform/velero.yaml`'s `targetRevision` — this note read "v8.4.x
-  (latest 8.x stable at executor pickup time)" until the 2026-07-20 RFC #617
-  bump; see [§Re-evaluation log](#re-evaluation-log) for the full history).
+- **Chart:** `vmware-tanzu/velero` `12.1.0` (`appVersion: 1.18.1`; pin **lived** in
+  `gitops/platform/velero.yaml`'s `targetRevision` until the component was removed
+  2026-09-07 — that file no longer exists. This note read "v8.4.x (latest 8.x stable
+  at executor pickup time)" until the 2026-07-20 RFC #617 bump; see [§Re-evaluation
+  log](#re-evaluation-log) for the full history up to removal).
 - **Source:** `https://vmware-tanzu.github.io/helm-charts`
 - **Namespace:** `velero` (new namespace; PSA label `restricted`).
 
@@ -101,7 +117,7 @@ Each `Schedule` uses `defaultVolumesToFsBackup: true` so PVCs are captured
 via Kopia regardless of CSI driver. Restic is **not** used (deprecated in
 Velero 1.14; Kopia is the replacement).
 
-### `make dr-restore` target (Objective O3 enabler)
+### make dr-restore target (Objective O3 enabler)
 
 ```makefile
 dr-restore: ## Restore every stateful namespace from latest Velero backup (Objective O3)
@@ -155,7 +171,7 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 
 **In scope** — backup of every stateful namespace listed in CHARTER O3
 (`data`, `capstone`, `vault`, `observability`); restore via
-`make dr-restore`; real-metric dashboard.
+make dr-restore; real-metric dashboard.
 
 **Out of scope (this RFC):**
 
@@ -191,7 +207,7 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
 | `gitops/velero/networkpolicy/kustomization.yaml` | Default-deny overlay |
 | `gitops/secrets/velero-s3-externalsecret.yaml` | Renders `cloud-credentials` Secret from Vault |
 | `scripts/garage-bootstrap.sh` | Day-0 seam — create `velero-key` + bucket, seed Vault path |
-| `scripts/dr-restore.sh` | `make dr-restore` runner — Objective O3 |
+| `scripts/dr-restore.sh` | make dr-restore runner — Objective O3 |
 | `Makefile` | New `dr-restore` target |
 | `gitops/platform/observability-alloy.yaml` | New `velero` scrape job |
 | `grafana/dashboards/lab-velero.json` | Real-metric dashboard (Objective O5) |
@@ -315,3 +331,29 @@ backup duration p95, backup/restore phase counters, node-agent pod status.
   version. **Status: resolved.** Both the "Chart + version" summary above and
   the 2026-07-18/2026-07-20 log entries are now superseded by the live pin;
   this closes the flip condition.
+
+### 2026-09-07 — Removed, no replacement (maintainer decision)
+
+**Trigger.** Maintainer decision to drop Velero from the lab entirely, alongside its
+S3 backend Garage (removed the same day) and capstone/Kargo/Argo Rollouts/Kyverno in
+the same sweep.
+
+**Decision: remove, no replacement.** `gitops/velero/`, `gitops/governance/velero/`,
+`gitops/platform/velero.yaml`, `gitops/platform/velero-extras.yaml`,
+`gitops/platform/velero-schedules.yaml`, `gitops/platform/velero-networkpolicy.yaml`,
+`gitops/secrets/velero-s3-externalsecret.yaml`, the `lab-velero.json` dashboard,
+`tests/velero.bats`, `tests/networkpolicy-velero.bats`,
+`tests/securitycontext-velero.bats`, and every other velero cross-reference
+(governance leaf, ApplicationSet entry, dependency-register row) were deleted in the
+same change. `scripts/dr-restore.sh` (`velero restore create --from-schedule`),
+`scripts/dr-chaos.sh`, and `scripts/dr-network-partition.sh` (all capstone-targeted),
+along with their dr-restore/dr-chaos/dr-network-partition Makefile targets and
+`scripts/lib/budget-check.sh`/`scripts/lib/dr-results-log.sh` (the shared libraries
+these scripts were their last remaining callers of), were deleted 2026-09-07 as the
+dedicated follow-up this note used to flag as pending — see docs/DR.md's current,
+much narrower DR-capability section for what replaced them (in short: nothing;
+full-cluster-recreate-from-git is the only DR mechanism left).
+
+**Flip condition (next re-evaluation).** None — this is a terminal removal, not a
+version pin. Re-adopting cluster/PVC backup would need a fresh RFC (and a new S3
+backend decision, since Garage is also gone), not a revisit of this entry.

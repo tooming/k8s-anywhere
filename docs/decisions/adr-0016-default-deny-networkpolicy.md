@@ -1,4 +1,4 @@
-# ADR-0016 — Default-deny NetworkPolicy per namespace (Cilium-enforced)
+# ADR-0016 — Default-deny NetworkPolicy per namespace
 
 **Status.** Adopted. Decision taken in RFC #82. Pilot namespace: `data`. **Fan-out is
 complete** as of 2026-07-14 — every always-on namespace (plus the on-demand ones that
@@ -15,16 +15,39 @@ current than any static table in this ADR could stay.
 deny-by-default, allow-by-exception network-segmentation model expressed in the
 standard `networking.k8s.io/v1 NetworkPolicy` API. This requires:
 
-1. A policy-capable CNI — covered by **ADR-0014** (Cilium, swapping out
-   k3s-default Flannel which does not enforce `NetworkPolicy`).
+1. A policy-capable CNI — originally covered by **ADR-0014** (Cilium, swapping
+   out k3s-default Flannel + kube-router). ADR-0014 was removed entirely
+   2026-09-07, no replacement — see "Cilium's removal" below for what enforces
+   this ADR's policies now.
 2. The policy fan-out itself: two baseline policies per namespace (deny-all +
    allow-DNS-and-apiserver) plus per-workload explicit-allow policies.
 
-Without ADR-0014's Cilium prerequisite every `NetworkPolicy` object lands
-declaratively but is silently non-functional — exactly the "fabricated content"
-anti-pattern ADR-0004 forbids. This ADR therefore depends on ADR-0014 being
-active (i.e. the cluster has been brought up with `disable_default_cni = true`
-and `make cilium-up` has run).
+Without a policy-capable CNI every `NetworkPolicy` object lands declaratively
+but is silently non-functional — exactly the "fabricated content" anti-pattern
+ADR-0004 forbids. This ADR depends on the cluster's CNI actually enforcing
+`networking.k8s.io/v1 NetworkPolicy` — true of k3s's bundled Flannel + kube-router
+today (kube-router is the piece that enforces; Flannel is only the data plane).
+
+### Cilium's removal (2026-09-07) — enforcement moved, the pattern didn't
+
+Cilium (ADR-0014) was removed entirely 2026-09-07, no replacement — host capacity
+found live with hard evidence (docs/incident-log.md) plus the maintainer's
+"no replacement, aggressive simplification" direction this session. k3s's bundled
+Flannel CNI + **kube-router** NetworkPolicy controller enforces this ADR's policies
+now, as plain `networking.k8s.io/v1 NetworkPolicy` — the same API this ADR always
+targeted, so no policy YAML needed to change shape.
+
+The enforcement mechanics did change, though: under kube-router's iptables-based
+`FORWARD`-chain enforcement, kube-proxy's ClusterIP DNAT happens first (in the
+`nat` table's `PREROUTING` chain), so a NetworkPolicy rule evaluates against
+already-DNAT'd traffic — the real backend pod's IP, not the ClusterIP. This is the
+opposite order from Cilium's kube-proxy-free socket-LB datapath, which evaluated
+policy *before* a ClusterIP was ever resolved to a backend pod. Practically: a
+plain podSelector/namespaceSelector rule against the real destination pods now
+works correctly, and needs none of the socket-LB/pre-DNAT ClusterIP-CIDR
+workarounds Cilium required for Service-fronted egress. See
+[`gitops/network/policies/allow-dns-and-apiserver.yaml`](../../gitops/network/policies/allow-dns-and-apiserver.yaml)'s
+header comment for the full technical detail this paragraph summarizes.
 
 ---
 
@@ -66,23 +89,28 @@ Each namespace's Kustomize overlay sets `namespace:` in a patch so a single
 | Phase | Scope | Rationale |
 |-------|-------|-----------|
 | **Pilot** (this ADR) | `data` namespace | RabbitMQ + Redis are self-contained, the existing "Lab — RabbitMQ" / "Lab — Redis" dashboards and `data-demo` load generator give immediate signal if a policy is wrong. (Historical: the `data` namespace, RabbitMQ, and Valkey — Redis's successor, ADR-0018 — were removed from the lab entirely 2026-09-06; the pilot itself, and the pattern it established, still stands.) |
-| **Fan-out** (planner-groomed items, one namespace per executor run) | Every remaining always-on namespace, delivered two ways: (a) the `networkpolicy` `ApplicationSet` (`gitops/platform/networkpolicy-appset.yaml`, list-generator, wave 3, generated Applications at wave 4) — the majority of namespaces; (b) a handful of standalone `<ns>-networkpolicy` Applications for namespaces whose overlay predates the appset or that carry component-specific wiring (`kyverno`, `trivy-system`, `argo-rollouts`, `velero`, `kargo`, `kargo-project`) | Sequential, one namespace per executor run so failures are isolated; the appset consolidated most of the standalone Applications this pattern originally produced into one list, per RFC #82's spirit without one YAML file per namespace in `gitops/platform/`. |
-| **On-demand namespaces** | `harbor` | **Auto-synced ahead of the on-demand bring-up**, not "with" it as originally planned — the namespace's default-deny floor (via the appset) is in place *before* `make <name>-up` ever admits a pod, so there's no policy race on first bring-up. Same `automated: {prune, selfHeal}` policy as every other appset entry. |
+| **Fan-out** (planner-groomed items, one namespace per executor run) | Every remaining always-on namespace, delivered via the `networkpolicy` `ApplicationSet` (`gitops/platform/networkpolicy-appset.yaml`, list-generator, wave 3, generated Applications at wave 4) | Sequential, one namespace per executor run so failures are isolated; the appset consolidated the standalone per-namespace Applications this pattern originally produced into one list, per RFC #82's spirit without one YAML file per namespace in `gitops/platform/`. |
 | **Out of scope** | `kube-system` | Contains kube-dns, metrics-server, and the kubelet's SA issuer; flows are complex and a policy mistake here takes the cluster down. Unchanged since this ADR was adopted. |
 
 ---
 
-## Why Cilium (from ADR-0014)
+## Why kube-router (formerly Cilium, ADR-0014)
 
-The detailed CNI-choice rationale lives in ADR-0014. Summary:
+Cilium was this lab's CNI/policy engine from adoption until its removal
+2026-09-07 (ADR-0014, no replacement — see "Cilium's removal" above). k3s's
+bundled Flannel + kube-router — the option ADR-0014 originally rejected — is
+what actually enforces this ADR's `NetworkPolicy` objects today:
 
-- k3s's bundled Flannel does not enforce `NetworkPolicy` — any policy placed
-  before the CNI swap is silently non-functional.
-- Cilium (CNCF graduated 2023) is the eBPF-native CNI that new clusters reach
-  for in 2026. It enforces standard `NetworkPolicy` and provides the richer
-  `CiliumNetworkPolicy` for future L7 rules.
-- Calico was considered — still excellent, rejected because Cilium fits the
-  lab's eBPF learning angle better and `kubeProxyReplacement` removes a layer.
+- k3s's bundled Flannel provides the data plane; kube-router (also bundled)
+  is the piece that actually enforces standard `networking.k8s.io/v1
+  NetworkPolicy` — without it, any policy placed would be silently
+  non-functional, same risk Cilium's absence would have posed originally.
+- What's given up versus Cilium: eBPF-datapath performance, `kubeProxyReplacement`,
+  Hubble observability, and the richer `CiliumNetworkPolicy` L7 dialect. None of
+  those were load-bearing for this ADR's actual decision (plain
+  `networking.k8s.io/v1 NetworkPolicy`, never `CiliumNetworkPolicy`), so the
+  removal cost this ADR nothing beyond the enforcement-order change described
+  above.
 
 ---
 
@@ -102,29 +130,25 @@ The detailed CNI-choice rationale lives in ADR-0014. Summary:
 
 ## Scope & exceptions
 
-**Namespaces in scope — fan-out complete (2026-07-14).** As of 2026-09-06 (TiDB,
-Istio+Kiali, and Longhorn removed from the lab entirely — see each ADR's Status;
-the observability stack — and with it the `observability` and `node-exporter`
-namespaces — removed the same day with no replacement, ADR-0041; Envoy Gateway —
-and with it the `envoy-gateway-system` namespace — removed 2026-09-06 alongside
-the Traefik migration, ADR-0040; RabbitMQ, Valkey, and KEDA removed the same day too —
-see each ADR's Status; RabbitMQ/Valkey's removal also retired the `data` namespace
-itself, since it held nothing else), 18 namespaces carry the two-policy floor:
-`ack-system`, `argo-rollouts`, `argocd`, `capstone`, `capstone-pipeline`,
-`cert-manager`, `external-secrets`, `harbor`,
-`kargo`, `kro`, `kyverno`, `lab-demo`, `lab-gateway`,
-`moto`, `storage`,
-`trivy-system`, `vault`, `velero`. This list drifts as new components land — treat
-[docs/dependency-tree.md](../dependency-tree.md) as the live source of truth and this
-ADR as the *pattern*, not the enumeration.
+**Namespaces in scope — fan-out complete (2026-07-14).** As of 2026-09-07, this
+lab is down to exactly 6 always-on namespaces, all carrying the two-policy floor:
+`argocd`, `cert-manager`, `external-secrets`, `lab-demo`, `lab-gateway`, `vault`.
+(Every other namespace this ADR previously enumerated — `ack-system`,
+`argo-rollouts`, `capstone`, `capstone-pipeline`, `harbor`, `kargo`,
+`kargo-project`, `kro`, `kyverno`, `moto`, `storage`, `trivy-system`, `velero`,
+plus the earlier `data`, `observability`, `node-exporter`, `envoy-gateway-system`,
+`istio-system`, `longhorn-system`, and `tidb`/`tidb-admin` — was removed from the
+lab entirely, no replacement, across a series of 2026-09-06/2026-09-07 removals;
+see each component's own ADR Status.) This list drifts as new components land —
+treat [docs/dependency-tree.md](../dependency-tree.md) as the live source of
+truth and this ADR as the *pattern*, not the enumeration.
 
 **Carve-outs / special handling:**
 
 | Namespace | Treatment | Reason |
 |-----------|-----------|--------|
 | `kube-system` | out of scope | DNS, metrics-server, API issuer — a mistake here brings the cluster down. Separate RFC. |
-| `harbor` (on-demand) | policy auto-synced ahead of the component's own on-demand bring-up | The default-deny floor is in place before `make <name>-up` admits any pod — no policy race on first bring-up. Originally planned as "lands with the bring-up PR"; the appset pattern made pre-provisioning both possible and simpler. |
-| `argocd`, `harbor` | single broad `podSelector: {}` intra-namespace allow (`allow-{argocd,harbor}-intra-namespace.yaml`) instead of one explicit per-flow policy per edge | Formalized 2026-07-15 (found via ROADMAP rule #9's coverage/hardening sweep — this is the **general, already-consistent convention** across every multi-component namespace, not a one-off: each of these namespaces hosts a single purpose-built, tightly-coupled multi-component stack (ArgoCD's controller/server/repo-server/cache; Harbor's core/registry/jobservice/portal/database) with no independent tenants mixed in, and each manifest's own header comment already carried this exact rationale before this row existed. **General principle (to prevent this same gap recurring for a future namespace):** a namespace may use one broad intra-namespace allow instead of per-flow policies when every pod in it is part of the same single-tenant, purpose-built multi-component stack — the cross-namespace boundary is the security perimeter ADR-0016 protects; the intra-namespace convenience allow never widens *that* boundary. **Flip condition:** if a future namespace-scoped threat model requires intra-namespace segmentation, replace this with explicit per-flow policies per the ADR's general pattern. (This row also covered `observability`, `istio-system`, `longhorn-system`, and `tidb` until those components were removed from the lab entirely 2026-09-06.) |
+| `argocd` | single broad `podSelector: {}` intra-namespace allow (`allow-argocd-intra-namespace.yaml`) instead of one explicit per-flow policy per edge | Formalized 2026-07-15 (found via ROADMAP rule #9's coverage/hardening sweep) — ArgoCD hosts a single purpose-built, tightly-coupled multi-component stack (controller/server/repo-server/cache) with no independent tenants mixed in, and the manifest's own header comment carries this exact rationale. **General principle (to prevent this same gap recurring for a future namespace):** a namespace may use one broad intra-namespace allow instead of per-flow policies when every pod in it is part of the same single-tenant, purpose-built multi-component stack — the cross-namespace boundary is the security perimeter ADR-0016 protects; the intra-namespace convenience allow never widens *that* boundary. **Flip condition:** if a future namespace-scoped threat model requires intra-namespace segmentation, replace this with explicit per-flow policies per the ADR's general pattern. (This row also covered `harbor`, `observability`, `istio-system`, `longhorn-system`, and `tidb` until each of those components was removed from the lab entirely.) |
 
 ---
 
@@ -145,8 +169,7 @@ ADR as the *pattern*, not the enumeration.
 
 | Path | Role |
 |------|------|
-| `gitops/platform/networkpolicy-appset.yaml` | `ApplicationSet` (list-generator) that plants the per-namespace overlay Application for most fanned-out namespaces — the primary delivery mechanism today, not a standalone Application per namespace |
-| `gitops/platform/{kyverno,trivy-system,argo-rollouts,velero,kargo,kargo-project}-networkpolicy.yaml` | Standalone `<ns>-networkpolicy` Applications for namespaces whose overlay predates the appset or carries component-specific wiring |
+| `gitops/platform/networkpolicy-appset.yaml` | `ApplicationSet` (list-generator) that plants the per-namespace overlay Application for every fanned-out namespace — the sole delivery mechanism today, not a standalone Application per namespace |
 
 ---
 
@@ -156,10 +179,9 @@ ADR as the *pattern*, not the enumeration.
 |-----|-------------|
 | [ADR-0001](adr-0001-gitops-over-terraform-helm.md) | Policies land as ArgoCD `Application`s from git paths — consistent with GitOps-only; no `kubectl apply`. |
 | [ADR-0003](adr-0003-decoupled-no-spof.md) | Deny-by-default is the decoupled, explicit posture; no single catch-all rule is a SPOF. |
-| [ADR-0004](adr-0004-no-fabricated-content.md) | Policies are only declared after ADR-0014's Cilium is active — otherwise they'd be silent no-ops (fabricated safety). |
-| [ADR-0008](adr-0008-envoy-gateway-not-traefik.md) | CNI swap leaves Envoy Gateway intact; `NetworkPolicy` operates below the ingress L7 layer. |
-| [ADR-0012](adr-0012-istio-ambient-not-sidecar.md) | `NetworkPolicy` and Istio `AuthorizationPolicy` are complementary, not redundant. |
-| [ADR-0014](adr-0014-cilium-not-flannel-policy.md) | **Prerequisite.** Cilium must be active before any policy is functional. |
+| [ADR-0004](adr-0004-no-fabricated-content.md) | Policies are only declared once the cluster's CNI actually enforces them — otherwise they'd be silent no-ops (fabricated safety). |
+| [ADR-0012](adr-0012-istio-ambient-not-sidecar.md) | `NetworkPolicy` and Istio `AuthorizationPolicy` were complementary, not redundant, while Istio was in the lab (removed entirely, ADR-0012's own Status). |
+| [ADR-0014](adr-0014-cilium-not-flannel-policy.md) | **Former prerequisite, now removed (2026-09-07, no replacement).** k3s's bundled Flannel + kube-router — ADR-0014's own originally-rejected option — enforces this ADR's policies now; see "Cilium's removal" above. |
 | [ADR-0017](adr-0017-pod-security-standards-restricted.md) | Companion security ADR (host network controls vs pod security controls). |
 
 ---

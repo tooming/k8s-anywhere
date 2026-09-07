@@ -1,8 +1,8 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for the External Secrets Operator chart pin
 # (gitops/platform/external-secrets.yaml). Per-scope file, mirrors the
-# repo's other exact-version-pin test pairs (e.g. tests/observability-loki.bats,
-# tests/trivy-operator.bats).
+# repo's other exact-version-pin test pairs (e.g. tests/argocd-chart-pin.bats,
+# tests/k3s-version-pin.bats).
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"

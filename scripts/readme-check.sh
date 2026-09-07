@@ -47,7 +47,7 @@ missing=""
 for f in "$ROOT"/gitops/platform/*.yaml; do
   [ -e "$f" ] || continue
   name="$(grep -m1 -E '^\s*name:' "$f" | awk '{print $2}')"
-  case "$name" in ""|*-config|*-extras|*-resources|*-dashboards|lab-gateway|demo|root|ack-s3) continue;; esac
+  case "$name" in ""|*-config|*-extras|*-resources|*-dashboards|lab-gateway|demo|root) continue;; esac
   nname="$(printf '%s' "$name" | tr -dc 'a-zA-Z0-9' | tr 'A-Z' 'a-z')"
   grep -qF "$nname" <<<"$norm_readme" || missing="$missing $name"
 done

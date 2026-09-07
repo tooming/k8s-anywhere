@@ -1,7 +1,12 @@
 # Root Terragrunt config for the oracle backend (ADR-0026/0027). Child units
-# (cluster/, argocd/, gitlab/) include this for shared state + inputs — argocd/ and
-# gitlab/ are byte-identical to infra/live/local/'s units; only this file and cluster/
-# differ per backend, per infra/live/README.md's contract.
+# (cluster/, argocd/) include this for shared state + inputs — argocd/ is
+# byte-identical to infra/live/local/'s unit; only this file and cluster/ differ
+# per backend, per infra/live/README.md's contract. A gitlab/ unit existed here
+# until 2026-09-07 (self-hosted git, ADR-0033) — GitLab (and its Forgejo
+# successor, ADR-0035) were both removed from the project entirely that day, no
+# replacement; the repo now lives only on its public GitHub remote everywhere,
+# oracle backend included, so that unit (and its forgejo/ counterpart) were
+# dropped rather than kept as dead Terraform code.
 
 locals {
   cluster_name = "k8s-anywhere-oracle"

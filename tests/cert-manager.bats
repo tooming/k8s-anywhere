@@ -99,7 +99,10 @@ setup() {
 }
 
 @test "cert-manager allow-webhook-from-apiserver rule permits TCP 10250" {
-  run grep -q 'port: "10250"' "$REPO/gitops/cert-manager/networkpolicy/allow-cert-manager-webhook-from-apiserver.yaml"
+  # Plain integer (not a quoted string) since 2026-09-07: this became a plain
+  # networking.k8s.io/v1 NetworkPolicy when Cilium (CiliumNetworkPolicy) was
+  # removed entirely, no replacement (ADR-0014).
+  run grep -qE 'port: "?10250"?' "$REPO/gitops/cert-manager/networkpolicy/allow-cert-manager-webhook-from-apiserver.yaml"
   [ "$status" -eq 0 ]
 }
 

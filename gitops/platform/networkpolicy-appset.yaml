@@ -14,15 +14,14 @@ spec:
   generators:
     - list:
         elements:
-          - appName: ack-networkpolicy
-            gitPath: gitops/ack/networkpolicy
-            destNamespace: ack-system
+          # ack-networkpolicy REMOVED 2026-09-07 (ADR-0038): ACK (S3) was dropped
+          # from the lab entirely, no replacement.
           - appName: argocd-networkpolicy
             gitPath: gitops/argocd/networkpolicy
             destNamespace: argocd
-          - appName: capstone-networkpolicy
-            gitPath: gitops/apps/capstone/networkpolicy
-            destNamespace: capstone
+          # capstone-networkpolicy REMOVED 2026-09-07: capstone was dropped from
+          # the lab entirely, no replacement, alongside Harbor/Kargo/Argo Rollouts/
+          # Kyverno.
           # data-networkpolicy REMOVED 2026-09-06 (RabbitMQ/ADR-0009, Valkey/
           # ADR-0018): the data namespace no longer exists — it held nothing else.
           - appName: external-secrets-networkpolicy
@@ -31,27 +30,29 @@ spec:
           - appName: lab-gateway-networkpolicy
             gitPath: gitops/network/networkpolicy
             destNamespace: lab-gateway
-          - appName: moto-networkpolicy
-            gitPath: gitops/moto/networkpolicy
-            destNamespace: moto
+          # moto-networkpolicy REMOVED 2026-09-07 (ADR-0038): moto was dropped from
+          # the lab entirely, no replacement — ACK-S3 (its only client) and KRO
+          # (which orchestrated ACK on top of it) are also gone.
           # observability-networkpolicy REMOVED 2026-09-06 (ADR-0041): the
           # observability namespace no longer exists — Grafana/Mimir/Loki/
           # Tempo/Pyroscope/Alloy removed entirely, no replacement.
-          - appName: storage-networkpolicy
-            gitPath: gitops/storage/networkpolicy
-            destNamespace: storage
-          - appName: kro-networkpolicy
-            gitPath: gitops/kro/networkpolicy
-            destNamespace: kro
+          # storage-networkpolicy REMOVED 2026-09-07 (ADR-0002/ADR-0007/ADR-0039): the
+          # storage namespace no longer exists — Garage, s3manager, and the off-cluster
+          # tfstate Garage were all removed entirely, no replacement.
+          # kro-networkpolicy REMOVED 2026-09-07 (ADR-0038): KRO was dropped from
+          # the lab entirely — its only ResourceGraphDefinition claimed an ACK
+          # Bucket, so it became dead weight the moment ACK/moto were removed, no
+          # replacement.
           - appName: lab-demo-networkpolicy
             gitPath: gitops/apps/demo/networkpolicy
             destNamespace: lab-demo
           - appName: vault-networkpolicy
             gitPath: gitops/vault/networkpolicy
             destNamespace: vault
-          - appName: harbor-networkpolicy
-            gitPath: gitops/harbor/networkpolicy
-            destNamespace: harbor
+          # harbor-networkpolicy REMOVED 2026-09-07 (ADR-0024): Harbor was dropped
+          # from the lab entirely, no replacement — the harbor namespace no longer
+          # exists, same dead-config shape the data-networkpolicy removal above
+          # already established.
           # node-exporter-networkpolicy REMOVED 2026-09-06 (ADR-0041): the
           # node-exporter namespace no longer exists — node-exporter existed
           # only as an Alloy scrape target, removed with the rest of the
@@ -65,7 +66,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: ssh://git@host.k3d.internal:2223/lab/k8s-lab.git
+        repoURL: https://github.com/tooming/k8s-anywhere.git
         targetRevision: main
         path: "{{gitPath}}"
         kustomize:

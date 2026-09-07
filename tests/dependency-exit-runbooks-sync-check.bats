@@ -47,11 +47,14 @@ setup() {
   [[ "$output" == *"dependency-register.md not found"* ]]
 }
 
-@test "dependency-exit-runbooks-sync-check: passes on the real repo (both concentration groups and all 21 register rows have runbooks)" {
+@test "dependency-exit-runbooks-sync-check: passes on the real repo (both concentration groups and every register row have runbooks)" {
   run bash "$REPO/scripts/dependency-exit-runbooks-sync-check.sh"
   [ "$status" -eq 0 ]
   [[ "$output" == *"github.com/grafana"* ]]
   [[ "$output" == *"github.com/argoproj"* ]]
-  [[ "$output" == *"Kyverno is mentioned"* ]]
-  [[ "$output" == *"s3manager is mentioned"* ]]
+  [[ "$output" == *"github.com/hashicorp"* ]]
+  [[ "$output" == *"Vault is mentioned"* ]]
+  # s3manager was removed from the register entirely 2026-09-07 (Garage's browser
+  # UI, orphaned the same day Garage itself went, ADR-0039) — it's no longer a
+  # register row at all, so it no longer needs (or gets) a "mentioned" line here.
 }

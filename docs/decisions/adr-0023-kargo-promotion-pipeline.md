@@ -1,9 +1,23 @@
 # ADR-0023 — Kargo for GitOps promotion pipelines (multi-stage, Warehouse-gated)
 
-**Status.** Adopted. On-demand component (bring up with `make kargo-up`). Complements
+**Status.** Removed 2026-09-07 (maintainer decision — component dropped from the lab
+entirely, no replacement). capstone (via `gitops/kargo-project/`'s `capstone-pipeline`
+namespace) was Kargo's only promotion target and Harbor/ADR-0024 was its only image
+source — both are also gone. All `gitops/kargo/`, `gitops/kargo-project/`,
+`gitops/governance/kargo/`, `gitops/governance/capstone-pipeline/`,
+`gitops/platform/kargo.yaml`, `gitops/platform/kargo-extras.yaml`,
+`gitops/platform/kargo-networkpolicy.yaml`, `gitops/platform/kargo-project.yaml`,
+`gitops/platform/kargo-project-networkpolicy.yaml`,
+`gitops/secrets/kargo-admin-externalsecret.yaml` manifests, the `kargo-up`/`kargo-down`
+Makefile targets, and every kargo test and cross-reference were deleted in the same
+change. The decision record below is kept for history (why Kargo was adopted, what it
+demonstrated) but no longer describes anything live in the repo — do not treat any
+manifest path or Makefile target named below as still existing.
+
+~~**Status.** Adopted. On-demand component (bring up with make kargo-up). Complements
 Argo Rollouts (ADR-0020): Rollouts controls *how* a version lands in a stage (canary
 steps, SLO gates); Kargo controls *which* version reaches each stage and *when* it is
-cleared to move forward.
+cleared to move forward.~~
 
 ---
 
@@ -34,12 +48,11 @@ Adopt **Kargo** as the lab's promotion-orchestration layer.
 - **Helm repo:** `ghcr.io/akuity/kargo-charts` (OCI; the original
   `https://charts.kargo.io` HTTPS index was retired upstream — see
   `gitops/platform/kargo.yaml`'s header comment)
-- **Chart:** `kargo` `1.11.3` (`appVersion: 1.11.3`; pin lives in
-  `gitops/platform/kargo.yaml`'s `targetRevision` — Kargo ships app+chart together
-  from one `Chart.yaml` per release tag, so chart version and appVersion are always
-  identical; see [§Re-evaluation log](#re-evaluation-log) for the bump history —
-  CVE-driven bumps get their own dated entry there and in `gitops/platform/kargo.yaml`'s
-  header comment)
+- **Chart:** `kargo` `1.11.3` (`appVersion: 1.11.3`; pin **lived** in
+  `gitops/platform/kargo.yaml`'s `targetRevision` until the component was removed
+  2026-09-07 — that file no longer exists. Kargo shipped app+chart together from one
+  `Chart.yaml` per release tag, so chart version and appVersion were always identical;
+  see [§Re-evaluation log](#re-evaluation-log) for the bump history up to removal)
 - **Namespace:** `kargo` (new; PSA `restricted` — Kargo pods run as uid 65532)
 
 ### Footprint controls (ON-DEMAND)
@@ -80,7 +93,7 @@ Warehouse (capstone-pipeline)
 
 Kargo's admin account password hash is stored in Vault (`secret/kargo/admin`,
 property `password-hash`) and rendered into `kargo-admin-credentials` Secret via
-ESO. Seed the Vault path before running `make kargo-up`:
+ESO. Seed the Vault path before running make kargo-up:
 
 ```bash
 vault kv put secret/kargo/admin password-hash='<bcrypt-hash>'
@@ -241,7 +254,7 @@ not a security-driven bump (unlike the two dated bumps recorded in
 `gitops/platform/kargo.yaml`'s own header comment).
 
 **Decision: bump.** No blast radius either way — Kargo is ON-DEMAND (not auto-synced;
-ADR-0005 budget), so this pin only takes effect on the next `make kargo-up`.
+ADR-0005 budget), so this pin only takes effect on the next make kargo-up.
 
 **Flip conditions:** revisit when the OCI registry's tag list shows a newer stable
 release above `1.11.0`, or a security advisory is filed against `1.11.0` (check
@@ -267,7 +280,7 @@ error handling, HTTP request context propagation), response body leak prevention
 CVE cited. Nothing in the changelog touches the Digest-strategy admission-webhook
 behavior `tests/kargo.bats` already documents (#633) — that assertion is unaffected.
 No blast radius either way — Kargo is ON-DEMAND (ADR-0005 budget), so this pin only
-takes effect on the next `make kargo-up`.
+takes effect on the next make kargo-up.
 
 **Flip conditions:** revisit when the OCI registry's tag list shows a newer stable
 release above `1.11.1`, or a security advisory is filed against `1.11.1` (check
@@ -303,7 +316,7 @@ re-verified unchanged at both tags for every path this Application sets
 (`global.securityContext`, `api.{replicas,resources,tls.selfSignedCert,secret}`,
 `controller.resources`, `webhooksServer.{replicas,resources}`). No blast
 radius either way — Kargo is ON-DEMAND (ADR-0005 budget), so this pin only
-takes effect on the next `make kargo-up`.
+takes effect on the next make kargo-up.
 
 **Honest note on relevance to #633.** The "dropped origins when aborting
 queued promotions" and "pointless status write for argocd health" fixes
@@ -361,12 +374,35 @@ Also confirmed `controller.replicas` (set in this Application's
 pre-existing harmless no-op, not a regression introduced by this bump —
 Helm silently ignores values keys with no matching template use. No blast
 radius either way — Kargo is ON-DEMAND (ADR-0005 budget), so this pin only
-takes effect on the next `make kargo-up`.
+takes effect on the next make kargo-up.
 
 **Flip conditions:** revisit when the OCI registry's tag list shows a newer
 stable release above `1.11.3`, or a security advisory is filed against
 `1.11.3` (check `github.com/akuity/kargo/security/advisories` manually or
 via the maintainer).
+
+### 2026-09-07 — Removed, no replacement (maintainer decision)
+
+**Trigger.** Maintainer decision to drop Kargo from the lab entirely, alongside its
+only promotion target (capstone, via the `capstone-pipeline` namespace), its only
+image source (Harbor/ADR-0024, removed the same day), and Argo Rollouts/Velero/Kyverno
+in the same sweep.
+
+**Decision: remove, no replacement.** `gitops/kargo/`, `gitops/kargo-project/`,
+`gitops/governance/kargo/`, `gitops/governance/capstone-pipeline/`,
+`gitops/platform/kargo.yaml`, `gitops/platform/kargo-extras.yaml`,
+`gitops/platform/kargo-networkpolicy.yaml`, `gitops/platform/kargo-project.yaml`,
+`gitops/platform/kargo-project-networkpolicy.yaml`,
+`gitops/secrets/kargo-admin-externalsecret.yaml`, the `kargo-up`/`kargo-down` Makefile
+targets and their `ondemand-budget-check.sh` unit tracking, `tests/kargo.bats`,
+`tests/networkpolicy-kargo.bats`, `tests/networkpolicy-capstone-pipeline.bats`,
+`tests/securitycontext-kargo.bats`, `tests/securitycontext-capstone-pipeline.bats`, and
+every other kargo cross-reference (governance leaf, ApplicationSet entry,
+dependency-register row) were deleted in the same change.
+
+**Flip condition (next re-evaluation).** None — this is a terminal removal, not a
+version pin. Re-adopting multi-stage promotion would need a fresh RFC, not a revisit
+of this entry.
 
 ---
 

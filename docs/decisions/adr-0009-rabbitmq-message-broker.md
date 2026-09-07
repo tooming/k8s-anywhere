@@ -126,7 +126,7 @@ on-disk metadata format once Khepri has migrated in — the reverted 3.13 binary
 reads Mnesia's on-disk format, not Khepri's, so a clean revert is **not**
 guaranteed once the new node has booted and migrated. Per ADR-0005's
 already-accepted single-node recreate-over-HA posture, the realistic recovery
-path if a revert is ever needed is `make dr-restore` / reseeding the queue
+path if a revert is ever needed is make dr-restore / reseeding the queue
 state from Velero, not an in-place downgrade.
 
 **Flip condition (next re-evaluation).** Re-check when RabbitMQ's `4.3.x` line

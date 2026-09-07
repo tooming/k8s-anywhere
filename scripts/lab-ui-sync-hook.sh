@@ -21,7 +21,7 @@ esac
 
 if ! out="$(bash "$ROOT/scripts/lab-ui-check.sh" 2>&1)"; then
   {
-    echo "README.md's Endpoints table looks stale after editing ${fp##*/} — host UIs use the :8000 front door:"
+    echo "README.md's Endpoints table looks stale after editing ${fp##*/} — host UIs use k3d's own :8080 load-balancer port:"
     echo "$out"
     echo "(re-check: make lab-ui-check; the table is README.md's ## Endpoints section)"
   } >&2

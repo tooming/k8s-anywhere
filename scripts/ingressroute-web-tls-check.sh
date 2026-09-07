@@ -15,7 +15,7 @@
 # `tls: {}` added and entryPoints:[web, websecure] 404s on `web` specifically.
 #
 # This silently broke plain-HTTP access (the lab's documented canonical
-# access path, e.g. http://argocd.127.0.0.1.nip.io:8000) for every IngressRoute
+# access path, e.g. http://argocd.127.0.0.1.nip.io:8080) for every IngressRoute
 # in the repo at once post-ADR-0040 (Envoy Gateway -> Traefik), with no CI
 # signal — kustomize/manifest validation has no opinion on Traefik's runtime
 # router-matching semantics. The fix (see gitops/network/argocd-ingressroute.yaml's

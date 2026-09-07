@@ -1,23 +1,25 @@
 #!/usr/bin/env bats
-# Clusterless structural tests for four operational scripts that had zero bats
-# coverage: scripts/dr-verify.sh, scripts/frontdoor-ensure.sh,
-# scripts/lab-health-check.sh, scripts/tfstate-bootstrap.sh. All four are wired
-# into real `make` targets (dr-verify, frontdoor, health, tfstate-up) and gate
-# DR/lab-health workflows (docs/DR.md, ADR-0005) — until now nothing caught an
-# accidental structural regression (a deleted budget var, a dropped predicate,
-# a Makefile target losing its script invocation). No running cluster required:
-# these tests verify declared structure/behaviour only, never execute kubectl/
-# docker/k3d/garage against a live target.
+# Clusterless structural tests for operational scripts that had zero bats
+# coverage: scripts/dr-verify.sh, scripts/lab-health-check.sh. Both are wired
+# into real `make` targets (dr-verify, health) and gate DR/lab-health workflows
+# (docs/DR.md, ADR-0005) — until now nothing caught an accidental structural
+# regression (a deleted budget var, a dropped predicate, a Makefile target
+# losing its script invocation). No running cluster required: these tests
+# verify declared structure/behaviour only, never execute kubectl/docker/k3d
+# against a live target.
+#
+# scripts/frontdoor-ensure.sh, scripts/tfstate-bootstrap.sh, and
+# scripts/cilium-apiserver-drift-check.sh were covered here too until their
+# components (the DR frontdoor/blue-green apparatus, the off-cluster Garage
+# tfstate backend, and Cilium — ADR-0014) were removed entirely 2026-09-07, no
+# replacement; their dedicated sections were removed in the same change.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   DRVERIFY="$REPO/scripts/dr-verify.sh"
-  FRONTDOOR="$REPO/scripts/frontdoor-ensure.sh"
   HEALTHCHECK="$REPO/scripts/lab-health-check.sh"
-  TFSTATE="$REPO/scripts/tfstate-bootstrap.sh"
   BUDGET="$REPO/scripts/ondemand-budget-check.sh"
   DATASTORE="$REPO/scripts/k3s-datastore-health-check.sh"
-  CILIUMDRIFT="$REPO/scripts/cilium-apiserver-drift-check.sh"
   MAKEFILE="$REPO/Makefile"
 }
 
@@ -30,11 +32,16 @@ setup() {
   [ -x "$DRVERIFY" ]
 }
 
-@test "dr-verify.sh defines a budget var for every real check (nodes/argo/vault/eso/garage)" {
-  for v in T_NODES T_ARGO T_VAULT T_ESO T_GARAGE; do
+@test "dr-verify.sh defines a budget var for every real check (nodes/argo/vault/eso)" {
+  for v in T_NODES T_ARGO T_VAULT T_ESO; do
     run grep -q "$v=" "$DRVERIFY"
     [ "$status" -eq 0 ]
   done
+}
+
+@test "dr-verify.sh no longer defines a Garage budget var (ADR-0002/ADR-0021/ADR-0024, no replacement)" {
+  run grep -q "T_GARAGE=" "$DRVERIFY"
+  [ "$status" -ne 0 ]
 }
 
 @test "dr-verify.sh no longer defines Mimir/Grafana budget vars (ADR-0041)" {
@@ -61,9 +68,9 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "dr-verify.sh checks Garage buckets exist" {
+@test "dr-verify.sh no longer checks Garage buckets (ADR-0002/ADR-0021/ADR-0024, no replacement)" {
   run grep -q "GARAGE_BUCKETS=" "$DRVERIFY"
-  [ "$status" -eq 0 ]
+  [ "$status" -ne 0 ]
 }
 
 @test "dr-verify.sh no longer queries Mimir or checks Grafana /api/health (ADR-0041)" {
@@ -77,35 +84,6 @@ setup() {
   run grep -q "exit 0" "$DRVERIFY"
   [ "$status" -eq 0 ]
   run grep -q "exit 1" "$DRVERIFY"
-  [ "$status" -eq 0 ]
-}
-
-# --- scripts/frontdoor-ensure.sh ---------------------------------------------
-@test "frontdoor-ensure.sh exists" {
-  [ -f "$FRONTDOOR" ]
-}
-
-@test "frontdoor-ensure.sh is executable" {
-  [ -x "$FRONTDOOR" ]
-}
-
-@test "frontdoor-ensure.sh auto-picks the running cluster when none is passed" {
-  run grep -q "k3d cluster list" "$FRONTDOOR"
-  [ "$status" -eq 0 ]
-}
-
-@test "frontdoor-ensure.sh prefers the blue (k8s-lab) cluster when both are running" {
-  run grep -q "k8s-lab" "$FRONTDOOR"
-  [ "$status" -eq 0 ]
-}
-
-@test "frontdoor-ensure.sh delegates to bluegreen-frontdoor.sh" {
-  run grep -q "bluegreen-frontdoor.sh" "$FRONTDOOR"
-  [ "$status" -eq 0 ]
-}
-
-@test "frontdoor-ensure.sh fails loudly when it can't auto-pick a cluster" {
-  run grep -q "can't auto-pick a cluster" "$FRONTDOOR"
   [ "$status" -eq 0 ]
 }
 
@@ -133,22 +111,21 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "lab-health-check.sh probes the Traefik front door over HTTP, not just pod readiness" {
+@test "lab-health-check.sh probes UIs over HTTP, not just pod readiness" {
   run grep -q "UI_PROBES" "$HEALTHCHECK"
   [ "$status" -eq 0 ]
 }
 
-@test "lab-health-check.sh default UI_PROBES uses the stable front door :8000, not a per-cluster Traefik port" {
-  # :8080/:8082 are blue/green's own direct ports — they disappear when that
-  # cluster is torn down after a blue/green cutover (docs/DR.md), so a
-  # hardcoded per-cluster port here would make `make health` silently probe a
-  # since-removed backend post-cutover. Only the stable :8000 front door
-  # (scripts/bluegreen-frontdoor.sh) survives a cutover.
+@test "lab-health-check.sh default UI_PROBES uses k3d's own load balancer port :8080, not the removed front door's :8000" {
+  # The custom front door (:8000) that used to sit in front of a blue/green
+  # cluster pair was removed entirely 2026-09-07, no replacement — there is
+  # only one cluster/mode left, so k3d's own load balancer port :8080 is now
+  # the sole, permanent entry point (see scripts/lab-health-check.sh's own
+  # header for the full reasoning).
   run grep -oE 'UI_PROBES="\$\{LAB_UI_PROBES:-[^}]+\}"' "$HEALTHCHECK"
   [ "$status" -eq 0 ]
-  [[ "$output" != *":8080"* ]]
-  [[ "$output" != *":8082"* ]]
-  [[ "$output" == *":8000"* ]]
+  [[ "$output" != *":8000"* ]]
+  [[ "$output" == *":8080"* ]]
 }
 
 @test "lab-health-check.sh exits 2 when the cluster is unreachable, distinct from 1 (unhealthy)" {
@@ -158,50 +135,11 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-# --- scripts/tfstate-bootstrap.sh ---------------------------------------------
-@test "tfstate-bootstrap.sh exists" {
-  [ -f "$TFSTATE" ]
-}
-
-@test "tfstate-bootstrap.sh is executable" {
-  [ -x "$TFSTATE" ]
-}
-
-@test "tfstate-bootstrap.sh requires AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY" {
-  run grep -q "AWS_ACCESS_KEY_ID" "$TFSTATE"
-  [ "$status" -eq 0 ]
-  run grep -q "AWS_SECRET_ACCESS_KEY" "$TFSTATE"
-  [ "$status" -eq 0 ]
-}
-
-@test "tfstate-bootstrap.sh is idempotent on layout assignment (checks NO ROLE first)" {
-  run grep -q "NO ROLE" "$TFSTATE"
-  [ "$status" -eq 0 ]
-}
-
-@test "tfstate-bootstrap.sh is idempotent on key import (checks key info first)" {
-  run grep -q "key info tfstate" "$TFSTATE"
-  [ "$status" -eq 0 ]
-}
-
-@test "tfstate-bootstrap.sh creates the tfstate bucket with read+write grants" {
-  run grep -q "bucket create tfstate" "$TFSTATE"
-  [ "$status" -eq 0 ]
-  run grep -q "bucket allow --read --write tfstate" "$TFSTATE"
-  [ "$status" -eq 0 ]
-}
-
 # --- Makefile wiring ----------------------------------------------------------
 @test "Makefile dr-verify target invokes dr-verify.sh" {
   run grep -A1 '^dr-verify:' "$MAKEFILE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"dr-verify.sh"* ]]
-}
-
-@test "Makefile frontdoor target invokes frontdoor-ensure.sh" {
-  run grep -A1 '^frontdoor:' "$MAKEFILE"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"frontdoor-ensure.sh"* ]]
 }
 
 @test "Makefile health target invokes lab-health-check.sh" {
@@ -215,29 +153,24 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "Makefile tfstate-up target invokes tfstate-bootstrap.sh" {
-  run grep -A4 '^tfstate-up:' "$MAKEFILE"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"tfstate-bootstrap.sh"* ]]
-}
-
-@test "Makefile declares .PHONY for dr-verify, frontdoor, health, tfstate-up" {
-  for t in dr-verify frontdoor health tfstate-up; do
+@test "Makefile declares .PHONY for dr-verify, health" {
+  for t in dr-verify health; do
     run grep -q "\.PHONY: $t\$" "$MAKEFILE"
     [ "$status" -eq 0 ]
   done
 }
 
-# --- creds/argocd-ui print the stable front door, not a per-cluster Traefik port --
-# `make up`'s own completion banner already advertises :8000 as the canonical entry
-# point (docs/DR.md, scripts/bluegreen-frontdoor.sh); `creds`/`argocd-ui` printing
-# :8080 instead was a real inconsistency a fresh-bootstrap user would hit immediately,
-# and a real breakage post-blue/green-cutover once :8080 stops existing.
-@test "Makefile creds target prints the front door :8000 for ArgoCD/Vault, not :8080" {
+# --- creds/argocd-ui print k3d's own load-balancer port ------------------------
+# The custom front door (:8000) that used to sit in front of a blue/green cluster
+# pair was removed entirely 2026-09-07, no replacement — `make up`'s own
+# completion banner, `creds`, and `argocd-ui` all now consistently advertise
+# k3d's own :8080 load-balancer port, the sole entry point left.
+@test "Makefile creds target prints k3d's load-balancer :8080 for ArgoCD/Vault, not the removed front door's :8000" {
   run grep -A6 '^creds:' "$MAKEFILE"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"argocd.127.0.0.1.nip.io:8000"* ]]
-  [[ "$output" == *"vault.127.0.0.1.nip.io:8000"* ]]
+  [[ "$output" == *"argocd.127.0.0.1.nip.io:8080"* ]]
+  [[ "$output" == *"vault.127.0.0.1.nip.io:8080"* ]]
+  [[ "$output" != *":8000"* ]]
 }
 
 @test "Makefile creds target no longer prints a Grafana line (ADR-0041)" {
@@ -253,10 +186,11 @@ setup() {
   [[ "$output" != *"Valkey"* ]]
 }
 
-@test "Makefile argocd-ui target's comment offers the front door :8000, not :8080" {
+@test "Makefile argocd-ui target's comment offers k3d's load-balancer :8080, not the removed front door's :8000" {
   run grep '^argocd-ui:' "$MAKEFILE"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"argocd.127.0.0.1.nip.io:8000"* ]]
+  [[ "$output" == *"argocd.127.0.0.1.nip.io:8080"* ]]
+  [[ "$output" != *":8000"* ]]
 }
 
 # --- scripts/ondemand-budget-check.sh ------------------------------------------
@@ -273,10 +207,12 @@ setup() {
   [ -x "$BUDGET" ]
 }
 
-@test "ondemand-budget-check.sh tracks both documented heavy on-demand units" {
+@test "ondemand-budget-check.sh tracks no heavy on-demand units (Harbor + Kargo both removed 2026-09-07, no replacement)" {
+  run grep -q "declare -A UNIT_APPS=(" "$BUDGET"
+  [ "$status" -eq 0 ]
   for unit in harbor kargo; do
     run grep -q "\[$unit\]=" "$BUDGET"
-    [ "$status" -eq 0 ]
+    [ "$status" -ne 0 ]
   done
 }
 
@@ -309,10 +245,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "ondemand-budget-check.sh maps both units to a namespace for the Pod check" {
+@test "ondemand-budget-check.sh maps no unit to a namespace (UNIT_NS empty, same reason as UNIT_APPS)" {
   for unit in harbor kargo; do
     run bash -c "grep -A10 'declare -A UNIT_NS=' '$BUDGET' | grep -q '\[$unit\]='"
-    [ "$status" -eq 0 ]
+    [ "$status" -ne 0 ]
   done
 }
 
@@ -331,11 +267,10 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "Makefile guards every heavy *-up target with ondemand-guard" {
+@test "Makefile no longer has harbor-up/kargo-up targets (both removed 2026-09-07, no replacement)" {
   for t in harbor-up kargo-up; do
-    run grep -A2 "^$t:" "$MAKEFILE"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"ondemand-guard"* ]]
+    run grep -q "^$t:" "$MAKEFILE"
+    [ "$status" -ne 0 ]
   done
 }
 
@@ -403,51 +338,5 @@ setup() {
 
 @test "lab-health-check.sh reports k3s datastore health informationally (never flips PASS/FAIL)" {
   run grep -q "k3s-datastore-health-check.sh" "$HEALTHCHECK"
-  [ "$status" -eq 0 ]
-}
-
-# --- scripts/cilium-apiserver-drift-check.sh ------------------------------------
-# Cilium's kube-proxy-free mode (ADR-0014) bakes the control-plane node's docker-
-# bridge IP into every cilium-agent pod's KUBERNETES_SERVICE_HOST — `make cilium-up`
-# re-derives and re-applies it, but nothing re-runs that automatically when the IP
-# changes (Colima/k3d stop+start, a node container restart). First found 2026-07-29
-# (docs/incident-log.md, noted "re-check if it recurs"); recurred 2026-09-06 mid
-# issue #633 investigation, silently stalling pod-sandbox creation cluster-wide for
-# 10+ minutes before being diagnosed. This script is the mechanical guard.
-@test "cilium-apiserver-drift-check.sh exists" {
-  [ -f "$CILIUMDRIFT" ]
-}
-
-@test "cilium-apiserver-drift-check.sh is executable" {
-  [ -x "$CILIUMDRIFT" ]
-}
-
-@test "cilium-apiserver-drift-check.sh compares KUBERNETES_SERVICE_HOST against the live kubernetes Endpoints" {
-  run grep -q "KUBERNETES_SERVICE_HOST" "$CILIUMDRIFT"
-  [ "$status" -eq 0 ]
-  run grep -q "kubectl get endpoints kubernetes" "$CILIUMDRIFT"
-  [ "$status" -eq 0 ]
-}
-
-@test "cilium-apiserver-drift-check.sh points at 'make cilium-up' as the fix, not a duplicate helm invocation" {
-  run grep -q "make cilium-up" "$CILIUMDRIFT"
-  [ "$status" -eq 0 ]
-  run grep -q "helm upgrade" "$CILIUMDRIFT"
-  [ "$status" -eq 1 ]
-}
-
-@test "cilium-apiserver-drift-check.sh exits non-zero when the cluster is unreachable" {
-  run env KUBECONFIG=/nonexistent-kubeconfig-$$ bash "$CILIUMDRIFT"
-  [ "$status" -ne 0 ]
-}
-
-@test "Makefile cilium-drift-check target invokes cilium-apiserver-drift-check.sh" {
-  run grep -A1 '^cilium-drift-check:' "$MAKEFILE"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"cilium-apiserver-drift-check.sh"* ]]
-}
-
-@test "lab-health-check.sh reports cilium apiserver-host drift informationally (never flips PASS/FAIL)" {
-  run grep -q "cilium-apiserver-drift-check.sh" "$HEALTHCHECK"
   [ "$status" -eq 0 ]
 }

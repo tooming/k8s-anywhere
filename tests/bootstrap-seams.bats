@@ -5,7 +5,10 @@
 # gitlab-tls-bootstrap and grafana-gitsync-bootstrap (ADR-0006) — this file's
 # original subject — were both removed 2026-09-06 (ADR-0041, observability
 # stack removed with no replacement): Grafana's native Git Sync was their only
-# consumer.
+# consumer. This file's other original subject, GitLab itself (gitlab-up,
+# gitlab-push, gitlab-env-ensure.sh and friends), was removed entirely
+# 2026-09-07, no replacement — the repo now lives only on its public GitHub
+# remote; that section was removed in the same change.
 
 setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
 
@@ -36,49 +39,13 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   done <<< "$targets"
 }
 
-# --- gitlab/.env self-heal (gitlab-up can't run without GITLAB_ROOT_PASSWORD) -
-# gitlab/.env is gitignored, so a fresh clone has none and `docker compose up`
-# dies on interpolation. gitlab-env-ensure.sh creates it; gitlab-up must call it
-# FIRST so the failure mode is impossible by construction.
-@test "gitlab-env-ensure.sh exists and is executable" {
-  [ -x "$REPO/scripts/gitlab-env-ensure.sh" ]
+@test "no gitlab-* Makefile targets remain (GitLab removed entirely 2026-09-07, no replacement)" {
+  run grep -E '^gitlab-[a-z-]+:' "$REPO/Makefile"
+  [ "$status" -ne 0 ]
 }
 
-@test "gitlab-up runs gitlab-env-ensure before 'docker compose up'" {
-  # The ensure call must precede the compose up line within the gitlab-up recipe.
-  run bash -c "awk '/^gitlab-up:/{f=1} f{print} f&&/docker compose up/{exit}' '$REPO/Makefile'"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"gitlab-env-ensure.sh"* ]]
-  ensure_line=$(printf '%s\n' "$output" | grep -n 'gitlab-env-ensure.sh' | head -1 | cut -d: -f1)
-  compose_line=$(printf '%s\n' "$output" | grep -n 'docker compose up' | head -1 | cut -d: -f1)
-  [ -n "$ensure_line" ] && [ -n "$compose_line" ] && [ "$ensure_line" -lt "$compose_line" ]
-}
-
-@test "gitlab-env-ensure.sh is idempotent (no-op when GITLAB_ROOT_PASSWORD already set)" {
-  run grep -c 'already has GITLAB_ROOT_PASSWORD' "$REPO/scripts/gitlab-env-ensure.sh"
-  [ "$status" -eq 0 ]
-  [ "$output" -ge 1 ]
-}
-
-# --- gitlab-push must not mirror a stale local main ---------------------------
-# A long-lived checkout whose local main lags github/main used to push the stale
-# main to the GitLab mirror (or die non-fast-forward once GitLab was ahead) and
-# fail `make up` at gitlab-configure. gitlab-push now best-effort fast-forwards
-# local main from github first — ancestor-gated (never rewrites local-only
-# commits) and ||-true so an offline DR bootstrap still proceeds.
-@test "gitlab-push fast-forwards local main from github before mirroring" {
-  run grep -n 'merge-base --is-ancestor main github/main' "$REPO/Makefile"
-  [ "$status" -eq 0 ]
-}
-
-@test "gitlab-push main fast-forward is best-effort (offline DR bootstrap survives)" {
-  block=$(awk '/^gitlab-push:/,/^$/' "$REPO/Makefile")
-  [[ "$block" == *"merge-base --is-ancestor"* ]]
-  [[ "$block" == *"|| true"* ]]
-}
-
-@test "gitlab-push skips the fast-forward when main is the checked-out branch" {
-  block=$(awk '/^gitlab-push:/,/^$/' "$REPO/Makefile")
-  [[ "$block" == *'rev-parse --abbrev-ref HEAD'* ]]
-  [[ "$block" == *'!= "main"'* ]]
+@test "no gitlab-*.sh scripts remain (GitLab removed entirely 2026-09-07, no replacement)" {
+  run bash -c "ls '$REPO'/scripts/gitlab-*.sh 2>/dev/null"
+  [ "$status" -ne 0 ]
+  [ -z "$output" ]
 }

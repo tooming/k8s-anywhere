@@ -27,19 +27,7 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
 }
 
 @test "dr-test.sh: refuses non-interactively without DR_ASSUME_YES" {
-  run env -u DR_ASSUME_YES bash "$REPO/scripts/dr-test.sh" full </dev/null
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"Refusing non-interactively"* ]]
-}
-
-@test "dr-bluegreen-promote.sh: refuses non-interactively without DR_ASSUME_YES" {
-  run env -u DR_ASSUME_YES bash "$REPO/scripts/dr-bluegreen-promote.sh" </dev/null
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"Refusing non-interactively"* ]]
-}
-
-@test "dr-chaos.sh: refuses non-interactively without DR_ASSUME_YES" {
-  run env -u DR_ASSUME_YES bash "$REPO/scripts/dr-chaos.sh" </dev/null
+  run env -u DR_ASSUME_YES bash "$REPO/scripts/dr-test.sh" cluster </dev/null
   [ "$status" -eq 1 ]
   [[ "$output" == *"Refusing non-interactively"* ]]
 }

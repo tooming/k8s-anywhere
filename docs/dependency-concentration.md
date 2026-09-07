@@ -11,14 +11,22 @@ file as pure re-indexing, with no new dependency-risk judgment made in producing
 
 ## Method
 
-Group every one of `docs/dependency-register.md`'s 18 GitHub-hosted tool rows
-(of 21 total; the other 3 — Terraform/Terragrunt, Oracle Cloud Infrastructure,
-Forgejo — aren't GitHub-hosted, so there's no GitHub org to group them by) by
-**upstream GitHub org**, reusing the register's own "Upstream source" column
-verbatim (nothing re-derived from memory), and flag any org backing more than
-one row as a concentration point.
+Group every one of `docs/dependency-register.md`'s 8 GitHub-hosted tool rows
+(of 9 total; the other one — Oracle Cloud Infrastructure — isn't GitHub-hosted,
+so there's no GitHub org to group it by) by **upstream GitHub org**, reusing the
+register's own "Upstream source" column verbatim (nothing re-derived from
+memory), and flag any org backing more than one row as a concentration point.
 
 ## Findings, worst-first
+
+**`github.com/hashicorp` — 2 tools: Terraform (+ Terragrunt, gruntwork-io) and
+Vault.** The only org still backing more than one register row. Both are
+day-0/always-on-core dependencies with no in-lab overlap in what they do
+(bootstrap tooling vs. secrets backend), so a single upstream org going dark
+would require two independent fork-and-repoint efforts, not one shared blast
+radius — but it's still one org this lab depends on twice. No mitigation beyond
+"pin exact versions, same as everything else" (ADR-0001's design, see below) is
+currently in place specifically for this.
 
 **`github.com/grafana` — removed 2026-09-06 (ADR-0041).** This used to be the
 largest single concentration in the table (6 tools: Grafana, Mimir, Loki, Tempo,
@@ -27,28 +35,22 @@ The observability stack was removed entirely with no replacement (ADR-0041,
 supersedes ADR-0006/ADR-0034); none of those six rows exist in the register any
 more, so this is no longer a concentration point to track.
 
-**`github.com/argoproj` — 2 tools:** ArgoCD, Argo Rollouts. `always-on-core` and
-`always-on-next-wave` respectively — now the largest single concentration in the
-table (the `github.com/grafana` cluster that used to be larger no longer exists,
-per the note above).
+**`github.com/argoproj` — no longer a concentration.** Used to back 2 rows (ArgoCD,
+Argo Rollouts); Argo Rollouts was removed entirely 2026-09-07 (ADR-0020, no
+replacement — capstone, its only consumer, is also gone), so argoproj now backs
+just ArgoCD, below the 2-row threshold.
 
-**Every other row is a distinct org** — Terraform (hashicorp) and Terragrunt
-(gruntwork-io) are two different orgs sharing one register row; Garage (Deuxfleurs);
-Traefik (traefik, bundled with k3s — no separate org row of its own to track since ADR-0040); Cilium
-(cilium); Kyverno (kyverno); Velero
-(vmware-tanzu); Trivy Operator (aquasecurity); Kargo (akuity); Harbor (goharbor);
-Oracle Cloud Infrastructure (not GitHub-hosted — cloud.oracle.com); k3s (k3s-io);
-cert-manager (cert-manager); External Secrets Operator (external-secrets); Forgejo
-(not GitHub-hosted — codeberg.org/forgejo, code.forgejo.org/forgejo); Vault
-(hashicorp — the same org as Terraform, but that row isn't GitHub-hosted per the
-register's own column, so this doesn't create a second `hashicorp` concentration
-row to track); moto (getmoto); ACK S3 controller (aws-controllers-k8s); KRO
-(kubernetes-sigs); s3manager (cloudlena).
-(RabbitMQ, Valkey, KEDA, kube-state-metrics, and node-exporter were removed from
-this list 2026-09-06/2026-08-25 along with the components themselves — ADR-0009,
-ADR-0018, ADR-0029, and ADR-0041 respectively — none of their register rows exist
-any more.)
-No further grouping applies — padding this section with 16 one-line "groups" of a
+**Removed 2026-09-07, no longer tracked here at all (their register rows are
+gone):** Deuxfleurs/Garage, cilium (Cilium's register row is kept, dated, for
+its removal history — see the register's own Scope note — but contributes no
+concentration grouping since nothing else shares that org), goharbor/Harbor,
+codeberg.org+code.forgejo.org/Forgejo (not GitHub-hosted), cloudlena/s3manager.
+
+**Every other row is a distinct, single-row org** — traefik (traefik, bundled
+with k3s — no separate org row of its own to track since ADR-0040); Oracle Cloud
+Infrastructure (not GitHub-hosted — cloud.oracle.com); k3s (k3s-io);
+cert-manager (cert-manager); External Secrets Operator (external-secrets).
+No further grouping applies — padding this section with one-line "groups" of a
 single tool each would not add information the register table doesn't already give
 directly.
 

@@ -86,7 +86,24 @@ printf '%s== dependency concentration-risk sync (concentration.md -> register, r
 mapfile -t GROUP_LINES < <(grep -oE '\*\*`github\.com/[A-Za-z0-9_.-]+`[^0-9]*[0-9]+ tools?' "$CONCENTRATION" \
   | sed -E 's/^\*\*`github\.com\/([A-Za-z0-9_.-]+)`[^0-9]*([0-9]+) tools?.*/\1\t\2/')
 
+# Zero headers is a legitimate state (2026-09-07): every register org can
+# genuinely back only 1 row at once (e.g. once argoproj's Argo Rollouts row was
+# removed alongside grafana's earlier removal, no org backs 2+ rows any more) —
+# that is NOT the same failure as a heading-format change breaking the parser.
+# Distinguish the two by checking the forward direction's own ORG_COUNT map: if
+# it genuinely contains no org with 2+ rows, zero concentration headers is
+# correct, not drift.
+any_real_group=0
+for org in "${!ORG_COUNT[@]}"; do
+  [ "${ORG_COUNT[$org]}" -ge 2 ] && { any_real_group=1; break; }
+done
+
 if [ "${#GROUP_LINES[@]}" -eq 0 ]; then
+  if [ "$any_real_group" -eq 0 ]; then
+    ok "no org backs 2+ rows in dependency-register.md right now, so zero concentration-group headers in dependency-concentration.md is correct"
+    echo
+    exit "$drift"
+  fi
   bad "no '**\`github.com/ORG\` — N tools' concentration-group headers parsed from docs/dependency-concentration.md — heading format may have changed"
   exit 1
 fi

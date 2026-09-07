@@ -42,5 +42,5 @@ variable "disable_traefik" {
 variable "disable_default_cni" {
   type        = bool
   default     = false
-  description = "Disable k3s's bundled Flannel CNI + NetworkPolicy controller (--flannel-backend=none --disable-network-policy). Per ADR-0014, set to true ONLY when the Cilium ArgoCD Application is also being landed in the same change — otherwise the cluster comes up with no CNI and pods stay in ContainerCreating."
+  description = "Disable k3s's bundled Flannel CNI + NetworkPolicy controller (--flannel-backend=none --disable-network-policy). Cilium (ADR-0014) was removed entirely 2026-09-07, no replacement — k3s's bundled Flannel + kube-router is the lab's only CNI now, so leave this false. Only ever set true alongside an ArgoCD Application that installs a real CNI in the same change — otherwise the cluster comes up with no CNI and pods stay in ContainerCreating."
 }

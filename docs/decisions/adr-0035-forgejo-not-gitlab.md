@@ -1,11 +1,19 @@
 # ADR-0035 — Forgejo (self-hosted) as the lab's git source of truth + CI runner (supersedes ADR-0033)
 
-**Status.** Adopted. **Supersedes [ADR-0033](adr-0033-gitlab-git-source-and-ci.md).**
+**Status.** Removed 2026-09-07 (maintainer decision — component dropped from the lab
+entirely, no replacement; ArgoCD syncs directly from GitHub instead). The `forgejo/`
+compose stack, `.forgejo/workflows/`, every `scripts/forgejo-*.sh` script, and every
+Forgejo test were deleted in the same change. The decision record below is kept for
+history (why Forgejo was adopted over GitLab, what it demonstrated) but no longer
+describes anything live in the repo — do not treat any manifest path or Makefile target
+named below as still existing.
+
+~~**Status.** Adopted. **Supersedes [ADR-0033](adr-0033-gitlab-git-source-and-ci.md).**
 Architect decision. Migration execution tracked as new ROADMAP items (this same run) —
 this ADR lands the decision; the cutover itself is mechanical fan-out work across
 several follow-up PRs (compose stack, Terraform module, CI pipeline port, script/Makefile
 rename, GitLab decommission), mirroring how [ADR-0024](adr-0024-harbor-not-artifactory.md)
-(Harbor superseding Artifactory) was executed in stages.
+(Harbor superseding Artifactory) was executed in stages.~~
 
 ---
 
