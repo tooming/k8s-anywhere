@@ -130,3 +130,47 @@ Was brought up via tfstate-up; torn down via tfstate-down (stopped the
 container; the Docker volume `tfstate_data` persisted until tfstate-clean) —
 all three Makefile targets were removed along with the rest of this backend
 (see Status above).
+
+---
+
+## Re-evaluation log
+
+**2026-09-07 — Oracle backend's own tfstate Garage: audited, kept.** Trigger:
+CHARTER.md's "Cloud backend" bullet flagged, as a genuinely open question
+left by the 2026-09-06/2026-09-07 simplification, whether
+`infra/live/oracle/root.hcl`'s own separate off-cluster Garage instance
+(`infra/tfstate-oracle/`, RFC #377 item 3) should also be reconsidered now
+that the local backend's equivalent (this ADR's own subject) was removed.
+
+**Decision: Keep, unchanged.** The two instances were removed for
+different, non-transferable reasons and the removal reasoning for one does
+not carry over to the other:
+
+- The **local** backend's off-cluster Garage was removed because its
+  *consuming context* disappeared — Velero backups, Harbor's registry
+  storage, and s3manager's browsing UI (the actual users of in-cluster
+  Garage, ADR-0002) were all removed the same day, and the local host was
+  independently found, with live evidence (`docs/incident-log.md`'s
+  2026-09-06 entries: Harbor alone spiking load average to 238), to be
+  capacity-constrained running the full prior stack on one 12 GB VM. A
+  plain local-file Terraform backend is a strict simplification with no
+  loss of capability for a single-host, single-operator lab (ADR-0005).
+- The **Oracle** backend's off-cluster Garage serves a use case that never
+  went away: durable state for a cloud-hosted target that may be applied
+  from a different workstation/session than the one that created it. A
+  plain local-file backend is the *wrong* fit here specifically because
+  it isn't local to any one machine — losing a shared, durable state store
+  would be a real regression for this backend, not a simplification.
+- The Oracle backend's tfstate Garage runs on its **own, separate Always
+  Free AMD Micro instance** — it never shared host capacity with the local
+  lab's 12 GB VM, so the specific capacity pressure that motivated removing
+  the local backend's Garage does not apply here at all. There is no
+  equivalent "component straining the host" finding to act on.
+
+**Flip condition:** revisit if (a) the Oracle backend itself is ever
+removed (nothing left to hold state for), or (b) a simpler, still-durable,
+still-shared-across-sessions state mechanism becomes practical for a
+cloud-hosted Terragrunt unit (e.g., if Oracle's own free-tier object
+storage becomes a viable Terraform S3-compatible backend directly, removing
+the need for a dedicated Garage instance at all) — not before either
+condition is concretely true.
