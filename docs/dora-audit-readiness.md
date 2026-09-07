@@ -352,18 +352,22 @@ concentration)?**
   exit-ability or invent a smaller true cost.
 - **Evidence:** [docs/dependency-exit-runbooks.md](dependency-exit-runbooks.md);
   ADR-0024 (executed migration); ADR-0001 (structural exit-ability).
-- **Gap:** the two live concentration groups (Q16) each have a written runbook, and
-  so do six `always-on-core` single-tool rows (Cilium, Garage, Traefik,
-  cert-manager, Terraform/Terragrunt, Forgejo). RabbitMQ, Valkey, and KEDA had
-  runbooks too until all three were removed from the lab entirely 2026-09-06, with
-  no replacement — a removed dependency needs no exit runbook. Several newer
-  register rows (Velero, Trivy Operator, Kargo, Harbor, Oracle Cloud Infrastructure,
-  k3s, moto, ACK S3 controller, KRO, s3manager, Vault, External Secrets Operator)
-  don't yet have one — a real, separately-scoped gap, flagged as its own follow-up
-  rather than silently claimed complete. A written runbook existing in advance also
-  doesn't mean the effort of an actual exit is smaller, only that the first-response
-  steps are already identified — exits still happen reactively via a new ADR when
-  actually triggered.
+- **Gap:** none in coverage *existence* — every one of `docs/dependency-register.md`'s
+  21 current rows has a written runbook entry in
+  [`docs/dependency-exit-runbooks.md`](dependency-exit-runbooks.md), mechanically
+  enforced by `make dependency-exit-runbooks-sync-check` (wired into `make ci`'s
+  `drift` job, so a new register row without a matching runbook mention fails the
+  build). This closed in three sweeps (2026-09-02, then a 2026-09-06 pass covering
+  the final thirteen rows: Kyverno, Velero, Trivy Operator, Kargo, Harbor, Oracle
+  Cloud Infrastructure, k3s, moto, ACK S3 controller, KRO, s3manager, Vault, and
+  External Secrets Operator) — this entry previously (as of 2026-09-06) still
+  described those thirteen as "a real, separately-scoped gap," which was true when
+  written but stale by the time this correction landed. RabbitMQ, Valkey, and KEDA
+  had runbooks too until all three were removed from the lab entirely 2026-09-06,
+  with no replacement — a removed dependency needs no exit runbook. A written
+  runbook existing in advance also doesn't mean the effort of an actual exit is
+  smaller, only that the first-response steps are already identified — exits still
+  happen reactively via a new ADR when actually triggered.
 
 ---
 
