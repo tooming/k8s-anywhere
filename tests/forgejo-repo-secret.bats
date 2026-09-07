@@ -27,11 +27,6 @@ setup() {
   [ -x "$SCRIPT" ]
 }
 
-@test "forgejo-repo-secret.sh passes shellcheck" {
-  run shellcheck --severity=warning "$SCRIPT"
-  [ "$status" -eq 0 ]
-}
-
 # --- targets the right repo, namespace, and Secret ---------------------------
 @test "forgejo-repo-secret.sh targets the lab/k8s-lab repo" {
   grep -q 'ORG="lab"' "$SCRIPT"

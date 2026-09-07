@@ -79,6 +79,10 @@ yq-variant-guard-check: ## Check scripts/*.sh calling mikefarah-only yq syntax (
 git-fixture-isolation-check: ## Check git-fixture bats tests unset GIT_* (so make ci survives running from a hook)
 	@bash scripts/git-fixture-isolation-check.sh
 
+.PHONY: bats-shellcheck-duplication-check
+bats-shellcheck-duplication-check: ## Check no bats test invokes shellcheck directly (that's make lint's job)
+	@bash scripts/bats-shellcheck-duplication-check.sh
+
 .PHONY: securitycontext-tests-mark
 securitycontext-tests-mark: ## Refresh tests/.securitycontext-titles — run ONLY after an intentional rename/edit of a monolith test
 	@grep -oE '^@test "[^"]*"' tests/securitycontext.bats | sort > tests/.securitycontext-titles
@@ -244,6 +248,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/ok-bad-lib-check.sh
 	@bash scripts/drift-detectors-tests-check.sh
 	@bash scripts/hook-scripts-coverage-tests-check.sh
+	@bash scripts/bats-shellcheck-duplication-check.sh
 	@bash scripts/ci-parity-check.sh
 
 .PHONY: install-hooks
