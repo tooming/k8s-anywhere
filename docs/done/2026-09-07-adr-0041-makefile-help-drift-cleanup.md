@@ -66,4 +66,4 @@ the prior bats-shellcheck cleanup had already been tried this run).
 
 ## PR
 
-(filled in once the PR is opened)
+https://github.com/tooming/k8s-anywhere/pull/1476 (chore/adr-0041-makefile-help-drift-cleanup)
