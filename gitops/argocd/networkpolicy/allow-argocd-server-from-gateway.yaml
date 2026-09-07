@@ -4,11 +4,21 @@
 # routes traffic from Traefik pods in kube-system to the ArgoCD UI and API on
 # TCP 8080 (the container port; the argocd-server Service maps 80→8080 externally).
 # server.insecure=true is set in infra/modules/argocd/values.yaml, so plain HTTP.
+#
+# Shares allow-dns-and-apiserver.yaml's sync-wave (-1) for uniformity with this
+# overlay's other allow rules (allow-argocd-intra-namespace.yaml,
+# allow-argocd-repo-server-egress-charts.yaml — see their headers for why THEY
+# must not land late) — this one is ingress-only so it isn't itself on the
+# repo-server-deadlock critical path, but landing it a wave behind its siblings
+# would leave the argocd-server UI unreachable through the gateway for one wave
+# with no corresponding benefit.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-argocd-server-from-gateway
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   podSelector:
     matchLabels:

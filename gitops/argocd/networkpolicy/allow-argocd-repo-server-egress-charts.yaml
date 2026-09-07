@@ -12,11 +12,23 @@
 # egress from repo-server while preserving a reliable rebuild path.
 #
 # Wired into gitops/argocd/networkpolicy/kustomization.yaml (auto-synced, wave 4).
+#
+# Must share allow-dns-and-apiserver.yaml's sync-wave (-1), strictly before
+# default-deny.yaml (wave 0) — NOT the kustomization's default wave. repo-server
+# itself is a pod in this namespace, so allow-dns-and-apiserver's podSelector:{}
+# egress rule restricts IT too the instant it lands; if this rule lands a wave
+# late, repo-server loses `helm pull`/`git fetch` egress in the gap — and since
+# repo-server is what every Application (including this kustomization's own next
+# sync) needs to generate manifests, that gap is a deadlock. See
+# allow-argocd-intra-namespace.yaml's header for the full mechanism, confirmed
+# live on a from-scratch `make up` post-Cilium-removal (2026-09-07).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-argocd-repo-server-egress-charts
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   podSelector:
     matchLabels:
