@@ -11,8 +11,8 @@ file as pure re-indexing, with no new dependency-risk judgment made in producing
 
 ## Method
 
-Group every one of `docs/dependency-register.md`'s 26 GitHub-hosted tool rows
-(of 29 total; the other 3 — Terraform/Terragrunt, Oracle Cloud Infrastructure,
+Group every one of `docs/dependency-register.md`'s 18 GitHub-hosted tool rows
+(of 21 total; the other 3 — Terraform/Terragrunt, Oracle Cloud Infrastructure,
 Forgejo — aren't GitHub-hosted, so there's no GitHub org to group them by) by
 **upstream GitHub org**, reusing the register's own "Upstream source" column
 verbatim (nothing re-derived from memory), and flag any org backing more than
@@ -34,14 +34,21 @@ per the note above).
 
 **Every other row is a distinct org** — Terraform (hashicorp) and Terragrunt
 (gruntwork-io) are two different orgs sharing one register row; Garage (Deuxfleurs);
-Traefik (traefik, bundled with k3s — no separate org row of its own to track since ADR-0040); RabbitMQ (rabbitmq); Cilium
-(cilium); Valkey (valkey-io); Kyverno (kyverno); Velero
+Traefik (traefik, bundled with k3s — no separate org row of its own to track since ADR-0040); Cilium
+(cilium); Kyverno (kyverno); Velero
 (vmware-tanzu); Trivy Operator (aquasecurity); Kargo (akuity); Harbor (goharbor);
 Oracle Cloud Infrastructure (not GitHub-hosted — cloud.oracle.com); k3s (k3s-io);
-cert-manager (cert-manager); KEDA (kedacore); Forgejo (not GitHub-hosted —
-codeberg.org/forgejo, code.forgejo.org/forgejo); kube-state-metrics (kubernetes);
-node-exporter (prometheus).
-No further grouping applies — padding this section with 24 one-line "groups" of a
+cert-manager (cert-manager); External Secrets Operator (external-secrets); Forgejo
+(not GitHub-hosted — codeberg.org/forgejo, code.forgejo.org/forgejo); Vault
+(hashicorp — the same org as Terraform, but that row isn't GitHub-hosted per the
+register's own column, so this doesn't create a second `hashicorp` concentration
+row to track); moto (getmoto); ACK S3 controller (aws-controllers-k8s); KRO
+(kubernetes-sigs); s3manager (cloudlena).
+(RabbitMQ, Valkey, KEDA, kube-state-metrics, and node-exporter were removed from
+this list 2026-09-06/2026-08-25 along with the components themselves — ADR-0009,
+ADR-0018, ADR-0029, and ADR-0041 respectively — none of their register rows exist
+any more.)
+No further grouping applies — padding this section with 16 one-line "groups" of a
 single tool each would not add information the register table doesn't already give
 directly.
 

@@ -47,7 +47,7 @@ setup() {
   [[ "$output" == *"dependency-register.md not found"* ]]
 }
 
-@test "dependency-exit-runbooks-sync-check: passes on the real repo (both concentration groups and all 32 register rows have runbooks)" {
+@test "dependency-exit-runbooks-sync-check: passes on the real repo (both concentration groups and all 21 register rows have runbooks)" {
   run bash "$REPO/scripts/dependency-exit-runbooks-sync-check.sh"
   [ "$status" -eq 0 ]
   [[ "$output" == *"github.com/grafana"* ]]
