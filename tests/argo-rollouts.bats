@@ -155,6 +155,54 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+# --- Dashboard basicAuth (RFC #1479, closes GHSA-366v-5xmx-36vh/CVE-2026-82277) ---
+@test "argo-rollouts IngressRoute both route entries (web and websecure) reference the dashboard-auth Middleware" {
+  count=$(grep -c 'name: argo-rollouts-dashboard-auth' "$REPO/gitops/argo-rollouts/ingressroute.yaml")
+  [ "$count" -eq 2 ]
+}
+
+@test "argo-rollouts dashboard-auth Middleware file exists" {
+  [ -f "$REPO/gitops/argo-rollouts/dashboard-auth-middleware.yaml" ]
+}
+
+@test "argo-rollouts dashboard-auth Middleware is a traefik.io/v1alpha1 basicAuth object" {
+  run grep -q 'apiVersion: traefik.io/v1alpha1' "$REPO/gitops/argo-rollouts/dashboard-auth-middleware.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'kind: Middleware' "$REPO/gitops/argo-rollouts/dashboard-auth-middleware.yaml"
+  [ "$status" -eq 0 ]
+  run grep -q 'basicAuth:' "$REPO/gitops/argo-rollouts/dashboard-auth-middleware.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argo-rollouts dashboard-auth Middleware references the argo-rollouts-dashboard-auth Secret" {
+  run grep -q 'secret: argo-rollouts-dashboard-auth' "$REPO/gitops/argo-rollouts/dashboard-auth-middleware.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argo-rollouts dashboard-auth ExternalSecret file exists" {
+  [ -f "$REPO/gitops/argo-rollouts/dashboard-auth-externalsecret.yaml" ]
+}
+
+@test "argo-rollouts dashboard-auth ExternalSecret targets Vault path secret/argo-rollouts/dashboard" {
+  run grep -q 'key: argo-rollouts/dashboard' "$REPO/gitops/argo-rollouts/dashboard-auth-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "argo-rollouts dashboard-auth ExternalSecret renders a user:hash users key" {
+  run grep -q 'users: "{{ .username }}:{{ .passwordHash }}"' "$REPO/gitops/argo-rollouts/dashboard-auth-externalsecret.yaml"
+  [ "$status" -eq 0 ]
+}
+
+@test "vault-bootstrap.sh seeds secret/argo-rollouts/dashboard" {
+  run grep -q 'secret/argo-rollouts/dashboard' "$REPO/scripts/vault-bootstrap.sh"
+  [ "$status" -eq 0 ]
+}
+
+@test "vault-bootstrap.sh generates the dashboard password hash via htpasswd bcrypt" {
+  run grep -q 'htpasswd -nbBC 14 admin' "$REPO/scripts/vault-bootstrap.sh"
+  [ "$status" -eq 0 ]
+}
+
 # --- NetworkPolicy overlay structure (ADR-0016 §4 fan-out) -------------------
 @test "argo-rollouts NetworkPolicy kustomization exists" {
   [ -f "$REPO/gitops/argo-rollouts/networkpolicy/kustomization.yaml" ]

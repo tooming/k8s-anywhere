@@ -43,7 +43,7 @@ cluster, deployed by ArgoCD (one `Application` per component).
 | **CNI (bootstrap)** | Cilium (`make cilium-up` — run before `make argocd` on fresh clusters; ADR-0014) |
 | **Policy & supply chain** | Kyverno (NetworkPolicy default-deny fan-out · `kyverno-policies` ClusterPolicies: PSS-restricted validate + seccomp mutate + verifyImages; ADR-0016, ADR-0019) · Trivy Operator (`trivy-system-networkpolicy` default-deny overlay; continuous CVE scanning + SBOM generation; ADR-0022) · `governance` ApplicationSet (per-namespace LimitRange resource defaults fan-out; RFC #293) |
 | **TLS / certificates** | cert-manager (`cert-manager-root-ca` self-signed root CA bootstrap chain — `selfsigned-bootstrap` → root `Certificate` → `k8s-lab-ca` `ClusterIssuer` · `lab-gateway-certificate` wildcard `*.127.0.0.1.nip.io` Certificate terminating Traefik's `websecure` entrypoint via the shared `TLSStore` (ADR-0040), alongside the original `web`/`http` one · DR front door proxies `:8443` through as a TCP passthrough · `cert-manager-networkpolicy` default-deny overlay; ADR-0028) |
-| **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller — weight/pause canary steps via Traefik's built-in traffic-split (`TraefikService`); no automated SLO gate since the observability stack's removal, ADR-0041 · `argo-rollouts-networkpolicy` default-deny overlay; ADR-0020, ADR-0040) |
+| **Progressive delivery** | Argo Rollouts (`argo-rollouts` controller — weight/pause canary steps via Traefik's built-in traffic-split (`TraefikService`); no automated SLO gate since the observability stack's removal, ADR-0041 · dashboard behind a Traefik `basicAuth` Middleware, RFC #1479 (GHSA-366v-5xmx-36vh) · `argo-rollouts-networkpolicy` default-deny overlay; ADR-0020, ADR-0040) |
 | **Promotion pipelines** | Kargo (`make kargo-up` / `make kargo-down` — Warehouse detects new image digests → Stage dev auto-promote → Stage prod manual gate · `kargo-project` capstone-pipeline Project · `kargo-networkpolicy` default-deny overlay · `kargo-project-networkpolicy` capstone-pipeline NetworkPolicy overlay; ADR-0023) |
 | **On-demand (heavy)** | Harbor CNCF OCI registry (`make harbor-up` / `make harbor-down` — Garage S3 backend; ADR-0024) · Kargo promotion engine (`make kargo-up` / `make kargo-down`) |
 
@@ -89,7 +89,7 @@ After `make up`, UIs are served via the stable front door on **`:8000`**
 | Vault | http://vault.127.0.0.1.nip.io:8000 |
 | S3 browser | http://s3.127.0.0.1.nip.io:8000 |
 | moto (AWS mock) | http://moto.127.0.0.1.nip.io:8000/moto-api/ |
-| Argo Rollouts | http://rollouts.127.0.0.1.nip.io:8000 |
+| Argo Rollouts *(HTTP Basic Auth — `vault kv get secret/argo-rollouts/dashboard`, RFC #1479)* | http://rollouts.127.0.0.1.nip.io:8000 |
 | Capstone *(demo app)* | http://capstone.127.0.0.1.nip.io:8000 |
 | GitLab | http://localhost:8929 |
 | Kargo *(on-demand)* | http://kargo.127.0.0.1.nip.io:8000 |
