@@ -89,4 +89,4 @@ carried over from the stale text being corrected.
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1489 (chore/platform-products-post-removal-wave-drift-fix)
