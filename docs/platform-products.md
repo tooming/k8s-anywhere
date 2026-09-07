@@ -78,7 +78,7 @@ graph TD
     claims["Resource claims: KRO + ACK + moto"]:::ss
   end
   subgraph T5["Tier 5 — Heavy add-ons (on-demand, built)"]
-    heavy["TiDB · Harbor · Istio+Kiali · Longhorn"]:::plan
+    heavy["Harbor · Kargo"]:::plan
   end
 
   compute --> state --> scm --> cd
@@ -93,7 +93,12 @@ graph TD
 with the stack itself, ADR-0041: no replacement, so no tier sits between Data and
 Self-service any more. Tier numbers 0/1/2/4/5 are kept as-is rather than
 renumbered, matching how this repo never reuses/renumbers a retired ADR or
-CHARTER Objective number either.)
+CHARTER Objective number either. Tier 5's own heavy-add-on set shrank the same
+day: TiDB, Istio ambient mesh + Kiali, and Longhorn were also built and
+demonstrated this on-demand pattern, then removed entirely 2026-09-06
+(maintainer decision, no replacement) — see ADR-0031/ADR-0032, ADR-0012, and
+ADR-0013 for the removal notes, matching how `00-architecture.md` and
+CHARTER.md already record it.)
 
 | Tier | What | Build priority | Why this order |
 |------|------|----------------|----------------|
@@ -102,7 +107,7 @@ CHARTER Objective number either.)
 | **2 Data** | Object storage (Garage) | **P1** | Stateful backend for apps (Velero backups, Harbor registry storage). |
 | **3 Observability** | Retired 2026-09-06 (ADR-0041) | — | Was "LGTMP + Grafana" — removed entirely, no replacement. |
 | **4 Self-service** | KRO + ACK + moto claims | **P2** | The "internal API" layer that turns primitives into one-line self-service. |
-| **5 Heavy** | TiDB, Harbor, Istio mesh, Longhorn | **P3** | On-demand, capacity-gated (the 16 GB reality); pulled in per customer need — all four are built (`make <name>-up`), not just planned. |
+| **5 Heavy** | Harbor, Kargo | **P3** | On-demand, capacity-gated (the 12 GB reality); pulled in per customer need — both are built (`make <name>-up`), not just planned. TiDB, Istio mesh, and Longhorn also built this pattern, then removed 2026-09-06 (no replacement). |
 
 ---
 
@@ -128,15 +133,23 @@ The paved road for shipping. Substrate that's also offered as a "deploy here" pr
 | Product | Consumer contract | Backed by | Depends on | Maturity |
 |---------|-------------------|-----------|------------|----------|
 | **Ingress / north-south routing** | `kind: IngressRoute` (Traefik CRD) on the shared TLSStore | Traefik, bundled with k3s (+ off-cluster front door) | k3s | ✅ self-service |
-| **Service mesh (east-west)** | sidecarless `PeerAuthentication`/traffic policy + Kiali topology (`make istio-up`) | Istio ambient + Kiali | ingress | 🟡 on-demand (heavy) |
+
+(**Service mesh (east-west)** — sidecarless `PeerAuthentication`/traffic policy +
+Kiali topology via Istio ambient mesh + Kiali — was built and demonstrated as an
+on-demand product here, then removed entirely 2026-09-06, maintainer decision, no
+replacement. See ADR-0012.)
 
 ### D. Data & storage
 | Product | Consumer contract | Backed by | Depends on | Maturity |
 |---------|-------------------|-----------|------------|----------|
 | **Object storage (S3)** | a bucket + credentials (today provisioned by `garage-bootstrap`; browse via s3manager) | Garage S3 | Secrets | 🟡 platform-provisioned (self-service path = Cloud Resources below) |
-| **Relational database** | a TiDB cluster via `make tidb-up`; no DB-claim CRD yet — direct `kubectl`/GitOps access | TiDB | storage | 🟡 on-demand (heavy) |
 | **Artifact registry** | push/pull endpoint + repo via `make harbor-up` | Harbor | storage | 🟡 on-demand (heavy) |
-| **Block storage / PVs** | a `longhorn` StorageClass via `make longhorn-up` | Longhorn | compute | 🟡 on-demand (heavy) |
+
+(**Relational database** — a TiDB cluster via `make tidb-up` — and **Block storage /
+PVs** — a `longhorn` StorageClass via `make longhorn-up` — were both built and
+demonstrated as on-demand products here, then removed entirely 2026-09-06,
+maintainer decision, no replacement. See ADR-0031/ADR-0032 and ADR-0013
+respectively.)
 
 ### E. Observability — retired 2026-09-06 (ADR-0041)
 
@@ -168,7 +181,7 @@ around keeping them separate so roadmap doesn't get eaten by firefighting.
 Discrete, schedulable, value-adding. Tracked as epics per product.
 - New products & new self-service contracts (e.g. extend KRO RGDs to DB/cache claims).
 - New product versions / upgrades (ArgoCD chart bumps, k8s version, Garage v2→vN).
-- Capacity & cost work (the "16 GB reality" — what heavy profiles fit).
+- Capacity & cost work (the "12 GB reality" — what heavy profiles fit).
 - Paved-road improvements (templates, golden paths, docs).
 
 ### Run (operational / unplanned)
@@ -213,8 +226,8 @@ one team, treating them as distinct product lines keeps ownership and the roadma
 |--------|-----------------|------------------------|
 | **Platform core / paved road** | Continuous Delivery, Cluster/env | k3d, Terraform/Terragrunt, **off-cluster Garage (state)**, GitLab, ArgoCD |
 | **Security & secrets** | Secrets | Vault, ESO |
-| **Connectivity** | Ingress, (mesh) | Traefik, front door |
-| **Data & storage** | Object storage, (DB/registry/PV) | Garage, (Longhorn/TiDB/Harbor) |
+| **Connectivity** | Ingress | Traefik, front door |
+| **Data & storage** | Object storage, (registry) | Garage, (Harbor) |
 | **Developer self-service** | Cloud Resources Service | KRO, ACK, moto |
 
 (An **Observability** domain — Metrics/Logs/Traces/Profiles, backed by LGTMP +
