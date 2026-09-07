@@ -85,7 +85,7 @@ Rows are grouped by layer, matching the README stack table.
 
 | Tool | Role in the platform |
 |------|----------------------|
-| **cert-manager** | Automated TLS certificate lifecycle — issues and auto-renews certs from a self-signed root CA (`k8s-lab-ca`) at the Gateway edge, backing a wildcard `*.127.0.0.1.nip.io` Certificate. Every north-south route is reachable over both HTTP and the shared Gateway's HTTPS listener (:8443); this is additive alongside the original HTTP-only path, never a breaking cutover. `restricted` PSA, zero carve-out. (ADR-0028) |
+| **cert-manager** | Automated TLS certificate lifecycle — issues and auto-renews certs from a self-signed root CA (`k8s-lab-ca`) at the Traefik edge, backing a wildcard `*.127.0.0.1.nip.io` Certificate. Every north-south route is reachable over both HTTP and Traefik's `websecure` entrypoint (:8443), TLS terminated via the shared `TLSStore` (ADR-0040); this is additive alongside the original HTTP-only path, never a breaking cutover. `restricted` PSA, zero carve-out. (ADR-0028) |
 
 ### Secrets
 
