@@ -138,6 +138,23 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
+# Found 2026-09-07 (JANITOR-fallback sweep): oracle-cluster-apply.yml's `unit`
+# workflow_dispatch choice still offered "gitlab" as a selectable option after
+# infra/live/oracle/gitlab/ was deleted 2026-09-07 (ADR-0035) — a user picking
+# it would fail with no such Terragrunt unit on disk. This guard makes that
+# recurrence impossible: every option in the dropdown must be a real
+# infra/live/oracle/ subdirectory.
+@test "oracle-cluster-apply.yml's unit dropdown only offers units that actually exist under infra/live/oracle/" {
+  WF="$REPO/.github/workflows/oracle-cluster-apply.yml"
+  run grep -oE '^\s*options: \[cluster.*\]' "$WF"
+  [ "$status" -eq 0 ]
+  opts="$(printf '%s' "$output" | grep -oE '\[[^]]*\]' | tr -d '[]' | tr ',' ' ')"
+  [ -n "$opts" ]
+  for u in $opts; do
+    [ -d "$LIVE/$u" ]
+  done
+}
+
 # --- bounded retries: an unbounded `until` here hangs `terraform apply` forever --
 
 @test "oracle-k3s-cluster main.tf's SSH-wait loop is bounded, not an infinite until" {

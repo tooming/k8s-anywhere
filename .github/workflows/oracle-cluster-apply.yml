@@ -22,7 +22,7 @@ on:
         description: "Which infra/live/oracle/ unit to run against"
         required: true
         type: choice
-        options: [cluster, argocd, gitlab]
+        options: [cluster, argocd]
       action:
         description: "terragrunt action"
         required: true

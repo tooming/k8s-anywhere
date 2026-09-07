@@ -3,5 +3,5 @@ kind: ConfigMap
 metadata:
   name: lab-demo-hello
 data:
-  message: "Hello from GitOps — this was synced by ArgoCD, from GitLab, into the cluster."
-  source: "gitlab:lab/k8s-lab @ gitops/apps/demo"
+  message: "Hello from GitOps — this was synced by ArgoCD, from GitHub, into the cluster."
+  source: "github:tooming/k8s-anywhere @ gitops/apps/demo"

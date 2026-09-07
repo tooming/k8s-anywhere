@@ -8,7 +8,7 @@ name: oracle-cluster-apply-retry
 # left is time: retry the launch periodically until Oracle's capacity frees up.
 #
 # Deliberately narrower than oracle-cluster-apply.yml: hardcoded to the cluster/ unit
-# and `apply` only -- no destroy, no argocd/gitlab, no input surface at all, so there's
+# and `apply` only -- no argocd, no destroy, no input surface at all, so there's
 # nothing a scheduled trigger could be tricked or misconfigured into doing beyond this
 # one already-approved action. Once the instance exists, subsequent applies are
 # no-ops (terraform idempotency) -- safe to leave running indefinitely, no
