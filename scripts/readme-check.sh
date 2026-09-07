@@ -57,12 +57,19 @@ done
 # `make tfstate-clean`); a target named in an ADR but absent from the Makefile is the
 # same drift class as #1 above, just in docs/decisions/ instead of README.md.
 # Exception: a **Superseded by** ADR (e.g. ADR-0011 once the Harbor migration retired
-# its `make artifactory-*` targets) intentionally keeps its original decision text "for
-# the historical record" — that prose describes what was true when written, not current
-# live state, so its make-target mentions are expected to go stale and are not drift.
+# its `make artifactory-*` targets) or a **Removed** ADR (e.g. ADR-0029 once KEDA was
+# dropped from the lab entirely, no replacement) intentionally keeps its original
+# decision text "for the historical record" — that prose describes what was true when
+# written, not current live state, so its make-target mentions are expected to go stale
+# and are not drift. (Found live 2026-09-07: ADR-0029's own Status line claimed its
+# `keda-up`/`keda-down` Makefile targets "were deleted in the same change" as the
+# removal, but they had actually survived as dead code until a JANITOR-fallback cycle
+# deleted them for real — this check had no way to notice either the false claim or,
+# once fixed, exempt the ADR's now-expected-stale historical mentions, so it's added
+# here alongside the same Superseded-by exemption.)
 for f in "$ROOT"/docs/decisions/*.md; do
   [ -e "$f" ] || continue
-  grep -q '\*\*Status\.\*\* Superseded by' "$f" && continue
+  grep -qE '\*\*Status\.\*\* (Superseded by|Removed)' "$f" && continue
   adr_targets="$(grep -oE '`make [a-z][a-z0-9-]+' "$f" | sed 's/`make //' | sort -u)"
   for t in $adr_targets; do
     grep -qx "$t" <<<"$mk_targets" || bad "$(basename "$f") mentions \`make $t\` but the Makefile has no '$t' target"
