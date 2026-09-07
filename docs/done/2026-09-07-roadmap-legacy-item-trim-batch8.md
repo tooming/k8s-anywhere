@@ -38,4 +38,4 @@ No `gitops/` change. `make ci` fully clean (exit 0, zero `not ok` lines).
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1496 (chore/roadmap-legacy-item-trim-batch8)
