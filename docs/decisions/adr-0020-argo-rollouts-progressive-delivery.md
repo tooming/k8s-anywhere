@@ -357,3 +357,41 @@ reconciliation, not a manual bring-up.
 
 **Flip conditions.** Revisit when `argo-helm` publishes a chart release
 above `2.43.0`, or a security advisory is filed against `v1.10.0`/`2.43.0`.
+
+### 2026-09-07 — Dashboard unauthenticated-mutation CVE, converted to RFC (audit #1478)
+
+**Trigger.** This entry's own prior flip condition fired: `argoproj/argo-rollouts`
+filed **GHSA-366v-5xmx-36vh** / **CVE-2026-82277** (Critical, CVSS 9.3, CWE-306)
+against the dashboard "through version 1.10.0" — exactly this lab's pinned
+appVersion. Confirmed directly against GitHub's own advisory database
+(`github.com/advisories/GHSA-366v-5xmx-36vh`), not a third-party summary. The
+dashboard "binds to all interfaces and exposes mutating Rollout operations
+without authentication, authorization, or CSRF protection"
+(`PromoteRollout`/`AbortRollout`/`RestartRollout`/`SetRolloutImage`/
+`UndoRollout`/`RetryRollout`). No patched version is identified in the advisory.
+This lab's `gitops/argo-rollouts/ingressroute.yaml` exposes exactly this
+dashboard at `rollouts.127.0.0.1.nip.io`, with zero Traefik `Middleware` applied
+— confirmed via repo-wide grep (this lab has never used `basicAuth`/`forwardAuth`
+anywhere before).
+
+**Decision: convert — the controller/CRDs are unaffected and this ADR's tool
+choice stands, but the dashboard's unauthenticated exposure needs a compensating
+ingress-layer control since no upstream fix exists yet.** Not "keep silently" —
+version-bumping cannot close a gap with no fixed version, and this is this lab's
+own actual live exposure, not a theoretical one. Converted to
+[RFC #1479](https://github.com/tooming/k8s-anywhere/issues/1479): a Traefik
+`basicAuth` `Middleware` in front of both the `web` and `websecure`
+`argo-rollouts` IngressRoutes, credentials generated and Vault-seeded via the
+exact bcrypt (`htpasswd -bnBC 14`) pattern already established for Kargo's admin
+credential (`scripts/vault-bootstrap.sh`'s `secret/kargo/admin` line) — no new
+technology or secrets pattern introduced, pure reuse. Rejected alternative:
+removing the IngressRoute entirely (`kubectl port-forward`-only access) — a
+bigger UX regression than the vulnerability warrants, since README/CHARTER
+document this dashboard as "the primary 'see the canary' learning artifact" and
+the actual gap is unauthenticated *mutation*, not exposure of a read-only view.
+
+**Flip condition (next re-evaluation).** Revisit once `argo-helm`/
+`argoproj/argo-rollouts` ships a version whose release notes confirm a fix for
+GHSA-366v-5xmx-36vh — at that point RFC #1479's compensating control may be kept
+as defense-in-depth or reconsidered, but is not itself a reason to drop once
+built. Audit closed: `gh issue close #1478`, actioned as RFC #1479.
