@@ -33,4 +33,4 @@ needed a matching update.
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1493 (chore/incident-log-severity-scheme-stale-examples-fix)
