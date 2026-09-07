@@ -4,13 +4,20 @@
 entirely, no replacement). The off-cluster tfstate Garage was removed alongside Garage
 itself (ADR-0002) and s3manager (ADR-0039) in the same change: `infra/tfstate/` (the
 whole directory — `docker-compose.yml`, `garage.toml`) and `scripts/tfstate-bootstrap.sh`
-were deleted. `infra/live/local/root.hcl` still generates an `s3` backend pointed at this
-now-deleted Garage and needs migrating to a local backend (or another replacement) as a
-separate, coordinated follow-up — not done as part of this removal, since it touches
-every Terragrunt unit at once. The decision record below is kept for history (why an
-off-cluster Garage was chosen over in-cluster Garage or a hosted S3 bucket) but no
-longer describes anything live in the repo — do not treat any manifest path or Makefile
-target named below as still existing.
+were deleted. `infra/live/local/root.hcl` was migrated to a `backend "local"` (plain file
+per Terragrunt unit, via `get_terragrunt_dir()`) in the **same change** — checked directly
+against the real file, confirmed no `s3`/Garage backend reference remains anywhere under
+`infra/live/local/`. (This paragraph previously said the migration was "not done as part
+of this removal... a separate, coordinated follow-up" — that was wrong the moment it was
+written; corrected 2026-09-07.) The Oracle backend
+(`infra/live/oracle/root.hcl`) is unaffected — it uses its own separate, still-live
+off-cluster Garage instance (`infra/tfstate-oracle/`, RFC #377 item 3), untouched by this
+removal; whether that design should also be reconsidered is a distinct, still-open
+question (see CHARTER.md's Oracle-backend bullet). The decision record below is kept for
+history (why an off-cluster Garage was chosen over in-cluster Garage or a hosted S3
+bucket) but no longer describes anything live under `infra/live/local/` — do not treat
+any manifest path or Makefile target named below as still existing for the local
+backend.
 
 ~~**Status.** Adopted. Shipped in commit `a07a1d2`; active in `infra/live/local/root.hcl`,
 `infra/tfstate/`, `scripts/tfstate-bootstrap.sh`, make tfstate-up.~~
