@@ -9,6 +9,13 @@
 # gitops/network/argocd-ingressroute.yaml's header comment for the full finding:
 # a `tls: {}` stanza on an object that also lists `web` silently breaks plain-HTTP
 # matching on `web` entirely.
+#
+# Both routes require HTTP Basic Auth (dashboard-auth-middleware.yaml, RFC #1479)
+# — closes GHSA-366v-5xmx-36vh/CVE-2026-82277 (audit #1478): the dashboard
+# exposes mutating Rollout operations with zero authentication upstream, and no
+# fixed version exists yet. Retrieve the credential via
+# `vault kv get secret/argo-rollouts/dashboard` (username `admin`; see
+# scripts/vault-bootstrap.sh for how it's seeded).
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -20,6 +27,8 @@ spec:
   routes:
     - kind: Rule
       match: Host(`rollouts.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      middlewares:
+        - name: argo-rollouts-dashboard-auth
       services:
         - name: argo-rollouts-dashboard
           port: 3100
@@ -35,6 +44,8 @@ spec:
   routes:
     - kind: Rule
       match: Host(`rollouts.127.0.0.1.nip.io`) && PathPrefix(`/`)
+      middlewares:
+        - name: argo-rollouts-dashboard-auth
       services:
         - name: argo-rollouts-dashboard
           port: 3100
