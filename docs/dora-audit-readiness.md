@@ -267,9 +267,14 @@ so a future edit can't silently drop the highest-severity rows without failing
 
 **Q14. Is there a register of ICT third-party dependencies?**
 - **Answer:** Yes. [`docs/dependency-register.md`](dependency-register.md) tabulates
-  every third-party tool named in a binding ADR — 29 tools across 25 ADRs (down
-  from 33/27 after the observability stack's 8-tool, 2-ADR removal, ADR-0041,
-  2026-09-06) — by criticality, upstream source, deciding ADR, and last-reviewed
+  every third-party tool named in a binding ADR — **21 tools across 20 ADRs**,
+  counted directly from the register's real rows and ADR-column values as of
+  2026-09-07 (down from the 29/25 this line previously stated after the
+  observability stack's 8-tool, 2-ADR removal, ADR-0041, 2026-09-06 — a further
+  removal wave the same day and 2026-08-25, RabbitMQ/Valkey/KEDA plus TiDB/Istio
+  ambient mesh + Kiali/Longhorn, ADR-0009/ADR-0018/ADR-0029/ADR-0031/ADR-0032/
+  ADR-0012/ADR-0013, shrank it further without this line ever being updated) — by
+  criticality, upstream source, deciding ADR, and last-reviewed
   date, re-indexed purely from existing ADR content.
 - **Evidence:** [docs/dependency-register.md](dependency-register.md).
 - **Gap:** narrower now — `make ci` gained a mechanical drift guard
