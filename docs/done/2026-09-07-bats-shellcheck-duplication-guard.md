@@ -51,4 +51,4 @@ a footgun that had already bit this exact session three times in a row).
 
 ## PR
 
-(filled in once the PR is opened)
+https://github.com/tooming/k8s-anywhere/pull/1475 (chore/bats-shellcheck-duplication-guard)
