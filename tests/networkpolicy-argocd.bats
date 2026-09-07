@@ -113,3 +113,44 @@ setup() {
   run grep -q 'destNamespace: argocd' "$REPO/gitops/platform/networkpolicy-appset.yaml"
   [ "$status" -eq 0 ]
 }
+
+# --- Sync-wave ordering: argocd's own allow rules must not land after the DNS/
+# apiserver floor (repo-server deadlock guard) ---------------------------------
+# Confirmed live on a genuinely from-scratch `make up` post-Cilium-removal
+# (2026-09-07): allow-dns-and-apiserver.yaml (wave -1, podSelector:{} egress
+# restricted to DNS+apiserver only) landing a wave before allow-argocd-intra-
+# namespace.yaml (which permits argocd-application-controller -> argocd-repo-
+# server/argocd-cache) cuts the controller off from repo-server before its own
+# allow-rule exists. Since repo-server is what every Application — including this
+# NetworkPolicy kustomization's own next sync — needs to generate manifests, that
+# gap is a deadlock the cluster can never recover from on its own: ArgoCD's wave
+# gate holds wave 0 back until wave -1 is Synced+Healthy, and once repo-server is
+# unreachable nothing else in the whole bootstrap can get manifests generated
+# either. Deleting the standalone allow-dns-and-apiserver object live let the sync
+# proceed and converge normally, confirming this exact ordering as the cause.
+#
+# This is a static/structural assertion, not a live-cluster timing test — it
+# cannot prove kube-router actually programs these waves' iptables rules
+# atomically (that's inherently a live-cluster behavior, see the PR that added
+# this test for why no stronger mechanical guard is possible here). What it CAN
+# and does guard mechanically: nobody re-introduces the specific wave-ordering
+# shape that caused the deadlock — an argocd-specific allow rule sitting at a
+# later (or unset/default) wave than the shared DNS+apiserver floor rule it
+# depends on.
+@test "every argocd-specific allow rule shares allow-dns-and-apiserver's sync-wave (not a later/default wave)" {
+  run grep -oE 'argocd\.argoproj\.io/sync-wave: "-?[0-9]+"' "$POLICIES/allow-dns-and-apiserver.yaml"
+  [ "$status" -eq 0 ]
+  local floor_wave
+  floor_wave="$(echo "$output" | grep -oE -- '-?[0-9]+')"
+
+  local f
+  for f in "$ARGOCD_NP/allow-argocd-intra-namespace.yaml" \
+           "$ARGOCD_NP/allow-argocd-repo-server-egress-charts.yaml" \
+           "$ARGOCD_NP/allow-argocd-server-from-gateway.yaml"; do
+    run grep -oE 'argocd\.argoproj\.io/sync-wave: "-?[0-9]+"' "$f"
+    [ "$status" -eq 0 ]
+    local wave
+    wave="$(echo "$output" | grep -oE -- '-?[0-9]+')"
+    [ "$wave" -eq "$floor_wave" ]
+  done
+}

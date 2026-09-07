@@ -20,7 +20,25 @@
 # allow-argocd-intra-namespace.yaml's existing podSelector:{} egress rule already
 # matches those same backend pods (see allow-dns-and-apiserver.yaml's header for the
 # full reasoning).
-# Wired into gitops/platform/argocd-networkpolicy.yaml (auto-synced, wave 4).
+# Wired into gitops/platform/networkpolicy-appset.yaml (the "argocd-networkpolicy"
+# ApplicationSet element, auto-synced, wave 4) — NOT a standalone
+# gitops/platform/argocd-networkpolicy.yaml Application; that file doesn't exist,
+# this namespace's fan-out was consolidated into the appset alongside every other
+# namespace's (see networkpolicy-appset.yaml's own header).
+#
+# Sync-wave shape within this overlay's own resources: allow-dns-and-apiserver.yaml
+# and every argocd-specific allow rule (allow-argocd-intra-namespace.yaml,
+# allow-argocd-repo-server-egress-charts.yaml, allow-argocd-server-from-gateway.yaml)
+# share wave -1; default-deny.yaml stays at the implicit wave 0, landing last but
+# adding no further restriction once the wave -1 rules exist (their podSelector:{}
+# rules already establish the same default-deny-except-explicitly-allowed semantics).
+# This is deliberate, not incidental: argocd hosts argocd-repo-server, which every
+# Application (including this one's own next sync) needs reachable to generate
+# manifests — if any wave -1 rule landed a wave late, the resulting gap would cut
+# repo-server off from the controller (or from its own chart/git egress) before its
+# own allow-rule existed, deadlocking the whole bootstrap rather than just this
+# namespace. Confirmed live on a from-scratch `make up` post-Cilium-removal
+# (2026-09-07). See the individual files' headers for the full mechanism.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 

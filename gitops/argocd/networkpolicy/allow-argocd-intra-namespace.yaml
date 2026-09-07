@@ -10,11 +10,28 @@
 #   argocd-applicationset-controller ← argocd-server (:7000, webhook callbacks).
 # A single broad intra-namespace allow is correct — every component is a tightly-coupled
 # part of the same ArgoCD control plane.
+#
+# Must share allow-dns-and-apiserver.yaml's sync-wave (-1), strictly before
+# default-deny.yaml (wave 0) — NOT the kustomization's default wave. If this rule
+# lands a wave late, the gap between allow-dns-and-apiserver (wave -1, podSelector:{}
+# egress restricted to DNS+apiserver only) landing and this rule landing leaves
+# argocd-application-controller unable to reach argocd-repo-server (gRPC :8081).
+# Since repo-server is what generates manifests for every Application including this
+# NetworkPolicy kustomization's own next sync, that gap is a deadlock, not a transient
+# blip: ArgoCD's wave gate holds the next wave back until wave -1 is Synced+Healthy,
+# and once repo-server is unreachable nothing else in the whole bootstrap can get its
+# manifests generated either. Confirmed live on a genuinely from-scratch `make up`
+# post-Cilium-removal (2026-09-07) — deleting the standalone allow-dns-and-apiserver
+# object unblocked the sync immediately, proving this exact ordering was the cause.
+# See allow-dns-and-apiserver.yaml's own header for why default-deny.yaml itself can
+# safely stay at wave 0 (it adds no further restriction once this rule exists).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-argocd-intra-namespace
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   podSelector: {}
   policyTypes:
