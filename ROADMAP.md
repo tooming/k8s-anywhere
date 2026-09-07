@@ -292,6 +292,12 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [x] 🟢 **JANITOR-fallback: remove tests/forgejo-repo-secret.bats's redundant
+  direct `shellcheck` invocation + add a mechanical recurrence guard** — full
+  verification writeup:
+  [docs/done/2026-09-07-bats-shellcheck-duplication-guard.md](docs/done/2026-09-07-bats-shellcheck-duplication-guard.md).
+  (chore/bats-shellcheck-duplication-guard)
+
 - [x] 🟢 **Oracle Cloud Infrastructure (ADR-0027) currency re-check — first review
   this dependency-register.md row had ever recorded** — full verification writeup:
   [docs/done/2026-09-07-oracle-adr-0027-currency-recheck.md](docs/done/2026-09-07-oracle-adr-0027-currency-recheck.md).
