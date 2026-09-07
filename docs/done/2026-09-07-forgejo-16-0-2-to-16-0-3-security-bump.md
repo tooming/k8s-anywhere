@@ -68,4 +68,4 @@ gap earlier this run, applied to the next-oldest active row.
 
 ## PR
 
-(filled in once the PR is opened)
+https://github.com/tooming/k8s-anywhere/pull/1483 (auto/forgejo-16-0-2-to-16-0-3-security-bump)
