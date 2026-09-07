@@ -64,4 +64,4 @@ closing the "is there more?" question rather than leaving it open.
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1485 (auto/dependency-register-ghsa-audit-clean)
