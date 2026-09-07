@@ -2,7 +2,7 @@
 
 ## PR
 
-(backfilled after PR creation)
+[#1506](https://github.com/tooming/k8s-anywhere/pull/1506)
 
 ## What
 
