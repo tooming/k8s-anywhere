@@ -20,9 +20,14 @@ setup() {
   [[ "$output" != *':latest'* ]]
 }
 
-@test "forgejo service is pinned to 16.0.2" {
-  run grep -F 'image: code.forgejo.org/forgejo/forgejo:16.0.2' "$COMPOSE"
+@test "forgejo service is pinned to 16.0.3" {
+  run grep -F 'image: code.forgejo.org/forgejo/forgejo:16.0.3' "$COMPOSE"
   [ "$status" -eq 0 ]
+}
+
+@test "forgejo service does not pin the stale 16.0.2" {
+  run grep -F 'image: code.forgejo.org/forgejo/forgejo:16.0.2' "$COMPOSE"
+  [ "$status" -eq 1 ]
 }
 
 @test "forgejo service uses code.forgejo.org, not codeberg.org (2026-09-06: codeberg.org registry unreachable from the Colima VM)" {
@@ -36,9 +41,14 @@ setup() {
   [[ "$output" != *':latest'* ]]
 }
 
-@test "forgejo-runner service is pinned to 13.0.0" {
-  run grep -F 'image: code.forgejo.org/forgejo/runner:13.0.0' "$COMPOSE"
+@test "forgejo-runner service is pinned to 13.1.0" {
+  run grep -F 'image: code.forgejo.org/forgejo/runner:13.1.0' "$COMPOSE"
   [ "$status" -eq 0 ]
+}
+
+@test "forgejo-runner service does not pin the stale 13.0.0" {
+  run grep -F 'image: code.forgejo.org/forgejo/runner:13.0.0' "$COMPOSE"
+  [ "$status" -eq 1 ]
 }
 
 @test "forgejo service uses a distinct host port from GitLab's 8929" {
@@ -58,7 +68,10 @@ setup() {
 }
 
 @test "forgejo-runner depends on forgejo being healthy, not just started" {
-  run grep -A7 '^  forgejo-runner:' "$COMPOSE"
+  # -A13 (bumped from -A7 2026-09-07 when the runner version-bump comment grew the
+  # image line's preceding comment block) -- same fixed-line-count fragility this
+  # file's own healthcheck test above already hit; re-bump here if it drifts again.
+  run grep -A13 '^  forgejo-runner:' "$COMPOSE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"condition: service_healthy"* ]]
 }

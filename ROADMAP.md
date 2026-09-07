@@ -292,6 +292,11 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [x] 🟢 **Bump Forgejo `16.0.2` → `16.0.3` (3 named security fixes) + forgejo-runner
+  `13.0.0` → `13.1.0` (routine currency)** — full verification writeup:
+  [docs/done/2026-09-07-forgejo-16-0-2-to-16-0-3-security-bump.md](docs/done/2026-09-07-forgejo-16-0-2-to-16-0-3-security-bump.md).
+  (auto/forgejo-16-0-2-to-16-0-3-security-bump)
+
 - [x] 🟢 **Traefik basicAuth Middleware for the Argo Rollouts dashboard** —
   full verification writeup:
   [docs/done/2026-09-07-argo-rollouts-dashboard-basicauth.md](docs/done/2026-09-07-argo-rollouts-dashboard-basicauth.md).
