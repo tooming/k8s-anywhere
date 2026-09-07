@@ -34,4 +34,4 @@ replacement text.
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1504 (chore/dora-audit-recurrence-guard-stale-fix)
