@@ -29,4 +29,4 @@ before writing the replacement.
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1503 (chore/dora-resilience-mapping-cilium-stale-fix)
