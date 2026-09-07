@@ -3,16 +3,18 @@
 # out of the now-frozen tests/drift-detectors.bats monolith (see that file's
 # header comment) into its own scope, per the drift-detectors-tests-check
 # convention: new drift-check coverage goes in its own tests/drift-<scope>.bats
-# file. Grouped together here because all three guard structural correctness
+# file. Grouped together here because both guard structural correctness
 # of live gitops/ manifests (a resolvable Helm chart pin, ServerSideApply on
-# oversized-CRD Applications, Argo Rollouts plugin lists staying real YAML
-# lists) rather than any one component's own configuration.
+# oversized-CRD Applications) rather than any one component's own
+# configuration. (A third check here, rollouts-plugin-list-check.sh, was
+# removed 2026-09-07 along with Argo Rollouts itself, ADR-0020, no
+# replacement — its own coverage below was removed in the same change.)
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   FIX="$REPO/tests/fixtures"
   # Every test in this file runs one of helm-chart-pin-check.sh /
-  # argocd-crd-ssa-check.sh / rollouts-plugin-list-check.sh directly — each is
+  # argocd-crd-ssa-check.sh directly — each is
   # gated by require_mikefarah_yq() (scripts/lib/yq-variant.sh), which itself
   # exits 0 ("skipping") under the wrong yq variant. A bats assertion that only
   # checks `[ "$status" -eq 0 ]` can't tell that skip apart from a real pass, and
@@ -87,23 +89,4 @@ setup() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"bigcrd-app"* ]]
   [[ "$output" == *"ServerSideApply"* ]]
-}
-
-# --- rollouts-plugin-list-check ----------------------------------------------------
-@test "rollouts-plugin-list-check: passes when plugin values are YAML lists" {
-  run env ROLLOUTS_PLUGIN_CHECK_ROOT="$FIX/rollouts-plugin-list-check/in-sync" \
-          bash "$REPO/scripts/rollouts-plugin-list-check.sh"
-  [ "$status" -eq 0 ]
-}
-
-@test "rollouts-plugin-list-check: FAILS when a plugin value is a block-scalar string" {
-  run env ROLLOUTS_PLUGIN_CHECK_ROOT="$FIX/rollouts-plugin-list-check/drift" \
-          bash "$REPO/scripts/rollouts-plugin-list-check.sh"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"must be a YAML list"* ]]
-}
-
-@test "rollouts-plugin-list-check: passes on the real repo gitops" {
-  run bash "$REPO/scripts/rollouts-plugin-list-check.sh"
-  [ "$status" -eq 0 ]
 }

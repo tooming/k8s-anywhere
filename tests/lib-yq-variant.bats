@@ -1,13 +1,15 @@
 #!/usr/bin/env bats
 # Clusterless behavioral tests for scripts/lib/yq-variant.sh's
 # require_mikefarah_yq() — the shared guard sourced by
-# helm-chart-pin-check.sh, argocd-crd-ssa-check.sh, and
-# rollouts-plugin-list-check.sh to hard-fail in CI (rather than silently
-# report "0 matches") when the wrong yq implementation is on PATH. Like
-# lint.sh before tests/lint-script.bats, this function had zero direct bats
-# coverage of its own branches despite gating three CI checks: a regression
-# here (e.g. a dropped `${CI:-}` check, or a typo in the mikefarah grep) would
-# silently turn all three callers' CI-required hard-fail into an always-green
+# helm-chart-pin-check.sh and argocd-crd-ssa-check.sh (a third caller,
+# rollouts-plugin-list-check.sh, was removed 2026-09-07 along with Argo
+# Rollouts itself, ADR-0020, no replacement) to hard-fail in CI (rather than
+# silently report "0 matches") when the wrong yq implementation is on PATH.
+# Like lint.sh before tests/lint-script.bats, this function had zero direct
+# bats coverage of its own branches despite gating these CI checks: a
+# regression here (e.g. a dropped `${CI:-}` check, or a typo in the
+# mikefarah grep) would silently turn both callers' CI-required hard-fail
+# into an always-green
 # skip, exactly the "false pass instead of a skip" class of bug this guard's
 # own header comment describes it as fixing.
 #
@@ -119,7 +121,7 @@ setup() {
 # covers this structurally; re-asserted here as a same-file cross-check so
 # this file alone documents the full contract of the shared guard.
 @test "every known mikefarah-only-syntax caller sources scripts/lib/yq-variant.sh" {
-  for f in helm-chart-pin-check.sh argocd-crd-ssa-check.sh rollouts-plugin-list-check.sh; do
+  for f in helm-chart-pin-check.sh argocd-crd-ssa-check.sh; do
     run grep -q 'lib/yq-variant\.sh' "$REPO/scripts/$f"
     [ "$status" -eq 0 ]
   done

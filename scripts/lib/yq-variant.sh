@@ -1,17 +1,19 @@
 # Shared mikefarah/yq variant guard — sourced, not executed.
 #
-# scripts/helm-chart-pin-check.sh, scripts/argocd-crd-ssa-check.sh, and
-# scripts/rollouts-plugin-list-check.sh all rely on mikefarah/yq-only features
-# (`eval-all`, `documentIndex`, `| tag`) to enumerate/inspect Applications. Other
-# `yq` implementations on PATH (e.g. python-yq, a jq wrapper) don't recognise
-# `eval-all` as a subcommand and exit non-zero — which these scripts consume via
-# `2>/dev/null` inside a `< <(...)` pipe, so the loop silently sees zero results
-# instead of erroring. Each script's own "0 matches" branch then reports a clean
-# "nothing to check" — a false pass, not a skip: exactly the class of bug
-# tests/lib/yq.bash's yqs() helper (and the cpu_millis regression it documents)
-# already fixed for bats tests, recurring here because these three scripts read
-# structured multi-field records via `eval-all`/`@tsv` instead of the single
-# scalar reads yqs() handles.
+# scripts/helm-chart-pin-check.sh and scripts/argocd-crd-ssa-check.sh both rely
+# on mikefarah/yq-only features (`eval-all`, `documentIndex`, `| tag`) to
+# enumerate/inspect Applications. Other `yq` implementations on PATH (e.g.
+# python-yq, a jq wrapper) don't recognise `eval-all` as a subcommand and exit
+# non-zero — which these scripts consume via `2>/dev/null` inside a `< <(...)`
+# pipe, so the loop silently sees zero results instead of erroring. Each
+# script's own "0 matches" branch then reports a clean "nothing to check" — a
+# false pass, not a skip: exactly the class of bug tests/lib/yq.bash's yqs()
+# helper (and the cpu_millis regression it documents) already fixed for bats
+# tests, recurring here because these scripts read structured multi-field
+# records via `eval-all`/`@tsv` instead of the single scalar reads yqs()
+# handles. (A third former caller, scripts/rollouts-plugin-list-check.sh, was
+# removed 2026-09-07 along with Argo Rollouts itself, ADR-0020, no
+# replacement.)
 #
 # require_mikefarah_yq() makes the wrong-variant case loud instead of silent:
 # hard-fail in CI (a gate must not silently no-op there), skip with a clear

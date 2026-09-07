@@ -344,44 +344,6 @@ mk_payload() { printf '{"tool_input":{"file_path":"%s"}}' "$1"; }
   [ "$status" -eq 0 ]
 }
 
-# --- rollouts-plugin-list-sync-hook.sh -------------------------------------------
-
-@test "rollouts-plugin-list-sync-hook: empty payload exits 0" {
-  run bash "$REPO/scripts/rollouts-plugin-list-sync-hook.sh" <<<"{}"
-  [ "$status" -eq 0 ]
-}
-
-@test "rollouts-plugin-list-sync-hook: Application yaml with no plugin keys exits 0 (filtered out)" {
-  run bash "$REPO/scripts/rollouts-plugin-list-sync-hook.sh" <<<"$(mk_payload "$REPO/gitops/platform/kyverno.yaml")"
-  [ "$status" -eq 0 ]
-}
-
-@test "rollouts-plugin-list-sync-hook: real argo-rollouts Application (plugin values already YAML lists) exits 0" {
-  run bash "$REPO/scripts/rollouts-plugin-list-sync-hook.sh" <<<"$(mk_payload "$REPO/gitops/platform/argo-rollouts.yaml")"
-  [ "$status" -eq 0 ]
-}
-
-@test "rollouts-plugin-list-sync-hook: a block-scalar (string) plugin value exits 2" {
-  # Same require_mikefarah_yq()-skip-masking concern as the two drift tests above.
-  require_mikefarah_yq_or_skip
-  cat >"$BATS_TEST_TMPDIR/bad-rollout-app.yaml" <<'YAML'
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: argo-rollouts
-spec:
-  source:
-    helm:
-      valuesObject:
-        controller:
-          trafficRouterPlugins: |
-            - name: argoproj-labs/gatewayAPI
-YAML
-  run bash "$REPO/scripts/rollouts-plugin-list-sync-hook.sh" <<<"$(mk_payload "$BATS_TEST_TMPDIR/bad-rollout-app.yaml")"
-  [ "$status" -eq 2 ]
-  [[ "$output" == *"must be a YAML list"* || "$output" == *"unmarshal"* ]]
-}
-
 # --- routines-sync-hook.sh (fixture-tree copy: ROOT is BASH_SOURCE-relative, ---
 # --- not env-overridable, so the hook + fixture .routines-applied are copied ---
 # --- into an isolated tmp tree — mirrors tests/fixtures/routines-check/*) ------

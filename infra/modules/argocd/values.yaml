@@ -95,11 +95,7 @@ configs:
     # The live Application CRD (checked: argocd v3.5.0, `kubectl get crd
     # applications.argoproj.io`) does NOT expose a `source.kustomize.
     # buildOptions` field at all — every Application in this repo that sets it
-    # per-Application (argo-rollouts-networkpolicy.yaml,
-    # cert-manager-networkpolicy.yaml, kargo-networkpolicy.yaml,
-    # kargo-project-networkpolicy.yaml, keda-networkpolicy.yaml,
-    # kyverno-networkpolicy.yaml, velero-networkpolicy.yaml,
-    # governance-appset.yaml,
+    # per-Application (cert-manager-networkpolicy.yaml, governance-appset.yaml,
     # networkpolicy-appset.yaml) has that field silently ignored by kubectl's
     # strict-decode/ArgoCD's own schema — it only "works" for those because
     # THIS global setting already covers the same LoadRestrictionsNone need.

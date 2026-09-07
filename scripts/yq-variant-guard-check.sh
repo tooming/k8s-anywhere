@@ -6,11 +6,11 @@
 # Why: other yq implementations on PATH (e.g. python-yq, a jq wrapper) don't
 # recognise `eval-all`/`eval`/`ea` as a subcommand and exit non-zero. A script that
 # pipes that failure through `2>/dev/null` sees zero results and reports a false
-# "nothing to check" instead of erroring — helm-chart-pin-check.sh,
-# argocd-crd-ssa-check.sh, and rollouts-plugin-list-check.sh all hit exactly this
-# in an environment where a non-mikefarah yq is on PATH, silently no-opping
-# instead of catching real drift (see scripts/lib/yq-variant.sh for the full
-# writeup). require_mikefarah_yq() makes that failure loud: hard-fail in CI,
+# "nothing to check" instead of erroring — helm-chart-pin-check.sh and
+# argocd-crd-ssa-check.sh both hit exactly this in an environment where a
+# non-mikefarah yq is on PATH, silently no-opping instead of catching real
+# drift (see scripts/lib/yq-variant.sh for the full writeup).
+# require_mikefarah_yq() makes that failure loud: hard-fail in CI,
 # honest skip locally. This guard makes the recurrence impossible: no new script
 # can add a raw eval-all/eval/ea call without also wiring the guard (fix + guard,
 # per CLAUDE.md's bugfix-prevents-recurrence rule).

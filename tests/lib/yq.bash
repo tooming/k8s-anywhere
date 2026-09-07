@@ -34,9 +34,9 @@ yqs() {
 #
 # Without this, the wrong yq variant doesn't just fail these tests loud — for a
 # script wrapped by require_mikefarah_yq() (helm-chart-pin-check.sh,
-# argocd-crd-ssa-check.sh, rollouts-plugin-list-check.sh), its own "skip, don't
-# fail" exit 0 makes a bats assertion checking only `[ "$status" -eq 0 ]` report a
-# false pass — the test looks green without the check's logic having run at all.
+# argocd-crd-ssa-check.sh), its own "skip, don't fail" exit 0 makes a bats
+# assertion checking only `[ "$status" -eq 0 ]` report a false pass — the test
+# looks green without the check's logic having run at all.
 # CI always installs real mikefarah/yq (.github/workflows/ci.yml), so neither
 # failure mode fires there; this only helps a local run tell "skipped, install
 # mikefarah/yq" apart from "failed" or a silent false-pass.

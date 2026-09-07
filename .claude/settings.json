@@ -162,12 +162,6 @@
           },
           {
             "type": "command",
-            "command": "bash scripts/rollouts-plugin-list-sync-hook.sh",
-            "timeout": 30,
-            "statusMessage": "Checking Argo Rollouts plugin values are lists"
-          },
-          {
-            "type": "command",
             "command": "bash scripts/probe-timeout-sync-hook.sh",
             "timeout": 30,
             "statusMessage": "Checking probe timeoutSeconds aren't too tight"

@@ -10,8 +10,8 @@
 # impossible, mirroring the yqs-lib-check.sh pattern.
 #
 # Deliberately does NOT flag a `bad()` with no side effect (e.g.
-# argocd-crd-ssa-check.sh, helm-chart-pin-check.sh, lab-health-check.sh,
-# rollouts-plugin-list-check.sh) — those track
+# argocd-crd-ssa-check.sh, helm-chart-pin-check.sh, lab-health-check.sh) —
+# those track
 # failure via their own separately-managed `fail` variable instead, and
 # forcing them onto the shared drift-setting `bad()` would add an incidental
 # unused `drift` variable to their scope. Only a `bad()` matching the exact
