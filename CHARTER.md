@@ -175,11 +175,15 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   itself is still blocked by a transient Oracle Always Free capacity constraint
   (`500 Out of host capacity` across all ADs), not a bug in this repo — see
   [`infra/live/README.md`](infra/live/README.md)'s Status table for what's confirmed
-  end-to-end versus still pending. (ADR-0026, ADR-0027) Note: this module's own
-  tfstate backend design predates the 2026-09-07 simplification and may itself need
-  re-examining as a follow-up, since the localhost backend's equivalent (the
-  off-cluster Garage tfstate store) was removed with its migration to a replacement
-  backend left as an open item (ADR-0007's Status).
+  end-to-end versus still pending. (ADR-0026, ADR-0027) Note: the localhost backend's
+  own equivalent tfstate store (an off-cluster Garage instance) was removed and
+  migrated to a local Terraform backend the same day (ADR-0007's Status). This
+  module's own tfstate backend design — a separate, still-live off-cluster Garage
+  instance on its own Oracle Always Free AMD Micro instance — was audited against
+  that same question and **kept unchanged** (ADR-0007's Re-evaluation log,
+  2026-09-07): it serves a durable, cross-session state need the local backend's
+  local-file replacement doesn't have, and never shared the local host's capacity
+  constraint that motivated removing the local backend's Garage in the first place.
 - **TLS certificate lifecycle**: cert-manager issues and auto-renews certs from a
   self-signed root CA (works identically on localhost and the Oracle backend, unlike
   public ACME). Every north-south route is reachable over both HTTP and Traefik's
