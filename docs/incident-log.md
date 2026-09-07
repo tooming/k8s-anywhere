@@ -25,7 +25,7 @@ Q6 and Q8 flag as missing.
 |---|---|---|
 | **P0** | Whole-lab-down, or a data-loss risk (a stateful namespace's backup/restore path is broken, a destructive `make` target misbehaves). | Fix in the same session it's found — nothing else takes priority. |
 | **P1** | A single always-on component is down or degraded, or a security-relevant gap (an admission policy not enforcing, a NetworkPolicy hole, an exposed credential). | Fix in the same session, or the very next one if mid-investigation. |
-| **P2** | An on-demand/heavy component (Harbor, TiDB, Istio, Longhorn, Kargo's pipeline) is broken, or a non-blocking functional defect in an always-on component. | Track as a ROADMAP/backlog item; fix on the next relevant executor pass. |
+| **P2** | An on-demand/heavy component (Harbor, Kargo's pipeline) is broken, or a non-blocking functional defect in an always-on component. | Track as a ROADMAP/backlog item; fix on the next relevant executor pass. |
 | **P3** | Cosmetic, documentation drift, or a low-value inefficiency with no functional impact. | Filler-lane item — cheap to defer indefinitely. |
 
 ## How to log a new incident
