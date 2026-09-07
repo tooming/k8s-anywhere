@@ -41,4 +41,4 @@ check`'s own live output in this session, not assumed.
 
 ## PR
 
-(backfilled after PR creation)
+https://github.com/tooming/k8s-anywhere/pull/1490 (chore/dora-audit-q17-runbook-gap-stale-fix)
