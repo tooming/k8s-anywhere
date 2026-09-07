@@ -64,4 +64,4 @@ accuracy bug in a prior sweep rather than a currency gap.
 
 ## PR
 
-(filled in once the PR is opened)
+https://github.com/tooming/k8s-anywhere/pull/1484 (auto/harbor-ghsa-56j8-fabricated-id-correction)
