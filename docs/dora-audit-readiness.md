@@ -118,7 +118,13 @@ so a future edit can't silently drop the highest-severity rows without failing
   event (e.g., ADR-0017's Vault v2.0.2 audit, resolved "keep", logged in the ADR
   itself). There's no calendar-driven review — reviews are event-triggered, not
   periodic.
-- **Evidence:** ADR-0017 "Re-evaluation log" section; [ROADMAP.md:2615](../ROADMAP.md).
+- **Evidence:** ADR-0017 "Re-evaluation log" section; `routines/architect.prompt.md`
+  STEP 2 (the source of the `## Re-evaluation log` pattern every audited/superseded
+  ADR follows — a broken `ROADMAP.md:2615` line-number citation stood here until
+  this fix; ROADMAP.md's own line count has since shrunk well past that line
+  through this run's own legacy-item-trim batches, and the line never actually
+  pointed at review-cadence content even at the time it was written — checked
+  directly via `git show` against the commit that introduced it).
 - **Gap:** no periodic (e.g., quarterly) re-verification that O3's RTO/RPO are still
   true on current hardware/chart versions, independent of a triggering event.
 
