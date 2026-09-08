@@ -278,6 +278,16 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [x] 🟢 **Regenerate the on-demand DORA metrics snapshot
+  (`docs/dora-metrics.md`, `make dora-metrics`, RFC #580)** — found stale
+  (still showing its 2026-09-03T01:55:53Z snapshot 5 days and ~20 merged
+  PRs later, from this run alone). Not a `make ci`-gated drift check by
+  design (it's explicitly on-demand, same as
+  `scripts/ondemand-budget-check.sh`'s sibling tools) — only a currency
+  sweep like this one surfaces it. Ran `make dora-metrics`; confirmed no
+  other doc hardcodes the old numbers — full verification writeup:
+  [docs/done/2026-09-08-dora-metrics-refresh-cycle20.md](docs/done/2026-09-08-dora-metrics-refresh-cycle20.md). (auto/dora-metrics-refresh-cycle20)
+
 - [x] 🟢 **`lab-demo` actually runs the Jaeger HotROD tracing demo
   (`jaegertracing/example-hotrod:2.20.0`), not the "single static
   hello-world Deployment" that `README.md`, `ROADMAP.md`'s own intro,
