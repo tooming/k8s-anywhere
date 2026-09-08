@@ -75,8 +75,16 @@ make up
       └─ 3 coredns-host-alias     host.k3d.internal -> docker gateway     [scripts/coredns-host-alias.sh]
          └─ 4 argocd                 ArgoCD (GitOps engine)               [Terraform/Helm]
             └─ 5 root-app               app-of-apps planted               [kubectl apply]
-               └─ 6 coredns-nip-io-rewrite  *.127.0.0.1.nip.io -> Envoy    [scripts/coredns-host-alias.sh]
+               └─ 6 coredns-nip-io-rewrite  *.127.0.0.1.nip.io -> Traefik  [scripts/coredns-host-alias.sh]
 ```
+
+> **Step 3's continued necessity is unconfirmed.** `host.k3d.internal` was
+> originally load-bearing for ArgoCD's Forgejo repoURL; Forgejo is gone
+> (ADR-0035) and ArgoCD now syncs from a public GitHub `repoURL` instead. A
+> repo-wide grep finds zero remaining consumers, but removing this step is a
+> live-cluster-verified decision this remote executor can't make on its own
+> (it never runs `make up`) — tracked in
+> [#1517](https://github.com/tooming/k8s-anywhere/issues/1517).
 
 > **No off-cluster services left.** Cilium, Garage (in-cluster + the off-cluster
 > tfstate backend), Forgejo, and the DR front door were each an off-cluster or

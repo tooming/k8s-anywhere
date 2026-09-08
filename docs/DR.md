@@ -32,7 +32,7 @@ ArgoCD from GitHub.
 |---|------|---------------|-----------------|
 | 1 | Colima VM | `colima-up` | container runtime |
 | 2 | k3d cluster | `cluster-up` | the substrate — ships with Flannel (CNI) + kube-router (NetworkPolicy) bundled and enabled, no separate CNI install step |
-| 3 | CoreDNS host alias | `coredns-host-alias` | teaches CoreDNS to resolve `host.k3d.internal` (k3d 5.x on Colima omits this) |
+| 3 | CoreDNS host alias | `coredns-host-alias` | teaches CoreDNS to resolve `host.k3d.internal` (k3d 5.x on Colima omits this) — originally load-bearing for ArgoCD's Forgejo repoURL; Forgejo is gone (ADR-0035) and ArgoCD now syncs from a public GitHub `repoURL` instead, so this step's continued necessity is unconfirmed pending live verification ([#1517](https://github.com/tooming/k8s-anywhere/issues/1517)) |
 | 4 | ArgoCD | `argocd` | the GitOps engine — must exist before GitOps |
 | 5 | App-of-apps | `root-app` | the single seed; ArgoCD now syncs everything else, directly from this repo's public GitHub remote |
 | 6 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Traefik's in-cluster Service |

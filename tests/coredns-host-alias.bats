@@ -1,7 +1,9 @@
 #!/usr/bin/env bats
 # Clusterless structural tests for scripts/coredns-host-alias.sh, which manages two
 # independent rewrites in the coredns-custom ConfigMap (kube-system): host.k3d.internal
-# (docker host gateway, needed for ArgoCD's Forgejo repoURL) and *.127.0.0.1.nip.io
+# (docker host gateway, originally needed for ArgoCD's Forgejo repoURL; Forgejo was
+# removed 2026-09-07/ADR-0035 and this alias's continued necessity is unconfirmed
+# pending live verification, issue #1517) and *.127.0.0.1.nip.io
 # (Traefik's in-cluster Service, ADR-0040 — needed by any in-cluster client resolving
 # a lab hostname — found live-patched out-of-band in PR #1323/issue #633). No running
 # cluster required: these tests verify declared structure/behaviour only, never execute
