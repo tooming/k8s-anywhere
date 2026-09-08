@@ -278,7 +278,7 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
-- [ ] 🟢 **Fix `docs/dora-audit-readiness.md` Q15's stale "~30-repo sweep"
+- [x] 🟢 **Fix `docs/dora-audit-readiness.md` Q15's stale "~30-repo sweep"
   claim about `scripts/dependency-maintenance-check.sh` — the real current
   count is 6 github-backed rows (`docs/dependency-register.md` is down to 7
   rows total, 2026-09-06/2026-09-07 simplification; only Oracle Cloud
@@ -297,7 +297,9 @@ You review and merge plan PRs, same as implementation PRs.
   non-numeric phrasing like "a multi-repo sweep") rather than swapping in
   "6", which would only recreate the same drift class at the next
   simplification round. Docs-only, no `make ci` gate affected.
-  Single-PR-sized, clusterless-deliverable.
+  Single-PR-sized, clusterless-deliverable. — full verification writeup:
+  [docs/done/2026-09-08-dora-audit-readiness-30-repo-note-cleanup.md](docs/done/2026-09-08-dora-audit-readiness-30-repo-note-cleanup.md).
+  (auto/dora-audit-readiness-30-repo-note-cleanup)
 
 - [x] 🟢 **Correct `scripts/dependency-maintenance-check.sh`'s stale header
   comment — it still claims `docs/dependency-register.md` has "33 rows" and
