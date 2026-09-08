@@ -278,7 +278,7 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
-- [ ] 🟢 **Correct `scripts/dependency-maintenance-check.sh`'s stale header
+- [x] 🟢 **Correct `scripts/dependency-maintenance-check.sh`'s stale header
   comment — it still claims `docs/dependency-register.md` has "33 rows" and
   that "Terraform/Terragrunt, Oracle Cloud Infrastructure, Forgejo" are the
   rows with no `github.com` upstream source, but the register is now down to
@@ -306,7 +306,10 @@ You review and merge plan PRs, same as implementation PRs.
   `docs/dependency-tree.md` and other self-tracking docs already use); also
   fix the same section's stale "~30-repo sweep" claim (real count today is 6
   github-backed rows). Docs/comment-only, no logic change, no `make ci` gate
-  affected. Single-PR-sized, clusterless-deliverable.
+  affected. Single-PR-sized, clusterless-deliverable. — full verification
+  writeup:
+  [docs/done/2026-09-08-dependency-maintenance-check-stale-counts-cleanup.md](docs/done/2026-09-08-dependency-maintenance-check-stale-counts-cleanup.md).
+  (auto/dependency-maintenance-check-stale-counts-cleanup)
 
 - [x] 🟢 **Correct `scripts/coredns-host-alias.sh`'s header comment (and
   `docs/DR.md`/`docs/dependency-tree.md`'s bootstrap-step descriptions) to
