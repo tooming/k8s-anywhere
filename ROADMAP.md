@@ -278,7 +278,7 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
-- [ ] 🟢 **Remove the dead Harbor containerd registry-mirror block from
+- [x] 🟢 **Remove the dead Harbor containerd registry-mirror block from
   `infra/modules/k3d-cluster/k3d-config.yaml.tftpl` (and its dedicated
   `tests/k3d-registry-mirror.bats` file) — Harbor was removed entirely
   2026-09-07 (ADR-0024), no replacement, but this bootstrap template still
@@ -308,7 +308,9 @@ You review and merge plan PRs, same as implementation PRs.
   equivalent Harbor mirror config — verified via
   `grep -rn "harbor" infra/modules/oracle-k3s-cluster/` (zero hits) — so this
   is a local-backend-only fix, single file + single test file,
-  clusterless-deliverable, single-PR-sized.
+  clusterless-deliverable, single-PR-sized. — full verification writeup:
+  [docs/done/2026-09-08-dead-harbor-registry-mirror-cleanup.md](docs/done/2026-09-08-dead-harbor-registry-mirror-cleanup.md).
+  (auto/dead-harbor-registry-mirror-cleanup)
 
 - [x] 🟢 **Fix stale `vault`/`external-secrets` (and other pre-2026-09-07-removal)
   namespace references in ADR-0016 and ADR-0017's per-namespace tables — both
