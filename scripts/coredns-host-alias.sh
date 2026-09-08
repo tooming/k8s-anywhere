@@ -4,9 +4,20 @@
 #
 #  1. host.k3d.internal -> the docker host gateway. k3d 5.x does NOT inject
 #     this into the node container's /etc/hosts when running under Colima/
-#     Docker on macOS, so without it every ArgoCD Application (whose repoURL
-#     points at the local Forgejo via http://host.k3d.internal:2223/...)
-#     silently fails to fetch on refresh and drifts away from desired state.
+#     Docker on macOS. This alias was originally load-bearing: every ArgoCD
+#     Application's repoURL pointed at the local Forgejo via
+#     http://host.k3d.internal:2223/..., and without the alias every
+#     Application silently failed to fetch on refresh and drifted away from
+#     desired state. Forgejo was removed entirely 2026-09-07 (ADR-0035) --
+#     gitops/bootstrap/root-app.yaml's repoURL is now a public GitHub HTTPS
+#     URL, resolvable via any standard DNS resolver, with no dependency on
+#     this alias. A repo-wide grep for host.k3d.internal/host-k3d-internal
+#     outside this file, the Makefile, and historical docs/done/ writeups
+#     finds zero remaining consumers -- this step is believed vestigial, but
+#     removing it is a live-cluster-verified decision (this repo's remote
+#     executor never runs `make up`), tracked in issue #1517. Do not remove
+#     this mode or the `make up` step that calls it without that
+#     confirmation.
 #
 #  2. *.127.0.0.1.nip.io -> Traefik's in-cluster Service (ADR-0040, supersedes
 #     Envoy Gateway/ADR-0008). nip.io's real wildcard DNS resolves any of its
@@ -21,7 +32,7 @@
 # Usage: coredns-host-alias.sh [host-alias|nip-io-rewrite]
 #   host-alias (default)  — (re)compute ONLY the host.k3d.internal key, from
 #                            the docker network gateway. Run early in `make up`
-#                            (step 5, `make coredns-host-alias`).
+#                            (step 3, `make coredns-host-alias`).
 #   nip-io-rewrite         — (re)compute ONLY the *.nip.io key, rewriting to
 #                            Traefik's well-known Service (`traefik.kube-system`,
 #                            k3s's bundled HelmChart release name — NOT

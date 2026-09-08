@@ -278,7 +278,7 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
-- [ ] 🟢 **Correct `scripts/coredns-host-alias.sh`'s header comment (and
+- [x] 🟢 **Correct `scripts/coredns-host-alias.sh`'s header comment (and
   `docs/DR.md`/`docs/dependency-tree.md`'s bootstrap-step descriptions) to
   note the `host.k3d.internal` alias was built for Forgejo's local repoURL
   — Forgejo is gone (ADR-0035), ArgoCD now syncs from a public GitHub
@@ -305,7 +305,10 @@ You review and merge plan PRs, same as implementation PRs.
   the script's `host-alias` mode itself in this item; that removal is
   issue #1517's job once a live/interactive session confirms `make up` still
   succeeds without it (this remote clusterless session cannot run `make up`
-  to verify — ROADMAP rule #2). Single-PR-sized, clusterless-deliverable.
+  to verify — ROADMAP rule #2). Single-PR-sized, clusterless-deliverable. —
+  full verification writeup:
+  [docs/done/2026-09-08-coredns-host-alias-forgejo-note-cleanup.md](docs/done/2026-09-08-coredns-host-alias-forgejo-note-cleanup.md).
+  (auto/coredns-host-alias-forgejo-note-cleanup)
 
 - [x] 🟢 **Remove the dead Harbor containerd registry-mirror block from
   `infra/modules/k3d-cluster/k3d-config.yaml.tftpl` (and its dedicated
