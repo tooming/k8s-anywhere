@@ -35,6 +35,19 @@ on:
     branches: [main]
   pull_request:
 
+# Cancel a still-running check for the same PR (or the same main-branch ref) the
+# moment a newer commit supersedes it -- otherwise every push during an active PR
+# (a rebase, a self-review PR-link backfill commit, a fix-up push) burns another
+# full ~7-job run for a commit whose CI result nothing ever reads once the newer
+# one lands. This repo's own self-merge routines do this on purpose (post the
+# placeholder, open the PR, push a backfill once the real PR number is known --
+# see scripts/docs-done-pr-link-check.sh's header) — two full runs per PR was the
+# routine case, not an edge case. `group` is per-PR (pull_request) or per-ref
+# (push to main), so unrelated PRs/branches never cancel each other's runs.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
