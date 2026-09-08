@@ -285,6 +285,20 @@ You review and merge plan PRs, same as implementation PRs.
 > both of batch 7's deferred candidates — see
 > [docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md).
 
+- [x] 🟢 **Add a `concurrency` group to `auto-update-prs.yml`** — found live
+  2026-09-08 (cycle 25, continuing cycle 24's lens): this workflow fires on
+  every push to `main`, and this repo's own self-merge routines push to
+  `main` in rapid succession (5 times in the last hour, this run alone) —
+  overlapping runs are the routine case, not an edge case. Not a
+  correctness risk (`--force-with-lease` already fails a stale run's push
+  safely) but a stale run's failed push logs a confusing, pointless
+  failure once a newer run has already superseded it. Added a
+  `github.ref`-keyed group with `cancel-in-progress: true` (safe here
+  specifically because of `--force-with-lease`) — full verification
+  writeup:
+  [docs/done/2026-09-08-auto-update-prs-concurrency.md](docs/done/2026-09-08-auto-update-prs-concurrency.md).
+  (auto/auto-update-prs-concurrency)
+
 - [x] 🟢 **Add `concurrency` groups to the two `oracle-cluster-apply*.yml`
   workflows** — found live 2026-09-08 (cycle 24): `oracle-cluster-apply.yml`
   (manual dispatch) and `oracle-cluster-apply-retry.yml` (hourly cron) both
