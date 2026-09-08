@@ -278,6 +278,37 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [ ] 🟢 **Add the "truly start over" clean-slate warning `docs/incident-log.md`'s
+  2026-09-06 k3s-datastore-persistence entry already recommended but never
+  landed — `docs/DR.md`'s "What is NOT preserved on a rebuild" section
+  doesn't warn that a bare `colima delete` does NOT wipe Colima's
+  container-runtime data (including the k3s embedded datastore), so a
+  session reaching for it expecting a genuine clean slate silently keeps
+  hours/days of stale state instead.** Found live 2026-09-08 (planner gap
+  analysis, different lens: a scan of `docs/incident-log.md`'s own
+  "Follow-up" column for a recommendation flagged-but-not-yet-actioned,
+  rather than the removed-component-rationale class this run's other items
+  this run addressed): the 2026-09-06 P0 incident row's Follow-up column
+  reads "**Recommend**: `docs/DR.md`'s rebuild guidance ... reached for a
+  bare `colima delete` expecting a true clean slate and didn't get one.
+  Worth a follow-up doc note in DR.md's 'Full rebuild' section spelling out
+  that `colima delete --data` (not bare `colima delete`) is what 'truly
+  start over' actually requires — flagged here rather than done, since this
+  session is focused on #633 itself." Verified this was never actioned:
+  `grep -n "colima delete" docs/DR.md` returns zero hits — the note was
+  never added. (Confirmed the `Makefile` has no `colima-delete` target at
+  all — this is purely a live-session manual command, so this is a
+  docs-only gap, no Makefile/script change needed.) **Scope:** add a short
+  note to `docs/DR.md`'s "What is NOT preserved on a rebuild" section (or a
+  new adjacent subsection) explaining that `make down`/`colima stop` is the
+  normal stop/start cycle (data on PVCs/volumes kept, this is correct and
+  intended) but a genuine "wipe everything and start truly fresh" requires
+  `colima delete --data` (or `colima delete -f --data` per the incident
+  log's own live-verified command), not a bare `colima delete` — cite the
+  incident-log row directly. Docs-only, no `make ci` gate affected (no test
+  currently asserts DR.md's prose shape here). Single-PR-sized,
+  clusterless-deliverable.
+
 - [x] 🟢 **Fix `docs/dora-audit-readiness.md` Q15's stale "~30-repo sweep"
   claim about `scripts/dependency-maintenance-check.sh` — the real current
   count is 6 github-backed rows (`docs/dependency-register.md` is down to 7
