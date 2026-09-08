@@ -108,7 +108,7 @@ so the executor never silently applies the wrong label.
 |-----------|-------------|--------|
 | `argocd` | `restricted` | ArgoCD components run as UID 1000 (non-root), `readOnlyRootFilesystem: true`, no capabilities. Phase 2 (RFC #205) adds `global.podSecurityContext` + `global.containerSecurityContext` to `infra/modules/argocd/values.yaml` and flips `enforce: restricted`. |
 | `lab-gateway` | `restricted` | Holds only the shared Traefik `TLSStore` CR (ADR-0040) — no pods run in this namespace at all (Traefik itself runs in `kube-system`, bundled with k3s), so `restricted` is a no-cost defense-in-depth floor for any future pod added here. |
-| `lab-demo` | `baseline` | The upstream `jaegertracing/example-hotrod` image runs as root (no `USER` instruction in the Dockerfile). `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when the image ships a non-root UID — checked 2026-07-26, not yet met, see [§Re-evaluation log](#re-evaluation-log). Per ROADMAP `auto/pss-np-lab-demo`. |
+| `lab-demo` | `baseline` | The upstream `jaegertracing/example-hotrod` image runs as root (no `USER` instruction in the Dockerfile). `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when the image ships a non-root UID — checked 2026-09-08 (against the pinned `2.20.0` tag), not yet met, see [§Re-evaluation log](#re-evaluation-log). Per ROADMAP `auto/pss-np-lab-demo`. |
 | `cert-manager` | `restricted` | Controller, webhook, and cainjector all default to `runAsNonRoot: true` + `seccompProfile.type: RuntimeDefault` (pod) and `allowPrivilegeEscalation: false` + `capabilities.drop: [ALL]` + `readOnlyRootFilesystem: true` (container) with no chart override — the full `restricted` profile out of the box, verified against the pinned chart's `values.yaml`. Per ADR-0028. |
 | `kube-system` | unchanged | k3s-managed; out of scope. |
 
@@ -500,6 +500,33 @@ currency check above.
 
 **Flip condition.** None pending — this is a closed record correction, same
 shape as ADR-0016's 2026-08-10 entry, not an open question.
+
+### 2026-09-08 — `lab-demo` carve-out kept, flip condition re-checked against the pinned tag (executor currency check)
+
+**Trigger.** The 2026-07-26 check above (last entry) verified the flip
+condition against `jaegertracing/jaeger`'s `main` branch — but
+`gitops/apps/demo/deployment.yaml`'s image has since been pinned to an
+exact tag (`jaegertracing/example-hotrod:2.20.0`, 2026-07-28,
+"recreate-from-code / no-floating-tag hardening"), so the 2026-07-26 check
+technically verified a different ref than what actually runs today. Found
+via planner gap analysis (2026-09-08, coverage/hardening sweep lens —
+ROADMAP rule #9): six weeks had passed with no re-check against the tag
+this repo actually pins.
+
+**What was checked.** Fetched `examples/hotrod/Dockerfile` directly at tag
+`v2.20.0` (the exact pinned version, not `main`):
+`https://raw.githubusercontent.com/jaegertracing/jaeger/v2.20.0/examples/hotrod/Dockerfile`.
+Final build stage is still `FROM scratch` with `ENTRYPOINT
+["/go/bin/hotrod-linux"]` and no `USER` instruction anywhere in the file —
+identical shape to the 2026-07-26 `main`-branch check. `jaegertracing/jaeger`'s
+latest tag (`git ls-remote --tags`, sorted) is `v2.20.0` itself — the pinned
+version is already current, so there is no newer release to check either.
+
+**Decision: keep `lab-demo: baseline`, condition still not met.** Same
+conclusion as 2026-07-26, now verified against the actual pinned ref rather
+than a floating branch.
+
+**Flip condition (unchanged).** When the image ships a non-root UID.
 
 ---
 
