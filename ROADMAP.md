@@ -285,6 +285,17 @@ You review and merge plan PRs, same as implementation PRs.
 > both of batch 7's deferred candidates — see
 > [docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md).
 
+- [x] 🟢 **Add `concurrency` groups to the two `oracle-cluster-apply*.yml`
+  workflows** — found live 2026-09-08 (cycle 24): `oracle-cluster-apply.yml`
+  (manual dispatch) and `oracle-cluster-apply-retry.yml` (hourly cron) both
+  run `terragrunt apply` against the same Garage-backed S3 Terraform state,
+  which has no lock table configured — nothing stopped the two workflows
+  from running concurrently against the same unit and interleaving writes.
+  Added a shared, per-unit `concurrency` group (`cancel-in-progress: false`
+  — queue, never cancel a live apply) to both — full verification writeup:
+  [docs/done/2026-09-08-oracle-workflows-concurrency-lock.md](docs/done/2026-09-08-oracle-workflows-concurrency-lock.md).
+  (auto/oracle-workflows-concurrency-lock)
+
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 8** — full
   verification writeup:
   [docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md).
