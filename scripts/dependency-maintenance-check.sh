@@ -4,7 +4,9 @@
 # maintained) after initial adoption") — see docs/dora-audit-readiness.md.
 #
 # docs/dependency-register.md is already the single source of truth for this lab's
-# third-party dependencies (33 rows, one per tool, each citing its binding ADR). This
+# third-party dependencies (one row per tool, each citing its binding ADR — see that
+# file for the live row count, which drifts as components are added/removed and is
+# deliberately not restated here as a number that would itself go stale). This
 # script walks that table's own "Upstream source" column, extracts every row's
 # github.com repo, and reports how long it's been since that repo's default branch
 # last received a commit. A repo with no commit in over a year is flagged for a
@@ -23,15 +25,18 @@
 # clone that fails (unreachable, renamed, rate-limited) is SKIPPED, never treated as
 # evidence of staleness.
 #
-# Report-only — deliberately NOT wired into `make ci`. A ~30-repo sweep (each a
+# Report-only — deliberately NOT wired into `make ci`. A multi-repo sweep (each a
 # real, if small, network fetch) is unsuitable as a hard, always-on CI gate; this is
 # meant to be run periodically on demand (e.g. by a future architect/janitor cycle),
 # same shape as ondemand-budget-check.sh / dora-metrics.sh in this same "Metrics
 # (on-demand, clusterless)" Makefile section.
 #
-# A few register rows (Terraform/Terragrunt, Oracle Cloud Infrastructure, Forgejo)
-# have no github.com upstream source at all — reported as skipped, not stale; their
-# own currency is tracked elsewhere (ADR Re-evaluation logs, the industry digest).
+# As of the 2026-09-08 currency check (7-row register), only Oracle Cloud
+# Infrastructure has no github.com upstream source at all (cloud.oracle.com only —
+# Terraform/Terragrunt's row now also cites github.com/hashicorp/terraform) —
+# reported as skipped, not stale; its own currency is tracked elsewhere (ADR
+# Re-evaluation logs, the industry digest). Re-check this note whenever the register
+# gains/loses a no-github-upstream row.
 #
 # Usage: dependency-maintenance-check.sh [--stale-days N]   (default 365)
 # Exit: 0 = every reachable repo committed within the window (or all were skipped);
