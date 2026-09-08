@@ -276,7 +276,17 @@ You review and merge plan PRs, same as implementation PRs.
 > 2026-09-04** (see the ROADMAP items immediately below) — trimmed 4 RFC #377
 > Oracle items, then 4 more (batch 2), then 5 more (batch 3), then 5 more
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
-> items remain for future bounded cycles to continue against.
+> items remain for future bounded cycles to continue against. **Batch 7**
+> (2026-09-08, cycle 22 of that run) trimmed 5 more after fixing batch 6's
+> own scan heuristic (it matched the bare substring `docs/done/` in prose,
+> not just a real markdown link) — see
+> [docs/done/2026-09-08-roadmap-legacy-item-trim-batch7.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch7.md)
+> for what remains uncovered.
+
+- [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 7** — full
+  verification writeup:
+  [docs/done/2026-09-08-roadmap-legacy-item-trim-batch7.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch7.md).
+  (auto/roadmap-legacy-item-trim-batch7)
 
 - [x] 🟢 **Fix `docs/platform-products.md`'s stale "6 always-on namespaces"
   claim** — found live 2026-09-08 (cycle 21 of this run): every other
@@ -1433,21 +1443,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-20-pss-external-secrets.md](docs/done/2026-06-20-pss-external-secrets.md).
   (auto/pss-external-secrets; PR #238)
 
-- [x] 🟢 **PSS-baseline hardening — `envoy-gateway-system` namespace** (CHARTER **Objective O2**,
-  due **2026-09-30**; RFC #230 — architect decision 2026-06-19). Add
-  `gitops/envoy-gateway-system/namespace.yaml` with all four PSA labels at `baseline`
-  (`enforce: baseline`, `enforce-version: latest`, `warn: baseline`, `audit: baseline`).
-  Add new auto-synced `Application` `gitops/platform/envoy-gateway-system-extras.yaml`
-  (sync-wave 0, `ServerSideApply=true`, `CreateNamespace=false` — namespace pre-created by
-  the existing `envoy-gateway` Application; follows the `argocd-extras` / `kyverno-extras`
-  naming convention). **No workload securityContext patches in this PR** — `baseline` does
-  not require field-level securityContext changes; proxy pod root UID is the documented
-  carve-out (RFC #230 §Rationale). Add `envoy-gateway-system → baseline` row to ADR-0017
-  §"Per-namespace profile" table with explicit flip condition to `restricted` (when
-  `gateway-helm` chart supports non-root proxy pods), citing RFC #230. Extend
-  `tests/securitycontext.bats`: namespace PSA-label assertions; assert `enforce: baseline`
-  present and `enforce: restricted` absent (safety check). `make ci` must pass. `docs/done/`
-  entry required. (auto/pss-envoy-gateway-system)
+- [x] 🟢 **PSS-baseline hardening — `envoy-gateway-system` namespace** — full
+  verification writeup:
+  [docs/done/2026-06-20-pss-envoy-gateway-system.md](docs/done/2026-06-20-pss-envoy-gateway-system.md).
+  (auto/pss-envoy-gateway-system; PR #239)
 
 - [x] 🟢 **zz-dns-clusterip-bridge — bring out-of-band CNPs under GitOps** —
   full verification writeup:
@@ -1590,27 +1589,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-21-node-exporter-vitals-dashboard.md](docs/done/2026-06-21-node-exporter-vitals-dashboard.md).
   (auto/node-exporter-vitals-dashboard; PR #245)
 
-- [x] 🟢 **NetworkPolicy fan-out — `external-secrets` namespace** (CHARTER
-  **Objective O2**, due **2026-09-30**; ADR-0016 §4 fan-out completion —
-  the `external-secrets` namespace received PSA labels via `auto/pss-external-secrets`
-  but has no default-deny NetworkPolicy overlay; it is the last always-on namespace
-  without an ADR-0016 floor). Add
-  `gitops/external-secrets/networkpolicy/kustomization.yaml` referencing the two
-  baseline templates (`../../network/policies/default-deny.yaml`,
-  `../../network/policies/allow-dns-and-apiserver.yaml`) plus two allow files:
-  `allow-eso-metrics-ingress.yaml` (ingress TCP 8080 from `namespaceSelector:
-  kubernetes.io/metadata.name: observability`; `podSelector: app.kubernetes.io/name:
-  external-secrets`); `allow-eso-vault-egress.yaml` (egress TCP 8200 to
-  `namespaceSelector: kubernetes.io/metadata.name: vault`; `podSelector:
-  app.kubernetes.io/name: external-secrets` — ESO calls the Vault k8s auth endpoint
-  to review tokens). Add an `external-secrets-networkpolicy` entry to the
-  `networkpolicy-appset.yaml` list generator (`gitPath:
-  gitops/external-secrets/networkpolicy`, `destNamespace: external-secrets`). Sync
-  policy is `automated: {prune: true, selfHeal: true}` via the appset template.
-  Extend `tests/networkpolicy.bats` with external-secrets overlay assertions:
-  kustomization exists; baseline refs present; allow-metrics-ingress on port 8080
-  present; allow-vault-egress on port 8200 present. Update `docs/dependency-tree.md`.
-  `docs/done/` entry required. (auto/networkpolicy-external-secrets)
+- [x] 🟢 **NetworkPolicy fan-out — `external-secrets` namespace** — full
+  verification writeup:
+  [docs/done/2026-06-21-networkpolicy-external-secrets.md](docs/done/2026-06-21-networkpolicy-external-secrets.md).
+  (auto/networkpolicy-external-secrets)
 
 - [x] 🟢 **PSS-restricted + NetworkPolicy — `kro` namespace** (CHARTER
   **Objective O2**, due **2026-09-30**; O2 gap — the `kro` namespace hosts the KRO
@@ -1635,25 +1617,9 @@ there is no point where the lab loses a working git source or CI path.
   `tests/networkpolicy.bats` with kro overlay assertions. `make ci` must pass.
   `docs/done/` entry required. (auto/pss-kro-namespace)
 
-- [x] 🟢 **Lab — s3manager (S3 bucket browser) dashboard** (CHARTER **Objective O5**,
-  due **2026-09-30**; O5 gap — `s3manager` is auto-synced in the always-on stack
-  (`gitops/platform/s3manager.yaml`) but has no Grafana dashboard;
-  `grafana/dashboards/lab-s3manager.json` is absent). New
-  `grafana/dashboards/lab-s3manager.json` ("Lab — s3manager (S3 Browser)") modelled
-  on `lab-kyverno.json` stat-row: s3manager pod running (KSM
-  `kube_deployment_status_replicas_available{namespace="storage",deployment="s3manager"}`);
-  ArgoCD sync state (`argocd_app_info{name="s3manager"}`); memory usage (cAdvisor
-  `container_memory_working_set_bytes{namespace="storage",container="s3manager"}`);
-  CPU usage rate (cAdvisor
-  `rate(container_cpu_usage_seconds_total{namespace="storage",container="s3manager"}[5m])`).
-  Note: `cloudlena/s3manager` does not expose Prometheus metrics; all panels use KSM +
-  cAdvisor data already scraped by Alloy (ADR-0004 — real auto-discovered data only;
-  any panel whose metric is not yet emitting a series naturally shows "No data"). No
-  new HTTPRoute row needed — the `s3.127.0.0.1.nip.io:8000` row already exists in the
-  "Lab UIs" panel; `make lab-ui-check` is unaffected. Extend `tests/observability.bats`:
-  `lab-s3manager.json` exists; dashboard references
-  `kube_deployment_status_replicas_available`; no fabricated/placeholder data. Update
-  `docs/dependency-tree.md` with s3manager dashboard note. `docs/done/` entry required.
+- [x] 🟢 **Lab — s3manager (S3 bucket browser) dashboard** — full verification
+  writeup:
+  [docs/done/2026-06-22-s3manager-dashboard.md](docs/done/2026-06-22-s3manager-dashboard.md).
   (auto/s3manager-dashboard)
 
 - [x] 🟢 **PSA baseline + NetworkPolicy — `lab-demo` namespace** — full
@@ -1733,26 +1699,9 @@ there is no point where the lab loses a working git source or CI path.
   (auto/o4-ci-rejection-gate; PR #1224)
 
 - [x] 🟢 **Platform Governance appset — `gitops/governance/` structure +
-  ApplicationSet** (CHARTER **Core Values** §"Everything as code; GitOps deploys
-  it", RFC #293 — architect decision 2026-06-28). Add
-  `gitops/platform/governance-appset.yaml` (ApplicationSet with list-generator,
-  sync-wave annotation `"3"` on the ApplicationSet metadata; generated Applications
-  at sync-wave `"4"` via template annotation; auto-synced via template syncPolicy;
-  follows the existing `networkpolicy-appset.yaml` pattern). Each namespace that
-  needs governance objects gets a leaf directory `gitops/governance/<namespace>/`
-  containing `kustomization.yaml` + `limitrange.yaml`. Seed two entries to
-  demonstrate the pattern (`argocd` and `capstone` from the RFC #294 standard-tier
-  list). Each `kustomization.yaml` lists `resources: [limitrange.yaml]`; each
-  `limitrange.yaml` is a `standard`-tier LimitRange (`type: Container`;
-  `default.cpu: "500m"`, `default.memory: "512Mi"`; `defaultRequest.cpu: "50m"`,
-  `defaultRequest.memory: "64Mi"`; `max.cpu: "2000m"`, `max.memory: "4Gi"`).
-  Kyverno ClusterPolicies stay in `gitops/kyverno/policies/` — do NOT move them.
-  Update `docs/dependency-tree.md` with a governance layer note (parallel to the
-  networkpolicy-appset notes). New `tests/governance.bats`: governance-appset file
-  exists; is an ApplicationSet; has list-generator; has auto-sync template; the two
-  seed namespace dirs exist each with `kustomization.yaml` and `limitrange.yaml`.
-  `make ci` must pass. `docs/done/` entry required. Closes #293.
-  (auto/platform-governance-appset)
+  ApplicationSet** — full verification writeup:
+  [docs/done/2026-06-30-auto-platform-governance-appset.md](docs/done/2026-06-30-auto-platform-governance-appset.md).
+  (auto/platform-governance-appset; PR #303)
 
 - [x] 🟢 **Namespace Resource Profiles — LimitRange defaults fan-out**
   (CHARTER **Core Values** §"Fits the 16 GB reality", RFC #294 — architect
@@ -1781,27 +1730,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-30-harbor-application.md](docs/done/2026-06-30-harbor-application.md).
   (auto/harbor-application; PR #306)
 
-- [x] 🟢 **Harbor NetworkPolicy floor + appset entry** (CHARTER **Core
-  Values**, RFC #297 / ADR-0024 — architect decision 2026-06-30; **NP fan-out
-  pre-approved by ADR-0024 per WAYS-OF-WORKING.md §2**; **prerequisite:
-  `auto/harbor-application` merges first**). Mirror the artifactory NP overlay
-  (ADR-0016 §4 fan-out). Add `gitops/harbor/networkpolicy/kustomization.yaml`
-  (`namespace: harbor`) referencing the shared
-  `../../network/policies/default-deny.yaml` +
-  `../../network/policies/allow-dns-and-apiserver.yaml`, plus:
-  `allow-harbor-ingress.yaml` (ingress from `envoy-gateway-system` to the Harbor
-  core/portal/registry ports), `allow-harbor-garage-egress.yaml` (egress TCP
-  3900 to the `storage` Garage S3 backend), and an egress allow to the platform
-  **Valkey** in `data` (Harbor's external Redis) — plus internal DB egress as
-  the chosen profile requires. Add a `harbor-networkpolicy` entry to
-  `gitops/platform/networkpolicy-appset.yaml` (auto-synced, wave 4 — mirror the
-  `artifactory-networkpolicy` entry: `appName: harbor-networkpolicy`,
-  `gitPath: gitops/harbor/networkpolicy`, `destNamespace: harbor`). Do **not**
-  remove the `artifactory-networkpolicy` entry yet (decommission item). Extend
-  `tests/harbor.bats`: NP overlay references default-deny + allow-dns-and-apiserver
-  + ingress-from-envoy + egress-to-storage; appset has the `harbor-networkpolicy`
-  entry. `make ci` must pass. `docs/done/` entry required.
-  (auto/harbor-networkpolicy)
+- [x] 🟢 **Harbor NetworkPolicy floor + appset entry** — full verification
+  writeup:
+  [docs/done/2026-06-30-harbor-networkpolicy.md](docs/done/2026-06-30-harbor-networkpolicy.md).
+  (auto/harbor-networkpolicy; PR #307)
 
 - [x] 🟢 **`make harbor-up` / `harbor-down` targets** (CHARTER **Core Values**
   §"Everything as code", RFC #297 / ADR-0024 — architect decision 2026-06-30;
