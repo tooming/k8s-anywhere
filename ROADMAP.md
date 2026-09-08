@@ -278,7 +278,7 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
-- [ ] 🟢 **Add the "truly start over" clean-slate warning `docs/incident-log.md`'s
+- [x] 🟢 **Add the "truly start over" clean-slate warning `docs/incident-log.md`'s
   2026-09-06 k3s-datastore-persistence entry already recommended but never
   landed — `docs/DR.md`'s "What is NOT preserved on a rebuild" section
   doesn't warn that a bare `colima delete` does NOT wipe Colima's
@@ -307,7 +307,9 @@ You review and merge plan PRs, same as implementation PRs.
   log's own live-verified command), not a bare `colima delete` — cite the
   incident-log row directly. Docs-only, no `make ci` gate affected (no test
   currently asserts DR.md's prose shape here). Single-PR-sized,
-  clusterless-deliverable.
+  clusterless-deliverable. — full verification writeup:
+  [docs/done/2026-09-08-dr-md-colima-delete-data-note.md](docs/done/2026-09-08-dr-md-colima-delete-data-note.md).
+  (auto/dr-md-colima-delete-data-note)
 
 - [x] 🟢 **Fix `docs/dora-audit-readiness.md` Q15's stale "~30-repo sweep"
   claim about `scripts/dependency-maintenance-check.sh` — the real current

@@ -51,6 +51,21 @@ Recreate model → fresh everything. That's expected for a throwaway lab — the
 no stateful application data left in this lab to lose (see the honest-scope note
 above).
 
+**A bare `colima delete` is not a clean slate.** `make down`/`colima stop` is the
+normal stop/start cycle — Colima's container-runtime data (including the k3s
+embedded datastore) is correctly kept, matching `make down`'s own doc comment
+("Data on PVCs/volumes is kept"). But `colima delete` alone tears down only the
+Lima VM itself; it **deliberately preserves** that same container-runtime data
+across VM recreation, so a `make up` afterward silently resumes from the old
+state rather than a genuine fresh boot. This was found live 2026-09-06
+([`docs/incident-log.md`](incident-log.md)'s k3s-datastore-persistence entry): a
+90MB `state.db` immediately after a supposedly-fresh bootstrap (a real fresh k3s
+datastore is single-digit MB) turned out to be hours old, because the prior
+`colima delete` never actually wiped the container-runtime data. **To genuinely
+start over**, use `colima delete --data` (or `colima delete -f --data` to skip
+the confirmation prompt) — the flag that actually wipes it — not a bare
+`colima delete`.
+
 ## `make dr-test`, `make dr-verify`, `make dr-destroy`
 
 The only DR mechanism this lab still has: prove the recreate-from-code claim end
