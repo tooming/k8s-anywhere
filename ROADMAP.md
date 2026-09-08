@@ -278,7 +278,7 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
-- [ ] 🟢 **`lab-demo` actually runs the Jaeger HotROD tracing demo
+- [x] 🟢 **`lab-demo` actually runs the Jaeger HotROD tracing demo
   (`jaegertracing/example-hotrod:2.20.0`), not the "single static
   hello-world Deployment" that `README.md`, `ROADMAP.md`'s own intro,
   `CHARTER.md`, `docs/00-architecture.md`, and `docs/dependency-tree.md`
@@ -348,7 +348,9 @@ You review and merge plan PRs, same as implementation PRs.
   direction the docs already, consistently, describe as decided. Larger
   than this run's other items — if it risks WAYS-OF-WORKING.md §3's
   ~400-line cap, split the PSS-flip half (2-3) into its own follow-up item
-  after the image-swap half (1, 4) lands.
+  after the image-swap half (1, 4) lands. — full verification writeup:
+  [docs/done/2026-09-08-lab-demo-hello-world-swap.md](docs/done/2026-09-08-lab-demo-hello-world-swap.md).
+  (auto/lab-demo-hello-world-swap)
 
 - [x] 🟢 **Add the "truly start over" clean-slate warning `docs/incident-log.md`'s
   2026-09-06 k3s-datastore-persistence entry already recommended but never

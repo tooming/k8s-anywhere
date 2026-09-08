@@ -5,3 +5,16 @@ metadata:
 data:
   message: "Hello from GitOps — this was synced by ArgoCD, from GitHub, into the cluster."
   source: "github:tooming/k8s-anywhere @ gitops/apps/demo"
+  # Rendered verbatim as the static page nginx-unprivileged serves
+  # (deployment.yaml mounts this key at /usr/share/nginx/html/index.html).
+  # Same message as the `message` key above -- no separate copy to drift.
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+      <head><title>lab-demo</title></head>
+      <body>
+        <h1>Hello from GitOps</h1>
+        <p>This was synced by ArgoCD, from GitHub, into the cluster.</p>
+        <p><code>github:tooming/k8s-anywhere @ gitops/apps/demo</code></p>
+      </body>
+    </html>

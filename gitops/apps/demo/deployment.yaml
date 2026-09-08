@@ -14,18 +14,54 @@ spec:
       labels:
         app: hello
     spec:
+      # PSS restricted (ADR-0017): nginx-unprivileged's own default UID is
+      # non-root, but we pin an explicit UID/GID here anyway, matching this
+      # repo's per-workload default (ADR-0017 Layer 1) -- both writable paths
+      # nginx needs are emptyDir mounts below, so fsGroup ownership on them
+      # is all that matters, not any UID baked into the image.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: hello
-          # Pinned 2026-07-28 (recreate-from-code / no-floating-tag hardening): `latest`
-          # currently resolves to 2.20.0 (Docker Hub tags API, confirmed live) — this is
-          # a pin-what's-already-running change, not a version bump, same reasoning as
-          # the Vault image-tag pin.
-          image: jaegertracing/example-hotrod:2.20.0
+          # Swapped 2026-09-08 from jaegertracing/example-hotrod: HotROD's own
+          # distributed-tracing demo was orphaned once the observability stack
+          # (its OTLP receiver) was removed 2026-09-06, ADR-0041 -- its tracing
+          # functionality was already dead weight, and no Service/IngressRoute
+          # ever existed to reach its web UI either. nginx-unprivileged serves
+          # the same "Hello from GitOps" message the (previously orphaned)
+          # lab-demo-hello ConfigMap already carried, now actually wired up,
+          # and runs non-root by default -- meeting ADR-0017's lab-demo flip
+          # condition, PSA baseline -> restricted (see this namespace's own
+          # namespace.yaml and ADR-0017's Re-evaluation log).
+          image: nginxinc/nginx-unprivileged:1.31.5-alpine
           ports:
             - containerPort: 8080
-          # OTEL_EXPORTER_OTLP_ENDPOINT (pointed at Tempo) removed 2026-09-06 (ADR-0041,
-          # observability stack removed with no replacement) — Tempo no longer exists to
-          # receive traces; hotrod runs with its own default (no-op) exporter behavior.
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+            # nginx-unprivileged redirects its pid file and every http-context
+            # temp path (client/proxy/fastcgi/uwsgi/scgi) under /tmp by default
+            # specifically so a read-only root filesystem works -- one emptyDir
+            # covers all of them.
+            - name: tmp
+              mountPath: /tmp
+            # Default nginx.conf's proxy/fastcgi cache paths -- unused by this
+            # static-only config, but nginx validates/creates the directory at
+            # startup regardless, so it must be writable.
+            - name: cache
+              mountPath: /var/cache/nginx
           resources:
             requests:
               cpu: 10m
@@ -33,3 +69,14 @@ spec:
             limits:
               cpu: 100m
               memory: 64Mi
+      volumes:
+        - name: html
+          configMap:
+            name: lab-demo-hello
+            items:
+              - key: index.html
+                path: index.html
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
