@@ -5,10 +5,28 @@ name: auto-update-prs
 # ROADMAP.md / dependency-tree.md — files every PR touches — never accumulate
 # merge-conflict markers. Clean rebases are force-pushed; conflicted branches
 # are left unchanged and the pr-up-to-date CI gate catches them.
-
+#
+# Concurrency: this repo's own self-merge routines push to main in rapid
+# succession (a merge is itself a push event), so two runs of this workflow
+# can easily overlap. That's not a correctness risk on its own -- every push
+# here uses `--force-with-lease`, so a stale run's push attempt fails safely
+# (lease mismatch) rather than clobbering a newer one's work -- but it does
+# mean a superseded run's own push attempts fail loudly and confusingly in
+# the Actions log for no reason, once a newer run (which re-fetches and
+# re-rebases against the newest main) has already superseded it. Same
+# efficiency rationale as ci.yml's own concurrency group (cycle 19 of the
+# 2026-09-08 executor run) -- keyed by ref since this only ever triggers on
+# pushes to `main`. cancel-in-progress: true is safe here specifically
+# because of force-with-lease: cancelling mid-run leaves whatever was
+# already successfully force-pushed as-is, and the newer run repeats the
+# full rebase sweep against the latest main regardless.
 on:
   push:
     branches: [main]
+
+concurrency:
+  group: auto-update-prs-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
