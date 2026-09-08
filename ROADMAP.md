@@ -278,6 +278,36 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [ ] 🟢 **Correct `scripts/dependency-maintenance-check.sh`'s stale header
+  comment — it still claims `docs/dependency-register.md` has "33 rows" and
+  that "Terraform/Terragrunt, Oracle Cloud Infrastructure, Forgejo" are the
+  rows with no `github.com` upstream source, but the register is now down to
+  7 rows (2026-09-06/2026-09-07 simplification) and Forgejo isn't a row at
+  all any more (removed, ADR-0035); of the current 7 rows, only Oracle Cloud
+  Infrastructure genuinely lacks a `github.com` source — Terraform/Terragrunt
+  now cites `github.com/hashicorp/terraform` too.** Found live 2026-09-08
+  (planner gap analysis, same "leftover rationale/count from a removed
+  component" class as this run's earlier ADR-0016/0017 (#1514),
+  dead-Harbor-mirror (#1516), and coredns-host-alias.sh (#1519) fixes):
+  `grep -c "^|" docs/dependency-register.md` confirms 7 real table rows (the
+  `make ci` "Scope note ADR/row-count arithmetic" check's own live count);
+  `grep -n "github.com" docs/dependency-register.md` confirms exactly 6 of
+  those 7 rows (Terraform/Terragrunt, ArgoCD, Traefik, Cilium, k3s,
+  cert-manager) cite a `github.com/<owner>/<repo>` upstream, leaving only
+  Oracle Cloud Infrastructure (`cloud.oracle.com` only) with none. This is a
+  report-only script (`Report-only — deliberately NOT wired into make ci`,
+  per its own header) — the stale comment doesn't affect its actual
+  behavior/output, purely its self-description; no test asserts the exact
+  stale text (`grep -rn "33 rows\|no github.com upstream" tests/*.bats`
+  confirms). **Scope:** rewrite the header's dependency-count and
+  no-github-upstream-rows claims to match current reality (cite
+  `docs/dependency-register.md` as the source of truth rather than hardcoding
+  a number that will drift again, matching the phrasing pattern
+  `docs/dependency-tree.md` and other self-tracking docs already use); also
+  fix the same section's stale "~30-repo sweep" claim (real count today is 6
+  github-backed rows). Docs/comment-only, no logic change, no `make ci` gate
+  affected. Single-PR-sized, clusterless-deliverable.
+
 - [x] 🟢 **Correct `scripts/coredns-host-alias.sh`'s header comment (and
   `docs/DR.md`/`docs/dependency-tree.md`'s bootstrap-step descriptions) to
   note the `host.k3d.internal` alias was built for Forgejo's local repoURL
