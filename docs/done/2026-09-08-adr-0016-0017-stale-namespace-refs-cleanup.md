@@ -75,9 +75,6 @@ etc.) regressed from these edits.
 
 ## PR
 
-Branch `auto/adr-0016-0017-stale-namespace-refs-cleanup` (autonomous
+[#1514](https://github.com/tooming/k8s-anywhere/pull/1514) (autonomous
 scheduled executor run, cycle 2: item picked directly from the
-freshly-refilled "Now / next" lane after cycle 1's `plan/*` PR #1513). PR
-number filled in below once opened.
-
-PR: (to be filled in)
+freshly-refilled "Now / next" lane after cycle 1's `plan/*` PR #1513).
