@@ -305,10 +305,11 @@ concentration)?**
   walks every `docs/dependency-register.md` row's `github.com` upstream source and
   reports days since that repo's default branch last committed, flagging anything
   past a year with no commit as worth a fresh look. It is *report-only*, not wired
-  into `make ci` (GitHub's request volume for a ~30-repo sweep makes it unsuitable as
-  a hard, always-on gate) — so this narrows the gap from "no mechanism at all" to "a
-  real mechanism that still needs a human/routine to actually invoke it", same
-  category as the industry digest's own cadence.
+  into `make ci` (a multi-repo sweep — one network fetch per
+  `docs/dependency-register.md` row with a `github.com` upstream — is unsuitable as
+  a hard, always-on gate given GitHub's request volume) — so this narrows the gap
+  from "no mechanism at all" to "a real mechanism that still needs a human/routine
+  to actually invoke it", same category as the industry digest's own cadence.
 - **Evidence:** ADR-0025; `docs/industry/2026-W23-digest.md`;
   `scripts/dependency-maintenance-check.sh`.
 - **Gap:** narrower now — the re-check mechanism exists and is real (mechanical, not
