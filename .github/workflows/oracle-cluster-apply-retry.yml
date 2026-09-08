@@ -17,11 +17,22 @@ name: oracle-cluster-apply-retry
 # Treats "Out of host capacity" as an expected, non-alerting outcome (logged as a
 # ::notice:: and exits 0) so this doesn't send an hourly failure-email for a known,
 # waiting-on-Oracle state -- any OTHER failure reason still fails the job loudly.
+#
+# Concurrency: shares its group key with oracle-cluster-apply.yml's own (see that
+# file's comment for the full rationale -- no lock table on the shared Garage-backed
+# S3 tfstate, so two concurrent applies against the same unit have nothing stopping
+# an interleaved/corrupted write). This workflow always targets `cluster`, so its
+# group is that literal value rather than an input-driven one. cancel-in-progress
+# stays at its default `false` -- queue behind a running apply, never cancel one
+# mid-flight.
 
 on:
   schedule:
     - cron: "17 * * * *" # hourly, offset off the top-of-hour GH Actions crunch
   workflow_dispatch: {}
+
+concurrency:
+  group: oracle-terragrunt-cluster
 
 permissions:
   contents: read

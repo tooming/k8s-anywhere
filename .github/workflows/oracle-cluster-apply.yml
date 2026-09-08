@@ -14,6 +14,21 @@ name: oracle-cluster-apply
 #     `terragrunt destroy`) until there's a deliberate reason to automate that too.
 #   - Requires OCI_* and TFSTATE_ORACLE_* repo secrets to exist; until they're set this
 #     workflow fails immediately at the "render credentials" step with no side effects.
+#
+# Concurrency: infra/live/oracle/root.hcl's S3 backend (the separate off-cluster
+# Garage tfstate instance, RFC #377 item 3) has no lock table configured (Garage's S3
+# API support doesn't extend to the DynamoDB-style locking Terraform's native s3
+# backend would otherwise use) -- two concurrent `terragrunt apply` runs against the
+# same unit's state have nothing stopping a corrupted/interleaved write. This
+# workflow (manual dispatch) and oracle-cluster-apply-retry.yml (hourly cron,
+# hardcoded to the `cluster` unit) both apply against that same state, so the group
+# key below is shared with that workflow's own -- keyed per-unit, not per-workflow --
+# so a manual `cluster` dispatch queues behind (never cancels -- see below) an
+# in-flight hourly retry against `cluster`, and vice versa. `argocd` runs never
+# collide with `cluster` runs (different state keys), so they get their own group.
+# cancel-in-progress is deliberately left at its default `false`: cancelling a
+# mid-flight `terragrunt apply` (as opposed to queuing behind a finished one) is how
+# you get the exact interleaved-write corruption this group exists to prevent.
 
 on:
   workflow_dispatch:
@@ -28,6 +43,9 @@ on:
         required: true
         type: choice
         options: [plan, apply]
+
+concurrency:
+  group: oracle-terragrunt-${{ inputs.unit }}
 
 permissions:
   contents: read
