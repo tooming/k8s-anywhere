@@ -278,6 +278,19 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [x] 🟢 **Fix `docs/platform-products.md`'s stale "6 always-on namespaces"
+  claim** — found live 2026-09-08 (cycle 21 of this run): every other
+  current-state doc (`README.md`, `docs/dependency-tree.md`) correctly says
+  "4 always-on namespaces" (`argocd`, `cert-manager`, `lab-gateway`,
+  `lab-demo`) since the 2026-09-06/07 simplification, and `docs/decisions/
+  adr-0016-default-deny-networkpolicy.md` had the identical stale "6" fixed
+  earlier this run (cycle 2) — this file was missed in that sweep. Swept
+  the rest of the file (tier diagram, product catalog, domain table) for
+  further staleness; found none — cert-manager/lab-demo's absence from the
+  product catalog is by design (not self-service "products" in this doc's
+  own sense), not a gap — full verification writeup:
+  [docs/done/2026-09-08-platform-products-namespace-count-fix.md](docs/done/2026-09-08-platform-products-namespace-count-fix.md). (auto/platform-products-namespace-count-cycle21)
+
 - [x] 🟢 **Regenerate the on-demand DORA metrics snapshot
   (`docs/dora-metrics.md`, `make dora-metrics`, RFC #580)** — found stale
   (still showing its 2026-09-03T01:55:53Z snapshot 5 days and ~20 merged

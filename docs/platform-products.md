@@ -9,11 +9,12 @@ This is the org/product companion to [dependency-tree.md](dependency-tree.md) (t
 runtime + bootstrap graph) and [00-architecture.md](00-architecture.md) (roles).
 
 **A large simplification landed 2026-09-06/2026-09-07** (see README.md's own note and
-each removed component's ADR Status). This lab is now down to 6 always-on namespaces
-and nothing on-demand — most of the products, tiers, and domains this doc used to
-catalog no longer exist, no replacement. This rewrite describes only what's actually
-live today; it does not restate the removal history component-by-component the way
-earlier revisions of this file did — see `docs/decisions/` for that.
+each removed component's ADR Status). This lab is now down to 4 always-on namespaces
+(`argocd`, `cert-manager`, `lab-gateway`, `lab-demo`) and nothing on-demand — most of
+the products, tiers, and domains this doc used to catalog no longer exist, no
+replacement. This rewrite describes only what's actually live today; it does not
+restate the removal history component-by-component the way earlier revisions of this
+file did — see `docs/decisions/` for that.
 
 ---
 
