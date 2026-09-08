@@ -278,7 +278,7 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
-- [ ] 🟢 **Fix stale `vault`/`external-secrets` (and other pre-2026-09-07-removal)
+- [x] 🟢 **Fix stale `vault`/`external-secrets` (and other pre-2026-09-07-removal)
   namespace references in ADR-0016 and ADR-0017's per-namespace tables — both
   ADRs were left behind by ADR-0042 (#1510, Vault + External Secrets Operator
   removal).** Found live 2026-09-08 (planner gap analysis, Core Value "Docs
@@ -305,7 +305,9 @@ You review and merge plan PRs, same as implementation PRs.
   change, no `make ci` gate affected beyond the existing markdown-only lint —
   clusterless-deliverable, single-PR-sized. Not a case ADR-0016/0017's own
   "Files this work touches" tables need editing (those already list the ADR
-  files themselves as in-scope for updates).
+  files themselves as in-scope for updates). — full verification writeup:
+  [docs/done/2026-09-08-adr-0016-0017-stale-namespace-refs-cleanup.md](docs/done/2026-09-08-adr-0016-0017-stale-namespace-refs-cleanup.md).
+  (auto/adr-0016-0017-stale-namespace-refs-cleanup)
 
 - [x] 🟢 **Re-verify every GHSA ID cited in `docs/dependency-register.md`
   (confirms the Harbor fabrication was isolated, not a pattern)** — full

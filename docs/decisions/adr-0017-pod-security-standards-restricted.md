@@ -106,21 +106,19 @@ so the executor never silently applies the wrong label.
 
 | Namespace | PSA profile | Reason |
 |-----------|-------------|--------|
-| `capstone` | `restricted` | Pilot; workload is fully owned by us. |
 | `argocd` | `restricted` | ArgoCD components run as UID 1000 (non-root), `readOnlyRootFilesystem: true`, no capabilities. Phase 2 (RFC #205) adds `global.podSecurityContext` + `global.containerSecurityContext` to `infra/modules/argocd/values.yaml` and flips `enforce: restricted`. |
-| `storage` (Garage) | `baseline` | Upstream Garage image does not yet declare an explicit non-root user required by `restricted`. Re-evaluate per upstream release. |
 | `lab-gateway` | `restricted` | Holds only the shared Traefik `TLSStore` CR (ADR-0040) — no pods run in this namespace at all (Traefik itself runs in `kube-system`, bundled with k3s), so `restricted` is a no-cost defense-in-depth floor for any future pod added here. |
-| `vault` | `restricted` | Flipped from `baseline` 2026-07-17 (RFC #478): chart `v0.34.0`'s default Vault `v2.0.3` image no longer holds `cap_ipc_lock`; `disable_mlock = true` is set as the required counterpart. Full history: audit #157 (2026-06-11, kept) → audit #477 (2026-07-17, converted) → this flip. See [§Re-evaluation log](#re-evaluation-log). |
-| `kyverno` | `restricted` | Flipped from `baseline` 2026-07-17 (RFC #483): chart `kyverno-chart-3.3.4`'s four controllers already default to the full restricted container securityContext, no override needed. Bumped to `kyverno-chart-3.3.9` 2026-07-18 (upgrade-drafter) — re-verified the same defaults still hold at the new pin, no regression. Full history: audit #482 (2026-07-17, converted) → this flip. See [§Re-evaluation log](#re-evaluation-log). |
-| `velero` | `restricted` | Controller runs non-root (UID 65534); node-agent DaemonSet uses a per-workload annotation to mount `/var/lib/kubelet/pods` for Kopia FS-backup (a per-workload `hostPath` carve-out under an otherwise-`restricted` namespace — see §"Per-workload field carve-outs"). Per ADR-0021 §"PSA profile" (implementation adopted `restricted`, overriding the initial `baseline` estimate). |
-| `argo-rollouts` | `restricted` | Controller and dashboard both run as non-root (UID 65532), no host volumes, no privileged containers. Per ADR-0020 §"NetworkPolicy + PSS". |
-| `external-secrets` | `restricted` | ESO 2.x controller-manager, cert-controller, and webhook all run as UID 65534 (`nobody`), no host volumes, no special capabilities. Chart supports `global.podSecurityContext` / `global.containerSecurityContext` overrides. Per RFC #229 (architect decision 2026-06-19). |
-| `kargo` | `restricted` | Kargo api/controller/webhooks-server all run as UID 65532 (non-root); no host volumes, no special capabilities. Per ROADMAP `auto/pss-kro-namespace` pattern. |
-| `capstone-pipeline` | `restricted` | No workloads currently run in this namespace (Kargo itself runs in the `kargo` namespace; the Project CRD manages this namespace). `restricted` is a defense-in-depth floor ensuring any future pod admitted here is hardened by default. Per ROADMAP `auto/capstone-pipeline-psa`. |
-| `lab-demo` | `baseline` | The upstream `jaegertracing/example-hotrod` image runs as root (no `USER` instruction in the Dockerfile). `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when the image ships a non-root UID or is superseded by the capstone-built image — checked 2026-07-26, not yet met, see [§Re-evaluation log](#re-evaluation-log). Per ROADMAP `auto/pss-np-lab-demo`. |
-| `harbor` | `restricted` | Harbor is Go-based; core/registry/jobservice all run as non-root UID 10000; portal uses nginx with a non-root UID in the 1.19.x chart (unchanged since 1.16.x — verified directly against the chart's `templates/portal/deployment.yaml` at both tags before the version bump, RFC/upgrade-drafter run 2026-07-19). No host volumes, no special capabilities. Per ADR-0024 / RFC #297 (architect decision 2026-06-30). |
+| `lab-demo` | `baseline` | The upstream `jaegertracing/example-hotrod` image runs as root (no `USER` instruction in the Dockerfile). `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when the image ships a non-root UID — checked 2026-07-26, not yet met, see [§Re-evaluation log](#re-evaluation-log). Per ROADMAP `auto/pss-np-lab-demo`. |
 | `cert-manager` | `restricted` | Controller, webhook, and cainjector all default to `runAsNonRoot: true` + `seccompProfile.type: RuntimeDefault` (pod) and `allowPrivilegeEscalation: false` + `capabilities.drop: [ALL]` + `readOnlyRootFilesystem: true` (container) with no chart override — the full `restricted` profile out of the box, verified against the pinned chart's `values.yaml`. Per ADR-0028. |
 | `kube-system` | unchanged | k3s-managed; out of scope. |
+
+(Every other namespace this table previously carried a row for — `capstone`,
+`storage` (Garage), `vault`, `kyverno`, `velero`, `argo-rollouts`,
+`external-secrets`, `kargo`, `capstone-pipeline`, `harbor` — was removed from
+the lab entirely, no replacement, across the 2026-09-06/2026-09-07
+simplification round and ADR-0042; see [§Re-evaluation log](#re-evaluation-log)
+below for the dated correction. See each component's own ADR Status for why it
+was removed.)
 
 ---
 
@@ -476,6 +474,32 @@ existed from RFC #287's architect decision (2026-06-27) through the
 2026-07-26 currency re-check (entry above) confirming the flip condition was
 never met before the registry itself was decommissioned in favor of Harbor
 (`harbor` row above, `restricted`, ADR-0024).
+
+### 2026-09-08 — ten removed-namespace rows dropped from the per-namespace table — drift correction
+
+**Trigger.** This ADR's per-namespace profile table still carried live-looking
+rows for `capstone`, `storage` (Garage), `vault`, `kyverno`, `velero`,
+`argo-rollouts`, `external-secrets`, `kargo`, `capstone-pipeline`, and
+`harbor` — every one of those namespaces was removed entirely, no
+replacement, across the 2026-09-06/2026-09-07 simplification round (commit
+`319d6b2` / #1497) and ADR-0042 (#1510, Vault + External Secrets Operator).
+`git log -- docs/decisions/adr-0017-pod-security-standards-restricted.md`
+confirms neither removal PR touched this file. Same drift class as
+ADR-0016's 2026-08-10 `artifactory` correction; found via planner gap
+analysis (2026-09-08, ROADMAP item), not an architect-routine weekly audit.
+
+**Decision: correct the record.** Deleted all ten now-stale rows; the table
+now lists only the lab's real 4 always-on namespaces plus `kube-system`
+(`argocd`, `lab-gateway`, `lab-demo`, `cert-manager`) — verified directly
+against `gitops/` before editing (ADR-0004). Also dropped the `lab-demo`
+row's dead "or is superseded by the capstone-built image" flip-condition
+clause (capstone no longer exists to supersede anything); the row's live
+condition — the upstream `jaegertracing/example-hotrod` image shipping a
+non-root UID — is unaffected and still open, unchanged from the 2026-07-26
+currency check above.
+
+**Flip condition.** None pending — this is a closed record correction, same
+shape as ADR-0016's 2026-08-10 entry, not an open question.
 
 ---
 
