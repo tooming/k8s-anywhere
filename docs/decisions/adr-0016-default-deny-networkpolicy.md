@@ -69,9 +69,10 @@ ingress and egress by default.
 
 ### 2. Per-workload explicit-allow policies
 
-Named for the flow they permit (e.g. `allow-vault-from-eso`,
+Named for the flow they permit (e.g. `allow-cert-manager-webhook-from-apiserver`,
 `allow-argocd-server-from-gateway`). One YAML file per flow, co-located with the
-workload it serves (e.g. `gitops/vault/networkpolicy/allow-vault-from-eso.yaml`).
+workload it serves (e.g.
+`gitops/cert-manager/networkpolicy/allow-cert-manager-webhook-from-apiserver.yaml`).
 No catch-all "allow same namespace" — every edge is explicit.
 
 ### 3. Reusable templates
@@ -131,17 +132,18 @@ what actually enforces this ADR's `NetworkPolicy` objects today:
 ## Scope & exceptions
 
 **Namespaces in scope — fan-out complete (2026-07-14).** As of 2026-09-07, this
-lab is down to exactly 6 always-on namespaces, all carrying the two-policy floor:
-`argocd`, `cert-manager`, `external-secrets`, `lab-demo`, `lab-gateway`, `vault`.
+lab is down to exactly 4 always-on namespaces, all carrying the two-policy floor:
+`argocd`, `cert-manager`, `lab-demo`, `lab-gateway`.
 (Every other namespace this ADR previously enumerated — `ack-system`,
-`argo-rollouts`, `capstone`, `capstone-pipeline`, `harbor`, `kargo`,
-`kargo-project`, `kro`, `kyverno`, `moto`, `storage`, `trivy-system`, `velero`,
-plus the earlier `data`, `observability`, `node-exporter`, `envoy-gateway-system`,
-`istio-system`, `longhorn-system`, and `tidb`/`tidb-admin` — was removed from the
-lab entirely, no replacement, across a series of 2026-09-06/2026-09-07 removals;
-see each component's own ADR Status.) This list drifts as new components land —
-treat [docs/dependency-tree.md](../dependency-tree.md) as the live source of
-truth and this ADR as the *pattern*, not the enumeration.
+`argo-rollouts`, `capstone`, `capstone-pipeline`, `external-secrets`, `harbor`,
+`kargo`, `kargo-project`, `kro`, `kyverno`, `moto`, `storage`, `trivy-system`,
+`vault`, `velero`, plus the earlier `data`, `observability`, `node-exporter`,
+`envoy-gateway-system`, `istio-system`, `longhorn-system`, and
+`tidb`/`tidb-admin` — was removed from the lab entirely, no replacement, across
+a series of 2026-09-06/2026-09-07 removals; see each component's own ADR
+Status.) This list drifts as new components land — treat
+[docs/dependency-tree.md](../dependency-tree.md) as the live source of truth
+and this ADR as the *pattern*, not the enumeration.
 
 **Carve-outs / special handling:**
 
@@ -277,3 +279,32 @@ of truth and this ADR as the *pattern*, not the enumeration"), the
 enumeration will drift again as new namespaces land; that's expected and not
 itself a defect — only a claim about a *specific, no-longer-existing* pod
 (like the artifactory row was) is the actionable bug class this entry closes.
+
+### 2026-09-08 — `vault`/`external-secrets` removed from the enumeration — drift correction
+
+**Trigger.** This ADR's §Scope & exceptions still stated "this lab is down to
+exactly 6 always-on namespaces... `vault`" and listed `external-secrets`
+alongside it in the live enumeration — but both namespaces were removed
+entirely, no replacement, by ADR-0042 (#1510, HashiCorp Vault + External
+Secrets Operator removal). `git log -- docs/decisions/
+adr-0016-default-deny-networkpolicy.md` confirms #1510 never touched this
+file — the same grooming gap the 2026-08-10 entry above already fixed once
+for `artifactory`, recurring for a different pair of namespaces. Found via
+planner gap analysis (2026-09-08, ROADMAP item), not an architect-routine
+weekly audit.
+
+**Decision: correct the record.** Dropped `vault` and `external-secrets` from
+the live enumeration (now 4 always-on namespaces: `argocd`, `cert-manager`,
+`lab-demo`, `lab-gateway`) and added both to the "removed, no replacement"
+parenthetical alongside the other 2026-09-06/2026-09-07 removals. Also
+swapped the §"Per-workload explicit-allow policies" naming-convention
+example off a now-nonexistent `gitops/vault/networkpolicy/
+allow-vault-from-eso.yaml` path onto a real, currently-live one
+(`gitops/cert-manager/networkpolicy/
+allow-cert-manager-webhook-from-apiserver.yaml`) — verified directly against
+the repo before citing it (ADR-0004). No carve-out table row existed for
+either namespace in this ADR (unlike ADR-0017, which had per-namespace rows
+for both — corrected in the same PR), so no row deletion was needed here.
+
+**Flip condition.** None pending — this is a closed record correction, same
+shape as the 2026-08-10 entry, not an open question.
