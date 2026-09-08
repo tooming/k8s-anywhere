@@ -278,6 +278,78 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [ ] 🟢 **`lab-demo` actually runs the Jaeger HotROD tracing demo
+  (`jaegertracing/example-hotrod:2.20.0`), not the "single static
+  hello-world Deployment" that `README.md`, `ROADMAP.md`'s own intro,
+  `CHARTER.md`, `docs/00-architecture.md`, and `docs/dependency-tree.md`
+  all already describe it as — swap the image to a genuine static
+  hello-world container so reality matches the docs (and wire up the
+  already-existing, currently-orphaned `lab-demo-hello` ConfigMap while at
+  it).** Found live 2026-09-08 (planner gap analysis, different lens: cross-
+  checking a docs claim repeated across 5 files against the actual manifest
+  it describes, rather than the "removed-component leftover" or "incident
+  follow-up" classes this run's other items used): `git log -S "static
+  hello-world" -- README.md CHARTER.md ROADMAP.md docs/00-architecture.md`
+  shows this phrasing was introduced by the 2026-09-06/2026-09-07
+  simplification commit (`319d6b2`/#1497) — the same commit that removed
+  the observability stack HotROD's tracing existed to feed — but
+  `gitops/apps/demo/deployment.yaml`'s actual image was never swapped; it
+  still pulls the full Jaeger HotROD demo app (a whole distributed-tracing
+  storefront simulator), whose own `OTEL_EXPORTER_OTLP_ENDPOINT` was
+  already removed the same commit ("hotrod runs with its own default
+  (no-op) exporter behavior" — its tracing functionality is entirely dead
+  weight now). Confirmed there is no Service or IngressRoute for `lab-demo`
+  at all (`grep -rl "lab-demo" gitops/network/` — zero hits;
+  `gitops/apps/demo/` has no `service.yaml`) — HotROD's web UI has never
+  actually been reachable from outside the cluster, so replacing it loses
+  nothing reachable today. Also confirmed `gitops/apps/demo/configmap.yaml`
+  (`lab-demo-hello`, message: "Hello from GitOps — this was synced by
+  ArgoCD, from GitHub, into the cluster.") is never referenced by the
+  Deployment (no `volumeMounts`/`envFrom` anywhere in
+  `deployment.yaml`) — a second, independent orphan this same fix should
+  close by finally wiring it up.
+  **Scope:** (1) replace `gitops/apps/demo/deployment.yaml`'s image with a
+  minimal, non-root-by-default static web server (e.g.
+  `nginxinc/nginx-unprivileged`, which listens on 8080 by default — no
+  `containerPort` change needed) serving an `index.html` rendering the
+  ConfigMap's existing message (add an `index.html` key to
+  `gitops/apps/demo/configmap.yaml` with real, non-fabricated content — the
+  same "Hello from GitOps..." text already there, ADR-0004 — and mount it
+  via a `volumeMounts`/`volumes` ConfigMap-volume pair the Deployment
+  currently has neither of); (2) since the new image runs non-root by
+  default, ADR-0017's `lab-demo` flip condition ("when the image ships a
+  non-root UID") is now met — flip `gitops/apps/demo/namespace.yaml`'s four
+  PSA labels from `baseline` to `restricted`, add the standard PSS
+  `restricted` pod/container `securityContext` fields to the Deployment
+  (mirror `gitops/cert-manager/*.yaml`'s pattern: `runAsNonRoot: true`,
+  `seccompProfile.type: RuntimeDefault`, `allowPrivilegeEscalation: false`,
+  `capabilities.drop: [ALL]`, `readOnlyRootFilesystem: true` — check
+  `nginx-unprivileged`'s own doc for whether a writable `emptyDir` is needed
+  for `/var/cache/nginx`/`/tmp`/`/var/run`, matching ADR-0017's
+  emptyDir-over-write-targets pattern), and update ADR-0017's per-namespace
+  table row + a new dated Re-evaluation log entry recording the flip,
+  mirroring the `vault`/`kyverno` flip-entry shape already in that log; (3)
+  update `tests/securitycontext-lab-demo.bats` (currently asserts
+  `baseline`, including an explicit "does NOT enforce restricted" safety
+  check that would need inverting) to assert `restricted` instead, adding
+  the new securityContext field assertions; (4) fix
+  `gitops/apps/demo/namespace.yaml`'s own header comment and
+  `tests/securitycontext-lab-demo.bats`'s own header comment, both of which
+  still say "because jaegertracing/example-hotrod runs as root" and cite
+  the dead "or is replaced by the capstone-built image" flip condition
+  (same stale phrase already removed from ADR-0017 itself in #1514 — missed
+  here). **Not in scope:** adding a Service/IngressRoute for `lab-demo`
+  (it has never had one; out of scope for this fix, a separate item if ever
+  wanted). `make ci` must stay green throughout, including
+  `tests/kustomize.bats`/`validate-manifests.sh` re-rendering the new
+  Deployment shape cleanly. This is a real container-image swap (not
+  docs-only) but not an ADR-worthy architecture decision — no ADR pins
+  the demo app's image choice, and this brings the manifest in line with a
+  direction the docs already, consistently, describe as decided. Larger
+  than this run's other items — if it risks WAYS-OF-WORKING.md §3's
+  ~400-line cap, split the PSS-flip half (2-3) into its own follow-up item
+  after the image-swap half (1, 4) lands.
+
 - [x] 🟢 **Add the "truly start over" clean-slate warning `docs/incident-log.md`'s
   2026-09-06 k3s-datastore-persistence entry already recommended but never
   landed — `docs/DR.md`'s "What is NOT preserved on a rebuild" section
