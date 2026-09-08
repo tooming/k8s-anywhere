@@ -278,6 +278,35 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [ ] 🟢 **Fix stale `vault`/`external-secrets` (and other pre-2026-09-07-removal)
+  namespace references in ADR-0016 and ADR-0017's per-namespace tables — both
+  ADRs were left behind by ADR-0042 (#1510, Vault + External Secrets Operator
+  removal).** Found live 2026-09-08 (planner gap analysis, Core Value "Docs
+  don't drift" not upheld): `docs/decisions/adr-0016-default-deny-networkpolicy.md`'s
+  §Scope & exceptions still states "this lab is down to exactly 6 always-on
+  namespaces... `vault`" (should be 4: `argocd`, `cert-manager`, `lab-gateway`,
+  `lab-demo` — ADR-0042/CHARTER.md's current count) and its "Relationship to
+  existing ADRs" / carve-out prose is otherwise fine. `docs/decisions/
+  adr-0017-pod-security-standards-restricted.md`'s per-namespace profile table
+  still carries live-looking rows for `vault`, `external-secrets`, `capstone`,
+  `storage` (Garage), `kyverno`, `velero`, `argo-rollouts`, `kargo`,
+  `capstone-pipeline`, and `harbor` — every one of those namespaces was removed
+  entirely 2026-09-06/2026-09-07 (ADR-0042 and the earlier simplification round,
+  commit 319d6b2/#1497), but neither ADR's table was updated when those removal
+  PRs landed (confirmed via `git log -- <file>`: #1510 never touched either
+  file). This is exactly the same drift class ADR-0016's own 2026-08-10
+  "Re-evaluation log" entry already fixed once for the `artifactory` namespace
+  — same fix pattern, same file: correct ADR-0016's namespace-count enumeration
+  to 4 (with a dated Re-evaluation log entry per that precedent), and delete
+  ADR-0017's now-stale carve-out rows for every removed namespace (add a dated
+  Re-evaluation log entry there too if useful, or a one-line note next to the
+  remaining `argocd`/`lab-gateway`/`lab-demo`/`cert-manager`/`kube-system` rows
+  stating the table is now current as of today). Docs-only, no code/manifest
+  change, no `make ci` gate affected beyond the existing markdown-only lint —
+  clusterless-deliverable, single-PR-sized. Not a case ADR-0016/0017's own
+  "Files this work touches" tables need editing (those already list the ADR
+  files themselves as in-scope for updates).
+
 - [x] 🟢 **Re-verify every GHSA ID cited in `docs/dependency-register.md`
   (confirms the Harbor fabrication was isolated, not a pattern)** — full
   verification writeup:
