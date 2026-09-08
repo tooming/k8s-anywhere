@@ -278,6 +278,38 @@ You review and merge plan PRs, same as implementation PRs.
 > (batch 4), then 5 more (batch 5), then 3 more (batch 6); ~154 legacy
 > items remain for future bounded cycles to continue against.
 
+- [ ] 🟢 **Remove the dead Harbor containerd registry-mirror block from
+  `infra/modules/k3d-cluster/k3d-config.yaml.tftpl` (and its dedicated
+  `tests/k3d-registry-mirror.bats` file) — Harbor was removed entirely
+  2026-09-07 (ADR-0024), no replacement, but this bootstrap template still
+  renders a `registries: mirrors: "harbor.127.0.0.1.nip.io": endpoint:
+  http://harbor.harbor.svc.cluster.local` block pointing at a Kubernetes
+  Service that will never exist again.** Found live 2026-09-08 (planner gap
+  analysis, same "leftover config from a removed component" class as this
+  run's earlier ADR-0016/0017 fix, this time in `infra/` rather than
+  `docs/decisions/`): `find gitops -iname "*harbor*"` and `grep -n
+  "harbor-up\|harbor-down" Makefile` both return zero results (Harbor is
+  fully gone, not even an on-demand target), yet the k3d bootstrap template's
+  comment block still describes it as "on-demand (ADR-0024) — this mirror
+  sits inert, harmlessly, whenever Harbor isn't running; it only matters
+  once `make harbor-up` is used" — a `make harbor-up` target that no longer
+  exists. `tests/k3d-registry-mirror.bats` (6 tests) exists solely to assert
+  this dead block's presence/shape, so it must be deleted (not just
+  updated) alongside the template edit, or `make ci` would keep passing
+  by testing dead code. **Scope:** delete the `registries:` block and its
+  preceding explanatory comment from `k3d-config.yaml.tftpl` (the
+  `%{ if disable_traefik || disable_default_cni ~}` conditional block below
+  it is unrelated and must stay); delete `tests/k3d-registry-mirror.bats`
+  entirely; check `tests/drift-detectors.bats`,
+  `tests/hook-scripts-coverage.bats`, and any "every scripts/lib/*.sh file is
+  referenced" / frozen-file-list guard for a now-dangling reference to the
+  deleted test file and update accordingly; re-run `make ci` to confirm
+  green. The Oracle backend (`infra/modules/oracle-k3s-cluster/`) has no
+  equivalent Harbor mirror config — verified via
+  `grep -rn "harbor" infra/modules/oracle-k3s-cluster/` (zero hits) — so this
+  is a local-backend-only fix, single file + single test file,
+  clusterless-deliverable, single-PR-sized.
+
 - [x] 🟢 **Fix stale `vault`/`external-secrets` (and other pre-2026-09-07-removal)
   namespace references in ADR-0016 and ADR-0017's per-namespace tables — both
   ADRs were left behind by ADR-0042 (#1510, Vault + External Secrets Operator
