@@ -281,7 +281,14 @@ You review and merge plan PRs, same as implementation PRs.
 > own scan heuristic (it matched the bare substring `docs/done/` in prose,
 > not just a real markdown link) — see
 > [docs/done/2026-09-08-roadmap-legacy-item-trim-batch7.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch7.md)
-> for what remains uncovered.
+> for what remains uncovered. **Batch 8** (same day, cycle 23) resolved
+> both of batch 7's deferred candidates — see
+> [docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md).
+
+- [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 8** — full
+  verification writeup:
+  [docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md).
+  (auto/roadmap-legacy-item-trim-batch8)
 
 - [x] 🟢 **ROADMAP.md legacy `[x]` item trim — batch 7** — full
   verification writeup:
@@ -1703,27 +1710,10 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-06-30-auto-platform-governance-appset.md](docs/done/2026-06-30-auto-platform-governance-appset.md).
   (auto/platform-governance-appset; PR #303)
 
-- [x] 🟢 **Namespace Resource Profiles — LimitRange defaults fan-out**
-  (CHARTER **Core Values** §"Fits the 16 GB reality", RFC #294 — architect
-  decision 2026-06-28; **prerequisite: `auto/platform-governance-appset` merges
-  first**). Extend `gitops/platform/governance-appset.yaml` list with all namespace
-  entries from the RFC #294 mapping table. Add
-  `gitops/governance/<namespace>/limitrange.yaml` for every `standard`-tier
-  namespace: `argocd`, `capstone`, `kyverno`, `external-secrets`, `velero`,
-  `argo-rollouts`, `trivy-system`, `moto`, `ack-system`, `kro`, `kargo`,
-  `lab-demo`, `data`, `storage`, `vault`, `lab-gateway`, `artifactory`, `kiali`.
-  Add `gitops/governance/observability/limitrange.yaml` with the `heavy` profile:
-  `default.cpu: "2000m"`, `default.memory: "2Gi"`; `defaultRequest.cpu: "100m"`,
-  `defaultRequest.memory: "128Mi"`; `max.cpu: "4000m"`, `max.memory: "8Gi"`.
-  Excluded namespaces (no LimitRange — document in PR body): `kube-system`,
-  `kube-public`, `kube-node-lease` (cluster-managed); `tidb`, `longhorn-system`,
-  `istio-system`, `inkless` (on-demand heavy — too variable for static defaults).
-  Extend `tests/governance.bats`: each namespace's `limitrange.yaml` exists; each
-  has `type: Container`; `defaultRequest.cpu: "50m"` present for standard-tier;
-  `default.memory: "2Gi"` present for `observability` (heavy tier). Update
-  `docs/dependency-tree.md` with a one-line note that all always-on namespaces
-  have LimitRange defaults. `make ci` must pass. `docs/done/` entry required.
-  Closes #294. (auto/namespace-resource-profiles)
+- [x] 🟢 **Namespace Resource Profiles — LimitRange defaults fan-out** — full
+  verification writeup:
+  [docs/done/2026-06-30-namespace-resource-profiles.md](docs/done/2026-06-30-namespace-resource-profiles.md).
+  (auto/namespace-resource-profiles; PR #304)
 
 - [x] 🟢 **Harbor on-demand Application + namespace + Envoy route** — full
   verification writeup:
@@ -1812,26 +1802,9 @@ there is no point where the lab loses a working git source or CI path.
   [docs/done/2026-07-29-harbor-capstone-rewire.md](docs/done/2026-07-29-harbor-capstone-rewire.md).
   (auto/harbor-capstone-rewire; PR #885)
 
-- [x] 🟢 **Decommission Artifactory manifests** (RFC #297 / ADR-0024 — architect
-  decision 2026-06-30; **maintainer-confirmation prerequisite: pick up ONLY
-  after `auto/harbor-capstone-rewire` merges AND the maintainer has confirmed the
-  Harbor footprint gate on #297; skip if not verifiable this run**). Remove
-  `gitops/platform/artifactory.yaml`, `gitops/platform/artifactory-extras.yaml`,
-  the entire `gitops/artifactory/` tree (namespace, route, networkpolicy), the
-  `make artifactory-up`/`artifactory-down` targets, the `artifactory-networkpolicy`
-  entry in `gitops/platform/networkpolicy-appset.yaml`, the `artifactory` row in
-  ADR-0017's profile table, the `artifactory` LimitRange entry in the governance
-  appset / `gitops/governance/`, the artifactory nodes/edges in
-  `docs/dependency-tree.md`, the now-superseded
-  `gitops/secrets/artifactory-registry-externalsecret.yaml`, and the artifactory
-  rows in README. Add a recurrence guard — extend `tests/harbor.bats` (or a
-  dedicated `tests/no-artifactory.bats`) asserting no `artifactory` ArgoCD
-  Application / route / make-target / appset entry remains (a
-  `grep -r artifactory gitops/ Makefile` guard allowing only historical
-  `docs/done/` + ADR-0011/0024 mentions). `make ci` must pass. `docs/done/` entry
-  required. **Closes #297** — the migration's final slice; close the issue once
-  this lands and the footprint gate is on record.
-  (auto/harbor-artifactory-decommission)
+- [x] 🟢 **Decommission Artifactory manifests** — full verification writeup:
+  [docs/done/2026-07-29-harbor-artifactory-decommission.md](docs/done/2026-07-29-harbor-artifactory-decommission.md).
+  Closed #297 (the migration's final slice). (auto/harbor-artifactory-decommission; PR #887)
 
 - [x] 🟢 **Harbor governance LimitRange** — full verification writeup:
   [docs/done/2026-07-03-auto-harbor-governance-limitrange.md](docs/done/2026-07-03-auto-harbor-governance-limitrange.md).
