@@ -108,7 +108,7 @@ so the executor never silently applies the wrong label.
 |-----------|-------------|--------|
 | `argocd` | `restricted` | ArgoCD components run as UID 1000 (non-root), `readOnlyRootFilesystem: true`, no capabilities. Phase 2 (RFC #205) adds `global.podSecurityContext` + `global.containerSecurityContext` to `infra/modules/argocd/values.yaml` and flips `enforce: restricted`. |
 | `lab-gateway` | `restricted` | Holds only the shared Traefik `TLSStore` CR (ADR-0040) — no pods run in this namespace at all (Traefik itself runs in `kube-system`, bundled with k3s), so `restricted` is a no-cost defense-in-depth floor for any future pod added here. |
-| `lab-demo` | `baseline` | The upstream `jaegertracing/example-hotrod` image runs as root (no `USER` instruction in the Dockerfile). `baseline` blocks privileged containers and host-namespace use while permitting the root UID. **Flip condition:** when the image ships a non-root UID — checked 2026-09-08 (against the pinned `2.20.0` tag), not yet met, see [§Re-evaluation log](#re-evaluation-log). Per ROADMAP `auto/pss-np-lab-demo`. |
+| `lab-demo` | `restricted` | Flipped from `baseline` 2026-09-08: the Deployment's image was swapped from the root-running `jaegertracing/example-hotrod` to `nginx-unprivileged` (non-root by default), meeting the flip condition. Full history: checked 2026-07-26 and 2026-09-08 (not yet met, against `main` then the pinned `2.20.0` tag) → this flip. See [§Re-evaluation log](#re-evaluation-log). Per ROADMAP `auto/lab-demo-hello-world-swap`. |
 | `cert-manager` | `restricted` | Controller, webhook, and cainjector all default to `runAsNonRoot: true` + `seccompProfile.type: RuntimeDefault` (pod) and `allowPrivilegeEscalation: false` + `capabilities.drop: [ALL]` + `readOnlyRootFilesystem: true` (container) with no chart override — the full `restricted` profile out of the box, verified against the pinned chart's `values.yaml`. Per ADR-0028. |
 | `kube-system` | unchanged | k3s-managed; out of scope. |
 
@@ -527,6 +527,40 @@ conclusion as 2026-07-26, now verified against the actual pinned ref rather
 than a floating branch.
 
 **Flip condition (unchanged).** When the image ships a non-root UID.
+
+### 2026-09-08 — `lab-demo` carve-out flipped to `restricted` (image swap)
+
+**Trigger.** `gitops/apps/demo/deployment.yaml` ran `jaegertracing/example-hotrod`
+purely as a "prove GitOps sync works" placeholder — its own distributed-tracing
+functionality had already been orphaned when the observability stack (its OTLP
+receiver) was removed 2026-09-06 (ADR-0041), and no Service/IngressRoute has
+ever existed to reach its web UI. `README.md`, `CHARTER.md`, `ROADMAP.md`'s own
+intro, `docs/00-architecture.md`, and `docs/dependency-tree.md` all already
+described `lab-demo` as "a single static hello-world Deployment" (phrasing
+introduced by the 2026-09-06/2026-09-07 simplification commit, `319d6b2`/#1497)
+— but the manifest itself was never actually swapped to match. Found via planner
+gap analysis (2026-09-08), ROADMAP `auto/lab-demo-hello-world-swap`.
+
+**Decision: swap the image, flip the carve-out.** Replaced the image with
+`nginxinc/nginx-unprivileged:1.31.5-alpine` (exact tag, no-floating-tag
+hardening, verified live via Docker Hub's tags API), which runs non-root by
+default — meeting the flip condition this row named since the pilot. Serves
+the previously-orphaned `lab-demo-hello` ConfigMap's own "Hello from
+GitOps..." message as a real static page (a new `index.html` key, real
+content, ADR-0004 — not fabricated). Added explicit pod/container
+`securityContext` fields (Layer 1: `runAsNonRoot: true`, `runAsUser`/
+`runAsGroup`/`fsGroup: 10001` per this ADR's per-workload default,
+`seccompProfile.type: RuntimeDefault`; `allowPrivilegeEscalation: false`,
+`capabilities.drop: [ALL]`, `readOnlyRootFilesystem: true`) plus `emptyDir`
+mounts at `/tmp` and `/var/cache/nginx` (nginx-unprivileged's own documented
+read-only-root-filesystem writable paths — verified against its README, not
+guessed) instead of relaxing `readOnlyRootFilesystem`, matching this ADR's
+own emptyDir-over-write-targets pattern. Flipped `gitops/apps/demo/
+namespace.yaml`'s four PSA labels `baseline` → `restricted` and updated the
+per-namespace table row above accordingly.
+
+**Flip condition.** None pending — closed, the carve-out itself is retired
+now that `lab-demo` is `restricted` like every other live namespace.
 
 ---
 
