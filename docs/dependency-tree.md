@@ -64,27 +64,28 @@ graph TD
 
 ## Day-0 bootstrap chain (`make up` — the only imperative steps)
 
-Everything below step 5 is reconciled by ArgoCD straight from GitHub (no
-self-hosted git source any more); steps 1–5 are the non-GitOps seam (you can't
+Everything below step 4 is reconciled by ArgoCD straight from GitHub (no
+self-hosted git source any more); steps 1–4 are the non-GitOps seam (you can't
 GitOps the GitOps engine into being).
 
 ```
 make up
 └─ 1 colima-up            Colima VM (Docker runtime)
    └─ 2 cluster-up            k3d cluster (bundled Flannel + kube-router)  [Terragrunt]
-      └─ 3 coredns-host-alias     host.k3d.internal -> docker gateway     [scripts/coredns-host-alias.sh]
-         └─ 4 argocd                 ArgoCD (GitOps engine)               [Terraform/Helm]
-            └─ 5 root-app               app-of-apps planted               [kubectl apply]
-               └─ 6 coredns-nip-io-rewrite  *.127.0.0.1.nip.io -> Traefik  [scripts/coredns-host-alias.sh]
+      └─ 3 argocd                 ArgoCD (GitOps engine)                  [Terraform/Helm]
+         └─ 4 root-app               app-of-apps planted                 [kubectl apply]
+            └─ 5 coredns-nip-io-rewrite  *.127.0.0.1.nip.io -> Traefik     [scripts/coredns-host-alias.sh]
 ```
 
-> **Step 3's continued necessity is unconfirmed.** `host.k3d.internal` was
-> originally load-bearing for ArgoCD's Forgejo repoURL; Forgejo is gone
-> (ADR-0035) and ArgoCD now syncs from a public GitHub `repoURL` instead. A
-> repo-wide grep finds zero remaining consumers, but removing this step is a
-> live-cluster-verified decision this remote executor can't make on its own
-> (it never runs `make up`) — tracked in
-> [#1517](https://github.com/tooming/k8s-anywhere/issues/1517).
+> **A `coredns-host-alias` step used to run here, between steps 2 and 3**,
+> teaching CoreDNS to resolve `host.k3d.internal` -> the docker host gateway
+> — load-bearing only for ArgoCD's old local-Forgejo `repoURL`. Forgejo was
+> removed (ADR-0035) and ArgoCD now syncs from a public GitHub `repoURL`
+> instead. Removed 2026-09-09 after live verification (issue #1517) that
+> `argocd`/`root-app` succeed against the GitHub `repoURL` without it — k3d
+> itself now also injects `host.k3d.internal` into CoreDNS natively on
+> cluster create, so even a future consumer wouldn't need this repo's help
+> for that hostname.
 
 > **No off-cluster services left.** Cilium, Garage (in-cluster + the off-cluster
 > tfstate backend), Forgejo, and the DR front door were each an off-cluster or

@@ -32,12 +32,18 @@ ArgoCD from GitHub.
 |---|------|---------------|-----------------|
 | 1 | Colima VM | `colima-up` | container runtime |
 | 2 | k3d cluster | `cluster-up` | the substrate — ships with Flannel (CNI) + kube-router (NetworkPolicy) bundled and enabled, no separate CNI install step |
-| 3 | CoreDNS host alias | `coredns-host-alias` | teaches CoreDNS to resolve `host.k3d.internal` (k3d 5.x on Colima omits this) — originally load-bearing for ArgoCD's Forgejo repoURL; Forgejo is gone (ADR-0035) and ArgoCD now syncs from a public GitHub `repoURL` instead, so this step's continued necessity is unconfirmed pending live verification ([#1517](https://github.com/tooming/k8s-anywhere/issues/1517)) |
-| 4 | ArgoCD | `argocd` | the GitOps engine — must exist before GitOps |
-| 5 | App-of-apps | `root-app` | the single seed; ArgoCD now syncs everything else, directly from this repo's public GitHub remote |
-| 6 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Traefik's in-cluster Service |
+| 3 | ArgoCD | `argocd` | the GitOps engine — must exist before GitOps |
+| 4 | App-of-apps | `root-app` | the single seed; ArgoCD now syncs everything else, directly from this repo's public GitHub remote |
+| 5 | CoreDNS nip.io rewrite | `coredns-nip-io-rewrite` | teaches CoreDNS to resolve every `*.127.0.0.1.nip.io` lab hostname to Traefik's in-cluster Service |
 
-Once step 5 is done, the remaining workloads (Traefik, cert-manager, lab-demo)
+(A step teaching CoreDNS to resolve `host.k3d.internal` used to run here, between
+steps 2 and 3 — load-bearing only for ArgoCD's old local-Forgejo `repoURL`. Removed
+2026-09-09 after live verification (issue #1517) that `argocd`/`root-app` succeed
+against the current public GitHub `repoURL` without it; k3d itself now also injects
+`host.k3d.internal` into CoreDNS natively on cluster create, so even a future
+consumer wouldn't need this repo's help for that hostname.)
+
+Once step 4 is done, the remaining workloads (Traefik, cert-manager, lab-demo)
 come up on their own — no secrets-bootstrap step left to run (Vault and External
 Secrets Operator were removed entirely 2026-09-07, ADR-0042, no replacement; no
 credential currently flowing through the lab needs an external secrets store).

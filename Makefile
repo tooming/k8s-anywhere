@@ -257,7 +257,6 @@ preflight: ## Check required CLI tools are installed
 up: ## Bootstrap the ENTIRE lab from scratch, in order (see docs/DR.md)
 	$(MAKE) colima-up
 	$(MAKE) cluster-up
-	$(MAKE) coredns-host-alias
 	$(MAKE) argocd
 	$(MAKE) root-app
 	$(MAKE) coredns-nip-io-rewrite
@@ -322,13 +321,9 @@ cluster-up: ## Create the k3d cluster
 cluster-down: ## Destroy the k3d cluster
 	cd $(LIVE)/cluster && terragrunt destroy -auto-approve
 
-.PHONY: coredns-host-alias
-coredns-host-alias: ## Teach CoreDNS to resolve host.k3d.internal -> docker gateway (k3d 5.x on Colima omits this)
-	@bash scripts/coredns-host-alias.sh host-alias
-
 .PHONY: coredns-nip-io-rewrite
 coredns-nip-io-rewrite: ## Teach CoreDNS to resolve *.127.0.0.1.nip.io -> Traefik's in-cluster Service (needed for in-cluster clients; issue #633/PR #1323)
-	@bash scripts/coredns-host-alias.sh nip-io-rewrite
+	@bash scripts/coredns-host-alias.sh
 
 ##@ Bootstrap (day-0, imperative seam)
 
