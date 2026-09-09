@@ -285,6 +285,12 @@ You review and merge plan PRs, same as implementation PRs.
 > both of batch 7's deferred candidates — see
 > [docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md).
 
+- [x] 🟢 **`docs/dependency-register.md`'s k3s and cert-manager rows'
+  "Last reviewed" dates re-confirmed against live upstream releases** —
+  full verification writeup:
+  [docs/done/2026-09-09-k3s-cert-manager-register-currency-refresh.md](docs/done/2026-09-09-k3s-cert-manager-register-currency-refresh.md).
+  (auto/k3s-cert-manager-register-currency-refresh)
+
 - [x] 🟢 **Add a `concurrency` group to `auto-update-prs.yml`** — found live
   2026-09-08 (cycle 25, continuing cycle 24's lens): this workflow fires on
   every push to `main`, and this repo's own self-merge routines push to
