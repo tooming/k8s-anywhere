@@ -57,4 +57,4 @@ entries, so the mechanical guard still passes) and its Scope-note arithmetic che
 
 ## PR
 
-auto/k3s-cert-manager-register-currency-refresh
+[#1540](https://github.com/tooming/k8s-anywhere/pull/1540)
