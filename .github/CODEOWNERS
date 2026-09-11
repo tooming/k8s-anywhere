@@ -18,10 +18,16 @@
 /infra/                    @tooming
 /gitops/bootstrap/         @tooming
 
-# Per-domain owners (assign as the team grows)
+# Per-domain owners (assign as the team grows) — mirrors docs/WAYS-OF-WORKING.md
+# §7's Ownership map. Updated 2026-09-11: the prior template's /gitops/vault/,
+# /gitops/secrets/, /gitops/storage/, and /gitops/data/ lines named directories
+# that no longer exist (Vault/External Secrets Operator removed 2026-09-07,
+# ADR-0042; Garage/s3manager removed 2026-09-07, ADR-0002/ADR-0007/ADR-0039;
+# RabbitMQ/Valkey removed 2026-09-06, ADR-0009/ADR-0018) — replaced with every
+# current top-level gitops/ directory not already covered above.
 # /gitops/network/         @network-owners
-# /gitops/vault/           @secrets-owners
-# /gitops/secrets/         @secrets-owners
-# /gitops/storage/         @storage-owners
-# /gitops/data/            @storage-owners
+# /gitops/traefik-config/  @network-owners
 # /gitops/apps/            @app-owners
+# /gitops/argocd/          @platform-owners
+# /gitops/cert-manager/    @platform-owners
+# /gitops/governance/      @platform-owners
