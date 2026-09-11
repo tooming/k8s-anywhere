@@ -52,8 +52,11 @@ rules below are binding.
      real, auto-discovered state. Never placeholder, mock, or invented data.
    - **ADR-0005** On a single host, recreate-from-code over true HA.
 4. **Respect the 12 GB budget — heavy components must NOT be auto-synced.** The
-   always-on stack already fills ~7 GB of the 12 GB VM. Add each heavy/on-demand
-   component as code that the user brings up *manually*:
+   always-on stack's baseline was last measured at ~7 GB of the 12 GB VM
+   pre-2026-09-06/07-simplification (Harbor, Kargo, TiDB, Istio+Kiali, and Longhorn
+   all removed since, no replacement) and hasn't been remeasured at the current,
+   much smaller scope — don't repeat the stale figure as current (ADR-0004). Add
+   each heavy/on-demand component as code that the user brings up *manually*:
    - manifests under `gitops/<area>/…`;
    - an ArgoCD `Application` that is **not** registered for automated sync in
      `gitops/bootstrap/root-app.yaml` — either leave it out of the app-of-apps, or
