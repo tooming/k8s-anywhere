@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Guards docs/00-architecture.md's documented resource ceiling: "A 12 GB Colima VM
-# holds the always-on stack at ~7 GB." Nothing enforced that until this script was
-# added (2026-08-05 incident): a chain of live-debugging sessions each ran
+# Guards ROADMAP.md rule #4's documented resource ceiling: a 12 GB Colima VM,
+# always-on baseline last measured at ~7 GB pre-2026-09-06/07-simplification and
+# not remeasured since at the current, much smaller scope (docs/00-architecture.md
+# used to state this same figure before its own 2026-09-07 rewrite dropped it).
+# Nothing enforced the ceiling until this script was added (2026-08-05 incident):
+# a chain of live-debugging sessions each ran
 # a `make <name>-up` and never the matching `-down`, so Harbor, Istio, Kiali,
 # Longhorn, Kargo, and TiDB ended up running SIMULTANEOUSLY — plus a fully orphaned
 # `artifactory` namespace with no owning ArgoCD Application at all, left over from
@@ -136,8 +139,10 @@ for ns in $ONDEMAND_NS; do
   [ "$is_owned" -eq 0 ] && ORPHANS+=("$ns ($pods pods)")
 done
 
-echo "On-demand resource budget (docs/00-architecture.md: 12 GB VM, ~7 GB always-on baseline,"
-echo "each heavy unit adds 1-4 GB — the doc's own tolerance is ONE unit up at a time):"
+echo "On-demand resource budget (12 GB VM; the always-on baseline was last measured"
+echo "at ~7 GB pre-2026-09-06/07-simplification and hasn't been remeasured at the"
+echo "current, much smaller scope — ROADMAP.md rule #4; each heavy unit adds 1-4 GB,"
+echo "tolerance is ONE unit up at a time):"
 echo
 if [ "${#UP_UNITS[@]}" -eq 0 ]; then
   ok "no on-demand units currently up"
