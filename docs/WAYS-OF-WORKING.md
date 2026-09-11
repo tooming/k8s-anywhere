@@ -194,19 +194,28 @@ _Process:_
   the same executor prompt, which escalates through the in-repo fallback chain (§1,
   `executor.prompt.md` STEP 6b) whenever its own ROADMAP lane is empty — so every one of
   this trigger's daily slots stays productive without a second trigger or a per-day
-  rotation to keep in sync by hand. **2026-08-18: this trigger dropped from 5→4 runs/day**
-  to free one account-wide slot for a new PR-only executor trigger on
-  [`toomingsolutions/easysportstream`](https://github.com/toomingsolutions/easysportstream) (see that repo's
-  `routines/routines.yaml` and `docs/AGENT_WAYS_OF_WORKING.md` §5 for the other half of this
-  split). **2026-08-25: dropped again, 4→3 runs/day**, at the maintainer's explicit request,
-  to free a second account-wide slot for a new executor trigger on
-  [`tooming/keebridge`](https://github.com/tooming/keebridge) (see that repo's own
-  `routines/routines.yaml` for the other half of this split) — the account-wide
-  5-runs/rolling-24h total is unchanged across both drops, just redistributed across three
-  repos now. No headroom beyond that combined total — adding any further routine trigger or
-  raising any repo's cadence requires enabling the paid "additional runs" toggle. (The local
-  verifier and operator are invoked by hand on the maintainer's machine; they have no cron
-  and no quota cost.)
+  rotation to keep in sync by hand. This trigger's own cadence has been handed off in four
+  successive cuts, each freeing one account-wide slot for a new sibling-repo executor
+  trigger at the maintainer's explicit request, while the account-wide 5-runs/rolling-24h
+  total stayed fixed throughout — only the distribution across repos changed:
+  **2026-08-18: 5→4 runs/day**, freeing the 19:00 UTC slot for a new PR-only executor
+  trigger on [`toomingsolutions/easysportstream`](https://github.com/toomingsolutions/easysportstream)
+  (see that repo's `routines/routines.yaml` and `docs/AGENT_WAYS_OF_WORKING.md` §5 for the
+  other half of this split — no self-merge there, since its `main` deploys to production
+  instantly with no rollback). **2026-08-25: 4→3 runs/day**, freeing the 10:00 UTC slot for
+  a new executor trigger on [`tooming/keebridge`](https://github.com/tooming/keebridge).
+  **2026-08-25 (same day, second cut): 3→2 runs/day**, freeing the 14:00 UTC slot for a new
+  `easysportstream`/`skoor-ai` executor trigger. **2026-08-25 (same day, third cut): 2→1
+  run/day**, freeing the 05:00 UTC slot for a new
+  [`toomingsolutions/appforge-ci`](https://github.com/toomingsolutions/appforge-ci) executor
+  trigger — see each sibling repo's own `routines/routines.yaml` for its half of the
+  respective split. This trigger now runs exactly once/day (`routines.yaml`'s `cron: "0 0
+  * * *"`, 00:00 UTC); the account-wide total is still exactly 5 fixed fire-times/rolling-24h,
+  now split k8s-anywhere 1 + easysportstream 1 + keebridge 1 + skoor-ai 1 + appforge-ci 1.
+  No headroom beyond that combined total — adding any further routine trigger or raising any
+  repo's cadence requires enabling the paid "additional runs" toggle. (The local verifier and
+  operator are invoked by hand on the maintainer's machine; they have no cron and no quota
+  cost.)
 - **Spread-across-the-day schedule + rolling-24h credit safety.** This trigger's daily runs
   fire at fixed clock-times (see `routines.yaml`'s `cron` for the exact current values,
   evenly spaced across the full day rather than clustered in one nightly window). The times
