@@ -209,7 +209,8 @@ ADR-0038. All four domains removed with no replacement.)
 1. **Publish the catalog** (this doc) — name the products and their contracts so teams
    know what they can self-serve.
 2. **Standardize the contract surface** — every product is a k8s CRD/resource consumed
-   via git PR (already true for CD, Secrets, Ingress).
+   via git PR (already true for CD, Ingress — Secrets was a third example here until
+   it was retired 2026-09-07, ADR-0042, see the domain note above).
 3. **Climb the maturity ladder** — the KRO-RGD claim-based pattern this step used to
    point toward next was removed 2026-09-07 with no replacement (ADR-0038) — a future
    claims-based effort would need to pick its own tooling from scratch, same as the
