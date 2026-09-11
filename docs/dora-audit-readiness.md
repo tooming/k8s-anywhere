@@ -236,20 +236,27 @@ test change was needed when Cilium's row changed, only this prose description.)
   run; they're just not on a calendar.
 
 **Q12. Is there an adversarial/penetration-style test (DORA's TLPT concept)?**
-- **Answer:** No, not any more. The three scoped fault-injection drills this lab used
-  to run (`dr-chaos` — pod kill against capstone; `dr-network-partition` — NetworkPolicy
-  deletion against capstone; `dr-garage-failure` — pod kill against Garage) each
-  targeted a component removed entirely 2026-09-07 (capstone, Garage) and were
-  deleted in the same change, with no replacement drill written against any
-  currently-live component. This is an honest regression from a prior, narrower
-  version of this answer, not a silent gap — said plainly per ADR-0004 rather than
-  restating the removed drills as if they still existed.
-- **Evidence:** [ADR-0021](decisions/adr-0021-velero-backup-restore.md),
-  [ADR-0024](decisions/adr-0024-harbor-not-artifactory.md) Status sections (component
-  removals that took the drills with them).
-- **Gap:** real. A future session could write a new fault-injection drill against one
-  of the four remaining always-on components (e.g. kill the single-replica ArgoCD
-  pod and assert Kubernetes' own self-heal) — nothing like that exists today.
+- **Answer:** Not a TLPT-style adversarial/penetration test — this lab makes no such
+  claim (see CHARTER.md's Goals section: the DORA framing here is explicitly
+  educational, never a regulatory compliance claim). One narrow fault-injection
+  drill does exist against a currently-live always-on component, added 2026-09-11
+  (`make dr-chaos-argocd`, [docs/DR.md](DR.md)): it kills the live
+  `argocd-application-controller` pod and asserts Kubernetes' own StatefulSet
+  controller recreates and re-readies it, and that every ArgoCD `Application`
+  returns to `Synced`+`Healthy`, within a bounded timeout. This replaces, narrowly,
+  the three scoped drills this lab used to run (`dr-chaos` — pod kill against
+  capstone; `dr-network-partition` — NetworkPolicy deletion against capstone;
+  `dr-garage-failure` — pod kill against Garage), each of which targeted a
+  component removed entirely 2026-09-07 (capstone, Garage) and was deleted in the
+  same change with no replacement written until now.
+- **Evidence:** `scripts/dr-chaos-argocd.sh`, `make dr-chaos-argocd`,
+  [ADR-0021](decisions/adr-0021-velero-backup-restore.md),
+  [ADR-0024](decisions/adr-0024-harbor-not-artifactory.md) Status sections (the
+  original component removals that took the prior three drills with them).
+- **Gap:** narrowed, not closed. One drill exists against one component
+  (ArgoCD's application-controller); the other three always-on components
+  (cert-manager, Traefik, lab-demo) have no equivalent drill yet, and nothing here
+  resembles a genuine adversarial/penetration test.
 
 **Q13. Are test results tracked with remediation deadlines?**
 - **Answer:** No mechanism exists any more. `docs/dr-results-log.md` and

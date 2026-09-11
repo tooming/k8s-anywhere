@@ -285,7 +285,7 @@ You review and merge plan PRs, same as implementation PRs.
 > both of batch 7's deferred candidates — see
 > [docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md).
 
-- [ ] 🟢 **Write a fault-injection drill against a currently-live always-on
+- [x] 🟢 **Write a fault-injection drill against a currently-live always-on
   component** — found live 2026-09-11 (planner gap analysis, cycle 4 of this
   run, re-reading `docs/dora-audit-readiness.md` against the current
   4-namespace repo state): Q12 ("Is there an adversarial/penetration-style
@@ -329,6 +329,9 @@ You review and merge plan PRs, same as implementation PRs.
   this lab cannot honestly make" — Q12's updated answer must preserve that
   framing, not overclaim). Split-if-oversized note: none expected — this is
   one small script + doc/test updates, well under the ~400-line PR guidance.
+  Full verification writeup:
+  [docs/done/2026-09-11-dr-chaos-argocd.md](docs/done/2026-09-11-dr-chaos-argocd.md).
+  (auto/dr-chaos-argocd)
 
 - [x] 🟢 **`docs/dependency-register.md`'s k3s and cert-manager rows'
   "Last reviewed" dates re-confirmed against live upstream releases** —

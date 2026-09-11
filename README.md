@@ -81,14 +81,18 @@ more (hostnames resolve to 127.0.0.1 via `nip.io` — no `/etc/hosts` edits):
 
 ## Disaster recovery
 
-The lab is **recreate-from-code**. There is no automated backup/restore, fault-injection,
-or blue/green drill left (all removed entirely 2026-09-07, no replacement, along with
-the components they exercised) — the only recovery mechanism is a full rebuild from git:
+The lab is **recreate-from-code**. There is no automated backup/restore or
+blue/green drill left (removed entirely 2026-09-07, no replacement, along with the
+components they exercised) — full rebuild from git is the primary recovery
+mechanism. One narrow fault-injection drill exists against a currently-live
+component (added back 2026-09-11, closing a gap `docs/dora-audit-readiness.md`'s
+Q12 named):
 
 | Command | What it does |
 |---------|--------------|
 | `make dr-verify` | Real end-to-end health check: nodes, every ArgoCD app Synced+Healthy. Safe anytime. |
 | `make dr-test` | Full DR drill: **destroy** the lab → `make up` → verify. `SCOPE=cluster\|machine`. |
+| `make dr-chaos-argocd` | Fault-injection drill: kill `argocd-application-controller`, assert Kubernetes self-heals it. |
 
 See [docs/DR.md](docs/DR.md) and [ADR-0005](docs/decisions/adr-0005-spof-recreate-over-ha.md)
 (why true HA isn't possible on a single host, and what the lab does instead).

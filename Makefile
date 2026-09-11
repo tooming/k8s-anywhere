@@ -383,6 +383,10 @@ dr-verify: ## Assert the lab is healthy end-to-end (real checks, no rebuild)
 dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=cluster|machine
 	bash scripts/dr-destroy.sh $(SCOPE)
 
+.PHONY: dr-chaos-argocd
+dr-chaos-argocd: ## Fault-injection drill: kill argocd-application-controller, assert Kubernetes self-heals it (live cluster only)
+	bash scripts/dr-chaos-argocd.sh
+
 ##@ Metrics (on-demand, clusterless)
 
 .PHONY: dora-metrics
