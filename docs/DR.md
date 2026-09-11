@@ -5,7 +5,7 @@ repo (manifests, Terraform, scripts); secrets are *generated* during bootstrap.
 To rebuild the whole thing on a clean machine: `make up`.
 
 ```sh
-make preflight   # check tools (brew install: colima k3d helm terragrunt kustomize argocd yq jq mkcert)
+make preflight   # check tools (brew install: colima docker k3d kubectl helm terraform terragrunt kustomize argocd yq jq mkcert)
 make up          # bootstrap everything, in order
 make status      # VM RAM + per-namespace usage + unhealthy pods
 ```

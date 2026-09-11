@@ -39,6 +39,23 @@ if [ -n "$readme_tools" ]; then
   done
 fi
 
+# --- 2b. docs/DR.md's own copy of the preflight tool list must match too ---
+# Found live 2026-09-11: this second copy of the same data (a `# check tools
+# (brew install: ...)` comment on DR.md's `make preflight` line) had silently
+# drifted — missing docker/kubectl/terraform — because section 2 above only
+# ever checked README.md's own brew-install line, never this one. Same drift
+# class, a second copy nothing was watching.
+DR="$ROOT/docs/DR.md"
+if [ -f "$DR" ]; then
+  dr_line="$(grep -m1 'brew install:' "$DR" || true)"
+  if [ -n "$dr_line" ]; then
+    dr_tools="$(sed -E 's/.*brew install:[[:space:]]*//; s/\).*$//' <<<"$dr_line" | tr ' ' '\n' | grep -v '^$' | sort -u)"
+    for t in $mk_tools; do
+      grep -qx "$t" <<<"$dr_tools" || bad "tool '$t' is in REQUIRED_TOOLS but missing from docs/DR.md's preflight tool-list"
+    done
+  fi
+fi
+
 # --- 3. (hint, non-failing) gitops/platform components not named in the README ---
 # Skip infra/glue apps; match on alphanumerics-only (so "cert-manager" matches
 # "cert-manager", "external-secrets" matches "External Secrets", etc).
