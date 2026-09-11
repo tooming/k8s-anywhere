@@ -86,7 +86,15 @@ inventing a new scheme: **always-on-core** (part of the always-on base stack),
 (manual `make <name>-up`/`-down`, never auto-synced), or **cloud-backend (opt-in)**
 (ADR-0027's alternate Oracle Cloud infra path — not part of the localhost budget
 tiers at all, since it's an operator-chosen alternative to the default backend, not
-a component running alongside it).
+a component running alongside it). Found stale 2026-09-11 (same sweep that fixed
+`docs/dora-audit-readiness.md` Q5's dangling O3 reference): **always-on-next-wave**
+and **heavy-on-demand** currently label zero rows below — O1 (the four next-wave
+components: Kyverno, Argo Rollouts, Velero, Trivy Operator) was retired 2026-09-07
+alongside Harbor and Kargo (the only two heavy-on-demand components this lab ever
+ran); every row below now carries **always-on-core**, **cloud-backend (opt-in)**,
+or (Cilium's row only) its own **removed** status. Both unused tier names are kept,
+not deleted, in case a future CHARTER edit reintroduces either shape — this is a
+plain statement of current fact (ADR-0004), not a claim that a row uses them today.
 
 **Last reviewed** is the most recent dated entry in the ADR's own "Re-evaluation log"
 section where one exists; where an ADR has no such section *and* states no explicit
