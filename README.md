@@ -117,7 +117,8 @@ them and enforces every gate.
 
 - `infra/` — Terraform modules + Terragrunt live config (the day-0 bootstrap)
 - `gitops/` — what ArgoCD syncs: `bootstrap/` (root app-of-apps) → `platform/` (one
-  `Application` per component) → `network/ apps/`
+  `Application` per component) → the manifests each Application points at:
+  `argocd/ cert-manager/ governance/ network/ apps/ traefik-config/`
 - `scripts/` — bootstrap + quality-gate scripts (`lint.sh`, `validate-*.sh`, `test.sh`)
 - `tests/` — `bats` unit tests + fixtures · `.github/workflows/ci.yml` — the clusterless CI gates · `docs/` — architecture, DR, decisions, dependency tree
 
