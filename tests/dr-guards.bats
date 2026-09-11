@@ -31,3 +31,15 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   [ "$status" -eq 1 ]
   [[ "$output" == *"Refusing non-interactively"* ]]
 }
+
+@test "dr-chaos-argocd.sh: refuses non-interactively without DR_ASSUME_YES" {
+  run env -u DR_ASSUME_YES bash "$REPO/scripts/dr-chaos-argocd.sh" </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Refusing non-interactively"* ]]
+}
+
+@test "dr-chaos-argocd.sh: with DR_ASSUME_YES, fails gracefully (no live cluster here) before deleting anything" {
+  run env DR_ASSUME_YES=1 bash "$REPO/scripts/dr-chaos-argocd.sh" </dev/null
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"no live argocd-application-controller pod found"* ]]
+}

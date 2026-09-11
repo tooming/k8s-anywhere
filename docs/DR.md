@@ -14,13 +14,17 @@ make status      # VM RAM + per-namespace usage + unhealthy pods
 simplification the same day: Velero (backup/restore), Garage (its S3 target), the
 DR front door, capstone, and the chaos/network-partition/storage-failure/blue-green
 drills that all depended on them were removed entirely, no replacement. There is
-**no automated backup/restore, no fault-injection drill, and no zero-downtime
-cutover drill left in this lab** — full-cluster-recreate-from-git (`make down &&
-make up`) is the only recovery mechanism that remains. This is a plain statement of
-current fact (ADR-0004), not a gap to silently paper over: the maintainer's
-explicit direction this session was aggressive simplification, and a lab this small
-has no stateful data left worth a dedicated backup mechanism (see each removed
-component's own ADR Status for the reasoning).
+**no automated backup/restore and no zero-downtime cutover drill left in this
+lab** — full-cluster-recreate-from-git (`make down && make up`) is the primary
+recovery mechanism. This is a plain statement of current fact (ADR-0004), not a gap
+to silently paper over: the maintainer's explicit direction this session was
+aggressive simplification, and a lab this small has no stateful data left worth a
+dedicated backup mechanism (see each removed component's own ADR Status for the
+reasoning). One narrow fault-injection drill was added back 2026-09-11
+(`make dr-chaos-argocd`, below) against a currently-live always-on component — it
+is not a general replacement for the removed drills, and not an adversarial/
+penetration-style test (DORA's TLPT concept, see `docs/dora-audit-readiness.md`
+Q12).
 
 ## What `make up` does, and why
 
@@ -92,6 +96,32 @@ nor rebuilds), so it collapsed into `cluster` and was dropped.
 `dr-verify` checks (all live, no placeholders — see ADR-0004): nodes `Ready`,
 every ArgoCD `Application` `Synced`+`Healthy`. Each check polls until satisfied or
 its budget expires; exit 0 only if all pass.
+
+## `make dr-chaos-argocd` — fault-injection drill
+
+```sh
+make dr-chaos-argocd   # kills the live argocd-application-controller pod, asserts self-heal
+```
+
+Closes the real gap `docs/dora-audit-readiness.md`'s Q12 named verbatim: the three
+fault-injection drills this lab used to run (`dr-chaos`, `dr-network-partition`,
+`dr-garage-failure`) each targeted a component removed entirely 2026-09-07
+(capstone, Garage) and were deleted with no replacement written against any
+currently-live component. This is that replacement, narrowly scoped to one
+concrete instance: it deletes the live `argocd-application-controller` pod (same
+type-to-confirm gate as `dr-test`/`dr-destroy` — `DR_ASSUME_YES=1` bypasses it for
+scripted use), then polls for Kubernetes' own StatefulSet controller to recreate
+and re-ready a new pod (a different UID), then polls for every ArgoCD `Application`
+to return to `Synced`+`Healthy` (the same predicate `dr-verify` uses). Exit 0 only
+if both recover within budget (`DR_T_POD`/`DR_T_ARGO` seconds, defaults 120/300).
+
+**Honest scope.** This is one narrow instance against one always-on, single-replica
+component — not a general chaos-engineering harness, not an adversarial/
+penetration-style test (DORA's TLPT concept), and not a claim of regulatory
+compliance (see CHARTER.md's Goals section on this lab's educational-only DORA
+framing). Requires a live cluster — never runs in CI; `make ci` only lints this
+script and exercises its non-destructive confirmation-guard path
+(`tests/dr-guards.bats`).
 
 ## Single points of failure (and why true HA isn't possible here)
 
