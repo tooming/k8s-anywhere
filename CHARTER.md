@@ -125,8 +125,9 @@ are reviewed (and slipped, advanced, or retired) at each CHARTER edit.
   (ADR-0017), or has an ADR-cited carve-out in ADR-0017's per-namespace profile table.
   Enforcement moved from Cilium to k3s's bundled Flannel + kube-router 2026-09-07
   (ADR-0014's Status) — the bar itself (every namespace covered) is unchanged.
-  *Measured by:* `tests/networkpolicy.bats` + `tests/securitycontext.bats` cover every
-  namespace in `gitops/`.
+  *Measured by:* `tests/networkpolicy-*.bats` + `tests/securitycontext-*.bats` (one file
+  per namespace, plus the shared-baseline `tests/networkpolicy.bats` and the frozen
+  `tests/securitycontext.bats`) cover every namespace in `gitops/`.
 - **O3 — Retired 2026-09-07.** Was "Stateful DR is exercised" — Velero, the
   mechanism this objective measured, was removed entirely, no replacement, the
   same day as its S3 backend (Garage). This lab has no stateful application data
