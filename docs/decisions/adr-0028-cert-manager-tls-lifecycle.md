@@ -255,6 +255,40 @@ published advisories are accounted for and the pin is past every floor.
 cert-manager security advisory names a version at or above `1.21.1` as
 affected.
 
+### 2026-09-11 — bumped `1.21.1` → `1.21.2`
+
+**Trigger.** This entry's own flip condition fired: `v1.21.2` was published
+2026-09-11 (confirmed directly via `releases.atom` — `updated:
+2026-09-11T07:51:11Z`; `v1.21.1`, `v1.21.0` are the two prior entries in the
+same feed, confirming `1.21.2` is the newest tag on the `1.21.x` line, no
+minor/major jump).
+
+**Verified directly (not assumed, ADR-0004):** GitHub's release notes for
+`v1.21.2` list, among other bug fixes, two security-relevant ones: ACME
+Issuer response bodies are no longer reflected into `Issuer`/Vault-Issuer
+status conditions and Events (only the bounded ACME problem document
+surfaces now) — an information-disclosure hardening fix — and ACME server
+response bodies are now capped at 16 MiB, closing an unbounded-memory DoS
+vector. A validating-webhook panic on `AdmissionReview` requests that omit
+optional fields is also fixed. The release also carries a Go toolchain bump
+(1.26.6/1.26.8) and dependency bumps (`google.golang.org/grpc` → `v1.83.2`,
+`golang.org/x/crypto` → `v0.56.0`).
+
+**Decision: bump `cert-manager` chart `1.21.1` → `1.21.2`** (the newest
+`1.21.x` patch, smallest safe delta carrying the fixes above).
+`gitops/platform/cert-manager.yaml`'s `targetRevision` updated;
+`tests/cert-manager.bats` updated to assert `1.21.2` present.
+
+**ADR-0004 caveat.** This remote, clusterless session verified the release
+notes and feed-date facts directly, but cannot verify cert-manager issues
+and renews certificates cleanly post-bump on a live cluster. Rollback is a
+one-line revert of `targetRevision`; ArgoCD reconciles the change on its
+next sync.
+
+**Flip condition (next re-evaluation).** Revisit when a cert-manager
+security advisory names a version at or above `1.21.2` as affected, or
+when the next scheduled currency sweep finds a newer `1.21.x` patch.
+
 ---
 
 ## Files this work will touch
