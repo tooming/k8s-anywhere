@@ -43,8 +43,8 @@ setup() {
   ! grep -q 'kustomize%2Fv5.4.3' "$CI_YML"
 }
 
-@test "terraform is pinned to 1.16.1 via hashicorp/setup-terraform (JANITOR-fallback currency sweep, 2026-09-06)" {
-  grep -q 'terraform_version: "1.16.1"' "$CI_YML"
+@test "terraform is pinned to 1.16.2 via hashicorp/setup-terraform (upgrade-drafter fallback, 2026-09-11)" {
+  grep -q 'terraform_version: "1.16.2"' "$CI_YML"
 }
 
 @test "no workflow references the pre-bump terraform 1.9.8 pin" {
@@ -59,6 +59,10 @@ setup() {
   ! grep -rq 'terraform_version: "1.15.9"' "$WORKFLOWS"/*.yml
 }
 
+@test "no workflow references the pre-bump terraform 1.16.1 pin" {
+  ! grep -rq 'terraform_version: "1.16.1"' "$WORKFLOWS"/*.yml
+}
+
 @test "every infra/ terraform module's required_version floor still admits the pinned CI terraform version" {
   # required_version is a ">= X.Y" floor (never an exact pin), so a CI terraform
   # bump only needs to stay >= that floor, not match it exactly.
@@ -69,9 +73,9 @@ setup() {
 
 # --- oracle-cluster-apply.yml / oracle-cluster-apply-retry.yml tool pins ------
 
-@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terraform_version 1.16.1 (2026-09-06, in sync with ci.yml)" {
-  grep -q 'terraform_version: "1.16.1"' "$ORACLE_APPLY"
-  grep -q 'terraform_version: "1.16.1"' "$ORACLE_RETRY"
+@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terraform_version 1.16.2 (2026-09-11, in sync with ci.yml)" {
+  grep -q 'terraform_version: "1.16.2"' "$ORACLE_APPLY"
+  grep -q 'terraform_version: "1.16.2"' "$ORACLE_RETRY"
 }
 
 @test "no workflow references the pre-bump terragrunt v1.1.3 pin" {

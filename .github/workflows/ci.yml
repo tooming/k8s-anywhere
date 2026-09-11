@@ -113,7 +113,13 @@ jobs:
           # infra/ module: none use bastion_host/SSH connection blocks, only
           # local-exec provisioners, so it's a no-op here. Keep in sync with
           # oracle-cluster-apply.yml / oracle-cluster-apply-retry.yml.
-          terraform_version: "1.16.1"
+          # Bumped 1.16.1 -> 1.16.2 (2026-09-11, upgrade-drafter fallback):
+          # single upstream bug fix, "Fix panic in module installation when
+          # encountering invalid module calls" (hashicorp/terraform#39129) --
+          # no CVE, no breaking change, verified directly against the release's
+          # own notes. Keep in sync with oracle-cluster-apply.yml /
+          # oracle-cluster-apply-retry.yml.
+          terraform_version: "1.16.2"
       - name: Install tflint
         run: curl -fsSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
       - run: bash scripts/validate-terraform.sh

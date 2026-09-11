@@ -80,7 +80,10 @@ jobs:
           # Bumped 1.15.9 -> 1.16.1 (2026-09-06, JANITOR-fallback currency
           # sweep): routine currency, no CVE -- matches ci.yml's own same-day
           # bump, keeping this file's stated keep-in-sync intent true.
-          terraform_version: "1.16.1"
+          # Bumped 1.16.1 -> 1.16.2 (2026-09-11, upgrade-drafter fallback):
+          # single upstream bug fix (module-installation panic), no CVE --
+          # matches ci.yml's own same-day bump.
+          terraform_version: "1.16.2"
           terraform_wrapper: false
 
       - name: Install terragrunt
