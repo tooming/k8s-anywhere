@@ -44,7 +44,7 @@ credentials or Vault's unseal key (ADR-0001 corollary).
   ConfigMaps, and the `observability-dashboards` ArgoCD Application. **Community
   dashboards (gnetId) are unaffected** — separate provider.
 
-**Status.** **Adopted.** Implemented + verified live at `13.0.1`: Grafana synced the
+~~**Status.** **Adopted.** Implemented + verified live at `13.0.1`: Grafana synced the
 lab dashboards (`grafana/dashboards/` in the repo) from GitLab over the TLS proxy; the
 k8s-sidecar, dashboard ConfigMaps, and the `observability-dashboards` app are removed.
 The pin is now `13.0.3` (2026-07-19, CVE bump — see §Re-evaluation log); the
@@ -55,7 +55,7 @@ the sync flow at `13.0.3` on a real cluster is still pending the maintainer's ne
 The Repository connection is bootstrapped imperatively (`scripts/grafana-gitsync-bootstrap.sh`),
 the TLS proxy + CA via `scripts/gitlab-tls-bootstrap.sh`. Community (gnetId) dashboards
 are unaffected. Both bootstraps are wired into `make up` (`Makefile`'s `up` target calls
-`gitlab-tls-bootstrap` then `grafana-gitsync-bootstrap`).
+`gitlab-tls-bootstrap` then `grafana-gitsync-bootstrap`).~~
 
 ## Re-evaluation log
 
