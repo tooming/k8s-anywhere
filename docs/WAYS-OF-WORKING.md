@@ -298,9 +298,21 @@ Each domain has an owning person/team, encoded in [`.github/CODEOWNERS`](../.git
 | Domain | Paths | Owner |
 |---|---|---|
 | Bootstrap / IaC | `infra/`, `gitops/bootstrap/`, `gitops/platform/` | @tbd |
-| Network / ingress | `gitops/network/` | @tbd |
-| Storage / data | `gitops/storage/`, `gitops/data/` | @tbd |
+| Network / ingress | `gitops/network/`, `gitops/traefik-config/` | @tbd |
+| Platform core | `gitops/argocd/`, `gitops/cert-manager/`, `gitops/governance/` | @tbd |
 | Apps / demo | `gitops/apps/` | @tbd |
+
+Found stale 2026-09-11 (janitor-lens sweep, same run that also fixed
+`.github/CODEOWNERS`'s matching stale template): this table's prior **Storage /
+data** row (`gitops/storage/`, `gitops/data/`) named two directories that no
+longer exist — `gitops/storage/` (Garage + s3manager) was removed 2026-09-07,
+`gitops/data/` (RabbitMQ + Valkey) was removed 2026-09-06, neither with a
+replacement. Replaced with a **Platform core** row covering the three top-level
+`gitops/` directories this table never accounted for (`argocd/`, `cert-manager/`,
+`governance/`) and folded `gitops/traefik-config/` into **Network / ingress**
+(Traefik is this lab's ingress technology, ADR-0040) — the table now matches
+every current top-level `gitops/` directory (verified directly:
+`find gitops -maxdepth 1 -type d`).
 
 As the team grows, give each domain its **own executor routine** scoped to that path (own
 branch prefix), so agents work in parallel without colliding and PRs route to the right
