@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Shared PostToolUse-hook implementation for the repo's "frozen monolith" test
 # checks (securitycontext, drift-detectors, hook-scripts-coverage) — sourced,
 # not executed. Companion to frozen-monolith-check.sh's CI-side dedup; same

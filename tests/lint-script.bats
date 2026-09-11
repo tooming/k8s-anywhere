@@ -75,8 +75,24 @@ setup() {
 }
 
 @test "lint.sh runs shellcheck over every scripts/*.sh file" {
-  run grep -q 'shellcheck -S "\$SHELLCHECK_SEVERITY" scripts/\*\.sh' "$LINT"
+  run grep -q 'shellcheck -S "\$SHELLCHECK_SEVERITY" scripts/\*\.sh scripts/lib/\*\.sh' "$LINT"
   [ "$status" -eq 0 ]
+}
+
+@test "lint.sh also runs shellcheck over scripts/lib/*.sh (sourced helpers, not just top-level scripts)" {
+  # Regression guard: scripts/lib/*.sh was excluded from the shellcheck glob
+  # entirely until 2026-09-11, so 8 of 9 lib files had gone unchecked and
+  # accumulated a missing shebang/shell directive (SC2148, error severity) --
+  # `make lint` stayed green the whole time because it never looked at them.
+  run grep -q 'scripts/lib/\*\.sh' "$LINT"
+  [ "$status" -eq 0 ]
+}
+
+@test "every scripts/lib/*.sh file has a shebang or shellcheck shell directive (SC2148 guard)" {
+  for f in "$REPO"/scripts/lib/*.sh; do
+    head -1 "$f" | grep -qE '^#!(/usr/bin/env bash|/bin/bash)|^# shellcheck shell=' \
+      || { echo "missing shebang/shell directive: $f"; return 1; }
+  done
 }
 
 @test "lint.sh runs yamllint with the repo's .yamllint.yml config" {
