@@ -136,8 +136,15 @@ test change was needed when Cilium's row changed, only this prose description.)
   through this run's own legacy-item-trim batches, and the line never actually
   pointed at review-cadence content even at the time it was written — checked
   directly via `git show` against the commit that introduced it).
-- **Gap:** no periodic (e.g., quarterly) re-verification that O3's RTO/RPO are still
-  true on current hardware/chart versions, independent of a triggering event.
+- **Gap:** no periodic (e.g., quarterly) re-verification of ADR decisions
+  independent of a triggering event, for either of the two Objectives currently
+  live (O2, O7) — CHARTER.md's own dated bars (O2 by 2026-09-30, O7 by
+  2026-10-31) are the closest thing to a review cadence, and those are
+  completion deadlines, not recurring re-checks. (This gap previously cited "O3's
+  RTO/RPO" — O3 was retired 2026-09-07 when Velero and its stateful data left
+  the lab entirely, no replacement, per CHARTER.md's own O3 Status note; there is
+  no RTO/RPO bar left for a periodic check to apply to. Found stale 2026-09-11,
+  fixed in the same run that added `scripts/dr-chaos-argocd.sh`.)
 
 ---
 
