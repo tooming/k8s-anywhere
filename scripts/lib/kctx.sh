@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Shared KCTX-aware kubectl wrapper — sourced, not executed.
 # scripts/dr-verify.sh, scripts/lab-health-check.sh, and
 # scripts/ondemand-budget-check.sh each hand-rolled a byte-identical copy of

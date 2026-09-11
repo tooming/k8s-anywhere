@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Shared ANSI color setup for scripts/*.sh output — sourced, not executed.
 # Duplicated identically (or as a same-behavior subset) across 15+ scripts before
 # this extraction; consolidated so a future style tweak (e.g. a new color) only
@@ -25,6 +26,7 @@ fi
 # unused `drift` variable to their scope, a behavior wrinkle this extraction
 # avoids by design (see scripts/ok-bad-lib-check.sh).
 ok()  { printf '  %s✓%s %s\n' "$G" "$Z" "$1"; }
+# shellcheck disable=SC2034  # drift is the SOURCING script's variable (see comment above)
 bad() { printf '  %s✗%s %s\n' "$R" "$Z" "$1"; drift=1; }
 
 # Shared skip() informational-notice printer — sourced, not executed. Pairs

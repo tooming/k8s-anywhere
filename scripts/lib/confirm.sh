@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Shared "type-to-confirm" destructive-action gate — sourced, not executed.
 # scripts/dr-chaos.sh, scripts/dr-destroy.sh, scripts/dr-test.sh, and
 # scripts/dr-bluegreen-promote.sh each hand-rolled a byte-similar copy of this

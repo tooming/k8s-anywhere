@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Shared yq-variant-robust scalar read for scripts/*.sh — sourced, not executed.
 #
 # yq implementations disagree on how they print scalar output: mikefarah yq

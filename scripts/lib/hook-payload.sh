@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Shared PostToolUse hook helper: extract tool_input.file_path (or .path) from
 # the Claude Code hook JSON payload on stdin — sourced, not executed.
 # Duplicated identically across 15 scripts/*-hook.sh scripts before this

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Shared mikefarah/yq variant guard — sourced, not executed.
 #
 # scripts/helm-chart-pin-check.sh and scripts/argocd-crd-ssa-check.sh both rely

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Shared implementation for the repo's "frozen monolith" bats-test drift
 # checks (securitycontext-tests-check.sh, drift-detectors-tests-check.sh,
 # hook-scripts-coverage-tests-check.sh) — sourced, not executed. Each thin

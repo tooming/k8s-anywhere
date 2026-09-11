@@ -25,9 +25,14 @@ need() {
 printf '%s== lint ==%s\n' "$B" "$Z"
 
 # --- shellcheck over all scripts --------------------------------------------
+# scripts/lib/*.sh included too (2026-09-11 fix) -- these are sourced, not
+# executed, so it's easy to forget they're real bash a linter should also
+# check; 8 of 9 lacked a shebang/shell directive entirely (SC2148, error
+# severity) until this same fix added one to each, found only once this glob
+# was actually widened to look at them (see tests/lint-script.bats).
 if need shellcheck; then
-  if shellcheck -S "$SHELLCHECK_SEVERITY" scripts/*.sh; then
-    ok "shellcheck (severity>=$SHELLCHECK_SEVERITY) clean across scripts/"
+  if shellcheck -S "$SHELLCHECK_SEVERITY" scripts/*.sh scripts/lib/*.sh; then
+    ok "shellcheck (severity>=$SHELLCHECK_SEVERITY) clean across scripts/ + scripts/lib/"
   else
     bad "shellcheck found issues (severity>=$SHELLCHECK_SEVERITY)"
   fi
