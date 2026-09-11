@@ -283,15 +283,16 @@ test change was needed when Cilium's row changed, only this prose description.)
 
 **Q14. Is there a register of ICT third-party dependencies?**
 - **Answer:** Yes. [`docs/dependency-register.md`](dependency-register.md) tabulates
-  every third-party tool named in a binding ADR — **9 tools**, counted directly
-  from the register's real rows as of 2026-09-07 (down from 13 after Cilium,
-  Garage, Forgejo, Harbor, and s3manager were also removed entirely, no
-  replacement, the same day and the day after Kyverno/Argo Rollouts/Velero/Trivy
-  Operator/Kargo/moto/ACK/KRO went — ADR-0014, ADR-0002/ADR-0007, ADR-0035/
-  ADR-0033, ADR-0024, ADR-0039 — on top of the observability stack's earlier
-  8-tool removal, ADR-0041, 2026-09-06) — by criticality, upstream source,
-  deciding ADR, and last-reviewed date, re-indexed purely from existing ADR
-  content.
+  every third-party tool named in a binding ADR — **7 tools**, counted directly
+  from the register's real rows today (down from 13 after Cilium, Garage,
+  Forgejo, Harbor, and s3manager were also removed entirely, no replacement, the
+  same day and the day after Kyverno/Argo Rollouts/Velero/Trivy Operator/Kargo/
+  moto/ACK/KRO went — ADR-0014, ADR-0002/ADR-0007, ADR-0035/ADR-0033, ADR-0024,
+  ADR-0039 — on top of the observability stack's earlier 8-tool removal,
+  ADR-0041, 2026-09-06, and Vault + External Secrets Operator's later removal,
+  ADR-0042, which dropped the count from 9 to the current 7) — by criticality,
+  upstream source, deciding ADR, and last-reviewed date, re-indexed purely from
+  existing ADR content.
 - **Evidence:** [docs/dependency-register.md](dependency-register.md).
 - **Gap:** narrower now — `make ci` gained a mechanical drift guard
   (`scripts/dependency-register-check.sh`, 2026-08-24, PR #1297, extended the same
@@ -378,7 +379,7 @@ concentration)?**
 - **Evidence:** [docs/dependency-exit-runbooks.md](dependency-exit-runbooks.md);
   ADR-0024 (executed migration, itself now also moot); ADR-0001 (structural
   exit-ability).
-- **Gap:** none in coverage — every one of the register's 9 current rows (Q14) has
+- **Gap:** none in coverage — every one of the register's 7 current rows (Q14) has
   either a written runbook or a "moot, removed" note, and
   `scripts/dependency-exit-runbooks-sync-check.sh` (wired into `make ci`) mechanically
   fails the build if a future register row lacks one. A written runbook existing in
@@ -422,7 +423,9 @@ the stack in use?**
 This document was substantially rewritten 2026-09-07 after this lab's aggressive
 simplification (observability, Cilium, Garage, Forgejo, GitLab, Harbor, the DR front
 door, capstone, Kyverno, Argo Rollouts, Velero, Trivy Operator, Kargo, ACK, and
-moto/KRO all removed, no replacement). Several answers that used to be design-complete
+moto/KRO all removed, no replacement — Vault and External Secrets Operator followed
+the same day, ADR-0042, dropping the dependency register from 9 rows to the current
+7, Q14/Q17). Several answers that used to be design-complete
 (Pillar 3's DR/resilience testing, Pillar 1's Q3/Q4 backup RTO/RPO) are now **real,
 structural gaps, not just cadence ones** — the mechanisms that used to close them
 (Velero, the chaos/network-partition/storage-failure drills, blue-green cutover, the
