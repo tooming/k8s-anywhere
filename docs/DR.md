@@ -180,6 +180,35 @@ points of failure" below). Requires a live cluster — never runs in CI;
 `make ci` only lints this script and exercises its non-destructive
 confirmation-guard path (`tests/dr-guards.bats`).
 
+## `make dr-chaos-lab-demo` — fault-injection drill
+
+```sh
+make dr-chaos-lab-demo   # kills the live lab-demo (hello) pod, asserts self-heal
+```
+
+The fourth and last of the four fault-injection drills narrowing
+`docs/dora-audit-readiness.md`'s Q12 gap — after this, every one of the
+lab's four always-on components (ArgoCD, cert-manager, Traefik, `lab-demo`)
+has a drill. Deletes the live `hello` pod (selector `app: hello`,
+`lab-demo` namespace), then polls for Kubernetes' own Deployment
+controller to recreate and re-ready a new pod (a different UID). Its
+recovery predicate differs from the other three: `lab-demo` has no
+`Service` or `IngressRoute` (confirmed directly — no `Service` manifest
+exists under `gitops/apps/demo/`, and `deployment.yaml`'s own header
+comment says so explicitly), so there's no HTTP front-door URL to probe.
+Instead it `kubectl exec`s into the new pod and `cat`s the
+ConfigMap-mounted `index.html` directly, confirming it still serves the
+real `lab-demo-hello` content — a stronger check than pod-`Ready` alone,
+since it also confirms the `ConfigMap` volume actually re-attached. Exit 0
+only if both recover within budget (`DR_T_POD`/`DR_T_CONTENT` seconds,
+defaults 120/60).
+
+**Honest scope.** Same narrow, single-instance shape as the three drills
+above — not a chaos-engineering harness, not a TLPT-style test. Requires a
+live cluster — never runs in CI; `make ci` only lints this script and
+exercises its non-destructive confirmation-guard path
+(`tests/dr-guards.bats`).
+
 ## Single points of failure (and why true HA isn't possible here)
 
 | SPOF | Path | If it fails | Blast radius |

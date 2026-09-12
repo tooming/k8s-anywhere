@@ -402,7 +402,10 @@ You review and merge plan PRs, same as implementation PRs.
   the same PR sequence — state precisely which components are covered as of
   this item's own merge). Split-if-oversized note: none expected.
 
-- [ ] 🟢 **Fault-injection drill against the `lab-demo` pod** — same Q12
+- [x] 🟢 **Fault-injection drill against the `lab-demo` pod** —
+  full verification writeup:
+  [docs/done/2026-09-12-dr-chaos-lab-demo.md](docs/done/2026-09-12-dr-chaos-lab-demo.md).
+  (auto/dr-chaos-lab-demo) — same Q12
   gap-narrowing found live 2026-09-12, this item covers `lab-demo`, the
   fourth and final always-on component named in Q12's gap (see the
   cert-manager item above for the full context).
