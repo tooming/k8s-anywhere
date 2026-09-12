@@ -336,6 +336,90 @@ You review and merge plan PRs, same as implementation PRs.
   [docs/done/2026-09-11-dr-chaos-argocd.md](docs/done/2026-09-11-dr-chaos-argocd.md).
   (auto/dr-chaos-argocd)
 
+- [ ] 🟢 **Fault-injection drill against the `cert-manager` controller pod** —
+  found live 2026-09-12 (planner gap analysis, re-reading
+  `docs/dora-audit-readiness.md`'s own Q12 **Gap** field after `dr-chaos-argocd`
+  shipped): Q12's gap is explicitly described as "narrowed, not closed" —
+  `dr-chaos-argocd` covers only ArgoCD's application-controller pod; the other
+  three always-on components (cert-manager, Traefik, `lab-demo`) have no
+  equivalent drill yet. This item covers cert-manager; Traefik and `lab-demo`
+  are separate items below (kept as three small PRs, not one large one, per
+  WAYS-OF-WORKING.md §3's size discipline — mirrors `dr-chaos-argocd`'s own
+  single-component scope).
+  **Scope:** add `scripts/dr-chaos-cert-manager.sh` mirroring
+  `scripts/dr-chaos-argocd.sh`'s exact shape (same `confirm_or_abort`/
+  `DR_ASSUME_YES` gate, same `retry`/`fail` helpers, same
+  `lib/kctx.sh`/`lib/colors.sh`/`lib/confirm.sh` sourcing): kill the live
+  cert-manager controller pod in the `cert-manager` namespace (selector
+  `app.kubernetes.io/name=cert-manager` — the upstream Jetstack chart's own
+  controller-pod label, distinct from its sibling `cainjector`/`webhook`
+  pods; **NEEDS LIVE VERIFICATION on the next cluster rebuild** before this
+  drill is trusted, same caveat this repo's own
+  `allow-cert-manager-webhook-from-apiserver.yaml` already states for a label
+  assumption in this exact namespace — do not silently drop this caveat when
+  building), then poll for a new Ready pod (different UID) and, as the
+  recovery predicate, that `kubectl get clusterissuer` (or `issuer -n
+  cert-manager`, whichever this repo's root-CA bootstrap actually uses — read
+  `gitops/platform/cert-manager-root-ca.yaml` first) reports `Ready` again,
+  mirroring `dr-verify.sh`'s existing cert-manager health predicate if one
+  exists (reuse it rather than inventing a second one — check `dr-verify.sh`
+  before writing this from scratch); a `make dr-chaos-cert-manager` target
+  under the Makefile's "Disaster recovery" section, next to
+  `dr-chaos-argocd`; guard-only bats coverage added to `tests/dr-guards.bats`
+  (same non-destructive unknown-usage/no-confirmation-refusal pattern, never
+  invoking a live cluster from `make ci`); a `docs/DR.md` update listing the
+  new drill alongside `dr-chaos-argocd`; and an honest update to
+  `docs/dora-audit-readiness.md`'s Q12 **Gap** field noting two of the three
+  remaining components are now covered (do not overclaim — Traefik is still
+  a separate item below, not done by this one). Split-if-oversized note:
+  none expected — same size class as `dr-chaos-argocd` (one script + small
+  doc/test updates).
+
+- [ ] 🟢 **Fault-injection drill against the Traefik pod (`kube-system`)** —
+  same Q12 gap-narrowing found live 2026-09-12, this item covers Traefik
+  specifically (see the cert-manager item immediately above for the full
+  Q12 context — not repeated here).
+  **Scope:** add `scripts/dr-chaos-traefik.sh` mirroring
+  `scripts/dr-chaos-argocd.sh`'s exact shape: kill the live Traefik pod in
+  the `kube-system` namespace (selector `app.kubernetes.io/name=traefik` —
+  already a real, live selector this repo's own
+  `gitops/argocd/networkpolicy/allow-argocd-server-from-gateway.yaml` uses
+  today to reach the same pod, not a new assumption), then poll for a new
+  Ready pod (different UID) and, as the recovery predicate, that the
+  lab's own HTTP ingress responds again (reuse `lab-health-check.sh`'s
+  existing `UI_PROBES`/k3d-load-balancer-port-`:8080` probe pattern rather
+  than inventing a new HTTP check); a `make dr-chaos-traefik` target under
+  the Makefile's "Disaster recovery" section; guard-only bats coverage added
+  to `tests/dr-guards.bats` (same pattern); a `docs/DR.md` update; and an
+  honest update to `docs/dora-audit-readiness.md`'s Q12 **Gap** field (do not
+  overclaim completion if the cert-manager item above hasn't landed yet in
+  the same PR sequence — state precisely which components are covered as of
+  this item's own merge). Split-if-oversized note: none expected.
+
+- [ ] 🟢 **Fault-injection drill against the `lab-demo` pod** — same Q12
+  gap-narrowing found live 2026-09-12, this item covers `lab-demo`, the
+  fourth and final always-on component named in Q12's gap (see the
+  cert-manager item above for the full context).
+  **Scope:** add `scripts/dr-chaos-lab-demo.sh` mirroring
+  `scripts/dr-chaos-argocd.sh`'s exact shape: kill the live `hello` pod in
+  the `lab-demo` namespace (selector `app: hello` — the real, live label
+  `gitops/apps/demo/deployment.yaml` already sets, confirmed directly, not
+  assumed), then poll for a new Ready pod (different UID) and, as the
+  recovery predicate, that the demo's own HTTP endpoint serves the expected
+  `lab-demo-hello` ConfigMap content again (reuse `lab-health-check.sh`'s
+  existing probe pattern, same as the Traefik item above); a
+  `make dr-chaos-lab-demo` target under the Makefile's "Disaster recovery"
+  section; guard-only bats coverage added to `tests/dr-guards.bats`; a
+  `docs/DR.md` update; and a final honest update to
+  `docs/dora-audit-readiness.md`'s Q12 **Answer**/**Gap** fields — once this
+  item lands (after the cert-manager and Traefik items above), all four
+  always-on components have a drill, so Q12's **Gap** field should say so
+  plainly rather than continuing to describe it as "narrowed" — but this
+  update belongs in whichever of the three PRs lands last, not duplicated in
+  all three; check the other two items' merge state before writing this
+  PR's own Q12 update so it accurately reflects what's actually landed by
+  the time this one merges. Split-if-oversized note: none expected.
+
 - [x] 🟢 **`docs/dependency-register.md`'s k3s and cert-manager rows'
   "Last reviewed" dates re-confirmed against live upstream releases** —
   full verification writeup:
