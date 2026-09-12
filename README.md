@@ -84,8 +84,8 @@ more (hostnames resolve to 127.0.0.1 via `nip.io` — no `/etc/hosts` edits):
 The lab is **recreate-from-code**. There is no automated backup/restore or
 blue/green drill left (removed entirely 2026-09-07, no replacement, along with the
 components they exercised) — full rebuild from git is the primary recovery
-mechanism. One narrow fault-injection drill exists against a currently-live
-component (added back 2026-09-11, closing a gap `docs/dora-audit-readiness.md`'s
+mechanism. Four narrow fault-injection drills exist, one against each always-on
+component (added back 2026-09-11/12, closing a gap `docs/dora-audit-readiness.md`'s
 Q12 named):
 
 | Command | What it does |
@@ -93,6 +93,9 @@ Q12 named):
 | `make dr-verify` | Real end-to-end health check: nodes, every ArgoCD app Synced+Healthy. Safe anytime. |
 | `make dr-test` | Full DR drill: **destroy** the lab → `make up` → verify. `SCOPE=cluster\|machine`. |
 | `make dr-chaos-argocd` | Fault-injection drill: kill `argocd-application-controller`, assert Kubernetes self-heals it. |
+| `make dr-chaos-cert-manager` | Fault-injection drill: kill the cert-manager controller pod, assert Kubernetes self-heals it + the root-CA issuer chain returns Ready. |
+| `make dr-chaos-traefik` | Fault-injection drill: kill the Traefik pod, assert Kubernetes self-heals it + the HTTP front door answers again. |
+| `make dr-chaos-lab-demo` | Fault-injection drill: kill the lab-demo (hello) pod, assert Kubernetes self-heals it + it serves its real content again. |
 
 See [docs/DR.md](docs/DR.md) and [ADR-0005](docs/decisions/adr-0005-spof-recreate-over-ha.md)
 (why true HA isn't possible on a single host, and what the lab does instead).

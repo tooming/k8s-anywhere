@@ -20,11 +20,12 @@ recovery mechanism. This is a plain statement of current fact (ADR-0004), not a 
 to silently paper over: the maintainer's explicit direction this session was
 aggressive simplification, and a lab this small has no stateful data left worth a
 dedicated backup mechanism (see each removed component's own ADR Status for the
-reasoning). One narrow fault-injection drill was added back 2026-09-11
-(`make dr-chaos-argocd`, below) against a currently-live always-on component — it
-is not a general replacement for the removed drills, and not an adversarial/
-penetration-style test (DORA's TLPT concept, see `docs/dora-audit-readiness.md`
-Q12).
+reasoning). Four narrow fault-injection drills were added back 2026-09-11/12
+(`make dr-chaos-argocd`, `dr-chaos-cert-manager`, `dr-chaos-traefik`,
+`dr-chaos-lab-demo`, below), one against each of the lab's four always-on
+components — they are not a general replacement for the removed drills, and
+not an adversarial/penetration-style test (DORA's TLPT concept, see
+`docs/dora-audit-readiness.md` Q12).
 
 ## What `make up` does, and why
 
