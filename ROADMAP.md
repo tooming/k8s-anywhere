@@ -378,7 +378,10 @@ You review and merge plan PRs, same as implementation PRs.
   none expected — same size class as `dr-chaos-argocd` (one script + small
   doc/test updates).
 
-- [ ] 🟢 **Fault-injection drill against the Traefik pod (`kube-system`)** —
+- [x] 🟢 **Fault-injection drill against the Traefik pod (`kube-system`)** —
+  full verification writeup:
+  [docs/done/2026-09-12-dr-chaos-traefik.md](docs/done/2026-09-12-dr-chaos-traefik.md).
+  (auto/dr-chaos-traefik)
   same Q12 gap-narrowing found live 2026-09-12, this item covers Traefik
   specifically (see the cert-manager item immediately above for the full
   Q12 context — not repeated here).

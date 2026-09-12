@@ -391,6 +391,10 @@ dr-chaos-argocd: ## Fault-injection drill: kill argocd-application-controller, a
 dr-chaos-cert-manager: ## Fault-injection drill: kill the cert-manager controller pod, assert Kubernetes self-heals it + the root-CA issuer chain returns Ready (live cluster only)
 	bash scripts/dr-chaos-cert-manager.sh
 
+.PHONY: dr-chaos-traefik
+dr-chaos-traefik: ## Fault-injection drill: kill the Traefik pod, assert Kubernetes self-heals it + the HTTP front door answers again (live cluster only)
+	bash scripts/dr-chaos-traefik.sh
+
 ##@ Metrics (on-demand, clusterless)
 
 .PHONY: dora-metrics
