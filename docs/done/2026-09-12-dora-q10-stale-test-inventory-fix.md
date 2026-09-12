@@ -32,4 +32,4 @@ by this run's own earlier PRs (#1573, #1576, #1577, #1578).
 
 ## PR
 
-https://github.com/tooming/k8s-anywhere/pull/PLACEHOLDER
+https://github.com/tooming/k8s-anywhere/pull/1579
