@@ -395,6 +395,10 @@ dr-chaos-cert-manager: ## Fault-injection drill: kill the cert-manager controlle
 dr-chaos-traefik: ## Fault-injection drill: kill the Traefik pod, assert Kubernetes self-heals it + the HTTP front door answers again (live cluster only)
 	bash scripts/dr-chaos-traefik.sh
 
+.PHONY: dr-chaos-lab-demo
+dr-chaos-lab-demo: ## Fault-injection drill: kill the lab-demo (hello) pod, assert Kubernetes self-heals it + it serves its real content again (live cluster only)
+	bash scripts/dr-chaos-lab-demo.sh
+
 ##@ Metrics (on-demand, clusterless)
 
 .PHONY: dora-metrics
