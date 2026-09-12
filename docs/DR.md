@@ -149,6 +149,37 @@ cluster rebuild before trusting this drill's pass/fail result. Requires a
 live cluster — never runs in CI; `make ci` only lints this script and
 exercises its non-destructive confirmation-guard path (`tests/dr-guards.bats`).
 
+## `make dr-chaos-traefik` — fault-injection drill
+
+```sh
+make dr-chaos-traefik   # kills the live Traefik pod, asserts self-heal
+```
+
+The third and last of the three follow-ups to `dr-chaos-argocd` narrowing
+`docs/dora-audit-readiness.md`'s Q12 gap further — after this and
+`dr-chaos-cert-manager` above, `dr-chaos-lab-demo` is the only remaining
+always-on component without a drill. Deletes the live Traefik pod
+(selector `app.kubernetes.io/name=traefik`, `kube-system` namespace — the
+same selector this repo's own
+`gitops/argocd/networkpolicy/allow-argocd-server-from-gateway.yaml` already
+uses to reach the same pod, not a new assumption), then polls for
+Kubernetes' own Deployment controller to recreate and re-ready a new pod (a
+different UID), then polls the lab's own HTTP front door
+(`http://argocd.127.0.0.1.nip.io:8080/healthz` — the identical URL
+`lab-health-check.sh`'s own `UI_PROBES` already probes) until it answers
+again. Exit 0 only if both recover within budget (`DR_T_POD`/`DR_T_HTTP`
+seconds, defaults 120/180).
+
+**Honest scope.** Same narrow, single-instance shape as `dr-chaos-argocd`
+and `dr-chaos-cert-manager` above — not a chaos-engineering harness, not a
+TLPT-style test. Killing the lab's only ingress path means every other
+always-on UI briefly returns errors too, same as a real Traefik outage
+would — this drill measures how fast that outage self-heals, not whether it
+happens (ADR-0005: a single-host lab has this SPOF by design, see "Single
+points of failure" below). Requires a live cluster — never runs in CI;
+`make ci` only lints this script and exercises its non-destructive
+confirmation-guard path (`tests/dr-guards.bats`).
+
 ## Single points of failure (and why true HA isn't possible here)
 
 | SPOF | Path | If it fails | Blast radius |

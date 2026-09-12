@@ -245,7 +245,7 @@ test change was needed when Cilium's row changed, only this prose description.)
 **Q12. Is there an adversarial/penetration-style test (DORA's TLPT concept)?**
 - **Answer:** Not a TLPT-style adversarial/penetration test — this lab makes no such
   claim (see CHARTER.md's Goals section: the DORA framing here is explicitly
-  educational, never a regulatory compliance claim). Two narrow fault-injection
+  educational, never a regulatory compliance claim). Three narrow fault-injection
   drills now exist against currently-live always-on components: `make
   dr-chaos-argocd` (added 2026-09-11) kills the live
   `argocd-application-controller` pod and asserts Kubernetes' own StatefulSet
@@ -254,22 +254,26 @@ test change was needed when Cilium's row changed, only this prose description.)
   kills the live cert-manager controller pod and asserts Kubernetes' own
   Deployment controller recreates and re-readies it, and that the root-CA
   issuer chain (`k8s-lab-ca` `ClusterIssuer` + `k8s-lab-root-ca` `Certificate`)
-  returns to `Ready` — both within a bounded timeout (see [docs/DR.md](DR.md)).
-  These replace, narrowly, the three scoped drills this lab used to run
-  (`dr-chaos` — pod kill against capstone; `dr-network-partition` — NetworkPolicy
-  deletion against capstone; `dr-garage-failure` — pod kill against Garage), each
-  of which targeted a component removed entirely 2026-09-07 (capstone, Garage)
-  and was deleted in the same change with no replacement written until now.
+  returns to `Ready`; `make dr-chaos-traefik` (added 2026-09-12) kills the live
+  Traefik pod and asserts Kubernetes' own Deployment controller recreates and
+  re-readies it, and that the lab's own HTTP front door answers again — all
+  three within a bounded timeout (see [docs/DR.md](DR.md)). These replace,
+  narrowly, the three scoped drills this lab used to run (`dr-chaos` — pod kill
+  against capstone; `dr-network-partition` — NetworkPolicy deletion against
+  capstone; `dr-garage-failure` — pod kill against Garage), each of which
+  targeted a component removed entirely 2026-09-07 (capstone, Garage) and was
+  deleted in the same change with no replacement written until now.
 - **Evidence:** `scripts/dr-chaos-argocd.sh`, `scripts/dr-chaos-cert-manager.sh`,
-  `make dr-chaos-argocd`, `make dr-chaos-cert-manager`,
+  `scripts/dr-chaos-traefik.sh`, `make dr-chaos-argocd`,
+  `make dr-chaos-cert-manager`, `make dr-chaos-traefik`,
   [ADR-0021](decisions/adr-0021-velero-backup-restore.md),
   [ADR-0024](decisions/adr-0024-harbor-not-artifactory.md) Status sections (the
   original component removals that took the prior three drills with them).
-- **Gap:** narrowed further, still not closed. Two drills exist (ArgoCD's
-  application-controller, cert-manager's controller); the other two always-on
-  components (Traefik, `lab-demo`) have no equivalent drill yet — both are
-  already tracked as separate ROADMAP items — and nothing here resembles a
-  genuine adversarial/penetration test. The cert-manager drill's own controller-
+- **Gap:** narrowed further, still not closed. Three drills exist (ArgoCD's
+  application-controller, cert-manager's controller, Traefik); `lab-demo` is
+  the one remaining always-on component with no equivalent drill yet — already
+  tracked as a separate ROADMAP item — and nothing here resembles a genuine
+  adversarial/penetration test. The cert-manager drill's own controller-
   pod-label selector also still needs live-cluster confirmation before its
   pass/fail result can be trusted (see `docs/DR.md`'s own caveat) — narrowing the
   gap here does not itself confirm that.
