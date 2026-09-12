@@ -18,7 +18,17 @@ STEP 1c's own instruction, refreshed in place again rather than creating a secon
 file for the same week — the original entry's Argo Rollouts dashboard CVE finding
 (At-a-glance/RFC #1479) is preserved below as history since it was real, verified
 work that shipped (PR #1482) before the components it touched were removed;
-everything else now describes the lab's actual current, four-namespace shape._
+everything else now describes the lab's actual current, four-namespace shape.
+**Refreshed a third time 2026-09-12, same day, same ISO week** — a fourth
+architect-fallback invocation (cycle 9 of this run), after the prior refresh
+itself went stale within hours: it still described only one fault-injection
+drill (`dr-chaos-argocd`) when three more (`dr-chaos-cert-manager`,
+`dr-chaos-traefik`, `dr-chaos-lab-demo`) had since landed this same run
+(cycles 4–6, [PR #1576](https://github.com/tooming/k8s-anywhere/pull/1576)–[#1578](https://github.com/tooming/k8s-anywhere/pull/1578)),
+closing `docs/dora-audit-readiness.md`'s Q12 gap for every always-on
+component. This refresh also folds in two more real fixes from the same
+run: a stale Q10 test-inventory undercount ([PR #1579](https://github.com/tooming/k8s-anywhere/pull/1579))
+and stale single-drill claims in README/docs/DR.md ([PR #1580](https://github.com/tooming/k8s-anywhere/pull/1580))._
 
 ---
 
@@ -78,13 +88,27 @@ everything else now describes the lab's actual current, four-namespace shape._
   everywhere, due 2026-09-30) remains on track — `make ci`'s
   `tests/networkpolicy-*.bats` + `tests/securitycontext-*.bats` cover all four
   current namespaces, verified directly this cycle.
-- **2026-09-12 refresh: a new fault-injection drill landed 2026-09-11**
-  (`scripts/dr-chaos-argocd.sh` / `make dr-chaos-argocd`, `docs/done/2026-09-11-
-  dr-chaos-argocd.md`) — kills the single-replica ArgoCD application-controller
-  pod and asserts Kubernetes' own self-heal + every `Application` returning to
-  Synced+Healthy, closing the `docs/dora-audit-readiness.md` Q12 gap the prior
-  three chaos drills left behind when their targets (capstone, Garage) were
-  removed 2026-09-07 with no replacement.
+- **2026-09-12 refresh (this refresh): four fault-injection drills now exist,
+  one per always-on component** — `dr-chaos-argocd` (landed 2026-09-11, kills
+  the single-replica ArgoCD application-controller pod, asserts self-heal +
+  every `Application` returning to Synced+Healthy) plus three same-run
+  follow-ups landed this same cycle-of-cycles: `dr-chaos-cert-manager` (kills
+  the cert-manager controller pod, asserts self-heal + the root-CA issuer
+  chain returns Ready — its selector is flagged as needing live-cluster
+  confirmation, not yet asserted as trustworthy), `dr-chaos-traefik` (kills
+  the Traefik pod, asserts self-heal + the HTTP front door answers again),
+  and `dr-chaos-lab-demo` (kills the `hello` pod, asserts self-heal + it
+  serves its real ConfigMap content again via `kubectl exec`, since
+  `lab-demo` has no `Service`/`IngressRoute` to probe over HTTP). Together
+  these close `docs/dora-audit-readiness.md`'s Q12 gap for every one of the
+  lab's four always-on components — the prior three chaos drills this lab
+  used to run all targeted components (capstone, Garage) removed 2026-09-07
+  with no replacement, and are fully superseded now, not just narrowly.
+  Q10's own test-inventory answer had gone stale after these landed (still
+  said "two real tests remain"); fixed the same run
+  ([PR #1579](https://github.com/tooming/k8s-anywhere/pull/1579)), along with
+  the same staleness in README.md/`docs/DR.md`'s own intro prose
+  ([PR #1580](https://github.com/tooming/k8s-anywhere/pull/1580)).
 
 ---
 
@@ -175,10 +199,15 @@ close or convert this cycle.
 
 ## Cadence
 
-This is the ninth entry produced under `architect.prompt.md` STEP 1c's
+This is the tenth entry produced under `architect.prompt.md` STEP 1c's
 mandatory digest-write contract (see [2026-W36](2026-W36-digest.md)), refreshed
-in place a second time this same ISO week per STEP 1c's own instruction rather
-than creating a second file — reached via `executor.prompt.md` STEP 6b with a
-fully exhausted "Now / next" lane (zero unchecked ROADMAP items, zero open
-GitHub issues, `make ci` fully green with zero drift signals) after the
-PLANNER fallback found no gap to promote and no issue to groom.
+in place a third time this same ISO week per STEP 1c's own instruction rather
+than creating a second file — reached via `executor.prompt.md` STEP 6b (cycle
+9 of this run) after PLANNER's own gap analysis two cycles earlier ([PR #1575](https://github.com/tooming/k8s-anywhere/pull/1575))
+had already been fully built out (cycles 4–6) and this run's own subsequent
+work (the four `dr-chaos-*` drills plus two doc fixes) made the prior refresh
+stale within the same day. A genuine pattern worth naming for future
+refreshes: a digest refresh that lands mid-run, before the run's own
+in-flight work finishes, will go stale again almost immediately — a
+same-run digest refresh is most useful as the run's *last* deliverable, not
+an early one, when practical.
