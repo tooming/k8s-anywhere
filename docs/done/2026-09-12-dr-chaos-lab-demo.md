@@ -55,4 +55,4 @@ entries recorded, not overclaimed here either.
 
 ## PR
 
-https://github.com/tooming/k8s-anywhere/pull/PLACEHOLDER
+https://github.com/tooming/k8s-anywhere/pull/1578
