@@ -44,4 +44,4 @@ not carry the same "NEEDS LIVE VERIFICATION" caveat.
 
 ## PR
 
-https://github.com/tooming/k8s-anywhere/pull/PLACEHOLDER
+https://github.com/tooming/k8s-anywhere/pull/1577
