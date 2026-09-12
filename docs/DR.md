@@ -123,6 +123,32 @@ framing). Requires a live cluster — never runs in CI; `make ci` only lints thi
 script and exercises its non-destructive confirmation-guard path
 (`tests/dr-guards.bats`).
 
+## `make dr-chaos-cert-manager` — fault-injection drill
+
+```sh
+make dr-chaos-cert-manager   # kills the live cert-manager controller pod, asserts self-heal
+```
+
+The second of three follow-ups to `dr-chaos-argocd` narrowing
+`docs/dora-audit-readiness.md`'s Q12 gap further (Traefik and `lab-demo` are
+separate drills). Deletes the live cert-manager controller pod (selector
+`app.kubernetes.io/name=cert-manager` — same type-to-confirm gate as
+`dr-chaos-argocd`), then polls for Kubernetes' own Deployment controller to
+recreate and re-ready a new pod (a different UID), then polls for the
+root-CA issuer chain (`gitops/cert-manager/root-ca/`) — the `k8s-lab-ca`
+`ClusterIssuer` and the `k8s-lab-root-ca` `Certificate` — to report `Ready`
+again. Exit 0 only if all three recover within budget (`DR_T_POD`/
+`DR_T_ISSUER` seconds, defaults 120/300).
+
+**Honest scope.** Same narrow, single-instance shape as `dr-chaos-argocd`
+above — not a chaos-engineering harness, not a TLPT-style test. The
+controller-pod selector is the upstream Jetstack chart's own documented
+label but **has not been confirmed against a real running cluster from this
+clusterless authoring session** (ADR-0004) — verify it on the next live
+cluster rebuild before trusting this drill's pass/fail result. Requires a
+live cluster — never runs in CI; `make ci` only lints this script and
+exercises its non-destructive confirmation-guard path (`tests/dr-guards.bats`).
+
 ## Single points of failure (and why true HA isn't possible here)
 
 | SPOF | Path | If it fails | Blast radius |

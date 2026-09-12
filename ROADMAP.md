@@ -336,7 +336,10 @@ You review and merge plan PRs, same as implementation PRs.
   [docs/done/2026-09-11-dr-chaos-argocd.md](docs/done/2026-09-11-dr-chaos-argocd.md).
   (auto/dr-chaos-argocd)
 
-- [ ] 🟢 **Fault-injection drill against the `cert-manager` controller pod** —
+- [x] 🟢 **Fault-injection drill against the `cert-manager` controller pod** —
+  full verification writeup:
+  [docs/done/2026-09-12-dr-chaos-cert-manager.md](docs/done/2026-09-12-dr-chaos-cert-manager.md).
+  (auto/dr-chaos-cert-manager)
   found live 2026-09-12 (planner gap analysis, re-reading
   `docs/dora-audit-readiness.md`'s own Q12 **Gap** field after `dr-chaos-argocd`
   shipped): Q12's gap is explicitly described as "narrowed, not closed" —

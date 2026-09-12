@@ -387,6 +387,10 @@ dr-destroy: ## Tear the lab down to a clean slate (the 'disaster' only). SCOPE=c
 dr-chaos-argocd: ## Fault-injection drill: kill argocd-application-controller, assert Kubernetes self-heals it (live cluster only)
 	bash scripts/dr-chaos-argocd.sh
 
+.PHONY: dr-chaos-cert-manager
+dr-chaos-cert-manager: ## Fault-injection drill: kill the cert-manager controller pod, assert Kubernetes self-heals it + the root-CA issuer chain returns Ready (live cluster only)
+	bash scripts/dr-chaos-cert-manager.sh
+
 ##@ Metrics (on-demand, clusterless)
 
 .PHONY: dora-metrics
