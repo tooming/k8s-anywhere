@@ -55,4 +55,4 @@ either.
 
 ## PR
 
-(auto/dr-chaos-cert-manager)
+https://github.com/tooming/k8s-anywhere/pull/1576
