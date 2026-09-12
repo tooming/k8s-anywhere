@@ -215,23 +215,39 @@ test change was needed when Cilium's row changed, only this prose description.)
 ## Pillar 3 — Digital operational resilience testing (Ch IV)
 
 **Q10. What test types are performed, and against what?**
-- **Answer:** Narrower than before, honestly. The chaos/fault-injection drills
-  (`dr-chaos`, a pod-kill against capstone), the network-partition drill
+- **Answer:** Narrower than before in kind, but a new fault-injection category
+  has since been rebuilt (see below) — this answer was stale as of 2026-09-12
+  (last written the day of the 2026-09-07 simplification, never updated after
+  Q12's own four drills landed 2026-09-11/12). The original chaos/fault-injection
+  drills (`dr-chaos`, a pod-kill against capstone), the network-partition drill
   (`dr-network-partition`), the storage-failure drill (`dr-garage-failure`),
   the Velero-restore drill (`dr-restore`), the end-to-end capstone functional
   check (`capstone-demo`), and the blue-green zero-downtime cutover drill
   (`dr-bluegreen`) all depended on components removed entirely 2026-09-07
   (capstone, Velero, Garage, the DR front door) and were deleted in the same
-  change — there is no replacement for any of them. Two real tests remain:
+  change — there is no replacement for any of them individually. What exists
+  today:
   1. `make dr-test` — full destroy + rebuild from code, asserts health.
   2. `make dr-verify` — asserts the live lab is healthy end-to-end (no rebuild).
+  3. `make dr-chaos-argocd` / `dr-chaos-cert-manager` / `dr-chaos-traefik` /
+     `dr-chaos-lab-demo` — four narrow fault-injection drills (2026-09-11/12),
+     one per always-on component, each killing a live pod and asserting
+     Kubernetes' own self-heal plus a component-specific recovery predicate
+     (see [docs/DR.md](DR.md) and Q12 for the full detail).
   No continuous vulnerability scanning exists either — Trivy Operator was
   removed entirely 2026-09-07, no replacement.
-- **Evidence:** [docs/DR.md](DR.md); `scripts/dr-test.sh`; `scripts/dr-verify.sh`.
-- **Gap:** real. This lab's DR testing surface shrank along with everything it used
-  to exercise (backup/restore, chaos injection, blue-green cutover, continuous
-  scanning) — what's left is "recreate from code, then verify," which is real and
-  honest but narrower than DORA's TLPT concept asks for (see Q12).
+- **Evidence:** [docs/DR.md](DR.md); `scripts/dr-test.sh`; `scripts/dr-verify.sh`;
+  `scripts/dr-chaos-argocd.sh`; `scripts/dr-chaos-cert-manager.sh`;
+  `scripts/dr-chaos-traefik.sh`; `scripts/dr-chaos-lab-demo.sh`.
+- **Gap:** narrower than the 2026-09-07 low point, still real overall. Backup/
+  restore, blue-green cutover, and continuous vulnerability scanning have no
+  replacement and aren't planned to get one (deliberate scope, not an oversight
+  — see CHARTER.md's "2026-09-07 simplification"). Fault-injection specifically
+  is now covered per-component (four narrow drills, one per always-on
+  component) — narrower in scope than the old capstone-targeted drills (single-
+  pod-kill only, no network-partition equivalent) but broader in coverage
+  (every always-on component, not just one demo app) — still not a genuine
+  adversarial/penetration-style test (see Q12).
 
 **Q11. What is the testing cadence?**
 - **Answer:** On-demand only. Neither remaining test (`dr-test`, `dr-verify`) runs on
