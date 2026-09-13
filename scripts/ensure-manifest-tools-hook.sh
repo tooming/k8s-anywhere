@@ -43,6 +43,7 @@ set -uo pipefail
 KUSTOMIZE_VERSION="v5.8.1"   # matches .github/workflows/ci.yml's kustomize job
 KUBECONFORM_VERSION="v0.8.0" # matches .github/workflows/ci.yml's manifests job
 TERRAFORM_VERSION="1.16.2"   # matches .github/workflows/ci.yml's terraform job
+TFLINT_VERSION="v0.64.0"     # matches .github/workflows/ci.yml's terraform job
 
 install_kustomize() {
   command -v kustomize >/dev/null 2>&1 && { echo "kustomize already installed ($(command -v kustomize))"; return 0; }
@@ -88,14 +89,22 @@ install_terraform() {
 
 install_tflint() {
   command -v tflint >/dev/null 2>&1 && { echo "tflint already installed ($(command -v tflint))"; return 0; }
-  # Mirrors .github/workflows/ci.yml's own install method exactly (the
-  # upstream script itself warns it may be retired, but ci.yml still relies on
-  # it as of this writing — if it ever stops working there, update both).
-  if curl -fsSL -m 60 https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh 2>/dev/null | bash >/dev/null 2>&1; then
-    echo "tflint installed — make ci's terraform step will lint for real this session"
+  # Was the upstream install_linux.sh convenience script until 2026-09-13,
+  # when terraform-linters/tflint dropped it from the repo entirely (confirmed
+  # live: neither branch serves it any more, a real 404, not a transient
+  # outage) — this comment used to warn that script "may be retired"; it now
+  # has been. Mirrors .github/workflows/ci.yml's own pinned direct-binary-
+  # download fix — keep both in sync on future version bumps.
+  local tmp; tmp="$(mktemp -d)" || return 0
+  if curl -fsSL -m 60 -o "$tmp/tflint.zip" \
+      "https://github.com/terraform-linters/tflint/releases/download/${TFLINT_VERSION}/tflint_linux_amd64.zip" \
+      && unzip -q "$tmp/tflint.zip" -d "$tmp" \
+      && install "$tmp/tflint" /usr/local/bin/tflint; then
+    echo "tflint $TFLINT_VERSION installed — make ci's terraform step will lint for real this session"
   else
-    echo "tflint install failed (no network, or the upstream install script is unreachable/retired) — make ci will soft-skip this part locally"
+    echo "tflint install failed (no network, or GitHub releases unreachable) — make ci will soft-skip this part locally"
   fi
+  rm -rf "$tmp"
 }
 
 install_kustomize

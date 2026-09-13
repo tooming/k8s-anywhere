@@ -47,6 +47,18 @@ setup() {
   grep -q 'terraform_version: "1.16.2"' "$CI_YML"
 }
 
+@test "tflint is pinned to v0.64.0 via direct release-asset download (2026-09-13 CI-fix)" {
+  grep -q 'tflint/releases/download/v0.64.0/tflint_linux_amd64.zip' "$CI_YML"
+}
+
+@test "no workflow references the retired tflint install_linux.sh convenience script" {
+  # terraform-linters/tflint dropped this script from the repo entirely
+  # 2026-09-13 (a real 404, not a transient outage) — it broke ci.yml's
+  # terraform job with no diff of its own to blame. Guards against reverting
+  # to it on a future tflint bump.
+  ! grep -rq 'tflint/master/install_linux.sh\|tflint/main/install_linux.sh' "$WORKFLOWS"/*.yml "$REPO"/scripts/*.sh
+}
+
 @test "no workflow references the pre-bump terraform 1.9.8 pin" {
   ! grep -rq 'terraform_version: "1.9.8"' "$WORKFLOWS"/*.yml
 }
