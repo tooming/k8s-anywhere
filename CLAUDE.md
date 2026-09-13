@@ -142,6 +142,16 @@ chasing a real upstream networking bug, and was told plainly it didn't need to a
 Treat any "looks scary but is actually just this lab's own disposable infra" action the
 same as opening a PR — just do it and report.
 
+**A deferred finding gets tracked, not just mentioned (2026-09-14, explicit maintainer
+correction elsewhere in the account).** This repo's own bias is already "fix it in the
+same session you notice it" (see above), which is the strongest form of this rule — but
+when something genuinely isn't getting fixed right now (out of scope for the current
+work, needs its own design pass, lower priority than what's in flight), it must become a
+real backlog item — a ROADMAP `Now/next`/`Backlog` entry or a GitHub issue — not just a
+line in a PR description or session output that nothing else ever reads again. The test
+is the same as everywhere else in this account: if the only place a finding exists is
+this conversation, it doesn't exist once the conversation ends.
+
 ## Always open a PR
 After pushing changes to the feature branch, **always open a pull request** for them
 (unless the user says otherwise). Don't wait to be asked.
