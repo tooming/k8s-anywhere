@@ -55,4 +55,4 @@ architecture choice); no version-pinning ADR touches tflint.
 
 ## PR
 
-auto/ci-fix-tflint-install-script-retired
+[#1584](https://github.com/tooming/k8s-anywhere/pull/1584)
