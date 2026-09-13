@@ -121,7 +121,21 @@ jobs:
           # oracle-cluster-apply-retry.yml.
           terraform_version: "1.16.2"
       - name: Install tflint
-        run: curl -fsSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+        # Was `curl ... install_linux.sh | bash` (the upstream convenience
+        # installer) until 2026-09-13, when that script started 404ing —
+        # terraform-linters/tflint dropped install_linux.sh from the repo
+        # entirely (confirmed live: neither the master nor main branch serves
+        # it any more; the README's own Installation section now only lists
+        # direct release-asset download, Homebrew/WinGet, `go install`, and
+        # Docker). Switched to the same pinned direct-binary-download pattern
+        # this workflow already uses for kustomize/kubeconform, so a version
+        # bump is a version-string edit here, not a dependency on an
+        # installer script upstream can remove out from under us again.
+        run: |
+          curl -fsSL -o /tmp/tflint.zip \
+            https://github.com/terraform-linters/tflint/releases/download/v0.64.0/tflint_linux_amd64.zip
+          unzip -q /tmp/tflint.zip -d /tmp
+          sudo install /tmp/tflint /usr/local/bin/tflint
       - run: bash scripts/validate-terraform.sh
 
   kustomize:
