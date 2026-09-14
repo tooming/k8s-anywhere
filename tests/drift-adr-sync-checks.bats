@@ -127,30 +127,35 @@ setup() {
 }
 
 # --- context-doc-version-sync-check -------------------------------------------------
-# The script's only two check_one calls (KRO, ACK s3-controller — the Grafana/Pyroscope
-# ones were already removed 2026-09-06, ADR-0041) were themselves removed 2026-09-07
-# (ADR-0038: ACK/moto/KRO all dropped from the lab, no replacement). The checker now
-# tracks zero prose version citations, so it exits 0 unconditionally regardless of
-# fixture content — the tests/fixtures/context-doc-version-sync/{in-sync,drift}/
-# fixtures (built around a synthetic KRO/ACK citation) can no longer exercise real
-# drift detection. Left in place, still exercised below, so a regression that makes
-# the checker error out on these paths would still be caught; a real "detects drift"
-# test needs a new self-tracking citation with its own check_one call first.
-@test "context-doc-version-sync-check: passes on the in-sync fixture (checker currently tracks zero citations)" {
+# The script's original two check_one calls (KRO, ACK s3-controller — the
+# Grafana/Pyroscope ones were already removed 2026-09-06, ADR-0041) were themselves
+# removed 2026-09-07 (ADR-0038: ACK/moto/KRO all dropped from the lab, no
+# replacement) — context.md itself tracks zero citations again. A 2026-09-14
+# content-accuracy read found the identical bug class in docs/dependency-tree.md's
+# own cert-manager citation (stale "v1.21.1" vs the live "1.21.2" pin), added here
+# as this checker's first dependency-tree.md citation — the
+# tests/fixtures/context-doc-version-sync/{in-sync,drift}/ fixtures now carry a
+# matching docs/dependency-tree.md + gitops/platform/cert-manager.yaml pair
+# (in-sync: both 1.21.2; drift: doc says 1.21.1, gitops says 1.21.2) so both real
+# pass and real drift detection are exercised again.
+@test "context-doc-version-sync-check: passes on the in-sync fixture (dependency-tree.md's cert-manager citation matches)" {
   run env CONTEXTDOCCHECK_ROOT="$FIX/context-doc-version-sync/in-sync" bash "$REPO/scripts/context-doc-version-sync-check.sh"
   [ "$status" -eq 0 ]
+  [[ "$output" == *"cert-manager (dependency-tree.md)"* ]]
 }
 
-@test "context-doc-version-sync-check: also passes on the drift fixture (its KRO citation is no longer parsed by anything)" {
+@test "context-doc-version-sync-check: FAILS on the drift fixture (dependency-tree.md's cert-manager citation is stale)" {
   run env CONTEXTDOCCHECK_ROOT="$FIX/context-doc-version-sync/drift" bash "$REPO/scripts/context-doc-version-sync-check.sh"
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"dependency-tree.md says \"1.21.1\" but gitops/platform/cert-manager.yaml has \"1.21.2\""* ]]
 }
 
-@test "context-doc-version-sync-check: passes on the real repo (no self-tracking citation left, since ACK/moto/KRO were removed 2026-09-07, ADR-0038)" {
+@test "context-doc-version-sync-check: passes on the real repo (context.md tracks zero citations since ACK/moto/KRO removal, dependency-tree.md's cert-manager citation matches the live pin)" {
   run bash "$REPO/scripts/context-doc-version-sync-check.sh"
   [ "$status" -eq 0 ]
   [[ "$output" != *"ACK s3-controller"* ]]
   [[ "$output" != *"KRO chart version"* ]]
+  [[ "$output" == *"cert-manager (dependency-tree.md)"* ]]
 }
 
 # --- dependency-register-check -------------------------------------------------------
