@@ -73,5 +73,6 @@ No code/config change — comment/documentation only. `make ci` passes green.
 
 ## PR
 
-(auto/traefik-ghsa-sweep-20260914) — autonomous scheduled executor run,
-cycle 2 of this run, STEP 6b PLANNER-fallback filler.
+[#1589](https://github.com/tooming/k8s-anywhere/pull/1589) — autonomous
+scheduled executor run, cycle 2 of this run, STEP 6b PLANNER-fallback
+filler.
