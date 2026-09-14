@@ -37,6 +37,7 @@ set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/dr-chaos.sh"
 
 T_POD="${DR_T_POD:-120}"
 T_ISSUER="${DR_T_ISSUER:-300}"
@@ -46,35 +47,8 @@ NS="cert-manager"
 confirm_or_abort "$(printf '%sThis kills the live cert-manager controller pod.%s ' "$R$B" "$Z")" \
   "chaos" "to start the drill"
 
-START=$SECONDS
-fail(){ printf '\n%s%sDR CHAOS FAILED%s at: %s  (elapsed %ss)\n' "$B" "$R" "$Z" "$1" "$((SECONDS-START))"; exit 1; }
-
-# retry <timeout_s> <interval_s> <predicate-fn> : 0 if predicate succeeds in time
-retry() {
-  local to=$1 iv=$2 fn=$3 end
-  end=$((SECONDS + to))
-  while :; do
-    "$fn" && return 0
-    [ "$SECONDS" -ge "$end" ] && return 1
-    sleep "$iv"
-  done
-}
-
-BEFORE_UID=$(kubectl -n "$NS" get pod -l "$SELECTOR" -o jsonpath='{.items[0].metadata.uid}' 2>/dev/null)
-[ -n "$BEFORE_UID" ] || fail "no live cert-manager controller pod found (selector: $SELECTOR)"
-
-phase "1/3  CHAOS — deleting the live cert-manager controller pod"
-kubectl -n "$NS" delete pod -l "$SELECTOR" --wait=false || fail "kubectl delete pod"
-
-phase "2/3  SELF-HEAL — waiting for Kubernetes to recreate + ready a new pod"
-p_new_pod_ready() {
-  local uid ready
-  uid=$(kubectl -n "$NS" get pod -l "$SELECTOR" -o jsonpath='{.items[0].metadata.uid}' 2>/dev/null)
-  [ -n "$uid" ] && [ "$uid" != "$BEFORE_UID" ] || return 1
-  ready=$(kubectl -n "$NS" get pod -l "$SELECTOR" -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null)
-  [ "$ready" = "true" ]
-}
-retry "$T_POD" 3 p_new_pod_ready || fail "no new Ready cert-manager controller pod within ${T_POD}s"
+dr_chaos_start
+dr_chaos_kill_and_wait "$NS" "$SELECTOR" "$T_POD" "cert-manager controller"
 
 phase "3/3  VERIFY — root-CA issuer chain returns to Ready"
 p_issuer_chain_ready() {
@@ -86,7 +60,7 @@ p_issuer_chain_ready() {
     -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null)
   [ "$cert_ready" = "True" ]
 }
-retry "$T_ISSUER" 5 p_issuer_chain_ready || fail "k8s-lab-ca ClusterIssuer / k8s-lab-root-ca Certificate did not return to Ready within ${T_ISSUER}s"
+dr_chaos_retry "$T_ISSUER" 5 p_issuer_chain_ready || dr_chaos_fail "k8s-lab-ca ClusterIssuer / k8s-lab-root-ca Certificate did not return to Ready within ${T_ISSUER}s"
 
-ELAPSED=$((SECONDS-START))
+ELAPSED=$((SECONDS-DR_CHAOS_START))
 printf '\n%s%s✅ DR CHAOS PASSED%s — cert-manager controller self-healed in %ss.\n' "$B" "$G" "$Z" "$ELAPSED"

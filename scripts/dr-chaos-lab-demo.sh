@@ -36,6 +36,7 @@ set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/dr-chaos.sh"
 
 T_POD="${DR_T_POD:-120}"
 T_CONTENT="${DR_T_CONTENT:-60}"
@@ -46,45 +47,15 @@ EXPECT="Hello from GitOps"
 confirm_or_abort "$(printf '%sThis kills the live lab-demo (hello) pod.%s ' "$R$B" "$Z")" \
   "chaos" "to start the drill"
 
-START=$SECONDS
-fail(){ printf '\n%s%sDR CHAOS FAILED%s at: %s  (elapsed %ss)\n' "$B" "$R" "$Z" "$1" "$((SECONDS-START))"; exit 1; }
-
-# retry <timeout_s> <interval_s> <predicate-fn> : 0 if predicate succeeds in time
-retry() {
-  local to=$1 iv=$2 fn=$3 end
-  end=$((SECONDS + to))
-  while :; do
-    "$fn" && return 0
-    [ "$SECONDS" -ge "$end" ] && return 1
-    sleep "$iv"
-  done
-}
-
-BEFORE_UID=$(kubectl -n "$NS" get pod -l "$SELECTOR" -o jsonpath='{.items[0].metadata.uid}' 2>/dev/null)
-[ -n "$BEFORE_UID" ] || fail "no live lab-demo (hello) pod found (selector: $SELECTOR)"
-
-phase "1/3  CHAOS — deleting the live lab-demo (hello) pod"
-kubectl -n "$NS" delete pod -l "$SELECTOR" --wait=false || fail "kubectl delete pod"
-
-phase "2/3  SELF-HEAL — waiting for Kubernetes to recreate + ready a new pod"
-NEW_POD=""
-p_new_pod_ready() {
-  local uid ready name
-  name=$(kubectl -n "$NS" get pod -l "$SELECTOR" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-  uid=$(kubectl -n "$NS" get pod -l "$SELECTOR" -o jsonpath='{.items[0].metadata.uid}' 2>/dev/null)
-  [ -n "$uid" ] && [ "$uid" != "$BEFORE_UID" ] || return 1
-  ready=$(kubectl -n "$NS" get pod -l "$SELECTOR" -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null)
-  [ "$ready" = "true" ] || return 1
-  NEW_POD="$name"
-}
-retry "$T_POD" 3 p_new_pod_ready || fail "no new Ready lab-demo (hello) pod within ${T_POD}s"
+dr_chaos_start
+dr_chaos_kill_and_wait "$NS" "$SELECTOR" "$T_POD" "lab-demo (hello)"
 
 phase "3/3  VERIFY — the new pod serves the real lab-demo-hello content again"
 p_content_ok() {
-  kubectl -n "$NS" exec "$NEW_POD" -c hello -- cat /usr/share/nginx/html/index.html 2>/dev/null \
+  kubectl -n "$NS" exec "$DR_CHAOS_NEW_POD_NAME" -c hello -- cat /usr/share/nginx/html/index.html 2>/dev/null \
     | grep -q "$EXPECT"
 }
-retry "$T_CONTENT" 3 p_content_ok || fail "new pod $NEW_POD did not serve the expected content within ${T_CONTENT}s"
+dr_chaos_retry "$T_CONTENT" 3 p_content_ok || dr_chaos_fail "new pod $DR_CHAOS_NEW_POD_NAME did not serve the expected content within ${T_CONTENT}s"
 
-ELAPSED=$((SECONDS-START))
+ELAPSED=$((SECONDS-DR_CHAOS_START))
 printf '\n%s%s✅ DR CHAOS PASSED%s — lab-demo self-healed in %ss.\n' "$B" "$G" "$Z" "$ELAPSED"

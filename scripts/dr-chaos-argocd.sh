@@ -24,6 +24,7 @@ set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/dr-chaos.sh"
 
 T_POD="${DR_T_POD:-120}"
 T_ARGO="${DR_T_ARGO:-300}"
@@ -32,35 +33,8 @@ SELECTOR="app.kubernetes.io/name=argocd-application-controller"
 confirm_or_abort "$(printf '%sThis kills the live argocd-application-controller pod.%s ' "$R$B" "$Z")" \
   "chaos" "to start the drill"
 
-START=$SECONDS
-fail(){ printf '\n%s%sDR CHAOS FAILED%s at: %s  (elapsed %ss)\n' "$B" "$R" "$Z" "$1" "$((SECONDS-START))"; exit 1; }
-
-# retry <timeout_s> <interval_s> <predicate-fn> : 0 if predicate succeeds in time
-retry() {
-  local to=$1 iv=$2 fn=$3 end
-  end=$((SECONDS + to))
-  while :; do
-    "$fn" && return 0
-    [ "$SECONDS" -ge "$end" ] && return 1
-    sleep "$iv"
-  done
-}
-
-BEFORE_UID=$(kubectl -n argocd get pod -l "$SELECTOR" -o jsonpath='{.items[0].metadata.uid}' 2>/dev/null)
-[ -n "$BEFORE_UID" ] || fail "no live argocd-application-controller pod found (selector: $SELECTOR)"
-
-phase "1/3  CHAOS — deleting the live argocd-application-controller pod"
-kubectl -n argocd delete pod -l "$SELECTOR" --wait=false || fail "kubectl delete pod"
-
-phase "2/3  SELF-HEAL — waiting for Kubernetes to recreate + ready a new pod"
-p_new_pod_ready() {
-  local uid ready
-  uid=$(kubectl -n argocd get pod -l "$SELECTOR" -o jsonpath='{.items[0].metadata.uid}' 2>/dev/null)
-  [ -n "$uid" ] && [ "$uid" != "$BEFORE_UID" ] || return 1
-  ready=$(kubectl -n argocd get pod -l "$SELECTOR" -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null)
-  [ "$ready" = "true" ]
-}
-retry "$T_POD" 3 p_new_pod_ready || fail "no new Ready argocd-application-controller pod within ${T_POD}s"
+dr_chaos_start
+dr_chaos_kill_and_wait argocd "$SELECTOR" "$T_POD" "argocd-application-controller"
 
 phase "3/3  VERIFY — ArgoCD Applications return to Synced/Healthy"
 p_argo_healthy() {
@@ -71,7 +45,7 @@ p_argo_healthy() {
   green=$(jq '[.items[]|select(.status.sync.status=="Synced" and .status.health.status=="Healthy")]|length' <<<"$json")
   [ "$total" = "$green" ]
 }
-retry "$T_ARGO" 5 p_argo_healthy || fail "Applications did not return to Synced/Healthy within ${T_ARGO}s"
+dr_chaos_retry "$T_ARGO" 5 p_argo_healthy || dr_chaos_fail "Applications did not return to Synced/Healthy within ${T_ARGO}s"
 
-ELAPSED=$((SECONDS-START))
+ELAPSED=$((SECONDS-DR_CHAOS_START))
 printf '\n%s%s✅ DR CHAOS PASSED%s — argocd-application-controller self-healed in %ss.\n' "$B" "$G" "$Z" "$ELAPSED"

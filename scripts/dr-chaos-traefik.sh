@@ -29,6 +29,7 @@ set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/kctx.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/confirm.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/dr-chaos.sh"
 
 T_POD="${DR_T_POD:-120}"
 T_HTTP="${DR_T_HTTP:-180}"
@@ -41,35 +42,8 @@ PROBE_URL="${DR_PROBE_URL:-http://argocd.127.0.0.1.nip.io:8080/healthz}"
 confirm_or_abort "$(printf '%sThis kills the live Traefik pod.%s ' "$R$B" "$Z")" \
   "chaos" "to start the drill"
 
-START=$SECONDS
-fail(){ printf '\n%s%sDR CHAOS FAILED%s at: %s  (elapsed %ss)\n' "$B" "$R" "$Z" "$1" "$((SECONDS-START))"; exit 1; }
-
-# retry <timeout_s> <interval_s> <predicate-fn> : 0 if predicate succeeds in time
-retry() {
-  local to=$1 iv=$2 fn=$3 end
-  end=$((SECONDS + to))
-  while :; do
-    "$fn" && return 0
-    [ "$SECONDS" -ge "$end" ] && return 1
-    sleep "$iv"
-  done
-}
-
-BEFORE_UID=$(kubectl -n "$NS" get pod -l "$SELECTOR" -o jsonpath='{.items[0].metadata.uid}' 2>/dev/null)
-[ -n "$BEFORE_UID" ] || fail "no live Traefik pod found (selector: $SELECTOR)"
-
-phase "1/3  CHAOS — deleting the live Traefik pod"
-kubectl -n "$NS" delete pod -l "$SELECTOR" --wait=false || fail "kubectl delete pod"
-
-phase "2/3  SELF-HEAL — waiting for Kubernetes to recreate + ready a new pod"
-p_new_pod_ready() {
-  local uid ready
-  uid=$(kubectl -n "$NS" get pod -l "$SELECTOR" -o jsonpath='{.items[0].metadata.uid}' 2>/dev/null)
-  [ -n "$uid" ] && [ "$uid" != "$BEFORE_UID" ] || return 1
-  ready=$(kubectl -n "$NS" get pod -l "$SELECTOR" -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null)
-  [ "$ready" = "true" ]
-}
-retry "$T_POD" 3 p_new_pod_ready || fail "no new Ready Traefik pod within ${T_POD}s"
+dr_chaos_start
+dr_chaos_kill_and_wait "$NS" "$SELECTOR" "$T_POD" "Traefik"
 
 phase "3/3  VERIFY — the lab's HTTP front door answers again"
 p_http_ok() {
@@ -77,7 +51,7 @@ p_http_ok() {
   code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 6 "$PROBE_URL" 2>/dev/null)
   case "$code" in 2*|3*|401|403) return 0 ;; *) return 1 ;; esac
 }
-retry "$T_HTTP" 3 p_http_ok || fail "$PROBE_URL did not answer within ${T_HTTP}s"
+dr_chaos_retry "$T_HTTP" 3 p_http_ok || dr_chaos_fail "$PROBE_URL did not answer within ${T_HTTP}s"
 
-ELAPSED=$((SECONDS-START))
+ELAPSED=$((SECONDS-DR_CHAOS_START))
 printf '\n%s%s✅ DR CHAOS PASSED%s — Traefik self-healed in %ss.\n' "$B" "$G" "$Z" "$ELAPSED"
