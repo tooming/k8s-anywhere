@@ -288,6 +288,25 @@ You review and merge plan PRs, same as implementation PRs.
 > both of batch 7's deferred candidates — see
 > [docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md).
 
+- [x] 🟢 **Regenerate the on-demand DORA metrics snapshot
+  (`docs/dora-metrics.md`, `make dora-metrics`, RFC #580)** — found live
+  2026-09-14 (STEP 6b PLANNER-fallback filler, ROADMAP rule #9: the lane
+  was completely empty — every backlog item across every section was
+  `[x]`, zero open PRs, zero open issues — and yesterday's three
+  `[Action needed]` cycles already re-verified every pinned dependency,
+  GitHub Actions pin, and doc-drift surface clean, so this cycle tried a
+  fresh angle: the on-demand generated-report layer, same class as the
+  2026-09-08 refresh below it in this file). `docs/dora-metrics.md` was
+  still showing its 2026-09-11T00:27:08Z snapshot 3 days and 20 more
+  first-parent merges later — not a `make ci`-gated drift check by design
+  (it's deliberately on-demand, same as `scripts/ondemand-budget-check.sh`'s
+  sibling tools), so only a currency sweep like this one surfaces it. Ran
+  `make dora-metrics`; confirmed no other doc hardcodes the old numbers
+  (`grep -rn` across `docs/*.md`/`README.md`/`CHARTER.md` for the stale
+  values returned nothing). Full verification writeup:
+  [docs/done/2026-09-14-dora-metrics-refresh.md](docs/done/2026-09-14-dora-metrics-refresh.md).
+  (auto/dora-metrics-refresh-20260914)
+
 - [x] 🟢 **Write a fault-injection drill against a currently-live always-on
   component** — found live 2026-09-11 (planner gap analysis, cycle 4 of this
   run, re-reading `docs/dora-audit-readiness.md` against the current
