@@ -79,3 +79,21 @@ setup() { REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"; }
   [ "$status" -eq 1 ]
   [[ "$output" == *"no live lab-demo (hello) pod found"* ]]
 }
+
+# scripts/lib/dr-chaos.sh consolidation guard (2026-09-14, JANITOR-fallback
+# cleanup): the four dr-chaos-*.sh scripts above each hand-rolled a
+# byte-identical retry()/fail() pair and a near-identical "capture
+# BEFORE_UID, delete pod, poll for a new Ready pod" sequence before this
+# extraction — mirrors the existing lib/kctx.sh / lib/confirm.sh consolidation
+# pattern (see tests/kctx-lib.bats's own analogous guard).
+@test "no script under scripts/*.sh re-inlines the dr-chaos retry()/fail() pattern (source lib/dr-chaos.sh instead)" {
+  run grep -l '^retry() {' "$REPO"/scripts/dr-chaos-*.sh
+  [ "$status" -ne 0 ]
+}
+
+@test "every dr-chaos-*.sh script sources lib/dr-chaos.sh" {
+  for f in "$REPO"/scripts/dr-chaos-*.sh; do
+    run grep -q 'lib/dr-chaos.sh' "$f"
+    [ "$status" -eq 0 ]
+  done
+}
