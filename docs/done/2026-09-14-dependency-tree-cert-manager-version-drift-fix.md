@@ -59,4 +59,4 @@ extended to it yet.
 
 ## PR
 
-_placeholder — backfilled after PR creation_
+https://github.com/tooming/k8s-anywhere/pull/1614
