@@ -58,5 +58,5 @@ clusterless environment can run against live-cluster code.
 
 ## PR
 
-(chore/dr-chaos-lib-consolidation) — autonomous scheduled executor run,
-cycle 6, STEP 6b JANITOR-fallback.
+[#1593](https://github.com/tooming/k8s-anywhere/pull/1593) — autonomous
+scheduled executor run, cycle 6, STEP 6b JANITOR-fallback.
