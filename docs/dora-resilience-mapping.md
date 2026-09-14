@@ -60,13 +60,26 @@ DORA Articles 24–27 require regular resilience testing. `make dr-verify` and
 `make dr-test` are real, runnable recovery drills, not aspirational
 descriptions — `make dr-test` destroys and rebuilds the lab from scratch and
 verifies it; `make dr-verify` asserts the live lab is healthy end-to-end
-without a rebuild. The zero-downtime cutover drill that used to sit alongside
-them, `make dr-bluegreen` (blue/green pair behind a stable DR front door), was
-**removed entirely 2026-09-07, no replacement** — it depended on the DR front
-door and the second cluster it fronted, both gone the same day. This is a real
-narrowing of Pillar 3's mapping, not just a rename: the lab no longer
-demonstrates a zero-downtime cutover at all. See [docs/DR.md](DR.md) for the
-current drill catalogue and honest gap accounting.
+without a rebuild. A fault-injection category also exists, one narrow drill
+per always-on component: `make dr-chaos-argocd` (added 2026-09-11) and
+`make dr-chaos-cert-manager` / `dr-chaos-traefik` / `dr-chaos-lab-demo`
+(added 2026-09-12) each kill a live pod and assert Kubernetes' own
+self-heal plus a component-specific recovery predicate (ArgoCD back to
+`Synced`+`Healthy`, the cert-manager root-CA issuer chain back to `Ready`,
+Traefik's HTTP front door answering again, the `lab-demo` pod serving its
+real content again) within a bounded timeout — closing the gap
+`docs/dora-audit-readiness.md` Q12 tracked after the prior fault-injection
+drills (`dr-chaos`, `dr-network-partition`, `dr-garage-failure`) were
+deleted 2026-09-07 along with the components they targeted. This is not a
+TLPT-style adversarial/penetration test and makes no such claim — no attack
+simulation, no red-team methodology (see Q12). The zero-downtime cutover
+drill that used to sit alongside the recovery drills, `make dr-bluegreen`
+(blue/green pair behind a stable DR front door), was **removed entirely
+2026-09-07, no replacement** — it depended on the DR front door and the
+second cluster it fronted, both gone the same day. This is a real narrowing
+of Pillar 3's mapping, not just a rename: the lab no longer demonstrates a
+zero-downtime cutover at all. See [docs/DR.md](DR.md) for the current drill
+catalogue and honest gap accounting.
 
 ## Pillar 4 — ICT third-party risk management
 
