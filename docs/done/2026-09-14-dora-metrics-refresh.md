@@ -63,7 +63,7 @@ unavailable before this change).
 
 ## PR
 
-(auto/dora-metrics-refresh-20260914) — autonomous scheduled executor run,
-STEP 6b PLANNER-fallback filler after confirming the backlog was genuinely
-empty and yesterday's three `[Action needed]` cycles had already swept every
-other currency angle clean.
+[#1588](https://github.com/tooming/k8s-anywhere/pull/1588) — autonomous
+scheduled executor run, STEP 6b PLANNER-fallback filler after confirming the
+backlog was genuinely empty and yesterday's three `[Action needed]` cycles
+had already swept every other currency angle clean.
