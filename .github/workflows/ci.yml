@@ -136,6 +136,25 @@ jobs:
             https://github.com/terraform-linters/tflint/releases/download/v0.64.0/tflint_linux_amd64.zip
           unzip -q /tmp/tflint.zip -d /tmp
           sudo install /tmp/tflint /usr/local/bin/tflint
+      - name: Set TF_PLUGIN_CACHE_DIR
+        run: echo "TF_PLUGIN_CACHE_DIR=$HOME/.terraform.d/plugin-cache" >> "$GITHUB_ENV"
+      - name: Create Terraform plugin cache dir
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+      - name: Cache Terraform provider plugins
+        # Github-hosted runners are ephemeral -- no local persistence exists
+        # across runs without actions/cache, and the terraform-init loop in
+        # validate-terraform.sh re-downloads every module's providers (aws/
+        # oci/etc.) from scratch on every single CI run otherwise. Keyed on
+        # the lockfiles so a provider/version bump still forces a fresh
+        # download; restore-keys falls back to the newest same-OS cache when
+        # the lockfile hash doesn't match exactly (e.g. a lockfile touched in
+        # this PR), which still saves most of the download.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: ${{ runner.os }}-tfplugins-${{ hashFiles('infra/modules/**/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-tfplugins-
       - run: bash scripts/validate-terraform.sh
 
   kustomize:
