@@ -86,3 +86,18 @@ closed adjacent gaps this investigation surfaced (the missing-Secret bug, the
 GitLab-left-running resource cost) without touching the rename/decommission
 itself — genuine progress, not a resolution of this investigation's own
 question.
+
+## Update 2026-09-07 — moot: both GitLab and Forgejo removed entirely
+
+This investigation's entire premise (choosing how to rename `gitlab-*.sh`
+scripts to a `forgejo-*.sh` equivalent) no longer applies: GitLab was fully
+decommissioned, then Forgejo itself was also removed entirely, no
+replacement, the same day (ADR-0035's Status) — the repo now lives only on
+its public GitHub remote. Neither `scripts/gitlab-*.sh` nor
+`scripts/forgejo-*.sh` exists in the repo any more (confirmed directly,
+2026-09-14: `ls scripts/gitlab-*.sh scripts/forgejo-*.sh` finds nothing),
+and no `gitlab-*`/`forgejo-*` `Makefile` targets remain either. The
+corresponding `ROADMAP.md` item is already closed `[x]` with this same
+"closed as moot 2026-09-07" note — this file was left without a matching
+closing update until now, found and fixed the same run
+(`docs/backlog/2026-09-14-*.md` cycle 26).
