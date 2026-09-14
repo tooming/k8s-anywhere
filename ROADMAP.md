@@ -2681,6 +2681,20 @@ there is no point where the lab loses a working git source or CI path.
   receiver; four starting rules on already-scraped metrics.) **Groomed ↗** into a 🟢
   item in *Now / next* above (`auto/grafana-alerting-rules`), planner run 2026-08-10.
 
+- [x] 🟢 **k3s `v1.37.0+k3s1` shipped stable (2026-09-14) — evaluated, deliberately
+  kept at `v1.36.4+k3s1`, not bumped** — this is a Kubernetes *minor*-line jump, not
+  a routine patch bump: the release's one named security fix (CVE-2026-84445,
+  gRPC-Go xDS-server DoS) needs `xds.NewGRPCServer()` construction k3s's own gRPC
+  usage doesn't do, so it doesn't apply here; the underlying Kubernetes `v1.37.0`
+  line carries real, documented breaking changes (static-pod `Secret`/`ConfigMap`
+  references removed, deprecated kubelet flags now block startup, `SELinuxMount`
+  GA and on by default) this remote clusterless session can't verify live, and
+  community guidance is to wait past a `.0` release. Full reasoning + flip
+  condition (`v1.37.1+` ships, past the day-of-`.0` caution window): ADR-0030's own
+  Re-evaluation log. `docs/dependency-register.md`'s k3s row updated with the
+  result. No code/config change — full verification writeup:
+  [docs/done/2026-09-14-k3s-v1.37.0-evaluated-kept.md](docs/done/2026-09-14-k3s-v1.37.0-evaluated-kept.md).
+
 _New 🟡 items proposed by the architect live in
 [`docs/roadmap/incoming/`](docs/roadmap/incoming/) — one file per run — until
 the planner absorbs them here. Do **not** append new 🟡 items directly to this

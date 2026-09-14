@@ -306,3 +306,72 @@ stable release at or above `v1.36.4` ships, or when a CVE is disclosed
 against `v1.36.4` specifically (or a primary source, unlike this cycle's
 release-list-only claim, confirms CVE-2025-54410's actual applicability to
 k3s's own runtime).
+
+### 2026-09-14 — `v1.37.0+k3s1` shipped stable; kept at `v1.36.4+k3s1`, deliberately not bumped
+
+**Trigger.** This entry's own flip condition fired: `github.com/k3s-io/k3s/releases`
+confirms `v1.37.0+k3s1` published 2026-09-14 (today) — the first stable
+release on the `1.37.x` line (the prior five tags, `v1.37.0-rc1` through
+`-rc5`, published 2026-09-02 through 2026-09-11, were pre-releases only).
+This is a Kubernetes **minor**-line jump (`1.36.x` → `1.37.x`), not the
+patch-line bumps this ADR's Re-evaluation log has handled routinely so far.
+
+**Verified directly (not assumed, ADR-0004):**
+- Fetched `github.com/k3s-io/k3s/releases/tag/v1.37.0+k3s1` directly: the
+  release's stated primary focus is **CVE-2026-84445** (gRPC-Go xDS servers:
+  DoS via crash on a request missing both `:authority` and `Host` headers,
+  fixed by bumping `google.golang.org/grpc` to `v1.83.2`).
+- Read the advisory itself (gitlab.com/advisories mirror of the upstream
+  grpc-go GHSA): the vulnerable code path requires a server built with
+  `xds.NewGRPCServer()` — gRPC's **xDS control-plane server** mode, used by
+  service-mesh/xDS-management-plane components (e.g. Istio's control
+  plane), not by a plain gRPC client/server pair. k3s's own gRPC usage
+  (containerd's CRI socket, k3s's internal supervisor/agent protocol) does
+  not construct an xDS server this way — **this CVE does not apply to this
+  lab's actual k3s deployment**, the same "is the vulnerable code path
+  actually exercised" diligence this run has already applied to every
+  Traefik/ArgoCD GHSA sweep.
+- A live web search corroborates the Kubernetes v1.37.0 release itself
+  (not k3s's wrapper) ships real, documented breaking changes on the base
+  Kubernetes minor line: static pods may no longer reference `Secret`s or
+  `ConfigMap`s (a real behavior removal, not just a deprecation warning),
+  the kubelet refuses to start when a deprecated cAdvisor flag is set (18
+  kubelet flags dropped total), `SELinuxMount` graduates to GA and flips
+  **on by default** (can break workloads on SELinux-enabled nodes), kubeadm
+  drops the `v1beta3` config API, a batch of metrics are removed, and
+  kube-proxy begins its move from iptables to nftables. None of these are
+  cited in k3s's own `v1.37.0+k3s1` release notes (which only call out the
+  gRPC bump) — they come from the upstream Kubernetes release itself, which
+  k3s bundles wholesale.
+- Community guidance (multiple independent sources, cross-checked) is
+  explicit: treat a `.0` release as the least production-exercised state of
+  a new line and prefer `v1.37.1`/`v1.37.2` once available — ordinary,
+  conservative version-adoption practice, not specific to this lab.
+
+**Decision: Keep at `v1.36.4+k3s1`, do not bump to `v1.37.0+k3s1` yet.**
+Per this ADR's own Scope & exceptions section, a version-*line* jump (unlike
+the routine patch bumps this log otherwise records) goes through deeper
+diligence before adoption, not a drive-by pin edit — and that diligence
+here surfaces a real, unverified breaking-change surface (static-pod-secret
+removal, kubelet flag removal, SELinuxMount default-on) against a `.0`
+release the wider community itself recommends waiting past, while the
+release's one named security fix (CVE-2026-84445) does not apply to this
+lab's actual gRPC usage. Bumping now would trade a real, if narrow,
+regression risk this remote clusterless session cannot verify (ADR-0004 —
+no live cluster to prove `make up` still bootstraps cleanly under the new
+kubelet-flag and SELinuxMount defaults) for a security fix that does not
+apply here. No code/config change this entry.
+
+**Tracked, not just mentioned** (this repo's own standing rule against a
+deferred finding existing only in a PR description): this entry's own flip
+condition below is the tracking mechanism, the same shape this repo already
+uses for every other "recheck later" dependency finding (e.g. Traefik's
+own "re-check when the k3s pin next bumps" note) — no separate ROADMAP
+item needed since the periodic dependency-register sweep already re-checks
+this row routinely. A `ROADMAP.md` Cross-cutting hardening entry records
+this cycle's diligence pass as done work.
+
+**Flip condition (next re-evaluation).** Revisit when `v1.37.1` or later
+ships on the `1.37.x` line (past the "day-of-.0" caution window), or when a
+CVE is disclosed against `v1.36.4` specifically that CVE-2026-84445's
+inapplicability doesn't already cover.
