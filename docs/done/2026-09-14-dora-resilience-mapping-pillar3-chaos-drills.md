@@ -47,4 +47,4 @@ untouched — only added the missing citation.
 
 ## PR
 
-_placeholder — backfilled after PR creation_
+https://github.com/tooming/k8s-anywhere/pull/1605
