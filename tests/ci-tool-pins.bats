@@ -94,9 +94,13 @@ setup() {
   ! grep -rq 'gruntwork-io/terragrunt/releases/download/v1.1.3/terragrunt_linux_amd64' "$WORKFLOWS"/*.yml
 }
 
-@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terragrunt v1.1.4 (2026-09-06)" {
-  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.4/terragrunt_linux_amd64' "$ORACLE_APPLY"
-  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.4/terragrunt_linux_amd64' "$ORACLE_RETRY"
+@test "no workflow references the pre-bump terragrunt v1.1.4 pin" {
+  ! grep -rq 'gruntwork-io/terragrunt/releases/download/v1.1.4/terragrunt_linux_amd64' "$WORKFLOWS"/*.yml
+}
+
+@test "oracle-cluster-apply.yml and oracle-cluster-apply-retry.yml pin terragrunt v1.1.5 (2026-09-15)" {
+  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.5/terragrunt_linux_amd64' "$ORACLE_APPLY"
+  grep -q 'gruntwork-io/terragrunt/releases/download/v1.1.5/terragrunt_linux_amd64' "$ORACLE_RETRY"
 }
 
 @test "no workflow references the pre-bump terragrunt v0.67.0 pin" {

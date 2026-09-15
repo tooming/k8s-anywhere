@@ -119,11 +119,33 @@ jobs:
           # on a shared machine), registry credentials are no longer duplicated into
           # generated CLI config files, and the toolchain moved to Go v1.27. Checked
           # the real v1.1.4 release notes directly; no documented breaking change.
-          # Same "no cloud credentials reachable from this sandbox" caveat as the
+          # Bumped v1.1.4 -> v1.1.5 (2026-09-15, JANITOR-fallback currency sweep):
+          # this session's outbound network egress to registry.terraform.io/
+          # get.helm.sh/api.github.com (per-repo) is blocked, but raw.githubusercontent.com
+          # and the git wire protocol are not -- read the real per-feature changelog
+          # entries directly via a sparse git clone of gruntwork-io/terragrunt at the
+          # v1.1.5 tag (docs/src/data/changelog/v1.1.5/*.mdx) rather than assuming
+          # safety. Notably fixes a real regression v1.1.4 itself introduced: its Go
+          # 1.27 toolchain bump changed `base64gzip()`'s compressed output bytes,
+          # which could plan a spurious replacement for a resource comparing the
+          # encoded value (e.g. `user_data_base64` with
+          # `user_data_replace_on_change = true`) -- not applicable here regardless,
+          # since infra/modules/oracle-k3s-cluster/main.tf's own `user_data` uses
+          # `base64encode()`, not `base64gzip()` (verified directly, no occurrence of
+          # `base64gzip` anywhere in infra/). Every other v1.1.5 changelog entry
+          # checked (generate-block file permissions 0644->0600, `backend`
+          # commands no longer failing on an unapplied `dependency` block,
+          # `find --dependencies` output ordering, dependency-state-read fallback
+          # behavior, mutable-source clone-vs-copy performance) is a bug fix or
+          # perf improvement with no breaking-change note, and none touch a
+          # feature this repo's `infra/live/oracle/` units use beyond the
+          # already-safe `generate`/`dependency` blocks themselves (which the
+          # relevant entries only make MORE permissive/correct, not less). Same
+          # "no cloud credentials reachable from this sandbox" caveat as the
           # entries above -- this workflow's own next real run is the actual
           # verification.
           curl -fsSL -o /usr/local/bin/terragrunt \
-            https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.4/terragrunt_linux_amd64
+            https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.5/terragrunt_linux_amd64
           chmod +x /usr/local/bin/terragrunt
 
       - name: Set TF_PLUGIN_CACHE_DIR
