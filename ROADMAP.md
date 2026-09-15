@@ -358,17 +358,8 @@ You review and merge plan PRs, same as implementation PRs.
   [docs/done/2026-09-09-k3s-cert-manager-register-currency-refresh.md](docs/done/2026-09-09-k3s-cert-manager-register-currency-refresh.md).
   (auto/k3s-cert-manager-register-currency-refresh)
 
-- [x] 🟢 **Add a `concurrency` group to `auto-update-prs.yml`** — found live
-  2026-09-08 (cycle 25, continuing cycle 24's lens): this workflow fires on
-  every push to `main`, and this repo's own self-merge routines push to
-  `main` in rapid succession (5 times in the last hour, this run alone) —
-  overlapping runs are the routine case, not an edge case. Not a
-  correctness risk (`--force-with-lease` already fails a stale run's push
-  safely) but a stale run's failed push logs a confusing, pointless
-  failure once a newer run has already superseded it. Added a
-  `github.ref`-keyed group with `cancel-in-progress: true` (safe here
-  specifically because of `--force-with-lease`) — full verification
-  writeup:
+- [x] 🟢 **Add a `concurrency` group to `auto-update-prs.yml`** — full
+  verification writeup:
   [docs/done/2026-09-08-auto-update-prs-concurrency.md](docs/done/2026-09-08-auto-update-prs-concurrency.md).
   (auto/auto-update-prs-concurrency)
 
@@ -394,17 +385,9 @@ You review and merge plan PRs, same as implementation PRs.
   (auto/roadmap-legacy-item-trim-batch7)
 
 - [x] 🟢 **Fix `docs/platform-products.md`'s stale "6 always-on namespaces"
-  claim** — found live 2026-09-08 (cycle 21 of this run): every other
-  current-state doc (`README.md`, `docs/dependency-tree.md`) correctly says
-  "4 always-on namespaces" (`argocd`, `cert-manager`, `lab-gateway`,
-  `lab-demo`) since the 2026-09-06/07 simplification, and `docs/decisions/
-  adr-0016-default-deny-networkpolicy.md` had the identical stale "6" fixed
-  earlier this run (cycle 2) — this file was missed in that sweep. Swept
-  the rest of the file (tier diagram, product catalog, domain table) for
-  further staleness; found none — cert-manager/lab-demo's absence from the
-  product catalog is by design (not self-service "products" in this doc's
-  own sense), not a gap — full verification writeup:
-  [docs/done/2026-09-08-platform-products-namespace-count-fix.md](docs/done/2026-09-08-platform-products-namespace-count-fix.md). (auto/platform-products-namespace-count-cycle21)
+  claim** — full verification writeup:
+  [docs/done/2026-09-08-platform-products-namespace-count-fix.md](docs/done/2026-09-08-platform-products-namespace-count-fix.md).
+  (auto/platform-products-namespace-count-cycle21)
 
 - [x] 🟢 **Regenerate the on-demand DORA metrics snapshot
   (`docs/dora-metrics.md`, `make dora-metrics`, RFC #580)** — found stale
@@ -1941,22 +1924,6 @@ there is no point where the lab loses a working git source or CI path.
 - [x] 🟢 **Fix a stale namespace list in `gitops/platform/velero-networkpolicy.yaml`'s
   header comment (post-TiDB-removal drift)** — full verification writeup:
   [docs/done/2026-09-06-velero-networkpolicy-tidb-comment-fix.md](docs/done/2026-09-06-velero-networkpolicy-tidb-comment-fix.md).
-  (auto/velero-networkpolicy-tidb-comment-fix)
-  (ADR-0004; JANITOR-fallback coverage sweep 2026-09-06, following up on PR #1452's
-  TiDB/Istio/Kiali/Longhorn removal — checked every `gitops/` file for lingering
-  references to the removed components and found this one stale header comment; the
-  child `NetworkPolicy` file itself (`gitops/velero/networkpolicy/
-  allow-velero-egress-kopia-pv.yaml`) had already been correctly updated by PR #1452,
-  but the parent `Application` wrapper's own header comment, listing the same
-  namespace set independently in prose, was missed.)
-
-  `gitops/platform/velero-networkpolicy.yaml`'s header comment still listed
-  "backed-up namespaces (data/tidb/capstone/vault)" — `tidb` no longer exists as a
-  namespace since PR #1452. Corrected to the real, current set
-  (data/capstone/vault/observability, matching the child `NetworkPolicy`'s actual
-  `values:` list exactly) with an inline note on when/why it changed. No test
-  depended on the stale text (checked `tests/networkpolicy-velero.bats`/
-  `tests/velero.bats` directly). `make ci` must pass. `docs/done/` entry required.
   (auto/velero-networkpolicy-tidb-comment-fix)
 
 - [x] 🟢 **Fix 4 stale RabbitMQ/Valkey/KEDA references in `gitops/` header comments
