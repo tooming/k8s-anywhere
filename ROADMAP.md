@@ -308,8 +308,10 @@ You review and merge plan PRs, same as implementation PRs.
   not change what `terraform apply` does or touches, so it carries no
   live-infra-mutation risk and needs no architect RFC; `make ci`'s
   `shellcheck`/`yamllint` lint job (the only local gate that touches
-  `.github/workflows/*.yml`) is sufficient to validate the YAML. Close
-  issue #1619 when this item's PR merges.
+  `.github/workflows/*.yml`) is sufficient to validate the YAML. Issue
+  #1619 was already closed as part of this grooming (per the planner's
+  STEP 6) — reference it in the implementation PR body, no further issue
+  action needed.
 
 - [x] 🟢 **Regenerate the on-demand DORA metrics snapshot
   (`docs/dora-metrics.md`, `make dora-metrics`, RFC #580)** — found live
