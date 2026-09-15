@@ -465,34 +465,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 - [x] 🟢 **Add the "truly start over" clean-slate warning `docs/incident-log.md`'s
   2026-09-06 k3s-datastore-persistence entry already recommended but never
-  landed — `docs/DR.md`'s "What is NOT preserved on a rebuild" section
-  doesn't warn that a bare `colima delete` does NOT wipe Colima's
-  container-runtime data (including the k3s embedded datastore), so a
-  session reaching for it expecting a genuine clean slate silently keeps
-  hours/days of stale state instead.** Found live 2026-09-08 (planner gap
-  analysis, different lens: a scan of `docs/incident-log.md`'s own
-  "Follow-up" column for a recommendation flagged-but-not-yet-actioned,
-  rather than the removed-component-rationale class this run's other items
-  this run addressed): the 2026-09-06 P0 incident row's Follow-up column
-  reads "**Recommend**: `docs/DR.md`'s rebuild guidance ... reached for a
-  bare `colima delete` expecting a true clean slate and didn't get one.
-  Worth a follow-up doc note in DR.md's 'Full rebuild' section spelling out
-  that `colima delete --data` (not bare `colima delete`) is what 'truly
-  start over' actually requires — flagged here rather than done, since this
-  session is focused on #633 itself." Verified this was never actioned:
-  `grep -n "colima delete" docs/DR.md` returns zero hits — the note was
-  never added. (Confirmed the `Makefile` has no `colima-delete` target at
-  all — this is purely a live-session manual command, so this is a
-  docs-only gap, no Makefile/script change needed.) **Scope:** add a short
-  note to `docs/DR.md`'s "What is NOT preserved on a rebuild" section (or a
-  new adjacent subsection) explaining that `make down`/`colima stop` is the
-  normal stop/start cycle (data on PVCs/volumes kept, this is correct and
-  intended) but a genuine "wipe everything and start truly fresh" requires
-  `colima delete --data` (or `colima delete -f --data` per the incident
-  log's own live-verified command), not a bare `colima delete` — cite the
-  incident-log row directly. Docs-only, no `make ci` gate affected (no test
-  currently asserts DR.md's prose shape here). Single-PR-sized,
-  clusterless-deliverable. — full verification writeup:
+  landed** — full verification writeup:
   [docs/done/2026-09-08-dr-md-colima-delete-data-note.md](docs/done/2026-09-08-dr-md-colima-delete-data-note.md).
   (auto/dr-md-colima-delete-data-note)
 
@@ -520,67 +493,16 @@ You review and merge plan PRs, same as implementation PRs.
   (auto/dora-audit-readiness-30-repo-note-cleanup)
 
 - [x] 🟢 **Correct `scripts/dependency-maintenance-check.sh`'s stale header
-  comment — it still claims `docs/dependency-register.md` has "33 rows" and
-  that "Terraform/Terragrunt, Oracle Cloud Infrastructure, Forgejo" are the
-  rows with no `github.com` upstream source, but the register is now down to
-  7 rows (2026-09-06/2026-09-07 simplification) and Forgejo isn't a row at
-  all any more (removed, ADR-0035); of the current 7 rows, only Oracle Cloud
-  Infrastructure genuinely lacks a `github.com` source — Terraform/Terragrunt
-  now cites `github.com/hashicorp/terraform` too.** Found live 2026-09-08
-  (planner gap analysis, same "leftover rationale/count from a removed
-  component" class as this run's earlier ADR-0016/0017 (#1514),
-  dead-Harbor-mirror (#1516), and coredns-host-alias.sh (#1519) fixes):
-  `grep -c "^|" docs/dependency-register.md` confirms 7 real table rows (the
-  `make ci` "Scope note ADR/row-count arithmetic" check's own live count);
-  `grep -n "github.com" docs/dependency-register.md` confirms exactly 6 of
-  those 7 rows (Terraform/Terragrunt, ArgoCD, Traefik, Cilium, k3s,
-  cert-manager) cite a `github.com/<owner>/<repo>` upstream, leaving only
-  Oracle Cloud Infrastructure (`cloud.oracle.com` only) with none. This is a
-  report-only script (`Report-only — deliberately NOT wired into make ci`,
-  per its own header) — the stale comment doesn't affect its actual
-  behavior/output, purely its self-description; no test asserts the exact
-  stale text (`grep -rn "33 rows\|no github.com upstream" tests/*.bats`
-  confirms). **Scope:** rewrite the header's dependency-count and
-  no-github-upstream-rows claims to match current reality (cite
-  `docs/dependency-register.md` as the source of truth rather than hardcoding
-  a number that will drift again, matching the phrasing pattern
-  `docs/dependency-tree.md` and other self-tracking docs already use); also
-  fix the same section's stale "~30-repo sweep" claim (real count today is 6
-  github-backed rows). Docs/comment-only, no logic change, no `make ci` gate
-  affected. Single-PR-sized, clusterless-deliverable. — full verification
-  writeup:
+  comment (row count + no-`github.com`-upstream claims, post-simplification)**
+  — full verification writeup:
   [docs/done/2026-09-08-dependency-maintenance-check-stale-counts-cleanup.md](docs/done/2026-09-08-dependency-maintenance-check-stale-counts-cleanup.md).
   (auto/dependency-maintenance-check-stale-counts-cleanup)
 
 - [x] 🟢 **Correct `scripts/coredns-host-alias.sh`'s header comment (and
   `docs/DR.md`/`docs/dependency-tree.md`'s bootstrap-step descriptions) to
-  note the `host.k3d.internal` alias was built for Forgejo's local repoURL
-  — Forgejo is gone (ADR-0035), ArgoCD now syncs from a public GitHub
-  `repoURL`, and this alias's continued necessity is unconfirmed pending
-  live verification (tracked in
-  [#1517](https://github.com/tooming/k8s-anywhere/issues/1517)).** Found
-  live 2026-09-08 (planner gap analysis, same "leftover rationale from a
-  removed component" class as this run's earlier ADR-0016/0017 (#1514) and
-  dead-Harbor-mirror (#1516) fixes): the script's own header still explains
-  the alias purely in terms of "every ArgoCD Application (whose repoURL
-  points at the local Forgejo via `http://host.k3d.internal:2223/...`)" —
-  but `gitops/bootstrap/root-app.yaml`'s `repoURL` is
-  `https://github.com/tooming/k8s-anywhere.git` (a public HTTPS host,
-  resolvable via any standard DNS, not a docker-network-local address). A
-  repo-wide grep for `host.k3d.internal`/`host-k3d-internal` outside
-  `Makefile`, the script itself, and historical `docs/done/` writeups finds
-  zero consumers in any live-synced `gitops/**`/`infra/modules/argocd/**`
-  path. **Scope of THIS item (🟢, safe, docs/comment-only, no behavior
-  change):** update the script's header comment and the two docs' bootstrap
-  descriptions to state plainly that the alias was Forgejo-era, is currently
-  unreferenced by anything live in the repo, and its removal is gated on
-  live confirmation via issue #1517 — do **not** remove the
-  `coredns-host-alias` Makefile target, the `make up` step that calls it, or
-  the script's `host-alias` mode itself in this item; that removal is
-  issue #1517's job once a live/interactive session confirms `make up` still
-  succeeds without it (this remote clusterless session cannot run `make up`
-  to verify — ROADMAP rule #2). Single-PR-sized, clusterless-deliverable. —
-  full verification writeup:
+  note the `host.k3d.internal` alias was built for Forgejo's local repoURL**
+  (Forgejo removal drift; issue #1517 tracked the later full-removal
+  question, closed via PR #1542) — full verification writeup:
   [docs/done/2026-09-08-coredns-host-alias-forgejo-note-cleanup.md](docs/done/2026-09-08-coredns-host-alias-forgejo-note-cleanup.md).
   (auto/coredns-host-alias-forgejo-note-cleanup)
 
@@ -591,33 +513,8 @@ You review and merge plan PRs, same as implementation PRs.
   (auto/dead-harbor-registry-mirror-cleanup)
 
 - [x] 🟢 **Fix stale `vault`/`external-secrets` (and other pre-2026-09-07-removal)
-  namespace references in ADR-0016 and ADR-0017's per-namespace tables — both
-  ADRs were left behind by ADR-0042 (#1510, Vault + External Secrets Operator
-  removal).** Found live 2026-09-08 (planner gap analysis, Core Value "Docs
-  don't drift" not upheld): `docs/decisions/adr-0016-default-deny-networkpolicy.md`'s
-  §Scope & exceptions still states "this lab is down to exactly 6 always-on
-  namespaces... `vault`" (should be 4: `argocd`, `cert-manager`, `lab-gateway`,
-  `lab-demo` — ADR-0042/CHARTER.md's current count) and its "Relationship to
-  existing ADRs" / carve-out prose is otherwise fine. `docs/decisions/
-  adr-0017-pod-security-standards-restricted.md`'s per-namespace profile table
-  still carries live-looking rows for `vault`, `external-secrets`, `capstone`,
-  `storage` (Garage), `kyverno`, `velero`, `argo-rollouts`, `kargo`,
-  `capstone-pipeline`, and `harbor` — every one of those namespaces was removed
-  entirely 2026-09-06/2026-09-07 (ADR-0042 and the earlier simplification round,
-  commit 319d6b2/#1497), but neither ADR's table was updated when those removal
-  PRs landed (confirmed via `git log -- <file>`: #1510 never touched either
-  file). This is exactly the same drift class ADR-0016's own 2026-08-10
-  "Re-evaluation log" entry already fixed once for the `artifactory` namespace
-  — same fix pattern, same file: correct ADR-0016's namespace-count enumeration
-  to 4 (with a dated Re-evaluation log entry per that precedent), and delete
-  ADR-0017's now-stale carve-out rows for every removed namespace (add a dated
-  Re-evaluation log entry there too if useful, or a one-line note next to the
-  remaining `argocd`/`lab-gateway`/`lab-demo`/`cert-manager`/`kube-system` rows
-  stating the table is now current as of today). Docs-only, no code/manifest
-  change, no `make ci` gate affected beyond the existing markdown-only lint —
-  clusterless-deliverable, single-PR-sized. Not a case ADR-0016/0017's own
-  "Files this work touches" tables need editing (those already list the ADR
-  files themselves as in-scope for updates). — full verification writeup:
+  namespace references in ADR-0016 and ADR-0017's per-namespace tables** —
+  full verification writeup:
   [docs/done/2026-09-08-adr-0016-0017-stale-namespace-refs-cleanup.md](docs/done/2026-09-08-adr-0016-0017-stale-namespace-refs-cleanup.md).
   (auto/adr-0016-0017-stale-namespace-refs-cleanup)
 
@@ -834,33 +731,6 @@ You review and merge plan PRs, same as implementation PRs.
   writeup:
   [docs/done/2026-09-06-terraform-terragrunt-currency-bump.md](docs/done/2026-09-06-terraform-terragrunt-currency-bump.md).
   (auto/terraform-terragrunt-currency-bump)
-  (CLAUDE.md coverage/hardening sweep, ROADMAP rule #9's fallback chain —
-  `docs/dependency-register.md`'s Terraform/Terragrunt row was the one remaining
-  active row still reading "not dated in ADR (no Re-evaluation log)"; every other
-  active row already had a recent, dated review by this point in the run.)
-
-  Terraform: confirmed the latest stable release directly (`v1.16.1`, 2026-09-02)
-  vs. the pinned `1.15.9`. Checked `hashicorp/terraform`'s only-ever published GitHub
-  security advisory (GHSA-4rvg-555h-r626, an Azure-backend cleartext-state issue from
-  2019) — not applicable, this repo has never used an Azure backend (state lives in
-  Garage S3, ADR-0007). Checked `v1.16.0`'s one breaking-change note
-  (`bastion_host_key` provisioner behavior) against every `infra/modules/*/main.tf`
-  directly — none use `bastion_host`/SSH connection blocks, only `local-exec`
-  provisioners; not applicable. Terragrunt: confirmed latest stable (`v1.1.4`,
-  2026-08-27) vs. pinned `v1.1.3` — real security hardening (generated files/dirs get
-  restricted `0600`/`0700` permissions, registry credentials no longer duplicated
-  into generated CLI config files), no breaking change in the real release notes.
-  Bumped both pins everywhere they're carried (`.github/workflows/ci.yml` +
-  `oracle-cluster-apply.yml` + `oracle-cluster-apply-retry.yml` +
-  `scripts/ensure-manifest-tools-hook.sh`), updated `tests/ci-tool-pins.bats`'s
-  exact-pin assertions and added the matching pre-bump negative tests (mirroring the
-  file's own established drift-guard shape). Installed Terraform `1.16.1` directly
-  in this sandbox and re-ran `make ci`'s `terraform` step against it: zero
-  pre-existing failures. Terragrunt itself isn't exercised in this clusterless
-  sandbox (no OCI credentials reachable here) — this workflow's own next real run
-  against Oracle Cloud is the actual verification, same standing caveat every prior
-  terragrunt bump in these workflows' own comments has recorded. `make ci` must
-  pass. `docs/done/` entry required. (auto/terraform-terragrunt-currency-bump)
 
 - [x] 🟢 **Bump k3s `v1.36.3+k3s1` → `v1.36.4+k3s1` on both backends** — full
   verification writeup:
@@ -2115,32 +1985,6 @@ there is no point where the lab loses a working git source or CI path.
   `make ci`'s unit-test gate can't silently self-skip in an autonomous session** —
   full verification writeup:
   [docs/done/2026-09-06-ensure-bats-session-start-hook.md](docs/done/2026-09-06-ensure-bats-session-start-hook.md).
-  (auto/ensure-bats-hook)
-  (CLAUDE.md's bugfix-recurrence-prevention rule; JANITOR-fallback cleanup 2026-09-06,
-  reached via `executor.prompt.md` STEP 6b after the "Now / next" lane was
-  re-confirmed fully gated this cycle (issues #633/#1229 unchanged) and
-  PLANNER/ARCHITECT/TRIAGER/DOC-DRIFT-AUTHOR all came up empty again. Found live this
-  same run: two `upgrade/*` version-bump PRs
-  (`upgrade/kro-0.9.3-to-0.9.4`, `upgrade/grafana-12.10.4-to-12.11.2`) both passed a
-  local `make ci` that silently skipped `tests/securitycontext-kro.bats`'s hard-coded
-  exact-chart-pin assertion because `bats` wasn't installed in this remote clusterless
-  sandbox — `scripts/test.sh`'s existing local-vs-CI skip is a fair convenience for a
-  human contributor, but this session's *entire* self-review contract IS `make ci`
-  (WAYS-OF-WORKING.md §0.1's self-merge model, no other backstop) — recurring twice in
-  one run makes it a real class of bug, not a one-off, per CLAUDE.md's own
-  bugfix-recurrence rule.)
-
-  Added `scripts/ensure-bats-hook.sh`, a best-effort `SessionStart` hook (installs
-  `bats` via `apt-get` if missing, silently no-ops if `apt-get`/network/permission
-  isn't available — never blocks the session) wired into `.claude/settings.json`.
-  Once `bats` is on `PATH`, `scripts/test.sh`'s own existing local/CI branch naturally
-  takes the "run the real suite" path for the rest of the session — no change needed
-  to `test.sh` itself. Added `tests/hook-scripts-ensure-bats.bats` (its own file per
-  `tests/hook-scripts-coverage.bats`'s frozen-monolith rule) covering: script
-  exists/executable, exits 0 + reports "already installed" when `bats` is present
-  (the actual path this bats run itself exercises), exits 0 even with no `apt-get` on
-  `PATH` (never blocks), and is actually wired into `.claude/settings.json` (valid
-  JSON preserved). `make ci` must pass. `docs/done/` entry required.
   (auto/ensure-bats-hook)
 
 - [x] 🟢 **Fix a stale ADR-0004 violation in `docs/dora-audit-readiness.md`'s Kyverno
