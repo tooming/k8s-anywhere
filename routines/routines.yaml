@@ -108,7 +108,7 @@ routines:
     trigger_id: trig_01XxtSdkPdRNjBfAidUXTwos
     cron: "0 0 * * *"   # 00:00 UTC — 1/day, all 7 days (19:00 slot moved to easysportstream 2026-08-18; 10:00 slot moved to keebridge 2026-08-25; 14:00 slot moved to skoor-ai 2026-08-25; 05:00 slot moved to appforge-ci 2026-08-25)
     model: claude-sonnet-5
-    enabled: true
+    enabled: false  # paused 2026-09-15 via claude.ai/code/routines (owner action, not a file edit); to resume: flip back to true, re-apply live via RemoteTrigger update, then `make routines-mark-applied`
     allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
     prompt_file: executor.prompt.md   # the real contract — read live every run, no apply needed
     live_prompt: |
