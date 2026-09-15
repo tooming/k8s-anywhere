@@ -1,4 +1,4 @@
 # .routines-applied — sha256 of routines/routines.yaml at last apply.
 # Updated by: scripts/routines-mark-applied.sh (`make routines-mark-applied`).
 # Drift checker: scripts/routines-check.sh (`make routines-check`, in `make ci`).
-routines/routines.yaml sha256=6580db65ad755b82ca08c116290470253a43bab56dc1109b73bfee6dfef464bd
+routines/routines.yaml sha256=cc0aeee9b432dd5a238763d51abf006bc17c83ddefc129004cb967a24e5e217e
