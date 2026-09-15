@@ -346,52 +346,11 @@ You review and merge plan PRs, same as implementation PRs.
   full verification writeup:
   [docs/done/2026-09-12-dr-chaos-traefik.md](docs/done/2026-09-12-dr-chaos-traefik.md).
   (auto/dr-chaos-traefik)
-  same Q12 gap-narrowing found live 2026-09-12, this item covers Traefik
-  specifically (see the cert-manager item immediately above for the full
-  Q12 context — not repeated here).
-  **Scope:** add `scripts/dr-chaos-traefik.sh` mirroring
-  `scripts/dr-chaos-argocd.sh`'s exact shape: kill the live Traefik pod in
-  the `kube-system` namespace (selector `app.kubernetes.io/name=traefik` —
-  already a real, live selector this repo's own
-  `gitops/argocd/networkpolicy/allow-argocd-server-from-gateway.yaml` uses
-  today to reach the same pod, not a new assumption), then poll for a new
-  Ready pod (different UID) and, as the recovery predicate, that the
-  lab's own HTTP ingress responds again (reuse `lab-health-check.sh`'s
-  existing `UI_PROBES`/k3d-load-balancer-port-`:8080` probe pattern rather
-  than inventing a new HTTP check); a `make dr-chaos-traefik` target under
-  the Makefile's "Disaster recovery" section; guard-only bats coverage added
-  to `tests/dr-guards.bats` (same pattern); a `docs/DR.md` update; and an
-  honest update to `docs/dora-audit-readiness.md`'s Q12 **Gap** field (do not
-  overclaim completion if the cert-manager item above hasn't landed yet in
-  the same PR sequence — state precisely which components are covered as of
-  this item's own merge). Split-if-oversized note: none expected.
 
 - [x] 🟢 **Fault-injection drill against the `lab-demo` pod** —
   full verification writeup:
   [docs/done/2026-09-12-dr-chaos-lab-demo.md](docs/done/2026-09-12-dr-chaos-lab-demo.md).
-  (auto/dr-chaos-lab-demo) — same Q12
-  gap-narrowing found live 2026-09-12, this item covers `lab-demo`, the
-  fourth and final always-on component named in Q12's gap (see the
-  cert-manager item above for the full context).
-  **Scope:** add `scripts/dr-chaos-lab-demo.sh` mirroring
-  `scripts/dr-chaos-argocd.sh`'s exact shape: kill the live `hello` pod in
-  the `lab-demo` namespace (selector `app: hello` — the real, live label
-  `gitops/apps/demo/deployment.yaml` already sets, confirmed directly, not
-  assumed), then poll for a new Ready pod (different UID) and, as the
-  recovery predicate, that the demo's own HTTP endpoint serves the expected
-  `lab-demo-hello` ConfigMap content again (reuse `lab-health-check.sh`'s
-  existing probe pattern, same as the Traefik item above); a
-  `make dr-chaos-lab-demo` target under the Makefile's "Disaster recovery"
-  section; guard-only bats coverage added to `tests/dr-guards.bats`; a
-  `docs/DR.md` update; and a final honest update to
-  `docs/dora-audit-readiness.md`'s Q12 **Answer**/**Gap** fields — once this
-  item lands (after the cert-manager and Traefik items above), all four
-  always-on components have a drill, so Q12's **Gap** field should say so
-  plainly rather than continuing to describe it as "narrowed" — but this
-  update belongs in whichever of the three PRs lands last, not duplicated in
-  all three; check the other two items' merge state before writing this
-  PR's own Q12 update so it accurately reflects what's actually landed by
-  the time this one merges. Split-if-oversized note: none expected.
+  (auto/dr-chaos-lab-demo)
 
 - [x] 🟢 **`docs/dependency-register.md`'s k3s and cert-manager rows'
   "Last reviewed" dates re-confirmed against live upstream releases** —
@@ -470,25 +429,8 @@ You review and merge plan PRs, same as implementation PRs.
   (auto/dr-md-colima-delete-data-note)
 
 - [x] 🟢 **Fix `docs/dora-audit-readiness.md` Q15's stale "~30-repo sweep"
-  claim about `scripts/dependency-maintenance-check.sh` — the real current
-  count is 6 github-backed rows (`docs/dependency-register.md` is down to 7
-  rows total, 2026-09-06/2026-09-07 simplification; only Oracle Cloud
-  Infrastructure lacks a `github.com` source).** Found live 2026-09-08
-  (planner gap analysis, same class this run already fixed directly in the
-  script itself — `auto/dependency-maintenance-check-stale-counts-cleanup`,
-  #1521 — but missed this second copy of the same stale claim describing the
-  script from the outside): Q15's "Answer" paragraph says "GitHub's request
-  volume for a `~30-repo` sweep makes it unsuitable as a hard, always-on
-  gate" — `grep -rn "30-repo" docs/*.md` confirms this is the only remaining
-  occurrence anywhere in `docs/`, and `grep -rn "30-repo" tests/*.bats`
-  confirms no test asserts it. **Scope:** reword the parenthetical to avoid
-  hardcoding a specific repo count (matching the fix already applied to the
-  script's own header comment in #1521 — point at
-  `docs/dependency-register.md` as the live source of truth, or use a
-  non-numeric phrasing like "a multi-repo sweep") rather than swapping in
-  "6", which would only recreate the same drift class at the next
-  simplification round. Docs-only, no `make ci` gate affected.
-  Single-PR-sized, clusterless-deliverable. — full verification writeup:
+  claim about `scripts/dependency-maintenance-check.sh`** — full
+  verification writeup:
   [docs/done/2026-09-08-dora-audit-readiness-30-repo-note-cleanup.md](docs/done/2026-09-08-dora-audit-readiness-30-repo-note-cleanup.md).
   (auto/dora-audit-readiness-30-repo-note-cleanup)
 
@@ -672,29 +614,6 @@ You review and merge plan PRs, same as implementation PRs.
   none exploitable in this lab's config** — full verification writeup:
   [docs/done/2026-09-06-traefik-full-ghsa-sweep.md](docs/done/2026-09-06-traefik-full-ghsa-sweep.md).
   (auto/traefik-full-ghsa-sweep)
-  (ADR-0004; extending this run's "full advisory listing, not just currency" GHSA-sweep
-  technique — already applied to Envoy Gateway, Cilium, ArgoCD, KEDA+Velero, and
-  cert-manager — to Traefik, the one remaining always-on ingress component with no
-  dedicated security audit on record since ADR-0040 replaced Envoy Gateway after that
-  component's own sweep had already happened.)
-
-  Traefik ships bundled with k3s (no independent chart `Application`/`targetRevision`
-  of its own — `gitops/platform/traefik-config.yaml` only delivers a `HelmChartConfig`
-  for probe/resource tuning). Confirmed the actual bundled version directly via k3s's
-  `v1.36.4+k3s1` release notes' "Embedded Component Versions" table: Traefik `v3.7.8`.
-  Checked all 9 published `traefik/traefik` GitHub security advisories in range,
-  including one Critical (`digestAuth` complete auth bypass, GHSA-5w68-77r2-r64c) —
-  every one's affected range includes `v3.7.8`, but every one requires a feature this
-  lab's `gitops/` doesn't use (digestAuth/basicAuth middlewares, Gateway API objects,
-  `TLSOption`/mTLS, HTTP/3, the `kubernetesIngressNGINX` compat provider, or a
-  multi-tenant `crossProviderNamespaces` setup) — confirmed via direct `grep` against
-  every real manifest, not assumed. No newer k3s release yet bundles a fixed Traefik
-  (`v3.7.11`/`v3.7.12`); flip condition recorded: re-check when the k3s pin
-  (ADR-0030) next bumps, since that silently carries a new bundled Traefik version
-  along with it. `docs/dependency-register.md`'s Traefik row updated with the result
-  (ADR-0040 has no dedicated Re-evaluation log of its own, same shape as this run's
-  ArgoCD sweep). No code/config change. `make ci` must pass. `docs/done/` entry
-  required. (auto/traefik-full-ghsa-sweep)
 
 - [x] 🟢 **ArgoCD full GHSA sweep — confirm `v3.5.2` pin security-clean** — full
   verification writeup:
@@ -1991,26 +1910,6 @@ there is no point where the lab loses a working git source or CI path.
   criticality-tier row** — full verification writeup:
   [docs/done/2026-09-06-dora-kyverno-failurepolicy-fix.md](docs/done/2026-09-06-dora-kyverno-failurepolicy-fix.md).
   (auto/dora-kyverno-failurepolicy-fix)
-  (ADR-0004 (no fabricated content — dashboards/outputs must show real,
-  auto-discovered state); JANITOR-fallback cleanup 2026-09-06, reached via
-  `executor.prompt.md` STEP 6b after the "Now / next" lane was re-confirmed fully
-  gated this cycle (issues #633/#1229 unchanged) and PLANNER/ARCHITECT/TRIAGER/
-  DOC-DRIFT-AUTHOR/UPGRADE-DRAFTER all came up empty or too risky this cycle
-  (ArgoCD's chart 10.5.0 → 10.8.0 spanned multiple minor releases and this remote
-  session's page-fetch tooling could not reliably diff its large `values.yaml`
-  across tags — skipped rather than asserting safety it couldn't verify).)
-
-  `docs/dora-audit-readiness.md`'s Kyverno criticality-tier row claimed "Every
-  policy in `gitops/kyverno/policies/` sets `failurePolicy: Ignore` ... confirmed
-  directly in `verify-image-signatures.yaml`" — verified directly against the real
-  file (ADR-0004) and found this false: `verify-image-signatures.yaml` explicitly
-  sets `failurePolicy: Fail` (flipped from `Ignore` 2026-08-18, per that file's own
-  header comment). Corrected the row to state the real, current fact and to
-  honestly flag what the other 4 `ClusterPolicy` files' unset `failurePolicy`
-  actually resolves to as unverified from this clusterless session (not asserted
-  either way), rather than repeating a blanket claim that was already wrong for at
-  least one of the five files. `make ci` must pass. `docs/done/` entry required.
-  (auto/dora-kyverno-failurepolicy-fix)
 
 - [x] 🟢 **`scripts/ensure-lint-tools-hook.sh` — auto-install `shellcheck`/`yamllint`
   at session start so `make ci`'s lint gate can't silently self-skip either** —
@@ -2054,27 +1953,6 @@ there is no point where the lab loses a working git source or CI path.
   (post-2026-09-06-removal drift)** — full verification writeup:
   [docs/done/2026-09-06-rabbitmq-valkey-keda-comment-sweep.md](docs/done/2026-09-06-rabbitmq-valkey-keda-comment-sweep.md).
   (auto/rabbitmq-valkey-keda-comment-sweep)
-  (ADR-0004; JANITOR-fallback coverage sweep 2026-09-06, following up on the same-day
-  RabbitMQ/Valkey/KEDA removal (ADR-0009/ADR-0018/ADR-0029) — same "check every
-  `gitops/` file for lingering references to a just-removed component" pattern that
-  already caught one real stale comment each for the TiDB removal and the
-  observability-stack removal earlier this run.)
-
-  Fixed 4 present-tense comments still describing removed components as live:
-  `gitops/vault/networkpolicy/allow-vault-from-eso.yaml` (ExternalSecret consumer
-  list still named rabbitmq/valkey), `gitops/external-secrets/networkpolicy/
-  allow-eso-webhook-from-apiserver.yaml` (compared its shape to "gitops/keda's
-  equivalent files", a directory that no longer exists), `gitops/platform/
-  harbor.yaml` (implied Valkey was merely "unaffected" by Harbor's redis-photon
-  exception rather than removed entirely), and `gitops/network/policies/
-  zz-dns-clusterip-bridge.yaml` (illustrative ClusterIP example used
-  `valkey.data.svc`, a Service that no longer exists — swapped for
-  `vault.vault.svc`). Left `gitops/kyverno/policies/
-  require-pod-security-restricted.yaml`'s "mimir, loki, tempo, moto, rabbitmq,
-  valkey" list alone — that's a past-tense description of a historical incident
-  (a PSS-rejection replay), not a present-tense claim about current namespace
-  contents, so it's accurate as written. `make ci` must pass. `docs/done/` entry
-  required. (auto/rabbitmq-valkey-keda-comment-sweep)
 
 - ~~🟡 **GitHub↔Forgejo git-history divergence — needs an architect decision on
   sync strategy**~~ (issue #1335; RFC #1340 — architect decision 2026-08-25:
