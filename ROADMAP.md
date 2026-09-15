@@ -288,6 +288,29 @@ You review and merge plan PRs, same as implementation PRs.
 > both of batch 7's deferred candidates — see
 > [docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md).
 
+- [ ] 🟢 **Cache Terraform providers in `oracle-cluster-apply-retry.yml` /
+  `oracle-cluster-apply.yml` (issue #1619)** — groomed 2026-09-15 (STEP 6b
+  PLANNER-fallback grooming: the "Now / next" lane was completely empty —
+  every backlog item `[x]`, zero open PRs — and issue #1619 was the one
+  open, ungroomed intake item). Same missing-provider-cache gap
+  `ci.yml`'s `terraform` job had before PR #1618 fixed it there: no
+  `TF_PLUGIN_CACHE_DIR` + `actions/cache` step, so every run of the
+  hourly-cron `oracle-cluster-apply-retry.yml` (fires every 17 minutes
+  past the hour) and the manual `oracle-cluster-apply.yml` re-downloads
+  the `oracle/oci` provider (large) from scratch — most retry runs end in
+  an expected "Out of host capacity" no-op, so that download is frequently
+  paid just to reach the no-op. **Scope:** apply PR #1618's exact pattern
+  (`Set TF_PLUGIN_CACHE_DIR` env step + `mkdir -p` + `actions/cache@<same
+  pinned sha>` keyed on `hashFiles('infra/modules/**/.terraform.lock.hcl')`,
+  restore-keys scoped to `runner.os`) to whichever job(s) in each of these
+  two workflows run `terraform init`/`plan`/`apply`. This is purely a
+  caching addition to the CI runner's provider-plugin directory — it does
+  not change what `terraform apply` does or touches, so it carries no
+  live-infra-mutation risk and needs no architect RFC; `make ci`'s
+  `shellcheck`/`yamllint` lint job (the only local gate that touches
+  `.github/workflows/*.yml`) is sufficient to validate the YAML. Close
+  issue #1619 when this item's PR merges.
+
 - [x] 🟢 **Regenerate the on-demand DORA metrics snapshot
   (`docs/dora-metrics.md`, `make dora-metrics`, RFC #580)** — found live
   2026-09-14 (STEP 6b PLANNER-fallback filler, ROADMAP rule #9: the lane
