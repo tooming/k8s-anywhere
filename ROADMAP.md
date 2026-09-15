@@ -333,50 +333,7 @@ You review and merge plan PRs, same as implementation PRs.
   (auto/dora-metrics-refresh-20260914)
 
 - [x] 🟢 **Write a fault-injection drill against a currently-live always-on
-  component** — found live 2026-09-11 (planner gap analysis, cycle 4 of this
-  run, re-reading `docs/dora-audit-readiness.md` against the current
-  4-namespace repo state): Q12 ("Is there an adversarial/penetration-style
-  test (DORA's TLPT concept)?") names a real, still-open gap verbatim — the
-  three fault-injection drills this lab used to run (`dr-chaos`,
-  `dr-network-partition`, `dr-garage-failure`) each targeted a component
-  removed entirely 2026-09-07 (capstone, Garage) and were deleted with no
-  replacement written against any currently-live component, and Q13 (test
-  results/remediation tracking) independently confirms no such mechanism
-  exists any more either. Q12's own text names the concrete, buildable
-  instance: "kill the single-replica ArgoCD pod and assert Kubernetes' own
-  self-heal" — this directly serves CHARTER's Goals ("operational-resilience
-  discipline... mapped onto concrete GitOps practice") and is entirely
-  clusterless-*writable* even though it only *runs* against a live cluster
-  (same shape as the existing `scripts/dr-test.sh`/`dr-verify.sh`/
-  `dr-destroy.sh`, none of which run in CI either — `make ci` only lints them
-  and exercises their non-destructive guard paths, per `tests/dr-guards.bats`'s
-  existing pattern).
-  **Scope:** add `scripts/dr-chaos-argocd.sh` (kill the
-  `app.kubernetes.io/name=argocd-application-controller` pod — the label this
-  repo's own `gitops/argocd/networkpolicy/*.yaml` already uses for its sibling
-  components — via the same `confirm_or_abort`/`DR_ASSUME_YES` type-to-confirm
-  gate as `dr-destroy.sh`/`dr-test.sh`, then poll for a new Ready pod (a
-  different UID) and for every ArgoCD `Application` to return to
-  Synced+Healthy, mirroring `dr-verify.sh`'s own `p_argo` predicate); a
-  `make dr-chaos-argocd` target under the Makefile's "Disaster recovery"
-  section; guard-only bats coverage in `tests/dr-guards.bats` (unknown-usage/
-  no-confirmation-refusal paths only, same non-destructive pattern already
-  used for `dr-test.sh`/`dr-destroy.sh` — never actually invoking a live
-  cluster from `make ci`); a `docs/DR.md` section documenting it; a
-  `README.md` update (the Disaster Recovery section currently states "There
-  is no automated backup/restore, fault-injection, or blue/green drill left"
-  — this closes the fault-injection half of that claim, so the claim and the
-  table need updating together, not left contradicting the new script); and
-  an honest update to `docs/dora-audit-readiness.md`'s Q12 **Answer**/**Gap**
-  fields reflecting that one concrete fault-injection drill now exists
-  against a live always-on component — explicitly NOT an adversarial/
-  penetration-style TLPT test, and NOT a claim of regulatory compliance
-  (CHARTER's own Goals section already states this lab's DORA framing is
-  "explicitly as an educational lens, never a regulatory compliance claim
-  this lab cannot honestly make" — Q12's updated answer must preserve that
-  framing, not overclaim). Split-if-oversized note: none expected — this is
-  one small script + doc/test updates, well under the ~400-line PR guidance.
-  Full verification writeup:
+  component (ArgoCD)** — full verification writeup:
   [docs/done/2026-09-11-dr-chaos-argocd.md](docs/done/2026-09-11-dr-chaos-argocd.md).
   (auto/dr-chaos-argocd)
 
@@ -384,43 +341,6 @@ You review and merge plan PRs, same as implementation PRs.
   full verification writeup:
   [docs/done/2026-09-12-dr-chaos-cert-manager.md](docs/done/2026-09-12-dr-chaos-cert-manager.md).
   (auto/dr-chaos-cert-manager)
-  found live 2026-09-12 (planner gap analysis, re-reading
-  `docs/dora-audit-readiness.md`'s own Q12 **Gap** field after `dr-chaos-argocd`
-  shipped): Q12's gap is explicitly described as "narrowed, not closed" —
-  `dr-chaos-argocd` covers only ArgoCD's application-controller pod; the other
-  three always-on components (cert-manager, Traefik, `lab-demo`) have no
-  equivalent drill yet. This item covers cert-manager; Traefik and `lab-demo`
-  are separate items below (kept as three small PRs, not one large one, per
-  WAYS-OF-WORKING.md §3's size discipline — mirrors `dr-chaos-argocd`'s own
-  single-component scope).
-  **Scope:** add `scripts/dr-chaos-cert-manager.sh` mirroring
-  `scripts/dr-chaos-argocd.sh`'s exact shape (same `confirm_or_abort`/
-  `DR_ASSUME_YES` gate, same `retry`/`fail` helpers, same
-  `lib/kctx.sh`/`lib/colors.sh`/`lib/confirm.sh` sourcing): kill the live
-  cert-manager controller pod in the `cert-manager` namespace (selector
-  `app.kubernetes.io/name=cert-manager` — the upstream Jetstack chart's own
-  controller-pod label, distinct from its sibling `cainjector`/`webhook`
-  pods; **NEEDS LIVE VERIFICATION on the next cluster rebuild** before this
-  drill is trusted, same caveat this repo's own
-  `allow-cert-manager-webhook-from-apiserver.yaml` already states for a label
-  assumption in this exact namespace — do not silently drop this caveat when
-  building), then poll for a new Ready pod (different UID) and, as the
-  recovery predicate, that `kubectl get clusterissuer` (or `issuer -n
-  cert-manager`, whichever this repo's root-CA bootstrap actually uses — read
-  `gitops/platform/cert-manager-root-ca.yaml` first) reports `Ready` again,
-  mirroring `dr-verify.sh`'s existing cert-manager health predicate if one
-  exists (reuse it rather than inventing a second one — check `dr-verify.sh`
-  before writing this from scratch); a `make dr-chaos-cert-manager` target
-  under the Makefile's "Disaster recovery" section, next to
-  `dr-chaos-argocd`; guard-only bats coverage added to `tests/dr-guards.bats`
-  (same non-destructive unknown-usage/no-confirmation-refusal pattern, never
-  invoking a live cluster from `make ci`); a `docs/DR.md` update listing the
-  new drill alongside `dr-chaos-argocd`; and an honest update to
-  `docs/dora-audit-readiness.md`'s Q12 **Gap** field noting two of the three
-  remaining components are now covered (do not overclaim — Traefik is still
-  a separate item below, not done by this one). Split-if-oversized note:
-  none expected — same size class as `dr-chaos-argocd` (one script + small
-  doc/test updates).
 
 - [x] 🟢 **Fault-injection drill against the Traefik pod (`kube-system`)** —
   full verification writeup:
@@ -537,77 +457,9 @@ You review and merge plan PRs, same as implementation PRs.
   other doc hardcodes the old numbers — full verification writeup:
   [docs/done/2026-09-08-dora-metrics-refresh-cycle20.md](docs/done/2026-09-08-dora-metrics-refresh-cycle20.md). (auto/dora-metrics-refresh-cycle20)
 
-- [x] 🟢 **`lab-demo` actually runs the Jaeger HotROD tracing demo
-  (`jaegertracing/example-hotrod:2.20.0`), not the "single static
-  hello-world Deployment" that `README.md`, `ROADMAP.md`'s own intro,
-  `CHARTER.md`, `docs/00-architecture.md`, and `docs/dependency-tree.md`
-  all already describe it as — swap the image to a genuine static
-  hello-world container so reality matches the docs (and wire up the
-  already-existing, currently-orphaned `lab-demo-hello` ConfigMap while at
-  it).** Found live 2026-09-08 (planner gap analysis, different lens: cross-
-  checking a docs claim repeated across 5 files against the actual manifest
-  it describes, rather than the "removed-component leftover" or "incident
-  follow-up" classes this run's other items used): `git log -S "static
-  hello-world" -- README.md CHARTER.md ROADMAP.md docs/00-architecture.md`
-  shows this phrasing was introduced by the 2026-09-06/2026-09-07
-  simplification commit (`319d6b2`/#1497) — the same commit that removed
-  the observability stack HotROD's tracing existed to feed — but
-  `gitops/apps/demo/deployment.yaml`'s actual image was never swapped; it
-  still pulls the full Jaeger HotROD demo app (a whole distributed-tracing
-  storefront simulator), whose own `OTEL_EXPORTER_OTLP_ENDPOINT` was
-  already removed the same commit ("hotrod runs with its own default
-  (no-op) exporter behavior" — its tracing functionality is entirely dead
-  weight now). Confirmed there is no Service or IngressRoute for `lab-demo`
-  at all (`grep -rl "lab-demo" gitops/network/` — zero hits;
-  `gitops/apps/demo/` has no `service.yaml`) — HotROD's web UI has never
-  actually been reachable from outside the cluster, so replacing it loses
-  nothing reachable today. Also confirmed `gitops/apps/demo/configmap.yaml`
-  (`lab-demo-hello`, message: "Hello from GitOps — this was synced by
-  ArgoCD, from GitHub, into the cluster.") is never referenced by the
-  Deployment (no `volumeMounts`/`envFrom` anywhere in
-  `deployment.yaml`) — a second, independent orphan this same fix should
-  close by finally wiring it up.
-  **Scope:** (1) replace `gitops/apps/demo/deployment.yaml`'s image with a
-  minimal, non-root-by-default static web server (e.g.
-  `nginxinc/nginx-unprivileged`, which listens on 8080 by default — no
-  `containerPort` change needed) serving an `index.html` rendering the
-  ConfigMap's existing message (add an `index.html` key to
-  `gitops/apps/demo/configmap.yaml` with real, non-fabricated content — the
-  same "Hello from GitOps..." text already there, ADR-0004 — and mount it
-  via a `volumeMounts`/`volumes` ConfigMap-volume pair the Deployment
-  currently has neither of); (2) since the new image runs non-root by
-  default, ADR-0017's `lab-demo` flip condition ("when the image ships a
-  non-root UID") is now met — flip `gitops/apps/demo/namespace.yaml`'s four
-  PSA labels from `baseline` to `restricted`, add the standard PSS
-  `restricted` pod/container `securityContext` fields to the Deployment
-  (mirror `gitops/cert-manager/*.yaml`'s pattern: `runAsNonRoot: true`,
-  `seccompProfile.type: RuntimeDefault`, `allowPrivilegeEscalation: false`,
-  `capabilities.drop: [ALL]`, `readOnlyRootFilesystem: true` — check
-  `nginx-unprivileged`'s own doc for whether a writable `emptyDir` is needed
-  for `/var/cache/nginx`/`/tmp`/`/var/run`, matching ADR-0017's
-  emptyDir-over-write-targets pattern), and update ADR-0017's per-namespace
-  table row + a new dated Re-evaluation log entry recording the flip,
-  mirroring the `vault`/`kyverno` flip-entry shape already in that log; (3)
-  update `tests/securitycontext-lab-demo.bats` (currently asserts
-  `baseline`, including an explicit "does NOT enforce restricted" safety
-  check that would need inverting) to assert `restricted` instead, adding
-  the new securityContext field assertions; (4) fix
-  `gitops/apps/demo/namespace.yaml`'s own header comment and
-  `tests/securitycontext-lab-demo.bats`'s own header comment, both of which
-  still say "because jaegertracing/example-hotrod runs as root" and cite
-  the dead "or is replaced by the capstone-built image" flip condition
-  (same stale phrase already removed from ADR-0017 itself in #1514 — missed
-  here). **Not in scope:** adding a Service/IngressRoute for `lab-demo`
-  (it has never had one; out of scope for this fix, a separate item if ever
-  wanted). `make ci` must stay green throughout, including
-  `tests/kustomize.bats`/`validate-manifests.sh` re-rendering the new
-  Deployment shape cleanly. This is a real container-image swap (not
-  docs-only) but not an ADR-worthy architecture decision — no ADR pins
-  the demo app's image choice, and this brings the manifest in line with a
-  direction the docs already, consistently, describe as decided. Larger
-  than this run's other items — if it risks WAYS-OF-WORKING.md §3's
-  ~400-line cap, split the PSS-flip half (2-3) into its own follow-up item
-  after the image-swap half (1, 4) lands. — full verification writeup:
+- [x] 🟢 **`lab-demo` actually runs the Jaeger HotROD tracing demo, not the
+  "single static hello-world Deployment" the docs claimed** — full
+  verification writeup:
   [docs/done/2026-09-08-lab-demo-hello-world-swap.md](docs/done/2026-09-08-lab-demo-hello-world-swap.md).
   (auto/lab-demo-hello-world-swap)
 
@@ -734,35 +586,7 @@ You review and merge plan PRs, same as implementation PRs.
 
 - [x] 🟢 **Remove the dead Harbor containerd registry-mirror block from
   `infra/modules/k3d-cluster/k3d-config.yaml.tftpl` (and its dedicated
-  `tests/k3d-registry-mirror.bats` file) — Harbor was removed entirely
-  2026-09-07 (ADR-0024), no replacement, but this bootstrap template still
-  renders a `registries: mirrors: "harbor.127.0.0.1.nip.io": endpoint:
-  http://harbor.harbor.svc.cluster.local` block pointing at a Kubernetes
-  Service that will never exist again.** Found live 2026-09-08 (planner gap
-  analysis, same "leftover config from a removed component" class as this
-  run's earlier ADR-0016/0017 fix, this time in `infra/` rather than
-  `docs/decisions/`): `find gitops -iname "*harbor*"` and `grep -n
-  "harbor-up\|harbor-down" Makefile` both return zero results (Harbor is
-  fully gone, not even an on-demand target), yet the k3d bootstrap template's
-  comment block still describes it as "on-demand (ADR-0024) — this mirror
-  sits inert, harmlessly, whenever Harbor isn't running; it only matters
-  once `make harbor-up` is used" — a `make harbor-up` target that no longer
-  exists. `tests/k3d-registry-mirror.bats` (6 tests) exists solely to assert
-  this dead block's presence/shape, so it must be deleted (not just
-  updated) alongside the template edit, or `make ci` would keep passing
-  by testing dead code. **Scope:** delete the `registries:` block and its
-  preceding explanatory comment from `k3d-config.yaml.tftpl` (the
-  `%{ if disable_traefik || disable_default_cni ~}` conditional block below
-  it is unrelated and must stay); delete `tests/k3d-registry-mirror.bats`
-  entirely; check `tests/drift-detectors.bats`,
-  `tests/hook-scripts-coverage.bats`, and any "every scripts/lib/*.sh file is
-  referenced" / frozen-file-list guard for a now-dangling reference to the
-  deleted test file and update accordingly; re-run `make ci` to confirm
-  green. The Oracle backend (`infra/modules/oracle-k3s-cluster/`) has no
-  equivalent Harbor mirror config — verified via
-  `grep -rn "harbor" infra/modules/oracle-k3s-cluster/` (zero hits) — so this
-  is a local-backend-only fix, single file + single test file,
-  clusterless-deliverable, single-PR-sized. — full verification writeup:
+  `tests/k3d-registry-mirror.bats` file)** — full verification writeup:
   [docs/done/2026-09-08-dead-harbor-registry-mirror-cleanup.md](docs/done/2026-09-08-dead-harbor-registry-mirror-cleanup.md).
   (auto/dead-harbor-registry-mirror-cleanup)
 
@@ -2349,103 +2173,17 @@ there is no point where the lab loses a working git source or CI path.
   full verification writeup:
   [docs/done/2026-09-06-ensure-lint-tools-session-start-hook.md](docs/done/2026-09-06-ensure-lint-tools-session-start-hook.md).
   (auto/ensure-lint-tools-hook)
-  (CLAUDE.md's bugfix-recurrence-prevention rule; JANITOR-fallback cleanup 2026-09-06,
-  a direct follow-up to `auto/ensure-bats-hook` (#1448) earlier this same run — same
-  footgun class, a different pair of tools. Found live checking whether the ArgoCD
-  chart-bump candidate this cycle's `[Action needed]` note (#1450) mentioned could be
-  attempted more safely with `kustomize`/`helm` installed locally: neither was
-  installed either, and neither is `shellcheck`/`yamllint` — `scripts/lint.sh`'s own
-  local/CI skip (`command -v shellcheck`/`yamllint`, soft-skip locally, hard-fail
-  under `CI=true`) meant this session's own `make ci` had been silently skipping the
-  entire `lint` gate the whole run, on every one of this run's prior PRs, exactly the
-  same self-review blind spot the bats fix closed for the `unit` gate.)
-
-  Added `scripts/ensure-lint-tools-hook.sh`, a best-effort `SessionStart` hook
-  (installs `shellcheck`/`yamllint` via `apt-get` if missing, silently no-ops if
-  `apt-get`/network/permission isn't available — never blocks the session) wired
-  into `.claude/settings.json`. Once both are on `PATH`, `scripts/lint.sh`'s own
-  existing local/CI branch naturally takes the "run the real check" path for the
-  rest of the session — no change needed to `lint.sh` itself. Verified live: running
-  `bash scripts/lint.sh` after installing both found zero pre-existing lint findings
-  across the whole repo (the GitHub Actions backstop had genuinely been keeping this
-  clean; installing the tools locally didn't surface a hidden violation this PR would
-  otherwise need to fix). Added `tests/hook-scripts-ensure-lint-tools.bats` (its own
-  file per `tests/hook-scripts-coverage.bats`'s frozen-monolith rule, mirroring
-  `tests/hook-scripts-ensure-bats.bats`'s structure) covering: script
-  exists/executable, exits 0 + reports "already installed" for both tools when
-  present (the actual path this bats run itself exercises), exits 0 even with no
-  `apt-get`/tools on `PATH` (never blocks), and is actually wired into
-  `.claude/settings.json` (valid JSON preserved). `make ci` must pass. `docs/done/`
-  entry required. (auto/ensure-lint-tools-hook)
 
 - [x] 🟢 **`scripts/ensure-manifest-tools-hook.sh` — auto-install
   `kustomize`/`terraform`/`tflint`/`kubeconform` so `make ci`'s validate gates can't
   self-skip either** — full verification writeup:
   [docs/done/2026-09-06-ensure-manifest-tools-session-start-hook.md](docs/done/2026-09-06-ensure-manifest-tools-session-start-hook.md).
   (auto/ensure-manifest-tools-hook)
-  (CLAUDE.md's bugfix-recurrence-prevention rule; third JANITOR-fallback follow-up
-  this same run to `auto/ensure-bats-hook` (#1448) and `auto/ensure-lint-tools-hook`
-  (#1456) — same footgun class, the remaining validate-*.sh tool dependencies.
-  Verified live none of `kustomize`/`terraform`/`tflint`/`kubeconform` was installed
-  either, meaning `make ci`'s kustomize/terraform/manifests steps had all been
-  silently self-skipping the whole run too.)
-
-  Added `scripts/ensure-manifest-tools-hook.sh`, pinning each tool's version to
-  exactly match `.github/workflows/ci.yml`'s own pins (`kustomize` v5.8.1,
-  `kubeconform` v0.8.0, `terraform` 1.15.9, `tflint` via CI's own install script) so
-  a local pass means the same thing CI's pass means. `helm` is deliberately excluded
-  and the script says why: its official binaries are hosted exclusively on
-  `get.helm.sh`, which this sandbox's egress proxy blocks (verified live — the
-  official `get-helm-3` install script failed with `connect_rejected`); this only
-  costs `helm-chart-pin-check.sh`'s local run (that gate's own soft-skip message
-  already says so) since `validate-kustomize.sh` no longer needs `helm` at all as of
-  2026-09-06 (ADR-0040's Envoy Gateway removal deleted the only kustomization that
-  vendored a Helm chart via the `helmCharts` inflator). Verified live: running the
-  freshly-enabled `kustomize`/`terraform`/`manifests` `make ci` steps found **zero
-  pre-existing failures** — the GitHub Actions backstop had genuinely been keeping
-  all three clean; enabling them locally didn't surface hidden drift needing a
-  separate fix. Added `tests/hook-scripts-ensure-manifest-tools.bats` (its own file
-  per `tests/hook-scripts-coverage.bats`'s frozen-monolith rule): script
-  exists/executable, reports "already installed" for all four tools when present
-  (the actual path this bats run itself exercises), never fails even with no
-  network/tools reachable (a minimal `PATH` exercising only the hook's own
-  non-network coreutils calls), explicitly documents the `helm` exclusion, and is
-  wired into `.claude/settings.json` with valid JSON preserved. `make ci` must pass.
-  `docs/done/` entry required. (auto/ensure-manifest-tools-hook)
 
 - [x] 🟢 **`scripts/ensure-yq-hook.sh` — auto-install `mikefarah/yq` so `make ci`'s
   yq-only gates can't self-skip either** — full verification writeup:
   [docs/done/2026-09-06-ensure-yq-session-start-hook.md](docs/done/2026-09-06-ensure-yq-session-start-hook.md).
   (auto/ensure-yq-hook)
-  (CLAUDE.md's bugfix-recurrence-prevention rule; fourth JANITOR-fallback follow-up
-  this same run to `auto/ensure-bats-hook` (#1448), `auto/ensure-lint-tools-hook`
-  (#1456), and `auto/ensure-manifest-tools-hook` (#1460) — same footgun class, this
-  time `scripts/lib/yq-variant.sh`'s `require_mikefarah_yq()`, which soft-skips any
-  mikefarah-yq-only gate when the `yq` on `PATH` isn't that variant. Found live while
-  validating PR #1461 (Traefik web/tls split): this sandbox's apt-installed
-  `/usr/bin/yq` is the Python/jq-wrapper variant (`yq 0.0.0`, no "mikefarah" in its
-  version string), so `tests/ingressroute-web-tls-check.bats`'s own violation-detection
-  assertion silently soft-skipped locally even though the identical commit's real
-  GitHub Actions run reported success — confirmed by reading `.github/workflows/
-  ci.yml`'s own "Install yq + helm" step, which installs mikefarah/yq to this exact
-  path already, so main was never actually broken, purely a local-sandbox validation
-  gap.)
-
-  Added `scripts/ensure-yq-hook.sh`, using the identical install command
-  `.github/workflows/ci.yml`'s own "Install yq + helm" step uses (minus `sudo`, since
-  this session already runs as root) to install mikefarah/yq to `/usr/local/bin/yq`
-  (ahead of `/usr/bin` on `PATH`), so a local pass means the same thing a CI pass
-  means. Verified live both branches: already-installed (no-op, reports success) and
-  fresh-install (downloads, `chmod +x`, verifies the binary reports "mikefarah" in its
-  version string) both work; re-ran `tests/ingressroute-web-tls-check.bats` afterward
-  and all 4 assertions passed for real instead of soft-skipping. Added
-  `tests/hook-scripts-ensure-yq.bats` (its own file per `tests/hook-scripts-
-  coverage.bats`'s frozen-monolith rule): script exists/executable, reports "already
-  installed" when mikefarah/yq is present (the actual path this bats run itself
-  exercises), never fails even with no network/yq reachable (a minimal `PATH`
-  exercising only the hook's own non-network calls), and is wired into
-  `.claude/settings.json` with valid JSON preserved. `make ci` must pass. `docs/done/`
-  entry required. (auto/ensure-yq-hook)
 
 - [x] 🟢 **Fix a stale namespace list in `gitops/platform/velero-networkpolicy.yaml`'s
   header comment (post-TiDB-removal drift)** — full verification writeup:
