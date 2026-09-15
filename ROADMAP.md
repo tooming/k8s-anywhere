@@ -651,6 +651,16 @@ You review and merge plan PRs, same as implementation PRs.
   [docs/done/2026-09-06-terraform-terragrunt-currency-bump.md](docs/done/2026-09-06-terraform-terragrunt-currency-bump.md).
   (auto/terraform-terragrunt-currency-bump)
 
+- [x] 🟢 **Bump Terragrunt `v1.1.4`→`v1.1.5` (Oracle apply workflows) — found
+  live 2026-09-15 via a previously-unrecognized network path (JANITOR-fallback
+  currency sweep)** — `registry.terraform.io`/`get.helm.sh`/per-repo
+  `api.github.com` are blocked from this sandbox, but `raw.githubusercontent.com`
+  and the git wire protocol are not, reopening currency checks for any
+  GitHub-hosted tool's *releases* (not provider registry bumps, which stay
+  genuinely blocked). Full verification writeup:
+  [docs/done/2026-09-15-terragrunt-1.1.5-currency-bump.md](docs/done/2026-09-15-terragrunt-1.1.5-currency-bump.md).
+  (auto/terragrunt-1.1.5-currency-bump)
+
 - [x] 🟢 **Bump k3s `v1.36.3+k3s1` → `v1.36.4+k3s1` on both backends** — full
   verification writeup:
   [docs/done/2026-09-03-k3s-1-36-3-to-1-36-4-currency-bump.md](docs/done/2026-09-03-k3s-1-36-3-to-1-36-4-currency-bump.md).

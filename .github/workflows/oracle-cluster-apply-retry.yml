@@ -82,8 +82,14 @@ jobs:
           # see oracle-cluster-apply.yml's matching comment for the full
           # verification trail (real security hardening: tightened generated-file
           # permissions, reduced credential duplication; no breaking change).
+          # Bumped v1.1.4 -> v1.1.5 (2026-09-15, JANITOR-fallback currency sweep) --
+          # see oracle-cluster-apply.yml's matching comment for the full
+          # verification trail (fixes a real v1.1.4-introduced `base64gzip()`
+          # regression, not applicable here since this repo's own `user_data` uses
+          # `base64encode()` instead; every other changelog entry checked is a bug
+          # fix or perf improvement, no breaking change).
           curl -fsSL -o /usr/local/bin/terragrunt \
-            https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.4/terragrunt_linux_amd64
+            https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.5/terragrunt_linux_amd64
           chmod +x /usr/local/bin/terragrunt
 
       - name: Set TF_PLUGIN_CACHE_DIR
