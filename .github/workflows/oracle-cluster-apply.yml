@@ -126,6 +126,28 @@ jobs:
             https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.4/terragrunt_linux_amd64
           chmod +x /usr/local/bin/terragrunt
 
+      - name: Set TF_PLUGIN_CACHE_DIR
+        run: echo "TF_PLUGIN_CACHE_DIR=$HOME/.terraform.d/plugin-cache" >> "$GITHUB_ENV"
+      - name: Create Terraform plugin cache dir
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+      - name: Cache Terraform provider plugins
+        # Same gap ci.yml's terraform job had before PR #1618 added this exact
+        # pattern there (see that job's matching comment for the full
+        # rationale) -- every manual dispatch of this workflow re-downloaded
+        # its unit's providers (oci/random for `cluster`, helm for `argocd`)
+        # from scratch. No .terraform.lock.hcl is committed for
+        # infra/live/oracle/ units (unlike infra/live/local/'s, .gitignore's
+        # default), so key on both units' modules' required_providers blocks
+        # instead -- the files whose content actually determines which
+        # provider versions get pulled, covering whichever unit this
+        # dispatch's `inputs.unit` targets.
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: ${{ runner.os }}-tfplugins-oracle-${{ hashFiles('infra/modules/oracle-k3s-cluster/main.tf', 'infra/modules/argocd/main.tf') }}
+          restore-keys: |
+            ${{ runner.os }}-tfplugins-oracle-
+
       - name: Render OCI + SSH credential files from secrets
         run: |
           umask 077

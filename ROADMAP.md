@@ -288,7 +288,7 @@ You review and merge plan PRs, same as implementation PRs.
 > both of batch 7's deferred candidates — see
 > [docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md](docs/done/2026-09-08-roadmap-legacy-item-trim-batch8.md).
 
-- [ ] 🟢 **Cache Terraform providers in `oracle-cluster-apply-retry.yml` /
+- [x] 🟢 **Cache Terraform providers in `oracle-cluster-apply-retry.yml` /
   `oracle-cluster-apply.yml` (issue #1619)** — groomed 2026-09-15 (STEP 6b
   PLANNER-fallback grooming: the "Now / next" lane was completely empty —
   every backlog item `[x]`, zero open PRs — and issue #1619 was the one
