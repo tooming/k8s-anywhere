@@ -65,8 +65,8 @@ mk_comment_payload() {
   [ -z "$output" ]
 }
 
-@test "idle-issue-guard-hook: a [self-review] comment (no title field) exits 0 even though the body discusses idle cycles" {
-  run bash "$REPO/scripts/idle-issue-guard-hook.sh" <<<"$(mk_comment_payload "[self-review] fixed the idle-cycle detection bug this PR was about")"
+@test "idle-issue-guard-hook: a comment (no title field) discussing the hyphenated idle-cycle compound exits 0" {
+  run bash "$REPO/scripts/idle-issue-guard-hook.sh" <<<"$(mk_comment_payload "fixed the idle-cycle detection bug this PR was about")"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }

@@ -12,6 +12,11 @@
 # `make ci` sandbox has no `gh` CLI and no live GitHub state, so the tests
 # only assert the no-gh fallback path — the gh-present path is exercised live
 # by every routine's own STEP 1b in normal operation).
+#
+# Until 2026-09-23 the script also skipped any PR carrying a `self-reviewed`
+# label; WAYS-OF-WORKING.md §4 dropped that comment/label step that day
+# (issue #1632), so the label-skip branch (and its bats coverage) was removed
+# as dead code — every green-but-open agent PR is stale now, full stop.
 
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"

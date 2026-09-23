@@ -59,25 +59,16 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "idle-issue-guard-check: does not self-trigger on a [self-review] comment discussing 'idle' as standalone prose" {
-  # Regression (2026-07-16): the self-review comment for the PR that corrected
-  # STEP 8's stop condition discussed "idle cycle" / "idle issue" as standalone
-  # prose (not the hyphenated-compound shape the scrub above already handles)
-  # while explaining the fix, and tripped this guard even though it reported
-  # real, already-shipped work on an existing PR. A [self-review] comment can
-  # never legitimately be an idle *declaration* — it always follows a PR that
-  # already has a real diff.
-  run env IDLEGUARD_TITLE="" \
-      IDLEGUARD_BODY="[self-review]
-Gate integrity: ✅
-An idle cycle is never a reason to stop the run; only credit exhaustion is." \
-      bash "$REPO/scripts/idle-issue-guard-check.sh"
-  [ "$status" -eq 0 ]
-}
+# The `[self-review]`-prefix bypass that used to live here (2026-07-16 —
+# 2026-09-23) was removed once WAYS-OF-WORKING.md §4 dropped the
+# `[self-review]` PR-comment-and-label step entirely (issue #1632): no comment
+# carries that marker anymore, so the exemption became unreachable, and the
+# false-positive shape it guarded against ("idle cycle" / "idle issue" as
+# standalone prose in a self-review comment) can't recur since self-review is
+# no longer written up as a PR comment at all. See
+# scripts/idle-issue-guard-check.sh's own history comment for the reasoning.
 
-@test "idle-issue-guard-check: still FAILS an idle declaration without the [self-review] prefix" {
-  # The exemption above must be narrow — it keys off the literal body prefix,
-  # not merely the presence of the word "self-review" or a PR context.
+@test "idle-issue-guard-check: still FAILS an idle declaration in plain prose" {
   run env IDLEGUARD_TITLE="executor idle — needs work" \
       IDLEGUARD_BODY="no actionable work found this run" \
       bash "$REPO/scripts/idle-issue-guard-check.sh"
