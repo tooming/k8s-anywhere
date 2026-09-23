@@ -23,6 +23,15 @@ setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
 }
 
+# Turn every line-leading AT_TEST placeholder into a real @test. Portable in-place
+# edit via a temp file: GNU `sed -i 'expr' f` and BSD `sed -i '' 'expr' f` are
+# mutually incompatible, so a bare `sed -i` here failed on macOS (#1637).
+unplaceholder() {
+  local f="$1" tmp
+  tmp="$(mktemp)" || return 1
+  sed 's/^AT_TEST /@test /' "$f" >"$tmp" && mv "$tmp" "$f"
+}
+
 # --- existence + syntax -------------------------------------------------
 
 @test "scripts/lib/frozen-monolith-check.sh exists" {
@@ -69,7 +78,7 @@ AT_TEST "beta does another thing" {
   true
 }
 EOF
-  sed -i 's/^AT_TEST /@test /' "$bats_file"
+  unplaceholder "$bats_file"
   grep -oE '^@test "[^"]*"' "$bats_file" | sort >"$snap"
 
   run frozen_monolith_check "$bats_file" "$snap" "fixture-mark" "tests/fixture-<scope>.bats" "tests/fixture-monolith.bats"
@@ -91,7 +100,7 @@ AT_TEST "beta does another thing" {
   true
 }
 EOF
-  sed -i 's/^AT_TEST /@test /' "$bats_file"
+  unplaceholder "$bats_file"
   grep -oE '^@test "[^"]*"' "$bats_file" | sort >"$snap"
 
   # Simulate a PR appending a new @test straight to the frozen monolith.
@@ -100,7 +109,7 @@ AT_TEST "gamma is a new test that should not have been appended here" {
   true
 }
 EOF
-  sed -i 's/^AT_TEST /@test /' "$bats_file"
+  unplaceholder "$bats_file"
 
   run frozen_monolith_check "$bats_file" "$snap" "fixture-mark" "tests/fixture-<scope>.bats" "tests/fixture-monolith.bats"
   [ "$status" -eq 1 ]
@@ -132,7 +141,7 @@ AT_TEST "alpha does a thing" {
   true
 }
 EOF
-  sed -i 's/^AT_TEST /@test /' "$ROOT/tests/fixture-monolith.bats"
+  unplaceholder "$ROOT/tests/fixture-monolith.bats"
   grep -oE '^@test "[^"]*"' "$ROOT/tests/fixture-monolith.bats" | sort >"$ROOT/tests/.fixture-titles"
 
   cat >"$ROOT/scripts/fixture-check.sh" <<EOF
@@ -176,7 +185,7 @@ AT_TEST "gamma is a new test that should not have been appended here" {
   true
 }
 EOF
-  sed -i 's/^AT_TEST /@test /' "$ROOT/tests/fixture-monolith.bats"
+  unplaceholder "$ROOT/tests/fixture-monolith.bats"
 
   payload='{"tool_input":{"file_path":"'"$ROOT"'/tests/fixture-monolith.bats"}}'
   run frozen_monolith_sync_hook "tests/fixture-monolith.bats" "scripts/fixture-check.sh" "fixture-mark" "tests/fixture-<scope>.bats" "$ROOT" <<< "$payload"

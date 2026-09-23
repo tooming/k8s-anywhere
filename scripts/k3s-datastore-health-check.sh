@@ -78,14 +78,14 @@ fail=0
 
 # --- 1. state.db (+ WAL/SHM) size -----------------------------------------------
 DB_PATH=/var/lib/rancher/k3s/server/db/state.db
-DB_BYTES="$(docker exec "$CONTAINER" sh -c "stat -c '%s' '$DB_PATH' 2>/dev/null")"
+DB_BYTES="$(docker exec "$CONTAINER" sh -c "stat -c '%s' '$DB_PATH' 2>/dev/null")"  # portability-ok: runs inside the k3s container (Linux), not on the host
 if [ -z "$DB_BYTES" ]; then
   bad "could not read state.db from $CONTAINER — is it using the default sqlite/kine datastore (not etcd)?"
   fail=1
 else
   DB_MB=$(( DB_BYTES / 1024 / 1024 ))
   for suffix in "" -wal -shm; do
-    b="$(docker exec "$CONTAINER" sh -c "stat -c '%s' '${DB_PATH}${suffix}' 2>/dev/null")"
+    b="$(docker exec "$CONTAINER" sh -c "stat -c '%s' '${DB_PATH}${suffix}' 2>/dev/null")"  # portability-ok: runs inside the k3s container (Linux), not on the host
     [ -n "$b" ] && note "state.db${suffix:-}: $(( b / 1024 / 1024 ))MB"
   done
   if [ "$STATE_DB_MAX_MB" -gt 0 ] && [ "$DB_MB" -gt "$STATE_DB_MAX_MB" ]; then
@@ -108,7 +108,7 @@ if [ -z "$LAST_COMPACT_LINE" ]; then
   fail=1
 else
   LAST_TS="$(printf '%s' "$LAST_COMPACT_LINE" | grep -oE '^time="[^"]+"' | sed 's/time="//;s/"$//')"
-  LAST_EPOCH="$(date -u -d "$LAST_TS" +%s 2>/dev/null || date -u -jf '%Y-%m-%dT%H:%M:%SZ' "$LAST_TS" +%s 2>/dev/null)"
+  LAST_EPOCH="$(date -u -d "$LAST_TS" +%s 2>/dev/null || date -u -jf '%Y-%m-%dT%H:%M:%SZ' "$LAST_TS" +%s 2>/dev/null)"  # portability-ok: date -jf is the BSD fallback
   if [ -z "$LAST_EPOCH" ]; then
     note "could not parse last compaction timestamp ('$LAST_TS') — skipping gap check"
   else

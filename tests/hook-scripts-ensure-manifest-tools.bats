@@ -16,6 +16,7 @@
 setup() {
   REPO="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   HOOK="$REPO/scripts/ensure-manifest-tools-hook.sh"
+  source "$REPO/scripts/lib/timeout.sh"
 }
 
 @test "ensure-manifest-tools-hook.sh exists and is executable" {
@@ -37,16 +38,19 @@ setup() {
 
 @test "ensure-manifest-tools-hook.sh never fails even with no network/tools available" {
   # Same technique as the sibling ensure-*-hook.sh tests: a minimal PATH
-  # containing only symlinked bash/timeout/mktemp/rm binaries (the hook's own
+  # containing only symlinked bash/mktemp/rm binaries (the hook's own
   # non-network coreutils calls), so every `command -v` check correctly fails
   # and every curl call fails fast with "command not found" -- no actual
   # network calls happen -- without breaking the shell's own ability to run.
+  # The 30s hang guard wraps `env` from OUTSIDE the stripped PATH, via the
+  # portable run_with_timeout (a bare `timeout` is GNU-only and was 127 on
+  # macOS, #1637) -- so it needs no symlink in fakebin.
   local fakebin
   fakebin="$(mktemp -d)"
-  for bin in bash timeout mktemp rm; do
+  for bin in bash mktemp rm; do
     ln -s "$(command -v "$bin")" "$fakebin/$bin"
   done
-  run env -i PATH="$fakebin" timeout 30 bash "$HOOK"
+  run run_with_timeout 30 env -i PATH="$fakebin" bash "$HOOK"
   rm -rf "$fakebin"
   [ "$status" -eq 0 ]
 }

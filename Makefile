@@ -75,6 +75,10 @@ git-fixture-isolation-check: ## Check git-fixture bats tests unset GIT_* (so mak
 bats-shellcheck-duplication-check: ## Check no bats test invokes shellcheck directly (that's make lint's job)
 	@bash scripts/bats-shellcheck-duplication-check.sh
 
+.PHONY: portability-check
+portability-check: ## Check scripts/tests/hooks/Makefile use no GNU-only shell idioms a stock macOS rejects (Perl-mode grep, unsuffixed sed in-place, bare timeout, ...)
+	@bash scripts/portability-check.sh
+
 .PHONY: securitycontext-tests-mark
 securitycontext-tests-mark: ## Refresh tests/.securitycontext-titles — run ONLY after an intentional rename/edit of a monolith test
 	@grep -oE '^@test "[^"]*"' tests/securitycontext.bats | sort > tests/.securitycontext-titles
@@ -236,6 +240,7 @@ ci: ## Run every clusterless gate: lint + validate + test + drift checks
 	@bash scripts/drift-detectors-tests-check.sh
 	@bash scripts/hook-scripts-coverage-tests-check.sh
 	@bash scripts/bats-shellcheck-duplication-check.sh
+	@bash scripts/portability-check.sh
 	@bash scripts/ci-parity-check.sh
 
 .PHONY: install-hooks

@@ -15,7 +15,7 @@
 # checking" (ADR-0004 — no fabricated verdicts, just a real, dated signal).
 #
 # Resolves via `git clone --bare --depth 1 --filter=tree:0` + `git log -1
-# --format=%cI` (a few hundred KB, ~1-2s per repo, no auth needed) rather than the
+# --format=%ct` (a few hundred KB, ~1-2s per repo, no auth needed) rather than the
 # GitHub REST API: this session's own environment gates api.github.com/github.com
 # HTTP(S) requests to repos outside its configured scope (verified directly this
 # run — every api.github.com call returned an access-scope message, not repo data),
@@ -56,6 +56,7 @@ done
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/colors.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/dependency-register.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/timeout.sh"
 # ok()/skip() come from lib/colors.sh (shared, per tests/colors-lib.bats's
 # de-duplication guard). warn() is local — no shared equivalent exists yet
 # (bad() carries a drift=1 side effect this advisory report doesn't want).
@@ -69,16 +70,18 @@ warn() { printf '  %s⚠%s %s\n' "$Y" "$Z" "$1"; }
 RESOLVER="${DEPMAINT_RESOLVER:-}"
 
 resolve_builtin() {
-  local owner="$1" repo="$2" tmp date_str epoch now
+  local owner="$1" repo="$2" tmp epoch now
   tmp="$(mktemp -d)"
-  if ! timeout 20 git clone --bare --depth 1 --filter=tree:0 --quiet \
+  if ! run_with_timeout 20 git clone --bare --depth 1 --filter=tree:0 --quiet \
        "https://github.com/$owner/$repo.git" "$tmp" >/dev/null 2>&1; then
     rm -rf "$tmp"; echo UNREACHABLE; return
   fi
-  date_str="$(git -C "$tmp" log -1 --format=%cI HEAD 2>/dev/null)"
+  # %ct = committer date as epoch seconds: no date-string parsing needed. The old
+  # %cI + `date -d`/`date -j -f '%z'` pair could not work on macOS at all (BSD
+  # `date` rejects the "+03:00" offset %cI prints) and, with no `timeout` there
+  # either, every repo came back UNREACHABLE (#1637).
+  epoch="$(git -C "$tmp" log -1 --format=%ct HEAD 2>/dev/null)"
   rm -rf "$tmp"
-  [ -n "$date_str" ] || { echo UNREACHABLE; return; }
-  epoch="$(date -u -d "$date_str" +%s 2>/dev/null || date -u -j -f '%Y-%m-%dT%H:%M:%S%z' "$date_str" +%s 2>/dev/null)"
   [ -n "$epoch" ] || { echo UNREACHABLE; return; }
   now="$(date -u +%s)"
   echo $(( (now - epoch) / 86400 ))
