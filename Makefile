@@ -99,7 +99,7 @@ hook-scripts-coverage-tests-mark: ## Refresh tests/.hook-scripts-coverage-titles
 	@echo "  ok  tests/.hook-scripts-coverage-titles refreshed ($$(wc -l < tests/.hook-scripts-coverage-titles | tr -d ' ') titles)"
 
 .PHONY: routines-check
-routines-check: ## Check routines/*.prompt.md match the last apply (catches edits not synced to claude.ai triggers)
+routines-check: ## Check routines/routines.yaml matches the last apply (catches edits not synced to the claude.ai trigger)
 	@bash scripts/routines-check.sh
 
 .PHONY: routines-mark-applied
