@@ -132,6 +132,19 @@ STUB
 
 # Same shape as auto/active in make_fixture, but reused standalone here so
 # each orphan test controls gh's stubbed response independently.
+make_unauthed_gh() {
+  # A `gh` that is on PATH but not usable: `gh auth status` fails, exactly what the
+  # script's `command -v gh && gh auth status` gate treats as "no gh". Putting this
+  # first on PATH is what makes the "no usable gh" case hermetic -- merely omitting
+  # a stub still lets a real, authenticated gh (e.g. /opt/homebrew/bin/gh on a dev
+  # Mac) leak in and run class-3 reclassification (#1637).
+  cat > "$WORK/gh" <<'STUB'
+#!/usr/bin/env bash
+exit 1
+STUB
+  chmod +x "$WORK/gh"
+}
+
 make_orphan_fixture() {
   git init -q --bare "$WORK/remote.git"
   git clone -q "$WORK/remote.git" "$WORK/clone"
@@ -179,10 +192,10 @@ make_orphan_fixture() {
   [[ "$output" == *"Active (kept): 1"* ]]
 }
 
-@test "prune: without gh available, class-3 reclassification is skipped entirely (git-only fallback unchanged)" {
+@test "prune: without a usable gh (unavailable/unauthenticated), class-3 reclassification is skipped entirely (git-only fallback unchanged)" {
   make_orphan_fixture
-  # deliberately no stub gh on PATH
-  run env PRUNE_ROOT="$WORK/clone" ORPHAN_AGE_S=0 bash "$SCRIPT"
+  make_unauthed_gh
+  run env PATH="$WORK:$PATH" PRUNE_ROOT="$WORK/clone" ORPHAN_AGE_S=0 bash "$SCRIPT"
   [ "$status" -eq 0 ]
   ! grep -qE '^\[stale:[a-z]+\] +auto/orphan-candidate' <<<"$output"
   [[ "$output" == *"Active (kept): 1"* ]]

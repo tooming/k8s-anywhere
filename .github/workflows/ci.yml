@@ -249,4 +249,5 @@ jobs:
       - run: bash scripts/drift-detectors-tests-check.sh
       - run: bash scripts/hook-scripts-coverage-tests-check.sh
       - run: bash scripts/bats-shellcheck-duplication-check.sh
+      - run: bash scripts/portability-check.sh
       - run: bash scripts/ci-parity-check.sh
