@@ -105,6 +105,43 @@ _(As the team grows, replace the single-owner entries above with the owning engi
 
 - **One item per PR**, focused and bounded (target < ~400 changed lines; larger work is
   split by the planner first). Reviewers may reject oversized PRs on sight.
+- **Claim before you work (2026-09-23, explicit maintainer decision — org-wide rule):**
+  every agent — scheduled routine or interactive session — marks an existing GitHub
+  issue `in-progress` while it works it (an `rfc`/`adr-audit`/intake issue, the
+  `Closes #NNN` RFC behind a ROADMAP item, a human-filed bug), so two agents never
+  collide on the same issue. Where a session has GitHub issue tools instead of `gh`,
+  read the issue's current labels first and send the *full* set plus `in-progress`, so a
+  label-set replace cannot drop the others. This is the one binding copy of the
+  mechanics here (cloud routines cannot read the org's canonical text in
+  `toomingsolutions/assistant` → `org/working-preferences.md`); `CLAUDE.md` and the
+  routine prompts only point at it.
+  - **Before starting:** skip an issue that carries `in-progress`, or that an open PR or
+    branch references — unless the claim is stale (below). Re-read its labels right
+    before claiming: the label is a soft lock, not an atomic one, so if an open PR
+    appears right after you claimed, back off.
+  - **Claim** (create the label if missing, then add-only so the other labels survive;
+    no claim comment needed — the label's own `labeled` event carries the timestamp):
+
+    ```
+    gh label create in-progress --color fbca04 --description "An agent or person is actively working this issue - skip it" 2>/dev/null || true
+    gh issue edit <n> --add-label in-progress
+    ```
+
+  - **Hold** it through PR open: an open PR that addresses the issue *is* the claim.
+  - **Release** (`gh issue edit <n> --remove-label in-progress`) on every exit that
+    leaves the issue open with no PR behind it — gave up, blocked, handed off, run
+    ending, or the PR was closed unmerged. A merged `Closes #NNN` PR or a direct close
+    makes the label moot.
+  - **Stale claim:** `in-progress` on an open issue, no open PR referencing it, and a
+    newest `labeled` event (`gh api repos/{owner}/{repo}/issues/<n>/events`) older than
+    **12 hours** means the holder died — the executor's STEP 8 loop runs until it is cut
+    off, so it cannot clean up after itself. Remove the label, take the issue over, and
+    say so in the PR body.
+  - **Never label** the standing `[Action required]` issues (ROADMAP rule #11 — open by
+    design, they would look permanently held), an issue you are only reading or
+    commenting on, or one you skipped. ROADMAP items with no issue behind them (most
+    executor work) need no label: the open-`auto/*`-PR check (`executor.prompt.md`
+    STEP 2) remains their claim.
 - **Branch prefix signals origin:** `auto/*` (executor), `plan/*` (planner), `arch/*`
   (architect), `upgrade/*` (upgrade drafter), `sync/*` (doc-drift author), `chore/*`
   (janitor), `digest/*` (industry-news writer, retired 2026-06-13 — folded into the

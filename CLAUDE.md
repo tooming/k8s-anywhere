@@ -151,6 +151,12 @@ line in a PR description or session output that nothing else ever reads again. T
 is the same as everywhere else in this account: if the only place a finding exists is
 this conversation, it doesn't exist once the conversation ends.
 
+**Claim an issue before you work it (2026-09-23, org-wide rule).** Mark an existing
+GitHub issue `in-progress` while you work it, skip ones another agent already holds,
+and release the label on any exit that leaves it open with no PR behind it — the
+mechanics (commands, 12 h stale rule, what never to label) live in one place:
+[WAYS-OF-WORKING.md §3 "Claim before you work"](docs/WAYS-OF-WORKING.md).
+
 ## Always open a PR
 After pushing changes to the feature branch, **always open a pull request** for them
 (unless the user says otherwise). Don't wait to be asked.
