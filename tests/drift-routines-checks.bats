@@ -76,3 +76,27 @@ setup() {
   run bash "$REPO/scripts/routines-check.sh"
   [[ "$output" != *"routines.yaml is not in .routines-applied"* ]]
 }
+
+# --- AGENTS.md routines section ------------------------------------------------------
+# AGENTS.md is the Codex CLI's hand-kept mirror of CLAUDE.md. Its Routines section kept
+# the pre-2026-07-15 baked-prompt rule ("editing ANY routines/*.prompt.md needs a
+# RemoteTrigger apply") long after the pointer architecture made it false (#1635),
+# because nothing tied the copy to CLAUDE.md. These tests are that tie: the mirror must
+# keep CLAUDE.md's heading (so a rewrite of the source section can't leave it behind
+# unnoticed) and must never again present a *.prompt.md edit as needing an apply.
+@test "AGENTS.md: carries CLAUDE.md's routines heading verbatim (mirror stays tied to its source)" {
+  heading="$(grep -m1 -E '^## Routines: pointer architecture' "$REPO/CLAUDE.md")"
+  [ -n "$heading" ]
+  run grep -Fxq -- "$heading" "$REPO/AGENTS.md"
+  [ "$status" -eq 0 ]
+}
+
+@test "AGENTS.md: every paragraph naming a *.prompt.md says it needs no apply step" {
+  stale="$(awk -v RS= '/prompt\.md/ && !/no apply step/' "$REPO/AGENTS.md")"
+  [ -z "$stale" ]
+}
+
+@test "AGENTS.md: the live trigger is on claude.ai (no 'Codex.ai' rename artifact)" {
+  run grep -n 'Codex\.ai' "$REPO/AGENTS.md"
+  [ "$status" -ne 0 ]
+}
