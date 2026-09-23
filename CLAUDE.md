@@ -35,8 +35,7 @@ Concretely:
   backlog item, a failing check, a drifted doc, an un-groomed CHARTER gap, a clunky
   routine prompt, a governance rule that no longer fits — any of these is yours to pick
   up, fix, and land in the same session you notice it (see "Bias to action" below for
-  *how*; §3/§4 there for the self-merge contract: CI green, `[self-review]` posted,
-  conversations resolved).
+  *how*; §3/§4 there for the self-merge contract: CI green, conversations resolved).
 - **"Idle" is not an outcome — every run ships a PR.** Reporting "nothing to do" (or
   opening/commenting on an "executor idle" issue) is forbidden outright, not merely
   evidence-gated: idle issues (#52, #56, #57, #76, #89, #121, #262, #390, #398) piled up
