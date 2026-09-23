@@ -115,8 +115,12 @@ _(As the team grows, replace the single-owner entries above with the owning engi
   mechanics here (cloud routines cannot read the org's canonical text in
   `toomingsolutions/assistant` → `org/working-preferences.md`); `CLAUDE.md` and the
   routine prompts only point at it.
-  - **Before starting:** skip an issue that carries `in-progress`, or that an open PR or
-    branch references — unless the claim is stale (below). Re-read its labels right
+  - **Before starting:** skip an open issue that carries `in-progress`, or that an open PR
+    or branch references — unless the claim is stale (below). **Never claim a closed
+    issue, and ignore a leftover `in-progress` label on one** (the planner closes an RFC
+    when it grooms it, so the `RFC #NNN` behind a ROADMAP item is usually already closed
+    by the time the executor picks the item; a label on it would never go stale, since
+    the stale rule below is written for open issues). Re-read its labels right
     before claiming: the label is a soft lock, not an atomic one, so if an open PR
     appears right after you claimed, back off.
   - **Claim** (create the label if missing, then add-only so the other labels survive;
@@ -133,10 +137,16 @@ _(As the team grows, replace the single-owner entries above with the owning engi
     ending, or the PR was closed unmerged. A merged `Closes #NNN` PR or a direct close
     makes the label moot.
   - **Stale claim:** `in-progress` on an open issue, no open PR referencing it, and a
-    newest `labeled` event (`gh api repos/{owner}/{repo}/issues/<n>/events`) older than
-    **12 hours** means the holder died — the executor's STEP 8 loop runs until it is cut
-    off, so it cannot clean up after itself. Remove the label, take the issue over, and
-    say so in the PR body.
+    newest `labeled` event for `in-progress` older than **12 hours** means the holder died
+    — the executor's STEP 8 loop runs until it is cut off, so it cannot clean up after
+    itself. Remove the label, take the issue over, and say so in the PR body or run
+    summary. Read the timestamp with a paginated query (the events endpoint returns the
+    oldest 30 by default, so the newest `labeled` event may not be on page one):
+
+    ```
+    gh api --paginate repos/{owner}/{repo}/issues/<n>/events \
+      --jq '.[] | select(.event=="labeled" and .label.name=="in-progress") | .created_at' | tail -1
+    ```
   - **Never label** the standing `[Action required]` issues (ROADMAP rule #11 — open by
     design, they would look permanently held), an issue you are only reading or
     commenting on, or one you skipped. ROADMAP items with no issue behind them (most
