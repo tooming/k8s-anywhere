@@ -134,8 +134,9 @@ _(As the team grows, replace the single-owner entries above with the owning engi
   - **Hold** it through PR open: an open PR that addresses the issue *is* the claim.
   - **Release** (`gh issue edit <n> --remove-label in-progress`) on every exit that
     leaves the issue open with no PR behind it — gave up, blocked, handed off, run
-    ending, or the PR was closed unmerged. A merged `Closes #NNN` PR or a direct close
-    makes the label moot.
+    ending, the PR was closed unmerged, or the PR **merged without closing the issue**
+    (a `Refs #NNN` PR). A merged `Closes #NNN` PR or a direct close makes the label
+    moot.
   - **Stale claim:** `in-progress` on an open issue, no open PR referencing it, and a
     newest `labeled` event for `in-progress` older than **12 hours** means the holder died
     — the executor's STEP 8 loop runs until it is cut off, so it cannot clean up after
@@ -147,6 +148,9 @@ _(As the team grows, replace the single-owner entries above with the owning engi
     gh api --paginate repos/{owner}/{repo}/issues/<n>/events \
       --jq '.[] | select(.event=="labeled" and .label.name=="in-progress") | .created_at' | tail -1
     ```
+
+    With no `gh` and no events view (an issue-tools-only session), fall back to the issue's
+    `updated_at` being older than 12 hours.
   - **Never label** the standing `[Action required]` issues (ROADMAP rule #11 — open by
     design, they would look permanently held), an issue you are only reading or
     commenting on, or one you skipped. ROADMAP items with no issue behind them (most
