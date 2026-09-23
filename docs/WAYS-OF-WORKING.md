@@ -23,11 +23,10 @@
    implements; **any agent may merge its own PR, including one that edits this file,
    `CHARTER.md`, a `docs/decisions/*.md` ADR, secrets/credentials, live-cluster or
    production infrastructure, git history, or another agent's configuration**, once
-   required CI is green, its `[self-review]` comment is posted, and conversations are
-   resolved. Branch protection on `main` has been removed (§4) precisely to make this
-   possible — GitHub no longer blocks a merge or a direct push on any of that, which
-   means **the CI-green / self-review / resolved-conversations bar is now enforced by
-   agent discipline alone, not the platform.** Treat it as load-bearing for that
+   required CI is green and conversations are resolved. Branch protection on `main` has
+   been removed (§4) precisely to make this possible — GitHub no longer blocks a merge
+   or a direct push on any of that, which means **the CI-green / resolved-conversations
+   bar is now enforced by agent discipline alone, not the platform.** Treat it as load-bearing for that
    reason, not less binding. The maintainer does not work issues or click merge
    buttons. An agent must never assign the maintainer an action item it can perform
    itself with the tools it has — "maintainer: please do X" is now a routine bug for
@@ -81,11 +80,13 @@ chain, or the same work will double-fire from two triggers. `janitor.prompt.md` 
 > happens **inside each PR-producing run**: the executor, planner, architect, and
 > upgrade-drafter prompts end with a mandatory self-review step that audits the run's own
 > diff against the three review checks (gate integrity, ADR compliance, ADR-0004
-> fabricated content — plus the adversarial design review for `arch/*`) and
-> posts a `[self-review]` comment + `self-reviewed` label on the PR before the run ends.
-> The backend trigger stays disabled as an audit trail; its daily slot funded the
-> executor's restoration to 3/day, and the 2026-06-13 consolidation folded the rest into
-> the fallback chain above.
+> fabricated content — plus the adversarial design review for `arch/*`) and, until
+> 2026-09-23, posted a `[self-review]` comment + `self-reviewed` label on the PR before
+> the run ends. That comment-and-label write-up was dropped 2026-09-23 (see the dated
+> entry in §4) — the underlying audit itself still runs before every merge, just isn't
+> posted or labeled any more. The backend trigger stays disabled as an audit trail; its
+> daily slot funded the executor's restoration to 3/day, and the 2026-06-13 consolidation
+> folded the rest into the fallback chain above.
 
 **Local on-demand roles (maintainer's machine, cluster-bound — not on cron, no quota cost):**
 
@@ -114,11 +115,11 @@ _(As the team grows, replace the single-owner entries above with the owning engi
 - **Green before review:** `make ci` passes; ADRs honored; heavy components stay
   non-auto-synced; docs/dashboards in sync.
 - **Self-merge (unconditional, including governance):** once every required status check
-  is green, the `[self-review]` comment is posted, and all conversations are resolved,
-  the authoring routine merges its own PR (squash, matching `main`'s linear-history
-  convention) and updates the ROADMAP checkbox / closes the issue it addressed. It must
-  **not** merge if any required check is red or a conversation is unresolved — those
-  hold unconditionally, with no exception for any category of change (§0.1).
+  is green and all conversations are resolved, the authoring routine merges its own PR
+  (squash, matching `main`'s linear-history convention) and updates the ROADMAP checkbox
+  / closes the issue it addressed. It must **not** merge if any required check is red or
+  a conversation is unresolved — those hold unconditionally, with no exception for any
+  category of change (§0.1).
 
 ## 4. Review & merge gate
 
@@ -138,8 +139,8 @@ _GitHub repo settings (as of 2026-07-13):_
     conversations-must-resolve requirement.
 
   **What this means in practice: the self-merge contract in §0.1/§3/§4 (CI green,
-  `[self-review]` posted, conversations resolved) is now the *only* thing standing
-  between a broken change and `main` — GitHub will no longer catch a violation of it.**
+  conversations resolved) is now the *only* thing standing between a broken change and
+  `main` — GitHub will no longer catch a violation of it.**
   Every routine and every human working this repo must treat those rules as
   load-bearing, not advisory, precisely because nothing else enforces them anymore.
   This doc still says "never merge with a red CI check" — that is no longer
@@ -170,12 +171,28 @@ _Process:_
 - **WIP limit:** cap concurrent open agent PRs (suggested ≤ 3 `auto/*` + ≤ 1 each of
   `plan/*`, `arch/*`, `upgrade/*`, `sync/*`, `digest/*`). At the cap, agents wait instead
   of piling on. (The executor already skips items with an open `auto/*` PR; the cap
-  generalizes that to protect reviewer attention.) Every PR-producing routine posts a
-  first-pass `[self-review]` comment (+ `self-reviewed` label) on its own PR before
-  merging — combined with green required CI, this **is** the self-merge trigger
+  generalizes that to protect reviewer attention.) Every PR-producing routine completes
+  its own first-pass diligence (gate integrity, ADR compliance, fabricated-content, and
+  whatever domain-specific checks its role calls for) before merging — combined with
+  green required CI and resolved conversations, this **is** the self-merge trigger
   unconditionally (§0.1, §3), including PRs that touch governance files. It never
   substitutes for a human's ability to review after the fact, comment, or revert —
   self-merge removes the pre-merge gate, not post-merge accountability.
+
+  **2026-09-23 (explicit maintainer decision): the `[self-review]` PR-comment-and-label
+  step is dropped, for every role** — interactive Claude Code sessions and every
+  autonomous routine (executor, architect, planner, janitor, doc-drift-author,
+  upgrade-drafter, learning-post-writer) alike. Reasoning, in the maintainer's own words:
+  "i don't think that these give extra value, only spending tokens atm." The
+  comment-and-label ritual never demonstrated safety value beyond what CI-green +
+  resolved-conversations already provide, and it cost real tokens on every merge for no
+  offsetting benefit. The underlying audit each routine performs before merging — gate
+  integrity, ADR compliance, ADR-0004 fabricated-content checks, whatever
+  domain-specific checks that routine's role calls for, and the adversarial design
+  review for `arch/*` — still happens as ordinary pre-merge diligence; it is simply no
+  longer written up as a `[self-review]`-marked PR comment or marked with a
+  `self-reviewed` label. CI-green + resolved-conversations (§0.1, §3, §4 above) remains
+  the actual, unconditional merge gate, unchanged by this.
 - **Staleness SLA:** an agent PR with no review in N working days is flagged or auto-closed,
   not left to rot. Closing is cheap — the item simply returns to the backlog.
 
@@ -244,7 +261,7 @@ _Process:_
   them. This is in direct tension with §0.3's "review capacity is the constraint, not
   generation": more PRs per run means more merged changes for the maintainer to spot-check
   after the fact, faster. The mitigations already in place (§0.1's CI-green +
-  `[self-review]` + resolved-conversations bar; WIP caps in §4; each cycle still capped at
+  resolved-conversations bar; WIP caps in §4; each cycle still capped at
   one item / ~400 lines) are unchanged and still apply per cycle — but this is a real
   cost/risk increase from the maintainer's explicit choice, not a side effect to ignore.
   If output ever outpaces what's reasonable to spot-check, the fix is the kill-switch

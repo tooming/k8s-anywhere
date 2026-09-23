@@ -32,8 +32,10 @@ directory as fallback targets and on-demand local invocations, not as scheduled 
 
 > **Retired triggers** (kept disabled as an audit trail — no delete API): the
 > **reviewer** (daily first-pass PR review, retired 2026-06-10 — cron-based review kept
-> lagging PR-open, so first-pass review now happens *inside* each PR-producing run, the
-> `[self-review]` step); and **planner, architect, triager, upgrade-drafter,
+> lagging PR-open, so first-pass review now happens *inside* each PR-producing run, as a
+> self-review audit before merging — until 2026-09-23 this was posted as a `[self-review]`
+> PR comment + `self-reviewed` label; that write-up step was dropped that day, see
+> docs/WAYS-OF-WORKING.md §4, while the audit itself continues); and **planner, architect, triager, upgrade-drafter,
 > doc-drift-author, industry-news-writer, and the old "executor 4th slot"** (all retired
 > 2026-06-13, absorbed into the executor's fallback chain above — the industry-news
 > writer's digest-gathering step folded into the architect prompt's own STEP 1). Do not

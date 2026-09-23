@@ -76,9 +76,9 @@ rules below are binding.
    2026-07-14; this rule was stale until 2026-07-16 and still said otherwise). One
    branch per item (`auto/<short-slug>`). Title it clearly; the body should say what +
    why and note it's an autonomous run. `make ci` runs on the PR; the executor
-   self-reviews it (the `[self-review]` comment), then merges it — CI-green +
-   self-review is the gate, not a human click. Never commit straight to a branch
-   without opening a PR, and never silently do nothing (see rule #9).
+   self-reviews it, then merges it — CI-green (+ conversations resolved) is the gate,
+   not a human click. Never commit straight to a branch without opening a PR, and never
+   silently do nothing (see rule #9).
 7. **Check it off in the same PR.** Mark the item `[x]` in the backlog, then create
    `docs/done/YYYY-MM-DD-<slug>.md` (today's date + your branch slug) with the full
    item description and the PR number. Do **not** prepend anything to the `## Done`
