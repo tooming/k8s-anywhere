@@ -29,20 +29,26 @@ $BODY"
 # leaves/creates the issue open is a candidate idle *declaration*.
 [ "$STATE" = "closed" ] && exit 0
 
-# A [self-review] comment is posted onto a PR that already exists and already
-# carries a real diff (WAYS-OF-WORKING.md §0.1/§3 — self-review always follows
-# a PR being opened, never precedes or substitutes for one) — it can never
-# legitimately BE an "executor/session idle — no work" declaration, no matter
-# what its body discusses. Caught live (2026-07-16): the self-review comment
-# for the PR that corrected STEP 8's stop condition discussed "idle cycle" /
-# "idle issue" as standalone prose (not the hyphenated-compound shape the scrub
-# below already handles) while explaining the fix, and tripped this guard even
-# though it was reporting real, already-shipped work. Matches this file's own
-# `idle-titled` precedent below: discussing the feature must not self-trigger.
-# (add_issue_comment has no title, so this checks BODY only.)
-case "$BODY" in
-  '[self-review]'*) exit 0 ;;
-esac
+# Until 2026-09-23 a `[self-review]`-prefixed BODY was exempted here: that
+# marker was posted only onto a PR that already existed and already carried a
+# real diff (WAYS-OF-WORKING.md §0.1/§3), so it could never legitimately BE an
+# "executor/session idle — no work" declaration no matter what its body
+# discussed. Caught live (2026-07-16): the self-review comment for the PR that
+# corrected STEP 8's stop condition discussed "idle cycle" / "idle issue" as
+# standalone prose while explaining the fix, and tripped this guard even
+# though it was reporting real, already-shipped work.
+#
+# WAYS-OF-WORKING.md §4 dropped the `[self-review]` PR-comment-and-label step
+# entirely that day (issue #1632) — self-review diligence is no longer written
+# up as a PR comment of any kind, so the exact scenario this bypass guarded
+# against (a self-review comment discussing "idle" in prose) can no longer
+# occur, and the marker itself is removed as dead code rather than replaced.
+# A *different* comment that legitimately needs to discuss "idle" in prose is
+# still possible in principle, but that's a new, not-yet-observed case; per
+# this repo's own history (the `idle-titled` compound scrub below, and the
+# bypass this comment used to describe), guards here get added when a false
+# positive is caught live, not spun up speculatively for a case that hasn't
+# happened.
 
 # Strip any "idle-<word>" compound (idle-titled, idle-flavored,
 # idle-issue-guard-check.sh, ...) before pattern-matching — a PR or comment

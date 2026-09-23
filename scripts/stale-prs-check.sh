@@ -15,10 +15,17 @@
 # Before this script, STEP 1b was a hand-built `gh pr list --search
 # "head:auto/ head:plan/ ..."` query the acting session had to reconstruct
 # correctly from memory every time, then cross-reference each result's checks
-# and comments by hand. This script makes that one command: it flags exactly
-# the PRs matching the "stale" pattern (agent branch prefix, all required
-# checks green, no `self-reviewed` label yet) so a run can never miss one by
-# mistyping the search or skipping a prefix.
+# by hand. This script makes that one command: it flags exactly the PRs
+# matching the "stale" pattern (agent branch prefix, open, all required checks
+# green) so a run can never miss one by mistyping the search or skipping a
+# prefix.
+#
+# Until 2026-09-23 this also skipped any PR already carrying a `self-reviewed`
+# label — WAYS-OF-WORKING.md §4 dropped the `[self-review]` PR-comment-and-
+# label step that day (issue #1632), so no PR will ever carry that label
+# again; every green-but-open agent PR is now simply stale, matching STEP 1b's
+# own wording across the routines ("required checks are green ... but the PR
+# is still open").
 #
 # Usage:
 #   bash scripts/stale-prs-check.sh
@@ -46,12 +53,11 @@ for p in "${AGENT_PREFIXES[@]}"; do
   search_terms+="head:${p}/ "
 done
 
-mapfile -t PRS < <(gh pr list --state open --search "${search_terms}" --json number,headRefName,labels 2>/dev/null \
+mapfile -t PRS < <(gh pr list --state open --search "${search_terms}" --json number,headRefName 2>/dev/null \
   | python3 -c '
 import json, sys
 for pr in json.load(sys.stdin):
-    labels = [l["name"] for l in pr.get("labels", [])]
-    print(f"{pr[\"number\"]}\t{pr[\"headRefName\"]}\t{\",\".join(labels)}")
+    print(f"{pr[\"number\"]}\t{pr[\"headRefName\"]}")
 ' 2>/dev/null)
 
 if [[ ${#PRS[@]} -eq 0 ]]; then
@@ -64,11 +70,6 @@ for line in "${PRS[@]}"; do
   [[ -z "$line" ]] && continue
   num=$(cut -f1 <<<"$line")
   branch=$(cut -f2 <<<"$line")
-  labels=$(cut -f3 <<<"$line")
-
-  if [[ ",${labels}," == *",self-reviewed,"* ]]; then
-    continue
-  fi
 
   rollup=$(gh pr view "$num" --json statusCheckRollup --jq '[.statusCheckRollup[]?.conclusion // .statusCheckRollup[]?.state] | unique | join(",")' 2>/dev/null)
   if [[ -z "$rollup" ]]; then
@@ -81,10 +82,10 @@ done
 
 echo "─────────────────────────────────────────────"
 if [[ ${#STALE[@]} -eq 0 ]]; then
-  echo "stale-prs-check: none — every green agent PR already carries self-reviewed (or has pending/failing checks)"
+  echo "stale-prs-check: none — no open agent PRs are CI-green (or checks are still pending/failing)"
   exit 0
 fi
 
-echo "stale-prs-check: ${#STALE[@]} PR(s) are CI-green with no self-reviewed label — finish STEP 1b on these before starting new work:"
+echo "stale-prs-check: ${#STALE[@]} PR(s) are CI-green but still open — finish STEP 1b on these before starting new work:"
 printf '  %s\n' "${STALE[@]}"
 exit 0

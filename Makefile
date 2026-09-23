@@ -195,7 +195,7 @@ rebase-prs: ## Prune stale branches, then show/rebase the open PR branches (PUSH
 	@bash scripts/rebase-open-prs.sh $(if $(PUSH),--push)
 
 .PHONY: stale-prs-check
-stale-prs-check: ## List open agent-branch PRs that are CI-green but missing the self-reviewed label (STEP 1b helper)
+stale-prs-check: ## List open agent-branch PRs that are CI-green but still open (STEP 1b helper)
 	@bash scripts/stale-prs-check.sh
 
 .PHONY: ci
